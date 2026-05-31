@@ -4625,3 +4625,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper work touches that boundary.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-181: Campaign readiness projection helper mixed launch package with preview readiness
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_readiness_projection_http.py` launch-package response helper.
+- Finding: after launch-package route extraction, launch-package response construction still lived
+  in the preview-readiness projection helper module. Launch package builds operator create-request
+  guidance with idempotency and correlation metadata, while preview readiness is the direct
+  fail-closed supportability check.
+- Action: moved launch-package response construction into
+  `src/api/routers/wave_campaign_launch_package_http.py`, updated the launch-package route to import
+  that focused helper directly, and kept `wave_campaign_readiness_projection_http.py`
+  import-compatible for existing callers. Public behavior, not-found mapping, requested as-of date,
+  actor, correlation, and response shape were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_readiness_projection_http.py` as preview-readiness plus
+  compatibility re-exports unless a future cleanup can safely retire compatibility imports.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

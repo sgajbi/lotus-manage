@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_readiness_projection_http import (
+from src.api.routers.wave_campaign_launch_package_http import (
     get_campaign_definition_launch_package_response,
 )
 from src.api.routers.wave_route_parameters import (
