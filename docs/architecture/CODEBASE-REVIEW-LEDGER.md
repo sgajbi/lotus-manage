@@ -3315,3 +3315,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   preserving repository/configuration import seams.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-122: Policy-pack admin mutations were owned by helper module
+
+- Date: 2026-05-31
+- Scope: policy-pack upsert and delete admin endpoints.
+- Finding: after extracting policy-pack documentation, effective resolution, and catalog reads,
+  `src/api/routers/rebalance_policy_packs.py` still owned admin mutation routes while also
+  carrying repository/configuration helper exports used by services and tests. Admin mutation
+  routes have a distinct feature-gated control-plane boundary and should be reviewed separately.
+- Action: moved policy-pack admin route registration into
+  `src/api/routers/rebalance_policy_pack_admin_routes.py`, preserving public paths, response
+  models, Swagger guidance, admin feature gating, query-parameter rejection, upsert payload
+  projection, repository mutation behavior, delete behavior, and missing-item 404 mapping. The
+  original module now retains router construction, route composition, and repository/configuration
+  helpers for existing import seams.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review whether repository/configuration helpers should move behind an explicit
+  policy-pack dependency module once service/test import seams can be updated safely.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
