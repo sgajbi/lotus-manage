@@ -14,6 +14,7 @@ import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
+import src.api.services.rebalance_stateful_source_context as stateful_source_context
 import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
@@ -178,6 +179,39 @@ def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(mo
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert disabled.value.detail == "DPM_STATEFUL_INPUT_DISABLED"
     assert rebalance_envelope_http_exception(disabled.value).status_code == 409
+
+
+def test_stateful_source_context_helper_gates_before_resolver_call() -> None:
+    def _unexpected_resolver():
+        raise AssertionError("resolver should not be constructed")
+
+    missing_payload = RebalanceExecutionRequestEnvelope.model_construct(
+        input_mode="stateful",
+        stateful_input=None,
+        stateless_input=None,
+        options_override={},
+    )
+    with pytest.raises(service.DpmRebalanceEnvelopeValidationError):
+        stateful_source_context.resolve_stateful_source_context(
+            envelope=missing_payload,
+            correlation_id="corr",
+            stateful_enabled=True,
+            resolver_factory=_unexpected_resolver,
+        )
+
+    disabled_payload = RebalanceExecutionRequestEnvelope.model_construct(
+        input_mode="stateful",
+        stateful_input=_stateful_input(),
+        stateless_input=None,
+        options_override={},
+    )
+    with pytest.raises(service.DpmRebalanceStatefulInputDisabledError):
+        stateful_source_context.resolve_stateful_source_context(
+            envelope=disabled_payload,
+            correlation_id="corr",
+            stateful_enabled=False,
+            resolver_factory=_unexpected_resolver,
+        )
 
 
 def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> None:

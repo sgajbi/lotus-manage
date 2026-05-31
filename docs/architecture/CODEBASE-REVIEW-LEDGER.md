@@ -6036,3 +6036,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   resolution and async submission envelope construction in small compatibility-preserving slices.
 - Wiki decision: no wiki source change required; this is internal policy-execution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-239: Stateful source-context helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_stateful_source_context.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `_resolve_stateful_source_context` still owned stateful payload gating, resolver
+  construction, core-resolver exception mapping, resolver telemetry, and canonical context hashing.
+  That kept source-data integration mechanics in the main rebalance orchestration module and made
+  gate behavior harder to test without the compatibility wrapper.
+- Action: extracted stateful source-context resolution into
+  `rebalance_stateful_source_context.py`, with explicit resolver factory and feature flag inputs.
+  The existing `_resolve_stateful_source_context` wrapper remains as the compatibility seam for
+  current tests and main-module overrides. Public routes, OpenAPI output, stateful disabled/missing
+  payload details, core resolver error mapping, telemetry labels, and context hash behavior were
+  preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  stateful-source and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract stateless/stateful envelope-to-request transformation next so core-context
+  validation and request materialization have direct helper tests.
+- Wiki decision: no wiki source change required; this is internal core-sourcing modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
