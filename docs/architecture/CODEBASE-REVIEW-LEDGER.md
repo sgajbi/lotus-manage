@@ -3745,3 +3745,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the remaining source-resolution module.
 - Wiki decision: no wiki source change required; this is internal source-resolution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-142: Core DPM universe discovery was mixed with campaign membership
+
+- Date: 2026-05-31
+- Scope: Core DPM portfolio-universe candidate discovery for bulk-review campaign waves.
+- Finding: `src/api/routers/wave_campaign_source_resolution.py` still mixed live Core
+  portfolio-universe paging and source-readiness guards with Manage-owned campaign membership
+  hashing and governance projection. Core discovery owns upstream availability mapping,
+  non-terminating page protection, truncated-page rejection, duplicate candidate detection, and
+  Core source-reference construction.
+- Action: moved Core DPM portfolio-universe discovery into
+  `src/api/routers/wave_core_portfolio_universe_resolution.py`, preserving page bounds,
+  supportability checks, error codes/messages, candidate deduplication, source refs, and the
+  campaign membership call path.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split campaign membership governance projection from the remaining source-resolution
+  module.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
