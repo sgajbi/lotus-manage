@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+from src.api.routers.wave_campaign_action_common import persisted_definition_or_404
+from src.api.routers.wave_campaign_approval_decision_http import (
+    list_campaign_definition_approval_decisions_response as list_campaign_definition_approval_decisions_response,
+    record_campaign_definition_approval_decision_response as record_campaign_definition_approval_decision_response,
+)
 from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_conflict_http_exception,
-    campaign_definition_not_found_http_exception,
     campaign_definition_value_http_exception,
     get_campaign_definition_or_404,
 )
 from src.api.routers.wave_campaign_models import (
-    DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
@@ -16,72 +19,19 @@ from src.api.routers.wave_campaign_models import (
 from src.core.waves import (
     CampaignAssignmentTaskStatus,
     DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     DpmBulkReviewCampaignDefinitionRepository,
-    build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
     build_bulk_review_campaign_definition_assignment_task_page,
     build_bulk_review_campaign_definition_maker_checker_control_page,
     open_bulk_review_campaign_definition_assignment_task,
-    record_bulk_review_campaign_definition_approval_decision,
     record_bulk_review_campaign_definition_assignment_action,
     record_bulk_review_campaign_definition_maker_checker_control,
     transition_bulk_review_campaign_definition_assignment_task,
 )
-
-
-def record_campaign_definition_approval_decision_response(
-    *,
-    campaign_id: str,
-    campaign_version: str,
-    request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
-    repository: DpmBulkReviewCampaignDefinitionRepository,
-) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    try:
-        updated = record_bulk_review_campaign_definition_approval_decision(
-            definition=definition,
-            decision_type=request.decision_type,
-            decision_ref=request.decision_ref,
-            decided_by=request.decided_by,
-            decision_reason=request.decision_reason,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_approval_decision(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    return _persisted_definition_or_404(persisted)
-
-
-def list_campaign_definition_approval_decisions_response(
-    *,
-    campaign_id: str,
-    campaign_version: str,
-    limit: int,
-    offset: int,
-    repository: DpmBulkReviewCampaignDefinitionRepository,
-) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_approval_decision_page(
-        definition=definition,
-        limit=limit,
-        offset=offset,
-    )
 
 
 def record_campaign_definition_assignment_action_response(
@@ -114,7 +64,7 @@ def record_campaign_definition_assignment_action_response(
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
         raise campaign_definition_value_http_exception(exc) from exc
-    return _persisted_definition_or_404(persisted)
+    return persisted_definition_or_404(persisted)
 
 
 def list_campaign_definition_assignment_actions_response(
@@ -168,7 +118,7 @@ def open_campaign_definition_assignment_task_response(
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
         raise campaign_definition_value_http_exception(exc) from exc
-    return _persisted_definition_or_404(persisted)
+    return persisted_definition_or_404(persisted)
 
 
 def transition_campaign_definition_assignment_task_response(
@@ -204,7 +154,7 @@ def transition_campaign_definition_assignment_task_response(
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
         raise campaign_definition_value_http_exception(exc) from exc
-    return _persisted_definition_or_404(persisted)
+    return persisted_definition_or_404(persisted)
 
 
 def list_campaign_definition_assignment_tasks_response(
@@ -260,7 +210,7 @@ def record_campaign_definition_maker_checker_control_response(
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
         raise campaign_definition_value_http_exception(exc) from exc
-    return _persisted_definition_or_404(persisted)
+    return persisted_definition_or_404(persisted)
 
 
 def list_campaign_definition_maker_checker_controls_response(
@@ -281,11 +231,3 @@ def list_campaign_definition_maker_checker_controls_response(
         limit=limit,
         offset=offset,
     )
-
-
-def _persisted_definition_or_404(
-    persisted: DpmBulkReviewCampaignDefinition | None,
-) -> DpmBulkReviewCampaignDefinition:
-    if persisted is None:
-        raise campaign_definition_not_found_http_exception()
-    return persisted

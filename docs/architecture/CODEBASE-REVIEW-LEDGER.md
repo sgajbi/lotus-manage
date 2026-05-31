@@ -4234,3 +4234,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: inspect larger wave route helper modules after PM operating-quality builders are split.
 - Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-164: Campaign action HTTP mixed approval evidence with other evidence helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`.
+- Finding: after campaign evidence routes were split, `wave_campaign_action_http.py` still mixed
+  approval-decision response helpers with assignment-action, assignment-task, and maker-checker
+  response helpers. Approval decisions own append-only approval mutation, approval page projection,
+  conflict/value HTTP mapping, and persisted-definition not-found handling.
+- Action: moved approval-decision HTTP response helpers into
+  `src/api/routers/wave_campaign_approval_decision_http.py`, moved persisted-definition not-found
+  handling into `src/api/routers/wave_campaign_action_common.py`, and kept
+  `wave_campaign_action_http.py` as a compatibility import surface for existing evidence route
+  modules. Public paths, request/response models, repository calls, conflict/value/not-found
+  mappings, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-action, assignment-task, and maker-checker HTTP helpers from the
+  remaining campaign action compatibility module.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
