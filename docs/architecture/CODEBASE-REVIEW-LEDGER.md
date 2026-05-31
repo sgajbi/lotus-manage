@@ -4711,3 +4711,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   prove no active callers remain.
 - Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-185: Campaign definition compatibility helper had no internal callers
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/wave_campaign_definition_http.py`.
+- Finding: after definition read, write, error, and lifecycle helpers were split and routes imported
+  focused modules directly, the definition helper only re-exported those focused helpers and had no
+  repository-local callers.
+- Action: removed the unused compatibility helper module. Public routes, response models, OpenAPI
+  output, validation-error mapping, not-found mapping, conflict mapping, and focused definition
+  helper ownership were preserved because all route modules already import the focused helpers
+  directly.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: continue retiring compatibility-only modules only after repository-local import scans
+  prove no active callers remain.
+- Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
+  with no route, payload, supported-feature, or operator-contract change.
