@@ -1664,3 +1664,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   module before exposing them in routers or service facades.
 - Wiki decision: no wiki source change required; this is internal validation-boundary hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-043: Search Swagger did not list supported filter vocabularies
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search OpenAPI parameter guidance
+- Finding: the search API rejected unsupported event-type and supportability-state filters, but
+  Swagger only said unsupported event types are rejected and did not list the implementation-backed
+  accepted vocabularies for client developers, demo operators, or Gateway consumers.
+- Action: wired the search route parameter descriptions to the shared request-normalization
+  vocabulary constants and pinned representative event/supportability values in the OpenAPI test.
+- Status: hardened
+- Evidence: OpenAPI assertions in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep Swagger parameter guidance generated from shared vocabulary constants when new
+  portfolio-memory search filters are added.
+- Wiki decision: no wiki source change required; this improves generated OpenAPI guidance without
+  changing routes, payloads, supported features, or operator wiki truth.

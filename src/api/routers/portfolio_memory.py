@@ -42,6 +42,8 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+    PORTFOLIO_MEMORY_SUPPORTED_EVENT_TYPES,
+    PORTFOLIO_MEMORY_SUPPORTED_SUPPORTABILITY_STATES,
     normalize_portfolio_memory_event_type_filter,
     normalize_portfolio_memory_supportability_state_filter,
 )
@@ -61,6 +63,12 @@ from src.core.waves.repository import DpmWaveRepository
 router = APIRouter(
     prefix="/rebalance/portfolio-memory",
     tags=["lotus-manage Portfolio Memory"],
+)
+_SUPPORTED_EVENT_TYPE_DESCRIPTION = ", ".join(
+    f"`{event_type}`" for event_type in PORTFOLIO_MEMORY_SUPPORTED_EVENT_TYPES
+)
+_SUPPORTED_SUPPORTABILITY_STATE_DESCRIPTION = ", ".join(
+    f"`{state}`" for state in PORTFOLIO_MEMORY_SUPPORTED_SUPPORTABILITY_STATES
 )
 
 
@@ -131,7 +139,8 @@ def search_portfolio_memory_index(
         default=None,
         description=(
             "Optional portfolio-memory event type filter. Unsupported event types are rejected "
-            "instead of being interpreted as an empty source result."
+            "instead of being interpreted as an empty source result. Supported event types: "
+            f"{_SUPPORTED_EVENT_TYPE_DESCRIPTION}."
         ),
         examples=["WAVE_HANDOFF_READY"],
     ),
@@ -140,7 +149,8 @@ def search_portfolio_memory_index(
         pattern=r"^\s*(READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY)\s*$",
         description=(
             "Optional aggregate supportability-state filter. Leading and trailing whitespace is "
-            "normalized before matching."
+            "normalized before matching. Supported states: "
+            f"{_SUPPORTED_SUPPORTABILITY_STATE_DESCRIPTION}."
         ),
         examples=["READY"],
     ),

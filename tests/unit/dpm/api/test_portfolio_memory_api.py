@@ -1728,12 +1728,18 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         if parameter["name"] == "event_type"
     )
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
+    assert "Supported event types:" in event_type_parameter["description"]
+    assert "`WAVE_HANDOFF_READY`" in event_type_parameter["description"]
+    assert "`PM_QUALITY_SUMMARY_INVOCATION`" in event_type_parameter["description"]
     parameters = {
         parameter["name"]: parameter
         for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
             "parameters"
         ]
     }
+    assert "Supported states:" in parameters["supportability_state"]["description"]
+    assert "`READY`" in parameters["supportability_state"]["description"]
+    assert "`PENDING_REVIEW`" in parameters["supportability_state"]["description"]
     assert parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT
     assert parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN
     assert parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX
