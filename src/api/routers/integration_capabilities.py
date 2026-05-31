@@ -1,8 +1,15 @@
 import os
-from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Query, Request
 
+from src.api.routers.integration_capabilities_builders import (
+    build_capabilities_response,
+    build_feature_capabilities,
+    build_workflow_capabilities,
+    env_bool,
+    stateful_execution_publishable,
+    supported_input_modes,
+)
 from src.api.routers.integration_capabilities_models import (
     CAPABILITIES_RESPONSE_EXAMPLES,
     ConsumerSystem,
@@ -18,10 +25,7 @@ router = APIRouter(tags=["Integration"])
 
 
 def _env_bool(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+    return env_bool(name, default, env_get=os.getenv)
 
 
 def _supported_input_modes(
@@ -29,25 +33,14 @@ def _supported_input_modes(
     stateful_enabled: bool,
     stateless_enabled: bool,
 ) -> list[str]:
-    supported_input_modes: list[str] = []
-    if stateful_enabled:
-        supported_input_modes.append("stateful")
-    if stateless_enabled:
-        supported_input_modes.append("stateless")
-    return supported_input_modes
+    return supported_input_modes(
+        stateful_enabled=stateful_enabled,
+        stateless_enabled=stateless_enabled,
+    )
 
 
 def _stateful_execution_publishable() -> bool:
-    resolver_path_template = os.getenv("DPM_CORE_RESOLVER_PATH_TEMPLATE", "").strip()
-    uses_legacy_monolithic_resolver = (
-        bool(resolver_path_template) and "dpm-execution-context" in resolver_path_template
-    )
-    return (
-        _env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False)
-        and _env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
-        and bool(os.getenv("DPM_CORE_BASE_URL", "").strip())
-        and not uses_legacy_monolithic_resolver
-    )
+    return stateful_execution_publishable(env_get=os.getenv)
 
 
 def _build_feature_capabilities(
@@ -57,48 +50,16 @@ def _build_feature_capabilities(
     stateless_enabled: bool,
     solver_available: bool,
 ) -> list[FeatureCapability]:
-    return [
-        FeatureCapability(
-            key="dpm.execution.stateful_portfolio_id",
-            enabled=stateful_enabled,
-            owner_service="lotus-manage",
-            description="Stateful lotus-manage rebalance execution using a governed portfolio identifier; enable only when a governed lotus-core resolver is configured.",
-        ),
-        FeatureCapability(
-            key="dpm.execution.stateless",
-            enabled=stateless_enabled,
-            owner_service="lotus-manage",
-            description="Stateless lotus-manage rebalance execution using explicit request bundles.",
-        ),
-        FeatureCapability(
-            key="dpm.workflow.review_gate",
-            enabled=workflow_enabled,
-            owner_service="lotus-manage",
-            description="Discretionary mandate run review gates for approve, reject, and request-changes decisions.",
-        ),
-        FeatureCapability(
-            key="dpm.execution.solver_target_generation",
-            enabled=solver_available,
-            owner_service="lotus-manage",
-            description="Optional solver-backed target generation for discretionary mandate rebalance requests when solver dependencies are installed.",
-        ),
-        FeatureCapability(
-            key="manage.observability.action_register_supportability",
-            enabled=True,
-            owner_service="lotus-manage",
-            description="Source-backed action register and supportability summary posture with bounded states, reasons, and metrics.",
-        ),
-    ]
+    return build_feature_capabilities(
+        workflow_enabled=workflow_enabled,
+        stateful_enabled=stateful_enabled,
+        stateless_enabled=stateless_enabled,
+        solver_available=solver_available,
+    )
 
 
 def _build_workflow_capabilities(*, workflow_enabled: bool) -> list[WorkflowCapability]:
-    return [
-        WorkflowCapability(
-            workflow_key="dpm_rebalance_lifecycle",
-            enabled=workflow_enabled,
-            required_features=["dpm.workflow.review_gate"],
-        ),
-    ]
+    return build_workflow_capabilities(workflow_enabled=workflow_enabled)
 
 
 def _build_capabilities_response(
@@ -106,30 +67,11 @@ def _build_capabilities_response(
     consumer_system: ConsumerSystem,
     tenant_id: str,
 ) -> IntegrationCapabilitiesResponse:
-    workflow_enabled = _env_bool("DPM_WORKFLOW_ENABLED", False)
-    stateful_enabled = _stateful_execution_publishable()
-    stateless_enabled = _env_bool("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", True)
-    solver_available = has_solver_dependencies()
-
-    return IntegrationCapabilitiesResponse(
-        contract_version="v1",
-        source_service=os.getenv("DPM_CAP_SOURCE_SERVICE", "lotus-manage"),
+    return build_capabilities_response(
         consumer_system=consumer_system,
         tenant_id=tenant_id,
-        generated_at=datetime.now(UTC),
-        as_of_date=date.today(),
-        policy_version=os.getenv("DPM_POLICY_VERSION", "dpm.policy.v1"),
-        supported_input_modes=_supported_input_modes(
-            stateful_enabled=stateful_enabled,
-            stateless_enabled=stateless_enabled,
-        ),
-        features=_build_feature_capabilities(
-            workflow_enabled=workflow_enabled,
-            stateful_enabled=stateful_enabled,
-            stateless_enabled=stateless_enabled,
-            solver_available=solver_available,
-        ),
-        workflows=_build_workflow_capabilities(workflow_enabled=workflow_enabled),
+        solver_available=has_solver_dependencies(),
+        env_get=os.getenv,
     )
 
 

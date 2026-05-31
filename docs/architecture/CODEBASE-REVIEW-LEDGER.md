@@ -3615,3 +3615,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   feature-resolution extraction.
 - Wiki decision: no wiki source change required; this is internal schema modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-136: Integration capability feature resolution lived in the route module
+
+- Date: 2026-05-31
+- Scope: integration-capabilities environment and feature-resolution helpers.
+- Finding: after extracting schemas, `src/api/routers/integration_capabilities.py` still mixed the
+  HTTP route with environment parsing, stateful publishability checks, supported input-mode
+  ordering, feature capability assembly, workflow assembly, and response construction. This
+  control-plane logic is cross-app contract-sensitive and should be reviewable without scanning
+  FastAPI route metadata.
+- Action: moved feature-resolution builders into
+  `src/api/routers/integration_capabilities_builders.py` while retaining compatibility wrapper
+  names in `integration_capabilities.py`. The route still owns query validation and solver
+  dependency injection so existing tests and monkeypatch seams remain intact.
+- Status: hardened
+- Evidence: focused integration-capabilities API regression
+  (`tests/unit/dpm/api/test_integration_capabilities_api.py` plus health contract checks), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: monitor neighboring `lotus-gateway` and `lotus-core` capability/source-contract
+  refactors for consumer vocabulary or stateful resolver posture changes.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
