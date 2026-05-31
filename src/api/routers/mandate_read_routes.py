@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, Query
 
 from src.api.dependencies import get_mandate_repository
-from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
+from src.api.routers.mandate_http import (
+    mandate_diff_unavailable_http_exception,
+    read_mandate_with_not_found_http_mapping,
+)
 from src.api.routers.mandate_models import MANDATE_RESPONSE_EXAMPLE
 from src.api.routers.mandates import router
 from src.api.services.mandate_service import (
@@ -160,4 +163,4 @@ async def read_mandate_diff(
             )
         )
     except DpmMandateDiffUnavailableError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise mandate_diff_unavailable_http_exception(exc) from exc

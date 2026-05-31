@@ -6,6 +6,7 @@ from typing import TypeVar
 from fastapi import HTTPException, status
 
 from src.api.services.mandate_service import (
+    DpmMandateDiffUnavailableError,
     DpmMandateHealthNotFoundError,
     DpmMandateNotFoundError,
     DpmMandateSourceIncompleteError,
@@ -38,3 +39,9 @@ def mandate_source_incomplete_http_exception(
         status_code=status.HTTP_424_FAILED_DEPENDENCY,
         detail=str(exc),
     )
+
+
+def mandate_diff_unavailable_http_exception(
+    exc: DpmMandateDiffUnavailableError,
+) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))

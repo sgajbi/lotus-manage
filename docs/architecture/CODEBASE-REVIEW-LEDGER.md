@@ -5476,3 +5476,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   PM-quality, and wave-specific messages.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-219: Mandate diff conflict HTTP mapping
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandate_http.py` and `src/api/routers/mandate_read_routes.py`.
+- Finding: mandate read routes already reused shared not-found HTTP mapping, but the mandate diff
+  route still constructed its `409` unavailable-comparison response inline. The remaining branch
+  was small, but it kept diff-specific contract translation outside the mandate HTTP helper layer.
+- Action: added `mandate_diff_unavailable_http_exception()` and reused it from the mandate diff
+  route. Public paths, response models, OpenAPI output, and existing `409` detail strings were
+  preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: inspect mandate refresh source-unavailable mapping separately; it is a `503`
+  dependency failure and should not be mixed into the diff conflict helper.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
