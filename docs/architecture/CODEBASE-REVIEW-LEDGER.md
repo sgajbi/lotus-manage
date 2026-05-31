@@ -2506,3 +2506,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   is owned separately.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-084: Workflow decision routes were mixed with run workflow actions
+
+- Date: 2026-05-31
+- Scope: workflow decision listing and workflow-decision history lookup by correlation id.
+- Finding: workflow decision search routes lived in `rebalance_runs_workflow_routes.py` alongside
+  workflow state, workflow actions, and run/idempotency history routes. Decision search has a
+  distinct filter contract and supports operational audit review across runs, while action routes
+  own mutation, conflict handling, and workflow metrics.
+- Action: moved workflow decision route registration into
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, preserving public paths, response
+  models, Swagger metadata, query filters, feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split workflow state/history reads from workflow action commands so mutating review
+  behavior and read-only supportability views are owned separately.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
