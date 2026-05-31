@@ -161,6 +161,7 @@ importlib.import_module("src.api.routers.rebalance_runs_lookup_routes")
 importlib.import_module("src.api.routers.rebalance_runs_support_bundle_routes")
 importlib.import_module("src.api.routers.rebalance_runs_artifact_routes")
 importlib.import_module("src.api.routers.rebalance_runs_operations_routes")
+importlib.import_module("src.api.routers.rebalance_runs_lineage_routes")
 importlib.import_module("src.api.routers.rebalance_runs_workflow_routes")
 
 __all__ = [

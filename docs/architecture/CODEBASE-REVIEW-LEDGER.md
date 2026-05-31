@@ -2485,3 +2485,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   module pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-083: Supportability lineage route was mixed with async operations
+
+- Date: 2026-05-31
+- Scope: supportability lineage lookup for `GET /api/v1/rebalance/lineage/{entity_id}`.
+- Finding: lineage search was implemented inside `rebalance_runs_operations_routes.py` alongside
+  asynchronous operation list/detail routes. Lineage is an audit and traceability search surface
+  with a separate feature gate and filter contract, so keeping it mixed with async operation
+  polling obscured ownership and made future route review harder.
+- Action: moved lineage route registration into `src/api/routers/rebalance_runs_lineage_routes.py`
+  while preserving public path, response model, Swagger metadata, feature gates,
+  unsupported-query rejection, lineage filters, and empty-page behavior for unknown entity ids.
+- Status: hardened
+- Evidence: focused DPM API lineage/async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "lineage or async_operation"`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review async operation route metadata and workflow route duplication now that lineage
+  is owned separately.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
