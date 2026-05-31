@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import importlib
-
 from fastapi import APIRouter
+
+from src.api.routers.route_registration import register_route_modules
 
 router = APIRouter(
     prefix="/rebalance/outcome-reviews",
@@ -20,8 +20,7 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.outcome_review_handoff_routes",
 )
 
-for route_module in _ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_ROUTE_MODULES)
 
 
 run_lookup_router = APIRouter(prefix="/rebalance/runs", tags=["lotus-manage Outcome Reviews"])
@@ -33,5 +32,4 @@ _CROSS_ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.outcome_review_wave_lookup_routes",
 )
 
-for route_module in _CROSS_ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_CROSS_ROUTE_MODULES)

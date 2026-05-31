@@ -5080,3 +5080,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   focused regressions pass.
 - Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-203: Outcome and rebalance parent routers duplicated registration loops
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/outcome_reviews.py` and `src/api/routers/rebalance_runs.py`.
+- Finding: outcome-review and rebalance-run parent routers still repeated local route-module
+  registration loops after their route inventories were centralized. That duplicated the same
+  parent-router mechanics across two of the larger operational API surfaces.
+- Action: replaced the local loops with the shared `register_route_modules()` helper while
+  preserving each router's ordered route inventory. Public paths, route ordering, response models,
+  OpenAPI output, outcome-review lookup prefixes, rebalance run supportability behavior, and
+  workflow/async operation registration were preserved.
+- Status: hardened
+- Evidence: outcome-review and DPM rebalance API regressions
+  (`tests/unit/api/test_outcome_reviews_api.py` and `tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep `rebalance_simulation.py` on its callable-loader pattern while `src/api/main.py`
+  imports endpoint functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.

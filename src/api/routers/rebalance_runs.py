@@ -1,10 +1,10 @@
-import importlib
 from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.api.routers import rebalance_runs_config
+from src.api.routers.route_registration import register_route_modules
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     normalize_backend_init_error,
@@ -179,8 +179,7 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.rebalance_runs_workflow_history_routes",
 )
 
-for route_module in _ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_ROUTE_MODULES)
 
 __all__ = [
     "Depends",
