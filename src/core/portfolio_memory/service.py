@@ -13,33 +13,14 @@ from src.core.pm_quality.repository import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
-    DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySearchPage,
     PortfolioMemorySupportabilityState,
 )
 from src.core.portfolio_memory.aggregate import (
     build_portfolio_memory_aggregate as _build_portfolio_memory_aggregate,
 )
-from src.core.portfolio_memory.campaign_collection import (
-    campaign_definition_memory_events as _campaign_definition_memory_events,
-)
 from src.core.portfolio_memory.candidate_portfolios import (
     candidate_portfolio_ids as _candidate_portfolio_ids,
-)
-from src.core.portfolio_memory.construction_collection import (
-    construction_memory_events as _construction_memory_events,
-)
-from src.core.portfolio_memory.mandate_collection import (
-    mandate_memory_events as _mandate_memory_events,
-)
-from src.core.portfolio_memory.pm_quality_collection import (
-    pm_quality_memory_events as _pm_quality_memory_events,
-)
-from src.core.portfolio_memory.proof_pack_collection import (
-    proof_pack_memory_events as _proof_pack_memory_events,
-)
-from src.core.portfolio_memory.outcome_collection import (
-    outcome_review_memory_events as _outcome_review_memory_events,
 )
 from src.core.portfolio_memory.search_filters import (
     normalize_portfolio_memory_search_filter,
@@ -49,8 +30,9 @@ from src.core.portfolio_memory.search_page import (
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
 )
-from src.core.portfolio_memory.wave_collection import (
-    wave_memory_events as _wave_memory_events,
+from src.core.portfolio_memory.source_collection import (
+    PortfolioMemorySourceRepositories,
+    collect_portfolio_memory_events as _collect_portfolio_memory_events,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -75,69 +57,21 @@ def build_portfolio_memory(
     """Compose manage-owned portfolio memory without recalculating source truth."""
 
     generated_at = generated_at or datetime.now(timezone.utc)
-    events: list[DpmPortfolioMemoryEvent] = []
-    events.extend(
-        _proof_pack_memory_events(
-            portfolio_id=portfolio_id,
+    events = _collect_portfolio_memory_events(
+        portfolio_id=portfolio_id,
+        repositories=PortfolioMemorySourceRepositories(
             proof_pack_repository=proof_pack_repository,
-            limit=limit,
-        )
-    )
-
-    if mandate_repository is not None:
-        events.extend(
-            _mandate_memory_events(
-                portfolio_id=portfolio_id,
-                mandate_repository=mandate_repository,
-                limit=limit,
-            )
-        )
-
-    if construction_repository is not None:
-        events.extend(
-            _construction_memory_events(
-                portfolio_id=portfolio_id,
-                construction_repository=construction_repository,
-                limit=limit,
-            )
-        )
-
-    events.extend(
-        _wave_memory_events(
-            portfolio_id=portfolio_id,
             wave_repository=wave_repository,
-            limit=limit,
-        )
-    )
-
-    if campaign_definition_repository is not None:
-        events.extend(
-            _campaign_definition_memory_events(
-                portfolio_id=portfolio_id,
-                campaign_definition_repository=campaign_definition_repository,
-                limit=limit,
-            )
-        )
-
-    events.extend(
-        _outcome_review_memory_events(
-            portfolio_id=portfolio_id,
             outcome_review_repository=outcome_review_repository,
-            limit=limit,
-        )
+            mandate_repository=mandate_repository,
+            construction_repository=construction_repository,
+            pm_quality_score_run_repository=pm_quality_score_run_repository,
+            pm_quality_review_action_repository=pm_quality_review_action_repository,
+            pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+            campaign_definition_repository=campaign_definition_repository,
+        ),
+        limit=limit,
     )
-
-    if pm_quality_score_run_repository is not None:
-        events.extend(
-            _pm_quality_memory_events(
-                portfolio_id=portfolio_id,
-                score_run_repository=pm_quality_score_run_repository,
-                review_action_repository=pm_quality_review_action_repository,
-                summary_invocation_repository=pm_quality_summary_invocation_repository,
-                limit=limit,
-            )
-        )
-
     return _build_portfolio_memory_aggregate(
         portfolio_id=portfolio_id,
         events=events,

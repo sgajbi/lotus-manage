@@ -1321,3 +1321,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   reason about.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-025: Portfolio-memory source collection orchestration lived in service
+
+- Date: 2026-05-31
+- Scope: source-family event collection orchestration for portfolio-memory aggregates
+- Finding: `src/core/portfolio_memory/service.py` still coordinated every source-family collector
+  directly after the individual source-family collectors had been extracted. That kept repository
+  bundle wiring and collection ordering mixed with memory aggregate assembly and made
+  required-versus-optional source-family behavior harder to test without building full memory
+  aggregates.
+- Action: extracted source-family collection orchestration to
+  `src/core/portfolio_memory/source_collection.py` with a typed
+  `PortfolioMemorySourceRepositories` bundle. Updated the service to delegate event collection
+  while keeping the public API stable. Added focused tests proving required source-family
+  collection, optional source-family inclusion, and optional empty-repository behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review whether `search_portfolio_memory` should receive the same repository bundle
+  helper if parameter passing becomes harder to reason about; avoid broader abstraction until it
+  removes real duplication.
+- Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
+  with no API, supported-feature, or operator-contract change.
