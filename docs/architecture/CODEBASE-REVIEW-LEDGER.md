@@ -4304,3 +4304,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   module.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-167: Campaign action HTTP compatibility module still owned maker-checker helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
+- Finding: after approval-decision, assignment-action, and assignment-task helpers were extracted,
+  `wave_campaign_action_http.py` still owned maker-checker control response helpers. That prevented
+  the legacy action helper module from becoming a pure compatibility surface.
+- Action: moved maker-checker HTTP response helpers into
+  `src/api/routers/wave_campaign_maker_checker_http.py`, updated the maker-checker evidence route
+  to import the focused helper module directly, and reduced `wave_campaign_action_http.py` to
+  compatibility re-exports for existing callers. Public paths, request/response models, repository
+  calls, conflict/value/not-found mappings, control pagination, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether remaining compatibility imports can be retired after downstream callers
+  have moved to the focused helper modules.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
