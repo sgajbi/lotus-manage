@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from decimal import Decimal
 
-from src.api.routers.wave_campaign_source_resolution import (
+from src.api.routers.wave_campaign_definition_resolution import (
     request_with_campaign_definition,
+)
+from src.api.routers.wave_campaign_source_resolution import (
     resolve_bulk_review_campaign_portfolios,
 )
 from src.api.routers.wave_core_source_resolution import (

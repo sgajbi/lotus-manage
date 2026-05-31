@@ -3723,3 +3723,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   target.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-141: Campaign definition materialization was mixed with source discovery
+
+- Date: 2026-05-31
+- Scope: persisted bulk-review campaign definition request materialization.
+- Finding: `src/api/routers/wave_campaign_source_resolution.py` mixed persisted campaign-definition
+  materialization with live Core DPM portfolio-universe discovery and membership/governance
+  source-resolution logic. Persisted definitions own a separate fail-closed contract: reference
+  completeness, status eligibility, as-of-date parity, candidate projection, and governance
+  hydration.
+- Action: moved persisted campaign-definition request materialization into
+  `src/api/routers/wave_campaign_definition_resolution.py`, preserving validation codes/messages,
+  source-reference construction, candidate projection, governance hydration, and the wave portfolio
+  resolution call path through an explicit direct import.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split Core DPM portfolio-universe discovery and campaign membership governance from
+  the remaining source-resolution module.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
