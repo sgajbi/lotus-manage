@@ -1300,3 +1300,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-family collector pattern before introducing any broader orchestration abstraction.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-024: Outcome-review memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: post-trade outcome-review repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned outcome-review listing, append-only
+  persisted event lookup, and outcome memory event fan-out. That kept the outcome-review
+  source-family dependency flow in the top-level memory service and left repository-level persisted
+  event fan-out without direct source-family collector tests.
+- Action: extracted outcome-review collection to
+  `src/core/portfolio_memory/outcome_collection.py` and updated the service to delegate
+  outcome-review memory event collection. Added focused tests proving portfolio-filtered collection
+  and projection of both review-created and persisted append-only outcome events.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_outcome_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: with source-family collectors extracted, review whether `service.py` should introduce a
+  lightweight repository-bundle orchestration object only if dependency passing becomes harder to
+  reason about.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.

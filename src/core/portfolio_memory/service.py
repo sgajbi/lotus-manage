@@ -38,8 +38,8 @@ from src.core.portfolio_memory.pm_quality_collection import (
 from src.core.portfolio_memory.proof_pack_collection import (
     proof_pack_memory_events as _proof_pack_memory_events,
 )
-from src.core.portfolio_memory.outcome_projection import (
-    outcome_review_events as _outcome_review_events,
+from src.core.portfolio_memory.outcome_collection import (
+    outcome_review_memory_events as _outcome_review_memory_events,
 )
 from src.core.portfolio_memory.search_filters import (
     normalize_portfolio_memory_search_filter,
@@ -119,15 +119,13 @@ def build_portfolio_memory(
             )
         )
 
-    outcome_reviews = outcome_review_repository.list_outcome_reviews(
-        portfolio_id=portfolio_id,
-        limit=limit,
-    )
-    for review in outcome_reviews:
-        persisted_events = outcome_review_repository.list_events(
-            outcome_review_id=review.outcome_review_id
+    events.extend(
+        _outcome_review_memory_events(
+            portfolio_id=portfolio_id,
+            outcome_review_repository=outcome_review_repository,
+            limit=limit,
         )
-        events.extend(_outcome_review_events(review=review, persisted_events=persisted_events))
+    )
 
     if pm_quality_score_run_repository is not None:
         events.extend(
