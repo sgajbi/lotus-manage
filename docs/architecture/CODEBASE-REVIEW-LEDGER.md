@@ -1561,3 +1561,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   continuation, source-family, or drilldown routes.
 - Wiki decision: no wiki source change required; this improves generated Swagger/OpenAPI guidance
   without changing route behavior, payloads, or operator-facing wiki truth.
+
+## BACKEND-REVIEW-20260531-037: Search-page assembly owned facet aggregation
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search facet aggregation
+- Finding: `src/core/portfolio_memory/search_page.py` still mixed pagination/envelope assembly with
+  matching-event facet aggregation. That made search-page construction harder to review and left
+  facet counting without a direct unit boundary even though source-system and source-type facets
+  are an audit/demo-facing search contract.
+- Action: extracted facet counting into `src/core/portfolio_memory/search_facets.py`, kept
+  `build_search_page` focused on sorting, pagination, and envelope finalization, and added a
+  focused facet test covering matching events plus portfolio-level source-system coverage.
+- Status: hardened
+- Evidence: focused test in `tests/unit/dpm/portfolio_memory/test_search_facets.py` plus existing
+  search-page and portfolio-memory API tests.
+- Follow-up: add future portfolio-memory facets through the facet module before threading them into
+  the API envelope.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no route,
+  payload, supported-feature, or operator-contract change.

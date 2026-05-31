@@ -16,11 +16,9 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemorySearchPage,
     PortfolioMemorySupportabilityState,
 )
+from src.core.portfolio_memory.search_facets import build_search_facet_counts
 from src.core.portfolio_memory.search_filters import (
-    count_values,
     event_matches_search_filters,
-    event_source_systems,
-    event_source_types,
 )
 
 PORTFOLIO_MEMORY_SEARCH_SUPPORT_BOUNDARY = (
@@ -149,32 +147,7 @@ def build_search_page(
         reverse=True,
     )
     total_count = len(sorted_rows)
-    supportability_state_counts = count_values(
-        item.supportability_state for item, _events in sorted_rows
-    )
-    event_type_counts: dict[str, int] = {}
-    matching_event_supportability_state_counts: dict[str, int] = {}
-    matching_event_source_system_counts: dict[str, int] = {}
-    matching_event_source_type_counts: dict[str, int] = {}
-    source_system_counts: dict[str, int] = {}
-    for item, matching_events in sorted_rows:
-        for event in matching_events:
-            event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
-            matching_event_supportability_state_counts[event.supportability_state] = (
-                matching_event_supportability_state_counts.get(event.supportability_state, 0) + 1
-            )
-            for source_system in event_source_systems(event):
-                matching_event_source_system_counts[source_system] = (
-                    matching_event_source_system_counts.get(source_system, 0) + 1
-                )
-            for source_type in event_source_types(event):
-                matching_event_source_type_counts[source_type] = (
-                    matching_event_source_type_counts.get(source_type, 0) + 1
-                )
-        for represented_source_system in item.source_systems:
-            source_system_counts[represented_source_system] = (
-                source_system_counts.get(represented_source_system, 0) + 1
-            )
+    facet_counts = build_search_facet_counts(sorted_rows)
 
     page_rows = sorted_rows[offset : offset + limit]
     page = [item for item, _events in page_rows]
@@ -198,18 +171,16 @@ def build_search_page(
                 source_system=filters.source_system,
                 source_type=filters.source_type,
             ),
-            "supportability_state_counts": dict(sorted(supportability_state_counts.items())),
-            "event_type_counts": dict(sorted(event_type_counts.items())),
-            "matching_event_supportability_state_counts": dict(
-                sorted(matching_event_supportability_state_counts.items())
+            "supportability_state_counts": facet_counts.supportability_state_counts,
+            "event_type_counts": facet_counts.event_type_counts,
+            "matching_event_supportability_state_counts": (
+                facet_counts.matching_event_supportability_state_counts
             ),
-            "matching_event_source_system_counts": dict(
-                sorted(matching_event_source_system_counts.items())
+            "matching_event_source_system_counts": (
+                facet_counts.matching_event_source_system_counts
             ),
-            "matching_event_source_type_counts": dict(
-                sorted(matching_event_source_type_counts.items())
-            ),
-            "source_system_counts": dict(sorted(source_system_counts.items())),
+            "matching_event_source_type_counts": facet_counts.matching_event_source_type_counts,
+            "source_system_counts": facet_counts.source_system_counts,
             "source_event_family_posture": source_event_family_posture(),
             "external_execution_boundary": external_execution_boundary_evidence(),
             "client_communication_boundary": client_communication_boundary_evidence(),
