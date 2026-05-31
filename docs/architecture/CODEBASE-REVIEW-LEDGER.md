@@ -3530,3 +3530,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split construction read and selection handlers from the remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-132: Construction read lookup was mixed with selection commands
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/construction/alternative-sets/{alternative_set_id}`.
+- Finding: after extracting generation, the construction router still mixed the persisted
+  alternative-set read model with selection command behavior. The read route owns a repository-only
+  lookup and audit/presentation Swagger contract, while selection owns PM decision capture and
+  explicit selection error translation.
+- Action: moved the alternative-set read route registration into
+  `src/api/routers/construction_read_routes.py`, preserving public path, response model, Swagger
+  description, example payload, path metadata, repository dependency, service call, and exception
+  mapping.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction selection command from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
