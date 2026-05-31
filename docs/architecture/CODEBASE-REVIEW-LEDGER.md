@@ -5147,3 +5147,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   adding new workflow behavior.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-206: Rebalance workflow read routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_workflow_state_routes.py`,
+  `src/api/routers/rebalance_runs_workflow_history_routes.py`,
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, and
+  `src/api/routers/rebalance_runs_workflow_read_http.py`.
+- Finding: workflow state, history, and correlation decision read routes each repeated the same
+  `DpmRunNotFoundError` to `404` HTTP mapping after feature-flag and query-parameter checks. The
+  duplicated branch was mechanically identical and raised drift risk across the three operational
+  run handles.
+- Action: extracted `read_workflow_with_http_mapping()` and routed workflow read service calls
+  through it. Public paths, response models, feature-flag assertions, unsupported-query rejection,
+  OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: evaluate whether non-workflow rebalance run lookups should share a broader run
+  not-found helper after the workflow read surfaces are stable.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
