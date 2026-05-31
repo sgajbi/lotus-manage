@@ -94,3 +94,20 @@ CampaignReadModelOffsetQuery = Annotated[
         examples=[0],
     ),
 ]
+CampaignEvidenceLimitQuery = Annotated[
+    int,
+    Query(
+        ge=1,
+        le=200,
+        description="Maximum number of campaign evidence records to return.",
+        examples=[50],
+    ),
+]
+CampaignEvidenceOffsetQuery = Annotated[
+    int,
+    Query(
+        ge=0,
+        description="Zero-based campaign evidence page offset.",
+        examples=[0],
+    ),
+]

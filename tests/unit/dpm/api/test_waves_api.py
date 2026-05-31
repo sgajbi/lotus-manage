@@ -6256,6 +6256,10 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
     ]["post"]
+    approval_decisions = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/approval-decisions"
+    ]["get"]
     item_selection = openapi["paths"][
         "/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select"
     ]["post"]
@@ -6360,3 +6364,9 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     )
     assert discovery_parameters["limit"] == "Maximum number of campaign read-model rows to return."
     assert discovery_parameters["offset"] == "Zero-based campaign read-model page offset."
+    approval_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in approval_decisions["parameters"]
+    }
+    assert approval_parameters["limit"] == "Maximum number of campaign evidence records to return."
+    assert approval_parameters["offset"] == "Zero-based campaign evidence page offset."

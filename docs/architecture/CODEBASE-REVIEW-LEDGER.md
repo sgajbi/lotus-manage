@@ -1880,3 +1880,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   controller-local `Path` or `Query` metadata.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-055: Campaign evidence pagination repeated weak Swagger metadata
+
+- Date: 2026-05-31
+- Scope: campaign approval-decision, assignment-action, assignment-task, maker-checker-control, and
+  launch-history evidence pages
+- Finding: append-only campaign evidence endpoints repeated bare `limit` and `offset` query
+  metadata. Those pages are audit/evidence ledgers and should not inherit generic pagination
+  wording from generated OpenAPI defaults.
+- Action: added shared campaign evidence pagination aliases in
+  `src/api/routers/wave_route_parameters.py`, applied them to the append-only evidence pages, and
+  regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep read-model pagination and evidence-ledger pagination separate so future docs do
+  not blur operational queues with audit/evidence record pages.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.

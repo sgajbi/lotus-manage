@@ -41,6 +41,8 @@ from src.api.routers.wave_route_parameters import (
     CampaignActiveOnQuery,
     CampaignAssignmentTaskRefPath,
     CampaignDefinitionAsOfDateQuery,
+    CampaignEvidenceLimitQuery,
+    CampaignEvidenceOffsetQuery,
     CampaignDefinitionFilterIdQuery,
     CampaignDefinitionIdPath,
     CampaignDefinitionStatusQuery,
@@ -722,8 +724,8 @@ def record_bulk_review_campaign_definition_approval_decision_endpoint(
 def list_bulk_review_campaign_definition_approval_decisions(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignEvidenceLimitQuery = 50,
+    offset: CampaignEvidenceOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -781,8 +783,8 @@ def record_bulk_review_campaign_definition_assignment_action_endpoint(
 def list_bulk_review_campaign_definition_assignment_actions(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignEvidenceLimitQuery = 50,
+    offset: CampaignEvidenceOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -873,8 +875,8 @@ def list_bulk_review_campaign_definition_assignment_tasks(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     status: CampaignAssignmentTaskStatus | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignEvidenceLimitQuery = 50,
+    offset: CampaignEvidenceOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -932,8 +934,8 @@ def record_bulk_review_campaign_definition_maker_checker_control_endpoint(
 def list_bulk_review_campaign_definition_maker_checker_controls(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignEvidenceLimitQuery = 50,
+    offset: CampaignEvidenceOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -990,8 +992,8 @@ def list_bulk_review_campaign_definition_lifecycle_events(
 def list_bulk_review_campaign_definition_launch_history(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    limit: CampaignEvidenceLimitQuery = 50,
+    offset: CampaignEvidenceOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
