@@ -6299,6 +6299,12 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "404" in source_check["responses"]
     assert "409" in source_check["responses"]
     assert "422" in source_check["responses"]
+    source_check_parameters = {
+        parameter["name"]: parameter["description"] for parameter in source_check["parameters"]
+    }
+    assert source_check_parameters["x-correlation-id"] == (
+        "Optional correlation id for wave supportability and audit traceability."
+    )
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
     assert "does not cancel external orders" in cancel["description"]

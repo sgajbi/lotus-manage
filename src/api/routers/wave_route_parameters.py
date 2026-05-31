@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from fastapi import Path, Query
+from fastapi import Header, Path, Query
 
 
 CampaignDefinitionStatus = Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
@@ -40,6 +40,13 @@ WaveItemIdPath = Annotated[
     Path(
         description="Durable Manage rebalance wave item identifier.",
         examples=["dwi_001"],
+    ),
+]
+WaveCorrelationIdHeader = Annotated[
+    str | None,
+    Header(
+        description="Optional correlation id for wave supportability and audit traceability.",
+        examples=["corr-wave-command-001"],
     ),
 ]
 

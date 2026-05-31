@@ -1943,3 +1943,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for existing routes with no behavior, payload, or supported-feature
   change.
+
+## BACKEND-REVIEW-20260531-058: Wave correlation header metadata was duplicated across command routes
+
+- Date: 2026-05-31
+- Scope: wave preview, create, source-check, simulate, item selection, approval, staging, handoff,
+  and cancellation routes
+- Finding: wave command routes repeated route-local `X-Correlation-Id` header metadata. Correlation
+  ids are supportability and audit controls, so duplicated Swagger text made it easier for command
+  routes to drift in wording or examples.
+- Action: added a shared `WaveCorrelationIdHeader` alias in
+  `src/api/routers/wave_route_parameters.py`, applied it across wave command routes, pinned the
+  OpenAPI header description, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: review durable create `Idempotency-Key` header separately so idempotency semantics stay
+  explicit and do not get blurred with optional correlation.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.

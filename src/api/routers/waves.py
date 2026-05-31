@@ -60,6 +60,7 @@ from src.api.routers.wave_route_parameters import (
     CampaignReadModelLimitQuery,
     CampaignReadModelOffsetQuery,
     CampaignRequestedAsOfDateQuery,
+    WaveCorrelationIdHeader,
     WaveIdPath,
     WaveItemIdPath,
 )
@@ -1156,12 +1157,7 @@ def launch_bulk_review_campaign_definition(
 )
 def preview_wave(
     request: DpmWavePreviewRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.", examples=["corr-wave-001"]
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
         get_advise_authority_client
@@ -1247,12 +1243,7 @@ def create_wave(
             examples=["wave-idem-001"],
         ),
     ],
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.", examples=["corr-wave-001"]
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
@@ -1485,13 +1476,7 @@ def get_wave_items(
 def source_check_wave(
     wave_id: WaveIdPath,
     request: DpmWaveSourceCheckRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-source-check-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
@@ -1526,13 +1511,7 @@ def source_check_wave(
 def simulate_wave(
     wave_id: WaveIdPath,
     request: DpmWaveSimulationRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-simulate-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
@@ -1571,13 +1550,7 @@ def select_wave_item_alternative(
     wave_id: WaveIdPath,
     wave_item_id: WaveItemIdPath,
     request: DpmWaveSelectionRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-select-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
@@ -1618,13 +1591,7 @@ def select_wave_item_alternative(
 def approve_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-approve-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return run_wave_workflow_command_response(
@@ -1657,13 +1624,7 @@ def approve_wave(
 def stage_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-stage-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return run_wave_workflow_command_response(
@@ -1695,13 +1656,7 @@ def stage_wave(
 def handoff_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-handoff-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return run_wave_workflow_command_response(
@@ -1736,13 +1691,7 @@ def handoff_wave(
 def cancel_wave(
     wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(
-            description="Optional correlation id for supportability.",
-            examples=["corr-wave-cancel-001"],
-        ),
-    ] = None,
+    x_correlation_id: WaveCorrelationIdHeader = None,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:
     return run_wave_workflow_command_response(
