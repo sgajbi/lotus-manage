@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 import src.api.services.rebalance_simulation_service as service
+from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
 from src.api.request_models import BatchExecutionRequestEnvelope, RebalanceExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
@@ -15,6 +16,7 @@ from src.api.routers.runtime_utils import (
     postgres_connection_exception_types,
 )
 from src.core.dpm_source_context import DpmCoreContextIncompleteError, DpmStatefulInput
+from src.core.models import BatchRebalanceRequest
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from tests.shared.factories import valid_api_payload
 
@@ -75,6 +77,20 @@ def test_rebalance_run_support_provider_raises_application_error(monkeypatch) ->
         run_support_service.get_dpm_run_support_service()
 
     assert exc_info.value.detail == "DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED"
+
+
+def test_rebalance_batch_analysis_resolves_base_snapshot_ids() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+    batch_payload["portfolio_snapshot"]["snapshot_id"] = None
+    batch_payload["market_data_snapshot"]["snapshot_id"] = None
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+
+    assert resolve_base_snapshot_ids(request) == {
+        "portfolio_snapshot_id": request.portfolio_snapshot.portfolio_id,
+        "market_data_snapshot_id": "md",
+    }
 
 
 def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch) -> None:

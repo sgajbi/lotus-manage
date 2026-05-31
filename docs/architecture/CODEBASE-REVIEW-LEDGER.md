@@ -5690,3 +5690,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route slice already touches those surfaces.
 - Wiki decision: no wiki source change required; this is internal provider-boundary modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-227: Rebalance batch-analysis helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_batch_analysis.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still mixed orchestration with pure batch-analysis
+  helper logic for invalid scenario-option formatting, base snapshot identity resolution, and
+  comparison-metric construction. That made the already-large simulation service harder to scan
+  and harder to test at the helper boundary.
+- Action: extracted the pure batch-analysis helpers into `rebalance_batch_analysis.py` and kept
+  `execute_batch_analysis()` focused on orchestration, policy application, simulation execution,
+  supportability persistence, observability, and response assembly. Public routes, payloads,
+  OpenAPI output, and comparison metric behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the helper
+  and simulation service, OpenAPI quality gate, and API vocabulary inventory validation passed with
+  no drift.
+- Follow-up: continue extracting independent source-resolution, policy-pack, and async-operation
+  helper families from `rebalance_simulation_service.py` when each can be covered without broad
+  route churn.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
