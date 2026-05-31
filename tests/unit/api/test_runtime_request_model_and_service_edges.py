@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
+import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
@@ -272,6 +273,56 @@ def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> No
     assert resolver._config.transaction_cost_lookback_days == 30
     assert resolver._config.timeout_seconds == 3.5
     assert resolver._config.max_attempts == 4
+
+
+def test_rebalance_source_lineage_stamps_result_metadata() -> None:
+    stateless_result = SimpleNamespace(lineage=SimpleNamespace(input_mode="stateful"))
+
+    assert source_lineage_service.source_input_mode(None) == "stateless"
+    assert (
+        source_lineage_service.apply_source_lineage(
+            result=stateless_result,
+            source_context=None,
+        )
+        is stateless_result
+    )
+    assert stateless_result.lineage.input_mode == "stateless"
+
+    source_context = SimpleNamespace(
+        source_system="lotus-core",
+        stateful_context_hash="stateful-hash-001",
+        context=SimpleNamespace(
+            source_lineage=SimpleNamespace(
+                portfolio_snapshot_id="core-pf-snap-001",
+                market_data_snapshot_id="core-md-snap-001",
+                model_portfolio_id="model-balanced",
+                model_portfolio_version="2026-04-10",
+                shelf_version="shelf-sg-v1",
+                integration_policy_version="dpm-core-context.v1",
+                source_lineage_bundle_id="lineage-bundle-001",
+            ),
+            supportability=SimpleNamespace(state="READY"),
+        ),
+    )
+    stateful_result = SimpleNamespace(lineage=SimpleNamespace(input_mode="stateless"))
+
+    assert source_lineage_service.source_input_mode(source_context) == "stateful"
+    source_lineage_service.apply_source_lineage(
+        result=stateful_result,
+        source_context=source_context,
+    )
+
+    assert stateful_result.lineage.input_mode == "stateful"
+    assert stateful_result.lineage.source_system == "lotus-core"
+    assert stateful_result.lineage.portfolio_snapshot_id == "core-pf-snap-001"
+    assert stateful_result.lineage.market_data_snapshot_id == "core-md-snap-001"
+    assert stateful_result.lineage.model_portfolio_id == "model-balanced"
+    assert stateful_result.lineage.model_portfolio_version == "2026-04-10"
+    assert stateful_result.lineage.shelf_version == "shelf-sg-v1"
+    assert stateful_result.lineage.integration_policy_version == "dpm-core-context.v1"
+    assert stateful_result.lineage.source_lineage_bundle_id == "lineage-bundle-001"
+    assert stateful_result.lineage.source_supportability_state == "READY"
+    assert stateful_result.lineage.stateful_context_hash == "stateful-hash-001"
 
 
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:

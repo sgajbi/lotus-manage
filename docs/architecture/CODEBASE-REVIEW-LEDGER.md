@@ -5821,3 +5821,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   later slice once the compatibility path for existing tests and main-module overrides is narrowed.
 - Wiki decision: no wiki source change required; this is internal integration-helper modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-231: Rebalance source-lineage helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_source_lineage.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned source-input mode classification and
+  result lineage stamping while also coordinating policy packs, idempotency, run-support
+  recording, batch analysis, and async execution. That kept audit-lineage mutation coupled to a
+  broad orchestration module and made the stateful/stateless behavior harder to verify directly.
+- Action: extracted source-input mode classification and result source-lineage stamping into
+  `rebalance_source_lineage.py`, updated simulation orchestration to call the helper, and kept
+  compatibility aliases for existing private helper callers. Public routes, OpenAPI output,
+  result payload shape, source-lineage field names, and supportability semantics were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  source-lineage and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` by extracting stateful envelope
+  resolution and async execution helpers in later small slices once their test seams are direct.
+- Wiki decision: no wiki source change required; this is internal service-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

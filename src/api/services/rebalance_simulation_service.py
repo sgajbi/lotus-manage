@@ -50,6 +50,7 @@ from src.api.services.rebalance_run_support_service import (
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
+from src.api.services.rebalance_source_lineage import apply_source_lineage, source_input_mode
 from src.api.services.rebalance_batch_analysis import (
     build_comparison_metric,
     resolve_base_snapshot_ids,
@@ -97,6 +98,8 @@ build_core_resolver_client = core_resolver_service.build_core_resolver_client
 env_float = core_resolver_service.env_float
 env_int = core_resolver_service.env_int
 stateful_core_sourcing_enabled = core_resolver_service.stateful_core_sourcing_enabled
+_source_input_mode = source_input_mode
+_apply_source_lineage = apply_source_lineage
 
 
 def _main_override(name: str) -> Any | None:
@@ -140,10 +143,6 @@ def resolve_selected_policy_pack_definition(
     except DpmPolicyPackCatalogUnavailableError as exc:
         raise DpmRebalancePolicyPackCatalogUnavailableError(exc.detail) from exc
     return resolve_policy_pack_definition(resolution=policy_pack, catalog=catalog)
-
-
-def _source_input_mode(source_context: Optional[DpmResolvedSourceContext]) -> str:
-    return "stateful" if source_context is not None else "stateless"
 
 
 def _record_policy_resolution(
@@ -220,30 +219,6 @@ def _resolve_stateful_source_context(
         stateful_context_hash=stateful_context_hash,
         context=context,
     )
-
-
-def _apply_source_lineage(
-    *,
-    result: RebalanceResult,
-    source_context: Optional[DpmResolvedSourceContext],
-) -> RebalanceResult:
-    if source_context is None:
-        result.lineage.input_mode = "stateless"
-        return result
-
-    lineage = source_context.context.source_lineage
-    result.lineage.input_mode = "stateful"
-    result.lineage.source_system = source_context.source_system
-    result.lineage.portfolio_snapshot_id = lineage.portfolio_snapshot_id
-    result.lineage.market_data_snapshot_id = lineage.market_data_snapshot_id
-    result.lineage.model_portfolio_id = lineage.model_portfolio_id
-    result.lineage.model_portfolio_version = lineage.model_portfolio_version
-    result.lineage.shelf_version = lineage.shelf_version
-    result.lineage.integration_policy_version = lineage.integration_policy_version
-    result.lineage.source_lineage_bundle_id = lineage.source_lineage_bundle_id
-    result.lineage.source_supportability_state = source_context.context.supportability.state
-    result.lineage.stateful_context_hash = source_context.stateful_context_hash
-    return result
 
 
 def resolve_rebalance_request_envelope(
@@ -345,7 +320,7 @@ def simulate_rebalance(
         if existing is not None and existing.request_hash != request_hash:
             record_execution_call(
                 operation="simulate",
-                input_mode=_source_input_mode(source_context),
+                input_mode=source_input_mode(source_context),
                 outcome="conflict",
                 result_status="failed",
             )
@@ -360,7 +335,7 @@ def simulate_rebalance(
             except DpmRunNotFoundError as exc:
                 record_execution_call(
                     operation="simulate",
-                    input_mode=_source_input_mode(source_context),
+                    input_mode=source_input_mode(source_context),
                     outcome="error",
                     result_status="failed",
                 )
@@ -370,7 +345,7 @@ def simulate_rebalance(
             replay_result = RebalanceResult.model_validate(replay_run.result)
             record_execution_call(
                 operation="simulate",
-                input_mode=_source_input_mode(source_context),
+                input_mode=source_input_mode(source_context),
                 outcome="replayed",
                 result_status=_execution_status_label(replay_result.status),
             )
@@ -386,7 +361,7 @@ def simulate_rebalance(
         request_hash=request_hash,
         correlation_id=resolved_correlation_id,
     )
-    result = _apply_source_lineage(result=result, source_context=source_context)
+    result = apply_source_lineage(result=result, source_context=source_context)
 
     try:
         record_for_support = (
@@ -402,7 +377,7 @@ def simulate_rebalance(
         if replay_enabled:
             record_execution_call(
                 operation="simulate",
-                input_mode=_source_input_mode(source_context),
+                input_mode=source_input_mode(source_context),
                 outcome="error",
                 result_status="failed",
             )
@@ -416,7 +391,7 @@ def simulate_rebalance(
 
     record_execution_call(
         operation="simulate",
-        input_mode=_source_input_mode(source_context),
+        input_mode=source_input_mode(source_context),
         outcome=_execution_outcome_for_status(result.status),
         result_status=_execution_status_label(result.status),
     )
@@ -477,7 +452,7 @@ def execute_batch_analysis(
                 request_hash=request_hash,
                 correlation_id=scenario_correlation_id,
             )
-            scenario_result = _apply_source_lineage(
+            scenario_result = apply_source_lineage(
                 result=scenario_result,
                 source_context=source_context,
             )
@@ -503,7 +478,7 @@ def execute_batch_analysis(
         warnings.append("PARTIAL_BATCH_FAILURE")
     record_execution_call(
         operation="analyze",
-        input_mode=_source_input_mode(source_context),
+        input_mode=source_input_mode(source_context),
         outcome="partial_failure" if failed_scenarios else "success",
         result_status="partial_success" if failed_scenarios else "ready",
     )
@@ -632,7 +607,7 @@ def submit_and_optionally_execute_async_analysis(
         )
         record_execution_call(
             operation="analyze_async",
-            input_mode=_source_input_mode(source_context),
+            input_mode=source_input_mode(source_context),
             outcome="conflict",
             result_status="failed",
         )
@@ -644,7 +619,7 @@ def submit_and_optionally_execute_async_analysis(
     )
     record_execution_call(
         operation="analyze_async",
-        input_mode=_source_input_mode(source_context),
+        input_mode=source_input_mode(source_context),
         outcome="accepted",
         result_status="accepted",
     )
