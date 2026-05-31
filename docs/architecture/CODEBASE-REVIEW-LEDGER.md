@@ -2527,3 +2527,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior and read-only supportability views are owned separately.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-085: Workflow history routes were mixed with workflow action commands
+
+- Date: 2026-05-31
+- Scope: workflow history routes by run id, correlation id, and idempotency key.
+- Finding: read-only workflow history endpoints still lived in `rebalance_runs_workflow_routes.py`
+  next to mutating workflow action routes. History retrieval is an append-only audit/read surface,
+  while action routes own review command handling, transition conflicts, and workflow metrics.
+- Action: moved workflow history route registration into
+  `src/api/routers/rebalance_runs_workflow_history_routes.py`, preserving public paths, response
+  models, Swagger metadata, feature gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split workflow action commands from workflow state reads, keeping workflow decision
+  metrics with the command route module.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

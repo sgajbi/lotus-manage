@@ -1,3 +1,4 @@
+import importlib
 from typing import Annotated, Any, Optional
 
 from fastapi import Header, HTTPException, Path, Request, status
@@ -8,7 +9,6 @@ from src.core.rebalance_runs import (
     DpmRunNotFoundError,
     DpmRunSupportService,
     DpmRunWorkflowActionRequest,
-    DpmRunWorkflowHistoryResponse,
     DpmRunWorkflowResponse,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
@@ -23,12 +23,6 @@ _WORKFLOW_STATE_DESCRIPTION = (
     "does not accept query parameters."
 )
 
-_WORKFLOW_HISTORY_DESCRIPTION = (
-    "Returns append-only workflow decision history for discretionary mandate run-level audit, "
-    "review reconstruction, and supportability investigation. Use workflow state endpoints when "
-    "only the current gate posture is required. This endpoint does not accept query parameters."
-)
-
 _WORKFLOW_ACTION_DESCRIPTION = (
     "Applies one workflow action (`APPROVE`, `REJECT`, `REQUEST_CHANGES`) for a discretionary "
     "mandate rebalance run and returns updated workflow state. Supply the reviewer action in the "
@@ -41,12 +35,6 @@ _RouteResponses = dict[int | str, dict[str, Any]]
 
 _WORKFLOW_STATE_RESPONSES: _RouteResponses = {
     200: {"description": "Current workflow state and latest reviewer decision for the run."},
-    404: {"description": "Workflow disabled, run not found, or idempotency mapping not found."},
-    422: {"description": "Unsupported query parameters were supplied."},
-}
-
-_WORKFLOW_HISTORY_RESPONSES: _RouteResponses = {
-    200: {"description": "Append-only workflow decision history for the resolved run."},
     404: {"description": "Workflow disabled, run not found, or idempotency mapping not found."},
     422: {"description": "Unsupported query parameters were supplied."},
 }
@@ -356,90 +344,4 @@ def apply_dpm_run_workflow_action_by_idempotency(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
-@shared.router.get(
-    "/rebalance/runs/{rebalance_run_id}/workflow/history",
-    response_model=DpmRunWorkflowHistoryResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Run Workflow History",
-    description=_WORKFLOW_HISTORY_DESCRIPTION,
-    responses=_WORKFLOW_HISTORY_RESPONSES,
-)
-def get_dpm_run_workflow_history(
-    request: Request,
-    rebalance_run_id: Annotated[
-        str,
-        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
-    ],
-    service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-) -> DpmRunWorkflowHistoryResponse:
-    shared._assert_support_apis_enabled()
-    shared._assert_workflow_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow_history(rebalance_run_id=rebalance_run_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-
-@shared.router.get(
-    "/rebalance/runs/by-correlation/{correlation_id}/workflow/history",
-    response_model=DpmRunWorkflowHistoryResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Run Workflow History by Correlation Id",
-    description=(
-        "Returns append-only workflow decision history for a discretionary mandate rebalance run "
-        "resolved by submitted correlation id. Use this endpoint when the run id is not available. "
-        "This endpoint does not accept query parameters."
-    ),
-    responses=_WORKFLOW_HISTORY_RESPONSES,
-)
-def get_dpm_run_workflow_history_by_correlation(
-    request: Request,
-    correlation_id: Annotated[
-        str,
-        Path(
-            description="Correlation identifier used on run submission.",
-            examples=["corr-1234-abcd"],
-        ),
-    ],
-    service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-) -> DpmRunWorkflowHistoryResponse:
-    shared._assert_support_apis_enabled()
-    shared._assert_workflow_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow_history_by_correlation(correlation_id=correlation_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-
-@shared.router.get(
-    "/rebalance/runs/idempotency/{idempotency_key}/workflow/history",
-    response_model=DpmRunWorkflowHistoryResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Run Workflow History by Idempotency Key",
-    description=(
-        "Returns append-only workflow decision history for a discretionary mandate rebalance run "
-        "resolved by current idempotency-key mapping. Use this endpoint when a retry token is the "
-        "available operational handle. This endpoint does not accept query parameters."
-    ),
-    responses=_WORKFLOW_HISTORY_RESPONSES,
-)
-def get_dpm_run_workflow_history_by_idempotency(
-    request: Request,
-    idempotency_key: Annotated[
-        str,
-        Path(
-            description="Idempotency key supplied to `/rebalance/simulate`.",
-            examples=["demo-idem-001"],
-        ),
-    ],
-    service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-) -> DpmRunWorkflowHistoryResponse:
-    shared._assert_support_apis_enabled()
-    shared._assert_workflow_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow_history_by_idempotency(idempotency_key=idempotency_key)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+importlib.import_module("src.api.routers.rebalance_runs_workflow_history_routes")
