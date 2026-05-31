@@ -1,10 +1,19 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import get_mandate_repository
 from src.api.routers import monitoring as monitoring_router
 from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
+from src.api.routers.monitoring_http import (
+    monitoring_core_resolver_incomplete_http_exception,
+    monitoring_core_resolver_unavailable_http_exception,
+    monitoring_pm_book_mandate_snapshot_incomplete_http_exception,
+    monitoring_pm_book_membership_empty_http_exception,
+    monitoring_pm_book_membership_not_ready_http_exception,
+    monitoring_pm_book_portfolio_types_required_http_exception,
+    monitoring_selector_required_http_exception,
+)
 from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
@@ -39,26 +48,14 @@ async def run_once(
     source_filters: dict[str, str] = {}
     if not mandate_ids:
         if not request.portfolio_manager_id:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "code": "DPM_MONITORING_SELECTOR_REQUIRED",
-                    "message": "Provide mandate_ids or portfolio_manager_id for PM-book discovery.",
-                },
-            )
+            raise monitoring_selector_required_http_exception()
         portfolio_types = [
             portfolio_type.strip().upper()
             for portfolio_type in request.portfolio_types
             if portfolio_type.strip()
         ]
         if not portfolio_types:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "code": "DPM_MONITORING_PM_BOOK_PORTFOLIO_TYPES_REQUIRED",
-                    "message": "PM-book monitoring requires at least one portfolio type.",
-                },
-            )
+            raise monitoring_pm_book_portfolio_types_required_http_exception()
         try:
             membership = monitoring_router.get_core_resolver_client().resolve_portfolio_manager_book_membership(
                 portfolio_manager_id=request.portfolio_manager_id,
@@ -70,41 +67,20 @@ async def run_once(
                 correlation_id=None,
             )
         except DpmCoreResolverUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
-            ) from exc
+            raise monitoring_core_resolver_unavailable_http_exception(exc) from exc
         except DpmCoreResolverError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
-            ) from exc
+            raise monitoring_core_resolver_incomplete_http_exception(exc) from exc
         if membership.supportability.state != "READY":
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={
-                    "code": membership.supportability.reason,
-                    "message": "PM-book membership is not source-ready for monitoring.",
-                },
-            )
+            raise monitoring_pm_book_membership_not_ready_http_exception(membership)
         if not membership.members:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={
-                    "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
-                    "message": "PM-book membership returned no mandates to monitor.",
-                },
-            )
+            raise monitoring_pm_book_membership_empty_http_exception()
         try:
             mandate_ids = mandate_ids_from_pm_book_membership(
                 repository=repository,
                 membership=membership,
             )
         except DpmMandateSourceIncompleteError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={"code": str(exc) or "DPM_PM_BOOK_MANDATE_SNAPSHOT_MISSING"},
-            ) from exc
+            raise monitoring_pm_book_mandate_snapshot_incomplete_http_exception(exc) from exc
         source_filters = {
             "source_product": membership.product_name,
             "source_product_version": membership.product_version,

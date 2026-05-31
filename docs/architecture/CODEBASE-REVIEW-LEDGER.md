@@ -5451,3 +5451,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and PM-quality agree on a shared source-dependency error envelope.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-218: Monitoring run-once PM-book selector HTTP mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/monitoring_http.py`, `src/api/routers/monitoring_run_once_routes.py`, and
+  `tests/unit/dpm/api/test_monitoring_api.py`.
+- Finding: monitoring run-once PM-book discovery constructed selector validation, core resolver
+  source dependency, source-readiness, empty membership, and mandate snapshot dependency HTTP
+  failures inline. That route-level branching mixed workflow orchestration with contract-specific
+  error translation and made Manage more brittle while lotus-core and lotus-gateway integration
+  surfaces are being refactored by other agents.
+- Action: introduced monitoring-specific PM-book selector HTTP helpers and reused them from the
+  run-once route. Added regression coverage for core resolver unavailable and incomplete source
+  dependency mappings. Public paths, response models, OpenAPI output, and existing `422`,
+  `503`, and `424` detail payloads were preserved.
+- Status: hardened
+- Evidence: monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`), focused
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: evaluate whether wave PM-book review source dependency mapping can reuse a shared
+  lower-level envelope after core/gateway refactors settle; do not prematurely merge monitoring,
+  PM-quality, and wave-specific messages.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
