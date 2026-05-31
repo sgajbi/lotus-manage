@@ -6,6 +6,7 @@ from fastapi import Depends, Path
 
 from src.api.dependencies import get_construction_repository
 from src.api.routers.construction import router
+from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.construction_models import CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSet
@@ -42,4 +43,4 @@ def read_alternative_set(
             alternative_set_id=alternative_set_id,
         )
     except Exception as exc:
-        raise construction_service.to_api_http_exception(exc) from exc
+        raise construction_http_exception(exc) from exc

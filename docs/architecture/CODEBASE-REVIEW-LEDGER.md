@@ -5539,3 +5539,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   transport leakage in separate slices; those have larger route/service seams.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-222: Construction service leaked HTTP translation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_service.py`, `src/api/routers/construction_http.py`,
+  `src/api/routers/construction_generate_routes.py`,
+  `src/api/routers/construction_read_routes.py`,
+  `src/api/routers/construction_selection_routes.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`.
+- Finding: `construction_service` imported FastAPI solely to convert construction domain errors
+  into HTTP responses for generation, read, and selection routes. That transport dependency made a
+  large construction orchestration module harder to treat as reusable application logic.
+- Action: moved construction exception-to-HTTP mapping into `construction_http.py`, reused it from
+  the construction routes, and added focused mapping regression coverage. Public paths, response
+  models, OpenAPI output, and existing `404`/`409`/`500` detail strings were preserved.
+- Status: hardened
+- Evidence: construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  construction router/service Ruff checks, router-wide mypy, no FastAPI transport imports in
+  `construction_service.py`, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue decomposing `construction_service.py` by construction concern; the HTTP
+  boundary cleanup removes one transport dependency but the module remains too large for the
+  long-term enterprise maintainability target.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

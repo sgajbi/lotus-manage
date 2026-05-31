@@ -14,6 +14,7 @@ from src.api.routers.construction_models import (
     CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE,
     ConstructionAlternativeSetGenerateRequest,
 )
+from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service
 from src.api.services.rebalance_simulation_service import resolve_rebalance_request_envelope
@@ -82,4 +83,4 @@ def generate_alternative_set(
             run_service=run_service,
         )
     except Exception as exc:
-        raise construction_service.to_api_http_exception(exc) from exc
+        raise construction_http_exception(exc) from exc
