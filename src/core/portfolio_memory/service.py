@@ -24,6 +24,9 @@ from src.core.portfolio_memory.models import (
 from src.core.portfolio_memory.campaign_projection import (
     campaign_definition_events as _campaign_definition_events_for_definition,
 )
+from src.core.portfolio_memory.candidate_portfolios import (
+    candidate_portfolio_ids as _candidate_portfolio_ids,
+)
 from src.core.portfolio_memory.construction_projection import (
     construction_alternative_set_event as _construction_alternative_set_event,
     construction_selection_event as _construction_selection_event,
@@ -234,7 +237,7 @@ def search_portfolio_memory(
     explicit_candidate_ids = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }
-    candidate_ids = _memory_candidate_portfolio_ids(
+    candidate_ids = _candidate_portfolio_ids(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
@@ -461,63 +464,6 @@ def build_portfolio_memory_event_lookup(
         )
         return DpmPortfolioMemoryEventLookup.model_validate(payload)
     return None
-
-
-def _memory_candidate_portfolio_ids(
-    *,
-    proof_pack_repository: DpmProofPackRepository,
-    wave_repository: DpmWaveRepository,
-    outcome_review_repository: DpmOutcomeReviewRepository,
-    mandate_repository: DpmMandateRepository | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None,
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None,
-    portfolio_ids: list[str] | None,
-    source_scan_limit: int,
-) -> list[str]:
-    candidates: set[str] = {
-        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
-    }
-    candidates.update(
-        proof_pack.portfolio_id
-        for proof_pack in proof_pack_repository.list_proof_packs(limit=source_scan_limit)
-    )
-    candidates.update(
-        item.portfolio_id
-        for wave in wave_repository.list_waves(limit=source_scan_limit)
-        for item in wave.items
-    )
-    candidates.update(
-        review.portfolio_id
-        for review in outcome_review_repository.list_outcome_reviews(limit=source_scan_limit)
-    )
-    if mandate_repository is not None:
-        exceptions, _cursor = mandate_repository.list_monitoring_exceptions(
-            monitoring_run_id=None,
-            mandate_id=None,
-            portfolio_id=None,
-            state=None,
-            limit=source_scan_limit,
-            cursor=None,
-        )
-        candidates.update(exception.portfolio_id for exception in exceptions)
-    if campaign_definition_repository is not None:
-        candidates.update(
-            candidate.portfolio_id
-            for definition in campaign_definition_repository.list_definitions(
-                limit=source_scan_limit
-            )
-            for candidate in definition.candidates
-        )
-    if pm_quality_score_run_repository is not None:
-        candidates.update(
-            portfolio_id
-            for score_run in pm_quality_score_run_repository.list_score_runs(
-                limit=source_scan_limit
-            )
-            if score_run.book_scope_evidence is not None
-            for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids
-        )
-    return sorted(candidates)
 
 
 def _mandate_events(

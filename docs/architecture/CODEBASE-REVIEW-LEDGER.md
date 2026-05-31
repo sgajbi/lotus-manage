@@ -1073,3 +1073,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration now that all major event-family projection builders have dedicated modules.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-013: Portfolio-memory candidate discovery lived in service search orchestration
+
+- Date: 2026-05-31
+- Scope: candidate portfolio discovery for portfolio-memory search
+- Finding: portfolio-memory search kept cross-repository candidate discovery inside
+  `src/core/portfolio_memory/service.py`, mixing search page orchestration with reusable source
+  universe assembly. This made it harder to test explicit portfolio id normalization, optional
+  source repositories, and PM-book member evidence without invoking full search pagination.
+- Action: extracted candidate discovery to `src/core/portfolio_memory/candidate_portfolios.py` and
+  kept search result assembly in the service. Added direct tests for explicit id trimming,
+  source-backed portfolio merging, PM-quality book-scope membership, and optional repository
+  support.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` plus
+  existing portfolio-memory API search tests.
+- Follow-up: continue keeping repository scans narrow; introduce batching/indexing only with
+  repository-native evidence if search volume or latency requires it.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
