@@ -3509,3 +3509,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modules while preserving the parent router import used by `src/api/main.py`.
 - Wiki decision: no wiki source change required; this is internal router/model modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-131: Construction generate orchestration was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/construction/alternative-sets/generate`.
+- Finding: the construction router still mixed the generate command path with alternative-set read
+  and selection routes. Generation owns idempotency replay, stateful/stateless rebalance-envelope
+  resolution, optional risk-authority enrichment, run-support persistence, and source-context error
+  mapping; read and selection handlers have narrower repository-only contracts.
+- Action: moved the generate route registration and handler into
+  `src/api/routers/construction_generate_routes.py`, preserving public path, response model,
+  Swagger guidance, idempotency and correlation headers, database/session dependency wiring,
+  source-resolution call, risk-authority and run-support dependencies, service arguments, and API
+  exception mapping.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction read and selection handlers from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
