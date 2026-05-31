@@ -3767,3 +3767,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   module.
 - Wiki decision: no wiki source change required; this is internal source-resolution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-143: Campaign governance projection was mixed with membership assembly
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign governance diagnostics and source-reference projection.
+- Finding: after extracting persisted definitions and Core candidate discovery,
+  `src/api/routers/wave_campaign_source_resolution.py` still mixed campaign governance validation
+  and source-reference projection with membership selection and membership hashing. Governance owns
+  approval posture, expiry posture, actor entitlement posture, governance hashing, and governance
+  lineage projection.
+- Action: moved campaign governance projection into
+  `src/api/routers/wave_campaign_governance_resolution.py`, preserving not-supplied diagnostics,
+  approval/expiry/entitlement calculations, governance hash inputs, source refs, and membership
+  assembly behavior.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review the remaining wave campaign source-resolution module for smaller membership
+  assembly seams or move to the next large wave route surface.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
