@@ -3123,3 +3123,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split mandate health read/recalculate routes from the remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-113: Mandate health routes were still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: mandate health snapshot read and health recalculation routes.
+- Finding: after moving mandate reads and core refresh, `src/api/routers/mandates.py` still owned
+  health read/recalculate route handlers while also acting as the router composition shell. Health
+  access owns persisted health state, explicit recalculation input validation, source analytics
+  posture persistence, and 404/424 error mappings, so it should be reviewed independently from
+  route composition.
+- Action: moved health route registration into `src/api/routers/mandate_health_routes.py` and
+  reduced `mandates.py` to router construction, the core resolver dependency hook, and explicit
+  route-module imports. Public paths, response models, Swagger guidance, repository dependency
+  wiring, health-not-found behavior, recalculation behavior, and source-incomplete mapping were
+  preserved.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the next largest router for the same composition-shell and route-family
+  ownership pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
