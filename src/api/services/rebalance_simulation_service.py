@@ -1,7 +1,6 @@
 import logging
 import uuid
 from collections import OrderedDict
-from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from pydantic import ValidationError
@@ -58,6 +57,7 @@ from src.api.services.rebalance_async_operation_completion import (
 from src.api.services.rebalance_async_operation_payload import (
     resolve_analyze_async_execution_payload,
 )
+from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
@@ -65,11 +65,6 @@ from src.api.services.rebalance_run_support_service import (
     record_dpm_run_for_support,
 )
 from src.api.services.rebalance_source_lineage import apply_source_lineage, source_input_mode
-from src.api.services.rebalance_batch_analysis import (
-    build_comparison_metric,
-    resolve_base_snapshot_ids,
-    to_invalid_options_error,
-)
 from src.core.common.canonical import hash_canonical_payload
 from src.core.dpm_source_context import (
     DpmCoreContextIncompleteError,
@@ -95,7 +90,6 @@ from src.core.rebalance_runs import (
 from src.core.models import (
     BatchRebalanceRequest,
     BatchRebalanceResult,
-    EngineOptions,
     RebalanceResult,
 )
 from src.infrastructure.core_sourcing import (
@@ -360,10 +354,6 @@ def execute_batch_analysis(
     batch_id = f"batch_{uuid.uuid4().hex[:8]}"
     current_logger.info("Analyzing scenario batch")
 
-    results = {}
-    comparison_metrics = {}
-    failed_scenarios = {}
-    warnings = []
     policy_resolution = resolve_dpm_policy_pack(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
@@ -372,74 +362,16 @@ def execute_batch_analysis(
     _record_policy_resolution(surface="analyze", policy_pack=policy_resolution)
     policy_definition = resolve_selected_policy_pack_definition(policy_resolution)
 
-    for scenario_name in sorted(request.scenarios.keys()):
-        scenario = request.scenarios[scenario_name]
-        try:
-            options = EngineOptions.model_validate(scenario.options)
-        except ValidationError as exc:
-            failed_scenarios[scenario_name] = to_invalid_options_error(exc)
-            continue
-
-        try:
-            effective_options = apply_policy_pack_to_engine_options(
-                options=options,
-                policy_pack=policy_definition,
-            )
-            scenario_correlation_id = (
-                f"{correlation_id}:{scenario_name}"
-                if correlation_id
-                else f"{batch_id}:{scenario_name}"
-            )
-            request_hash = f"{batch_id}:{scenario_name}"
-            run_fn = _main_override("run_simulation") or run_simulation
-            scenario_result = run_fn(
-                portfolio=request.portfolio_snapshot,
-                market_data=request.market_data_snapshot,
-                model=request.model_portfolio,
-                shelf=request.shelf_entries,
-                options=effective_options,
-                request_hash=request_hash,
-                correlation_id=scenario_correlation_id,
-            )
-            scenario_result = apply_source_lineage(
-                result=scenario_result,
-                source_context=source_context,
-            )
-            record_for_support = (
-                _main_override("record_dpm_run_for_support") or record_dpm_run_for_support
-            )
-            record_for_support(
-                result=scenario_result,
-                request_hash=request_hash,
-                portfolio_id=request.portfolio_snapshot.portfolio_id,
-                idempotency_key=None,
-            )
-            results[scenario_name] = scenario_result
-            comparison_metrics[scenario_name] = build_comparison_metric(
-                scenario_result=scenario_result,
-                base_currency=request.portfolio_snapshot.base_currency,
-            )
-        except (ValidationError, RuntimeError, ValueError) as exc:
-            current_logger.exception("Scenario execution failed")
-            failed_scenarios[scenario_name] = f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}"
-
-    if failed_scenarios:
-        warnings.append("PARTIAL_BATCH_FAILURE")
-    record_execution_call(
-        operation="analyze",
-        input_mode=source_input_mode(source_context),
-        outcome="partial_failure" if failed_scenarios else "success",
-        result_status="partial_success" if failed_scenarios else "ready",
-    )
-
-    return BatchRebalanceResult(
-        batch_run_id=batch_id,
-        run_at_utc=datetime.now(timezone.utc).isoformat(),
-        base_snapshot_ids=resolve_base_snapshot_ids(request),
-        results=results,
-        comparison_metrics=comparison_metrics,
-        failed_scenarios=failed_scenarios,
-        warnings=warnings,
+    return execute_batch_scenarios(
+        request=request,
+        batch_id=batch_id,
+        correlation_id=correlation_id,
+        policy_definition=policy_definition,
+        source_context=source_context,
+        run_simulation_fn=_main_override("run_simulation") or run_simulation,
+        record_for_support=_main_override("record_dpm_run_for_support")
+        or record_dpm_run_for_support,
+        current_logger=current_logger,
     )
 
 

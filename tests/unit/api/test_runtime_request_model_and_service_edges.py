@@ -9,6 +9,7 @@ import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
+import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
@@ -424,6 +425,34 @@ def test_rebalance_async_operation_completion_records_success_and_failure() -> N
 
     assert service_double.failure == ("op_001", "ValueError", "bad payload")
     assert logged_messages == ["Asynchronous batch analysis failed"]
+
+
+def test_rebalance_batch_execution_reports_invalid_options_without_running_engine() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"invalid_case": {"options": {"max_turnover_pct": "bad"}}}
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+
+    def _unexpected_run(**_kwargs):
+        raise AssertionError("invalid options should fail before engine execution")
+
+    result = batch_execution.execute_batch_scenarios(
+        request=request,
+        batch_id="batch_test",
+        correlation_id="corr_batch",
+        policy_definition=None,
+        source_context=None,
+        run_simulation_fn=_unexpected_run,
+        record_for_support=lambda **_kwargs: None,
+        current_logger=SimpleNamespace(exception=lambda *_args, **_kwargs: None),
+    )
+
+    assert result.batch_run_id == "batch_test"
+    assert result.results == {}
+    assert result.comparison_metrics == {}
+    assert set(result.failed_scenarios) == {"invalid_case"}
+    assert result.failed_scenarios["invalid_case"].startswith("INVALID_OPTIONS:")
+    assert result.warnings == ["PARTIAL_BATCH_FAILURE"]
 
 
 def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:

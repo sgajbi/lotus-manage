@@ -5982,3 +5982,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   slice once the run-function and support-write seams can be passed explicitly.
 - Wiki decision: no wiki source change required; this is internal async-operation lifecycle
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-237: Batch scenario execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_batch_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `execute_batch_analysis` still owned scenario option validation, per-scenario engine
+  invocation, source-lineage stamping, supportability recording, comparison-metric assembly,
+  partial-failure warnings, and execution telemetry. That made the batch API orchestration too
+  broad and kept invalid-option behavior tied to the full route-level request path.
+- Action: extracted batch scenario execution into `rebalance_batch_execution.py`, passing the run
+  function and supportability recorder explicitly so existing override seams remain intact.
+  `execute_batch_analysis` now resolves policy context and delegates scenario execution to the
+  helper. Public routes, OpenAPI output, batch result shape, invalid-option messages, partial
+  failure warnings, and supportability writes were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the batch
+  execution and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` toward policy-context
+  resolution, sync simulation orchestration, and async operation orchestration only.
+- Wiki decision: no wiki source change required; this is internal batch-execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
