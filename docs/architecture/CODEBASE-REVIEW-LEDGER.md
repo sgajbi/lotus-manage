@@ -3040,3 +3040,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `outcome_reviews.py` to router construction plus composition imports.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-109: Wave outcome-review listing was still owned by the router shell
+
+- Date: 2026-05-31
+- Scope: wave-scoped outcome-review listing under `/rebalance/waves`.
+- Finding: after extracting base outcome-review routes and run lookup, `src/api/routers/outcome_reviews.py`
+  still directly owned the wave-scoped outcome-review listing while also acting as router
+  construction and composition. Wave lookup is a cross-resource list view with its own pagination
+  and applied wave filter semantics.
+- Action: moved wave-scoped outcome-review listing into
+  `src/api/routers/outcome_review_wave_lookup_routes.py` and reduced `outcome_reviews.py` to router
+  construction plus explicit composition imports, preserving public path, response model, Swagger
+  guidance, pagination parameters, repository dependency, applied wave filter payload, and source
+  owner/type facet behavior.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the next largest router for the same command/read/supportability route
+  ownership pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
