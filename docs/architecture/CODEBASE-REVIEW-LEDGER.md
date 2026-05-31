@@ -4508,3 +4508,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   any compatibility surface.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-176: Campaign readiness router mixed audit endpoints with readiness endpoints
+
+- Date: 2026-05-31
+- Scope:
+  campaign-definition audit endpoints under `/lifecycle-events` and `/launch-history` in
+  `src/api/routers/wave_campaign_readiness_routes.py`.
+- Finding: after audit/readiness helper extraction, the route module still combined append-only
+  audit read endpoints with workflow overview, preview-readiness, and launch-package endpoints.
+  This kept route ownership less clear even though the helper boundaries were already separated.
+- Action: moved lifecycle-events and launch-history endpoints into
+  `src/api/routers/wave_campaign_audit_read_routes.py`, included that router before readiness
+  routes from `waves.py`, and left `wave_campaign_readiness_routes.py` focused on readiness and
+  launch-package projections. Public paths, response models, route order, pagination, dependency
+  wiring, Swagger descriptions, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether campaign-definition route modules should be grouped under a higher-level
+  route aggregator once compatibility-only helper modules are stable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
