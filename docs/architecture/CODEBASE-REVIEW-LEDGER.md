@@ -2156,3 +2156,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   commands.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-068: Wave item-selection route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave item construction-alternative selection route definition
+- Finding: the item-selection command still lived directly in `src/api/routers/waves.py` even
+  though its response handling already lived in `src/api/routers/wave_selection_http.py`.
+  Selection has construction, proof-pack, mandate, run-support, and wave repository dependencies,
+  and it can optionally generate proof-pack evidence, so it should remain separate from wave
+  workflow state-transition commands.
+- Action: moved the item-selection route into `src/api/routers/wave_selection_routes.py` and
+  mounted it after simulation, preserving public path order and response contracts. The child
+  router inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract wave workflow state-transition commands into their own route module and then
+  review the remaining read-only search/detail/proof-pack/report/supportability routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

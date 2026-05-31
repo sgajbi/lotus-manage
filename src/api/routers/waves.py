@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import (
     get_campaign_definition_repository,
-    get_construction_repository,
     get_mandate_repository,
     get_outcome_review_repository,
     get_proof_pack_repository,
@@ -21,10 +20,7 @@ from src.api.routers.wave_response_contracts import (
     DpmWaveSearchResponse,
     DpmWaveSupportabilityResponse,
 )
-from src.api.routers.wave_request_models import (
-    DpmWaveSelectionRequest,
-    DpmWaveWorkflowCommandRequest,
-)
+from src.api.routers.wave_request_models import DpmWaveWorkflowCommandRequest
 from src.api.routers.wave_campaign_definition_http import (
     get_campaign_definition_response,
 )
@@ -50,12 +46,14 @@ from src.api.routers.wave_source_check_routes import (
 from src.api.routers.wave_simulation_routes import (
     router as simulation_router,
 )
+from src.api.routers.wave_selection_routes import (
+    router as selection_router,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
     WaveCorrelationIdHeader,
     WaveIdPath,
-    WaveItemIdPath,
 )
 from src.api.routers.wave_read_http import (
     get_wave_detail_response,
@@ -64,17 +62,13 @@ from src.api.routers.wave_read_http import (
 )
 from src.api.routers.wave_report_input_http import get_wave_report_input_response
 from src.api.routers.wave_search_http import search_waves_response
-from src.api.routers.wave_selection_http import select_wave_item_alternative_response
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
-from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.api.services import wave_service
-from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionRepository,
@@ -267,48 +261,7 @@ def get_wave_items(
 
 router.include_router(source_check_router)
 router.include_router(simulation_router)
-
-
-@router.post(
-    "/{wave_id}/items/{wave_item_id}/select",
-    response_model=DpmWaveResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Select a construction alternative for a wave item",
-    description=(
-        "Records item-level RFC-0039 alternative selection with actor, reason, and optional "
-        "comment. When requested, it generates an RFC-0040 proof pack from the selected "
-        "alternative. Proof-pack failures are represented as degraded selection posture instead "
-        "of unsupported proof-pack readiness."
-    ),
-    responses={
-        200: {"description": "Wave item selection recorded and persisted."},
-        404: {"description": "Wave, item, alternative set, or alternative id was not found."},
-        409: {"description": "Wave version conflict during optimistic update."},
-        422: {"description": "Wave or item is not eligible for selection."},
-    },
-)
-def select_wave_item_alternative(
-    wave_id: WaveIdPath,
-    wave_item_id: WaveItemIdPath,
-    request: DpmWaveSelectionRequest,
-    x_correlation_id: WaveCorrelationIdHeader = None,
-    construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
-    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-    run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-) -> DpmWaveResponse:
-    return select_wave_item_alternative_response(
-        wave_id=wave_id,
-        wave_item_id=wave_item_id,
-        request=request,
-        correlation_id=x_correlation_id or f"corr_wave_select_{wave_id}_{wave_item_id}",
-        construction_repository=construction_repository,
-        proof_pack_repository=proof_pack_repository,
-        mandate_repository=mandate_repository,
-        run_service=run_service,
-        wave_repository=wave_repository,
-    )
+router.include_router(selection_router)
 
 
 @router.post(
