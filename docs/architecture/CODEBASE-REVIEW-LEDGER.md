@@ -2437,3 +2437,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability summary and service initialization as separate ownership boundaries.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-081: Run lookup and idempotency routes lived in the supportability root router
+
+- Date: 2026-05-31
+- Scope: DPM run lookup routes by correlation id, request hash, idempotency key, run id, and
+  idempotency history.
+- Finding: run lookup and idempotency supportability endpoints still lived directly in
+  `src/api/routers/rebalance_runs.py`, mixed with service initialization, list/search,
+  supportability summary, support bundles, artifact, operations, and workflow route composition.
+  These endpoints form a distinct read/lineage lookup surface with consistent no-query-parameter
+  posture and not-found handling.
+- Action: moved lookup and idempotency route registration into
+  `src/api/routers/rebalance_runs_lookup_routes.py`, preserving public paths, response models,
+  Swagger descriptions, feature gates, unsupported-query rejection, idempotency-history gating, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API lookup/supportability regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or idempotency_history or support_runs_list"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review whether list/search and supportability summary should move to separate route
+  modules or remain with service initialization until the supportability root module is reduced to
+  a composition/service-factory boundary.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
