@@ -6401,8 +6401,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "When false, omit closed campaign rows from attention and workflow read models."
     )
     overview_parameters = {
-        parameter["name"]: parameter["description"]
-        for parameter in workflow_overview["parameters"]
+        parameter["name"]: parameter["description"] for parameter in workflow_overview["parameters"]
     }
     assert overview_parameters["requested_as_of_date"] == (
         "ISO date that the future wave preview/create request would use."

@@ -89,9 +89,7 @@ def register_wave_create_preview_routes(
         advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
             get_advise_authority_client
         ),
-        risk_authority_client: LotusRiskAuthorityClient | None = Depends(
-            get_risk_authority_client
-        ),
+        risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
         campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
             get_campaign_definition_repository
         ),
@@ -172,9 +170,7 @@ def register_wave_create_preview_routes(
         advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
             get_advise_authority_client
         ),
-        risk_authority_client: LotusRiskAuthorityClient | None = Depends(
-            get_risk_authority_client
-        ),
+        risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
         campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
             get_campaign_definition_repository
         ),

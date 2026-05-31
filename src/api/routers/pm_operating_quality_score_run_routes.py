@@ -63,9 +63,7 @@ def register_pm_quality_score_run_command_routes(
         request: DpmPmOperatingQualityScorePreviewRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
         outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-        policy_repository: DpmPmQualityPolicyRepository = Depends(
-            get_pm_quality_policy_repository
-        ),
+        policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
     ) -> DpmPmOperatingQualityScorePreviewResponse:
         score_run = build_score_run(
             request,
@@ -97,9 +95,7 @@ def register_pm_quality_score_run_command_routes(
         request: DpmPmOperatingQualityScorePreviewRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
         outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-        policy_repository: DpmPmQualityPolicyRepository = Depends(
-            get_pm_quality_policy_repository
-        ),
+        policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
         score_run_repository: DpmPmQualityScoreRunRepository = Depends(
             get_pm_quality_score_run_repository
         ),
