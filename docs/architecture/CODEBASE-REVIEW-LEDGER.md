@@ -2305,3 +2305,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   made explicit.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-075: PM operating quality fairness routes were mixed with other lifecycles
+
+- Date: 2026-05-31
+- Scope: PM operating quality fairness-analysis preview, create, list, detail, and route-local
+  builder behavior.
+- Finding: fairness-analysis endpoints and the route-local fairness builder lived inside the
+  general PM operating quality router, mixed with score-run, review-action, summary-invocation,
+  and policy routes. That obscured the fairness lifecycle boundary and kept model-risk governance
+  behavior harder to inspect.
+- Action: moved the fairness-analysis route group and builder into
+  `src/api/routers/pm_operating_quality_fairness_routes.py` and mounted it from the parent PM
+  operating quality router, preserving public paths, response contracts, descriptions, conflict
+  handling, and service error mapping.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: extract review-action and support-summary lifecycle routes next, then make the
+  score-run helper/core-resolver test seam explicit before moving score-run routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
