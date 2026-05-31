@@ -3189,3 +3189,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   queue routes into owned modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-116: Monitoring run reads were mixed with execution and exception queues
+
+- Date: 2026-05-31
+- Scope: monitoring run list and monitoring run detail endpoints.
+- Finding: `src/api/routers/monitoring.py` mixed persisted monitoring-run search/detail reads with
+  run-once execution and exception queue mutation. Run reads own bounded pagination, terminal
+  status filtering, cursor handling, and run-not-found mapping, which are separate from source
+  cohort resolution and exception resolution behavior.
+- Action: moved monitoring-run read route registration into
+  `src/api/routers/monitoring_run_read_routes.py`, preserving public paths, response models,
+  Swagger guidance, status filter vocabulary, pagination bounds, repository dependency wiring,
+  cursor response behavior, and 404 mapping for missing run ids.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split exception queue routes and source-backed run-once execution from the remaining
+  monitoring router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
