@@ -3253,3 +3253,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   integration-boundary ownership.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-119: Policy-pack route documentation constants hid route ownership
+
+- Date: 2026-05-31
+- Scope: policy-pack OpenAPI descriptions and response maps.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed long Swagger descriptions and
+  response maps with policy-pack resolution, repository setup, catalog reads, and admin mutations.
+  The documentation constants define the operator-facing supportability contract but do not own
+  runtime behavior, so keeping them in the router made the route file harder to review.
+- Action: moved policy-pack route descriptions and response maps into
+  `src/api/routers/rebalance_policy_pack_docs.py`, preserving public OpenAPI text, status-code
+  descriptions, unsupported query-parameter documentation, admin API disabled guidance, and all
+  runtime exports from the original router module.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split policy-pack catalog read routes and admin mutation routes while preserving the
+  existing service/test import seams from `rebalance_policy_packs.py`.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
