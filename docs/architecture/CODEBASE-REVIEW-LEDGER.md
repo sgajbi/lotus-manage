@@ -4190,3 +4190,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration only.
 - Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-162: PM quality builders mixed score-run and review-action assembly
+
+- Date: 2026-05-31
+- Scope: PM operating-quality review-action construction.
+- Finding: after separating PM-book sourcing and policy resolution,
+  `pm_operating_quality_builders.py` still mixed score-run construction with review-action target
+  lookup, fairness/score-run not-found mapping, review-action builder invocation, correlation-id
+  fallback, and validation error mapping.
+- Action: moved review-action construction into
+  `src/api/routers/pm_operating_quality_review_action_builder.py` while keeping the existing
+  `pm_operating_quality_builders.build_review_action` import surface intact for parent-router
+  compatibility and tests. Public routes, request/response models, target lookup semantics,
+  not-found details, validation mapping, and correlation-id behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: reduce `pm_operating_quality_builders.py` to a score-run builder compatibility module
+  or move score-run construction into a dedicated module.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
