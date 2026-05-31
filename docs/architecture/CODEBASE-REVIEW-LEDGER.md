@@ -3020,3 +3020,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split run lookup and wave lookup routes from the remaining composition shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-108: Run outcome-review lookup was mixed with wave lookup
+
+- Date: 2026-05-31
+- Scope: run-scoped outcome-review lookup under `/rebalance/runs`.
+- Finding: `src/api/routers/outcome_reviews.py` still mixed the run-scoped lookup route with the
+  wave-scoped lookup route while also coordinating the base outcome-review router. The run lookup
+  is a cross-resource view that connects RFC-0039/RFC-0040/RFC-0041 run evidence to RFC-0042
+  closure truth and has different routing ownership than wave-level review lists.
+- Action: moved run-scoped outcome-review lookup route registration into
+  `src/api/routers/outcome_review_run_lookup_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, first-review lookup behavior, and not-found mapping.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split wave outcome-review listing into its own route module and reduce
+  `outcome_reviews.py` to router construction plus composition imports.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
