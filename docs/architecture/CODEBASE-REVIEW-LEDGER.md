@@ -2027,3 +2027,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundary while preserving route registration order and public contracts.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-062: Campaign evidence routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign approval-decision, assignment-action, assignment-task, and maker-checker-control
+  route definitions
+- Finding: campaign evidence and control routes still lived directly in
+  `src/api/routers/waves.py`. These routes share append-only evidence semantics, pagination
+  contracts, and campaign-definition repository access, so keeping them mixed with durable wave
+  preview/create and launch orchestration increased controller size and ownership ambiguity.
+- Action: moved the campaign evidence/control route group into
+  `src/api/routers/wave_campaign_evidence_routes.py` and mounted it from the main wave router after
+  the campaign definition detail route, preserving the original public path order and response
+  contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract campaign lifecycle/readiness read routes separately from the durable launch
+  command so read-side supportability remains distinct from wave creation behavior.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
