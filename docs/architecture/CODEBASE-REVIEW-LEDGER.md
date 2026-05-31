@@ -5101,3 +5101,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   imports endpoint functions for compatibility.
 - Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-204: Rebalance simulation kept a local route-callable loader
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/route_registration.py` and `src/api/routers/rebalance_simulation.py`.
+- Finding: after route registration mechanics were centralized, rebalance simulation still owned a
+  local dynamic callable loader for compatibility endpoint exports consumed by `src/api/main.py`.
+  That left dynamic route import mechanics split between the shared utility and one parent router.
+- Action: moved the callable loading helper into `route_registration.py` and updated
+  `rebalance_simulation.py` to reuse it while keeping explicit exports for `simulate_rebalance`,
+  `analyze_scenarios`, `analyze_scenarios_async`, and `execute_dpm_async_operation`. Public paths,
+  route ordering, response models, OpenAPI output, idempotency behavior, async operation behavior,
+  and `src/api/main.py` imports were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep explicit route callable exports until `src/api/main.py` no longer imports endpoint
+  functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.

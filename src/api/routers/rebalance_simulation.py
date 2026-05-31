@@ -1,28 +1,22 @@
-import importlib
-from typing import Any
-
 from fastapi import APIRouter
+
+from src.api.routers.route_registration import load_route_callable
 
 router = APIRouter()
 
-
-def _load_route_callable(module_name: str, callable_name: str) -> Any:
-    return getattr(importlib.import_module(module_name), callable_name)
-
-
-simulate_rebalance = _load_route_callable(
+simulate_rebalance = load_route_callable(
     "src.api.routers.rebalance_simulation_simulate_routes",
     "simulate_rebalance",
 )
-analyze_scenarios = _load_route_callable(
+analyze_scenarios = load_route_callable(
     "src.api.routers.rebalance_simulation_analyze_routes",
     "analyze_scenarios",
 )
-analyze_scenarios_async = _load_route_callable(
+analyze_scenarios_async = load_route_callable(
     "src.api.routers.rebalance_simulation_async_routes",
     "analyze_scenarios_async",
 )
-execute_dpm_async_operation = _load_route_callable(
+execute_dpm_async_operation = load_route_callable(
     "src.api.routers.rebalance_simulation_operation_routes",
     "execute_dpm_async_operation",
 )
