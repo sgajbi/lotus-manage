@@ -2,148 +2,20 @@ from __future__ import annotations
 
 import importlib
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter
 
-from src.api.dependencies import get_mandate_repository
-from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
-from src.api.services.mandate_service import (
-    DpmMandateNotFoundError,
-    DpmMandateSourceIncompleteError,
-    mandate_ids_from_pm_book_membership,
-    run_mandate_monitoring_once,
-)
-from src.core.mandate_repository import DpmMandateRepository
-from src.core.mandates import DpmMonitoringRun
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
 
 router = APIRouter(prefix="/dpm", tags=["lotus-manage Monitoring"])
 
 
+def get_core_resolver_client() -> DpmCoreResolverClient:
+    return build_core_resolver_client()
+
+
 importlib.import_module("src.api.routers.monitoring_command_center_routes")
-
-
-@router.post(
-    "/monitoring/run-once",
-    response_model=DpmMonitoringRun,
-    summary="Run discretionary mandate monitoring once",
-    description=(
-        "Use this endpoint to evaluate a bounded set of existing mandate digital twins and persist "
-        "a monitoring run, health snapshots, and derived exceptions. Callers may provide explicit "
-        "mandate ids or omit them and provide a portfolio-manager selector so Manage resolves the "
-        "PM-book cohort from lotus-core `PortfolioManagerBookMembership:v1`."
-    ),
-    responses={
-        200: {"description": "Monitoring run completed and persisted."},
-        404: {"description": "At least one requested mandate id was not found."},
-    },
-)
-async def run_once(
-    request: DpmMonitoringRunOnceRequest,
-    repository: DpmMandateRepository = Depends(get_mandate_repository),
-) -> DpmMonitoringRun:
-    mandate_ids = list(request.mandate_ids)
-    source_filters: dict[str, str] = {}
-    if not mandate_ids:
-        if not request.portfolio_manager_id:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "code": "DPM_MONITORING_SELECTOR_REQUIRED",
-                    "message": "Provide mandate_ids or portfolio_manager_id for PM-book discovery.",
-                },
-            )
-        portfolio_types = [
-            portfolio_type.strip().upper()
-            for portfolio_type in request.portfolio_types
-            if portfolio_type.strip()
-        ]
-        if not portfolio_types:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail={
-                    "code": "DPM_MONITORING_PM_BOOK_PORTFOLIO_TYPES_REQUIRED",
-                    "message": "PM-book monitoring requires at least one portfolio type.",
-                },
-            )
-        try:
-            membership = build_core_resolver_client().resolve_portfolio_manager_book_membership(
-                portfolio_manager_id=request.portfolio_manager_id,
-                as_of_date=request.as_of_date,
-                tenant_id=request.tenant_id,
-                booking_center_code=request.booking_center_code,
-                portfolio_types=portfolio_types,
-                include_inactive=False,
-                correlation_id=None,
-            )
-        except DpmCoreResolverUnavailableError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
-            ) from exc
-        except DpmCoreResolverError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
-            ) from exc
-        if membership.supportability.state != "READY":
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={
-                    "code": membership.supportability.reason,
-                    "message": "PM-book membership is not source-ready for monitoring.",
-                },
-            )
-        if not membership.members:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={
-                    "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
-                    "message": "PM-book membership returned no mandates to monitor.",
-                },
-            )
-        try:
-            mandate_ids = mandate_ids_from_pm_book_membership(
-                repository=repository,
-                membership=membership,
-            )
-        except DpmMandateSourceIncompleteError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_424_FAILED_DEPENDENCY,
-                detail={"code": str(exc) or "DPM_PM_BOOK_MANDATE_SNAPSHOT_MISSING"},
-            ) from exc
-        source_filters = {
-            "source_product": membership.product_name,
-            "source_product_version": membership.product_version,
-            "source_supportability_state": membership.supportability.state,
-        }
-        if membership.snapshot_id:
-            source_filters["source_snapshot_id"] = membership.snapshot_id
-        if membership.source_batch_fingerprint:
-            source_filters["source_content_hash"] = membership.source_batch_fingerprint
-
-    try:
-        return run_mandate_monitoring_once(
-            repository=repository,
-            mandate_ids=mandate_ids,
-            as_of_date=request.as_of_date,
-            filters={
-                key: value
-                for key, value in {
-                    "tenant_id": request.tenant_id,
-                    "portfolio_manager_id": request.portfolio_manager_id,
-                    "book_id": request.book_id,
-                    "booking_center_code": request.booking_center_code,
-                    "requested_by": request.requested_by,
-                    **source_filters,
-                }.items()
-                if value is not None
-            },
-        )
-    except DpmMandateNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-
+importlib.import_module("src.api.routers.monitoring_run_once_routes")
 importlib.import_module("src.api.routers.monitoring_run_read_routes")
 importlib.import_module("src.api.routers.monitoring_exception_routes")

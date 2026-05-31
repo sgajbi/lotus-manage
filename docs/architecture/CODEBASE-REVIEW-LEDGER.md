@@ -3230,3 +3230,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split source-backed run-once execution from the remaining monitoring router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-118: Monitoring run-once execution was owned by the router shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/dpm/monitoring/run-once`.
+- Finding: after extracting command-center, run-read, and exception queue routes,
+  `src/api/routers/monitoring.py` still owned the source-backed run-once executor while also acting
+  as the router composition shell. Run-once owns explicit mandate execution, PM-book cohort
+  discovery through lotus-core, source supportability gating, source lineage filters, run
+  persistence, and 422/424/503/404 mappings, so it should be independently reviewable.
+- Action: moved run-once route registration into `src/api/routers/monitoring_run_once_routes.py`
+  and reduced `monitoring.py` to router construction, the core resolver dependency hook, and
+  explicit route-module imports. The existing `build_core_resolver_client` monkeypatch seam is
+  preserved through `get_core_resolver_client`, and public path, response model, Swagger guidance,
+  PM-book source filters, source-readiness handling, and error mappings were preserved.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next largest router or source-resolution module for route-family and
+  integration-boundary ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
