@@ -4122,3 +4122,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route module.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-159: PM quality fairness route owned command construction
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview` and
+  `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`.
+- Finding: after splitting fairness-analysis reads, the fairness command route still owned
+  cross-segment command construction and service-error-to-HTTP mapping. That kept request-to-command
+  transformation, correlation-id fallback, service invocation, and error status selection inside
+  endpoint code rather than a route-support boundary.
+- Action: moved fairness-analysis command construction and HTTP exception mapping into
+  `src/api/routers/pm_operating_quality_fairness_builder.py`, leaving preview/create endpoints to
+  compose dependencies, call the builder, persist on create, and return response DTOs. Public
+  paths, request/response models, correlation-id behavior, not-found mapping for missing score
+  runs, validation error mapping, and conflict handling were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect remaining PM operating-quality parent router private wrappers for stale
+  compatibility shims that can be reduced without breaking tests.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
