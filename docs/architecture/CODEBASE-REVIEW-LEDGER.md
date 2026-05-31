@@ -6309,3 +6309,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `src.api.main` compatibility exports.
 - Wiki decision: no wiki source change required; this is internal compatibility-boundary
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-249: Stale rebalance compatibility alias removal
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: after the policy-pack, source-lineage, and runtime-override extractions, the rebalance
+  simulation service still carried stale private aliases for selected policy-pack definition
+  resolution and source-lineage helpers. Repository search showed no route, service, or test
+  callers for those aliases, while active env/core aliases still had callers and were left intact.
+- Action: removed the unused service-local selected-policy wrapper and the stale source-lineage
+  alias exports/imports. This keeps the remaining compatibility surface limited to paths that are
+  still exercised by routes, `src.api.main`, or regression tests.
+- Status: hardened
+- Evidence: repository search for the removed aliases, runtime request-model/service edge and
+  rebalance API regressions (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  simulation service, OpenAPI quality gate, API vocabulary inventory validation, diff check, and
+  service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: continue pruning compatibility aliases only with search evidence and focused
+  regression coverage; do not remove the remaining env/core exports until their callers migrate.
+- Wiki decision: no wiki source change required; this is internal stale-alias cleanup with no
+  route, payload, supported-feature, or operator-contract change.

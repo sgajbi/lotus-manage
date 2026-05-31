@@ -33,7 +33,6 @@ from src.api.services.rebalance_policy_pack_service import (
 )
 from src.api.services.rebalance_policy_pack_execution import (
     resolve_execution_policy_pack_context,
-    resolve_selected_policy_pack_definition as resolve_selected_policy_pack_definition_from_catalog,
 )
 from src.api.services.rebalance_request_envelope_resolution import (
     resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
@@ -64,7 +63,6 @@ from src.api.services.rebalance_runtime_overrides import (
     resolve_callable_override,
     resolve_logger,
 )
-from src.api.services.rebalance_source_lineage import apply_source_lineage, source_input_mode
 from src.api.services.rebalance_stateful_source_context import (
     resolve_stateful_source_context,
 )
@@ -76,8 +74,6 @@ from src.core.dpm_source_context import (
 )
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.policy_packs import (
-    DpmEffectivePolicyPackResolution,
-    DpmPolicyPackDefinition,
     resolve_policy_pack_replay_enabled,
 )
 from src.core.rebalance_runs import (
@@ -97,21 +93,10 @@ build_core_resolver_client = core_resolver_service.build_core_resolver_client
 env_float = core_resolver_service.env_float
 env_int = core_resolver_service.env_int
 stateful_core_sourcing_enabled = core_resolver_service.stateful_core_sourcing_enabled
-_source_input_mode = source_input_mode
-_apply_source_lineage = apply_source_lineage
 
 
 def _resolved_logger() -> logging.Logger | Any:
     return resolve_logger(logger)
-
-
-def resolve_selected_policy_pack_definition(
-    policy_pack: DpmEffectivePolicyPackResolution,
-) -> Optional[DpmPolicyPackDefinition]:
-    return resolve_selected_policy_pack_definition_from_catalog(
-        policy_pack=policy_pack,
-        catalog_loader=load_dpm_policy_pack_catalog,
-    )
 
 
 def _resolve_stateful_source_context(
