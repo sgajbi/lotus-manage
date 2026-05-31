@@ -2959,3 +2959,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   routes.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-105: Outcome-review handoff routes were mixed with local reads
+
+- Date: 2026-05-31
+- Scope: downstream report input and AI evidence input routes.
+- Finding: `src/api/routers/outcome_reviews.py` mixed downstream handoff routes for
+  `lotus-report`/render/archive and `lotus-ai` consumers with local search and lookup routes.
+  These handoff routes share proof-pack, wave, mandate, and outcome-review dependencies and expose
+  bounded integration payloads rather than simple persisted review reads.
+- Action: moved report-input and AI-evidence-input route registration into
+  `src/api/routers/outcome_review_handoff_routes.py`, preserving public paths, response models,
+  Swagger guidance, repository dependencies, not-found behavior, external execution boundary
+  projection, client communication boundary projection, portfolio-memory context, and AI forbidden
+  action payloads.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split outcome-review search, direct lookup, run lookup, and wave lookup into
+  separately owned read modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
