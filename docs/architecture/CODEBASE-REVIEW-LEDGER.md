@@ -4326,3 +4326,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   have moved to the focused helper modules.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-168: Approval-decision route still depended on campaign action compatibility imports
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_approval_decision_evidence_routes.py` helper imports.
+- Finding: after the approval-decision HTTP helpers were extracted, the approval-decision evidence
+  route still imported them through `wave_campaign_action_http.py`. That kept a local route coupled
+  to a compatibility module instead of the focused helper boundary.
+- Action: updated the approval-decision evidence route to import
+  `src/api/routers/wave_campaign_approval_decision_http.py` directly. The action compatibility
+  module remains available for existing external/internal callers that have not moved yet.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_action_http.py` as compatibility-only unless a later cleanup can
+  prove no downstream import consumers remain.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
