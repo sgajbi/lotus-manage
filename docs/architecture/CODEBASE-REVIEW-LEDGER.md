@@ -5013,3 +5013,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   still the safest pattern.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-200: Rebalance simulation parent router repeated dynamic callable imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/rebalance_simulation.py`.
+- Finding: the rebalance simulation parent router still used repeated dynamic module imports plus
+  repeated attribute extraction for simulate, analyze, async analyze, and operation execution
+  routes. Unlike simple parent routers, this module also exposes compatibility callables consumed by
+  `src/api/main.py`, so removing those exports would be a behavior risk.
+- Action: introduced a focused route-callable loader and kept the explicit compatibility exports for
+  `simulate_rebalance`, `analyze_scenarios`, `analyze_scenarios_async`, and
+  `execute_dpm_async_operation`. Public paths, route ordering, response models, OpenAPI output,
+  idempotency behavior, async operation behavior, and `src/api/main.py` imports were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep explicit route callable exports until `src/api/main.py` no longer imports endpoint
+  functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
