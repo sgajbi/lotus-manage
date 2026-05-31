@@ -2916,3 +2916,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split source-refresh command handling from read/supportability/handoff routes.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-103: Outcome-review source refresh was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: durable outcome-review source-refresh endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed source refresh with search, lookup,
+  supportability, report, AI evidence, run lookup, and wave lookup routes. Refresh appends
+  source-refresh events, owns refreshed comparison validation, and emits not-found/supportability
+  metrics, so it belongs in a command-specific route module.
+- Action: moved source-refresh route registration into
+  `src/api/routers/outcome_review_refresh_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, validation and not-found error mapping, append-only
+  refresh event behavior, and supportability metrics.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split read/search/supportability/report/AI handoff routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
