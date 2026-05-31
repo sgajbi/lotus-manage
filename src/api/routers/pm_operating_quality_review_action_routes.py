@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_pm_quality_fairness_analysis_repository,
@@ -13,6 +13,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionRequest,
     DpmPmQualityReviewActionResponse,
 )
+from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_review_action_read_routes import (
     register_pm_quality_review_action_read_routes,
@@ -114,10 +115,7 @@ def register_pm_quality_review_action_routes(
         try:
             review_action_repository.save_review_action(action=review_action)
         except DpmPmQualityReviewActionConflictError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from exc
+            raise pm_quality_conflict_http_exception(exc) from exc
         return DpmPmQualityReviewActionResponse(review_action=review_action)
 
     register_pm_quality_review_action_read_routes(router)

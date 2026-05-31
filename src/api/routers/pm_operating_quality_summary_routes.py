@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_pm_quality_review_action_repository,
@@ -11,6 +11,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationRequest,
     DpmPmQualitySummaryInvocationResponse,
 )
+from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_summary_invocation_builder import (
     build_summary_invocation_response_model,
@@ -103,10 +104,7 @@ def create_pm_quality_summary_invocation_endpoint(
     try:
         summary_repository.save_summary_invocation(invocation=invocation)
     except DpmPmQualitySummaryInvocationConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
+        raise pm_quality_conflict_http_exception(exc) from exc
     return DpmPmQualitySummaryInvocationResponse(summary_invocation=invocation)
 
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_pm_quality_fairness_analysis_repository,
@@ -16,6 +16,7 @@ from src.api.routers.pm_operating_quality_fairness_builder import (
 from src.api.routers.pm_operating_quality_fairness_read_routes import (
     router as fairness_read_router,
 )
+from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
@@ -92,10 +93,7 @@ def create_pm_quality_fairness_analysis_endpoint(
     try:
         fairness_repository.save_fairness_analysis(analysis=fairness_analysis)
     except DpmPmQualityFairnessAnalysisConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
+        raise pm_quality_conflict_http_exception(exc) from exc
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)
 
 

@@ -5346,3 +5346,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   mapping pattern after outcome-review helper behavior is stable.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-214: PM operating quality routes repeated conflict mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_score_run_routes.py`,
+  `src/api/routers/pm_operating_quality_fairness_routes.py`,
+  `src/api/routers/pm_operating_quality_review_action_routes.py`,
+  `src/api/routers/pm_operating_quality_summary_routes.py`, and
+  `src/api/routers/pm_operating_quality_policy_routes.py`.
+- Finding: persisted PM operating-quality score runs, fairness analyses, review actions, summary
+  invocations, and policy versions each repeated the same persistence-conflict to `409` HTTP
+  mapping. The repeated branches made PM-quality governance routes noisier and increased drift
+  risk for future persisted evidence surfaces.
+- Action: introduced `pm_quality_conflict_http_exception()` and reused it from the persisted
+  command routes while leaving route-specific validation, missing-resource, and source-dependency
+  failures unchanged. Public paths, response models, OpenAPI output, and `409` detail strings were
+  preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect PM-quality read-route not-found handling and builder validation handling as
+  separate slices; those carry distinct detail payloads and should not be mixed into this conflict
+  helper.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

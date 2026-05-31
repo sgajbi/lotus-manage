@@ -5,6 +5,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import get_pm_quality_policy_repository
+from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
 from src.api.routers.pm_operating_quality_models import DpmPmOperatingQualityPolicyListResponse
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
@@ -46,10 +47,7 @@ def put_pm_operating_quality_policy_endpoint(
     try:
         repository.save_policy(policy=policy)
     except DpmPmQualityPolicyConflictError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
+        raise pm_quality_conflict_http_exception(exc) from exc
     return policy
 
 

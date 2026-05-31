@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_outcome_review_repository,
@@ -13,6 +13,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewRequest,
     DpmPmOperatingQualityScorePreviewResponse,
 )
+from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_score_run_read_routes import (
     register_pm_quality_score_run_read_routes as register_pm_quality_score_run_read_routes,
@@ -110,8 +111,5 @@ def register_pm_quality_score_run_command_routes(
         try:
             score_run_repository.save_score_run(score_run=score_run)
         except DpmPmQualityScoreRunConflictError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=str(exc),
-            ) from exc
+            raise pm_quality_conflict_http_exception(exc) from exc
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)
