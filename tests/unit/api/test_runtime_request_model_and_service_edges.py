@@ -10,6 +10,7 @@ import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_async_manual_execution as async_manual_execution
 import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
+import src.api.services.rebalance_async_operation_runner as async_runner
 import src.api.services.rebalance_async_submission as async_submission
 import src.api.services.rebalance_async_submission_payload as async_submission_payload
 import src.api.services.rebalance_batch_execution as batch_execution
@@ -630,6 +631,54 @@ def test_rebalance_async_operation_completion_records_success_and_failure() -> N
 
     assert service_double.failure == ("op_001", "ValueError", "bad payload")
     assert logged_messages == ["Asynchronous batch analysis failed"]
+
+
+def test_rebalance_async_operation_runner_executes_current_payload_context() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+    request_json = {
+        "batch_request": batch_payload,
+        "policy_context": {
+            "request_policy_pack_id": "request-pack",
+            "tenant_default_policy_pack_id": "tenant-pack",
+            "tenant_id": "tenant-sg",
+        },
+        "source_context": None,
+    }
+
+    class _SupportService:
+        completed: tuple[str, dict] | None = None
+
+        def prepare_analyze_operation_execution(self, *, operation_id: str):
+            return request_json, "corr-runner"
+
+        def complete_operation_success(self, *, operation_id: str, result_json: dict):
+            self.completed = (operation_id, result_json)
+
+        def complete_operation_failure(self, **_kwargs):
+            raise AssertionError("current async payload should execute successfully")
+
+    captured: dict[str, object] = {}
+
+    def _execute_batch(**kwargs):
+        captured.update(kwargs)
+        return SimpleNamespace(model_dump=lambda mode: {"batch_run_id": "batch-runner"})
+
+    support_service = _SupportService()
+    async_runner.run_analyze_async_operation_from_store(
+        operation_id="op_runner",
+        service=support_service,
+        execution_mode="manual",
+        execute_batch_fn=_execute_batch,
+        current_logger=SimpleNamespace(exception=lambda *_args, **_kwargs: None),
+    )
+
+    assert captured["correlation_id"] == "corr-runner"
+    assert captured["request_policy_pack_id"] == "request-pack"
+    assert captured["tenant_default_policy_pack_id"] == "tenant-pack"
+    assert captured["tenant_id"] == "tenant-sg"
+    assert support_service.completed == ("op_runner", {"batch_run_id": "batch-runner"})
 
 
 def test_rebalance_batch_execution_reports_invalid_options_without_running_engine() -> None:

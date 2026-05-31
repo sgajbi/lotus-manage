@@ -2,8 +2,6 @@ import logging
 import uuid
 from typing import Any, Optional
 
-from pydantic import ValidationError
-
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -47,12 +45,8 @@ from src.api.services.rebalance_async_config import (
     env_flag,
     resolve_async_execution_mode,
 )
-from src.api.services.rebalance_async_operation_completion import (
-    complete_analyze_async_operation,
-    fail_analyze_async_operation,
-)
-from src.api.services.rebalance_async_operation_payload import (
-    resolve_analyze_async_execution_payload,
+from src.api.services.rebalance_async_operation_runner import (
+    run_analyze_async_operation_from_store,
 )
 from src.api.services.rebalance_async_submission_payload import build_analyze_async_request_json
 from src.api.services.rebalance_async_submission import submit_analyze_async_request
@@ -85,7 +79,6 @@ from src.core.rebalance.policy_packs import (
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationStatusResponse,
-    DpmRunNotFoundError,
     DpmRunSupportService,
 )
 from src.core.models import (
@@ -255,35 +248,13 @@ def run_analyze_async_operation(
     service: DpmRunSupportService,
     execution_mode: str = "inline",
 ) -> None:
-    current_logger = _resolved_logger()
-    request_json, operation_correlation_id = service.prepare_analyze_operation_execution(
-        operation_id=operation_id
+    run_analyze_async_operation_from_store(
+        operation_id=operation_id,
+        service=service,
+        execution_mode=execution_mode,
+        execute_batch_fn=_main_override("_execute_batch_analysis") or execute_batch_analysis,
+        current_logger=_resolved_logger(),
     )
-    try:
-        payload = resolve_analyze_async_execution_payload(request_json)
-        execute_batch_fn = _main_override("_execute_batch_analysis") or execute_batch_analysis
-        result = execute_batch_fn(
-            request=payload.request,
-            correlation_id=operation_correlation_id,
-            request_policy_pack_id=payload.request_policy_pack_id,
-            tenant_default_policy_pack_id=payload.tenant_default_policy_pack_id,
-            tenant_id=payload.tenant_id,
-            source_context=payload.source_context,
-        )
-        complete_analyze_async_operation(
-            service=service,
-            operation_id=operation_id,
-            result=result,
-            execution_mode=execution_mode,
-        )
-    except (DpmRunNotFoundError, ValidationError, RuntimeError, ValueError) as exc:
-        fail_analyze_async_operation(
-            service=service,
-            operation_id=operation_id,
-            execution_mode=execution_mode,
-            exc=exc,
-            current_logger=current_logger,
-        )
 
 
 def submit_and_optionally_execute_async_analysis(

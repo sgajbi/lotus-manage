@@ -6252,3 +6252,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   only where search and regression tests prove existing callers no longer depend on them.
 - Wiki decision: no wiki source change required; this is internal policy-pack orchestration
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-247: Async analyze operation runner extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_runner.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still mixed stored-operation payload retrieval,
+  current/legacy async payload parsing, batch execution dispatch, completion writes, and
+  failure-state mapping inside the main rebalance orchestration service. That kept async lifecycle
+  behavior harder to test directly and made the remaining compatibility wrapper broader than
+  needed.
+- Action: extracted the stored async analyze operation lifecycle into
+  `rebalance_async_operation_runner.py`, with an explicit typed batch-execution dependency and
+  logger dependency. The public service function now preserves the existing `src.api.main`
+  override behavior and delegates to the runner. Added focused coverage proving current async
+  payload policy context is passed through to batch execution and completion is recorded.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  operation runner and simulation service, OpenAPI quality gate, API vocabulary inventory
+  validation, diff check, and service-layer HTTP leakage scan passed with no behavioral or
+  contract drift.
+- Follow-up: review whether remaining `src.api.main` patch seams can be replaced with a
+  dedicated dependency override module after route and test callers are aligned.
+- Wiki decision: no wiki source change required; this is internal async lifecycle modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
