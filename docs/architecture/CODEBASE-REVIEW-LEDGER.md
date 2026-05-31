@@ -3638,3 +3638,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   refactors for consumer vocabulary or stateful resolver posture changes.
 - Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-137: Single-run rebalance simulation was mixed with batch analysis
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/simulate`.
+- Finding: `src/api/routers/rebalance_simulation.py` mixed the single-run simulation command with
+  synchronous batch analysis, asynchronous batch submission, and async operation execution. The
+  single-run command owns idempotency-key semantics, policy-pack override headers, stateful/source
+  envelope resolution, and the simulation response examples.
+- Action: moved the single-run simulation route registration into
+  `src/api/routers/rebalance_simulation_simulate_routes.py`, preserving public path, response
+  model, Swagger guidance, header metadata, example payloads, database dependency, source-envelope
+  resolution, service call arguments, and route registration order.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split synchronous and asynchronous batch-analysis routes from the remaining router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
