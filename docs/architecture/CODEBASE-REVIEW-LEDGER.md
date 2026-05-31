@@ -3550,3 +3550,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split construction selection command from the remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-133: Construction selection command was owned by the router shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`.
+- Finding: after extracting generate and read routes, `src/api/routers/construction.py` still
+  owned the alternative-selection command while also acting as the route registration shell. The
+  selection command owns PM decision capture, bounded reason/comment request semantics,
+  correlation propagation, and explicit API error translation.
+- Action: moved construction selection route registration into
+  `src/api/routers/construction_selection_routes.py` and reduced `construction.py` to router
+  construction plus explicit route-module imports. Public path, response model, Swagger guidance,
+  path/header metadata, repository dependency, service call arguments, and HTTP error mapping were
+  preserved.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next large route or service surface after checking branch commit count
+  against the PR target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
