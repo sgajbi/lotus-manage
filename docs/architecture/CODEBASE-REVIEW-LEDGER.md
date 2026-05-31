@@ -1900,3 +1900,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   not blur operational queues with audit/evidence record pages.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
   existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-056: Campaign read-model context queries repeated entitlement wording
+
+- Date: 2026-05-31
+- Scope: campaign operating queue, approval inbox, workflow board, assignment plan, and workflow
+  automation query metadata
+- Finding: `requested_as_of_date`, `actor_id`, and `include_closed` query parameters repeated
+  route-local Swagger text across the campaign read-model endpoints. These fields carry shared
+  readiness, expiry, entitlement, and closed-row semantics, so duplicating their descriptions made
+  future drift more likely.
+- Action: added shared campaign read-model context query aliases for requested as-of date, actor id,
+  and closed-row inclusion, applied them to the read-model endpoints, and regenerated the API
+  vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep launch-package command queries separate unless they share the same read-model
+  semantics; launch commands have stricter operational meaning than queue projections.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.

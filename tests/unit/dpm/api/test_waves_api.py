@@ -6252,6 +6252,7 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}"
     ]["put"]
     campaign_discovery = openapi["paths"]["/api/v1/rebalance/waves/campaign-discovery"]["get"]
+    workflow_board = openapi["paths"]["/api/v1/rebalance/waves/campaign-workflow-board"]["get"]
     assignment_transition = openapi["paths"][
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
@@ -6370,3 +6371,15 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     }
     assert approval_parameters["limit"] == "Maximum number of campaign evidence records to return."
     assert approval_parameters["offset"] == "Zero-based campaign evidence page offset."
+    board_parameters = {
+        parameter["name"]: parameter["description"] for parameter in workflow_board["parameters"]
+    }
+    assert board_parameters["requested_as_of_date"].startswith(
+        "Optional ISO date to evaluate read-model readiness and expiry."
+    )
+    assert board_parameters["actor_id"] == (
+        "Optional actor id to evaluate against campaign entitlement evidence."
+    )
+    assert board_parameters["include_closed"] == (
+        "When false, omit closed campaign rows from attention and workflow read models."
+    )

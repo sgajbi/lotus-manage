@@ -77,6 +77,29 @@ CampaignIncludeExpiredQuery = Annotated[
         description="When false, omit expired campaigns from expiry-aware read models.",
     ),
 ]
+CampaignRequestedAsOfDateQuery = Annotated[
+    str | None,
+    Query(
+        description=(
+            "Optional ISO date to evaluate read-model readiness and expiry. When omitted, each "
+            "definition's persisted campaign as-of date is used."
+        ),
+        examples=["2026-05-10"],
+    ),
+]
+CampaignActorIdQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+        examples=["pm_001"],
+    ),
+]
+CampaignIncludeClosedQuery = Annotated[
+    bool,
+    Query(
+        description="When false, omit closed campaign rows from attention and workflow read models.",
+    ),
+]
 CampaignReadModelLimitQuery = Annotated[
     int,
     Query(

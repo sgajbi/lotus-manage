@@ -40,6 +40,7 @@ from src.api.routers.wave_campaign_definition_http import (
 from src.api.routers.wave_route_parameters import (
     CampaignActiveOnQuery,
     CampaignAssignmentTaskRefPath,
+    CampaignActorIdQuery,
     CampaignDefinitionAsOfDateQuery,
     CampaignEvidenceLimitQuery,
     CampaignEvidenceOffsetQuery,
@@ -48,8 +49,10 @@ from src.api.routers.wave_route_parameters import (
     CampaignDefinitionStatusQuery,
     CampaignDefinitionVersionPath,
     CampaignIncludeExpiredQuery,
+    CampaignIncludeClosedQuery,
     CampaignReadModelLimitQuery,
     CampaignReadModelOffsetQuery,
+    CampaignRequestedAsOfDateQuery,
     WaveIdPath,
     WaveItemIdPath,
 )
@@ -346,18 +349,8 @@ def list_bulk_review_campaign_operating_queue(
     campaign_id: CampaignDefinitionFilterIdQuery = None,
     campaign_status: CampaignDefinitionStatusQuery = None,
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date to evaluate readiness for every returned definition. When omitted, "
-            "each definition's persisted campaign as-of date is used."
-        ),
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
+    actor_id: CampaignActorIdQuery = None,
     active_on: CampaignActiveOnQuery = None,
     include_expired: CampaignIncludeExpiredQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
@@ -404,24 +397,14 @@ def list_bulk_review_campaign_approval_inbox(
     campaign_id: CampaignDefinitionFilterIdQuery = None,
     campaign_status: CampaignDefinitionStatusQuery = None,
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date to evaluate expiry and readiness. When omitted, each definition's "
-            "persisted campaign as-of date is used."
-        ),
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
+    actor_id: CampaignActorIdQuery = None,
     active_on: CampaignActiveOnQuery = None,
     inbox_status: CampaignApprovalInboxStatus | None = Query(
         default=None,
         description="Optional filter for one approval attention posture.",
     ),
-    include_closed: bool = Query(default=False),
+    include_closed: CampaignIncludeClosedQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -468,18 +451,8 @@ def list_bulk_review_campaign_workflow_board(
     campaign_id: CampaignDefinitionFilterIdQuery = None,
     campaign_status: CampaignDefinitionStatusQuery = None,
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
-            "persisted campaign as-of date is used."
-        ),
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
+    actor_id: CampaignActorIdQuery = None,
     active_on: CampaignActiveOnQuery = None,
     board_status: CampaignWorkflowBoardStatus | None = Query(
         default=None,
@@ -489,7 +462,7 @@ def list_bulk_review_campaign_workflow_board(
         default=None,
         description="Optional filter for one derived operator next action.",
     ),
-    include_closed: bool = Query(default=False),
+    include_closed: CampaignIncludeClosedQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -536,18 +509,8 @@ def list_bulk_review_campaign_assignment_plan(
     campaign_id: CampaignDefinitionFilterIdQuery = None,
     campaign_status: CampaignDefinitionStatusQuery = None,
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
-            "persisted campaign as-of date is used."
-        ),
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
+    actor_id: CampaignActorIdQuery = None,
     active_on: CampaignActiveOnQuery = None,
     escalation_tier: CampaignAssignmentEscalationTier | None = Query(
         default=None,
@@ -557,7 +520,7 @@ def list_bulk_review_campaign_assignment_plan(
         default=None,
         description="Optional filter for one derived operator next action.",
     ),
-    include_closed: bool = Query(default=False),
+    include_closed: CampaignIncludeClosedQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -610,18 +573,8 @@ def list_bulk_review_campaign_workflow_automation(
     campaign_id: CampaignDefinitionFilterIdQuery = None,
     campaign_status: CampaignDefinitionStatusQuery = None,
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: str | None = Query(
-        default=None,
-        description=(
-            "Optional ISO date to evaluate readiness and expiry. When omitted, each definition's "
-            "persisted campaign as-of date is used."
-        ),
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
+    actor_id: CampaignActorIdQuery = None,
     active_on: CampaignActiveOnQuery = None,
     automation_status: CampaignWorkflowAutomationStatus | None = Query(
         default=None,
@@ -631,7 +584,7 @@ def list_bulk_review_campaign_workflow_automation(
         default=None,
         description="Optional filter for one proposed Manage-side automation action.",
     ),
-    include_closed: bool = Query(default=False),
+    include_closed: CampaignIncludeClosedQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
