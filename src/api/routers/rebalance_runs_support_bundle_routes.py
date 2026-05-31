@@ -1,3 +1,4 @@
+import importlib
 from typing import Annotated
 
 from fastapi import HTTPException, Path, Request, status
@@ -149,46 +150,4 @@ def get_dpm_run_support_bundle_by_idempotency(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
-@shared.router.get(
-    "/rebalance/runs/by-operation/{operation_id}/support-bundle",
-    response_model=DpmRunSupportBundleResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Run Support Bundle by Operation Id",
-    description=(
-        "Returns aggregated supportability bundle for run resolved by asynchronous operation id, "
-        "including optional artifact, async operation, and idempotency history. Optional sections "
-        "are controlled only by `include_artifact`, `include_async_operation`, and "
-        "`include_idempotency_history`; unsupported query parameters are rejected."
-    ),
-    responses={
-        200: {"description": "Aggregated run supportability bundle for investigation."},
-        404: {"description": "Operation or mapped run not found, or support-bundle APIs disabled."},
-        422: {"description": "Unsupported query parameters were supplied."},
-    },
-)
-def get_dpm_run_support_bundle_by_operation(
-    request: Request,
-    operation_id: Annotated[
-        str,
-        Path(
-            description="Asynchronous operation identifier.",
-            examples=["dop_001"],
-        ),
-    ],
-    include_artifact: IncludeArtifactQuery = True,
-    include_async_operation: IncludeAsyncOperationQuery = True,
-    include_idempotency_history: IncludeIdempotencyHistoryQuery = True,
-    service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
-) -> DpmRunSupportBundleResponse:
-    shared._assert_support_apis_enabled()
-    shared._assert_support_bundle_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
-    try:
-        return service.get_run_support_bundle_by_operation(
-            operation_id=operation_id,
-            include_artifact=include_artifact,
-            include_async_operation=include_async_operation,
-            include_idempotency_history=include_idempotency_history,
-        )
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+importlib.import_module("src.api.routers.rebalance_runs_support_bundle_operation_routes")

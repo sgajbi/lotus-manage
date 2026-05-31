@@ -2657,3 +2657,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   support-bundle routes using the shared include-flag contract.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-091: Operation-resolved support bundle was mixed with run resolvers
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by asynchronous operation id.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` mixed direct run,
+  correlation, idempotency, and operation-id support-bundle resolvers in one module. The
+  operation-id resolver follows the async-operation mapping path before reaching a run bundle, so
+  it has a different supportability ownership boundary from direct run/key lookup routes.
+- Action: moved the operation-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_operation_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review whether direct support-bundle run, correlation, and idempotency resolvers
+  should be split once remaining lookup route ownership is simplified.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
