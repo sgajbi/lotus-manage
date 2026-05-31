@@ -6253,6 +6253,10 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     ]["put"]
     campaign_discovery = openapi["paths"]["/api/v1/rebalance/waves/campaign-discovery"]["get"]
     workflow_board = openapi["paths"]["/api/v1/rebalance/waves/campaign-workflow-board"]["get"]
+    workflow_overview = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/workflow-overview"
+    ]["get"]
     assignment_transition = openapi["paths"][
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
@@ -6383,3 +6387,17 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert board_parameters["include_closed"] == (
         "When false, omit closed campaign rows from attention and workflow read models."
     )
+    overview_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in workflow_overview["parameters"]
+    }
+    assert overview_parameters["requested_as_of_date"] == (
+        "ISO date that the future wave preview/create request would use."
+    )
+    assert overview_parameters["include_launch_package"].startswith(
+        "When true, include launch package guidance"
+    )
+    assert overview_parameters["launch_history_limit"] == (
+        "Maximum number of launch audit records to include."
+    )
+    assert overview_parameters["launch_history_offset"] == "Zero-based launch audit page offset."

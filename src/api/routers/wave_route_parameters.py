@@ -100,6 +100,60 @@ CampaignIncludeClosedQuery = Annotated[
         description="When false, omit closed campaign rows from attention and workflow read models.",
     ),
 ]
+CampaignLaunchRequestedAsOfDateQuery = Annotated[
+    str,
+    Query(
+        description="ISO date that the future wave preview/create request would use.",
+        examples=["2026-05-10"],
+    ),
+]
+CampaignLaunchActorIdOptionalQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional actor id to evaluate against campaign entitlement evidence.",
+        examples=["pm_001"],
+    ),
+]
+CampaignLaunchActorIdRequiredQuery = Annotated[
+    str,
+    Query(
+        description="Actor id to place in the preview/create request draft.",
+        examples=["pm_001"],
+    ),
+]
+CampaignLaunchCorrelationIdQuery = Annotated[
+    str | None,
+    Query(
+        description="Optional correlation id to carry into launch package guidance.",
+        examples=["corr-campaign-launch-001"],
+    ),
+]
+CampaignIncludeLaunchPackageQuery = Annotated[
+    bool,
+    Query(
+        description=(
+            "When true, include launch package guidance if preview readiness is READY and actor_id "
+            "is supplied."
+        ),
+    ),
+]
+CampaignLaunchHistoryLimitQuery = Annotated[
+    int,
+    Query(
+        ge=1,
+        le=200,
+        description="Maximum number of launch audit records to include.",
+        examples=[20],
+    ),
+]
+CampaignLaunchHistoryOffsetQuery = Annotated[
+    int,
+    Query(
+        ge=0,
+        description="Zero-based launch audit page offset.",
+        examples=[0],
+    ),
+]
 CampaignReadModelLimitQuery = Annotated[
     int,
     Query(

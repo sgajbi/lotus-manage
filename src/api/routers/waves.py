@@ -48,8 +48,15 @@ from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionStatusQuery,
     CampaignDefinitionVersionPath,
+    CampaignIncludeLaunchPackageQuery,
     CampaignIncludeExpiredQuery,
     CampaignIncludeClosedQuery,
+    CampaignLaunchActorIdOptionalQuery,
+    CampaignLaunchActorIdRequiredQuery,
+    CampaignLaunchCorrelationIdQuery,
+    CampaignLaunchHistoryLimitQuery,
+    CampaignLaunchHistoryOffsetQuery,
+    CampaignLaunchRequestedAsOfDateQuery,
     CampaignReadModelLimitQuery,
     CampaignReadModelOffsetQuery,
     CampaignRequestedAsOfDateQuery,
@@ -977,31 +984,13 @@ def list_bulk_review_campaign_definition_launch_history(
 def get_bulk_review_campaign_definition_workflow_overview(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    requested_as_of_date: str = Query(
-        description="ISO date that the future wave preview/create request would use.",
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
-    active_on: str | None = Query(
-        default=None,
-        description="Optional ISO date used to classify campaign expiry posture.",
-    ),
-    include_launch_package: bool = Query(
-        default=True,
-        description=(
-            "When true, include launch package guidance if preview readiness is READY and actor_id "
-            "is supplied."
-        ),
-    ),
-    correlation_id: str | None = Query(
-        default=None,
-        description="Optional correlation id to carry into launch package guidance.",
-    ),
-    launch_history_limit: int = Query(default=20, ge=1, le=200),
-    launch_history_offset: int = Query(default=0, ge=0),
+    requested_as_of_date: CampaignLaunchRequestedAsOfDateQuery,
+    actor_id: CampaignLaunchActorIdOptionalQuery = None,
+    active_on: CampaignActiveOnQuery = None,
+    include_launch_package: CampaignIncludeLaunchPackageQuery = True,
+    correlation_id: CampaignLaunchCorrelationIdQuery = None,
+    launch_history_limit: CampaignLaunchHistoryLimitQuery = 20,
+    launch_history_offset: CampaignLaunchHistoryOffsetQuery = 0,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -1037,14 +1026,8 @@ def get_bulk_review_campaign_definition_workflow_overview(
 def get_bulk_review_campaign_definition_preview_readiness(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    requested_as_of_date: str = Query(
-        description="ISO date that the future wave preview/create request would use.",
-        examples=["2026-05-10"],
-    ),
-    actor_id: str | None = Query(
-        default=None,
-        description="Optional actor id to evaluate against campaign entitlement evidence.",
-    ),
+    requested_as_of_date: CampaignLaunchRequestedAsOfDateQuery,
+    actor_id: CampaignLaunchActorIdOptionalQuery = None,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -1075,18 +1058,9 @@ def get_bulk_review_campaign_definition_preview_readiness(
 def get_bulk_review_campaign_definition_launch_package(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
-    requested_as_of_date: str = Query(
-        description="ISO date that the future wave preview/create request would use.",
-        examples=["2026-05-10"],
-    ),
-    actor_id: str = Query(
-        description="Actor id to place in the preview/create request draft.",
-        examples=["pm_001"],
-    ),
-    correlation_id: str | None = Query(
-        default=None,
-        description="Optional correlation id to carry into the create header draft.",
-    ),
+    requested_as_of_date: CampaignLaunchRequestedAsOfDateQuery,
+    actor_id: CampaignLaunchActorIdRequiredQuery,
+    correlation_id: CampaignLaunchCorrelationIdQuery = None,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),

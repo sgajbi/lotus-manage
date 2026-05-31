@@ -1922,3 +1922,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for existing routes with no behavior, payload, or supported-feature
   change.
+
+## BACKEND-REVIEW-20260531-057: Campaign launch-readiness queries repeated command wording
+
+- Date: 2026-05-31
+- Scope: campaign workflow overview, preview-readiness, and launch-package query metadata
+- Finding: launch-readiness endpoints repeated route-local query metadata for requested as-of date,
+  actor id, launch-package inclusion, correlation id, and launch-history pagination. These queries
+  drive fail-closed launch package guidance and are command-adjacent, so their Swagger wording
+  should stay consistent without sharing weaker queue/read-model aliases by accident.
+- Action: added shared launch-readiness query aliases in
+  `src/api/routers/wave_route_parameters.py`, applied them to workflow overview,
+  preview-readiness, and launch-package routes, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep launch-readiness query aliases separate from read-model and evidence-page
+  pagination aliases so command-adjacent API documentation remains precise.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, or supported-feature
+  change.

@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-31T07:56:01.007008+00:00",
+  "generatedAt": "2026-05-31T07:59:10.269135+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -18916,7 +18916,7 @@
       "location": "query",
       "required": false,
       "type": "integer",
-      "description": "Canonical launch history limit used by lotus-manage APIs.",
+      "description": "Maximum number of launch audit records to include.",
       "example": 1,
       "allowedValues": [],
       "semanticId": "lotus.launch_history_limit",
@@ -18928,7 +18928,7 @@
       "location": "query",
       "required": false,
       "type": "integer",
-      "description": "Canonical launch history offset used by lotus-manage APIs.",
+      "description": "Zero-based launch audit page offset.",
       "example": 1,
       "allowedValues": [],
       "semanticId": "lotus.launch_history_offset",
@@ -19036,7 +19036,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional correlation id to carry into the create header draft.",
+      "description": "Optional correlation id to carry into launch package guidance.",
       "example": "ENTITY_001",
       "allowedValues": [],
       "semanticId": "lotus.correlation_id",
