@@ -3893,3 +3893,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split automation readiness from the remaining campaign read-model router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-149: Campaign automation readiness was owned by the read-model shell
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-workflow-automation`.
+- Finding: after extracting discovery, queue, approval inbox, workflow board, and assignment plan,
+  `src/api/routers/wave_campaign_read_model_routes.py` still owned automation readiness while also
+  acting as the read-model router aggregator. Automation readiness owns Manage-side assignment-task
+  proposal posture, automation-status/action filtering, external workflow orchestration boundary
+  wording, and capability-posture publication.
+- Action: moved automation-readiness route registration into
+  `src/api/routers/wave_campaign_workflow_automation_routes.py` and reduced
+  `wave_campaign_read_model_routes.py` to a pure subrouter aggregator. Public path, response
+  model, Swagger guidance, query parameters, repository dependency, read-model query loading, page
+  builder arguments, capability-posture contract, and route order were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: prepare the ~50-commit branch for PR gate validation.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
