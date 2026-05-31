@@ -2414,3 +2414,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability service initialization in the parent until dependency ownership is made explicit.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-080: Run support-bundle routes duplicated query metadata in the root router
+
+- Date: 2026-05-31
+- Scope: DPM run support-bundle routes by run id, correlation id, idempotency key, and operation
+  id.
+- Finding: support-bundle endpoints were implemented directly in `src/api/routers/rebalance_runs.py`
+  and repeated the same optional-section query parameter metadata on each route. That kept the
+  root supportability router large and made the support-bundle API contract more likely to drift
+  across lookup variants.
+- Action: moved support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_routes.py` and centralized the
+  `include_artifact`, `include_async_operation`, and `include_idempotency_history` query parameter
+  contracts while preserving paths, response models, Swagger descriptions, feature gates,
+  unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: extract run lookup/read and idempotency-history route groups, then review
+  supportability summary and service initialization as separate ownership boundaries.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
