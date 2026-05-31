@@ -70,7 +70,21 @@ def count_values(values: Iterable[str]) -> dict[str, int]:
 def dedupe_and_sort_events(
     events: Iterable[DpmPortfolioMemoryEvent],
 ) -> list[DpmPortfolioMemoryEvent]:
-    unique = {event.event_id: event for event in events}
+    unique: dict[str, DpmPortfolioMemoryEvent] = {}
+    for event in events:
+        existing = unique.get(event.event_id)
+        if existing is None or _event_dedupe_key(event) > _event_dedupe_key(existing):
+            unique[event.event_id] = event
     return sorted(
         unique.values(), key=lambda event: (event.event_time, event.event_id), reverse=True
+    )
+
+
+def _event_dedupe_key(event: DpmPortfolioMemoryEvent) -> tuple[str, str, str, str, str]:
+    return (
+        event.event_time,
+        event.content_hash or "",
+        event.source_system,
+        event.source_type,
+        event.source_id,
     )

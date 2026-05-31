@@ -1630,3 +1630,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   warnings in focused tests as cleanup candidates rather than tolerated noise.
 - Wiki decision: no wiki source change required; this is route implementation hygiene with no API
   status-code, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-041: Event deduplication depended on source iteration order
+
+- Date: 2026-05-31
+- Scope: portfolio-memory aggregate event deduplication
+- Finding: portfolio-memory event deduplication used dictionary overwrite semantics, so duplicate
+  event ids were resolved by whichever source-family projection was iterated last. That made the
+  aggregate sensitive to source-family ordering instead of event identity and event time.
+- Action: changed duplicate resolution to keep the latest event by event time with stable
+  source/hash tie-breakers before applying the existing descending timeline sort.
+- Status: hardened
+- Evidence: focused search-filter test proving duplicate resolution is independent of input order.
+- Follow-up: if duplicate ids become a source-quality signal, add explicit duplicate diagnostics
+  rather than reintroducing order-sensitive overwrite behavior.
+- Wiki decision: no wiki source change required; this is deterministic aggregate hygiene with no
+  route, payload, supported-feature, or operator-contract change.

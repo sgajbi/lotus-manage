@@ -101,3 +101,20 @@ def test_count_values_and_event_sorting_are_deterministic() -> None:
         "event_newer",
         "event_older",
     ]
+
+
+def test_dedupe_and_sort_events_keeps_latest_duplicate_event_independent_of_input_order() -> None:
+    older_duplicate = _event(
+        event_id="event_duplicate",
+        event_time="2026-05-30T00:00:00+00:00",
+    ).model_copy(update={"content_hash": "sha256:older"})
+    latest_duplicate = _event(
+        event_id="event_duplicate",
+        event_time="2026-05-31T00:00:00+00:00",
+    ).model_copy(update={"content_hash": "sha256:latest"})
+
+    first = dedupe_and_sort_events([older_duplicate, latest_duplicate])
+    second = dedupe_and_sort_events([latest_duplicate, older_duplicate])
+
+    assert [event.content_hash for event in first] == ["sha256:latest"]
+    assert [event.content_hash for event in second] == ["sha256:latest"]
