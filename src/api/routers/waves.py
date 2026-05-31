@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Path, Query, status
 
 from src.api.dependencies import (
     get_advise_authority_client,
@@ -143,6 +143,28 @@ from src.infrastructure.advise_authority import (
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 logger = logging.getLogger(__name__)
 
+CampaignDefinitionIdPath = Annotated[
+    str,
+    Path(
+        description="Manage-owned bulk-review campaign definition identifier.",
+        examples=["campaign-holdings-apple-tesla-20260510"],
+    ),
+]
+CampaignDefinitionVersionPath = Annotated[
+    str,
+    Path(
+        description="Immutable campaign definition version.",
+        examples=["2026.05"],
+    ),
+]
+CampaignAssignmentTaskRefPath = Annotated[
+    str,
+    Path(
+        description="Stable campaign assignment task reference.",
+        examples=["BRC-TASK-2026-05-001"],
+    ),
+]
+
 
 @router.put(
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
@@ -157,8 +179,8 @@ logger = logging.getLogger(__name__)
     ),
 )
 def put_bulk_review_campaign_definition(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -212,8 +234,8 @@ def list_bulk_review_campaign_definitions(
     ),
 )
 def retire_bulk_review_campaign_definition(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRetirementRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -241,8 +263,8 @@ def retire_bulk_review_campaign_definition(
     ),
 )
 def supersede_bulk_review_campaign_definition(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -677,8 +699,8 @@ def list_bulk_review_campaign_workflow_automation(
     description="Retrieves one immutable Manage-owned bulk-review campaign definition.",
 )
 def get_bulk_review_campaign_definition(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -703,8 +725,8 @@ def get_bulk_review_campaign_definition(
     ),
 )
 def record_bulk_review_campaign_definition_approval_decision_endpoint(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -731,8 +753,8 @@ def record_bulk_review_campaign_definition_approval_decision_endpoint(
     ),
 )
 def list_bulk_review_campaign_definition_approval_decisions(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -761,8 +783,8 @@ def list_bulk_review_campaign_definition_approval_decisions(
     ),
 )
 def record_bulk_review_campaign_definition_assignment_action_endpoint(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -790,8 +812,8 @@ def record_bulk_review_campaign_definition_assignment_action_endpoint(
     ),
 )
 def list_bulk_review_campaign_definition_assignment_actions(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -821,8 +843,8 @@ def list_bulk_review_campaign_definition_assignment_actions(
     ),
 )
 def open_bulk_review_campaign_definition_assignment_task_endpoint(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -850,9 +872,9 @@ def open_bulk_review_campaign_definition_assignment_task_endpoint(
     ),
 )
 def transition_bulk_review_campaign_definition_assignment_task_endpoint(
-    campaign_id: str,
-    campaign_version: str,
-    task_ref: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
+    task_ref: CampaignAssignmentTaskRefPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -881,8 +903,8 @@ def transition_bulk_review_campaign_definition_assignment_task_endpoint(
     ),
 )
 def list_bulk_review_campaign_definition_assignment_tasks(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     status: CampaignAssignmentTaskStatus | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
@@ -913,8 +935,8 @@ def list_bulk_review_campaign_definition_assignment_tasks(
     ),
 )
 def record_bulk_review_campaign_definition_maker_checker_control_endpoint(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
@@ -941,8 +963,8 @@ def record_bulk_review_campaign_definition_maker_checker_control_endpoint(
     ),
 )
 def list_bulk_review_campaign_definition_maker_checker_controls(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -972,8 +994,8 @@ def list_bulk_review_campaign_definition_maker_checker_controls(
     ),
 )
 def list_bulk_review_campaign_definition_lifecycle_events(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
@@ -999,8 +1021,8 @@ def list_bulk_review_campaign_definition_lifecycle_events(
     ),
 )
 def list_bulk_review_campaign_definition_launch_history(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     limit: int = Query(default=50, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -1031,8 +1053,8 @@ def list_bulk_review_campaign_definition_launch_history(
     ),
 )
 def get_bulk_review_campaign_definition_workflow_overview(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     requested_as_of_date: str = Query(
         description="ISO date that the future wave preview/create request would use.",
         examples=["2026-05-10"],
@@ -1091,8 +1113,8 @@ def get_bulk_review_campaign_definition_workflow_overview(
     ),
 )
 def get_bulk_review_campaign_definition_preview_readiness(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     requested_as_of_date: str = Query(
         description="ISO date that the future wave preview/create request would use.",
         examples=["2026-05-10"],
@@ -1129,8 +1151,8 @@ def get_bulk_review_campaign_definition_preview_readiness(
     ),
 )
 def get_bulk_review_campaign_definition_launch_package(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     requested_as_of_date: str = Query(
         description="ISO date that the future wave preview/create request would use.",
         examples=["2026-05-10"],
@@ -1171,8 +1193,8 @@ def get_bulk_review_campaign_definition_launch_package(
     ),
 )
 def launch_bulk_review_campaign_definition(
-    campaign_id: str,
-    campaign_version: str,
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionLaunchRequest,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),

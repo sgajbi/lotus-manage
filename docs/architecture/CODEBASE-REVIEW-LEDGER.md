@@ -1801,3 +1801,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   endpoint-specific projection logic.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-051: Campaign definition path parameters lacked reusable API documentation
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition route path parameters in `src/api/routers/waves.py`
+- Finding: campaign-definition endpoints repeated bare `campaign_id`, `campaign_version`, and
+  assignment `task_ref` path parameters without shared descriptions or examples. That left a large
+  workflow surface dependent on generated default Swagger wording instead of domain-correct API
+  documentation.
+- Action: introduced reusable FastAPI `Annotated` path aliases for campaign definition id,
+  campaign definition version, and assignment task reference, then applied them across the
+  campaign-definition route family.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: apply the same reusable path-parameter documentation pattern to durable wave id and
+  wave item id routes in a separate slice.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.

@@ -6248,6 +6248,13 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     handoff = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/handoff"]["post"]
     cancel = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/cancel"]["post"]
     supportability = openapi["paths"]["/api/v1/rebalance/waves/{wave_id}/supportability"]["get"]
+    campaign_definition = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}"
+    ]["put"]
+    assignment_transition = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks/{task_ref}/transitions"
+    ]["post"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert search["tags"] == ["lotus-manage Rebalance Waves"]
@@ -6317,3 +6324,16 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert "DpmWaveClientCommunicationBoundaryEvidence" in openapi["components"]["schemas"]
     assert "DpmWaveCampaignUniverseBoundaryEvidence" in openapi["components"]["schemas"]
     assert "excludes portfolio identifiers" in supportability["description"]
+    campaign_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in campaign_definition["parameters"]
+    }
+    assert campaign_parameters == {
+        "campaign_id": "Manage-owned bulk-review campaign definition identifier.",
+        "campaign_version": "Immutable campaign definition version.",
+    }
+    assignment_parameters = {
+        parameter["name"]: parameter["description"]
+        for parameter in assignment_transition["parameters"]
+    }
+    assert assignment_parameters["task_ref"] == "Stable campaign assignment task reference."
