@@ -3210,3 +3210,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   monitoring router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-117: Monitoring exception queue routes were mixed with run execution
+
+- Date: 2026-05-31
+- Scope: monitoring exception search and exception resolution endpoints.
+- Finding: `src/api/routers/monitoring.py` still mixed operator exception queue reads and
+  resolution mutations with source-backed monitoring run execution. Exception queues own
+  mandate/portfolio/state filtering, bounded pagination, resolution reason capture, and 404
+  mapping for missing exception ids, so they should be isolated from cohort resolution logic.
+- Action: moved monitoring exception route registration into
+  `src/api/routers/monitoring_exception_routes.py`, preserving public paths, response models,
+  Swagger guidance, state filter vocabulary, pagination bounds, repository dependency wiring,
+  cursor response behavior, resolution semantics, and missing-exception 404 mapping.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split source-backed run-once execution from the remaining monitoring router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
