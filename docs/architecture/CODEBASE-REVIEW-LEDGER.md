@@ -1134,3 +1134,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembler class only if repository dependency flow becomes harder to reason about.
 - Wiki decision: no wiki source change required; this is internal search-page modularity cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-016: Portfolio-memory aggregate assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: portfolio-memory aggregate event bounding, supportability state, event-type counts,
+  source-system facets, governance posture, and final memory envelope assembly
+- Finding: `src/core/portfolio_memory/service.py` still mixed repository fan-out with pure
+  read-model aggregate rules after event projection. Dedupe/sort/limit behavior, aggregate
+  supportability, source-system facets, governance evidence, and final memory hash construction are
+  memory-envelope rules and should be directly testable without source repositories.
+- Action: extracted aggregate assembly to `src/core/portfolio_memory/aggregate.py`, leaving the
+  service to collect source events and delegate deterministic memory construction. Added direct
+  aggregate tests for dedupe/sort/limit behavior, source facet projection, governance/boundary
+  evidence, and explicit empty-memory state.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_aggregate.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: continue reviewing repository event collection helpers only where a source-family
+  collector can be split without weakening projection tests or introducing circular dependencies.
+- Wiki decision: no wiki source change required; this is internal aggregate modularity cleanup with
+  no API, supported-feature, or operator-contract change.

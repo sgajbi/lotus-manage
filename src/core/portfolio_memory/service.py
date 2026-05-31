@@ -18,6 +18,9 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemorySearchPage,
     PortfolioMemorySupportabilityState,
 )
+from src.core.portfolio_memory.aggregate import (
+    build_portfolio_memory_aggregate as _build_portfolio_memory_aggregate,
+)
 from src.core.portfolio_memory.campaign_projection import (
     campaign_definition_events as _campaign_definition_events_for_definition,
 )
@@ -30,13 +33,6 @@ from src.core.portfolio_memory.construction_projection import (
 )
 from src.core.portfolio_memory.envelopes import (
     finalize_event_lookup as _finalize_event_lookup,
-    finalize_portfolio_memory as _finalize_portfolio_memory,
-)
-from src.core.portfolio_memory.governance import (
-    client_communication_boundary_evidence as _client_communication_boundary_evidence,
-    external_execution_boundary_evidence as _external_execution_boundary_evidence,
-    portfolio_memory_governance_policy as _portfolio_memory_governance_policy,
-    source_event_family_posture as _source_event_family_posture,
 )
 from src.core.portfolio_memory.mandate_projection import (
     mandate_exception_event as _mandate_exception_event,
@@ -55,18 +51,12 @@ from src.core.portfolio_memory.proof_pack_projection import (
     proof_pack_events as _proof_pack_events,
 )
 from src.core.portfolio_memory.search_filters import (
-    count_values as _counts,
-    dedupe_and_sort_events as _dedupe_and_sort,
-    event_source_systems as _event_source_systems,
     normalize_portfolio_memory_search_filter,
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
-)
-from src.core.portfolio_memory.supportability import (
-    portfolio_memory_state as _memory_state,
 )
 from src.core.portfolio_memory.wave_projection import (
     wave_events as _wave_events,
@@ -179,28 +169,12 @@ def build_portfolio_memory(
             )
         )
 
-    events = _dedupe_and_sort(events)[:limit]
-    event_type_counts = _counts(event.event_type for event in events)
-    reason_codes = sorted({reason for event in events for reason in event.reason_codes})
-    source_systems = sorted(
-        {source_system for event in events for source_system in _event_source_systems(event)}
-    )
-    memory = DpmPortfolioMemory(
+    return _build_portfolio_memory_aggregate(
         portfolio_id=portfolio_id,
-        event_count=len(events),
-        supportability_state=_memory_state(events),
-        event_type_counts=event_type_counts,
-        source_systems=source_systems,
-        reason_codes=reason_codes,
-        governance_policy=_portfolio_memory_governance_policy(),
-        source_event_family_posture=_source_event_family_posture(),
-        external_execution_boundary=_external_execution_boundary_evidence(),
-        client_communication_boundary=_client_communication_boundary_evidence(),
         events=events,
-        content_hash="",
-        generated_at=generated_at.isoformat(),
+        limit=limit,
+        generated_at=generated_at,
     )
-    return _finalize_portfolio_memory(memory)
 
 
 def search_portfolio_memory(
