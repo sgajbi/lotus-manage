@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.api.routers.wave_campaign_definition_http import (
+from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_not_found_http_exception,
 )
 from src.core.waves import DpmBulkReviewCampaignDefinition

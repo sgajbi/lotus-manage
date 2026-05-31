@@ -4368,3 +4368,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   error module when touching those modules for adjacent work.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-170: Campaign action helpers depended on definition response module for error mapping
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_*_http.py` action/evidence helper imports for campaign-definition
+  error mapping.
+- Finding: the extracted approval-decision, assignment-action, assignment-task, maker-checker, and
+  shared action helpers still imported reusable campaign-definition error builders through
+  `wave_campaign_definition_http.py`. That kept action evidence helpers coupled to definition
+  response orchestration after the reusable mapping boundary had been extracted.
+- Action: moved action/evidence helper imports for conflict, validation, and not-found mapping to
+  `src/api/routers/wave_campaign_definition_errors.py` while keeping
+  `get_campaign_definition_or_404()` sourced from `wave_campaign_definition_http.py`. Route behavior,
+  status codes, and response payloads were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: apply the same direct error-module import pattern to launch/read helpers when touching
+  those modules for adjacent work.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from src.api.routers.wave_campaign_action_common import persisted_definition_or_404
-from src.api.routers.wave_campaign_definition_http import (
+from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_value_http_exception,
-    get_campaign_definition_or_404,
 )
+from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest,
 )
