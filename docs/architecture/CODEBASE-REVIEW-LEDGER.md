@@ -3357,3 +3357,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   into separately owned modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-124: Proof-pack generation was mixed with read and handoff routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/proof-packs`.
+- Finding: `src/api/routers/proof_packs.py` mixed the idempotent proof-pack generation command
+  with persisted proof-pack reads, Markdown rendering, and downstream report/AI handoff input
+  routes. Generation owns source selection, required idempotency, rebalance-run versus selected
+  alternative validation, source-backed regime-stress context, handoff reference materialization,
+  and governed service exception mapping.
+- Action: moved generation route registration and response URL assembly into
+  `src/api/routers/proof_pack_generate_routes.py`, preserving public path, response model, Swagger
+  guidance, idempotency and correlation headers, dependency wiring, request validation behavior,
+  service calls, handoff-ref creation, URL fields, and HTTP exception mapping.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split proof-pack lookup/Markdown and downstream handoff input routes from the
+  remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
