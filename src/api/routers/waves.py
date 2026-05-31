@@ -11,7 +11,6 @@ from src.api.dependencies import (
     get_mandate_repository,
     get_outcome_review_repository,
     get_proof_pack_repository,
-    get_risk_authority_client,
     get_wave_repository,
 )
 from src.api.routers.wave_response_contracts import (
@@ -24,7 +23,6 @@ from src.api.routers.wave_response_contracts import (
 )
 from src.api.routers.wave_request_models import (
     DpmWaveSelectionRequest,
-    DpmWaveSimulationRequest,
     DpmWaveWorkflowCommandRequest,
 )
 from src.api.routers.wave_campaign_definition_http import (
@@ -49,6 +47,9 @@ from src.api.routers.wave_create_preview_routes import register_wave_create_prev
 from src.api.routers.wave_source_check_routes import (
     router as source_check_router,
 )
+from src.api.routers.wave_simulation_routes import (
+    router as simulation_router,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
@@ -64,7 +65,6 @@ from src.api.routers.wave_read_http import (
 from src.api.routers.wave_report_input_http import get_wave_report_input_response
 from src.api.routers.wave_search_http import search_waves_response
 from src.api.routers.wave_selection_http import select_wave_item_alternative_response
-from src.api.routers.wave_simulation_http import simulate_wave_response
 from src.api.routers.wave_supportability_http import get_wave_supportability_response
 from src.api.routers.wave_workflow_command_http import run_wave_workflow_command_response
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -80,9 +80,6 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionRepository,
     DpmWaveReportInput,
     DpmWaveRepository,
-)
-from src.infrastructure.risk_authority import (
-    LotusRiskAuthorityClient,
 )
 
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
@@ -269,45 +266,7 @@ def get_wave_items(
 
 
 router.include_router(source_check_router)
-
-
-@router.post(
-    "/{wave_id}/simulate",
-    response_model=DpmWaveResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Generate construction alternatives for source-ready wave items",
-    description=(
-        "Calls the RFC-0039 construction alternative authority for source-ready wave items that "
-        "have caller-supplied construction inputs. Source-blocked, degraded, and review-required "
-        "items are preserved with their reasons. Ready items without construction input become "
-        "`SIMULATION_BLOCKED`; the endpoint does not synthesize portfolio holdings, market data, "
-        "model targets, or shelf data from mandate identifiers."
-    ),
-    responses={
-        200: {"description": "Durable simulated or partially simulated wave."},
-        404: {"description": "Wave not found."},
-        409: {"description": "Wave version conflict during optimistic update."},
-        422: {"description": "Wave is not source-checked or request is invalid."},
-    },
-)
-def simulate_wave(
-    wave_id: WaveIdPath,
-    request: DpmWaveSimulationRequest,
-    x_correlation_id: WaveCorrelationIdHeader = None,
-    construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
-    run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-) -> DpmWaveResponse:
-    return simulate_wave_response(
-        wave_id=wave_id,
-        request=request,
-        correlation_id=x_correlation_id or f"corr_wave_simulate_{wave_id}",
-        construction_repository=construction_repository,
-        run_service=run_service,
-        wave_repository=wave_repository,
-        risk_authority_client=risk_authority_client,
-    )
+router.include_router(simulation_router)
 
 
 @router.post(

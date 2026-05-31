@@ -2136,3 +2136,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   dependencies stay visible and independently testable.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-067: Wave simulation route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave simulation route definition
+- Finding: the simulation command still lived directly in `src/api/routers/waves.py` even though
+  its response handling already lived in `src/api/routers/wave_simulation_http.py`. Simulation has
+  construction repository, risk authority, run-support, and wave repository dependencies, so it is a
+  distinct command boundary from source-check, item selection, and workflow transitions.
+- Action: moved the simulation route into `src/api/routers/wave_simulation_routes.py` and mounted
+  it after source-check, preserving public path order and response contracts. The child router
+  inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract item-selection/proof-pack command routes separately from wave workflow state
+  commands.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
