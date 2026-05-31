@@ -53,3 +53,19 @@ def test_candidate_portfolio_ids_support_optional_repositories() -> None:
     )
 
     assert candidates == [PORTFOLIO_ID]
+
+
+def test_candidate_portfolio_ids_default_optional_repositories_to_empty_sources() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, _mandate_repository = (
+        _repositories()
+    )
+
+    candidates = candidate_portfolio_ids(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        portfolio_ids=None,
+        source_scan_limit=100,
+    )
+
+    assert candidates == [PORTFOLIO_ID]

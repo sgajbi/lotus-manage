@@ -1446,3 +1446,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   public service signatures should remain compatibility facades only.
 - Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-031: Candidate portfolio helper bypassed source repository factory
+
+- Date: 2026-05-31
+- Scope: portfolio-memory candidate discovery dependency construction
+- Finding: the legacy `candidate_portfolio_ids` helper still constructed
+  `PortfolioMemorySourceRepositories` directly and required callers to pass explicit `None` values
+  for optional source families. That left a second dependency-bundle construction path after the
+  factory moved to the source-repository boundary module.
+- Action: updated candidate discovery to use `build_portfolio_memory_source_repositories`, gave the
+  optional source repositories default `None` values, and added a focused test proving required-only
+  direct calls resolve to the same candidate set.
+- Status: hardened
+- Evidence: focused candidate-discovery tests in
+  `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` plus the portfolio-memory API test
+  lane.
+- Follow-up: keep direct helper compatibility paths thin; new source-family dependencies should be
+  introduced through the source-repository factory first.
+- Wiki decision: no wiki source change required; this is internal dependency-construction cleanup
+  with no API, supported-feature, or operator-contract change.

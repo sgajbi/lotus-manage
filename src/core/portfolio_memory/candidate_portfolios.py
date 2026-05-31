@@ -4,7 +4,10 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality.repository import DpmPmQualityScoreRunRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
-from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    build_portfolio_memory_source_repositories,
+)
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
 
@@ -14,14 +17,14 @@ def candidate_portfolio_ids(
     proof_pack_repository: DpmProofPackRepository,
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
-    mandate_repository: DpmMandateRepository | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None,
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None,
     portfolio_ids: list[str] | None,
     source_scan_limit: int,
+    mandate_repository: DpmMandateRepository | None = None,
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None = None,
 ) -> list[str]:
     return candidate_portfolio_ids_from_sources(
-        repositories=PortfolioMemorySourceRepositories(
+        repositories=build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
