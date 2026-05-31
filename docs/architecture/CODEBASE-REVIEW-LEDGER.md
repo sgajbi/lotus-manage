@@ -2569,3 +2569,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability route ownership clarity.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-087: Workflow state routes were still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: read-only workflow state routes by run id, correlation id, and idempotency key.
+- Finding: after extracting workflow decisions, history, and action commands,
+  `src/api/routers/rebalance_runs_workflow_routes.py` still directly owned workflow state route
+  handlers while also acting as the workflow route composition shell. That left one route family in
+  a different ownership style from the rest of the workflow supportability surface.
+- Action: moved workflow state route registration into
+  `src/api/routers/rebalance_runs_workflow_state_routes.py` and reduced
+  `rebalance_runs_workflow_routes.py` to explicit composition imports for state, action, and
+  history route modules, preserving public paths, response models, Swagger metadata, feature
+  gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the supportability root composition module for service-factory and route-order
+  readability once the async-operation module has the same ownership clarity.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
