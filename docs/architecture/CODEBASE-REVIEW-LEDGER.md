@@ -815,3 +815,52 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   until a stable tactical house-view workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-001: Portfolio-memory governance and state mapping lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, portfolio-memory governance posture, unsupported
+  external execution/client-communication boundary evidence, supportability-state mapping
+- Finding: portfolio-memory read-model orchestration mixed repository fan-out and event projection
+  with static governance policy, source-event family posture, unsupported-boundary evidence, and
+  state-mapping helpers. The behavior was correct, but the service file had grown past 2,200 lines
+  and made portfolio-memory source boundaries harder to review independently from aggregation
+  orchestration.
+- Action: extracted governance and boundary evidence into
+  `src/core/portfolio_memory/governance.py`, extracted supportability-state mapping into
+  `src/core/portfolio_memory/supportability.py`, preserved existing service helper aliases for
+  compatibility with focused tests, and added direct unit coverage for no-raw-payload governance,
+  unsupported external execution/client-communication claims, supported/deferred source-event
+  family posture, and fail-closed state mapping.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_governance_supportability.py`;
+  existing portfolio-memory API tests remain the behavior-preserving regression scope for the
+  service facade.
+- Follow-up: continue decomposing `portfolio_memory/service.py` by source-event family only when
+  each extraction can preserve lineage, content-hash, and no-unsupported-claim behavior with
+  focused tests.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-002: Portfolio-memory source-reference projection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, proof-pack, wave, campaign, outcome-review, and
+  mandate source-reference projection helpers
+- Finding: portfolio-memory source-reference projection helpers were embedded in the read-model
+  service next to repository fan-out and event aggregation. These mappers preserve source-owned
+  identity, supportability state, content hashes, and fallback identity behavior, so keeping them
+  inside service orchestration made lineage behavior harder to test directly and contributed to
+  monolithic service growth.
+- Action: extracted the pure source-reference projection helpers into
+  `src/core/portfolio_memory/source_refs.py`, kept service-level aliases for behavior-preserving
+  compatibility, and added direct tests for proof-pack, wave, outcome, mandate lineage, fallback
+  source identity, and proof-pack source-ref dedupe/sort behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_refs.py`; existing
+  portfolio-memory, proof-pack, and wave API tests remain the downstream regression scope for
+  event projection behavior.
+- Follow-up: continue decomposing event-family builders only when source lineage, artifact refs,
+  and content-hash semantics can be pinned independently.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
