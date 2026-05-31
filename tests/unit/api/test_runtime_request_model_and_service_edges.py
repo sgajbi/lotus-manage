@@ -5,6 +5,7 @@ import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
 
+import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_simulation_service as service
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
@@ -255,6 +256,22 @@ def test_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
     assert service.env_float("DPM_TEST_MISSING", 2.5) == 2.5
     with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_RESOLVER_UNAVAILABLE"):
         service.build_core_resolver_client()
+
+
+def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> None:
+    monkeypatch.setenv("DPM_CORE_BASE_URL", "http://lotus-core.test")
+    monkeypatch.setenv("DPM_CORE_QUERY_BASE_URL", "http://lotus-core-query.test")
+    monkeypatch.setenv("DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS", "30")
+    monkeypatch.setenv("DPM_CORE_RESOLVER_TIMEOUT_SECONDS", "3.5")
+    monkeypatch.setenv("DPM_CORE_RESOLVER_MAX_ATTEMPTS", "4")
+
+    resolver = core_resolver_service.build_core_resolver_client()
+
+    assert resolver._config.base_url == "http://lotus-core.test"
+    assert resolver._config.query_base_url == "http://lotus-core-query.test"
+    assert resolver._config.transaction_cost_lookback_days == 30
+    assert resolver._config.timeout_seconds == 3.5
+    assert resolver._config.max_attempts == 4
 
 
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:

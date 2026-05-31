@@ -56,7 +56,7 @@ from src.api.routers.wave_read_routes import register_wave_read_routes
 from src.api.routers.wave_read_support_routes import (
     router as wave_read_support_router,
 )
-from src.api.services.rebalance_simulation_service import build_core_resolver_client
+from src.api.services.core_resolver_service import build_core_resolver_client
 
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 

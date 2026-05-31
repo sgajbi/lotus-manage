@@ -5789,3 +5789,35 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   application logic.
 - Wiki decision: no wiki source change required; this is internal configuration-boundary
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-230: Core resolver construction service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/core_resolver_service.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  core-resolver-consuming routers for mandates, monitoring, PM operating quality, and waves, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned DPM core resolver client construction and
+  source-sourcing environment parsing even though mandate refresh, monitoring, PM operating
+  quality, wave preview, and campaign launch routes also consumed that capability. This made a
+  rebalance orchestration module the de facto owner of cross-domain core integration plumbing.
+- Action: extracted core resolver client construction and DPM core resolver environment parsing
+  into `core_resolver_service.py`, updated consuming routers to import the resolver factory from
+  that module, and kept compatibility exports in `rebalance_simulation_service.py` for existing
+  stateful envelope tests and callers. Public routes, OpenAPI output, resolver defaults, timeout
+  and retry semantics, and stateful source-resolution behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge, rebalance API, mandate API, monitoring API, PM
+  operating quality API, and waves API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, `tests/unit/dpm/api/test_mandates_api.py`,
+  `tests/unit/dpm/api/test_monitoring_api.py`,
+  `tests/unit/api/test_pm_operating_quality_api.py`, and
+  `tests/unit/dpm/api/test_waves_api.py`), focused Ruff checks, focused mypy over the resolver
+  service and consuming routers, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: move stateful envelope resolution itself out of `rebalance_simulation_service.py` in a
+  later slice once the compatibility path for existing tests and main-module overrides is narrowed.
+- Wiki decision: no wiki source change required; this is internal integration-helper modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

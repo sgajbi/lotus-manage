@@ -27,7 +27,7 @@ from src.api.routers.pm_operating_quality_score_run_routes import (
     register_pm_quality_score_run_read_routes,
 )
 from src.api.routers.pm_operating_quality_summary_routes import router as summary_router
-from src.api.services.rebalance_simulation_service import build_core_resolver_client
+from src.api.services.core_resolver_service import build_core_resolver_client
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
