@@ -1467,6 +1467,15 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert "requestBody" in operation
     assert "200" in operation["responses"]
     assert "compensation" in operation["description"]
+    correlation_header = next(
+        parameter
+        for parameter in operation["parameters"]
+        if parameter["name"] == "x-correlation-id" and parameter["in"] == "header"
+    )
+    assert (
+        correlation_header["description"]
+        == "Optional correlation id for PM operating quality audit, supportability, and downstream governance traceability."
+    )
 
     create_path = "/api/v1/rebalance/pm-operating-quality/score-runs"
     get_path = "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}"

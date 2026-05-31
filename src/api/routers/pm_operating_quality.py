@@ -3,8 +3,11 @@ from __future__ import annotations
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
+from src.api.routers.pm_operating_quality_route_parameters import (
+    PmQualityCorrelationIdHeader,
+)
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityPmBookScopeRequest,
     DpmPmOperatingQualityPolicyListResponse,
@@ -96,10 +99,7 @@ router = APIRouter(
 )
 def preview_pm_operating_quality_score_run_endpoint(
     request: DpmPmOperatingQualityScorePreviewRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-001"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
 ) -> DpmPmOperatingQualityScorePreviewResponse:
@@ -130,10 +130,7 @@ def preview_pm_operating_quality_score_run_endpoint(
 )
 def create_pm_operating_quality_score_run_endpoint(
     request: DpmPmOperatingQualityScorePreviewRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-001"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
@@ -176,10 +173,7 @@ def create_pm_operating_quality_score_run_endpoint(
 )
 def preview_pm_quality_fairness_analysis_endpoint(
     request: DpmPmQualityFairnessPreviewRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-fairness-001"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     repository: DpmPmQualityScoreRunRepository = Depends(get_pm_quality_score_run_repository),
 ) -> DpmPmQualityFairnessPreviewResponse:
     fairness_analysis = _build_fairness_analysis(
@@ -208,10 +202,7 @@ def preview_pm_quality_fairness_analysis_endpoint(
 )
 def create_pm_quality_fairness_analysis_endpoint(
     request: DpmPmQualityFairnessPreviewRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-fairness-create"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
@@ -320,10 +311,7 @@ def get_pm_quality_fairness_analysis_endpoint(
 )
 def preview_pm_quality_review_action_endpoint(
     request: DpmPmQualityReviewActionRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-review-001"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
@@ -358,10 +346,7 @@ def preview_pm_quality_review_action_endpoint(
 )
 def create_pm_quality_review_action_endpoint(
     request: DpmPmQualityReviewActionRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-review-create"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
@@ -485,10 +470,7 @@ def get_pm_quality_review_action_endpoint(
 )
 def preview_pm_quality_summary_invocation_endpoint(
     request: DpmPmQualitySummaryInvocationRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-summary-preview"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),
@@ -522,10 +504,7 @@ def preview_pm_quality_summary_invocation_endpoint(
 )
 def create_pm_quality_summary_invocation_endpoint(
     request: DpmPmQualitySummaryInvocationRequest,
-    x_correlation_id: Annotated[
-        str | None,
-        Header(description="Optional correlation id.", examples=["corr-pmq-summary-create"]),
-    ] = None,
+    x_correlation_id: PmQualityCorrelationIdHeader = None,
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
     ),

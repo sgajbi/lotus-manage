@@ -2262,3 +2262,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and consider a lightweight route-registration convention once the split has stabilized.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-073: PM operating quality correlation header metadata was duplicated
+
+- Date: 2026-05-31
+- Scope: PM operating quality command endpoints for score runs, fairness analyses, review actions,
+  and summary invocations.
+- Finding: eight command routes repeated route-local `X-Correlation-Id` header metadata. The
+  correlation id is an audit, supportability, and downstream governance traceability contract, so
+  repeated local Swagger descriptions could drift across PM operating quality command endpoints.
+- Action: added the shared `PmQualityCorrelationIdHeader` route parameter contract and applied it
+  across PM operating quality command routes. The PM operating quality OpenAPI regression now pins
+  the governed header description, and the API vocabulary inventory was regenerated to reflect the
+  updated Swagger-visible contract.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift after regeneration.
+- Follow-up: continue extracting PM operating quality route groups by lifecycle boundary once
+  shared route parameter contracts are stable.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for existing routes with no behavior, payload, supported-feature, or
+  operator-contract change.
