@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from src.api.routers.wave_campaign_definition_http import (
+from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_launch_blocked_http_exception,
-    get_campaign_definition_or_404,
 )
+from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionLaunchRequest
 from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_portfolio_resolution import resolve_portfolio_inputs_for_request

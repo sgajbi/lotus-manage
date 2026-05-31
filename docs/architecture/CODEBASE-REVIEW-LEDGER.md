@@ -4391,3 +4391,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   those modules for adjacent work.
 - Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-171: Campaign launch/read helpers imported error mapping through definition responses
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_launch_http.py`, `src/api/routers/wave_campaign_read_http.py`, and
+  `src/api/routers/wave_campaign_read_model_query.py`.
+- Finding: launch and read-model helpers still imported campaign-definition conflict,
+  launch-blocked, and discovery-date parsing through `wave_campaign_definition_http.py`. That kept
+  read/launch helpers coupled to definition response orchestration for reusable mapping utilities.
+- Action: moved those imports to `src/api/routers/wave_campaign_definition_errors.py` while keeping
+  `get_campaign_definition_or_404()` sourced from the definition response helper. Launch error
+  mapping, discovery-date validation, read-model query behavior, and route contracts were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_definition_http.py` as the definition response/lookup helper
+  boundary and use `wave_campaign_definition_errors.py` for reusable HTTP mapping in new helpers.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

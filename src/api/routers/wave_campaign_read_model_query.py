@@ -3,7 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 
-from src.api.routers.wave_campaign_definition_http import parse_optional_campaign_discovery_date
+from src.api.routers.wave_campaign_definition_errors import (
+    parse_optional_campaign_discovery_date,
+)
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionRepository,
