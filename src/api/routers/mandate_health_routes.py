@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import get_mandate_repository
-from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
+from src.api.routers.mandate_http import (
+    mandate_source_incomplete_http_exception,
+    read_mandate_with_not_found_http_mapping,
+)
 from src.api.routers.mandates import router
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
@@ -64,4 +67,4 @@ async def recalculate_health(
             health_input=request,
         )
     except DpmMandateSourceIncompleteError as exc:
-        raise HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY, detail=str(exc)) from exc
+        raise mandate_source_incomplete_http_exception(exc) from exc

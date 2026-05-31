@@ -8,6 +8,7 @@ from fastapi import HTTPException, status
 from src.api.services.mandate_service import (
     DpmMandateHealthNotFoundError,
     DpmMandateNotFoundError,
+    DpmMandateSourceIncompleteError,
     DpmMonitoringRunNotFoundError,
 )
 
@@ -28,3 +29,12 @@ def read_mandate_with_not_found_http_mapping(
         return read_mandate()
     except _MANDATE_NOT_FOUND_ERRORS as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+def mandate_source_incomplete_http_exception(
+    exc: DpmMandateSourceIncompleteError,
+) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_424_FAILED_DEPENDENCY,
+        detail=str(exc),
+    )

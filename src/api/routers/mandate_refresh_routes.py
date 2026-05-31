@@ -10,6 +10,7 @@ from src.api.routers.mandate_models import (
     DpmMandateRefreshFromCoreRequest,
     DpmMandateRefreshFromCoreResponse,
 )
+from src.api.routers.mandate_http import mandate_source_incomplete_http_exception
 from src.api.routers.mandates import get_core_resolver_client, router
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
@@ -96,8 +97,5 @@ async def refresh_mandate(
             detail=str(exc),
         ) from exc
     except DpmMandateSourceIncompleteError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail=str(exc),
-        ) from exc
+        raise mandate_source_incomplete_http_exception(exc) from exc
     return DpmMandateRefreshFromCoreResponse.from_result(result)

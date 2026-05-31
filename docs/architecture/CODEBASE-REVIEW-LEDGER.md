@@ -5295,3 +5295,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   after the not-found mapping has settled.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-212: Mandate source-incomplete routes repeated 424 mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/mandate_http.py`, `src/api/routers/mandate_health_routes.py`, and
+  `src/api/routers/mandate_refresh_routes.py`.
+- Finding: mandate health recalculation and refresh-from-core routes repeated identical
+  `DpmMandateSourceIncompleteError` to `424 Failed Dependency` HTTP mapping with string detail.
+  PM-book monitoring kept a separate structured code payload and was intentionally left outside
+  this helper.
+- Action: added `mandate_source_incomplete_http_exception()` to the mandate HTTP helper and reused
+  it from the two matching route branches. Public paths, response models, OpenAPI output,
+  source-unavailable `503` behavior, and existing `424` detail strings were preserved.
+- Status: hardened
+- Evidence: mandate and monitoring API regressions
+  (`tests/unit/dpm/api/test_mandates_api.py` and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep structured PM-book source-readiness failures explicit until a broader
+  source-dependency error envelope is introduced.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
