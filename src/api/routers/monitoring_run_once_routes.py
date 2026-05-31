@@ -4,9 +4,9 @@ from fastapi import Depends, HTTPException, status
 
 from src.api.dependencies import get_mandate_repository
 from src.api.routers import monitoring as monitoring_router
+from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
 from src.api.services.mandate_service import (
-    DpmMandateNotFoundError,
     DpmMandateSourceIncompleteError,
     mandate_ids_from_pm_book_membership,
     run_mandate_monitoring_once,
@@ -115,23 +115,33 @@ async def run_once(
         if membership.source_batch_fingerprint:
             source_filters["source_content_hash"] = membership.source_batch_fingerprint
 
-    try:
-        return run_mandate_monitoring_once(
+    return read_mandate_with_not_found_http_mapping(
+        lambda: run_mandate_monitoring_once(
             repository=repository,
             mandate_ids=mandate_ids,
             as_of_date=request.as_of_date,
-            filters={
-                key: value
-                for key, value in {
-                    "tenant_id": request.tenant_id,
-                    "portfolio_manager_id": request.portfolio_manager_id,
-                    "book_id": request.book_id,
-                    "booking_center_code": request.booking_center_code,
-                    "requested_by": request.requested_by,
-                    **source_filters,
-                }.items()
-                if value is not None
-            },
+            filters=_monitoring_run_filters(
+                request=request,
+                source_filters=source_filters,
+            ),
         )
-    except DpmMandateNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    )
+
+
+def _monitoring_run_filters(
+    *,
+    request: DpmMonitoringRunOnceRequest,
+    source_filters: dict[str, str],
+) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in {
+            "tenant_id": request.tenant_id,
+            "portfolio_manager_id": request.portfolio_manager_id,
+            "book_id": request.book_id,
+            "booking_center_code": request.booking_center_code,
+            "requested_by": request.requested_by,
+            **source_filters,
+        }.items()
+        if value is not None
+    }

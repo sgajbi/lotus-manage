@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, Query
 
 from src.api.dependencies import get_mandate_repository
+from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.monitoring import router
 from src.api.routers.monitoring_models import (
     DpmMonitoringExceptionPage,
     DpmMonitoringExceptionResolveRequest,
 )
 from src.api.services.mandate_service import (
-    DpmMandateNotFoundError,
     list_monitoring_exceptions,
     resolve_monitoring_exception,
 )
@@ -70,11 +70,10 @@ async def resolve_exception(
     request: DpmMonitoringExceptionResolveRequest,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringException:
-    try:
-        return resolve_monitoring_exception(
+    return read_mandate_with_not_found_http_mapping(
+        lambda: resolve_monitoring_exception(
             repository=repository,
             exception_id=exception_id,
             resolution_reason=request.resolution_reason,
         )
-    except DpmMandateNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    )

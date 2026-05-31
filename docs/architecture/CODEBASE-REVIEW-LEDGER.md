@@ -5267,3 +5267,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   conflict workflow outcomes, not only run-not-found lookup behavior.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-211: Mandate and monitoring routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/mandate_http.py`, `src/api/routers/mandate_read_routes.py`,
+  `src/api/routers/mandate_health_routes.py`,
+  `src/api/routers/monitoring_exception_routes.py`,
+  `src/api/routers/monitoring_run_read_routes.py`, and
+  `src/api/routers/monitoring_run_once_routes.py`.
+- Finding: mandate read, mandate health, monitoring run read, monitoring exception resolution,
+  and monitoring run-once routes repeated the same domain not-found to `404` HTTP mapping. The
+  repeated branches made mandate supportability routes more verbose and raised drift risk for
+  future DPM command-center surfaces.
+- Action: introduced `read_mandate_with_not_found_http_mapping()` and routed the not-found read
+  and command service calls through it. Public paths, response models, source-readiness handling,
+  OpenAPI output, and `404` detail behavior were preserved. The run-once filter assembly was moved
+  into a small helper so the route body stays focused on selector validation and service
+  invocation.
+- Status: hardened
+- Evidence: mandate and monitoring API regressions
+  (`tests/unit/dpm/api/test_mandates_api.py` and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect mandate source-incomplete `424` handling for possible shared helper reuse
+  after the not-found mapping has settled.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

@@ -3,9 +3,9 @@ from __future__ import annotations
 from fastapi import Depends, HTTPException, status
 
 from src.api.dependencies import get_mandate_repository
+from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.mandates import router
 from src.api.services.mandate_service import (
-    DpmMandateHealthNotFoundError,
     DpmMandateSourceIncompleteError,
     get_latest_mandate_health,
     recalculate_mandate_health,
@@ -32,10 +32,9 @@ async def read_mandate_health(
     mandate_id: str,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateHealthSnapshot:
-    try:
-        return get_latest_mandate_health(repository=repository, mandate_id=mandate_id)
-    except DpmMandateHealthNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_mandate_with_not_found_http_mapping(
+        lambda: get_latest_mandate_health(repository=repository, mandate_id=mandate_id)
+    )
 
 
 @router.post(

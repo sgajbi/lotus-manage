@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from fastapi import Depends, HTTPException, Query, status
+from fastapi import Depends, Query
 
 from src.api.dependencies import get_mandate_repository
+from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.monitoring import router
 from src.api.routers.monitoring_models import DpmMonitoringRunPage
 from src.api.services.mandate_service import (
-    DpmMonitoringRunNotFoundError,
     get_monitoring_run,
     list_monitoring_runs,
 )
@@ -56,7 +56,9 @@ async def read_monitoring_run(
     monitoring_run_id: str,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMonitoringRun:
-    try:
-        return get_monitoring_run(repository=repository, monitoring_run_id=monitoring_run_id)
-    except DpmMonitoringRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_mandate_with_not_found_http_mapping(
+        lambda: get_monitoring_run(
+            repository=repository,
+            monitoring_run_id=monitoring_run_id,
+        )
+    )

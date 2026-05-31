@@ -5,12 +5,12 @@ from typing import Optional
 from fastapi import Depends, HTTPException, Query, status
 
 from src.api.dependencies import get_mandate_repository
+from src.api.routers.mandate_http import read_mandate_with_not_found_http_mapping
 from src.api.routers.mandate_models import MANDATE_RESPONSE_EXAMPLE
 from src.api.routers.mandates import router
 from src.api.services.mandate_service import (
     DpmMandateDiff,
     DpmMandateDiffUnavailableError,
-    DpmMandateNotFoundError,
     diff_mandate_versions,
     get_latest_mandate,
     get_latest_mandate_by_portfolio,
@@ -18,10 +18,6 @@ from src.api.services.mandate_service import (
 )
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateDigitalTwin
-
-
-def _not_found(exc: DpmMandateNotFoundError) -> HTTPException:
-    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 @router.get(
@@ -45,10 +41,12 @@ async def read_mandate_by_portfolio(
     portfolio_id: str,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateDigitalTwin:
-    try:
-        return get_latest_mandate_by_portfolio(repository=repository, portfolio_id=portfolio_id)
-    except DpmMandateNotFoundError as exc:
-        raise _not_found(exc) from exc
+    return read_mandate_with_not_found_http_mapping(
+        lambda: get_latest_mandate_by_portfolio(
+            repository=repository,
+            portfolio_id=portfolio_id,
+        )
+    )
 
 
 @router.get(
@@ -72,10 +70,9 @@ async def read_mandate(
     mandate_id: str,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateDigitalTwin:
-    try:
-        return get_latest_mandate(repository=repository, mandate_id=mandate_id)
-    except DpmMandateNotFoundError as exc:
-        raise _not_found(exc) from exc
+    return read_mandate_with_not_found_http_mapping(
+        lambda: get_latest_mandate(repository=repository, mandate_id=mandate_id)
+    )
 
 
 @router.get(
@@ -99,10 +96,9 @@ async def read_mandate_versions(
     mandate_id: str,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> list[DpmMandateDigitalTwin]:
-    try:
-        return list_mandate_versions(repository=repository, mandate_id=mandate_id)
-    except DpmMandateNotFoundError as exc:
-        raise _not_found(exc) from exc
+    return read_mandate_with_not_found_http_mapping(
+        lambda: list_mandate_versions(repository=repository, mandate_id=mandate_id)
+    )
 
 
 @router.get(
@@ -155,13 +151,13 @@ async def read_mandate_diff(
     repository: DpmMandateRepository = Depends(get_mandate_repository),
 ) -> DpmMandateDiff:
     try:
-        return diff_mandate_versions(
-            repository=repository,
-            mandate_id=mandate_id,
-            from_version=from_version,
-            to_version=to_version,
+        return read_mandate_with_not_found_http_mapping(
+            lambda: diff_mandate_versions(
+                repository=repository,
+                mandate_id=mandate_id,
+                from_version=from_version,
+                to_version=to_version,
+            )
         )
-    except DpmMandateNotFoundError as exc:
-        raise _not_found(exc) from exc
     except DpmMandateDiffUnavailableError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
