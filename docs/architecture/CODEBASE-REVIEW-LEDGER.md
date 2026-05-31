@@ -3446,3 +3446,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   portfolio-memory router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-128: Portfolio-memory event lookup was mixed with detail reads
+
+- Date: 2026-05-31
+- Scope: exact portfolio-memory event lookup route.
+- Finding: after extracting search, `src/api/routers/portfolio_memory.py` still mixed exact event
+  lookup with detail timeline assembly and source repository dependency wiring. Event lookup owns
+  a distinct drill-down contract: bounded scan, exact event id matching, content-hash
+  reconciliation, and a detailed not-found diagnostic that reports the scanned event count.
+- Action: moved exact event lookup route registration into
+  `src/api/routers/portfolio_memory_event_routes.py`, preserving public path, response model,
+  Swagger guidance, path/query parameter metadata, source repository dependency wiring, support
+  boundary text, lookup behavior, and 404 diagnostic shape.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split portfolio-memory detail timeline read from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
