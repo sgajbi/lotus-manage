@@ -2613,3 +2613,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   operations shell mirrors the workflow route composition pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-089: Async operation inventory route still lived in the operations shell
+
+- Date: 2026-05-31
+- Scope: async operation list route with creation-window, type, status, correlation, and cursor
+  filters.
+- Finding: after point lookup extraction, `src/api/routers/rebalance_runs_operations_routes.py`
+  still directly owned the async operation list endpoint while also acting as the route composition
+  shell. The list endpoint has the query-heavy filter and pagination contract, so keeping it in the
+  shell left async-operation route ownership inconsistent with the workflow route pattern.
+- Action: moved async operation list route registration into
+  `src/api/routers/rebalance_runs_async_operation_inventory_routes.py` and reduced
+  `rebalance_runs_operations_routes.py` to explicit composition imports for inventory and lookup
+  route modules, preserving public path, response model, Swagger metadata, query filters,
+  unsupported-query rejection, supportability and async-operation feature gates, and pagination
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "async_operation"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the supportability root module for naming and composition readability now that
+  workflow and async-operation route families follow the same shell-plus-owned-module pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
