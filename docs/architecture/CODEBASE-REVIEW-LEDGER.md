@@ -5123,3 +5123,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   functions for compatibility.
 - Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-205: Rebalance workflow action routes duplicated HTTP mapping and metrics
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_workflow_action_routes.py` and
+  `src/api/routers/rebalance_runs_workflow_action_http.py`.
+- Finding: the run-id, correlation-id, and idempotency-key workflow action routes repeated the same
+  success metric, not-found mapping, disabled mapping, and conflict mapping. That duplicated
+  operational behavior across three command routes and increased drift risk for future workflow
+  action changes.
+- Action: extracted the shared workflow-action metric and HTTP exception mapping into
+  `apply_workflow_action_with_http_mapping()` and kept each route focused on request validation,
+  handle resolution, and service invocation. Public paths, request/response models, OpenAPI output,
+  unsupported-query rejection, correlation-id fallback behavior, metric labels, disabled/not-found
+  `404` mapping, and conflict `409` mapping were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: inspect remaining high-traffic command routes for duplicated HTTP mapping before
+  adding new workflow behavior.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
