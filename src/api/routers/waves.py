@@ -9,8 +9,17 @@ from src.api.routers.wave_campaign_definition_routes import (
 from src.api.routers.wave_campaign_definition_lifecycle_routes import (
     router as campaign_definition_lifecycle_router,
 )
-from src.api.routers.wave_campaign_evidence_routes import (
-    router as campaign_evidence_router,
+from src.api.routers.wave_campaign_approval_decision_evidence_routes import (
+    router as campaign_approval_decision_router,
+)
+from src.api.routers.wave_campaign_assignment_action_evidence_routes import (
+    router as campaign_assignment_action_router,
+)
+from src.api.routers.wave_campaign_assignment_task_evidence_routes import (
+    router as campaign_assignment_task_router,
+)
+from src.api.routers.wave_campaign_maker_checker_evidence_routes import (
+    router as campaign_maker_checker_router,
 )
 from src.api.routers.wave_campaign_launch_routes import (
     router as campaign_launch_router,
@@ -55,7 +64,10 @@ router.include_router(campaign_definition_router)
 router.include_router(campaign_definition_lifecycle_router)
 router.include_router(campaign_read_model_router)
 router.include_router(campaign_definition_detail_router)
-router.include_router(campaign_evidence_router)
+router.include_router(campaign_approval_decision_router)
+router.include_router(campaign_assignment_action_router)
+router.include_router(campaign_assignment_task_router)
+router.include_router(campaign_maker_checker_router)
 router.include_router(campaign_audit_read_router)
 router.include_router(campaign_workflow_overview_router)
 router.include_router(campaign_readiness_router)

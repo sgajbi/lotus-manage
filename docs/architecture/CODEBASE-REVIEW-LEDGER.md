@@ -4839,3 +4839,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior or reusable route grouping.
 - Wiki decision: no wiki source change required; this is internal route registration cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-191: Wave campaign evidence composition route only included leaf routers
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/waves.py` and `src/api/routers/wave_campaign_evidence_routes.py`.
+- Finding: after approval-decision, assignment-action, assignment-task, and maker-checker evidence
+  routes were split, the campaign evidence route module only grouped those leaf routers. Keeping an
+  extra aggregator made the campaign route registration less direct without owning behavior.
+- Action: registered campaign evidence leaf routers directly from the parent wave router and
+  removed the obsolete aggregation module. Public paths, route ordering, response models, OpenAPI
+  output, evidence persistence semantics, and maker-checker behavior were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep wave campaign route registration direct unless a grouping module owns real
+  behavior or reusable route policy.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
