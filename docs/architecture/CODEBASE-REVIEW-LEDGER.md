@@ -2896,3 +2896,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   outcome-review routes.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-102: Outcome-review create command was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: durable outcome-review creation endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed immutable review creation with search,
+  lookup, supportability, source refresh, report, AI evidence, run lookup, and wave lookup routes.
+  Creation owns idempotency, conflict handling, persistence, correlation fallback, and
+  supportability metric emission, so it should have a focused command-route owner.
+- Action: moved create route registration into `src/api/routers/outcome_review_create_routes.py`,
+  preserving public path, response model, Swagger guidance, idempotency header metadata,
+  correlation-id behavior, validation and conflict error mapping, persistence dependency, and
+  supportability metrics.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split source-refresh command handling from read/supportability/handoff routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
