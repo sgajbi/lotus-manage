@@ -20,8 +20,8 @@ from src.core.portfolio_memory.models import (
 from src.core.portfolio_memory.aggregate import (
     build_portfolio_memory_aggregate as _build_portfolio_memory_aggregate,
 )
-from src.core.portfolio_memory.campaign_projection import (
-    campaign_definition_events as _campaign_definition_events_for_definition,
+from src.core.portfolio_memory.campaign_collection import (
+    campaign_definition_memory_events as _campaign_definition_memory_events,
 )
 from src.core.portfolio_memory.candidate_portfolios import (
     candidate_portfolio_ids as _candidate_portfolio_ids,
@@ -110,7 +110,7 @@ def build_portfolio_memory(
 
     if campaign_definition_repository is not None:
         events.extend(
-            _campaign_definition_events(
+            _campaign_definition_memory_events(
                 portfolio_id=portfolio_id,
                 campaign_definition_repository=campaign_definition_repository,
                 limit=limit,
@@ -230,28 +230,6 @@ def search_portfolio_memory(
         offset=offset,
         generated_at=generated_at.isoformat(),
     )
-
-
-def _campaign_definition_events(
-    *,
-    portfolio_id: str,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    definitions = [
-        definition
-        for definition in campaign_definition_repository.list_definitions(limit=limit)
-        if any(candidate.portfolio_id == portfolio_id for candidate in definition.candidates)
-    ]
-    events: list[DpmPortfolioMemoryEvent] = []
-    for definition in definitions:
-        events.extend(
-            _campaign_definition_events_for_definition(
-                definition=definition,
-                portfolio_id=portfolio_id,
-            )
-        )
-    return events
 
 
 def _waves_for_portfolio(

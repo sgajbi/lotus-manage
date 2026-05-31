@@ -1240,3 +1240,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-family tests before considering a broader service orchestration abstraction.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-021: Campaign memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned campaign definition listing,
+  candidate membership filtering, and campaign memory event projection. That kept campaign workflow
+  source-family collection in the top-level memory service instead of beside campaign projection,
+  and left the non-matching candidate filter without direct source-family tests.
+- Action: extracted campaign collection to `src/core/portfolio_memory/campaign_collection.py` and
+  updated the service to delegate campaign workflow memory collection. Added focused tests proving
+  matching campaign workflow event projection and skipping definitions whose candidates do not
+  contain the requested portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_campaign_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: extract the remaining wave repository-family collector, then review whether
+  `service.py` should keep direct proof-pack/outcome repository traversal or move to explicit
+  source collectors.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
