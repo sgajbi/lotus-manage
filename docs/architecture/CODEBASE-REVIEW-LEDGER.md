@@ -3680,3 +3680,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-139: Async batch acceptance was mixed with manual execution
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/analyze/async`.
+- Finding: after extracting simulation and synchronous analysis routes, the rebalance simulation
+  router still mixed async batch acceptance with manual pending-operation execution. Async
+  acceptance owns `202 Accepted`, polling-handle semantics, correlation response headers,
+  conflict examples, and policy-pack header propagation for deferred scenario analysis.
+- Action: moved asynchronous batch-analysis route registration into
+  `src/api/routers/rebalance_simulation_async_routes.py`, preserving public path, response model,
+  Swagger guidance, `X-Correlation-Id` response header, header metadata, request field metadata,
+  source-envelope resolution, service call arguments, compatibility import from `src/api/main.py`,
+  and route registration order.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split manual pending-operation execution from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
