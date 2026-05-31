@@ -4099,3 +4099,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   controller-owned orchestration.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-158: PM quality fairness route mixed command and read endpoints
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses` and
+  `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`.
+- Finding: `src/api/routers/pm_operating_quality_fairness_routes.py` mixed preview/create command
+  endpoints, persisted read endpoints, and fairness-analysis construction. The read side owns
+  policy/date/state filters, pagination, immutable lookup, and not-found mapping, while preview and
+  create own cross-segment command construction and conflict-safe persistence.
+- Action: moved fairness-analysis list/get route registration into
+  `src/api/routers/pm_operating_quality_fairness_read_routes.py` and included it after the
+  preview/create routes from `pm_operating_quality_fairness_routes.py`. Public paths, response
+  models, Swagger guidance, query parameters, pagination bounds, repository dependency wiring,
+  not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: extract fairness-analysis command construction from the remaining fairness command
+  route module.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
