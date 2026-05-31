@@ -3701,3 +3701,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split manual pending-operation execution from the remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-140: Manual async operation execution was owned by the route shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/operations/{operation_id}/execute`.
+- Finding: after extracting simulation, synchronous analysis, and async acceptance, the rebalance
+  simulation router still owned manual pending-operation execution while also acting as the route
+  registration shell. Manual execution owns run-support service dependency wiring, pending-state
+  execution semantics, and terminal operation status response mapping.
+- Action: moved manual async operation execution route registration into
+  `src/api/routers/rebalance_simulation_operation_routes.py` and reduced
+  `rebalance_simulation.py` to router construction plus explicit route-module imports and
+  compatibility handler re-exports used by `src/api/main.py`. Public path, response model, Swagger
+  guidance, path metadata, service dependency, service call, and route order were preserved.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the next large route surface after checking branch commit count against the PR
+  target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
