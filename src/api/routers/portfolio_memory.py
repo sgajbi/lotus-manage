@@ -1,6 +1,6 @@
 """API routes for RFC-0040 portfolio memory."""
 
-from typing import Annotated
+from typing import Annotated, NoReturn
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
@@ -109,6 +109,13 @@ def get_portfolio_memory_source_repositories(
     )
 
 
+def _raise_portfolio_memory_search_validation_error(exc: ValueError) -> NoReturn:
+    raise HTTPException(
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail=str(exc),
+    ) from exc
+
+
 @router.get(
     "/search",
     response_model=DpmPortfolioMemorySearchPage,
@@ -200,10 +207,7 @@ def search_portfolio_memory_index(
             supportability_state
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
+        _raise_portfolio_memory_search_validation_error(exc)
     try:
         return search_portfolio_memory_from_sources(
             repositories=repositories,
@@ -217,10 +221,7 @@ def search_portfolio_memory_index(
             source_scan_limit=source_scan_limit,
         )
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
+        _raise_portfolio_memory_search_validation_error(exc)
 
 
 @router.get(

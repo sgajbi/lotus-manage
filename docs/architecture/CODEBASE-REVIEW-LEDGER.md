@@ -1731,3 +1731,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   per-portfolio memory assembly.
 - Wiki decision: no wiki source change required; this is defensive request-boundary hardening with
   no route, payload-shape, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-047: Search route duplicated validation-error translation
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search API error handling
+- Finding: after moving search validation into the request-normalization layer, the API route had
+  repeated `ValueError` to HTTP 422 translation blocks for vocabulary checks and service request
+  normalization.
+- Action: extracted a small route-local helper for portfolio-memory search validation errors so the
+  controller has one consistent mapping for request-boundary failures.
+- Status: hardened
+- Evidence: focused portfolio-memory API tests covering unsupported event type and excessive
+  explicit portfolio ids.
+- Follow-up: keep route-local validation translation centralized when additional search request
+  validators are added.
+- Wiki decision: no wiki source change required; this is controller maintainability cleanup with no
+  route, payload, supported-feature, or operator-contract change.
