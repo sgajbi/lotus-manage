@@ -9,13 +9,13 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewRequest,
     DpmPmQualityReviewActionRequest,
 )
+from src.api.routers.pm_operating_quality_policy_resolution import resolve_policy
 from src.api.routers.pm_operating_quality_book_scope_builder import (
     book_scope_signal,
     resolve_pm_book_scope_evidence,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.pm_quality import (
-    DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessAnalysis,
     DpmPmQualityFairnessAnalysisRepository,
@@ -115,27 +115,3 @@ def build_review_action(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
-
-
-def resolve_policy(
-    *,
-    request: DpmPmOperatingQualityScorePreviewRequest,
-    repository: DpmPmQualityPolicyRepository,
-) -> DpmPmOperatingQualityPolicy:
-    if request.policy is not None:
-        return request.policy
-    if request.policy_id is None or request.policy_version is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="PM_QUALITY_POLICY_REFERENCE_REQUIRED",
-        )
-    policy = repository.get_policy(
-        policy_id=request.policy_id,
-        policy_version=request.policy_version,
-    )
-    if policy is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_POLICY_NOT_FOUND:{request.policy_id}:{request.policy_version}",
-        )
-    return policy

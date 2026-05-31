@@ -4168,3 +4168,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   sourcing is stable in its own module.
 - Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-161: PM quality policy resolution lived inside score-run builders
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run policy resolution.
+- Finding: after separating Core PM-book sourcing, `pm_operating_quality_builders.py` still owned
+  policy reference resolution. Policy resolution has its own contract: prefer inline bank-owned
+  policy when supplied, require both `policy_id` and `policy_version` for repository lookup, return
+  governed 422 for missing references, and return governed 404 for unknown policy versions.
+- Action: moved policy resolution into
+  `src/api/routers/pm_operating_quality_policy_resolution.py` while keeping the existing
+  `pm_operating_quality_builders.resolve_policy` import surface intact for parent-router
+  compatibility and tests. Public routes, request/response models, error status codes/details, and
+  score-run construction behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: continue reducing `pm_operating_quality_builders.py` toward score-run and review-action
+  orchestration only.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
