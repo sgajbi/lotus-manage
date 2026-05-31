@@ -5220,3 +5220,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   that map `DpmRunNotFoundError` to `404`.
 - Wiki decision: no wiki source change required; this is internal helper consolidation with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-209: Rebalance run lookup routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_lookup_run_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_correlation_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_idempotency_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_request_hash_routes.py`, and
+  `src/api/routers/rebalance_runs_lookup_idempotency_history_routes.py`.
+- Finding: run lookup endpoints for run id, correlation id, idempotency key, request hash, and
+  idempotency history repeated identical `DpmRunNotFoundError` to `404` handling. That made
+  operational lookup behavior more verbose and easier to drift from support-bundle and workflow
+  lookup behavior.
+- Action: routed the lookup service calls through `read_run_with_not_found_http_mapping()`.
+  Public paths, response models, feature-flag assertions, unsupported-query rejection, OpenAPI
+  output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: apply the same primitive to artifact and async-operation lookup routes if validation
+  confirms no semantic distinction is needed.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
