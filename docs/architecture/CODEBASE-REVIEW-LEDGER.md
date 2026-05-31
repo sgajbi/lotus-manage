@@ -4412,3 +4412,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundary and use `wave_campaign_definition_errors.py` for reusable HTTP mapping in new helpers.
 - Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-172: Campaign definition response helper mixed create/read with lifecycle commands
+
+- Date: 2026-05-31
+- Scope:
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`.
+- Finding: `wave_campaign_definition_http.py` still owned retire and supersede response
+  orchestration alongside definition create/list/get helpers. The lifecycle commands have distinct
+  validation, lifecycle-error mapping, and audit semantics from definition persistence and reads.
+- Action: moved retire/supersede response helpers into
+  `src/api/routers/wave_campaign_definition_lifecycle_http.py`, updated the definition route to
+  import lifecycle helpers directly, and kept `wave_campaign_definition_http.py` import-compatible
+  for existing callers. Public paths, request/response models, lifecycle status mapping,
+  not-found/conflict/value mapping, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether definition create/list/get helpers should be split into write and read
+  modules after lifecycle extraction has stabilized.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

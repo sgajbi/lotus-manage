@@ -7,6 +7,8 @@ from src.api.routers.wave_campaign_definition_http import (
     get_campaign_definition_response,
     list_campaign_definitions_response,
     put_campaign_definition_response,
+)
+from src.api.routers.wave_campaign_definition_lifecycle_http import (
     retire_campaign_definition_response,
     supersede_campaign_definition_response,
 )
