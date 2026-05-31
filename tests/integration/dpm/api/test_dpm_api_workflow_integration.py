@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
+from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from tests.shared.factories import valid_api_payload
 
@@ -17,13 +17,11 @@ def setup_function() -> None:
     global _ORIGINAL_OVERRIDES
     original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db_session] = _override_get_db_session
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     _ORIGINAL_OVERRIDES = original_overrides
 
 
 def teardown_function() -> None:
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     app.dependency_overrides = _ORIGINAL_OVERRIDES
 

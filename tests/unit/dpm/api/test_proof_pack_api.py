@@ -13,7 +13,6 @@ from src.api.dependencies import (
 from src.api.main import app
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from src.api.services import proof_pack_service
-from src.api.services.rebalance_simulation_service import DPM_IDEMPOTENCY_CACHE
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
@@ -46,10 +45,8 @@ def override_dependencies():
     app.dependency_overrides[get_wave_repository] = lambda: wave_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: outcome_review_repository
     _seed_mandate_evidence(mandate_repository)
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     yield
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     app.dependency_overrides = original_overrides
 

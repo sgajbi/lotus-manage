@@ -6118,3 +6118,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   can remain injectable and independently testable.
 - Wiki decision: no wiki source change required; this is internal async submission modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-242: Stale in-memory idempotency cache removal
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`,
+  `tests/unit/dpm/api/test_proof_pack_api.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`.
+- Finding: `DPM_IDEMPOTENCY_CACHE` and `DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE` remained exported
+  compatibility state from the earlier in-memory replay implementation. Production replay and
+  run lookup now use the run-support service/repository path, and current tests only cleared the
+  stale cache without any code path reading or writing it.
+- Action: removed the stale cache object, default cache-size constant, and `src.api.main` exports,
+  then updated unit and integration fixtures to reset the real run-support service only. This
+  removes misleading state that could imply an unsupported in-process idempotency replay path.
+- Status: hardened
+- Evidence: rebalance API, proof-pack API, and DPM workflow integration regressions
+  (`tests/unit/dpm/api/test_api_rebalance.py`, `tests/unit/dpm/api/test_proof_pack_api.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`), focused Ruff checks, focused
+  mypy over `src/api/services/rebalance_simulation_service.py` and `src/api/main.py`, repository
+  search showing no remaining stale cache symbols, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: keep pruning exported compatibility state only when search and tests prove it is no
+  longer part of a supported public or test contract.
+- Wiki decision: no wiki source change required; this removes internal stale compatibility state
+  with no route, payload, supported-feature, or operator-contract change.

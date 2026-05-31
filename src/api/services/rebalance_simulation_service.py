@@ -1,7 +1,6 @@
 import logging
 import uuid
-from collections import OrderedDict
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from pydantic import ValidationError
 
@@ -98,8 +97,6 @@ from src.core.models import (
 
 logger = logging.getLogger(__name__)
 
-DPM_IDEMPOTENCY_CACHE: "OrderedDict[str, Dict[str, object]]" = OrderedDict()
-DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE = 1000
 build_core_resolver_client = core_resolver_service.build_core_resolver_client
 env_float = core_resolver_service.env_float
 env_int = core_resolver_service.env_int
@@ -445,8 +442,6 @@ def execute_dpm_async_operation(
 
 
 __all__ = [
-    "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
-    "DPM_IDEMPOTENCY_CACHE",
     "DpmRebalanceAsyncManualExecutionDisabledError",
     "DpmRebalanceAsyncOperationConflictError",
     "DpmRebalanceAsyncOperationError",

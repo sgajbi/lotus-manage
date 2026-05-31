@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
 import src.api.services.rebalance_simulation_service as rebalance_service
-from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
+from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
@@ -41,10 +41,8 @@ async def override_get_db_session():
 def override_db_dependency():
     original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db_session] = override_get_db_session
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     yield
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     app.dependency_overrides = original_overrides
 

@@ -52,8 +52,6 @@ from src.api.routers.outcome_reviews import (
 )
 from src.api.routers.waves import router as waves_router
 from src.api.services.rebalance_simulation_service import (
-    DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE,
-    DPM_IDEMPOTENCY_CACHE,
     run_simulation,
 )
 from src.api.services.rebalance_simulation_service import (
@@ -282,8 +280,6 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 
 
 __all__ = [
-    "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
-    "DPM_IDEMPOTENCY_CACHE",
     "HealthStatusResponse",
     "_async_manual_execution_enabled",
     "_env_flag",
