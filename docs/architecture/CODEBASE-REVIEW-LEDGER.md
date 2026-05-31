@@ -5197,3 +5197,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   future support-bundle route modules.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-208: Rebalance route helpers duplicated run not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_http.py`,
+  `src/api/routers/rebalance_runs_workflow_read_http.py`, and
+  `src/api/routers/rebalance_runs_support_bundle_http.py`.
+- Finding: the workflow-read and support-bundle helper modules each carried their own
+  `DpmRunNotFoundError` to `404` mapping. That avoided route-level duplication but introduced a
+  second layer where the same HTTP primitive could drift as more rebalance helper modules are
+  added.
+- Action: introduced `read_run_with_not_found_http_mapping()` as the shared rebalance-run HTTP
+  primitive and made the workflow-read and support-bundle helpers delegate to it. Public routes,
+  response models, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: reuse the shared primitive when consolidating remaining rebalance run lookup routes
+  that map `DpmRunNotFoundError` to `404`.
+- Wiki decision: no wiki source change required; this is internal helper consolidation with no
+  route, payload, supported-feature, or operator-contract change.
