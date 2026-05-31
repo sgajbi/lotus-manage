@@ -15,8 +15,6 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemoryEventLookup,
-    DpmPortfolioMemorySearchAppliedFilters,
-    DpmPortfolioMemorySearchItem,
     DpmPortfolioMemorySearchPage,
     PortfolioMemorySupportabilityState,
 )
@@ -33,7 +31,6 @@ from src.core.portfolio_memory.construction_projection import (
 from src.core.portfolio_memory.envelopes import (
     finalize_event_lookup as _finalize_event_lookup,
     finalize_portfolio_memory as _finalize_portfolio_memory,
-    finalize_search_page_payload as _finalize_search_page_payload,
 )
 from src.core.portfolio_memory.governance import (
     client_communication_boundary_evidence as _client_communication_boundary_evidence,
@@ -60,10 +57,13 @@ from src.core.portfolio_memory.proof_pack_projection import (
 from src.core.portfolio_memory.search_filters import (
     count_values as _counts,
     dedupe_and_sort_events as _dedupe_and_sort,
-    event_matches_search_filters as _event_matches_search_filters,
     event_source_systems as _event_source_systems,
-    event_source_types as _event_source_types,
     normalize_portfolio_memory_search_filter,
+)
+from src.core.portfolio_memory.search_page import (
+    PortfolioMemorySearchFilters,
+    build_search_page as _build_search_page,
+    build_search_row as _build_search_row,
 )
 from src.core.portfolio_memory.supportability import (
     portfolio_memory_state as _memory_state,
@@ -234,6 +234,12 @@ def search_portfolio_memory(
     )
     normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
     normalized_source_type = normalize_portfolio_memory_search_filter(source_type)
+    filters = PortfolioMemorySearchFilters(
+        event_type=normalized_event_type,
+        supportability_state=normalized_supportability_state,
+        source_system=normalized_source_system,
+        source_type=normalized_source_type,
+    )
     explicit_candidate_ids = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }
@@ -247,7 +253,7 @@ def search_portfolio_memory(
         portfolio_ids=portfolio_ids,
         source_scan_limit=source_scan_limit,
     )
-    search_rows: list[tuple[DpmPortfolioMemorySearchItem, list[DpmPortfolioMemoryEvent]]] = []
+    search_rows = []
     for portfolio_id in candidate_ids:
         memory = build_portfolio_memory(
             portfolio_id=portfolio_id,
@@ -263,172 +269,24 @@ def search_portfolio_memory(
             limit=source_scan_limit,
             generated_at=generated_at,
         )
-        if memory.event_count == 0:
-            if (
-                normalized_supportability_state != "EMPTY"
-                or portfolio_id not in explicit_candidate_ids
-            ):
-                continue
-        if (
-            normalized_event_type is not None
-            and normalized_event_type not in memory.event_type_counts
-        ):
-            continue
-        if (
-            normalized_supportability_state is not None
-            and memory.supportability_state != normalized_supportability_state
-        ):
-            continue
-        if (
-            normalized_source_system is not None
-            and normalized_source_system not in memory.source_systems
-        ):
-            continue
-        matching_events = [
-            event
-            for event in memory.events
-            if _event_matches_search_filters(
-                event=event,
-                event_type=normalized_event_type,
-                supportability_state=normalized_supportability_state,
-                source_system=normalized_source_system,
-                source_type=normalized_source_type,
-            )
-        ]
-        if (
-            (
-                normalized_event_type is not None
-                or normalized_source_system is not None
-                or normalized_source_type is not None
-                or normalized_supportability_state is not None
-            )
-            and normalized_supportability_state != "EMPTY"
-            and not matching_events
-        ):
-            continue
-        latest_event = memory.events[0] if memory.events else None
-        latest_matching_event = matching_events[0] if matching_events else None
-        search_rows.append(
-            (
-                DpmPortfolioMemorySearchItem(
-                    portfolio_id=memory.portfolio_id,
-                    event_count=memory.event_count,
-                    supportability_state=memory.supportability_state,
-                    event_type_counts=memory.event_type_counts,
-                    source_systems=memory.source_systems,
-                    reason_codes=memory.reason_codes,
-                    latest_event_time=latest_event.event_time if latest_event else None,
-                    latest_event_type=latest_event.event_type if latest_event else None,
-                    matching_event_count=len(matching_events),
-                    latest_matching_event_time=(
-                        latest_matching_event.event_time if latest_matching_event else None
-                    ),
-                    latest_matching_event_type=(
-                        latest_matching_event.event_type if latest_matching_event else None
-                    ),
-                    latest_matching_event_id=(
-                        latest_matching_event.event_id if latest_matching_event else None
-                    ),
-                    latest_matching_event_identity=(
-                        latest_matching_event.event_identity if latest_matching_event else None
-                    ),
-                    latest_matching_event_source_system=(
-                        latest_matching_event.source_system if latest_matching_event else None
-                    ),
-                    latest_matching_event_source_type=(
-                        latest_matching_event.source_type if latest_matching_event else None
-                    ),
-                    latest_matching_event_source_id=(
-                        latest_matching_event.source_id if latest_matching_event else None
-                    ),
-                    latest_matching_event_content_hash=(
-                        latest_matching_event.content_hash if latest_matching_event else None
-                    ),
-                    content_hash=memory.content_hash,
-                ),
-                matching_events,
-            )
+        row = _build_search_row(
+            memory=memory,
+            filters=filters,
+            explicit_candidate_ids=explicit_candidate_ids,
         )
+        if row is not None:
+            search_rows.append(row)
 
-    search_rows = sorted(
-        search_rows,
-        key=lambda row: (row[0].latest_event_time or "", row[0].portfolio_id),
-        reverse=True,
+    return _build_search_page(
+        search_rows=search_rows,
+        filters=filters,
+        explicit_candidate_ids=explicit_candidate_ids,
+        scanned_portfolio_count=len(candidate_ids),
+        source_scan_limit=source_scan_limit,
+        limit=limit,
+        offset=offset,
+        generated_at=generated_at.isoformat(),
     )
-    total_count = len(search_rows)
-    supportability_state_counts = _counts(
-        item.supportability_state for item, _events in search_rows
-    )
-    event_type_counts: dict[str, int] = {}
-    matching_event_supportability_state_counts: dict[str, int] = {}
-    matching_event_source_system_counts: dict[str, int] = {}
-    matching_event_source_type_counts: dict[str, int] = {}
-    source_system_counts: dict[str, int] = {}
-    for item, matching_events in search_rows:
-        for event in matching_events:
-            event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
-            matching_event_supportability_state_counts[event.supportability_state] = (
-                matching_event_supportability_state_counts.get(event.supportability_state, 0) + 1
-            )
-            for event_source_system in _event_source_systems(event):
-                matching_event_source_system_counts[event_source_system] = (
-                    matching_event_source_system_counts.get(event_source_system, 0) + 1
-                )
-            for event_source_type in _event_source_types(event):
-                matching_event_source_type_counts[event_source_type] = (
-                    matching_event_source_type_counts.get(event_source_type, 0) + 1
-                )
-        for represented_source_system in item.source_systems:
-            source_system_counts[represented_source_system] = (
-                source_system_counts.get(represented_source_system, 0) + 1
-            )
-    page_rows = search_rows[offset : offset + limit]
-    page = [item for item, _events in page_rows]
-    next_offset = offset + len(page)
-    has_more = next_offset < total_count
-    page_payload = {
-        "items": page,
-        "limit": limit,
-        "offset": offset,
-        "returned_count": len(page),
-        "total_count": total_count,
-        "has_more": has_more,
-        "next_offset": next_offset if has_more else None,
-        "scanned_portfolio_count": len(candidate_ids),
-        "source_scan_limit": source_scan_limit,
-        "applied_filters": DpmPortfolioMemorySearchAppliedFilters(
-            portfolio_ids=sorted(explicit_candidate_ids),
-            event_type=normalized_event_type,
-            supportability_state=normalized_supportability_state,
-            source_system=normalized_source_system,
-            source_type=normalized_source_type,
-        ),
-        "supportability_state_counts": dict(sorted(supportability_state_counts.items())),
-        "event_type_counts": dict(sorted(event_type_counts.items())),
-        "matching_event_supportability_state_counts": dict(
-            sorted(matching_event_supportability_state_counts.items())
-        ),
-        "matching_event_source_system_counts": dict(
-            sorted(matching_event_source_system_counts.items())
-        ),
-        "matching_event_source_type_counts": dict(
-            sorted(matching_event_source_type_counts.items())
-        ),
-        "source_system_counts": dict(sorted(source_system_counts.items())),
-        "source_event_family_posture": _source_event_family_posture(),
-        "external_execution_boundary": _external_execution_boundary_evidence(),
-        "client_communication_boundary": _client_communication_boundary_evidence(),
-        "generated_at": generated_at.isoformat(),
-        "support_boundary": (
-            "Manage-local memory search indexes persisted Manage evidence and explicit "
-            "caller-supplied portfolio identifiers only. It exposes supported and deferred "
-            "source-event family posture for Manage/report/AI/archive/PM-quality lineage, but "
-            "does not discover the global portfolio universe, query external source-owner "
-            "event stores, project OMS acknowledgement/fill/settlement events, project "
-            "client-communication events, or recalculate source truth."
-        ),
-    }
-    return _finalize_search_page_payload(page_payload)
 
 
 def build_portfolio_memory_event_lookup(

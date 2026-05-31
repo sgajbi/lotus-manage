@@ -1113,3 +1113,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   composition; avoid reintroducing ad hoc content-hash construction in endpoint code.
 - Wiki decision: no wiki source change required; this is internal hash-governance cleanup with no
   API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-015: Portfolio-memory search page assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search row matching, facet counts, pagination, and support-boundary page
+  payload assembly
+- Finding: `src/core/portfolio_memory/service.py` still mixed repository traversal with search row
+  matching, latest matching event metadata, matching-event facet counts, pagination, and search
+  support-boundary construction. Those are search-page projection rules and should be tested
+  directly without repository-backed memory construction.
+- Action: extracted search row and page assembly to `src/core/portfolio_memory/search_page.py`,
+  leaving candidate discovery and memory construction in the service. Added direct tests for latest
+  matching event metadata, explicit empty-portfolio handling, facet counts, deterministic ordering,
+  and pagination.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_page.py` plus existing
+  portfolio-memory API search tests.
+- Follow-up: review whether remaining service orchestration should be split into a lightweight
+  assembler class only if repository dependency flow becomes harder to reason about.
+- Wiki decision: no wiki source change required; this is internal search-page modularity cleanup
+  with no API, supported-feature, or operator-contract change.
