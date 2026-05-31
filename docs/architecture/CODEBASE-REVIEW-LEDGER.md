@@ -3466,3 +3466,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split portfolio-memory detail timeline read from the remaining router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-129: Portfolio-memory detail read was owned by the dependency shell
+
+- Date: 2026-05-31
+- Scope: source-backed portfolio-memory detail timeline route.
+- Finding: after extracting search and exact event lookup, `src/api/routers/portfolio_memory.py`
+  still owned the detail timeline route while also carrying source repository dependency wiring.
+  The detail route owns bounded timeline assembly, portfolio path metadata, and the source-backed
+  memory contract, while the remaining module should only construct the router and dependency
+  bundle used across route modules.
+- Action: moved detail timeline route registration into
+  `src/api/routers/portfolio_memory_detail_routes.py` and reduced `portfolio_memory.py` to router
+  construction, source repository dependency wiring, and explicit route-module imports. Public
+  path, response model, Swagger guidance, limit bounds, repository-bundle dependency wiring, and
+  service call were preserved.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the next large route surface for route-family decomposition after checking
+  branch commit count against the PR target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
