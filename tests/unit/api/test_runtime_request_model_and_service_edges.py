@@ -11,6 +11,7 @@ import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
 import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
+import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_supportability_write as supportability_write
@@ -25,6 +26,10 @@ from src.api.routers.runtime_utils import (
 )
 from src.core.dpm_source_context import DpmCoreContextIncompleteError, DpmStatefulInput
 from src.core.models import BatchRebalanceRequest
+from src.core.rebalance.policy_packs import (
+    DpmEffectivePolicyPackResolution,
+    DpmPolicyPackDefinition,
+)
 from src.core.rebalance_runs import DpmRunNotFoundError
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from tests.shared.factories import valid_api_payload
@@ -453,6 +458,37 @@ def test_rebalance_batch_execution_reports_invalid_options_without_running_engin
     assert set(result.failed_scenarios) == {"invalid_case"}
     assert result.failed_scenarios["invalid_case"].startswith("INVALID_OPTIONS:")
     assert result.warnings == ["PARTIAL_BATCH_FAILURE"]
+
+
+def test_rebalance_policy_pack_execution_loads_selected_catalog_only_when_needed() -> None:
+    disabled_resolution = DpmEffectivePolicyPackResolution(
+        enabled=False,
+        selected_policy_pack_id=None,
+        source="DISABLED",
+    )
+
+    assert (
+        policy_pack_execution.resolve_selected_policy_pack_definition(
+            policy_pack=disabled_resolution,
+            catalog_loader=lambda: (_ for _ in ()).throw(AssertionError("catalog not needed")),
+        )
+        is None
+    )
+
+    selected_resolution = DpmEffectivePolicyPackResolution(
+        enabled=True,
+        selected_policy_pack_id="pack-001",
+        source="REQUEST",
+    )
+    definition = DpmPolicyPackDefinition(policy_pack_id="pack-001", version="1")
+
+    assert (
+        policy_pack_execution.resolve_selected_policy_pack_definition(
+            policy_pack=selected_resolution,
+            catalog_loader=lambda: {"pack-001": definition},
+        )
+        is definition
+    )
 
 
 def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:

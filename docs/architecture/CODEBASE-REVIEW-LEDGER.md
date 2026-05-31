@@ -6009,3 +6009,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   resolution, sync simulation orchestration, and async operation orchestration only.
 - Wiki decision: no wiki source change required; this is internal batch-execution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-238: Rebalance policy-pack execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned selected policy-pack catalog loading,
+  catalog-unavailable error translation, and policy-resolution telemetry. These behaviors are
+  execution-policy concerns used by simulate/analyze/analyze-async paths and should be directly
+  testable without the larger simulation orchestration.
+- Action: extracted selected policy-pack definition resolution and telemetry recording into
+  `rebalance_policy_pack_execution.py`, while preserving the existing
+  `rebalance_simulation_service.load_dpm_policy_pack_catalog` patch seam through a compatibility
+  wrapper. Public routes, OpenAPI output, disabled-policy catalog short-circuit behavior,
+  policy-pack telemetry labels, and catalog-unavailable error details were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  policy-pack execution and simulation services, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` by extracting stateful envelope
+  resolution and async submission envelope construction in small compatibility-preserving slices.
+- Wiki decision: no wiki source change required; this is internal policy-execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

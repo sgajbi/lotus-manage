@@ -10,7 +10,6 @@ from src.api.observability import (
     record_async_operation,
     record_core_resolver_call,
     record_execution_call,
-    record_policy_pack_resolution,
 )
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
@@ -39,9 +38,12 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceStatefulInputDisabledError,
 )
 from src.api.services.rebalance_policy_pack_service import (
-    DpmPolicyPackCatalogUnavailableError,
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
+)
+from src.api.services.rebalance_policy_pack_execution import (
+    record_policy_resolution,
+    resolve_selected_policy_pack_definition as resolve_selected_policy_pack_definition_from_catalog,
 )
 from src.api.services.rebalance_idempotency_replay import resolve_idempotency_replay
 from src.api.services.rebalance_async_config import (
@@ -77,7 +79,6 @@ from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
     DpmPolicyPackDefinition,
     apply_policy_pack_to_engine_options,
-    resolve_policy_pack_definition,
     resolve_policy_pack_replay_enabled,
 )
 from src.core.rebalance_runs import (
@@ -124,13 +125,10 @@ def _resolved_logger() -> logging.Logger | Any:
 def resolve_selected_policy_pack_definition(
     policy_pack: DpmEffectivePolicyPackResolution,
 ) -> Optional[DpmPolicyPackDefinition]:
-    if policy_pack.selected_policy_pack_id is None:
-        return None
-    try:
-        catalog = load_dpm_policy_pack_catalog()
-    except DpmPolicyPackCatalogUnavailableError as exc:
-        raise DpmRebalancePolicyPackCatalogUnavailableError(exc.detail) from exc
-    return resolve_policy_pack_definition(resolution=policy_pack, catalog=catalog)
+    return resolve_selected_policy_pack_definition_from_catalog(
+        policy_pack=policy_pack,
+        catalog_loader=load_dpm_policy_pack_catalog,
+    )
 
 
 def _record_policy_resolution(
@@ -138,12 +136,7 @@ def _record_policy_resolution(
     surface: str,
     policy_pack: DpmEffectivePolicyPackResolution,
 ) -> None:
-    record_policy_pack_resolution(
-        surface=surface,
-        enabled=str(policy_pack.enabled).lower(),
-        source=policy_pack.source.lower(),
-        selected=str(policy_pack.selected_policy_pack_id is not None).lower(),
-    )
+    record_policy_resolution(surface=surface, policy_pack=policy_pack)
 
 
 def _execution_outcome_for_status(status_value: str) -> str:
