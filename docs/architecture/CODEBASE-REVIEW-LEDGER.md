@@ -4602,3 +4602,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   routing has stabilized.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-180: Campaign readiness projection helper mixed workflow overview with direct readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_readiness_projection_http.py` workflow-overview response helper.
+- Finding: after workflow-overview routing was split, the projection helper still lived with direct
+  preview-readiness and launch-package projection helpers. Workflow overview composes readiness,
+  lifecycle audit, launch-history, active-on filtering, and optional launch-package posture, which is
+  broader than direct readiness/package construction.
+- Action: moved workflow-overview response construction into
+  `src/api/routers/wave_campaign_workflow_overview_http.py`, updated the workflow-overview route to
+  import the focused helper directly, and kept `wave_campaign_readiness_projection_http.py`
+  import-compatible for existing callers. Public behavior, date validation, not-found mapping,
+  launch-history bounds, launch-package inclusion, and response shape were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split launch-package projection from preview-readiness projection if future route or
+  helper work touches that boundary.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
