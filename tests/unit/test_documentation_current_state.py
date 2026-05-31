@@ -450,6 +450,34 @@ def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
     assert missing == []
 
 
+def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
+    current_state = (ROOT / "wiki" / "Current-State.md").read_text(encoding="utf-8")
+    home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")
+    sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "# Current State",
+        "## Audience Map",
+        "## Functional Capability Matrix",
+        "## Non-Functional Capability Matrix",
+        "## Primary Feature Flow",
+        "## Source Authority And Boundary Flow",
+        "## Demo-Ready Claims",
+        "## Explicit Non-Claims",
+        "```mermaid",
+        "Portfolio memory",
+        "PM operating quality",
+        "External OMS execution",
+        "client communication",
+        "Gateway, Workbench, report, archive, AI",
+    ]
+    missing_terms = [term for term in required_terms if term not in current_state]
+
+    assert missing_terms == []
+    assert "[Current State](Current-State)" in home
+    assert "[Current State](Current-State)" in sidebar
+
+
 def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     rows = _detailed_wtbd_rows()
     all_ids = {row[0] for row in rows}

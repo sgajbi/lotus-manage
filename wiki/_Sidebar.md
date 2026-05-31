@@ -2,6 +2,8 @@
 
 [Overview](Overview)
 
+[Current State](Current-State)
+
 [Architecture](Architecture)
 
 [API Surface](API-Surface)
