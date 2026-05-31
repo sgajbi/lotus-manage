@@ -21,6 +21,13 @@ from src.api.request_models import (
     RebalanceExecutionRequestEnvelope,
     RebalanceRequest,
 )
+from src.api.services.rebalance_simulation_errors import (
+    DpmRebalanceCoreContextIncompleteError,
+    DpmRebalanceCoreResolverUnavailableError,
+    DpmRebalanceEnvelopeError,
+    DpmRebalanceEnvelopeValidationError,
+    DpmRebalanceStatefulInputDisabledError,
+)
 from src.api.routers.rebalance_policy_packs import (
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
@@ -255,15 +262,9 @@ def _resolve_stateful_source_context(
     correlation_id: Optional[str],
 ) -> DpmResolvedSourceContext:
     if envelope.stateful_input is None:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="DPM_STATEFUL_INPUT_REQUIRED",
-        )
+        raise DpmRebalanceEnvelopeValidationError("DPM_STATEFUL_INPUT_REQUIRED")
     if not stateful_core_sourcing_enabled():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="DPM_STATEFUL_INPUT_DISABLED",
-        )
+        raise DpmRebalanceStatefulInputDisabledError("DPM_STATEFUL_INPUT_DISABLED")
 
     resolver_factory = _main_override("build_core_resolver_client") or build_core_resolver_client
     try:
@@ -279,10 +280,7 @@ def _resolve_stateful_source_context(
             supportability_state="unavailable",
             reason="resolver_unavailable",
         )
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="DPM_CORE_RESOLVER_UNAVAILABLE",
-        ) from exc
+        raise DpmRebalanceCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE") from exc
     except ValidationError as exc:
         record_core_resolver_call(
             operation=DPM_CORE_RESOLVER_OPERATION,
@@ -290,10 +288,7 @@ def _resolve_stateful_source_context(
             supportability_state="unknown",
             reason="invalid_response",
         )
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="DPM_CORE_CONTEXT_INCOMPLETE",
-        ) from exc
+        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     except (DpmCoreContextIncompleteError, DpmCoreResolverError) as exc:
         record_core_resolver_call(
             operation=DPM_CORE_RESOLVER_OPERATION,
@@ -301,10 +296,7 @@ def _resolve_stateful_source_context(
             supportability_state="unknown",
             reason="context_incomplete",
         )
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="DPM_CORE_CONTEXT_INCOMPLETE",
-        ) from exc
+        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     record_core_resolver_call(
         operation=DPM_CORE_RESOLVER_OPERATION,
         outcome="success",
@@ -350,10 +342,7 @@ def resolve_rebalance_request_envelope(
 ) -> tuple[RebalanceRequest, Optional[DpmResolvedSourceContext]]:
     if envelope.input_mode == "stateless":
         if envelope.stateless_input is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="DPM_STATELESS_INPUT_REQUIRED",
-            )
+            raise DpmRebalanceEnvelopeValidationError("DPM_STATELESS_INPUT_REQUIRED")
         return envelope.stateless_input, None
 
     source_context = _resolve_stateful_source_context(
@@ -366,10 +355,7 @@ def resolve_rebalance_request_envelope(
             options_override=envelope.options_override,
         )
     except (DpmCoreContextIncompleteError, ValidationError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="DPM_CORE_CONTEXT_INCOMPLETE",
-        ) from exc
+        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     return RebalanceRequest.model_validate(resolved.model_dump(mode="python")), source_context
 
 
@@ -380,10 +366,7 @@ def resolve_batch_request_envelope(
 ) -> tuple[BatchRebalanceRequest, Optional[DpmResolvedSourceContext]]:
     if envelope.input_mode == "stateless":
         if envelope.stateless_input is None:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail="DPM_STATELESS_INPUT_REQUIRED",
-            )
+            raise DpmRebalanceEnvelopeValidationError("DPM_STATELESS_INPUT_REQUIRED")
         return envelope.stateless_input, None
 
     source_context = _resolve_stateful_source_context(
@@ -396,10 +379,7 @@ def resolve_batch_request_envelope(
             scenarios=envelope.scenarios,
         )
     except (DpmCoreContextIncompleteError, ValidationError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail="DPM_CORE_CONTEXT_INCOMPLETE",
-        ) from exc
+        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
     return request, source_context
 
 
@@ -807,6 +787,11 @@ def execute_dpm_async_operation(
 __all__ = [
     "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
     "DPM_IDEMPOTENCY_CACHE",
+    "DpmRebalanceCoreContextIncompleteError",
+    "DpmRebalanceCoreResolverUnavailableError",
+    "DpmRebalanceEnvelopeError",
+    "DpmRebalanceEnvelopeValidationError",
+    "DpmRebalanceStatefulInputDisabledError",
     "async_manual_execution_enabled",
     "env_flag",
     "env_int",

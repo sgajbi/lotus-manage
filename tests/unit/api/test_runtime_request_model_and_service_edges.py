@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import src.api.services.rebalance_simulation_service as service
 from src.api.request_models import BatchExecutionRequestEnvelope, RebalanceExecutionRequestEnvelope
+from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     normalize_backend_init_error,
@@ -71,38 +72,38 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
             raise DpmCoreResolverUnavailableError("down")
 
     monkeypatch.setattr(service, "build_core_resolver_client", lambda: _UnavailableResolver())
-    with pytest.raises(HTTPException) as unavailable:
+    with pytest.raises(service.DpmRebalanceCoreResolverUnavailableError) as unavailable:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
-    assert unavailable.value.status_code == 503
+    assert rebalance_envelope_http_exception(unavailable.value).status_code == 503
 
     class _IncompleteResolver:
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreResolverError("bad")
 
     monkeypatch.setattr(service, "build_core_resolver_client", lambda: _IncompleteResolver())
-    with pytest.raises(HTTPException) as incomplete:
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
-    assert incomplete.value.status_code == 424
     assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
+    assert rebalance_envelope_http_exception(incomplete.value).status_code == 424
 
     class _DerivedIncompleteResolver:
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreContextIncompleteError("MARKET_DATA_STALE")
 
     monkeypatch.setattr(service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver())
-    with pytest.raises(HTTPException) as derived_incomplete:
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as derived_incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
-    assert derived_incomplete.value.status_code == 424
     assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
+    assert rebalance_envelope_http_exception(derived_incomplete.value).status_code == 424
 
     class _InvalidResolver:
         def resolve_execution_context(self, **_kwargs):
             DpmStatefulInput.model_validate({})
 
     monkeypatch.setattr(service, "build_core_resolver_client", lambda: _InvalidResolver())
-    with pytest.raises(HTTPException) as invalid:
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as invalid:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
-    assert invalid.value.status_code == 424
+    assert rebalance_envelope_http_exception(invalid.value).status_code == 424
 
 
 def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(monkeypatch) -> None:
@@ -113,10 +114,10 @@ def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(mo
         options_override={},
     )
 
-    with pytest.raises(HTTPException) as missing:
+    with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as missing:
         service._resolve_stateful_source_context(envelope=missing_payload, correlation_id="corr")
-    assert missing.value.status_code == 422
     assert missing.value.detail == "DPM_STATEFUL_INPUT_REQUIRED"
+    assert rebalance_envelope_http_exception(missing.value).status_code == 422
 
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "false")
     envelope = RebalanceExecutionRequestEnvelope.model_construct(
@@ -126,10 +127,10 @@ def test_stateful_source_context_rejects_missing_payload_and_disabled_feature(mo
         options_override={},
     )
 
-    with pytest.raises(HTTPException) as disabled:
+    with pytest.raises(service.DpmRebalanceStatefulInputDisabledError) as disabled:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
-    assert disabled.value.status_code == 409
     assert disabled.value.detail == "DPM_STATEFUL_INPUT_DISABLED"
+    assert rebalance_envelope_http_exception(disabled.value).status_code == 409
 
 
 def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> None:
@@ -143,7 +144,7 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
         lambda **_kwargs: (_ for _ in ()).throw(DpmCoreContextIncompleteError("missing")),
     )
 
-    with pytest.raises(HTTPException) as rebalance_error:
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as rebalance_error:
         service.resolve_rebalance_request_envelope(
             envelope=RebalanceExecutionRequestEnvelope(
                 input_mode="stateful",
@@ -151,14 +152,14 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
             ),
             correlation_id="corr",
         )
-    assert rebalance_error.value.status_code == 424
+    assert rebalance_envelope_http_exception(rebalance_error.value).status_code == 424
 
     monkeypatch.setattr(
         service,
         "build_batch_rebalance_request_from_core_context",
         lambda **_kwargs: (_ for _ in ()).throw(DpmCoreContextIncompleteError("missing")),
     )
-    with pytest.raises(HTTPException) as batch_error:
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as batch_error:
         service.resolve_batch_request_envelope(
             envelope=BatchExecutionRequestEnvelope(
                 input_mode="stateful",
@@ -167,11 +168,11 @@ def test_stateful_envelope_resolution_maps_transform_failures(monkeypatch) -> No
             ),
             correlation_id="corr",
         )
-    assert batch_error.value.status_code == 424
+    assert rebalance_envelope_http_exception(batch_error.value).status_code == 424
 
 
 def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() -> None:
-    with pytest.raises(HTTPException) as rebalance_error:
+    with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as rebalance_error:
         service.resolve_rebalance_request_envelope(
             envelope=RebalanceExecutionRequestEnvelope.model_construct(
                 input_mode="stateless",
@@ -181,10 +182,10 @@ def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() ->
             ),
             correlation_id="corr",
         )
-    assert rebalance_error.value.status_code == 422
     assert rebalance_error.value.detail == "DPM_STATELESS_INPUT_REQUIRED"
+    assert rebalance_envelope_http_exception(rebalance_error.value).status_code == 422
 
-    with pytest.raises(HTTPException) as batch_error:
+    with pytest.raises(service.DpmRebalanceEnvelopeValidationError) as batch_error:
         service.resolve_batch_request_envelope(
             envelope=BatchExecutionRequestEnvelope.model_construct(
                 input_mode="stateless",
@@ -194,8 +195,8 @@ def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() ->
             ),
             correlation_id="corr",
         )
-    assert batch_error.value.status_code == 422
     assert batch_error.value.detail == "DPM_STATELESS_INPUT_REQUIRED"
+    assert rebalance_envelope_http_exception(batch_error.value).status_code == 422
 
 
 def test_async_manual_execution_disabled_is_reported(monkeypatch) -> None:

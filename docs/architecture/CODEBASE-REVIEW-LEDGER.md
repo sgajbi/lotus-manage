@@ -5565,3 +5565,38 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   long-term enterprise maintainability target.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-223: Rebalance envelope source-resolution HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_simulate_routes.py`,
+  `src/api/routers/rebalance_simulation_analyze_routes.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/routers/construction_generate_routes.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: rebalance execution-envelope and stateful source-resolution helpers raised FastAPI
+  `HTTPException` directly for missing stateless/stateful input, disabled stateful sourcing,
+  unavailable core resolver, and incomplete core context. These helpers are reused by simulation,
+  batch analysis, async analysis, and construction generation, so transport-specific failures in
+  the service layer made shared source-resolution logic harder to reuse and test as application
+  logic.
+- Action: introduced domain-level rebalance envelope/source-resolution exceptions, added
+  `rebalance_simulation_http.py` for route-layer HTTP mapping, and reused it from simulation,
+  analysis, async-analysis, and construction generation routes. Public paths, response models,
+  OpenAPI output, observability recording, and existing `422`/`409`/`503`/`424` detail strings
+  were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge, rebalance API, and construction API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`), rebalance/construction router/service Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue moving idempotency and async-operation HTTP mappings out of
+  `rebalance_simulation_service.py` in smaller slices; those paths have separate persistence and
+  operation-state semantics.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

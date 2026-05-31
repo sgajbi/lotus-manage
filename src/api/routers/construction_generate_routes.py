@@ -15,9 +15,10 @@ from src.api.routers.construction_models import (
     ConstructionAlternativeSetGenerateRequest,
 )
 from src.api.routers.construction_http import construction_http_exception
+from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service
-from src.api.services.rebalance_simulation_service import resolve_rebalance_request_envelope
+from src.api.services import rebalance_simulation_service
 from src.core.construction.models import ConstructionAlternativeSet
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -66,10 +67,16 @@ def generate_alternative_set(
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
-    rebalance_request, source_context = resolve_rebalance_request_envelope(
-        envelope=request.to_execution_envelope(),
-        correlation_id=x_correlation_id,
-    )
+    try:
+        (
+            rebalance_request,
+            source_context,
+        ) = rebalance_simulation_service.resolve_rebalance_request_envelope(
+            envelope=request.to_execution_envelope(),
+            correlation_id=x_correlation_id,
+        )
+    except rebalance_simulation_service.DpmRebalanceEnvelopeError as exc:
+        raise rebalance_envelope_http_exception(exc) from exc
     try:
         return construction_service.generate_construction_alternative_set(
             request=rebalance_request,

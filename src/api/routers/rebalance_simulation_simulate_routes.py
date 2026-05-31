@@ -7,6 +7,7 @@ from fastapi import Depends, Header, status
 from src.api.dependencies import get_db_session
 from src.api.request_models import RebalanceExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
+from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
     SIMULATE_409_EXAMPLE,
@@ -103,10 +104,13 @@ def simulate_rebalance(
     ] = None,
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
-    rebalance_request, source_context = service.resolve_rebalance_request_envelope(
-        envelope=request,
-        correlation_id=x_correlation_id,
-    )
+    try:
+        rebalance_request, source_context = service.resolve_rebalance_request_envelope(
+            envelope=request,
+            correlation_id=x_correlation_id,
+        )
+    except service.DpmRebalanceEnvelopeError as exc:
+        raise rebalance_envelope_http_exception(exc) from exc
     return service.simulate_rebalance(
         request=rebalance_request,
         idempotency_key=idempotency_key,
