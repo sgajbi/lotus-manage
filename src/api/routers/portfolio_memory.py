@@ -30,6 +30,13 @@ from src.core.portfolio_memory.models import (
     PortfolioMemorySupportabilityState,
 )
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
+from src.core.portfolio_memory.read_request import (
+    PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX,
+    PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_READ_LIMIT_MIN,
+)
 from src.core.portfolio_memory.search_filters import normalize_portfolio_memory_search_filter
 from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
@@ -230,7 +237,12 @@ def search_portfolio_memory_index(
 def get_portfolio_memory_event(
     portfolio_id: str,
     event_id: str,
-    limit: int = Query(default=500, ge=1, le=1000, description="Maximum events to scan."),
+    limit: int = Query(
+        default=PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT,
+        ge=PORTFOLIO_MEMORY_READ_LIMIT_MIN,
+        le=PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX,
+        description="Maximum source-backed memory events to scan while locating the requested event.",
+    ),
     repositories: PortfolioMemorySourceRepositories = Depends(
         get_portfolio_memory_source_repositories
     ),
@@ -282,7 +294,12 @@ def get_portfolio_memory_event(
 )
 def get_portfolio_memory(
     portfolio_id: str,
-    limit: int = Query(default=100, ge=1, le=500, description="Maximum events to return."),
+    limit: int = Query(
+        default=PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
+        ge=PORTFOLIO_MEMORY_READ_LIMIT_MIN,
+        le=PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX,
+        description="Maximum source-backed memory events to return in the portfolio timeline.",
+    ),
     repositories: PortfolioMemorySourceRepositories = Depends(
         get_portfolio_memory_source_repositories
     ),

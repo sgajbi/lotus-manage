@@ -450,6 +450,23 @@ def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
     assert missing == []
 
 
+def test_wiki_api_surface_documents_portfolio_memory_bounds_and_flow() -> None:
+    api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
+
+    assert "## Portfolio memory surfaces" in api_surface
+    assert "`GET /api/v1/rebalance/portfolio-memory/search`" in api_surface
+    assert "`GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`" in api_surface
+    assert (
+        "`GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}`" in api_surface
+    )
+    assert "capped at `500` events for API detail responses" in api_surface
+    assert "capped at `1000` events for bounded drilldown" in api_surface
+    assert "flowchart LR" in api_surface
+    assert "Portfolio memory is an audit and lineage read model" in api_surface
+    assert "not discover the global portfolio universe" in api_surface
+    assert "memory-event-id?limit=500" in api_surface
+
+
 def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
     current_state = (ROOT / "wiki" / "Current-State.md").read_text(encoding="utf-8")
     home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")

@@ -1485,3 +1485,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the source repository factory unless the public query contract changes.
 - Wiki decision: no wiki source change required; this is internal API wiring modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-033: Portfolio-memory detail reads relied on route-local scan limits
+
+- Date: 2026-05-31
+- Scope: portfolio-memory detail and exact-event read limits
+- Finding: portfolio-memory search pagination had shared core/API constants, but detail timelines
+  and exact-event lookup still carried route-local `limit` bounds while the core assembler accepted
+  unsafe direct-call limits. That created a drift risk between Swagger, service callers, and the
+  bounded source scan posture expected for demo and audit workflows.
+- Action: added shared portfolio-memory read-limit constants and core validation, wired the API
+  detail and event-lookup routes to those constants, added focused tests for direct-call rejection
+  and OpenAPI synchronization, and documented the bounded portfolio-memory API flow in the wiki.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_read_request.py`,
+  `tests/unit/dpm/portfolio_memory/test_service.py`,
+  `tests/unit/dpm/api/test_portfolio_memory_api.py`, and
+  `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep future portfolio-memory read or drilldown continuation semantics in the shared
+  request-limit module before changing route-level OpenAPI bounds.
+- Wiki decision: updated `wiki/API-Surface.md` because the API bounds and implementation-backed
+  portfolio-memory flow are operator- and demo-facing product truth.

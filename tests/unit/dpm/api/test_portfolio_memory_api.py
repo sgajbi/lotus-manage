@@ -52,6 +52,13 @@ from src.core.portfolio_memory.handoffs import (
 )
 from src.core.portfolio_memory.pm_quality_projection import score_run_includes_portfolio
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
+from src.core.portfolio_memory.read_request import (
+    PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX,
+    PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_READ_LIMIT_MIN,
+)
 from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
@@ -1743,6 +1750,31 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert (
         parameters["source_scan_limit"]["schema"]["maximum"]
         == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX
+    )
+    detail_parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/{portfolio_id}"][
+            "get"
+        ]["parameters"]
+    }
+    event_lookup_parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"][
+            "/api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}"
+        ]["get"]["parameters"]
+    }
+    assert detail_parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT
+    assert detail_parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_READ_LIMIT_MIN
+    assert detail_parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX
+    assert (
+        event_lookup_parameters["limit"]["schema"]["default"]
+        == PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT
+    )
+    assert event_lookup_parameters["limit"]["schema"]["minimum"] == (
+        PORTFOLIO_MEMORY_READ_LIMIT_MIN
+    )
+    assert event_lookup_parameters["limit"]["schema"]["maximum"] == (
+        PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX
     )
 
 

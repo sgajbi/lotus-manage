@@ -25,6 +25,10 @@ from src.core.portfolio_memory.search_page import (
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
 )
+from src.core.portfolio_memory.read_request import (
+    PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
+    validate_portfolio_memory_read_limit as _validate_portfolio_memory_read_limit,
+)
 from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
     PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
@@ -55,7 +59,7 @@ def build_portfolio_memory(
     pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None = None,
     pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None = None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None = None,
-    limit: int = 100,
+    limit: int = PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemory:
     """Compose manage-owned portfolio memory without recalculating source truth."""
@@ -82,11 +86,12 @@ def build_portfolio_memory_from_sources(
     *,
     portfolio_id: str,
     repositories: PortfolioMemorySourceRepositories,
-    limit: int = 100,
+    limit: int = PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemory:
     """Compose portfolio memory from an explicit source-repository bundle."""
 
+    limit = _validate_portfolio_memory_read_limit(limit=limit)
     generated_at = generated_at or datetime.now(timezone.utc)
     events = _collect_portfolio_memory_events(
         portfolio_id=portfolio_id,
