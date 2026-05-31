@@ -3958,3 +3958,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split assignment-task lifecycle evidence from the remaining campaign evidence router.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-152: Campaign evidence mixed assignment task lifecycle with controls
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`.
+- Finding: after extracting approval-decision and assignment-action evidence, the campaign
+  evidence router still mixed mutable assignment-task lifecycle routing with maker-checker control
+  evidence. Assignment tasks own controlled open/transition state, task-status filtering, and SLA
+  posture paging, while maker-checker controls own separate approval-control evidence.
+- Action: moved assignment-task route registration into
+  `src/api/routers/wave_campaign_assignment_task_evidence_routes.py` and included it after
+  assignment-action evidence from `wave_campaign_evidence_routes.py`, preserving public paths,
+  response models, Swagger guidance, status filtering, repository dependency wiring, response
+  helper calls, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split maker-checker controls from the remaining campaign evidence router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
