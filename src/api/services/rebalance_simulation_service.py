@@ -51,6 +51,9 @@ from src.api.services.rebalance_async_config import (
     env_flag,
     resolve_async_execution_mode,
 )
+from src.api.services.rebalance_async_operation_payload import (
+    resolve_analyze_async_execution_payload,
+)
 from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
@@ -447,33 +450,15 @@ def run_analyze_async_operation(
         operation_id=operation_id
     )
     try:
-        if isinstance(request_json, dict) and "batch_request" in request_json:
-            batch_payload = request_json.get("batch_request") or {}
-            policy_context = request_json.get("policy_context") or {}
-            source_context_payload = request_json.get("source_context")
-            request_policy_pack_id = policy_context.get("request_policy_pack_id")
-            tenant_default_policy_pack_id = policy_context.get("tenant_default_policy_pack_id")
-            tenant_id = policy_context.get("tenant_id")
-        else:
-            batch_payload = request_json
-            source_context_payload = None
-            request_policy_pack_id = None
-            tenant_default_policy_pack_id = None
-            tenant_id = None
-        batch_request = BatchRebalanceRequest.model_validate(batch_payload)
-        source_context = (
-            DpmResolvedSourceContext.model_validate(source_context_payload)
-            if source_context_payload
-            else None
-        )
+        payload = resolve_analyze_async_execution_payload(request_json)
         execute_batch_fn = _main_override("_execute_batch_analysis") or execute_batch_analysis
         result = execute_batch_fn(
-            request=batch_request,
+            request=payload.request,
             correlation_id=operation_correlation_id,
-            request_policy_pack_id=request_policy_pack_id,
-            tenant_default_policy_pack_id=tenant_default_policy_pack_id,
-            tenant_id=tenant_id,
-            source_context=source_context,
+            request_policy_pack_id=payload.request_policy_pack_id,
+            tenant_default_policy_pack_id=payload.tenant_default_policy_pack_id,
+            tenant_id=payload.tenant_id,
+            source_context=payload.source_context,
         )
         service.complete_operation_success(
             operation_id=operation_id,

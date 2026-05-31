@@ -5929,3 +5929,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   from `rebalance_simulation_service.py` only in small slices with direct lower-level coverage.
 - Wiki decision: no wiki source change required; this is internal supportability-write modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-235: Async analyze payload parser extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_payload.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still parsed both current persisted async-operation
+  envelopes and legacy raw batch payloads inline before delegating to batch analysis. That made
+  backward-compatibility behavior for stored operations hard to test without running the async
+  operation executor.
+- Action: extracted current/legacy async analyze payload parsing into
+  `rebalance_async_operation_payload.py`, including batch request validation, optional persisted
+  source-context validation, and policy-context selectors. The operation executor now consumes a
+  typed payload object before invoking batch analysis. Public routes, OpenAPI output, stored
+  operation payload compatibility, and policy-pack selector behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  payload and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue reducing `run_analyze_async_operation` by extracting completion/failure
+  recording once the operation lifecycle can be isolated without changing support-service calls.
+- Wiki decision: no wiki source change required; this is internal async-operation modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

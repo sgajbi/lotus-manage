@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
+import src.api.services.rebalance_async_operation_payload as async_payload
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
@@ -348,6 +349,38 @@ def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:
 
     monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "external")
     assert async_config.resolve_async_execution_mode() == "INLINE"
+
+
+def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+
+    legacy = async_payload.resolve_analyze_async_execution_payload(batch_payload)
+
+    assert set(legacy.request.scenarios) == {"baseline"}
+    assert legacy.source_context is None
+    assert legacy.request_policy_pack_id is None
+    assert legacy.tenant_default_policy_pack_id is None
+    assert legacy.tenant_id is None
+
+    current = async_payload.resolve_analyze_async_execution_payload(
+        {
+            "batch_request": batch_payload,
+            "policy_context": {
+                "request_policy_pack_id": "pack-request",
+                "tenant_default_policy_pack_id": "pack-tenant",
+                "tenant_id": "tenant-sg",
+            },
+            "source_context": None,
+        }
+    )
+
+    assert set(current.request.scenarios) == {"baseline"}
+    assert current.source_context is None
+    assert current.request_policy_pack_id == "pack-request"
+    assert current.tenant_default_policy_pack_id == "pack-tenant"
+    assert current.tenant_id == "tenant-sg"
 
 
 def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:
