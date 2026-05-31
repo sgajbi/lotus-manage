@@ -58,6 +58,7 @@ from src.api.services.rebalance_async_operation_completion import (
 from src.api.services.rebalance_async_operation_payload import (
     resolve_analyze_async_execution_payload,
 )
+from src.api.services.rebalance_async_submission_payload import build_analyze_async_request_json
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
@@ -370,17 +371,13 @@ def submit_and_optionally_execute_async_analysis(
     try:
         accepted = service.submit_analyze_async(
             correlation_id=correlation_id,
-            request_json={
-                "batch_request": request.model_dump(mode="json"),
-                "policy_context": {
-                    "request_policy_pack_id": policy_pack_id,
-                    "tenant_default_policy_pack_id": tenant_default_policy_pack_id,
-                    "tenant_id": tenant_id,
-                },
-                "source_context": (
-                    source_context.model_dump(mode="json") if source_context is not None else None
-                ),
-            },
+            request_json=build_analyze_async_request_json(
+                request=request,
+                policy_pack_id=policy_pack_id,
+                tenant_default_policy_pack_id=tenant_default_policy_pack_id,
+                tenant_id=tenant_id,
+                source_context=source_context,
+            ),
         )
     except DpmAsyncOperationConflictError as exc:
         record_async_operation(

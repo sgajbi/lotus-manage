@@ -9,6 +9,7 @@ import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
+import src.api.services.rebalance_async_submission_payload as async_submission_payload
 import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
@@ -463,6 +464,32 @@ def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() 
     assert current.request_policy_pack_id == "pack-request"
     assert current.tenant_default_policy_pack_id == "pack-tenant"
     assert current.tenant_id == "tenant-sg"
+
+
+def test_rebalance_async_submission_payload_preserves_policy_context() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+
+    request_json = async_submission_payload.build_analyze_async_request_json(
+        request=request,
+        policy_pack_id="request-pack",
+        tenant_default_policy_pack_id="tenant-pack",
+        tenant_id="tenant-sg",
+        source_context=None,
+    )
+
+    assert set(request_json) == {"batch_request", "policy_context", "source_context"}
+    assert request_json["source_context"] is None
+    assert request_json["policy_context"] == {
+        "request_policy_pack_id": "request-pack",
+        "tenant_default_policy_pack_id": "tenant-pack",
+        "tenant_id": "tenant-sg",
+    }
+    assert request_json["batch_request"]["scenarios"] == {
+        "baseline": {"description": None, "options": {}}
+    }
 
 
 def test_rebalance_async_operation_completion_records_success_and_failure() -> None:

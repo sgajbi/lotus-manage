@@ -6092,3 +6092,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   operation intake has direct helper coverage.
 - Wiki decision: no wiki source change required; this is internal request-materialization
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-241: Async analyze submission payload helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_submission_payload.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `submit_and_optionally_execute_async_analysis` still built the persisted async analyze
+  request envelope inline, including batch request serialization, policy-context selectors, and
+  optional source-context serialization. That made the stored-operation contract harder to test
+  without exercising the full async submit path.
+- Action: extracted async analyze request-json construction into
+  `rebalance_async_submission_payload.py` and updated async submission to use the helper. Public
+  routes, OpenAPI output, stored operation envelope shape, policy context keys, and source-context
+  serialization behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  submission and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract async submit telemetry/conflict handling once support-service submit behavior
+  can remain injectable and independently testable.
+- Wiki decision: no wiki source change required; this is internal async submission modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
