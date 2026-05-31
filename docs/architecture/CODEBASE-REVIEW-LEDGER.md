@@ -3103,3 +3103,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-112: Mandate core-refresh command was mixed with health routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/mandates/{mandate_id}/refresh-from-core`.
+- Finding: the mandate router still coupled the lotus-core acquisition command with persisted
+  health read/recalculate routes. The refresh route owns core resolver dependency injection,
+  correlation propagation, source-unavailable and source-incomplete mappings, and source-backed
+  response assembly, which is a distinct integration boundary from local health access.
+- Action: moved core-refresh route registration into
+  `src/api/routers/mandate_refresh_routes.py`, preserving public path, response model, Swagger
+  guidance, response example, repository and core resolver dependencies, correlation forwarding,
+  503 mapping for unavailable core sources, and 424 mapping for incomplete source products.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split mandate health read/recalculate routes from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
