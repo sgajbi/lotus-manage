@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
+import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_source_lineage as source_lineage_service
@@ -381,6 +382,48 @@ def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() 
     assert current.request_policy_pack_id == "pack-request"
     assert current.tenant_default_policy_pack_id == "pack-tenant"
     assert current.tenant_id == "tenant-sg"
+
+
+def test_rebalance_async_operation_completion_records_success_and_failure() -> None:
+    class _SupportService:
+        success: tuple[str, dict] | None = None
+        failure: tuple[str, str, str] | None = None
+
+        def complete_operation_success(self, *, operation_id: str, result_json: dict) -> None:
+            self.success = (operation_id, result_json)
+
+        def complete_operation_failure(
+            self,
+            *,
+            operation_id: str,
+            code: str,
+            message: str,
+        ) -> None:
+            self.failure = (operation_id, code, message)
+
+    service_double = _SupportService()
+    result = SimpleNamespace(model_dump=lambda mode: {"batch_run_id": "batch_001"})
+
+    async_completion.complete_analyze_async_operation(
+        service=service_double,
+        operation_id="op_001",
+        result=result,
+        execution_mode="inline",
+    )
+
+    assert service_double.success == ("op_001", {"batch_run_id": "batch_001"})
+
+    logged_messages: list[str] = []
+    async_completion.fail_analyze_async_operation(
+        service=service_double,
+        operation_id="op_001",
+        execution_mode="manual",
+        exc=ValueError("bad payload"),
+        current_logger=SimpleNamespace(exception=lambda message: logged_messages.append(message)),
+    )
+
+    assert service_double.failure == ("op_001", "ValueError", "bad payload")
+    assert logged_messages == ["Asynchronous batch analysis failed"]
 
 
 def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:

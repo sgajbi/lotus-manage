@@ -51,6 +51,10 @@ from src.api.services.rebalance_async_config import (
     env_flag,
     resolve_async_execution_mode,
 )
+from src.api.services.rebalance_async_operation_completion import (
+    complete_analyze_async_operation,
+    fail_analyze_async_operation,
+)
 from src.api.services.rebalance_async_operation_payload import (
     resolve_analyze_async_execution_payload,
 )
@@ -460,26 +464,19 @@ def run_analyze_async_operation(
             tenant_id=payload.tenant_id,
             source_context=payload.source_context,
         )
-        service.complete_operation_success(
+        complete_analyze_async_operation(
+            service=service,
             operation_id=operation_id,
-            result_json=result.model_dump(mode="json"),
-        )
-        record_async_operation(
-            event="execute",
+            result=result,
             execution_mode=execution_mode,
-            outcome="succeeded",
         )
     except (DpmRunNotFoundError, ValidationError, RuntimeError, ValueError) as exc:
-        current_logger.exception("Asynchronous batch analysis failed")
-        service.complete_operation_failure(
+        fail_analyze_async_operation(
+            service=service,
             operation_id=operation_id,
-            code=type(exc).__name__,
-            message=str(exc),
-        )
-        record_async_operation(
-            event="execute",
             execution_mode=execution_mode,
-            outcome="failed",
+            exc=exc,
+            current_logger=current_logger,
         )
 
 

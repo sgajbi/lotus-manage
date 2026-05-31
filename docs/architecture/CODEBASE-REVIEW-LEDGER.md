@@ -5956,3 +5956,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   recording once the operation lifecycle can be isolated without changing support-service calls.
 - Wiki decision: no wiki source change required; this is internal async-operation modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-236: Async analyze completion helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_completion.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still mixed batch execution with support-service
+  completion/failure writes and async telemetry recording. This made operation lifecycle side
+  effects harder to verify without inducing execution success and failure paths through the full
+  async executor.
+- Action: extracted async analyze success and failure completion into
+  `rebalance_async_operation_completion.py`, preserving support-service calls, failure code/message
+  derivation, logger behavior, and async telemetry outcomes. Public routes, OpenAPI output, stored
+  operation state transitions, and response payloads were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  completion and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: move batch scenario execution out of `rebalance_simulation_service.py` in a later
+  slice once the run-function and support-write seams can be passed explicitly.
+- Wiki decision: no wiki source change required; this is internal async-operation lifecycle
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
