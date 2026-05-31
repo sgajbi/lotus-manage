@@ -60,6 +60,10 @@ from src.api.services.rebalance_run_support_service import (
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
+from src.api.services.rebalance_runtime_overrides import (
+    resolve_callable_override,
+    resolve_logger,
+)
 from src.api.services.rebalance_source_lineage import apply_source_lineage, source_input_mode
 from src.api.services.rebalance_stateful_source_context import (
     resolve_stateful_source_context,
@@ -97,16 +101,8 @@ _source_input_mode = source_input_mode
 _apply_source_lineage = apply_source_lineage
 
 
-def _main_override(name: str) -> Any | None:
-    try:
-        from src.api import main as main_module
-    except ImportError:
-        return None
-    return getattr(main_module, name, None)
-
-
 def _resolved_logger() -> logging.Logger | Any:
-    return _main_override("logger") or logger
+    return resolve_logger(logger)
 
 
 def resolve_selected_policy_pack_definition(
@@ -123,7 +119,10 @@ def _resolve_stateful_source_context(
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
 ) -> DpmResolvedSourceContext:
-    resolver_factory = _main_override("build_core_resolver_client") or build_core_resolver_client
+    resolver_factory = resolve_callable_override(
+        "build_core_resolver_client",
+        build_core_resolver_client,
+    )
     return resolve_stateful_source_context(
         envelope=envelope,
         correlation_id=correlation_id,
@@ -201,9 +200,11 @@ def simulate_rebalance(
         replay_enabled=replay_enabled,
         source_context=source_context,
         support_service_factory=get_dpm_run_support_service,
-        run_simulation_fn=_main_override("run_simulation") or run_simulation,
-        record_for_support=_main_override("record_dpm_run_for_support")
-        or record_dpm_run_for_support,
+        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        record_for_support=resolve_callable_override(
+            "record_dpm_run_for_support",
+            record_dpm_run_for_support,
+        ),
         current_logger=current_logger,
     )
 
@@ -235,9 +236,11 @@ def execute_batch_analysis(
         correlation_id=correlation_id,
         policy_definition=policy_context.definition,
         source_context=source_context,
-        run_simulation_fn=_main_override("run_simulation") or run_simulation,
-        record_for_support=_main_override("record_dpm_run_for_support")
-        or record_dpm_run_for_support,
+        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        record_for_support=resolve_callable_override(
+            "record_dpm_run_for_support",
+            record_dpm_run_for_support,
+        ),
         current_logger=current_logger,
     )
 
@@ -252,7 +255,10 @@ def run_analyze_async_operation(
         operation_id=operation_id,
         service=service,
         execution_mode=execution_mode,
-        execute_batch_fn=_main_override("_execute_batch_analysis") or execute_batch_analysis,
+        execute_batch_fn=resolve_callable_override(
+            "_execute_batch_analysis",
+            execute_batch_analysis,
+        ),
         current_logger=_resolved_logger(),
     )
 

@@ -6281,3 +6281,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   dedicated dependency override module after route and test callers are aligned.
 - Wiki decision: no wiki source change required; this is internal async lifecycle modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-248: Rebalance runtime override helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_runtime_overrides.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: the remaining rebalance service compatibility seams still performed ad hoc dynamic
+  lookups into `src.api.main` for logger, core resolver factory, engine invocation,
+  supportability recording, and async batch execution overrides. The behavior was required for
+  existing route/test compatibility, but the mechanism was hidden inside the broad orchestration
+  module.
+- Action: introduced `rebalance_runtime_overrides.py` to centralize main-module override lookup,
+  callable fallback resolution, and logger fallback resolution. The rebalance service now consumes
+  that helper for all remaining compatibility override paths. Added focused coverage for missing
+  main-export fallback behavior while preserving existing `src.api.main` patch-seam regression
+  tests.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over runtime
+  overrides and simulation service, OpenAPI quality gate, API vocabulary inventory validation,
+  diff check, and service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: migrate route tests toward explicit dependency injection before deleting legacy
+  `src.api.main` compatibility exports.
+- Wiki decision: no wiki source change required; this is internal compatibility-boundary
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

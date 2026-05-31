@@ -17,6 +17,7 @@ import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
 import src.api.services.rebalance_request_envelope_resolution as envelope_resolution
+import src.api.services.rebalance_runtime_overrides as runtime_overrides
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_stateful_source_context as stateful_source_context
@@ -91,6 +92,20 @@ def test_runtime_utils_feature_and_backend_guards(monkeypatch) -> None:
         == "fallback"
     )
     assert ConnectionError in postgres_connection_exception_types()
+
+
+def test_rebalance_runtime_overrides_fall_back_for_missing_main_exports() -> None:
+    def _default_callable() -> str:
+        return "default"
+
+    assert (
+        runtime_overrides.resolve_callable_override(
+            "__missing_lotus_manage_override__",
+            _default_callable,
+        )
+        is _default_callable
+    )
+    assert runtime_overrides.resolve_main_override("__missing_lotus_manage_override__") is None
 
 
 def test_rebalance_run_support_provider_raises_application_error(monkeypatch) -> None:
