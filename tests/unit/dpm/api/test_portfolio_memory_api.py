@@ -1767,6 +1767,11 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert detail_parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_READ_LIMIT_MIN
     assert detail_parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX
     assert (
+        "Manage-local source-backed memory timeline"
+        in (detail_parameters["portfolio_id"]["description"])
+    )
+    assert detail_parameters["portfolio_id"]["schema"]["examples"] == ["PB_SG_GLOBAL_BAL_001"]
+    assert (
         event_lookup_parameters["limit"]["schema"]["default"]
         == PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT
     )
@@ -1776,6 +1781,14 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert event_lookup_parameters["limit"]["schema"]["maximum"] == (
         PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX
     )
+    assert (
+        "Manage-local source-backed memory timeline"
+        in (event_lookup_parameters["portfolio_id"]["description"])
+    )
+    assert "Stable portfolio-memory event id" in event_lookup_parameters["event_id"]["description"]
+    assert event_lookup_parameters["event_id"]["schema"]["examples"] == [
+        "memory:proof-pack:dpp_c09f73d0"
+    ]
 
 
 def test_portfolio_memory_search_page_rejects_inconsistent_metadata() -> None:

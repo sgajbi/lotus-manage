@@ -1545,3 +1545,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-scan validation boundary before reaching source repositories.
 - Wiki decision: no wiki source change required; this is internal defensive validation hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-036: Portfolio-memory path parameters lacked Swagger guidance
+
+- Date: 2026-05-31
+- Scope: portfolio-memory detail and event-lookup OpenAPI path parameter documentation
+- Finding: portfolio-memory detail and exact-event lookup routes carried rich endpoint
+  descriptions, but their `portfolio_id` and `event_id` path parameters were plain strings. Swagger
+  therefore lacked parameter-level usage guidance and examples for the audit/demo drilldown path.
+- Action: added FastAPI `Path` descriptions and examples for portfolio-memory `portfolio_id` and
+  `event_id`, and extended the OpenAPI regression test to pin those parameter docs.
+- Status: hardened
+- Evidence: OpenAPI assertions in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep new portfolio-memory route parameters annotated at the API boundary when adding
+  continuation, source-family, or drilldown routes.
+- Wiki decision: no wiki source change required; this improves generated Swagger/OpenAPI guidance
+  without changing route behavior, payloads, or operator-facing wiki truth.

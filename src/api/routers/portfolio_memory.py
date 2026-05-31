@@ -1,8 +1,8 @@
 """API routes for RFC-0040 portfolio memory."""
 
-from typing import cast, get_args
+from typing import Annotated, cast, get_args
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from src.api.dependencies import (
     get_construction_repository,
@@ -235,8 +235,24 @@ def search_portfolio_memory_index(
     ),
 )
 def get_portfolio_memory_event(
-    portfolio_id: str,
-    event_id: str,
+    portfolio_id: Annotated[
+        str,
+        Path(
+            description=(
+                "Portfolio identifier for the Manage-local source-backed memory timeline."
+            ),
+            examples=["PB_SG_GLOBAL_BAL_001"],
+        ),
+    ],
+    event_id: Annotated[
+        str,
+        Path(
+            description=(
+                "Stable portfolio-memory event id returned by the timeline or search result."
+            ),
+            examples=["memory:proof-pack:dpp_c09f73d0"],
+        ),
+    ],
     limit: int = Query(
         default=PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT,
         ge=PORTFOLIO_MEMORY_READ_LIMIT_MIN,
@@ -293,7 +309,15 @@ def get_portfolio_memory_event(
     ),
 )
 def get_portfolio_memory(
-    portfolio_id: str,
+    portfolio_id: Annotated[
+        str,
+        Path(
+            description=(
+                "Portfolio identifier for the Manage-local source-backed memory timeline."
+            ),
+            examples=["PB_SG_GLOBAL_BAL_001"],
+        ),
+    ],
     limit: int = Query(
         default=PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
         ge=PORTFOLIO_MEMORY_READ_LIMIT_MIN,
