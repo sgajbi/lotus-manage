@@ -3489,3 +3489,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   branch commit count against the PR target.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-130: Construction request contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: construction alternative-set API request contracts and Swagger example payload.
+- Finding: `src/api/routers/construction.py` mixed route registration with generated alternative
+  set request contracts, selection request contracts, stateful/stateless envelope conversion, and
+  OpenAPI example payloads. These models are shared by the generate and selection route families
+  and should remain independently reviewable from handler orchestration.
+- Action: moved construction request models and the alternative-set example payload into
+  `src/api/routers/construction_models.py`, preserving field names, defaults, examples,
+  descriptions, envelope conversion behavior, and imported domain vocabularies.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction generate, read, and selection route handlers into bounded route
+  modules while preserving the parent router import used by `src/api/main.py`.
+- Wiki decision: no wiki source change required; this is internal router/model modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
