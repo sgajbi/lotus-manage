@@ -6,6 +6,12 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_core_resolver_incomplete_http_exception,
+    pm_quality_core_resolver_unavailable_http_exception,
+    pm_quality_pm_book_membership_empty_http_exception,
+    pm_quality_pm_book_membership_not_ready_http_exception,
+)
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityPmBookScopeRequest,
     DpmPmOperatingQualityScorePreviewRequest,
@@ -43,32 +49,14 @@ def resolve_pm_book_scope_evidence(
             correlation_id=correlation_id,
         )
     except DpmCoreResolverUnavailableError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"},
-        ) from exc
+        raise pm_quality_core_resolver_unavailable_http_exception(exc) from exc
     except DpmCoreResolverError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
-        ) from exc
+        raise pm_quality_core_resolver_incomplete_http_exception(exc) from exc
 
     if membership.supportability.state != "READY":
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": membership.supportability.reason,
-                "message": "PM-book membership is not source-ready for PM operating quality.",
-            },
-        )
+        raise pm_quality_pm_book_membership_not_ready_http_exception(membership)
     if not membership.members:
-        raise HTTPException(
-            status_code=status.HTTP_424_FAILED_DEPENDENCY,
-            detail={
-                "code": "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
-                "message": "PM-book membership returned no portfolios for PM operating quality.",
-            },
-        )
+        raise pm_quality_pm_book_membership_empty_http_exception()
 
     source_id = (
         membership.snapshot_id

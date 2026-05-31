@@ -5428,3 +5428,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   broader cross-domain prerequisite error helper is introduced.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-217: PM operating quality PM-book source dependency mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py` and
+  `src/api/routers/pm_operating_quality_book_scope_builder.py`.
+- Finding: PM operating-quality PM-book scope materialization still constructed source dependency
+  HTTP failures inline for core resolver unavailability, incomplete PM-book membership data,
+  source-readiness failure, and empty membership results. These mappings are PM-quality-specific
+  contract details and should stay reusable near the rest of the PM-quality HTTP translation layer
+  as Manage integrates with ongoing core and gateway refactors.
+- Action: added PM-quality PM-book source dependency HTTP helpers and reused them from the book
+  scope builder. Public paths, response models, OpenAPI output, and existing `503`/`424` detail
+  payloads were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep monitoring PM-book selector source-readiness mappings separate until monitoring
+  and PM-quality agree on a shared source-dependency error envelope.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
