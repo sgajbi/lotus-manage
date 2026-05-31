@@ -3273,3 +3273,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   existing service/test import seams from `rebalance_policy_packs.py`.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-120: Effective policy-pack resolution route was mixed with catalog APIs
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/policies/effective`.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed effective policy-pack resolution with
+  catalog reads, admin mutations, and repository setup. The effective route is a read-only
+  supportability diagnostic over request, tenant, and global default precedence; it does not own
+  catalog item retrieval or mutation.
+- Action: moved effective policy-pack route registration into
+  `src/api/routers/rebalance_policy_pack_effective_routes.py`, preserving public path, response
+  model, Swagger guidance, request/tenant header metadata, query-parameter rejection,
+  policy-resolution metric recording, and the existing resolver exports from
+  `rebalance_policy_packs.py`.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split catalog read routes and admin mutation routes while preserving existing
+  repository/configuration import seams.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
