@@ -4955,3 +4955,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   still the safest pattern.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-197: Monitoring parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/monitoring.py`.
+- Finding: the monitoring parent router registered command-center, run-once, run-read, and
+  exception routes through repeated `importlib.import_module()` calls. That made route order less
+  explicit as an inventory and created copy/paste friction for future monitoring route slices.
+- Action: centralized monitoring route module names in one ordered tuple and registered them
+  through a single loop. Public paths, route ordering, response models, OpenAPI output, core
+  resolver dependency flow, command-center, monitoring run, and exception behavior were preserved.
+- Status: hardened
+- Evidence: monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`), router-wide
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.

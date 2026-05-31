@@ -15,7 +15,12 @@ def get_core_resolver_client() -> DpmCoreResolverClient:
     return build_core_resolver_client()
 
 
-importlib.import_module("src.api.routers.monitoring_command_center_routes")
-importlib.import_module("src.api.routers.monitoring_run_once_routes")
-importlib.import_module("src.api.routers.monitoring_run_read_routes")
-importlib.import_module("src.api.routers.monitoring_exception_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.monitoring_command_center_routes",
+    "src.api.routers.monitoring_run_once_routes",
+    "src.api.routers.monitoring_run_read_routes",
+    "src.api.routers.monitoring_exception_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)
