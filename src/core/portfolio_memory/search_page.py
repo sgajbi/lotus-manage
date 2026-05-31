@@ -141,11 +141,8 @@ def build_search_page(
     offset: int,
     generated_at: str,
 ) -> DpmPortfolioMemorySearchPage:
-    sorted_rows = sorted(
-        search_rows,
-        key=lambda row: (row[0].latest_event_time or "", row[0].portfolio_id),
-        reverse=True,
-    )
+    sorted_rows = sorted(search_rows, key=lambda row: row[0].portfolio_id)
+    sorted_rows.sort(key=lambda row: row[0].latest_event_time or "", reverse=True)
     total_count = len(sorted_rows)
     facet_counts = build_search_facet_counts(sorted_rows)
 

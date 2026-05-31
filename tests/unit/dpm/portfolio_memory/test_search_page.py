@@ -147,6 +147,66 @@ def test_build_search_page_counts_matching_event_facets_and_paginates() -> None:
     assert page.source_system_counts == {"lotus-core": 2, "lotus-manage": 2}
 
 
+def test_build_search_page_orders_timestamp_ties_by_portfolio_id() -> None:
+    filters = PortfolioMemorySearchFilters(
+        event_type="WAVE_HANDOFF_READY",
+        supportability_state=None,
+        source_system=None,
+        source_type=None,
+    )
+    rows = [
+        row
+        for row in [
+            build_search_row(
+                memory=_memory(
+                    portfolio_id="PB_SEARCH_Z",
+                    events=[
+                        _event(
+                            event_id="memory:search:handoff:z",
+                            event_type="WAVE_HANDOFF_READY",
+                            event_time="2026-05-31T10:00:00+00:00",
+                            source_id="handoff-z",
+                            content_hash="sha256:handoff-z",
+                        )
+                    ],
+                ),
+                filters=filters,
+                explicit_candidate_ids=set(),
+            ),
+            build_search_row(
+                memory=_memory(
+                    portfolio_id="PB_SEARCH_A",
+                    events=[
+                        _event(
+                            event_id="memory:search:handoff:a",
+                            event_type="WAVE_HANDOFF_READY",
+                            event_time="2026-05-31T10:00:00+00:00",
+                            source_id="handoff-a",
+                            content_hash="sha256:handoff-a",
+                        )
+                    ],
+                ),
+                filters=filters,
+                explicit_candidate_ids=set(),
+            ),
+        ]
+        if row is not None
+    ]
+
+    page = build_search_page(
+        search_rows=rows,
+        filters=filters,
+        explicit_candidate_ids=set(),
+        scanned_portfolio_count=2,
+        source_scan_limit=100,
+        limit=10,
+        offset=0,
+        generated_at="2026-05-31T12:00:00+00:00",
+    )
+
+    assert [item.portfolio_id for item in page.items] == ["PB_SEARCH_A", "PB_SEARCH_Z"]
+
+
 def _memory(
     *,
     portfolio_id: str,

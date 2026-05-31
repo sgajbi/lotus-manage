@@ -1696,3 +1696,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   of duplicating allowed values in controller code.
 - Wiki decision: no wiki source change required; this is API contract implementation hygiene with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-045: Search timestamp ties sorted portfolio ids descending
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search-page ordering
+- Finding: search pages sorted by `(latest_event_time, portfolio_id)` with `reverse=True`, so
+  equal-timestamp rows were deterministic but ordered by portfolio id descending. That is a weak
+  UX and audit posture for tie cases because portfolio identifiers should use ascending stable
+  order when event recency is equal.
+- Action: changed search-page sorting to apply portfolio id as the stable ascending tie-breaker
+  after ordering latest event timestamps descending.
+- Status: hardened
+- Evidence: focused search-page test proving equal timestamp rows return in ascending portfolio-id
+  order.
+- Follow-up: keep future search sort additions explicit about descending versus ascending fields
+  instead of relying on whole-tuple reverse sorting.
+- Wiki decision: no wiki source change required; this is deterministic response-order hygiene with
+  no route, payload-shape, supported-feature, or operator-contract change.
