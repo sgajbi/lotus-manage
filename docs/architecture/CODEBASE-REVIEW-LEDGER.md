@@ -4053,3 +4053,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   command/read split pattern.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-156: PM quality review-action routes mixed command and read registration
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/review-actions` and
+  `GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`.
+- Finding: `src/api/routers/pm_operating_quality_review_action_routes.py` registered preview/create
+  command endpoints and persisted read endpoints in one module. Review-action reads own bounded
+  target/policy/date/state filters, pagination, immutable lookup, and not-found mapping, while the
+  command side owns review-action construction and conflict-safe persistence.
+- Action: moved review-action list/get route registration into
+  `src/api/routers/pm_operating_quality_review_action_read_routes.py` and kept
+  `register_pm_quality_review_action_routes` as the stable parent registration entry point. Public
+  paths, response models, Swagger guidance, query parameters, pagination bounds, repository
+  dependency wiring, not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect whether PM operating-quality score-run read registration should be moved to a
+  dedicated module for consistency with review-action and summary read routing.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
