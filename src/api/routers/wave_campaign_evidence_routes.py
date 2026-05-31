@@ -3,19 +3,19 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_campaign_definition_repository
+from src.api.routers.wave_campaign_approval_decision_evidence_routes import (
+    router as approval_decision_router,
+)
 from src.api.routers.wave_campaign_action_http import (
-    list_campaign_definition_approval_decisions_response,
     list_campaign_definition_assignment_actions_response,
     list_campaign_definition_assignment_tasks_response,
     list_campaign_definition_maker_checker_controls_response,
     open_campaign_definition_assignment_task_response,
-    record_campaign_definition_approval_decision_response,
     record_campaign_definition_assignment_action_response,
     record_campaign_definition_maker_checker_control_response,
     transition_campaign_definition_assignment_task_response,
 )
 from src.api.routers.wave_campaign_models import (
-    DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
@@ -31,7 +31,6 @@ from src.api.routers.wave_route_parameters import (
 from src.core.waves import (
     CampaignAssignmentTaskStatus,
     DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
@@ -40,64 +39,7 @@ from src.core.waves import (
 
 
 router = APIRouter(tags=["lotus-manage Rebalance Waves"])
-
-
-@router.post(
-    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
-    response_model=DpmBulkReviewCampaignDefinition,
-    status_code=status.HTTP_201_CREATED,
-    summary="Record bulk-review campaign approval decision",
-    description=(
-        "Records an append-only approval decision on one active Manage-owned "
-        "`BulkReviewCampaignDefinition:v1`. This mutates campaign approval evidence only: it "
-        "does not run maker-checker workflow, approve trades, generate orders, route orders, "
-        "contact clients, or claim OMS execution."
-    ),
-)
-def record_bulk_review_campaign_definition_approval_decision_endpoint(
-    campaign_id: CampaignDefinitionIdPath,
-    campaign_version: CampaignDefinitionVersionPath,
-    request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmBulkReviewCampaignDefinition:
-    return record_campaign_definition_approval_decision_response(
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
-
-
-@router.get(
-    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
-    response_model=DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
-    status_code=status.HTTP_200_OK,
-    summary="List bulk-review campaign approval decisions",
-    description=(
-        "Returns a bounded append-only approval-decision page for one persisted Manage-owned "
-        "`BulkReviewCampaignDefinition:v1`. The response summarizes approval posture without "
-        "creating maker-checker workflow, trade approval, order generation, order routing, client "
-        "contact, or OMS execution claims."
-    ),
-)
-def list_bulk_review_campaign_definition_approval_decisions(
-    campaign_id: CampaignDefinitionIdPath,
-    campaign_version: CampaignDefinitionVersionPath,
-    limit: CampaignEvidenceLimitQuery = 50,
-    offset: CampaignEvidenceOffsetQuery = 0,
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
-    return list_campaign_definition_approval_decisions_response(
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        limit=limit,
-        offset=offset,
-        repository=repository,
-    )
+router.include_router(approval_decision_router)
 
 
 @router.post(

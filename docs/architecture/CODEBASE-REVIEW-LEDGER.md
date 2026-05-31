@@ -3915,3 +3915,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: prepare the ~50-commit branch for PR gate validation.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-150: Campaign evidence mixed approval decisions with task controls
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`.
+- Finding: `src/api/routers/wave_campaign_evidence_routes.py` mixed approval-decision evidence
+  with assignment-action, assignment-task, and maker-checker control routes. Approval decisions own
+  append-only approval evidence and read-page posture, while the remaining routes own separate
+  assignment workflow and maker-checker control lifecycles.
+- Action: moved approval-decision route registration into
+  `src/api/routers/wave_campaign_approval_decision_evidence_routes.py` and included it first from
+  `wave_campaign_evidence_routes.py`, preserving public paths, response models, Swagger guidance,
+  repository dependency wiring, response helper calls, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-action evidence from the remaining campaign evidence router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
