@@ -969,3 +969,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and artifact-ref semantics can be covered independently.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-008: Wave memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: wave created, state-transition, and internal handoff portfolio-memory event projection
+- Finding: wave event projection was embedded in `src/core/portfolio_memory/service.py` beside
+  wave repository discovery. The event builders own handoff-boundary semantics, source refs,
+  transition metadata, and no-external-execution evidence, so they are a source-event-family
+  projection boundary rather than service orchestration.
+- Action: extracted wave created, state-transition, handoff, and event-metadata projection into
+  `src/core/portfolio_memory/wave_projection.py`, leaving wave selection in the service. Added
+  direct unit coverage for matching item context, source refs, transition metadata, handoff
+  artifact refs, and unrelated handoff filtering.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_wave_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep campaign workflow projection in the service until it can be split without
+  weakening campaign-version identity or maker-checker boundary evidence.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
