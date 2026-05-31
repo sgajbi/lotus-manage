@@ -3002,3 +3002,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split direct review lookup, run lookup, and wave lookup routes into owned modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-107: Direct outcome-review lookup was mixed with cross-resource lookups
+
+- Date: 2026-05-31
+- Scope: direct outcome-review lookup by outcome-review id.
+- Finding: `src/api/routers/outcome_reviews.py` mixed direct persisted review lookup with run and
+  wave lookup routes. Direct lookup is a simple manage-owned identifier read, while run and wave
+  lookup routes are cross-resource views under different router prefixes.
+- Action: moved direct outcome-review lookup route registration into
+  `src/api/routers/outcome_review_lookup_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, persisted-truth boundary text, and not-found behavior.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split run lookup and wave lookup routes from the remaining composition shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
