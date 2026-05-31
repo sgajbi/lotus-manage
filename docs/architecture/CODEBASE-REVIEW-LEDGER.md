@@ -4145,3 +4145,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   compatibility shims that can be reduced without breaking tests.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-160: PM quality builders mixed score-run assembly with Core book sourcing
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run construction with optional `pm_book_scope`.
+- Finding: `src/api/routers/pm_operating_quality_builders.py` mixed score-run assembly and
+  review-action assembly with Core PM-book membership sourcing. The PM-book scope path owns
+  Core resolver invocation, unavailable/incomplete source mapping, source-ready validation, empty
+  membership fail-closed behavior, source refs, bounded member projection, and conversion into a
+  `SOURCE_QUALITY` evidence signal.
+- Action: moved PM-book scope sourcing and signal conversion into
+  `src/api/routers/pm_operating_quality_book_scope_builder.py` while keeping the existing
+  `pm_operating_quality_builders` import surface intact for parent-router compatibility and tests.
+  Public routes, request/response models, failure status codes/details, source refs, member limits,
+  reason codes, and correlation-id behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect whether policy resolution should be split from score-run assembly once PM-book
+  sourcing is stable in its own module.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
