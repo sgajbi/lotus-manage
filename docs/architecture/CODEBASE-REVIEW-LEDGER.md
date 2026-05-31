@@ -2723,3 +2723,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the support-bundle shell responsible only for composition order.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-094: Direct run support bundle was still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by run id.
+- Finding: after operation, idempotency, and correlation support-bundle extraction,
+  `src/api/routers/rebalance_runs_support_bundle_routes.py` still directly owned the run-id
+  support-bundle endpoint while also acting as the support-bundle route composition shell. That
+  left one resolver in a different ownership style from the rest of the support-bundle surface.
+- Action: moved direct run-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_run_routes.py` and reduced the support-bundle
+  shell to explicit composition imports for run, correlation, idempotency, and operation resolver
+  modules, preserving public path, response model, Swagger metadata, supportability and
+  support-bundle feature gates, unsupported-query rejection, include-flag behavior, and not-found
+  mapping.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review run lookup/idempotency lookup route ownership with the same resolver-boundary
+  pattern used for support bundles.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
