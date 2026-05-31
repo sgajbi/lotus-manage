@@ -1,5 +1,4 @@
 import logging
-import os
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timezone
@@ -44,6 +43,12 @@ from src.api.services.rebalance_policy_pack_service import (
     DpmPolicyPackCatalogUnavailableError,
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
+)
+from src.api.services.rebalance_async_config import (
+    async_manual_execution_enabled,
+    async_operations_enabled,
+    env_flag,
+    resolve_async_execution_mode,
 )
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
@@ -112,25 +117,6 @@ def _main_override(name: str) -> Any | None:
 
 def _resolved_logger() -> logging.Logger | Any:
     return _main_override("logger") or logger
-
-
-def env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
-def resolve_async_execution_mode() -> str:
-    value = os.getenv("DPM_ASYNC_EXECUTION_MODE", "INLINE")
-    normalized = value.strip().upper()
-    if normalized in {"INLINE", "ACCEPT_ONLY"}:
-        return normalized
-    return "INLINE"
-
-
-def async_manual_execution_enabled() -> bool:
-    return env_flag("DPM_ASYNC_MANUAL_EXECUTION_ENABLED", True)
 
 
 def resolve_selected_policy_pack_definition(
@@ -566,7 +552,7 @@ def submit_and_optionally_execute_async_analysis(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
-    if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
+    if not async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     try:
         service = get_dpm_run_support_service()
@@ -636,7 +622,7 @@ def submit_and_optionally_execute_async_analysis(
 def execute_dpm_async_operation(
     *, operation_id: str, service: DpmRunSupportService
 ) -> DpmAsyncOperationStatusResponse:
-    if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
+    if not async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     if not async_manual_execution_enabled():
         raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
@@ -686,6 +672,7 @@ __all__ = [
     "DpmRebalanceStatefulInputDisabledError",
     "DpmRebalanceSupportabilityStoreUnavailableError",
     "async_manual_execution_enabled",
+    "async_operations_enabled",
     "env_flag",
     "env_int",
     "execute_batch_analysis",

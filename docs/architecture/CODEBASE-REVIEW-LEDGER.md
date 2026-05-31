@@ -5847,3 +5847,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   resolution and async execution helpers in later small slices once their test seams are direct.
 - Wiki decision: no wiki source change required; this is internal service-boundary modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-232: Rebalance async configuration service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_config.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: async operation feature flags, manual-execution gating, and execution-mode
+  normalization were still embedded in `rebalance_simulation_service.py`, even though they are
+  reusable runtime configuration concerns and are also compatibility-exported through
+  `src/api/main.py`. This kept configuration parsing mixed into simulation orchestration.
+- Action: extracted async flag and mode helpers into `rebalance_async_config.py`, updated
+  simulation orchestration to use the dedicated helper for async operation gating, and preserved
+  compatibility exports from `rebalance_simulation_service.py`. Public routes, OpenAPI output,
+  accepted execution modes, default behavior, and async disabled/manual-disabled error details
+  were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  config and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue extracting async execution orchestration from `rebalance_simulation_service.py`
+  once the operation lifecycle can be isolated without widening the HTTP error-mapping surface.
+- Wiki decision: no wiki source change required; this is internal runtime-configuration modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

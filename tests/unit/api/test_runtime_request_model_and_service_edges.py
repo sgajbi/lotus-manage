@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
+import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
@@ -323,6 +324,27 @@ def test_rebalance_source_lineage_stamps_result_metadata() -> None:
     assert stateful_result.lineage.source_lineage_bundle_id == "lineage-bundle-001"
     assert stateful_result.lineage.source_supportability_state == "READY"
     assert stateful_result.lineage.stateful_context_hash == "stateful-hash-001"
+
+
+def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:
+    monkeypatch.delenv("DPM_ASYNC_EXECUTION_MODE", raising=False)
+    monkeypatch.delenv("DPM_ASYNC_OPERATIONS_ENABLED", raising=False)
+    monkeypatch.delenv("DPM_ASYNC_MANUAL_EXECUTION_ENABLED", raising=False)
+
+    assert async_config.resolve_async_execution_mode() == "INLINE"
+    assert async_config.async_operations_enabled() is True
+    assert async_config.async_manual_execution_enabled() is True
+
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "accept_only")
+    monkeypatch.setenv("DPM_ASYNC_OPERATIONS_ENABLED", "false")
+    monkeypatch.setenv("DPM_ASYNC_MANUAL_EXECUTION_ENABLED", "0")
+
+    assert async_config.resolve_async_execution_mode() == "ACCEPT_ONLY"
+    assert async_config.async_operations_enabled() is False
+    assert async_config.async_manual_execution_enabled() is False
+
+    monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "external")
+    assert async_config.resolve_async_execution_mode() == "INLINE"
 
 
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:
