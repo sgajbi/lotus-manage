@@ -169,7 +169,9 @@ importlib.import_module("src.api.routers.rebalance_runs_async_operation_inventor
 importlib.import_module("src.api.routers.rebalance_runs_async_operation_lookup_routes")
 importlib.import_module("src.api.routers.rebalance_runs_lineage_routes")
 importlib.import_module("src.api.routers.rebalance_runs_workflow_decision_routes")
-importlib.import_module("src.api.routers.rebalance_runs_workflow_routes")
+importlib.import_module("src.api.routers.rebalance_runs_workflow_state_routes")
+importlib.import_module("src.api.routers.rebalance_runs_workflow_action_routes")
+importlib.import_module("src.api.routers.rebalance_runs_workflow_history_routes")
 
 __all__ = [
     "Depends",
