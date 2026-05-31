@@ -2787,3 +2787,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route registration order for specific lookup paths before the run-id catch-all route.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-097: Request-hash lookup was mixed with trace and run-id lookups
+
+- Date: 2026-05-31
+- Scope: latest run lookup by canonical request hash.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` still mixed request-hash lookup with
+  correlation and direct run-id lookup routes. Request-hash lookup supports retry/replay and
+  fingerprint-based investigations, while correlation lookup supports trace resolution and run-id
+  lookup is the direct persisted identifier path.
+- Action: moved request-hash lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_request_hash_routes.py`, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, URL-encoded
+  hash path behavior, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API request-hash/supportability regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "request_hash or supportability"`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split direct run-id lookup from correlation lookup and leave the lookup shell
+  responsible only for specific-before-catch-all route composition.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
