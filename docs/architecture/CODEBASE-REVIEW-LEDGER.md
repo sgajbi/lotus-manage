@@ -1862,3 +1862,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for existing routes with no behavior, payload, or supported-feature
   change.
+
+## BACKEND-REVIEW-20260531-054: Wave route parameter aliases were embedded in the main router
+
+- Date: 2026-05-31
+- Scope: reusable wave route path and query parameter aliases
+- Finding: after hardening wave Swagger metadata, the reusable `Annotated` path/query aliases lived
+  directly in `src/api/routers/waves.py`. That kept domain API documentation primitives mixed with
+  route wiring in an already large controller module.
+- Action: moved campaign and durable-wave path/query aliases into
+  `src/api/routers/wave_route_parameters.py`, leaving `waves.py` to import the shared route
+  parameter contracts.
+- Status: hardened
+- Evidence: focused OpenAPI regression coverage, focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: place future wave route parameter aliases in the shared module instead of adding
+  controller-local `Path` or `Query` metadata.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
