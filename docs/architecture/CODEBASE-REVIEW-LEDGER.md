@@ -2392,3 +2392,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   monkeypatching.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-079: Run artifact endpoint lived in the supportability root router
+
+- Date: 2026-05-31
+- Scope: deterministic DPM run artifact route registration for
+  `GET /api/v1/rebalance/runs/{rebalance_run_id}/artifact`.
+- Finding: the deterministic run artifact endpoint was still implemented directly in
+  `src/api/routers/rebalance_runs.py`, which already owns service initialization, feature gates,
+  lookup APIs, support bundles, operations, and workflow composition. Artifact retrieval is a
+  distinct supportability sub-surface with its own feature gate and audit/replay contract.
+- Action: moved artifact route registration into
+  `src/api/routers/rebalance_runs_artifact_routes.py` while preserving public path, response
+  model, Swagger metadata, feature gates, unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API supportability/artifact regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "artifact or support_bundle or supportability_summary or support_runs_list or idempotency_history"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: extract run support-bundle routes next, then lookup/read routes, keeping
+  supportability service initialization in the parent until dependency ownership is made explicit.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
