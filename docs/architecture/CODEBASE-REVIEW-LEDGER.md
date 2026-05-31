@@ -6064,3 +6064,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   validation and request materialization have direct helper tests.
 - Wiki decision: no wiki source change required; this is internal core-sourcing modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-240: Rebalance request-envelope resolution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_request_envelope_resolution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned stateless envelope validation,
+  stateful source-context resolution delegation, core-context-to-request transformation, and
+  transform-error mapping for both simulate and batch analyze paths. That kept request
+  materialization mixed into orchestration and made stateless pass-through/stateful failure mapping
+  harder to prove directly.
+- Action: extracted rebalance and batch request-envelope materialization into
+  `rebalance_request_envelope_resolution.py`, with explicit stateful resolver and request-builder
+  dependencies. The existing service functions remain as compatibility wrappers for route callers
+  and tests. Public routes, OpenAPI output, stateless missing-payload details, core-context
+  incomplete mapping, and request payload shape were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  request-envelope and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract async submission payload construction and submit telemetry next so async
+  operation intake has direct helper coverage.
+- Wiki decision: no wiki source change required; this is internal request-materialization
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

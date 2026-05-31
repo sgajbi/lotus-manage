@@ -40,6 +40,10 @@ from src.api.services.rebalance_policy_pack_execution import (
     record_policy_resolution,
     resolve_selected_policy_pack_definition as resolve_selected_policy_pack_definition_from_catalog,
 )
+from src.api.services.rebalance_request_envelope_resolution import (
+    resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
+    resolve_rebalance_request_envelope as resolve_rebalance_request_envelope_from_source,
+)
 from src.api.services.rebalance_idempotency_replay import resolve_idempotency_replay
 from src.api.services.rebalance_async_config import (
     async_manual_execution_enabled,
@@ -67,7 +71,6 @@ from src.api.services.rebalance_stateful_source_context import (
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.dpm_source_context import (
-    DpmCoreContextIncompleteError,
     DpmResolvedSourceContext,
     build_batch_rebalance_request_from_core_context,
     build_rebalance_request_from_core_context,
@@ -160,23 +163,12 @@ def resolve_rebalance_request_envelope(
     envelope: RebalanceExecutionRequestEnvelope,
     correlation_id: Optional[str],
 ) -> tuple[RebalanceRequest, Optional[DpmResolvedSourceContext]]:
-    if envelope.input_mode == "stateless":
-        if envelope.stateless_input is None:
-            raise DpmRebalanceEnvelopeValidationError("DPM_STATELESS_INPUT_REQUIRED")
-        return envelope.stateless_input, None
-
-    source_context = _resolve_stateful_source_context(
+    return resolve_rebalance_request_envelope_from_source(
         envelope=envelope,
         correlation_id=correlation_id,
+        stateful_context_resolver=_resolve_stateful_source_context,
+        rebalance_request_builder=build_rebalance_request_from_core_context,
     )
-    try:
-        resolved = build_rebalance_request_from_core_context(
-            context=source_context.context,
-            options_override=envelope.options_override,
-        )
-    except (DpmCoreContextIncompleteError, ValidationError) as exc:
-        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
-    return RebalanceRequest.model_validate(resolved.model_dump(mode="python")), source_context
 
 
 def resolve_batch_request_envelope(
@@ -184,23 +176,12 @@ def resolve_batch_request_envelope(
     envelope: BatchExecutionRequestEnvelope,
     correlation_id: Optional[str],
 ) -> tuple[BatchRebalanceRequest, Optional[DpmResolvedSourceContext]]:
-    if envelope.input_mode == "stateless":
-        if envelope.stateless_input is None:
-            raise DpmRebalanceEnvelopeValidationError("DPM_STATELESS_INPUT_REQUIRED")
-        return envelope.stateless_input, None
-
-    source_context = _resolve_stateful_source_context(
+    return resolve_batch_request_envelope_from_source(
         envelope=envelope,
         correlation_id=correlation_id,
+        stateful_context_resolver=_resolve_stateful_source_context,
+        batch_request_builder=build_batch_rebalance_request_from_core_context,
     )
-    try:
-        request = build_batch_rebalance_request_from_core_context(
-            context=source_context.context,
-            scenarios=envelope.scenarios,
-        )
-    except (DpmCoreContextIncompleteError, ValidationError) as exc:
-        raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
-    return request, source_context
 
 
 def simulate_rebalance(

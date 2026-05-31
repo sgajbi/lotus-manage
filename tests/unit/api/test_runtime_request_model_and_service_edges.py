@@ -12,13 +12,18 @@ import src.api.services.rebalance_async_operation_payload as async_payload
 import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
+import src.api.services.rebalance_request_envelope_resolution as envelope_resolution
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_stateful_source_context as stateful_source_context
 import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
-from src.api.request_models import BatchExecutionRequestEnvelope, RebalanceExecutionRequestEnvelope
+from src.api.request_models import (
+    BatchExecutionRequestEnvelope,
+    RebalanceExecutionRequestEnvelope,
+    RebalanceRequest,
+)
 from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
@@ -211,6 +216,42 @@ def test_stateful_source_context_helper_gates_before_resolver_call() -> None:
             correlation_id="corr",
             stateful_enabled=False,
             resolver_factory=_unexpected_resolver,
+        )
+
+
+def test_rebalance_request_envelope_resolution_handles_stateless_and_transform_failure() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    stateless_envelope = RebalanceExecutionRequestEnvelope(
+        input_mode="stateless",
+        stateless_input=request,
+    )
+
+    resolved_request, source_context = envelope_resolution.resolve_rebalance_request_envelope(
+        envelope=stateless_envelope,
+        correlation_id="corr",
+        stateful_context_resolver=lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("stateless should not resolve source context")
+        ),
+        rebalance_request_builder=lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("stateless should not rebuild request")
+        ),
+    )
+
+    assert resolved_request is request
+    assert source_context is None
+
+    stateful_envelope = RebalanceExecutionRequestEnvelope(
+        input_mode="stateful",
+        stateful_input=_stateful_input(),
+    )
+    with pytest.raises(service.DpmRebalanceCoreContextIncompleteError):
+        envelope_resolution.resolve_rebalance_request_envelope(
+            envelope=stateful_envelope,
+            correlation_id="corr",
+            stateful_context_resolver=lambda **_kwargs: SimpleNamespace(context=object()),
+            rebalance_request_builder=lambda **_kwargs: (_ for _ in ()).throw(
+                DpmCoreContextIncompleteError("missing")
+            ),
         )
 
 
