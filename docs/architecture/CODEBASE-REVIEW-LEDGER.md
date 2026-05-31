@@ -4776,3 +4776,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   direct-registration cleanup.
 - Wiki decision: no wiki source change required; this is internal route registration cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-188: Rebalance support-bundle composition route only imported leaf routes
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs.py` and
+  `src/api/routers/rebalance_runs_support_bundle_routes.py`.
+- Finding: after support-bundle run, correlation, idempotency, and operation routes were split, the
+  support-bundle composition module only imported those leaf route modules. Keeping the extra import
+  layer made parent router registration less direct without owning behavior.
+- Action: registered support-bundle leaf routes directly from the parent rebalance run router and
+  removed the obsolete composition module. Public paths, route ordering, response models, OpenAPI
+  output, feature gates, and lookup semantics were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; DPM rebalance API regression
+  (`tests/unit/dpm/api/test_api_rebalance.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect remaining composition-only rebalance run route modules for the same safe
+  direct-registration cleanup.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.

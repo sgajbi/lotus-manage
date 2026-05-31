@@ -160,7 +160,10 @@ def reset_dpm_run_support_service_for_tests() -> None:
 
 importlib.import_module("src.api.routers.rebalance_runs_inventory_routes")
 importlib.import_module("src.api.routers.rebalance_runs_lookup_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_routes")
+importlib.import_module("src.api.routers.rebalance_runs_support_bundle_run_routes")
+importlib.import_module("src.api.routers.rebalance_runs_support_bundle_correlation_routes")
+importlib.import_module("src.api.routers.rebalance_runs_support_bundle_idempotency_routes")
+importlib.import_module("src.api.routers.rebalance_runs_support_bundle_operation_routes")
 importlib.import_module("src.api.routers.rebalance_runs_artifact_routes")
 importlib.import_module("src.api.routers.rebalance_runs_async_operation_inventory_routes")
 importlib.import_module("src.api.routers.rebalance_runs_async_operation_lookup_routes")
