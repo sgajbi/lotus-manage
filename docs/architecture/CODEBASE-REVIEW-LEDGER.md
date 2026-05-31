@@ -5874,3 +5874,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   once the operation lifecycle can be isolated without widening the HTTP error-mapping surface.
 - Wiki decision: no wiki source change required; this is internal runtime-configuration modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-233: Rebalance idempotency replay helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_idempotency_replay.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still contained the full idempotency replay lookup path,
+  including support-service availability mapping, request-hash conflict detection, missing-run
+  consistency handling, replay result validation, and execution telemetry. This made the main
+  simulation orchestration harder to read and kept replay edge behavior coupled to unrelated
+  policy-pack and persistence-write flow.
+- Action: extracted replay lookup/conflict/inconsistent-store handling into
+  `rebalance_idempotency_replay.py`, kept the support-service factory injectable so existing
+  test/main patch seams remain valid, and updated `simulate_rebalance` to return replayed results
+  through the helper. Public routes, OpenAPI output, idempotency error details, telemetry labels,
+  and replay payload shape were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  idempotency replay and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract simulation supportability-write handling next, so replay lookup and
+  persistence failure behavior are both independently testable service helpers.
+- Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

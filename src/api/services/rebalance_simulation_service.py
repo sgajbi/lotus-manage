@@ -44,6 +44,7 @@ from src.api.services.rebalance_policy_pack_service import (
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
 )
+from src.api.services.rebalance_idempotency_replay import resolve_idempotency_replay
 from src.api.services.rebalance_async_config import (
     async_manual_execution_enabled,
     async_operations_enabled,
@@ -80,7 +81,6 @@ from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationConflictError,
     DpmAsyncOperationStatusResponse,
-    DpmRunLookupResponse,
     DpmRunNotFoundError,
     DpmRunSupportService,
 )
@@ -294,47 +294,13 @@ def simulate_rebalance(
     )
 
     if replay_enabled:
-        try:
-            support_service = get_dpm_run_support_service()
-        except DpmRunSupportServiceUnavailableError as exc:
-            raise DpmRebalanceSupportabilityStoreUnavailableError(exc.detail) from exc
-        existing = None
-        try:
-            existing = support_service.get_idempotency_lookup(idempotency_key=idempotency_key)
-        except DpmRunNotFoundError:
-            existing = None
-        if existing is not None and existing.request_hash != request_hash:
-            record_execution_call(
-                operation="simulate",
-                input_mode=source_input_mode(source_context),
-                outcome="conflict",
-                result_status="failed",
-            )
-            raise DpmRebalanceIdempotencyConflictError(
-                "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
-            )
-        if existing is not None:
-            try:
-                replay_run: DpmRunLookupResponse = support_service.get_run(
-                    rebalance_run_id=existing.rebalance_run_id
-                )
-            except DpmRunNotFoundError as exc:
-                record_execution_call(
-                    operation="simulate",
-                    input_mode=source_input_mode(source_context),
-                    outcome="error",
-                    result_status="failed",
-                )
-                raise DpmRebalanceIdempotencyStoreInconsistentError(
-                    "DPM_IDEMPOTENCY_STORE_INCONSISTENT"
-                ) from exc
-            replay_result = RebalanceResult.model_validate(replay_run.result)
-            record_execution_call(
-                operation="simulate",
-                input_mode=source_input_mode(source_context),
-                outcome="replayed",
-                result_status=_execution_status_label(replay_result.status),
-            )
+        replay_result = resolve_idempotency_replay(
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            source_context=source_context,
+            support_service_factory=get_dpm_run_support_service,
+        )
+        if replay_result is not None:
             return replay_result
 
     run_fn = _main_override("run_simulation") or run_simulation

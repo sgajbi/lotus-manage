@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
+import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
@@ -20,6 +21,7 @@ from src.api.routers.runtime_utils import (
 )
 from src.core.dpm_source_context import DpmCoreContextIncompleteError, DpmStatefulInput
 from src.core.models import BatchRebalanceRequest
+from src.core.rebalance_runs import DpmRunNotFoundError
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from tests.shared.factories import valid_api_payload
 
@@ -345,6 +347,60 @@ def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:
 
     monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "external")
     assert async_config.resolve_async_execution_mode() == "INLINE"
+
+
+def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:
+    class _MissingService:
+        def get_idempotency_lookup(self, *, idempotency_key):
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+
+    assert (
+        idempotency_replay.resolve_idempotency_replay(
+            idempotency_key="idem_missing",
+            request_hash="sha256:request",
+            source_context=None,
+            support_service_factory=_MissingService,
+        )
+        is None
+    )
+
+    class _ConflictService:
+        def get_idempotency_lookup(self, *, idempotency_key):
+            return SimpleNamespace(
+                idempotency_key=idempotency_key,
+                request_hash="sha256:other",
+                rebalance_run_id="rr_001",
+            )
+
+    with pytest.raises(
+        service.DpmRebalanceIdempotencyConflictError,
+        match="IDEMPOTENCY_KEY_CONFLICT",
+    ):
+        idempotency_replay.resolve_idempotency_replay(
+            idempotency_key="idem_conflict",
+            request_hash="sha256:request",
+            source_context=None,
+            support_service_factory=_ConflictService,
+        )
+
+    class _InconsistentService:
+        def get_idempotency_lookup(self, *, idempotency_key):
+            return SimpleNamespace(
+                idempotency_key=idempotency_key,
+                request_hash="sha256:request",
+                rebalance_run_id="rr_missing",
+            )
+
+        def get_run(self, *, rebalance_run_id):
+            raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
+
+    with pytest.raises(service.DpmRebalanceIdempotencyStoreInconsistentError):
+        idempotency_replay.resolve_idempotency_replay(
+            idempotency_key="idem_inconsistent",
+            request_hash="sha256:request",
+            source_context=None,
+            support_service_factory=_InconsistentService,
+        )
 
 
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:
