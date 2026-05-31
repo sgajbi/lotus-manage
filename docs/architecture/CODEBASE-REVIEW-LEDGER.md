@@ -1748,3 +1748,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   validators are added.
 - Wiki decision: no wiki source change required; this is controller maintainability cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-048: Portfolio-memory search candidate bound was not in API wiki
+
+- Date: 2026-05-31
+- Scope: portfolio-memory API wiki bounds documentation
+- Finding: explicit `portfolio_ids` are now bounded by `source_scan_limit`, but the API wiki still
+  described only the query parameters and detail/event lookup event caps. Operators and client
+  developers would not know why an over-limit explicit candidate request returns HTTP 422.
+- Action: documented the explicit candidate-id bound in `wiki/API-Surface.md` and pinned the
+  wording in the documentation current-state test.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep wiki API bounds aligned with request-normalization behavior whenever search
+  pagination, source scan, or explicit candidate semantics change.
+- Wiki decision: updated `wiki/API-Surface.md` because this is implementation-backed API behavior
+  visible to developers, operators, Gateway consumers, and demo preparation.

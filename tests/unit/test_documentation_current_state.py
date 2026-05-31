@@ -461,6 +461,9 @@ def test_wiki_api_surface_documents_portfolio_memory_bounds_and_flow() -> None:
     )
     assert "capped at `500` events for API detail responses" in api_surface
     assert "capped at `1000` events for bounded drilldown" in api_surface
+    assert "explicit `portfolio_ids`" in api_surface
+    assert "must not exceed `source_scan_limit`" in api_surface
+    assert "fail with HTTP `422`" in api_surface
     assert "flowchart LR" in api_surface
     assert "Portfolio memory is an audit and lineage read model" in api_surface
     assert "not discover the global portfolio universe" in api_surface

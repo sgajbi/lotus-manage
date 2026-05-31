@@ -220,7 +220,9 @@ and solver target generation is runtime-discovered from installed solver depende
   monitoring exceptions, campaign workflow evidence, outcome reviews, PM operating-quality
   evidence, and explicit caller-supplied portfolio identifiers. It supports `event_type`,
   `supportability_state`, `source_system`, `source_type`, `limit`, `offset`, and
-  `source_scan_limit`.
+  `source_scan_limit`. After trimming blanks and deduplicating values, explicit `portfolio_ids`
+  must not exceed `source_scan_limit`; over-limit requests fail with HTTP `422` instead of forcing
+  unbounded per-portfolio memory assembly.
 - `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`
   returns the deterministic source-backed portfolio timeline for one portfolio. The route returns
   at most `100` events by default and is capped at `500` events for API detail responses.
