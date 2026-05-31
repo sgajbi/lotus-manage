@@ -1,4 +1,3 @@
-import importlib
 from typing import Annotated
 
 from fastapi import HTTPException, Path, Request, status
@@ -18,16 +17,15 @@ from src.core.rebalance_runs import (
 
 
 @shared.router.get(
-    "/rebalance/runs/{rebalance_run_id}/support-bundle",
+    "/rebalance/runs/by-correlation/{correlation_id}/support-bundle",
     response_model=DpmRunSupportBundleResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Run Support Bundle",
+    summary="Get lotus-manage Run Support Bundle by Correlation Id",
     description=(
-        "Returns an aggregated supportability bundle for one run, including run payload, "
-        "lineage, workflow history, optional deterministic artifact, and optional mapped async "
-        "operation/idempotency history. Optional sections are controlled only by "
-        "`include_artifact`, `include_async_operation`, and `include_idempotency_history`; "
-        "unsupported query parameters are rejected."
+        "Returns aggregated supportability bundle for run resolved by correlation id, "
+        "including optional artifact, async operation, and idempotency history. Optional sections "
+        "are controlled only by `include_artifact`, `include_async_operation`, and "
+        "`include_idempotency_history`; unsupported query parameters are rejected."
     ),
     responses={
         200: {"description": "Aggregated run supportability bundle for investigation."},
@@ -35,11 +33,14 @@ from src.core.rebalance_runs import (
         422: {"description": "Unsupported query parameters were supplied."},
     },
 )
-def get_dpm_run_support_bundle(
+def get_dpm_run_support_bundle_by_correlation(
     request: Request,
-    rebalance_run_id: Annotated[
+    correlation_id: Annotated[
         str,
-        Path(description="lotus-manage run identifier.", examples=["rr_abc12345"]),
+        Path(
+            description="Correlation identifier used on run submission.",
+            examples=["corr-1234-abcd"],
+        ),
     ],
     include_artifact: IncludeArtifactQuery = True,
     include_async_operation: IncludeAsyncOperationQuery = True,
@@ -50,16 +51,11 @@ def get_dpm_run_support_bundle(
     shared._assert_support_bundle_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
-        return service.get_run_support_bundle(
-            rebalance_run_id=rebalance_run_id,
+        return service.get_run_support_bundle_by_correlation(
+            correlation_id=correlation_id,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,
             include_idempotency_history=include_idempotency_history,
         )
     except DpmRunNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-
-
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_correlation_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_idempotency_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_operation_routes")

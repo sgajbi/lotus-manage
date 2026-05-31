@@ -2701,3 +2701,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   so the remaining support-bundle shell has explicit resolver ownership.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-093: Correlation support bundle was mixed with direct run lookup
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by submitted run correlation id.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` still owned both direct
+  run-id support-bundle lookup and correlation-id support-bundle lookup. Correlation lookup is a
+  trace-resolution support path used when the caller has the submitted correlation id rather than
+  the persisted run id, so it benefits from separate route ownership and focused review scope.
+- Action: moved correlation-id support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_correlation_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: move the remaining direct run-id support-bundle route into its own module and leave
+  the support-bundle shell responsible only for composition order.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
