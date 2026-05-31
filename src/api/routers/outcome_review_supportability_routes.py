@@ -1,10 +1,11 @@
 import logging
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import get_outcome_review_repository
 from src.api.observability import record_outcome_review_supportability
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import outcome_review_not_found_http_exception
 from src.api.routers.outcome_review_models import DpmOutcomeReviewSupportabilityResponse
 from src.api.routers.outcome_review_observability import (
     OUTCOME_SUPPORTABILITY_SURFACE,
@@ -45,9 +46,7 @@ def get_outcome_review_supportability_endpoint(
             supportability_state="not_found",
             reason="outcome_review_not_found",
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
-        )
+        raise outcome_review_not_found_http_exception()
     response = _supportability_response(review)
     record_outcome_review_supportability(
         surface=OUTCOME_SUPPORTABILITY_SURFACE,

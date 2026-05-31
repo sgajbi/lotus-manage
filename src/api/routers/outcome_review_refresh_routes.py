@@ -1,8 +1,12 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import get_outcome_review_repository
 from src.api.observability import record_outcome_review_supportability
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import (
+    outcome_review_not_found_http_exception,
+    outcome_review_validation_http_exception,
+)
 from src.api.routers.outcome_review_models import (
     DpmOutcomeReviewRefreshSourcesRequest,
     DpmOutcomeReviewRefreshSourcesResponse,
@@ -52,13 +56,9 @@ def refresh_outcome_review_sources_endpoint(
             supportability_state="not_found",
             reason="outcome_review_not_found",
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
-        ) from exc
+        raise outcome_review_not_found_http_exception() from exc
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
+        raise outcome_review_validation_http_exception(exc) from exc
     record_outcome_review_supportability(
         surface=OUTCOME_REFRESH_SURFACE,
         supportability_state=outcome_review_metric_state(comparison.state),

@@ -1,6 +1,7 @@
-from fastapi import HTTPException, status
+from fastapi import status
 
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import outcome_review_validation_http_exception
 from src.api.routers.outcome_review_models import (
     DpmOutcomeReviewPreviewRequest,
     DpmOutcomeReviewPreviewResponse,
@@ -35,7 +36,5 @@ def preview_outcome_review_endpoint(
             dimension_configs=[config.to_domain() for config in request.dimension_configs],
         )
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
+        raise outcome_review_validation_http_exception(exc) from exc
     return DpmOutcomeReviewPreviewResponse(comparison=comparison)

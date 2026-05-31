@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import (
     get_mandate_repository,
@@ -7,6 +7,7 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import outcome_review_not_found_http_exception
 from src.api.services.outcome_review_service import (
     DpmOutcomeReviewNotFoundError,
     get_ai_evidence_input,
@@ -47,9 +48,7 @@ def get_outcome_review_report_input_endpoint(
             mandate_repository=mandate_repository,
         )
     except DpmOutcomeReviewNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
-        ) from exc
+        raise outcome_review_not_found_http_exception() from exc
 
 
 @shared.router.get(
@@ -81,6 +80,4 @@ def get_outcome_review_ai_evidence_input_endpoint(
             mandate_repository=mandate_repository,
         )
     except DpmOutcomeReviewNotFoundError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
-        ) from exc
+        raise outcome_review_not_found_http_exception() from exc

@@ -1,7 +1,8 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 
 from src.api.dependencies import get_outcome_review_repository
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import outcome_review_not_found_http_exception
 from src.api.routers.outcome_review_models import DpmOutcomeReviewLookupResponse
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 
@@ -24,7 +25,5 @@ def get_outcome_review_by_run_endpoint(
 ) -> DpmOutcomeReviewLookupResponse:
     items = repository.list_outcome_reviews(rebalance_run_id=rebalance_run_id, limit=1)
     if not items:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="OUTCOME_REVIEW_NOT_FOUND"
-        )
+        raise outcome_review_not_found_http_exception()
     return DpmOutcomeReviewLookupResponse(outcome_review=items[0])

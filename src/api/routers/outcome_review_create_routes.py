@@ -1,10 +1,14 @@
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, status
 
 from src.api.dependencies import get_outcome_review_repository
 from src.api.observability import record_outcome_review_supportability
 from src.api.routers import outcome_reviews as shared
+from src.api.routers.outcome_review_http import (
+    outcome_review_conflict_http_exception,
+    outcome_review_validation_http_exception,
+)
 from src.api.routers.outcome_review_models import (
     DpmOutcomeReviewCreateRequest,
     DpmOutcomeReviewCreateResponse,
@@ -60,11 +64,9 @@ def create_outcome_review_endpoint(
             repository=repository,
         )
     except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
+        raise outcome_review_validation_http_exception(exc) from exc
     except DpmOutcomeReviewConflictError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise outcome_review_conflict_http_exception(exc) from exc
     record_outcome_review_supportability(
         surface=OUTCOME_CREATE_SURFACE,
         supportability_state=outcome_review_metric_state(review.state),

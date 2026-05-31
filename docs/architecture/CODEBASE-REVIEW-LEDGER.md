@@ -5318,3 +5318,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-dependency error envelope is introduced.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-213: Outcome-review routes repeated HTTP exception construction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/outcome_review_http.py`,
+  `src/api/routers/outcome_review_create_routes.py`,
+  `src/api/routers/outcome_review_preview_routes.py`,
+  `src/api/routers/outcome_review_refresh_routes.py`,
+  `src/api/routers/outcome_review_lookup_routes.py`,
+  `src/api/routers/outcome_review_run_lookup_routes.py`,
+  `src/api/routers/outcome_review_supportability_routes.py`, and
+  `src/api/routers/outcome_review_handoff_routes.py`.
+- Finding: outcome-review routes repeated construction of the same `404`, `409`, and `422` HTTP
+  exceptions with identical public details. The repeated branches made RFC-0042 operator and
+  handoff routes harder to keep consistent as report, AI, supportability, and source-refresh
+  surfaces evolve.
+- Action: introduced `outcome_review_http.py` with shared not-found, conflict, and validation
+  HTTP helpers and reused them from the matching routes. Public paths, response models,
+  observability emission, OpenAPI output, and existing error details were preserved.
+- Status: hardened
+- Evidence: outcome-review API regression (`tests/unit/api/test_outcome_reviews_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: inspect PM-operating-quality route builders for the same repeated validation/conflict
+  mapping pattern after outcome-review helper behavior is stable.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
