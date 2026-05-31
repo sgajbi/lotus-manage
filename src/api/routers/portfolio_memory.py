@@ -72,6 +72,11 @@ def get_portfolio_memory_source_repositories(
     )
 
 
-importlib.import_module("src.api.routers.portfolio_memory_search_routes")
-importlib.import_module("src.api.routers.portfolio_memory_event_routes")
-importlib.import_module("src.api.routers.portfolio_memory_detail_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.portfolio_memory_search_routes",
+    "src.api.routers.portfolio_memory_event_routes",
+    "src.api.routers.portfolio_memory_detail_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)
