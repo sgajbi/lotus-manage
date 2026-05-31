@@ -5374,3 +5374,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-215: PM operating quality read routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_score_run_read_routes.py`,
+  `src/api/routers/pm_operating_quality_fairness_read_routes.py`,
+  `src/api/routers/pm_operating_quality_review_action_read_routes.py`,
+  `src/api/routers/pm_operating_quality_summary_read_routes.py`, and
+  `src/api/routers/pm_operating_quality_policy_routes.py`.
+- Finding: PM operating-quality read routes repeated the same `404` response construction with
+  a governed `PM_QUALITY_*_NOT_FOUND:<identifier>` detail. The detail codes differed by evidence
+  family, but the HTTP construction pattern was identical and duplicated across score runs,
+  fairness analyses, review actions, summary invocations, and policy versions.
+- Action: added `pm_quality_not_found_http_exception()` to the PM-quality HTTP helper and reused
+  it from the matching read routes. Public paths, response models, OpenAPI output, and existing
+  `404` detail strings were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect PM-quality builder validation handling separately because those failures
+  intentionally mix missing persisted inputs and validation/conflict semantics.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_pm_quality_fairness_analysis_repository
+from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessAnalysisListResponse,
     DpmPmQualityFairnessPreviewResponse,
@@ -74,8 +75,8 @@ def get_pm_quality_fairness_analysis_endpoint(
 ) -> DpmPmQualityFairnessPreviewResponse:
     fairness_analysis = repository.get_fairness_analysis(fairness_analysis_id=fairness_analysis_id)
     if fairness_analysis is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{fairness_analysis_id}",
+        raise pm_quality_not_found_http_exception(
+            code="PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND",
+            identifier=fairness_analysis_id,
         )
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)

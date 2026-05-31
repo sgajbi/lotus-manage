@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_pm_quality_score_run_repository
+from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewResponse,
     DpmPmOperatingQualityScoreRunListResponse,
@@ -72,8 +73,8 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
     ) -> DpmPmOperatingQualityScorePreviewResponse:
         score_run = repository.get_score_run(score_run_id=score_run_id)
         if score_run is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}",
+            raise pm_quality_not_found_http_exception(
+                code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+                identifier=score_run_id,
             )
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_pm_quality_summary_invocation_repository
+from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationListResponse,
     DpmPmQualitySummaryInvocationResponse,
@@ -90,8 +91,8 @@ def get_pm_quality_summary_invocation_endpoint(
 ) -> DpmPmQualitySummaryInvocationResponse:
     invocation = repository.get_summary_invocation(summary_invocation_id=summary_invocation_id)
     if invocation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:{summary_invocation_id}",
+        raise pm_quality_not_found_http_exception(
+            code="PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND",
+            identifier=summary_invocation_id,
         )
     return DpmPmQualitySummaryInvocationResponse(summary_invocation=invocation)

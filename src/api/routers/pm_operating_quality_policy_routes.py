@@ -5,7 +5,10 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.api.dependencies import get_pm_quality_policy_repository
-from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_conflict_http_exception,
+    pm_quality_not_found_http_exception,
+)
 from src.api.routers.pm_operating_quality_models import DpmPmOperatingQualityPolicyListResponse
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
@@ -105,8 +108,9 @@ def get_pm_operating_quality_policy_endpoint(
 ) -> DpmPmOperatingQualityPolicy:
     policy = repository.get_policy(policy_id=policy_id, policy_version=policy_version)
     if policy is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_POLICY_NOT_FOUND:{policy_id}:{policy_version}",
+        raise pm_quality_not_found_http_exception(
+            code="PM_QUALITY_POLICY_NOT_FOUND",
+            identifier=policy_id,
+            secondary_identifier=policy_version,
         )
     return policy

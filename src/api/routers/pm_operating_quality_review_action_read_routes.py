@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_pm_quality_review_action_repository
+from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionListResponse,
     DpmPmQualityReviewActionResponse,
@@ -92,8 +93,8 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
     ) -> DpmPmQualityReviewActionResponse:
         review_action = repository.get_review_action(review_action_id=review_action_id)
         if review_action is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PM_QUALITY_REVIEW_ACTION_NOT_FOUND:{review_action_id}",
+            raise pm_quality_not_found_http_exception(
+                code="PM_QUALITY_REVIEW_ACTION_NOT_FOUND",
+                identifier=review_action_id,
             )
         return DpmPmQualityReviewActionResponse(review_action=review_action)
