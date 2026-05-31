@@ -3401,3 +3401,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-126: Proof-pack handoff routes were still owned by the router shell
+
+- Date: 2026-05-31
+- Scope: proof-pack report-input and AI-evidence-input routes.
+- Finding: after extracting proof-pack API models, generation, and local reads,
+  `src/api/routers/proof_packs.py` still owned downstream handoff routes while also acting as the
+  composition shell. Handoff routes require proof-pack, wave, outcome-review, and mandate
+  repositories and expose deterministic payloads for `lotus-report` and `lotus-ai`, so they should
+  be reviewed independently from local proof-pack reads.
+- Action: moved report-input and AI-evidence-input route registration into
+  `src/api/routers/proof_pack_handoff_routes.py` and reduced `proof_packs.py` to router
+  construction plus explicit route-module imports. Public paths, response models, Swagger
+  guidance, repository dependency wiring, handoff service calls, and proof-pack-not-found mapping
+  were preserved.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next largest route surface for the same command/read/handoff ownership
+  pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
