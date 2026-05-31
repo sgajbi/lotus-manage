@@ -3,6 +3,9 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_campaign_definition_repository
+from src.api.routers.wave_campaign_approval_inbox_routes import (
+    router as approval_inbox_router,
+)
 from src.api.routers.wave_campaign_discovery_routes import router as discovery_router
 from src.api.routers.wave_campaign_operating_queue_routes import (
     router as operating_queue_router,
@@ -20,18 +23,15 @@ from src.api.routers.wave_route_parameters import (
     CampaignRequestedAsOfDateQuery,
 )
 from src.core.waves import (
-    CampaignApprovalInboxStatus,
     CampaignAssignmentEscalationTier,
     CampaignWorkflowAutomationAction,
     CampaignWorkflowAutomationStatus,
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
-    DpmBulkReviewCampaignApprovalInboxPage,
     DpmBulkReviewCampaignAssignmentPlanPage,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignWorkflowAutomationPage,
     DpmBulkReviewCampaignWorkflowBoardPage,
-    build_bulk_review_campaign_approval_inbox_page,
     build_bulk_review_campaign_assignment_plan_page,
     build_bulk_review_campaign_workflow_automation_page,
     build_bulk_review_campaign_workflow_board_page,
@@ -43,59 +43,7 @@ router = APIRouter(tags=["lotus-manage Rebalance Waves"])
 
 router.include_router(discovery_router)
 router.include_router(operating_queue_router)
-
-
-@router.get(
-    "/campaign-approval-inbox",
-    response_model=DpmBulkReviewCampaignApprovalInboxPage,
-    status_code=status.HTTP_200_OK,
-    summary="List bulk-review campaign approval attention inbox",
-    description=(
-        "Returns a read-only approval attention inbox over persisted "
-        "`BulkReviewCampaignDefinition:v1` records. The inbox classifies approval-complete, "
-        "approval-required, approval-incomplete, expiry-attention, entitlement-attention, and "
-        "closed campaign definitions from existing governance evidence and fail-closed readiness "
-        "checks. It does not mutate approval state, create maker-checker workflow, approve trades, "
-        "generate orders, or claim OMS execution."
-    ),
-)
-def list_bulk_review_campaign_approval_inbox(
-    campaign_id: CampaignDefinitionFilterIdQuery = None,
-    campaign_status: CampaignDefinitionStatusQuery = None,
-    as_of_date: CampaignDefinitionAsOfDateQuery = None,
-    requested_as_of_date: CampaignRequestedAsOfDateQuery = None,
-    actor_id: CampaignActorIdQuery = None,
-    active_on: CampaignActiveOnQuery = None,
-    inbox_status: CampaignApprovalInboxStatus | None = Query(
-        default=None,
-        description="Optional filter for one approval attention posture.",
-    ),
-    include_closed: CampaignIncludeClosedQuery = False,
-    limit: CampaignReadModelLimitQuery = 50,
-    offset: CampaignReadModelOffsetQuery = 0,
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmBulkReviewCampaignApprovalInboxPage:
-    campaign_query = load_campaign_read_model_query(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_status=campaign_status,
-        as_of_date=as_of_date,
-        active_on=active_on,
-        limit=limit,
-        offset=offset,
-    )
-    return build_bulk_review_campaign_approval_inbox_page(
-        definitions=campaign_query.definitions,
-        requested_as_of_date=requested_as_of_date,
-        actor_id=actor_id,
-        active_on=campaign_query.active_on,
-        include_closed=include_closed,
-        inbox_status=inbox_status,
-        limit=limit,
-        offset=offset,
-    )
+router.include_router(approval_inbox_router)
 
 
 @router.get(

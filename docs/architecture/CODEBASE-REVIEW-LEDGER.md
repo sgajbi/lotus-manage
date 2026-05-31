@@ -3831,3 +3831,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   read-model router.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-146: Campaign approval inbox was mixed with workflow projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-approval-inbox`.
+- Finding: after extracting discovery and operating queue routes, the campaign read-model router
+  still mixed approval attention inbox behavior with workflow board, assignment plan, and
+  automation readiness. Approval inbox owns approval-complete/required/incomplete, expiry
+  attention, entitlement attention, closed-row inclusion, and optional inbox-status filtering.
+- Action: moved the approval inbox route registration into
+  `src/api/routers/wave_campaign_approval_inbox_routes.py` and included it after operating queue,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split workflow-board and assignment projections from the remaining campaign read-model
+  router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
