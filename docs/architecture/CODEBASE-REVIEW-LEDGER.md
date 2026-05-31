@@ -2679,3 +2679,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   should be split once remaining lookup route ownership is simplified.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-092: Idempotency support bundle was mixed with direct run resolvers
+
+- Date: 2026-05-31
+- Scope: support-bundle lookup by idempotency key.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` still mixed the
+  idempotency-key support-bundle resolver with direct run and correlation resolvers. The
+  idempotency route resolves through retry-key mapping and can include idempotency history, so it
+  has a distinct supportability contract from direct run/correlation bundle lookup.
+- Action: moved idempotency-key support-bundle route registration into
+  `src/api/routers/rebalance_runs_support_bundle_idempotency_routes.py`, reusing the shared
+  include-flag query parameter contract and preserving public path, response model, Swagger
+  metadata, supportability and support-bundle feature gates, unsupported-query rejection, and
+  not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split correlation-resolved support-bundle lookup from direct run support-bundle lookup
+  so the remaining support-bundle shell has explicit resolver ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
