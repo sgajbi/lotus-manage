@@ -1506,3 +1506,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   request-limit module before changing route-level OpenAPI bounds.
 - Wiki decision: updated `wiki/API-Surface.md` because the API bounds and implementation-backed
   portfolio-memory flow are operator- and demo-facing product truth.
+
+## BACKEND-REVIEW-20260531-034: Report-safe portfolio-memory context bypassed source bundles
+
+- Date: 2026-05-31
+- Scope: portfolio-memory report/AI/archive handoff context assembly
+- Finding: `src/api/services/portfolio_memory_context_service.py` still built report-safe memory
+  context through the individual-repository service facade even after API and core search paths
+  moved to explicit `PortfolioMemorySourceRepositories` bundles. That left one handoff path outside
+  the source-bundle dependency boundary used by timeline, search, and event lookup.
+- Action: added `build_report_portfolio_memory_context_from_sources`, updated the legacy facade to
+  build a source bundle first, and added a focused equivalence test proving the source-bundle entry
+  point preserves the report-safe context envelope.
+- Status: hardened
+- Evidence: focused test in `tests/unit/api/test_portfolio_memory_context_service.py` plus existing
+  portfolio-memory handoff and API tests.
+- Follow-up: future report/AI/archive portfolio-memory context additions should accept
+  `PortfolioMemorySourceRepositories` first and keep individual-repository facades as compatibility
+  wrappers.
+- Wiki decision: no wiki source change required; this is internal dependency-boundary cleanup with
+  no route, payload, supported-feature, or operator-contract change.
