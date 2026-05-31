@@ -1198,3 +1198,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   introducing broader collector abstractions.
 - Wiki decision: no wiki source change required; this is internal memory-collection performance and
   modularity cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-019: Mandate memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: mandate-health and mandate-monitoring repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned mandate twin lookup, latest health
+  snapshot lookup, monitoring exception paging, and mandate memory event projection. That coupled
+  mandate repository flow to the top-level memory service and left an important edge case
+  under-characterized: portfolio-level monitoring exceptions should still project when no latest
+  mandate twin is available.
+- Action: extracted mandate collection to `src/core/portfolio_memory/mandate_collection.py` and
+  updated the service to delegate mandate event collection. Added focused tests proving latest
+  health plus monitoring exception projection and preserving portfolio-level exception projection
+  when the mandate twin is absent.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_mandate_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting remaining repository-family collectors only where the module can
+  own a clear source-family dependency flow and direct tests.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.

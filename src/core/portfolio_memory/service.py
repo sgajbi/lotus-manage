@@ -30,9 +30,8 @@ from src.core.portfolio_memory.construction_projection import (
     construction_alternative_set_event as _construction_alternative_set_event,
     construction_selection_event as _construction_selection_event,
 )
-from src.core.portfolio_memory.mandate_projection import (
-    mandate_exception_event as _mandate_exception_event,
-    mandate_health_event as _mandate_health_event,
+from src.core.portfolio_memory.mandate_collection import (
+    mandate_memory_events as _mandate_memory_events,
 )
 from src.core.portfolio_memory.pm_quality_collection import (
     pm_quality_memory_events as _pm_quality_memory_events,
@@ -87,7 +86,7 @@ def build_portfolio_memory(
 
     if mandate_repository is not None:
         events.extend(
-            _mandate_events(
+            _mandate_memory_events(
                 portfolio_id=portfolio_id,
                 mandate_repository=mandate_repository,
                 limit=limit,
@@ -232,36 +231,6 @@ def search_portfolio_memory(
         offset=offset,
         generated_at=generated_at.isoformat(),
     )
-
-
-def _mandate_events(
-    *,
-    portfolio_id: str,
-    mandate_repository: DpmMandateRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    twin = mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
-    events: list[DpmPortfolioMemoryEvent] = []
-    if twin is not None:
-        health_snapshot = mandate_repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
-        if health_snapshot is not None:
-            events.append(
-                _mandate_health_event(
-                    health_snapshot=health_snapshot,
-                    source_lineage=twin.source_lineage,
-                )
-            )
-
-    exceptions, _cursor = mandate_repository.list_monitoring_exceptions(
-        monitoring_run_id=None,
-        mandate_id=twin.mandate_id if twin is not None else None,
-        portfolio_id=portfolio_id,
-        state=None,
-        limit=limit,
-        cursor=None,
-    )
-    events.extend(_mandate_exception_event(exception) for exception in exceptions)
-    return events
 
 
 def _construction_events(
