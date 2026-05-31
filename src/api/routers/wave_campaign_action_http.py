@@ -5,13 +5,16 @@ from src.api.routers.wave_campaign_approval_decision_http import (
     list_campaign_definition_approval_decisions_response as list_campaign_definition_approval_decisions_response,
     record_campaign_definition_approval_decision_response as record_campaign_definition_approval_decision_response,
 )
+from src.api.routers.wave_campaign_assignment_action_http import (
+    list_campaign_definition_assignment_actions_response as list_campaign_definition_assignment_actions_response,
+    record_campaign_definition_assignment_action_response as record_campaign_definition_assignment_action_response,
+)
 from src.api.routers.wave_campaign_definition_http import (
     campaign_definition_conflict_http_exception,
     campaign_definition_value_http_exception,
     get_campaign_definition_or_404,
 )
 from src.api.routers.wave_campaign_models import (
-    DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
     DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest,
@@ -19,72 +22,16 @@ from src.api.routers.wave_campaign_models import (
 from src.core.waves import (
     CampaignAssignmentTaskStatus,
     DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionAssignmentActionPage,
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionMakerCheckerControlPage,
     DpmBulkReviewCampaignDefinitionRepository,
-    build_bulk_review_campaign_definition_assignment_action_page,
     build_bulk_review_campaign_definition_assignment_task_page,
     build_bulk_review_campaign_definition_maker_checker_control_page,
     open_bulk_review_campaign_definition_assignment_task,
-    record_bulk_review_campaign_definition_assignment_action,
     record_bulk_review_campaign_definition_maker_checker_control,
     transition_bulk_review_campaign_definition_assignment_task,
 )
-
-
-def record_campaign_definition_assignment_action_response(
-    *,
-    campaign_id: str,
-    campaign_version: str,
-    request: DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
-    repository: DpmBulkReviewCampaignDefinitionRepository,
-) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    try:
-        updated = record_bulk_review_campaign_definition_assignment_action(
-            definition=definition,
-            action_type=request.action_type,
-            action_ref=request.action_ref,
-            recorded_by=request.recorded_by,
-            action_reason=request.action_reason,
-            assigned_actor_ids=request.assigned_actor_ids,
-            escalation_tier=request.escalation_tier,
-            sla_posture=request.sla_posture,
-            correlation_id=request.correlation_id,
-            source_refs=request.source_refs,
-        )
-        persisted = repository.record_definition_assignment_action(definition=updated)
-    except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
-    except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
-    return persisted_definition_or_404(persisted)
-
-
-def list_campaign_definition_assignment_actions_response(
-    *,
-    campaign_id: str,
-    campaign_version: str,
-    limit: int,
-    offset: int,
-    repository: DpmBulkReviewCampaignDefinitionRepository,
-) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    return build_bulk_review_campaign_definition_assignment_action_page(
-        definition=definition,
-        limit=limit,
-        offset=offset,
-    )
 
 
 def open_campaign_definition_assignment_task_response(

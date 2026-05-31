@@ -4258,3 +4258,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   remaining campaign action compatibility module.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-165: Campaign action HTTP mixed assignment-action helpers with task lifecycle helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`.
+- Finding: `wave_campaign_action_http.py` still owned assignment-action append/projection helpers
+  alongside assignment-task lifecycle and maker-checker control helpers. That kept separate evidence
+  families in one module after the route families had already been split.
+- Action: moved assignment-action HTTP response helpers into
+  `src/api/routers/wave_campaign_assignment_action_http.py`, updated the assignment-action evidence
+  route to import the focused helper module directly, and kept `wave_campaign_action_http.py` as a
+  compatibility import surface for existing callers. Public paths, request/response models,
+  repository calls, conflict/value/not-found mappings, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-task and maker-checker HTTP helpers from the remaining campaign action
+  compatibility module.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
