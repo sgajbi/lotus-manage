@@ -2091,3 +2091,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   controller still mixes command, search, detail, item, and workflow subdomains.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-065: Generic wave preview/create routes lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: generic wave preview and durable wave create route definitions
+- Finding: the non-durable preview and durable create routes still lived directly in
+  `src/api/routers/waves.py`, mixing source-resolution command orchestration with search, detail,
+  item, workflow, and report-input endpoints. These routes share source resolver wiring, mandate
+  repository access, optional correlation, and create idempotency contracts, so they form a
+  coherent command boundary.
+- Action: moved preview/create route registration into
+  `src/api/routers/wave_create_preview_routes.py`. The module uses a registration helper instead
+  of a child router because FastAPI rejects included child routers that contribute an empty-string
+  path operation; the helper preserves the exact `POST /rebalance/waves` public route and the
+  existing `build_core_resolver_client` monkeypatch seam used by regression tests.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue separating remaining generic wave search/detail/item/workflow routes by
+  read-side and command-side ownership boundaries.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
