@@ -4030,3 +4030,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   lookup/build/persist orchestration.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-155: PM quality summary route mixed command and read endpoints
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/summary-invocations` and
+  `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`.
+- Finding: after extracting summary-invocation construction, the summary route still mixed
+  preview/create command endpoints with persisted read endpoints. The read side owns bounded query
+  filters, pagination, immutable lookup, and not-found mapping, while preview/create own
+  review-gated invocation construction and persistence.
+- Action: moved summary-invocation list/get route registration into
+  `src/api/routers/pm_operating_quality_summary_read_routes.py` and included it after preview/create
+  commands from `pm_operating_quality_summary_routes.py`. Public paths, response models, Swagger
+  guidance, query parameters, pagination bounds, repository dependency wiring, not-found details,
+  and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect PM operating-quality score-run and review-action route modules for the same
+  command/read split pattern.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
