@@ -2284,3 +2284,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for existing routes with no behavior, payload, supported-feature, or
   operator-contract change.
+
+## BACKEND-REVIEW-20260531-074: PM operating quality policy routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: PM operating quality policy persist, list, and detail route definitions.
+- Finding: policy administration endpoints still lived directly in
+  `src/api/routers/pm_operating_quality.py` alongside score-run, fairness, review-action, and
+  support-summary lifecycle routes. That made the router harder to scan and mixed immutable policy
+  configuration ownership with execution and evidence workflows.
+- Action: moved the policy route group into `src/api/routers/pm_operating_quality_policy_routes.py`
+  and mounted it from the parent PM operating quality router, preserving public paths, response
+  models, descriptions, and repository behavior.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: continue extracting PM operating quality lifecycle route groups, with score-run
+  extraction deferred until the private helper tests and core-resolver monkeypatch boundary are
+  made explicit.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
