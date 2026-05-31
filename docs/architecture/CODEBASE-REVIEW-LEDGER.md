@@ -2049,3 +2049,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   command so read-side supportability remains distinct from wave creation behavior.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-063: Campaign readiness read routes lived beside launch commands
+
+- Date: 2026-05-31
+- Scope: campaign lifecycle-events, launch-history, workflow-overview, preview-readiness, and
+  launch-package route definitions
+- Finding: campaign readiness and supportability read routes still lived directly in
+  `src/api/routers/waves.py` beside the durable campaign launch command and generic wave
+  preview/create routes. These endpoints are operator read models over persisted campaign
+  definitions, not wave creation handlers, so their route ownership should stay separate from
+  command orchestration.
+- Action: moved the campaign readiness/read route group into
+  `src/api/routers/wave_campaign_readiness_routes.py` and mounted it after the campaign evidence
+  router, preserving the original public path order and response contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: isolate the durable campaign launch command from generic durable wave preview/create
+  routing when the next slice can preserve command dependency wiring clearly.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
