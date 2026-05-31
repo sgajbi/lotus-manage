@@ -1365,3 +1365,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   then adapt public compatibility facades only where existing callers require them.
 - Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-027: Portfolio-memory search request normalization lived in service
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search filter normalization and explicit candidate-id shaping
+- Finding: `src/core/portfolio_memory/service.py` still normalized search text filters, cast
+  supportability-state filters, and built the explicit candidate-id set inline. That kept request
+  validation and query shaping mixed with repository orchestration, making search behavior harder to
+  test without walking the full source repository scan path.
+- Action: extracted search query normalization to
+  `src/core/portfolio_memory/search_request.py` with a typed `PortfolioMemorySearchQuery`. Updated
+  the service to consume the normalized query object while preserving the public search API and
+  existing response semantics. Added focused tests for trimmed filters, blank-filter handling, and
+  explicit candidate-id normalization.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_request.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: keep new portfolio-memory search parameters normalized in the search-request module
+  before they reach repository orchestration or page assembly.
+- Wiki decision: no wiki source change required; this is internal search-query modularity cleanup
+  with no API, supported-feature, or operator-contract change.

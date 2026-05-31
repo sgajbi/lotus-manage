@@ -30,9 +30,9 @@ from src.core.portfolio_memory.models import (
     PortfolioMemorySupportabilityState,
 )
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
+from src.core.portfolio_memory.search_filters import normalize_portfolio_memory_search_filter
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
-    normalize_portfolio_memory_search_filter,
     search_portfolio_memory,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository

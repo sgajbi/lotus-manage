@@ -1,7 +1,6 @@
 """Source-backed portfolio memory read-model assembly."""
 
 from datetime import datetime, timezone
-from typing import cast
 
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
@@ -22,13 +21,12 @@ from src.core.portfolio_memory.aggregate import (
 from src.core.portfolio_memory.candidate_portfolios import (
     candidate_portfolio_ids_from_sources as _candidate_portfolio_ids_from_sources,
 )
-from src.core.portfolio_memory.search_filters import (
-    normalize_portfolio_memory_search_filter,
-)
 from src.core.portfolio_memory.search_page import (
-    PortfolioMemorySearchFilters,
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
+)
+from src.core.portfolio_memory.search_request import (
+    build_portfolio_memory_search_query as _build_portfolio_memory_search_query,
 )
 from src.core.portfolio_memory.source_collection import (
     collect_portfolio_memory_events as _collect_portfolio_memory_events,
@@ -132,22 +130,13 @@ def search_portfolio_memory(
         pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
         campaign_definition_repository=campaign_definition_repository,
     )
-    normalized_event_type = normalize_portfolio_memory_search_filter(event_type)
-    normalized_supportability_state = cast(
-        PortfolioMemorySupportabilityState | None,
-        normalize_portfolio_memory_search_filter(cast(str | None, supportability_state)),
+    search_query = _build_portfolio_memory_search_query(
+        portfolio_ids=portfolio_ids,
+        event_type=event_type,
+        supportability_state=supportability_state,
+        source_system=source_system,
+        source_type=source_type,
     )
-    normalized_source_system = normalize_portfolio_memory_search_filter(source_system)
-    normalized_source_type = normalize_portfolio_memory_search_filter(source_type)
-    filters = PortfolioMemorySearchFilters(
-        event_type=normalized_event_type,
-        supportability_state=normalized_supportability_state,
-        source_system=normalized_source_system,
-        source_type=normalized_source_type,
-    )
-    explicit_candidate_ids = {
-        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
-    }
     candidate_ids = _candidate_portfolio_ids_from_sources(
         repositories=repositories,
         portfolio_ids=portfolio_ids,
@@ -163,16 +152,16 @@ def search_portfolio_memory(
         )
         row = _build_search_row(
             memory=memory,
-            filters=filters,
-            explicit_candidate_ids=explicit_candidate_ids,
+            filters=search_query.filters,
+            explicit_candidate_ids=search_query.explicit_candidate_ids,
         )
         if row is not None:
             search_rows.append(row)
 
     return _build_search_page(
         search_rows=search_rows,
-        filters=filters,
-        explicit_candidate_ids=explicit_candidate_ids,
+        filters=search_query.filters,
+        explicit_candidate_ids=search_query.explicit_candidate_ids,
         scanned_portfolio_count=len(candidate_ids),
         source_scan_limit=source_scan_limit,
         limit=limit,
