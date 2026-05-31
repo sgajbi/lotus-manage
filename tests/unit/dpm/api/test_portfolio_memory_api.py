@@ -56,6 +56,21 @@ from src.core.portfolio_memory.service import (
     build_portfolio_memory_event_lookup,
     search_portfolio_memory,
 )
+from src.core.portfolio_memory.source_refs import (
+    from_outcome_source_ref,
+    from_proof_pack_evidence_ref,
+    from_source_product_lineage,
+    from_wave_source_ref,
+)
+from src.core.portfolio_memory.supportability import (
+    assignment_sla_state,
+    assignment_task_state,
+    maker_checker_state,
+    monitoring_exception_state,
+    pm_quality_review_action_state,
+    portfolio_memory_state,
+    source_supportability_state,
+)
 from src.core.proof_packs import DpmProofPackEvidenceRef
 from src.core.waves.models import (
     DpmRebalanceWave,
@@ -2384,28 +2399,17 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
         source_system="lotus-manage",
         content_hash="sha256:ai-evidence",
     )
+    assert from_proof_pack_evidence_ref(proof_pack_ref).source_id == proof_pack_ref.ref_id
     assert (
-        portfolio_memory_service._from_proof_pack_evidence_ref(proof_pack_ref).source_id
-        == proof_pack_ref.ref_id
-    )
-    assert (
-        portfolio_memory_service._from_source_product_lineage(
-            _mandate_twin().source_lineage[0]
-        ).source_type
+        from_source_product_lineage(_mandate_twin().source_lineage[0]).source_type
         == "CoreMandateBinding"
     )
-    assert (
-        portfolio_memory_service._from_wave_source_ref(wave.items[0].source_refs[0]).source_version
-        == "v1"
-    )
-    assert (
-        portfolio_memory_service._from_outcome_source_ref(outcome_ref).source_id
-        == outcome_ref.source_id
-    )
-    assert portfolio_memory_service._memory_state([]) == "EMPTY"
-    assert portfolio_memory_service._state("FAILED") == "BLOCKED"
-    assert portfolio_memory_service._state("PARTIAL") == "DEGRADED"
-    assert portfolio_memory_service._state("CREATED") == "PENDING_REVIEW"
+    assert from_wave_source_ref(wave.items[0].source_refs[0]).source_version == "v1"
+    assert from_outcome_source_ref(outcome_ref).source_id == outcome_ref.source_id
+    assert portfolio_memory_state([]) == "EMPTY"
+    assert source_supportability_state("FAILED") == "BLOCKED"
+    assert source_supportability_state("PARTIAL") == "DEGRADED"
+    assert source_supportability_state("CREATED") == "PENDING_REVIEW"
     assert (
         portfolio_memory_service._score_run_includes_portfolio(
             score_run=_pm_quality_score_run().model_copy(update={"book_scope_evidence": None}),
@@ -2436,43 +2440,39 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
         is True
     )
     assert (
-        portfolio_memory_service._monitoring_exception_state(
-            _monitoring_exception().model_copy(update={"state": "RESOLVED"})
-        )
+        monitoring_exception_state(_monitoring_exception().model_copy(update={"state": "RESOLVED"}))
         == "READY"
     )
     assert (
-        portfolio_memory_service._monitoring_exception_state(
+        monitoring_exception_state(
             _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.CRITICAL})
         )
         == "BLOCKED"
     )
-    assert portfolio_memory_service._monitoring_exception_state(_monitoring_exception()) == (
-        "DEGRADED"
-    )
+    assert monitoring_exception_state(_monitoring_exception()) == "DEGRADED"
     assert (
-        portfolio_memory_service._monitoring_exception_state(
+        monitoring_exception_state(
             _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.INFO})
         )
         == "PENDING_REVIEW"
     )
     assert (
-        portfolio_memory_service._pm_quality_review_action_state(
+        pm_quality_review_action_state(
             _pm_quality_review_action().model_copy(update={"action_state": "ESCALATED"})
         )
         == "DEGRADED"
     )
     assert (
-        portfolio_memory_service._pm_quality_review_action_state(
+        pm_quality_review_action_state(
             _pm_quality_review_action().model_copy(update={"action_state": "CLOSED"})
         )
         == "READY"
     )
-    assert portfolio_memory_service._assignment_sla_state("BREACHED_OR_BLOCKED") == "DEGRADED"
-    assert portfolio_memory_service._assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
-    assert portfolio_memory_service._assignment_task_state("BLOCKED", "ON_TRACK") == "DEGRADED"
-    assert portfolio_memory_service._assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
-    assert portfolio_memory_service._assignment_task_state("DONE", "ON_TRACK") == "READY"
-    assert portfolio_memory_service._maker_checker_state("FAILED") == "BLOCKED"
-    assert portfolio_memory_service._maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
-    assert portfolio_memory_service._maker_checker_state("PENDING") == "PENDING_REVIEW"
+    assert assignment_sla_state("BREACHED_OR_BLOCKED") == "DEGRADED"
+    assert assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
+    assert assignment_task_state("BLOCKED", "ON_TRACK") == "DEGRADED"
+    assert assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
+    assert assignment_task_state("DONE", "ON_TRACK") == "READY"
+    assert maker_checker_state("FAILED") == "BLOCKED"
+    assert maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
+    assert maker_checker_state("PENDING") == "PENDING_REVIEW"

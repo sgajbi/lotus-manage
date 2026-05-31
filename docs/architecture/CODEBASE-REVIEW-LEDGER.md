@@ -864,3 +864,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and content-hash semantics can be pinned independently.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-003: Portfolio-memory API tests depended on private service helper aliases
+
+- Date: 2026-05-31
+- Scope: `tests/unit/dpm/api/test_portfolio_memory_api.py`, portfolio-memory source-ref and
+  supportability helper assertions
+- Finding: helper-edge coverage in the API test suite asserted source-ref and supportability
+  behavior through private `portfolio_memory.service` aliases. After extracting these helpers into
+  focused modules, leaving the tests coupled to the service facade would obscure module ownership
+  and make future service decomposition harder.
+- Action: updated helper-edge assertions to import source-reference projection from
+  `src/core/portfolio_memory/source_refs.py` and supportability mapping from
+  `src/core/portfolio_memory/supportability.py`, while leaving the remaining
+  service-orchestration helper assertion in the service namespace.
+- Status: hardened
+- Evidence: focused portfolio-memory API tests plus the new module-level source-ref and
+  supportability tests.
+- Follow-up: extract the remaining PM-book membership inclusion helper only if a stable PM-quality
+  portfolio-memory projection module emerges.
+- Wiki decision: no wiki source change required; this is test ownership cleanup with no API,
+  supported-feature, or operator-contract change.
