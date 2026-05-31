@@ -19,6 +19,7 @@ import src.api.services.rebalance_request_envelope_resolution as envelope_resolu
 import src.api.services.rebalance_source_lineage as source_lineage_service
 import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_stateful_source_context as stateful_source_context
+import src.api.services.rebalance_sync_execution as sync_execution
 import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
@@ -39,6 +40,7 @@ from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
     DpmPolicyPackDefinition,
 )
+from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
     DpmAsyncOperationConflictError,
@@ -656,6 +658,34 @@ def test_rebalance_batch_execution_reports_invalid_options_without_running_engin
     assert set(result.failed_scenarios) == {"invalid_case"}
     assert result.failed_scenarios["invalid_case"].startswith("INVALID_OPTIONS:")
     assert result.warnings == ["PARTIAL_BATCH_FAILURE"]
+
+
+def test_rebalance_sync_execution_runs_engine_and_records_supportability() -> None:
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    support_calls: list[dict] = []
+
+    result = sync_execution.execute_simulation_request(
+        request=request,
+        idempotency_key="idem_sync",
+        request_hash="sha256:sync",
+        correlation_id="corr-sync",
+        policy_pack_definition=None,
+        replay_enabled=False,
+        source_context=None,
+        support_service_factory=lambda: (_ for _ in ()).throw(
+            AssertionError("replay-disabled execution should not resolve support service first")
+        ),
+        run_simulation_fn=run_simulation,
+        record_for_support=lambda **kwargs: support_calls.append(kwargs),
+        current_logger=SimpleNamespace(warning=lambda *_args, **_kwargs: None),
+    )
+
+    assert result.correlation_id == "corr-sync"
+    assert result.lineage.request_hash == "sha256:sync"
+    assert result.lineage.input_mode == "stateless"
+    assert support_calls[0]["request_hash"] == "sha256:sync"
+    assert support_calls[0]["idempotency_key"] == "idem_sync"
+    assert support_calls[0]["portfolio_id"] == request.portfolio_snapshot.portfolio_id
 
 
 def test_rebalance_policy_pack_execution_loads_selected_catalog_only_when_needed() -> None:

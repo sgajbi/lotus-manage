@@ -4,7 +4,6 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
-from src.api.observability import record_execution_call
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -43,7 +42,6 @@ from src.api.services.rebalance_request_envelope_resolution import (
     resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
     resolve_rebalance_request_envelope as resolve_rebalance_request_envelope_from_source,
 )
-from src.api.services.rebalance_idempotency_replay import resolve_idempotency_replay
 from src.api.services.rebalance_async_config import (
     async_manual_execution_enabled,
     async_operations_enabled,
@@ -63,7 +61,7 @@ from src.api.services.rebalance_async_manual_execution import (
     execute_analyze_async_operation_now,
 )
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
-from src.api.services.rebalance_supportability_write import record_simulation_supportability
+from src.api.services.rebalance_sync_execution import execute_simulation_request
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
     get_dpm_run_support_service,
@@ -83,7 +81,6 @@ from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
     DpmPolicyPackDefinition,
-    apply_policy_pack_to_engine_options,
     resolve_policy_pack_replay_enabled,
 )
 from src.core.rebalance_runs import (
@@ -135,14 +132,6 @@ def _record_policy_resolution(
     policy_pack: DpmEffectivePolicyPackResolution,
 ) -> None:
     record_policy_resolution(surface=surface, policy_pack=policy_pack)
-
-
-def _execution_outcome_for_status(status_value: str) -> str:
-    return "blocked" if status_value == "BLOCKED" else "success"
-
-
-def _execution_status_label(status_value: str) -> str:
-    return status_value.lower()
 
 
 def _resolve_stateful_source_context(
@@ -208,10 +197,6 @@ def simulate_rebalance(
     )
     _record_policy_resolution(surface="simulate", policy_pack=policy_pack)
     policy_pack_definition = resolve_selected_policy_pack_definition(policy_pack)
-    effective_options = apply_policy_pack_to_engine_options(
-        options=request.options,
-        policy_pack=policy_pack_definition,
-    )
     replay_enabled = resolve_policy_pack_replay_enabled(
         default_replay_enabled=default_replay_enabled,
         policy_pack=policy_pack_definition,
@@ -223,50 +208,20 @@ def simulate_rebalance(
         policy_pack.selected_policy_pack_id,
     )
 
-    if replay_enabled:
-        replay_result = resolve_idempotency_replay(
-            idempotency_key=idempotency_key,
-            request_hash=request_hash,
-            source_context=source_context,
-            support_service_factory=get_dpm_run_support_service,
-        )
-        if replay_result is not None:
-            return replay_result
-
-    run_fn = _main_override("run_simulation") or run_simulation
-    result = run_fn(
-        portfolio=request.portfolio_snapshot,
-        market_data=request.market_data_snapshot,
-        model=request.model_portfolio,
-        shelf=request.shelf_entries,
-        options=effective_options,
+    return execute_simulation_request(
+        request=request,
+        idempotency_key=idempotency_key,
         request_hash=request_hash,
         correlation_id=resolved_correlation_id,
-    )
-    result = apply_source_lineage(result=result, source_context=source_context)
-
-    record_simulation_supportability(
-        result=result,
-        request_hash=request_hash,
-        portfolio_id=request.portfolio_snapshot.portfolio_id,
-        idempotency_key=idempotency_key,
+        policy_pack_definition=policy_pack_definition,
         replay_enabled=replay_enabled,
         source_context=source_context,
+        support_service_factory=get_dpm_run_support_service,
+        run_simulation_fn=_main_override("run_simulation") or run_simulation,
         record_for_support=_main_override("record_dpm_run_for_support")
         or record_dpm_run_for_support,
         current_logger=current_logger,
     )
-
-    if result.status == "BLOCKED":
-        current_logger.warning("Run blocked by DPM engine safety rules")
-
-    record_execution_call(
-        operation="simulate",
-        input_mode=source_input_mode(source_context),
-        outcome=_execution_outcome_for_status(result.status),
-        result_status=_execution_status_label(result.status),
-    )
-    return result
 
 
 def execute_batch_analysis(

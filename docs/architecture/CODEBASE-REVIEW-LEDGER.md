@@ -6197,3 +6197,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration and compatibility exports only.
 - Wiki decision: no wiki source change required; this is internal manual async execution
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-245: Synchronous simulate execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_sync_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still owned policy application to engine options, idempotency
+  replay lookup, engine invocation, source-lineage stamping, supportability persistence,
+  blocked-run warning, and execution telemetry. That kept the main service wrapper broad even
+  after policy and source-context extraction.
+- Action: extracted the synchronous simulate execution flow into `rebalance_sync_execution.py`,
+  passing support-service, engine, and supportability recorder dependencies explicitly so existing
+  `src.api.main` patch seams remain intact. The wrapper now resolves request hash, correlation id,
+  and policy context before delegating execution. Public routes, OpenAPI output, replay behavior,
+  supportability write behavior, lineage stamping, and telemetry labels were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  synchronous execution and simulation services, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: review remaining compatibility exports and main override seams to remove only those
+  proven unused by repository search and regression coverage.
+- Wiki decision: no wiki source change required; this is internal synchronous execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
