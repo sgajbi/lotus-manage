@@ -2349,3 +2349,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   contract explicit, then finish score-run extraction.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-077: PM operating quality review-action routes obscured the parent router
+
+- Date: 2026-05-31
+- Scope: PM operating quality review-action preview, create, list, and detail route registration.
+- Finding: review-action endpoints still occupied the parent PM operating quality router even after
+  policy, fairness, and support-summary routes were extracted. These routes own supervisory review
+  evidence and conflict handling, while the parent should increasingly compose lifecycle modules.
+- Action: moved review-action route registration into
+  `src/api/routers/pm_operating_quality_review_action_routes.py`. The parent keeps the existing
+  `_build_review_action` helper and supplies it through an explicit route-builder adapter so
+  existing private tests and monkeypatches remain stable while route ownership is separated.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: make the score-run builder/core-resolver dependency boundary explicit, then extract
+  score-run command and read routes as the final PM operating quality router decomposition step.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
