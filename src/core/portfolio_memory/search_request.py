@@ -7,6 +7,15 @@ from src.core.portfolio_memory.models import PortfolioMemorySupportabilityState
 from src.core.portfolio_memory.search_filters import normalize_portfolio_memory_search_filter
 from src.core.portfolio_memory.search_page import PortfolioMemorySearchFilters
 
+PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT = 50
+PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN = 1
+PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX = 200
+PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT = 0
+PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN = 0
+PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT = 500
+PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN = 1
+PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX = 1000
+
 
 @dataclass(frozen=True)
 class PortfolioMemorySearchQuery:
@@ -58,9 +67,19 @@ def _validate_search_pagination(
     offset: int,
     source_scan_limit: int,
 ) -> None:
-    if limit < 1 or limit > 200:
-        raise ValueError("portfolio-memory search limit must be between 1 and 200")
-    if offset < 0:
+    if limit < PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN or limit > PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX:
+        raise ValueError(
+            "portfolio-memory search limit must be between "
+            f"{PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN} and {PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX}"
+        )
+    if offset < PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN:
         raise ValueError("portfolio-memory search offset must be greater than or equal to 0")
-    if source_scan_limit < 1 or source_scan_limit > 1000:
-        raise ValueError("portfolio-memory source_scan_limit must be between 1 and 1000")
+    if (
+        source_scan_limit < PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN
+        or source_scan_limit > PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX
+    ):
+        raise ValueError(
+            "portfolio-memory source_scan_limit must be between "
+            f"{PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN} and "
+            f"{PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX}"
+        )

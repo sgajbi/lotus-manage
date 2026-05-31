@@ -1407,3 +1407,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   search limits or continuation semantics are introduced.
 - Wiki decision: no wiki source change required; this is internal defensive validation hardening
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-029: Portfolio-memory search bounds were duplicated between API and core
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search pagination contract constants
+- Finding: after direct-call pagination validation was added, the API route still carried hard-coded
+  `limit`, `offset`, and `source_scan_limit` defaults and bounds that duplicated the core search
+  request validation. That created a future drift risk where Swagger/OpenAPI could advertise one
+  search contract while internal service validation enforced another.
+- Action: promoted the search defaults and bounds to named constants in
+  `src/core/portfolio_memory/search_request.py`, updated the FastAPI route and service defaults to
+  consume those constants, and added tests proving both the named constants and OpenAPI parameter
+  constraints remain synchronized with the core search query contract.
+- Status: hardened
+- Evidence: focused search-request tests plus the existing portfolio-memory API/OpenAPI tests.
+- Follow-up: if portfolio-memory search adds cursor-based continuation or changes maximum scan
+  posture, update the shared constants first and let API/service callers consume them.
+- Wiki decision: no wiki source change required; this is internal API/core contract synchronization
+  with no product-facing capability change.

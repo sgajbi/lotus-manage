@@ -1,6 +1,27 @@
 import pytest
 
-from src.core.portfolio_memory.search_request import build_portfolio_memory_search_query
+from src.core.portfolio_memory.search_request import (
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+    build_portfolio_memory_search_query,
+)
+
+
+def test_portfolio_memory_search_bounds_are_named_contract_constants() -> None:
+    assert PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT == 50
+    assert PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN == 1
+    assert PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX == 200
+    assert PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT == 0
+    assert PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN == 0
+    assert PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT == 500
+    assert PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN == 1
+    assert PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX == 1000
 
 
 def test_build_portfolio_memory_search_query_normalizes_text_filters() -> None:
@@ -10,9 +31,9 @@ def test_build_portfolio_memory_search_query_normalizes_text_filters() -> None:
         supportability_state=" READY ",
         source_system=" lotus-core ",
         source_type=" PortfolioManagerBookMembership ",
-        limit=50,
-        offset=0,
-        source_scan_limit=500,
+        limit=PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+        offset=PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+        source_scan_limit=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
     )
 
     assert query.filters.event_type == "WAVE_HANDOFF_READY"
@@ -20,9 +41,9 @@ def test_build_portfolio_memory_search_query_normalizes_text_filters() -> None:
     assert query.filters.source_system == "lotus-core"
     assert query.filters.source_type == "PortfolioManagerBookMembership"
     assert query.explicit_candidate_ids == {"PB_SEARCH_001", "PB_SEARCH_002"}
-    assert query.limit == 50
-    assert query.offset == 0
-    assert query.source_scan_limit == 500
+    assert query.limit == PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT
+    assert query.offset == PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT
+    assert query.source_scan_limit == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT
 
 
 def test_build_portfolio_memory_search_query_treats_blank_filters_as_absent() -> None:
@@ -50,11 +71,36 @@ def test_build_portfolio_memory_search_query_treats_blank_filters_as_absent() ->
 @pytest.mark.parametrize(
     ("limit", "offset", "source_scan_limit", "expected_message"),
     [
-        (0, 0, 500, "limit must be between 1 and 200"),
-        (201, 0, 500, "limit must be between 1 and 200"),
-        (50, -1, 500, "offset must be greater than or equal to 0"),
-        (50, 0, 0, "source_scan_limit must be between 1 and 1000"),
-        (50, 0, 1001, "source_scan_limit must be between 1 and 1000"),
+        (
+            PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN - 1,
+            0,
+            PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+            "limit must be between 1 and 200",
+        ),
+        (
+            PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX + 1,
+            0,
+            PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+            "limit must be between 1 and 200",
+        ),
+        (
+            PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+            PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN - 1,
+            PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+            "offset must be greater than or equal to 0",
+        ),
+        (
+            PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+            0,
+            PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN - 1,
+            "source_scan_limit must be between 1 and 1000",
+        ),
+        (
+            PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+            0,
+            PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX + 1,
+            "source_scan_limit must be between 1 and 1000",
+        ),
     ],
 )
 def test_build_portfolio_memory_search_query_rejects_unsafe_pagination(

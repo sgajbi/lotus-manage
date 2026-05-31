@@ -52,6 +52,16 @@ from src.core.portfolio_memory.handoffs import (
 )
 from src.core.portfolio_memory.pm_quality_projection import score_run_includes_portfolio
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
+from src.core.portfolio_memory.search_request import (
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+)
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
     search_portfolio_memory,
@@ -1711,6 +1721,29 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         if parameter["name"] == "event_type"
     )
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
+    parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
+            "parameters"
+        ]
+    }
+    assert parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT
+    assert parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN
+    assert parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX
+    assert parameters["offset"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT
+    assert parameters["offset"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN
+    assert (
+        parameters["source_scan_limit"]["schema"]["default"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT
+    )
+    assert (
+        parameters["source_scan_limit"]["schema"]["minimum"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN
+    )
+    assert (
+        parameters["source_scan_limit"]["schema"]["maximum"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX
+    )
 
 
 def test_portfolio_memory_search_page_rejects_inconsistent_metadata() -> None:

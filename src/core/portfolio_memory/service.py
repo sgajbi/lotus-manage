@@ -26,6 +26,9 @@ from src.core.portfolio_memory.search_page import (
     build_search_row as _build_search_row,
 )
 from src.core.portfolio_memory.search_request import (
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
     build_portfolio_memory_search_query as _build_portfolio_memory_search_query,
 )
 from src.core.portfolio_memory.source_collection import (
@@ -111,9 +114,9 @@ def search_portfolio_memory(
     supportability_state: PortfolioMemorySupportabilityState | None = None,
     source_system: str | None = None,
     source_type: str | None = None,
-    limit: int = 50,
-    offset: int = 0,
-    source_scan_limit: int = 500,
+    limit: int = PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    offset: int = PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    source_scan_limit: int = PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
     generated_at: datetime | None = None,
 ) -> DpmPortfolioMemorySearchPage:
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""

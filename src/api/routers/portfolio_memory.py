@@ -31,6 +31,16 @@ from src.core.portfolio_memory.models import (
 )
 from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
 from src.core.portfolio_memory.search_filters import normalize_portfolio_memory_search_filter
+from src.core.portfolio_memory.search_request import (
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+)
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
     search_portfolio_memory,
@@ -110,12 +120,21 @@ def search_portfolio_memory_index(
         ),
         examples=["DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"],
     ),
-    limit: int = Query(default=50, ge=1, le=200, description="Maximum summaries to return."),
-    offset: int = Query(default=0, ge=0, description="Zero-based page offset."),
+    limit: int = Query(
+        default=PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+        ge=PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN,
+        le=PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
+        description="Maximum summaries to return.",
+    ),
+    offset: int = Query(
+        default=PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+        ge=PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN,
+        description="Zero-based page offset.",
+    ),
     source_scan_limit: int = Query(
-        default=500,
-        ge=1,
-        le=1000,
+        default=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+        ge=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+        le=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
         description="Maximum rows to scan from each Manage-local evidence repository.",
     ),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
