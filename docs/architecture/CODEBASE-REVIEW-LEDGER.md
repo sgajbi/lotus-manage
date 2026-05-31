@@ -4898,3 +4898,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   still the safest pattern.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-194: Proof-pack parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/proof_packs.py`.
+- Finding: the proof-pack parent router registered generate, read, and handoff routes through
+  repeated `importlib.import_module()` calls. That made route order less explicit as an inventory
+  and created copy/paste friction for future proof-pack slices.
+- Action: centralized proof-pack route module names in one ordered tuple and registered them through
+  a single loop. Public paths, route ordering, response models, OpenAPI output, proof-pack
+  generation, read, and handoff behavior were preserved.
+- Status: hardened
+- Evidence: proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`), router-wide
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
