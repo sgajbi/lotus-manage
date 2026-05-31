@@ -1,4 +1,3 @@
-import importlib
 import os
 from typing import Optional, cast
 
@@ -11,6 +10,7 @@ from src.api.routers.runtime_utils import (
     normalize_backend_init_error,
     reject_unexpected_query_params,
 )
+from src.api.routers.route_registration import register_route_modules
 from src.core.common.capabilities import psycopg_error_type
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
 from src.core.rebalance.policy_packs import (
@@ -152,5 +152,4 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.rebalance_policy_pack_admin_routes",
 )
 
-for route_module in _ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_ROUTE_MODULES)

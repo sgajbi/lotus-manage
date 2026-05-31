@@ -5056,3 +5056,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   focused regressions pass.
 - Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-202: Proof, portfolio-memory, and policy-pack routers duplicated registration loops
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/proof_packs.py`, `src/api/routers/portfolio_memory.py`, and
+  `src/api/routers/rebalance_policy_packs.py`.
+- Finding: proof-pack, portfolio-memory, and policy-pack parent routers still repeated local
+  route-module registration loops after their route inventories were centralized. That left the
+  same import mechanics duplicated across business surfaces.
+- Action: replaced the local loops with the shared `register_route_modules()` helper while
+  preserving each router's ordered route inventory. Public paths, route ordering, response models,
+  OpenAPI output, repository/dependency flow, proof-pack, portfolio-memory, and policy-pack
+  behavior were preserved.
+- Status: hardened
+- Evidence: proof-pack, portfolio-memory, and policy-pack API regressions
+  (`tests/unit/dpm/api/test_proof_pack_api.py`,
+  `tests/unit/dpm/api/test_portfolio_memory_api.py`, and
+  `tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py`), router-wide Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: apply the helper to remaining parent routers in small, focused slices after their
+  focused regressions pass.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.

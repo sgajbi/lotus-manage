@@ -1,7 +1,5 @@
 """API routes for RFC-0040 portfolio memory."""
 
-import importlib
-
 from fastapi import APIRouter, Depends
 
 from src.api.dependencies import (
@@ -15,6 +13,7 @@ from src.api.dependencies import (
     get_proof_pack_repository,
     get_wave_repository,
 )
+from src.api.routers.route_registration import register_route_modules
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -78,5 +77,4 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.portfolio_memory_detail_routes",
 )
 
-for route_module in _ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_ROUTE_MODULES)
