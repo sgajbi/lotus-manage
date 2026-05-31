@@ -2199,3 +2199,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   campaign-definition route module.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-070: Wave search/detail/item read routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: durable wave search, wave detail, and wave item read route definitions
+- Finding: read-only durable wave search/detail/item routes still lived directly in
+  `src/api/routers/waves.py` after the command routes were extracted. These endpoints are
+  persisted read models over wave state and should be owned separately from source-check,
+  simulation, selection, and workflow command routes.
+- Action: moved search/detail/item route registration into `src/api/routers/wave_read_routes.py`.
+  The module uses a registration helper rather than a child router because the search route is an
+  empty-string path operation (`GET /rebalance/waves`), which FastAPI cannot include from a
+  zero-prefix child router.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract proof-pack/report/supportability read routes as a final wave read-support
+  group, then move the campaign definition detail route to campaign-definition ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
