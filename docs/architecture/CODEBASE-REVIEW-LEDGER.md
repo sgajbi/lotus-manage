@@ -3146,3 +3146,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   ownership pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-114: Monitoring API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: monitoring run-once request, monitoring run page, monitoring exception page, and
+  exception-resolution request models.
+- Finding: `src/api/routers/monitoring.py` mixed Pydantic API contracts with command-center,
+  run-once, monitoring-run lookup, and exception queue handlers. These models define public
+  operator-facing payload shape and pagination semantics, so they should be reviewable separately
+  from route orchestration logic.
+- Action: moved monitoring API request/page contracts into
+  `src/api/routers/monitoring_models.py`, preserving public schemas, Swagger field descriptions,
+  examples, default portfolio-type behavior, pagination cursors, and exception resolution payload
+  shape.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split command-center, run-once, monitoring-run lookup, and exception queue route
+  registrations into separately owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
