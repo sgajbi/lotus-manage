@@ -5034,3 +5034,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   functions for compatibility.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-201: Parent routers duplicated route-module registration loops
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/route_registration.py`, `src/api/routers/construction.py`,
+  `src/api/routers/mandates.py`, and `src/api/routers/monitoring.py`.
+- Finding: after construction, mandate, and monitoring parent routers were converted to ordered
+  route-module inventories, each still repeated the same dynamic registration loop. That duplicated
+  parent-router mechanics across services and made future registration changes more error-prone.
+- Action: introduced `register_route_modules()` as the shared router registration helper and applied
+  it to the construction, mandate, and monitoring parent routers. Public paths, route ordering,
+  response models, OpenAPI output, dependency flow, and route behavior were preserved.
+- Status: hardened
+- Evidence: construction, mandate, and monitoring API regressions
+  (`tests/unit/dpm/api/test_construction_api.py`, `tests/unit/dpm/api/test_mandates_api.py`, and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: apply the helper to remaining parent routers in small, focused slices after their
+  focused regressions pass.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.

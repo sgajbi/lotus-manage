@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import importlib
-
 from fastapi import APIRouter
 
+from src.api.routers.route_registration import register_route_modules
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
 from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
@@ -22,5 +21,4 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.monitoring_exception_routes",
 )
 
-for route_module in _ROUTE_MODULES:
-    importlib.import_module(route_module)
+register_route_modules(_ROUTE_MODULES)
