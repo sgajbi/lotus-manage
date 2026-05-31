@@ -3337,3 +3337,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   policy-pack dependency module once service/test import seams can be updated safely.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-123: Proof-pack API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: proof-pack OpenAPI example, generate request/response, and lookup response models.
+- Finding: `src/api/routers/proof_packs.py` mixed public API contracts with proof-pack generation,
+  lookup, Markdown, report-input, and AI-evidence-input route handlers. These contracts define
+  source selection, idempotent generation options, governed regime-stress context, and handoff URL
+  response shape, so they should be reviewable separately from route orchestration.
+- Action: moved proof-pack API models and example payload into
+  `src/api/routers/proof_pack_models.py`, preserving public schemas, Swagger descriptions,
+  examples, default include flags, regime-stress authority text, and response URL fields.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split proof-pack generation, lookup/Markdown, and downstream handoff input routes
+  into separately owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
