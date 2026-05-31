@@ -2546,3 +2546,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   metrics with the command route module.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-086: Workflow action command routes were mixed with workflow state reads
+
+- Date: 2026-05-31
+- Scope: workflow action command routes by run id, correlation id, and idempotency key.
+- Finding: mutating workflow action routes still lived in
+  `src/api/routers/rebalance_runs_workflow_routes.py` next to read-only workflow state endpoints
+  after decision and history extraction. Workflow commands own transition conflicts, reviewer
+  traceability, and decision metrics, so keeping them mixed with state reads made route ownership
+  and regression scope less explicit.
+- Action: moved workflow action route registration and workflow decision metric recording into
+  `src/api/routers/rebalance_runs_workflow_action_routes.py`, preserving public paths, response
+  models, Swagger metadata, supportability and workflow feature gates, unsupported-query
+  rejection, optional correlation-header behavior, disabled/not-found/conflict mapping, and metric
+  outcomes.
+- Status: hardened
+- Evidence: focused DPM API workflow regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "workflow"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review remaining workflow state routes and parent module composition for final
+  supportability route ownership clarity.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
