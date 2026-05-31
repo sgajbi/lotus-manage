@@ -2591,3 +2591,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   readability once the async-operation module has the same ownership clarity.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-088: Async operation point lookups were mixed with list filtering
+
+- Date: 2026-05-31
+- Scope: async operation lookup routes by operation id and correlation id.
+- Finding: `src/api/routers/rebalance_runs_operations_routes.py` owned both the query-heavy async
+  operation list endpoint and point lookup endpoints. Lookup routes have simpler no-query
+  contracts and not-found behavior, while the list endpoint owns pagination and filter validation,
+  so keeping them together made review scope broader than necessary.
+- Action: moved async operation point lookup route registration into
+  `src/api/routers/rebalance_runs_async_operation_lookup_routes.py` and left the operations module
+  to register the list endpoint plus the lookup module import, preserving public paths, response
+  models, Swagger metadata, supportability and async-operation feature gates, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API async-operation regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "async_operation"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split async operation list filtering into an explicit inventory route module so the
+  operations shell mirrors the workflow route composition pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
