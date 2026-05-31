@@ -146,6 +146,11 @@ def _record_policy_pack_api_resolution(resolution: DpmEffectivePolicyPackResolut
     )
 
 
-importlib.import_module("src.api.routers.rebalance_policy_pack_effective_routes")
-importlib.import_module("src.api.routers.rebalance_policy_pack_catalog_routes")
-importlib.import_module("src.api.routers.rebalance_policy_pack_admin_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.rebalance_policy_pack_effective_routes",
+    "src.api.routers.rebalance_policy_pack_catalog_routes",
+    "src.api.routers.rebalance_policy_pack_admin_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)
