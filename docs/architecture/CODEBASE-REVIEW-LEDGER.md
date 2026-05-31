@@ -1426,3 +1426,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   posture, update the shared constants first and let API/service callers consume them.
 - Wiki decision: no wiki source change required; this is internal API/core contract synchronization
   with no product-facing capability change.
+
+## BACKEND-REVIEW-20260531-030: Portfolio-memory source repository factory lived in service facade
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source repository bundle construction
+- Finding: `src/core/portfolio_memory/service.py` still owned the helper that converted public
+  service repository parameters into `PortfolioMemorySourceRepositories`. That kept dependency
+  bundle construction in the facade instead of the dedicated source-repository boundary module,
+  even after search and collection code had moved to bundle-based orchestration.
+- Action: moved source repository bundle construction to
+  `src/core/portfolio_memory/source_repositories.py` as
+  `build_portfolio_memory_source_repositories`, updated the service facade to delegate to it, and
+  added focused tests proving required and optional repositories are preserved exactly.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_repositories.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep new source-family repository dependencies on the bundle and factory module first;
+  public service signatures should remain compatibility facades only.
+- Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
+  with no API, supported-feature, or operator-contract change.

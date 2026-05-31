@@ -34,7 +34,10 @@ from src.core.portfolio_memory.search_request import (
 from src.core.portfolio_memory.source_collection import (
     collect_portfolio_memory_events as _collect_portfolio_memory_events,
 )
-from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    build_portfolio_memory_source_repositories as _build_portfolio_memory_source_repositories,
+)
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
@@ -59,7 +62,7 @@ def build_portfolio_memory(
 
     return build_portfolio_memory_from_sources(
         portfolio_id=portfolio_id,
-        repositories=_source_repositories(
+        repositories=_build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
             outcome_review_repository=outcome_review_repository,
@@ -122,7 +125,7 @@ def search_portfolio_memory(
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
     generated_at = generated_at or datetime.now(timezone.utc)
-    repositories = _source_repositories(
+    repositories = _build_portfolio_memory_source_repositories(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,
@@ -173,29 +176,4 @@ def search_portfolio_memory(
         limit=search_query.limit,
         offset=search_query.offset,
         generated_at=generated_at.isoformat(),
-    )
-
-
-def _source_repositories(
-    *,
-    proof_pack_repository: DpmProofPackRepository,
-    wave_repository: DpmWaveRepository,
-    outcome_review_repository: DpmOutcomeReviewRepository,
-    mandate_repository: DpmMandateRepository | None,
-    construction_repository: ConstructionRepository | None,
-    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository | None,
-    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository | None,
-    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository | None,
-) -> PortfolioMemorySourceRepositories:
-    return PortfolioMemorySourceRepositories(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-        construction_repository=construction_repository,
-        pm_quality_score_run_repository=pm_quality_score_run_repository,
-        pm_quality_review_action_repository=pm_quality_review_action_repository,
-        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
-        campaign_definition_repository=campaign_definition_repository,
     )
