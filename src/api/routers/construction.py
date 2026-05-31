@@ -11,6 +11,11 @@ router = APIRouter(
 )
 
 
-importlib.import_module("src.api.routers.construction_generate_routes")
-importlib.import_module("src.api.routers.construction_read_routes")
-importlib.import_module("src.api.routers.construction_selection_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.construction_generate_routes",
+    "src.api.routers.construction_read_routes",
+    "src.api.routers.construction_selection_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)
