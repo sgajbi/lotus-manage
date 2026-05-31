@@ -1093,3 +1093,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   repository-native evidence if search volume or latency requires it.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-014: Portfolio-memory content-hash envelope rules lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: deterministic content-hash finalization for memory, search pages, and event lookups
+- Finding: `src/core/portfolio_memory/service.py` repeated replay-stable content-hash envelope
+  construction for the memory aggregate, search page, and event lookup surfaces. Those rules are
+  audit and lineage contract behavior, not repository orchestration, and should be testable without
+  building full repository-backed memory pages.
+- Action: extracted deterministic envelope finalization to
+  `src/core/portfolio_memory/envelopes.py` and updated the service to delegate memory, search page,
+  and event lookup content-hash finalization. Added direct tests proving `generated_at` and existing
+  `content_hash` are excluded while model validation is still applied.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_envelopes.py` plus existing
+  portfolio-memory API hash-determinism tests.
+- Follow-up: keep remaining service orchestration focused on repository traversal and page
+  composition; avoid reintroducing ad hoc content-hash construction in endpoint code.
+- Wiki decision: no wiki source change required; this is internal hash-governance cleanup with no
+  API, supported-feature, or operator-contract change.

@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 from typing import cast
 
-from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.pm_quality.repository import (
@@ -30,6 +29,11 @@ from src.core.portfolio_memory.candidate_portfolios import (
 from src.core.portfolio_memory.construction_projection import (
     construction_alternative_set_event as _construction_alternative_set_event,
     construction_selection_event as _construction_selection_event,
+)
+from src.core.portfolio_memory.envelopes import (
+    finalize_event_lookup as _finalize_event_lookup,
+    finalize_portfolio_memory as _finalize_portfolio_memory,
+    finalize_search_page_payload as _finalize_search_page_payload,
 )
 from src.core.portfolio_memory.governance import (
     client_communication_boundary_evidence as _client_communication_boundary_evidence,
@@ -196,11 +200,7 @@ def build_portfolio_memory(
         content_hash="",
         generated_at=generated_at.isoformat(),
     )
-    payload = memory.model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(
-        strip_keys(payload, exclude={"content_hash", "generated_at"})
-    )
-    return DpmPortfolioMemory.model_validate(payload)
+    return _finalize_portfolio_memory(memory)
 
 
 def search_portfolio_memory(
@@ -428,13 +428,7 @@ def search_portfolio_memory(
             "client-communication events, or recalculate source truth."
         ),
     }
-    page_for_hash = DpmPortfolioMemorySearchPage.model_validate(
-        {**page_payload, "content_hash": "sha256:pending"}
-    )
-    page_payload["content_hash"] = hash_canonical_payload(
-        strip_keys(page_for_hash.model_dump(mode="json"), exclude={"content_hash", "generated_at"})
-    )
-    return DpmPortfolioMemorySearchPage.model_validate(page_payload)
+    return _finalize_search_page_payload(page_payload)
 
 
 def build_portfolio_memory_event_lookup(
@@ -458,11 +452,7 @@ def build_portfolio_memory_event_lookup(
             generated_at=memory.generated_at,
             support_boundary=support_boundary,
         )
-        payload = lookup.model_dump(mode="json")
-        payload["content_hash"] = hash_canonical_payload(
-            strip_keys(payload, exclude={"content_hash", "generated_at"})
-        )
-        return DpmPortfolioMemoryEventLookup.model_validate(payload)
+        return _finalize_event_lookup(lookup)
     return None
 
 
