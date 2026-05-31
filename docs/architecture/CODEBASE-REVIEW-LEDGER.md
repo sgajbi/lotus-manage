@@ -5495,3 +5495,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   dependency failure and should not be mixed into the diff conflict helper.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-220: Mandate refresh source-unavailable HTTP mapping
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandate_http.py` and `src/api/routers/mandate_refresh_routes.py`.
+- Finding: mandate refresh already reused the shared source-incomplete `424` helper, but still
+  constructed the source-unavailable `503` dependency failure inline. Keeping only one side of the
+  refresh dependency contract in the helper layer made the route noisier and less consistent.
+- Action: added `mandate_source_unavailable_http_exception()` and reused it from refresh-from-core.
+  Public paths, response models, OpenAPI output, and existing `503` detail strings were preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: keep mandate PM-book monitoring mappings in `monitoring_http.py` because those expose
+  structured selector-specific detail payloads instead of mandate refresh strings.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

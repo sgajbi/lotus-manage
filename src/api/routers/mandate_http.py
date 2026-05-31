@@ -10,6 +10,7 @@ from src.api.services.mandate_service import (
     DpmMandateHealthNotFoundError,
     DpmMandateNotFoundError,
     DpmMandateSourceIncompleteError,
+    DpmMandateSourceUnavailableError,
     DpmMonitoringRunNotFoundError,
 )
 
@@ -37,6 +38,15 @@ def mandate_source_incomplete_http_exception(
 ) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_424_FAILED_DEPENDENCY,
+        detail=str(exc),
+    )
+
+
+def mandate_source_unavailable_http_exception(
+    exc: DpmMandateSourceUnavailableError,
+) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail=str(exc),
     )
 

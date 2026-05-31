@@ -2,15 +2,18 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header
 
 from src.api.dependencies import get_mandate_repository
+from src.api.routers.mandate_http import (
+    mandate_source_incomplete_http_exception,
+    mandate_source_unavailable_http_exception,
+)
 from src.api.routers.mandate_models import (
     MANDATE_RESPONSE_EXAMPLE,
     DpmMandateRefreshFromCoreRequest,
     DpmMandateRefreshFromCoreResponse,
 )
-from src.api.routers.mandate_http import mandate_source_incomplete_http_exception
 from src.api.routers.mandates import get_core_resolver_client, router
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
@@ -92,10 +95,7 @@ async def refresh_mandate(
             correlation_id=x_correlation_id,
         )
     except DpmMandateSourceUnavailableError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        ) from exc
+        raise mandate_source_unavailable_http_exception(exc) from exc
     except DpmMandateSourceIncompleteError as exc:
         raise mandate_source_incomplete_http_exception(exc) from exc
     return DpmMandateRefreshFromCoreResponse.from_result(result)
