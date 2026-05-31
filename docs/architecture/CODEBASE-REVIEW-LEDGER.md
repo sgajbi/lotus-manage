@@ -1964,3 +1964,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for existing routes with no behavior, payload, or supported-feature
   change.
+
+## BACKEND-REVIEW-20260531-059: Durable wave create idempotency header was route-local metadata
+
+- Date: 2026-05-31
+- Scope: durable wave create `Idempotency-Key` header contract
+- Finding: the durable wave create endpoint carried its idempotency header metadata directly in
+  `src/api/routers/waves.py`. Idempotency is a command-safety contract, so it should be reusable
+  route metadata and kept deliberately separate from optional correlation headers.
+- Action: added `WaveCreateIdempotencyKeyHeader` to
+  `src/api/routers/wave_route_parameters.py`, applied it to durable wave create, pinned the
+  OpenAPI header description, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: keep future command idempotency headers modeled as explicit command-safety contracts
+  rather than generic header parameters.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
+  maintainability hardening for an existing route with no behavior, payload, or supported-feature
+  change.

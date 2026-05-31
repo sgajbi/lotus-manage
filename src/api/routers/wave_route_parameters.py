@@ -49,6 +49,13 @@ WaveCorrelationIdHeader = Annotated[
         examples=["corr-wave-command-001"],
     ),
 ]
+WaveCreateIdempotencyKeyHeader = Annotated[
+    str,
+    Header(
+        description="Required idempotency token for durable wave create replay protection.",
+        examples=["wave-idem-001"],
+    ),
+]
 
 CampaignDefinitionFilterIdQuery = Annotated[
     str | None,

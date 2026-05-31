@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import (
     get_advise_authority_client,
@@ -61,6 +61,7 @@ from src.api.routers.wave_route_parameters import (
     CampaignReadModelOffsetQuery,
     CampaignRequestedAsOfDateQuery,
     WaveCorrelationIdHeader,
+    WaveCreateIdempotencyKeyHeader,
     WaveIdPath,
     WaveItemIdPath,
 )
@@ -1236,13 +1237,7 @@ def preview_wave(
 )
 def create_wave(
     request: DpmWavePreviewRequest,
-    idempotency_key: Annotated[
-        str,
-        Header(
-            description="Required idempotency token for durable wave create.",
-            examples=["wave-idem-001"],
-        ),
-    ],
+    idempotency_key: WaveCreateIdempotencyKeyHeader,
     x_correlation_id: WaveCorrelationIdHeader = None,
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),

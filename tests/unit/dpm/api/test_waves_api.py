@@ -6305,6 +6305,12 @@ def test_wave_openapi_documents_preview_and_create() -> None:
     assert source_check_parameters["x-correlation-id"] == (
         "Optional correlation id for wave supportability and audit traceability."
     )
+    create_parameters = {
+        parameter["name"]: parameter["description"] for parameter in create["parameters"]
+    }
+    assert create_parameters["idempotency-key"] == (
+        "Required idempotency token for durable wave create replay protection."
+    )
     assert "does not claim external order execution" in stage["description"]
     assert "external_execution_claimed=false" in handoff["description"]
     assert "does not cancel external orders" in cancel["description"]
