@@ -4461,3 +4461,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   proves all downstream imports have moved and external import compatibility can be retired.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-174: Campaign read helper mixed audit projections with readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
+  and
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`.
+- Finding: `wave_campaign_read_http.py` owned simple audit projections alongside workflow overview,
+  preview readiness, and launch-package projections. Lifecycle events and launch history have a
+  distinct append-only audit/read-model purpose from readiness and launch packaging.
+- Action: moved lifecycle-event and launch-history response helpers into
+  `src/api/routers/wave_campaign_audit_read_http.py`, updated readiness routes to import audit
+  helpers directly, and kept `wave_campaign_read_http.py` import-compatible for existing callers.
+  Public paths, response models, pagination, not-found mapping, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split workflow overview/readiness/launch-package helpers into a focused readiness
+  projection module after audit read extraction is stable.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
