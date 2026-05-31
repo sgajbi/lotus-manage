@@ -2369,3 +2369,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   score-run command and read routes as the final PM operating quality router decomposition step.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-078: PM operating quality score-run routes kept the router non-compositional
+
+- Date: 2026-05-31
+- Scope: PM operating quality score-run preview, create, list, and detail route registration.
+- Finding: score-run command and read endpoints were the last route definitions implemented
+  directly in `src/api/routers/pm_operating_quality.py`. The parent router still needed to retain
+  private builder and source-resolution helpers for existing focused tests, but direct route
+  definitions were no longer necessary there.
+- Action: moved score-run command and read route registration into
+  `src/api/routers/pm_operating_quality_score_run_routes.py` with separate command and read
+  registration functions so the existing OpenAPI path order is preserved. The parent router now
+  composes PM operating quality lifecycle route modules and keeps only builder/support helper
+  behavior.
+- Status: hardened
+- Evidence: PM operating quality API regression test (`tests/unit/api/test_pm_operating_quality_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review whether PM operating quality helper functions should move behind an explicit
+  injectable service boundary once the current private tests are converted away from parent-module
+  monkeypatching.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
