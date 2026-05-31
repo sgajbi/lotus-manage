@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import logging
 from typing import Annotated
 
@@ -17,8 +18,6 @@ from src.api.routers.outcome_review_models import (
     DpmOutcomeReviewListAppliedFilters,
     DpmOutcomeReviewListResponse,
     DpmOutcomeReviewLookupResponse,
-    DpmOutcomeReviewPreviewRequest,
-    DpmOutcomeReviewPreviewResponse,
     DpmOutcomeReviewRefreshSourcesRequest,
     DpmOutcomeReviewRefreshSourcesResponse,
     DpmOutcomeReviewSupportabilityResponse,
@@ -37,7 +36,6 @@ from src.api.services.outcome_review_service import (
     create_outcome_review,
     get_ai_evidence_input,
     get_report_input,
-    preview_outcome_review,
     refresh_outcome_review_sources,
     search_outcome_reviews,
 )
@@ -63,34 +61,7 @@ router = APIRouter(
 )
 
 
-@router.post(
-    "/preview",
-    response_model=DpmOutcomeReviewPreviewResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Preview post-trade outcome comparison",
-    description=(
-        "What: Compare expected pre-trade manage evidence with realized source-owner evidence "
-        "without persisting a review.\n"
-        "When: Use before durable creation to inspect variance, degraded source posture, blocked "
-        "dimensions, and unsupported dimensions.\n"
-        "How: Supply implementation-backed expected and realized snapshots plus explicit tolerance "
-        "configuration. The endpoint does not calculate source-owner truth locally."
-    ),
-)
-def preview_outcome_review_endpoint(
-    request: DpmOutcomeReviewPreviewRequest,
-) -> DpmOutcomeReviewPreviewResponse:
-    try:
-        comparison = preview_outcome_review(
-            expected_snapshot=request.expected_snapshot,
-            realized_snapshot=request.realized_snapshot,
-            dimension_configs=[config.to_domain() for config in request.dimension_configs],
-        )
-    except DpmOutcomeReviewValidationError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
-        ) from exc
-    return DpmOutcomeReviewPreviewResponse(comparison=comparison)
+importlib.import_module("src.api.routers.outcome_review_preview_routes")
 
 
 @router.post(

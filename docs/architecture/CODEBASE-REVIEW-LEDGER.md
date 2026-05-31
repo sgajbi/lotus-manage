@@ -2876,3 +2876,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   now that shared observability policy is outside the controller.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-101: Outcome-review preview route was mixed with durable review routes
+
+- Date: 2026-05-31
+- Scope: non-durable outcome-review preview endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed the read-only preview comparison endpoint
+  with durable creation, source refresh, lookup, supportability, report, AI evidence, run lookup,
+  and wave lookup routes. Preview has no persistence side effect and owns validation-only
+  comparison behavior, so it should be reviewed separately from durable command paths.
+- Action: moved preview route registration into
+  `src/api/routers/outcome_review_preview_routes.py`, preserving public path, response model,
+  Swagger guidance, validation error mapping, and source-owner truth boundary text.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split durable create and source-refresh command routes from read/supportability
+  outcome-review routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
