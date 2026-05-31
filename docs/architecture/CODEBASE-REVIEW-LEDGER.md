@@ -4578,3 +4578,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   split once launch-package projection ownership is stable.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-179: Campaign readiness router mixed preview readiness with launch package routing
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`.
+- Finding: after workflow-overview route extraction, `wave_campaign_readiness_routes.py` still mixed
+  direct preview-readiness checks with launch-package routing. Launch package is operator packaging
+  for a future create request with idempotency/correlation guidance, while preview-readiness is the
+  direct fail-closed supportability check.
+- Action: moved the launch-package endpoint into
+  `src/api/routers/wave_campaign_launch_package_routes.py`, included that router after
+  preview-readiness routes and before durable launch routes in `waves.py`, and left
+  `wave_campaign_readiness_routes.py` focused on preview-readiness. Public path, response model,
+  query parameters, route order, dependency wiring, Swagger description, and behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect route aggregation once campaign-definition read/write/lifecycle/audit/readiness
+  routing has stabilized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

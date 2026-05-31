@@ -15,6 +15,9 @@ from src.api.routers.wave_campaign_evidence_routes import (
 from src.api.routers.wave_campaign_launch_routes import (
     router as campaign_launch_router,
 )
+from src.api.routers.wave_campaign_launch_package_routes import (
+    router as campaign_launch_package_router,
+)
 from src.api.routers.wave_campaign_audit_read_routes import (
     router as campaign_audit_read_router,
 )
@@ -56,6 +59,7 @@ router.include_router(campaign_evidence_router)
 router.include_router(campaign_audit_read_router)
 router.include_router(campaign_workflow_overview_router)
 router.include_router(campaign_readiness_router)
+router.include_router(campaign_launch_package_router)
 router.include_router(campaign_launch_router)
 register_wave_create_preview_routes(
     router,
