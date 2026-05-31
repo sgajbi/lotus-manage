@@ -2746,3 +2746,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pattern used for support bundles.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-095: Idempotency history lookup was mixed with current run lookups
+
+- Date: 2026-05-31
+- Scope: append-only idempotency history route for retry/audit reconstruction.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` mixed current run lookup routes with
+  the append-only idempotency history route. The history route has a distinct feature gate and
+  audit contract from current lookup by correlation, request hash, idempotency key, or run id.
+- Action: moved idempotency history route registration into
+  `src/api/routers/rebalance_runs_lookup_idempotency_history_routes.py`, preserving public path,
+  response model, Swagger metadata, supportability and idempotency-history feature gates,
+  unsupported-query rejection, and not-found behavior.
+- Status: hardened
+- Evidence: focused DPM API idempotency-history regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "idempotency_history"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split current idempotency-key lookup from correlation, request-hash, and run-id lookup
+  routes so each resolver boundary has focused ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
