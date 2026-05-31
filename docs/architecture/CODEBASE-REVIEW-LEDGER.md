@@ -815,3 +815,969 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   until a stable tactical house-view workflow projection object is introduced.
 - Wiki decision: no wiki source change required; this is an internal modularity refactor with no
   supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-001: Portfolio-memory governance and state mapping lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, portfolio-memory governance posture, unsupported
+  external execution/client-communication boundary evidence, supportability-state mapping
+- Finding: portfolio-memory read-model orchestration mixed repository fan-out and event projection
+  with static governance policy, source-event family posture, unsupported-boundary evidence, and
+  state-mapping helpers. The behavior was correct, but the service file had grown past 2,200 lines
+  and made portfolio-memory source boundaries harder to review independently from aggregation
+  orchestration.
+- Action: extracted governance and boundary evidence into
+  `src/core/portfolio_memory/governance.py`, extracted supportability-state mapping into
+  `src/core/portfolio_memory/supportability.py`, preserved existing service helper aliases for
+  compatibility with focused tests, and added direct unit coverage for no-raw-payload governance,
+  unsupported external execution/client-communication claims, supported/deferred source-event
+  family posture, and fail-closed state mapping.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_governance_supportability.py`;
+  existing portfolio-memory API tests remain the behavior-preserving regression scope for the
+  service facade.
+- Follow-up: continue decomposing `portfolio_memory/service.py` by source-event family only when
+  each extraction can preserve lineage, content-hash, and no-unsupported-claim behavior with
+  focused tests.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-002: Portfolio-memory source-reference projection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, proof-pack, wave, campaign, outcome-review, and
+  mandate source-reference projection helpers
+- Finding: portfolio-memory source-reference projection helpers were embedded in the read-model
+  service next to repository fan-out and event aggregation. These mappers preserve source-owned
+  identity, supportability state, content hashes, and fallback identity behavior, so keeping them
+  inside service orchestration made lineage behavior harder to test directly and contributed to
+  monolithic service growth.
+- Action: extracted the pure source-reference projection helpers into
+  `src/core/portfolio_memory/source_refs.py`, kept service-level aliases for behavior-preserving
+  compatibility, and added direct tests for proof-pack, wave, outcome, mandate lineage, fallback
+  source identity, and proof-pack source-ref dedupe/sort behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_refs.py`; existing
+  portfolio-memory, proof-pack, and wave API tests remain the downstream regression scope for
+  event projection behavior.
+- Follow-up: continue decomposing event-family builders only when source lineage, artifact refs,
+  and content-hash semantics can be pinned independently.
+- Wiki decision: no wiki source change required; this is an internal modularity refactor with no
+  supported-feature, API shape, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-003: Portfolio-memory API tests depended on private service helper aliases
+
+- Date: 2026-05-31
+- Scope: `tests/unit/dpm/api/test_portfolio_memory_api.py`, portfolio-memory source-ref and
+  supportability helper assertions
+- Finding: helper-edge coverage in the API test suite asserted source-ref and supportability
+  behavior through private `portfolio_memory.service` aliases. After extracting these helpers into
+  focused modules, leaving the tests coupled to the service facade would obscure module ownership
+  and make future service decomposition harder.
+- Action: updated helper-edge assertions to import source-reference projection from
+  `src/core/portfolio_memory/source_refs.py` and supportability mapping from
+  `src/core/portfolio_memory/supportability.py`, while leaving the remaining
+  service-orchestration helper assertion in the service namespace.
+- Status: hardened
+- Evidence: focused portfolio-memory API tests plus the new module-level source-ref and
+  supportability tests.
+- Follow-up: extract the remaining PM-book membership inclusion helper only if a stable PM-quality
+  portfolio-memory projection module emerges.
+- Wiki decision: no wiki source change required; this is test ownership cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-004: Portfolio-memory search and facet helpers lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, search filter normalization, event matching,
+  source-system/source-type facet extraction, deterministic counts, and event dedupe/sort helpers
+- Finding: portfolio-memory search orchestration mixed repository scanning and page construction
+  with pure helper behavior for filter normalization, event source facets, matching, counts, and
+  event ordering. These helpers are part of the search contract and should be testable without
+  constructing repository fixtures or invoking the full read-model service.
+- Action: extracted the pure search/facet helpers into
+  `src/core/portfolio_memory/search_filters.py`, kept service-level aliases for behavior-preserving
+  orchestration, and added direct tests for blank-filter normalization, source/artifact facet
+  inclusion, filter matching, count aggregation, and deterministic dedupe/sort behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_filters.py`; existing
+  portfolio-memory API search tests remain the endpoint/read-model regression scope.
+- Follow-up: keep candidate repository scanning inside service orchestration until a stable
+  search-index service boundary emerges.
+- Wiki decision: no wiki source change required; this is internal modularity/testability cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-005: PM-quality portfolio membership projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run membership projection inside
+  `src/core/portfolio_memory/service.py`
+- Finding: the service embedded the rule that links a PM operating-quality score run to a portfolio
+  through Core PM-book evidence. That rule is private-banking domain projection logic, not
+  repository orchestration, and it is reused by score-run, review-action, and summary-invocation
+  event projection.
+- Action: extracted the rule into `src/core/portfolio_memory/pm_quality_projection.py`, updated the
+  service to consume the focused helper, updated API helper-edge tests to assert against the new
+  module boundary, and added direct unit coverage for member portfolio ids, PM-book member source
+  refs, and missing book-scope evidence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep PM-quality event builders in the service until a coherent source-event-family
+  projection module can be extracted without weakening content-hash or no-unsupported-claim
+  evidence.
+- Wiki decision: no wiki source change required; this is internal domain projection cleanup with no
+  API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-006: Construction memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: construction alternative set and selected-alternative portfolio-memory event projection
+- Finding: construction event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source-safe projection details such as request
+  hash reuse, method counts, selected-method metadata, artifact refs, and explicit no-raw-payload
+  flags, so they are a domain projection boundary rather than service orchestration.
+- Action: extracted construction alternative set, construction selection, and alternative-set
+  content-hash projection into `src/core/portfolio_memory/construction_projection.py`, leaving
+  repository retrieval in the service. Added direct unit coverage for request-hash preservation,
+  method counts, selected-alternative metadata, artifact refs, fallback content hashing, and
+  no-raw-payload projection flags.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_construction_projection.py`
+  plus existing portfolio-memory API tests.
+- Follow-up: continue extracting source-event-family projection modules only where repository
+  scanning can remain separated from pure event construction.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-007: Proof-pack memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: proof-pack created and decision-timeline portfolio-memory event projection
+- Finding: proof-pack event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source-safe projection details such as
+  source refs, report/AI artifact refs, content hashes, status mapping, and bounded metadata, so
+  they are a source-event-family projection boundary rather than service orchestration.
+- Action: extracted proof-pack created and decision-timeline event projection into
+  `src/core/portfolio_memory/proof_pack_projection.py`, leaving proof-pack repository retrieval in
+  the service. Added direct unit coverage for created-event source/artifact references and
+  timeline-event evidence artifact projection.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_proof_pack_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting source-event-family projection modules only when source lineage
+  and artifact-ref semantics can be covered independently.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-008: Wave memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: wave created, state-transition, and internal handoff portfolio-memory event projection
+- Finding: wave event projection was embedded in `src/core/portfolio_memory/service.py` beside
+  wave repository discovery. The event builders own handoff-boundary semantics, source refs,
+  transition metadata, and no-external-execution evidence, so they are a source-event-family
+  projection boundary rather than service orchestration.
+- Action: extracted wave created, state-transition, handoff, and event-metadata projection into
+  `src/core/portfolio_memory/wave_projection.py`, leaving wave selection in the service. Added
+  direct unit coverage for matching item context, source refs, transition metadata, handoff
+  artifact refs, and unrelated handoff filtering.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_wave_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep campaign workflow projection in the service until it can be split without
+  weakening campaign-version identity or maker-checker boundary evidence.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-009: Outcome-review memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: post-trade outcome-review created and append-only event projection
+- Finding: outcome-review event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source lineage mapping, persisted-event
+  dedupe semantics, content-hash preservation, and handoff-reference metadata, so they are a
+  source-event-family projection boundary rather than service orchestration.
+- Action: extracted outcome-review created and append-only event projection into
+  `src/core/portfolio_memory/outcome_projection.py`, leaving outcome-review repository traversal
+  in the service. Added direct unit coverage for review lineage/handoff metadata and duplicate
+  persisted-event precedence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_outcome_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep PM-quality event projection as the next likely extraction once the score-run,
+  review-action, and summary-invocation boundaries can be pinned without weakening no-raw-score
+  and no-summary-text evidence.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-010: PM-quality memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run, review-action, and summary-invocation memory events
+- Finding: PM-quality event builders were embedded in `src/core/portfolio_memory/service.py`
+  beside repository filtering. The builders own private-banking PM-quality boundary semantics,
+  including no numeric score projection, no raw review reason projection, no summary text
+  projection, source refs, and artifact refs, so they are a domain projection boundary rather
+  than service orchestration.
+- Action: moved score-run, review-action, and summary-invocation event builders into
+  `src/core/portfolio_memory/pm_quality_projection.py`, leaving repository filtering and
+  portfolio membership selection in the service. Added direct tests for no-raw-score,
+  no-review-reason, and no-summary-text projection boundaries.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_projection.py`
+  plus existing portfolio-memory API tests.
+- Follow-up: review campaign workflow projection separately because campaign definition,
+  assignment, transition, and maker-checker evidence is a larger source-event-family boundary.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-011: Campaign workflow memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition, approval decision, assignment action, assignment task,
+  task transition, and maker-checker control memory events
+- Finding: campaign workflow event builders were embedded in
+  `src/core/portfolio_memory/service.py` beside repository filtering. The builders own
+  campaign-version identity, candidate source lineage, no-global-discovery flags, assignment SLA
+  state, task-transition boundary flags, and maker-checker no-external-approval/no-execution
+  evidence, so they are a domain projection boundary rather than service orchestration.
+- Action: moved campaign workflow event builders into
+  `src/core/portfolio_memory/campaign_projection.py`, leaving repository filtering in the
+  service. Added direct tests for source-lineage/no-global-discovery, assignment transition
+  boundary flags, and maker-checker no-external-approval/no-execution evidence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_campaign_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: revisit the remaining mandate-health projection after campaign extraction because it
+  is now the largest domain-event builder still resident in the service.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-012: Mandate memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: mandate health snapshot and monitoring exception memory events
+- Finding: mandate event builders were embedded in `src/core/portfolio_memory/service.py` beside
+  mandate repository lookup. The builders own source-lineage projection, canonical content hashing,
+  supportability state mapping, evidence refs, and monitoring threshold metadata, so they are a
+  domain projection boundary rather than service orchestration.
+- Action: moved mandate health and monitoring exception event builders into
+  `src/core/portfolio_memory/mandate_projection.py`, leaving repository retrieval in the service.
+  Added direct tests for source lineage, content hash preservation, supportability mapping,
+  monitoring-run artifact refs, and measured/threshold metadata.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_mandate_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review remaining service responsibilities for candidate scanning and repository
+  orchestration now that all major event-family projection builders have dedicated modules.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-013: Portfolio-memory candidate discovery lived in service search orchestration
+
+- Date: 2026-05-31
+- Scope: candidate portfolio discovery for portfolio-memory search
+- Finding: portfolio-memory search kept cross-repository candidate discovery inside
+  `src/core/portfolio_memory/service.py`, mixing search page orchestration with reusable source
+  universe assembly. This made it harder to test explicit portfolio id normalization, optional
+  source repositories, and PM-book member evidence without invoking full search pagination.
+- Action: extracted candidate discovery to `src/core/portfolio_memory/candidate_portfolios.py` and
+  kept search result assembly in the service. Added direct tests for explicit id trimming,
+  source-backed portfolio merging, PM-quality book-scope membership, and optional repository
+  support.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` plus
+  existing portfolio-memory API search tests.
+- Follow-up: continue keeping repository scans narrow; introduce batching/indexing only with
+  repository-native evidence if search volume or latency requires it.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-014: Portfolio-memory content-hash envelope rules lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: deterministic content-hash finalization for memory, search pages, and event lookups
+- Finding: `src/core/portfolio_memory/service.py` repeated replay-stable content-hash envelope
+  construction for the memory aggregate, search page, and event lookup surfaces. Those rules are
+  audit and lineage contract behavior, not repository orchestration, and should be testable without
+  building full repository-backed memory pages.
+- Action: extracted deterministic envelope finalization to
+  `src/core/portfolio_memory/envelopes.py` and updated the service to delegate memory, search page,
+  and event lookup content-hash finalization. Added direct tests proving `generated_at` and existing
+  `content_hash` are excluded while model validation is still applied.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_envelopes.py` plus existing
+  portfolio-memory API hash-determinism tests.
+- Follow-up: keep remaining service orchestration focused on repository traversal and page
+  composition; avoid reintroducing ad hoc content-hash construction in endpoint code.
+- Wiki decision: no wiki source change required; this is internal hash-governance cleanup with no
+  API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-015: Portfolio-memory search page assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search row matching, facet counts, pagination, and support-boundary page
+  payload assembly
+- Finding: `src/core/portfolio_memory/service.py` still mixed repository traversal with search row
+  matching, latest matching event metadata, matching-event facet counts, pagination, and search
+  support-boundary construction. Those are search-page projection rules and should be tested
+  directly without repository-backed memory construction.
+- Action: extracted search row and page assembly to `src/core/portfolio_memory/search_page.py`,
+  leaving candidate discovery and memory construction in the service. Added direct tests for latest
+  matching event metadata, explicit empty-portfolio handling, facet counts, deterministic ordering,
+  and pagination.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_page.py` plus existing
+  portfolio-memory API search tests.
+- Follow-up: review whether remaining service orchestration should be split into a lightweight
+  assembler class only if repository dependency flow becomes harder to reason about.
+- Wiki decision: no wiki source change required; this is internal search-page modularity cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-016: Portfolio-memory aggregate assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: portfolio-memory aggregate event bounding, supportability state, event-type counts,
+  source-system facets, governance posture, and final memory envelope assembly
+- Finding: `src/core/portfolio_memory/service.py` still mixed repository fan-out with pure
+  read-model aggregate rules after event projection. Dedupe/sort/limit behavior, aggregate
+  supportability, source-system facets, governance evidence, and final memory hash construction are
+  memory-envelope rules and should be directly testable without source repositories.
+- Action: extracted aggregate assembly to `src/core/portfolio_memory/aggregate.py`, leaving the
+  service to collect source events and delegate deterministic memory construction. Added direct
+  aggregate tests for dedupe/sort/limit behavior, source facet projection, governance/boundary
+  evidence, and explicit empty-memory state.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_aggregate.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: continue reviewing repository event collection helpers only where a source-family
+  collector can be split without weakening projection tests or introducing circular dependencies.
+- Wiki decision: no wiki source change required; this is internal aggregate modularity cleanup with
+  no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-017: Portfolio-memory event lookup assembly lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: exact portfolio-memory event lookup envelope assembly
+- Finding: `src/core/portfolio_memory/service.py` still owned exact event selection and replay-stable
+  lookup envelope construction even though it no longer needed repository access. That kept
+  audit/read-model lookup behavior coupled to memory/search orchestration and made the exact-event
+  surface depend on service internals in API code and tests.
+- Action: extracted exact event lookup assembly to `src/core/portfolio_memory/event_lookup.py`,
+  updated the portfolio-memory API route and tests to import the dedicated lookup module, and added
+  direct lookup tests for exact-event envelope projection and missing-event behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_event_lookup.py` plus existing
+  portfolio-memory API lookup tests.
+- Follow-up: keep exact-event lookup behavior in the lookup module; future route work should only
+  handle HTTP status mapping and repository dependency wiring.
+- Wiki decision: no wiki source change required; this is internal lookup modularity cleanup with no
+  API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-018: PM-quality memory collection repeated score-run scans
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run, review-action, and summary-invocation repository collection
+  for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` collected PM-quality score-run, review-action,
+  and summary-invocation memory events through three separate helpers, each scanning
+  `list_score_runs(limit=...)` to rebuild the same PM-book scoped score-run map. That duplicated
+  repository work on the portfolio-memory hot path and kept PM-quality collection flow embedded in
+  the service.
+- Action: extracted PM-quality collection to `src/core/portfolio_memory/pm_quality_collection.py`.
+  The collector materializes the portfolio-scoped score-run map once, reuses it for downstream
+  review-action and summary-invocation projection, and avoids downstream scans when no score run is
+  in scope for the portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_collection.py` prove
+  one score-run scan feeds all PM-quality memory events and that downstream scans are skipped when
+  the portfolio is out of PM-book scope; existing portfolio-memory API tests remain the endpoint
+  regression scope.
+- Follow-up: review remaining repository event collection helpers for similar repeated scans before
+  introducing broader collector abstractions.
+- Wiki decision: no wiki source change required; this is internal memory-collection performance and
+  modularity cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-019: Mandate memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: mandate-health and mandate-monitoring repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned mandate twin lookup, latest health
+  snapshot lookup, monitoring exception paging, and mandate memory event projection. That coupled
+  mandate repository flow to the top-level memory service and left an important edge case
+  under-characterized: portfolio-level monitoring exceptions should still project when no latest
+  mandate twin is available.
+- Action: extracted mandate collection to `src/core/portfolio_memory/mandate_collection.py` and
+  updated the service to delegate mandate event collection. Added focused tests proving latest
+  health plus monitoring exception projection and preserving portfolio-level exception projection
+  when the mandate twin is absent.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_mandate_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting remaining repository-family collectors only where the module can
+  own a clear source-family dependency flow and direct tests.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-020: Construction memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: construction alternative-set and selection repository collection for portfolio-memory
+  events
+- Finding: `src/core/portfolio_memory/service.py` still owned construction alternative-set listing,
+  selection lookup, and construction memory event projection. That kept construction repository flow
+  in the top-level memory service rather than in a source-family collector with direct tests for
+  alternative-set-only and selected-alternative cases.
+- Action: extracted construction collection to
+  `src/core/portfolio_memory/construction_collection.py` and updated the service to delegate
+  construction event collection. Added focused tests proving alternative-set plus selection
+  projection and preserving alternative-set projection when no selection exists.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_construction_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting remaining campaign and wave repository-family collectors with
+  source-family tests before considering a broader service orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-021: Campaign memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned campaign definition listing,
+  candidate membership filtering, and campaign memory event projection. That kept campaign workflow
+  source-family collection in the top-level memory service instead of beside campaign projection,
+  and left the non-matching candidate filter without direct source-family tests.
+- Action: extracted campaign collection to `src/core/portfolio_memory/campaign_collection.py` and
+  updated the service to delegate campaign workflow memory collection. Added focused tests proving
+  matching campaign workflow event projection and skipping definitions whose candidates do not
+  contain the requested portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_campaign_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: extract the remaining wave repository-family collector, then review whether
+  `service.py` should keep direct proof-pack/outcome repository traversal or move to explicit
+  source collectors.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-022: Wave memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: rebalance-wave repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned wave listing, portfolio-item
+  membership filtering, and wave memory event projection. That kept the rebalance-wave source-family
+  dependency flow in the top-level memory service and left the non-matching portfolio filter without
+  direct source-family tests.
+- Action: extracted wave collection to `src/core/portfolio_memory/wave_collection.py` and updated
+  the service to delegate wave memory event collection. Added focused tests proving matching wave
+  event projection and skipping waves whose items do not include the requested portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_wave_collection.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: review remaining direct proof-pack and outcome-review traversal in `service.py` for the
+  same source-family collector pattern before introducing any broader orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-023: Proof-pack memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: proof-pack repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned proof-pack listing and proof-pack
+  memory event fan-out. That kept proof-pack source-family collection in the top-level memory
+  service instead of beside proof-pack projection, and left portfolio filtering plus timeline
+  fan-out without direct source-family collector tests.
+- Action: extracted proof-pack collection to `src/core/portfolio_memory/proof_pack_collection.py`
+  and updated the service to delegate proof-pack memory event collection. Added focused tests
+  proving portfolio-filtered proof-pack collection and fan-out to created plus all decision-timeline
+  memory events.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_proof_pack_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review remaining direct outcome-review traversal in `service.py` for the same
+  source-family collector pattern before introducing any broader orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-024: Outcome-review memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: post-trade outcome-review repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned outcome-review listing, append-only
+  persisted event lookup, and outcome memory event fan-out. That kept the outcome-review
+  source-family dependency flow in the top-level memory service and left repository-level persisted
+  event fan-out without direct source-family collector tests.
+- Action: extracted outcome-review collection to
+  `src/core/portfolio_memory/outcome_collection.py` and updated the service to delegate
+  outcome-review memory event collection. Added focused tests proving portfolio-filtered collection
+  and projection of both review-created and persisted append-only outcome events.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_outcome_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: with source-family collectors extracted, review whether `service.py` should introduce a
+  lightweight repository-bundle orchestration object only if dependency passing becomes harder to
+  reason about.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-025: Portfolio-memory source collection orchestration lived in service
+
+- Date: 2026-05-31
+- Scope: source-family event collection orchestration for portfolio-memory aggregates
+- Finding: `src/core/portfolio_memory/service.py` still coordinated every source-family collector
+  directly after the individual source-family collectors had been extracted. That kept repository
+  bundle wiring and collection ordering mixed with memory aggregate assembly and made
+  required-versus-optional source-family behavior harder to test without building full memory
+  aggregates.
+- Action: extracted source-family collection orchestration to
+  `src/core/portfolio_memory/source_collection.py` with a typed
+  `PortfolioMemorySourceRepositories` bundle. Updated the service to delegate event collection
+  while keeping the public API stable. Added focused tests proving required source-family
+  collection, optional source-family inclusion, and optional empty-repository behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review whether `search_portfolio_memory` should receive the same repository bundle
+  helper if parameter passing becomes harder to reason about; avoid broader abstraction until it
+  removes real duplication.
+- Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-026: Portfolio-memory source repositories were duplicated across search paths
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source repository dependency flow for aggregate build and search
+- Finding: portfolio-memory candidate discovery, source event collection, and search aggregation
+  carried the same source repository family as separate parameter lists. That preserved public
+  compatibility but kept repeated wiring in the search path and made it easier for candidate
+  discovery and event collection to drift when new source families are added.
+- Action: moved `PortfolioMemorySourceRepositories` into a dedicated
+  `src/core/portfolio_memory/source_repositories.py` dependency module, added a bundle-based
+  candidate discovery entrypoint, and updated search to reuse one source repository bundle for
+  candidate discovery and per-portfolio memory assembly while keeping existing public service and
+  candidate-discovery signatures stable.
+- Status: hardened
+- Evidence: focused candidate-discovery and source-collection tests plus existing portfolio-memory
+  API tests.
+- Follow-up: keep future source-family additions on the shared source repository bundle first,
+  then adapt public compatibility facades only where existing callers require them.
+- Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-027: Portfolio-memory search request normalization lived in service
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search filter normalization and explicit candidate-id shaping
+- Finding: `src/core/portfolio_memory/service.py` still normalized search text filters, cast
+  supportability-state filters, and built the explicit candidate-id set inline. That kept request
+  validation and query shaping mixed with repository orchestration, making search behavior harder to
+  test without walking the full source repository scan path.
+- Action: extracted search query normalization to
+  `src/core/portfolio_memory/search_request.py` with a typed `PortfolioMemorySearchQuery`. Updated
+  the service to consume the normalized query object while preserving the public search API and
+  existing response semantics. Added focused tests for trimmed filters, blank-filter handling, and
+  explicit candidate-id normalization.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_request.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: keep new portfolio-memory search parameters normalized in the search-request module
+  before they reach repository orchestration or page assembly.
+- Wiki decision: no wiki source change required; this is internal search-query modularity cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-028: Portfolio-memory search pagination relied on API-only bounds
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search pagination and source scan bounds
+- Finding: the portfolio-memory API route constrained `limit`, `offset`, and `source_scan_limit`,
+  but the core search service accepted those values directly. Internal callers could therefore
+  bypass API query validation and pass negative offsets, zero limits, or unbounded source scan
+  limits into repository orchestration and page assembly.
+- Action: extended `src/core/portfolio_memory/search_request.py` so normalized search queries also
+  validate and carry pagination bounds. Updated the service to use the normalized query limits for
+  candidate discovery, per-portfolio memory assembly, and search page construction. Added focused
+  tests that prove valid bounds are preserved and unsafe direct-call pagination is rejected before
+  repository scans run.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_request.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: keep API and core service pagination bounds synchronized when new portfolio-memory
+  search limits or continuation semantics are introduced.
+- Wiki decision: no wiki source change required; this is internal defensive validation hardening
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-029: Portfolio-memory search bounds were duplicated between API and core
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search pagination contract constants
+- Finding: after direct-call pagination validation was added, the API route still carried hard-coded
+  `limit`, `offset`, and `source_scan_limit` defaults and bounds that duplicated the core search
+  request validation. That created a future drift risk where Swagger/OpenAPI could advertise one
+  search contract while internal service validation enforced another.
+- Action: promoted the search defaults and bounds to named constants in
+  `src/core/portfolio_memory/search_request.py`, updated the FastAPI route and service defaults to
+  consume those constants, and added tests proving both the named constants and OpenAPI parameter
+  constraints remain synchronized with the core search query contract.
+- Status: hardened
+- Evidence: focused search-request tests plus the existing portfolio-memory API/OpenAPI tests.
+- Follow-up: if portfolio-memory search adds cursor-based continuation or changes maximum scan
+  posture, update the shared constants first and let API/service callers consume them.
+- Wiki decision: no wiki source change required; this is internal API/core contract synchronization
+  with no product-facing capability change.
+
+## BACKEND-REVIEW-20260531-030: Portfolio-memory source repository factory lived in service facade
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source repository bundle construction
+- Finding: `src/core/portfolio_memory/service.py` still owned the helper that converted public
+  service repository parameters into `PortfolioMemorySourceRepositories`. That kept dependency
+  bundle construction in the facade instead of the dedicated source-repository boundary module,
+  even after search and collection code had moved to bundle-based orchestration.
+- Action: moved source repository bundle construction to
+  `src/core/portfolio_memory/source_repositories.py` as
+  `build_portfolio_memory_source_repositories`, updated the service facade to delegate to it, and
+  added focused tests proving required and optional repositories are preserved exactly.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_source_repositories.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep new source-family repository dependencies on the bundle and factory module first;
+  public service signatures should remain compatibility facades only.
+- Wiki decision: no wiki source change required; this is internal dependency-flow modularity cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-031: Candidate portfolio helper bypassed source repository factory
+
+- Date: 2026-05-31
+- Scope: portfolio-memory candidate discovery dependency construction
+- Finding: the legacy `candidate_portfolio_ids` helper still constructed
+  `PortfolioMemorySourceRepositories` directly and required callers to pass explicit `None` values
+  for optional source families. That left a second dependency-bundle construction path after the
+  factory moved to the source-repository boundary module.
+- Action: updated candidate discovery to use `build_portfolio_memory_source_repositories`, gave the
+  optional source repositories default `None` values, and added a focused test proving required-only
+  direct calls resolve to the same candidate set.
+- Status: hardened
+- Evidence: focused candidate-discovery tests in
+  `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` plus the portfolio-memory API test
+  lane.
+- Follow-up: keep direct helper compatibility paths thin; new source-family dependencies should be
+  introduced through the source-repository factory first.
+- Wiki decision: no wiki source change required; this is internal dependency-construction cleanup
+  with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-032: Portfolio-memory API repeated source repository dependency blocks
+
+- Date: 2026-05-31
+- Scope: portfolio-memory API dependency wiring and source-bundle service entry point
+- Finding: the detail, event lookup, and search endpoints each carried the same repository
+  dependency list and then passed individual repositories into service facades. That duplicated
+  API wiring across routes and made every new source-family repository a multi-endpoint route edit.
+- Action: added a shared FastAPI dependency that resolves
+  `PortfolioMemorySourceRepositories`, added `search_portfolio_memory_from_sources` for bundle-based
+  search orchestration, and updated all portfolio-memory API routes to consume the explicit source
+  bundle.
+- Status: hardened
+- Evidence: focused service test in `tests/unit/dpm/portfolio_memory/test_service.py` plus existing
+  portfolio-memory API tests that cover detail, event lookup, search, OpenAPI, and error behavior.
+- Follow-up: route-level source-family additions should update only the shared API dependency and
+  the source repository factory unless the public query contract changes.
+- Wiki decision: no wiki source change required; this is internal API wiring modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-033: Portfolio-memory detail reads relied on route-local scan limits
+
+- Date: 2026-05-31
+- Scope: portfolio-memory detail and exact-event read limits
+- Finding: portfolio-memory search pagination had shared core/API constants, but detail timelines
+  and exact-event lookup still carried route-local `limit` bounds while the core assembler accepted
+  unsafe direct-call limits. That created a drift risk between Swagger, service callers, and the
+  bounded source scan posture expected for demo and audit workflows.
+- Action: added shared portfolio-memory read-limit constants and core validation, wired the API
+  detail and event-lookup routes to those constants, added focused tests for direct-call rejection
+  and OpenAPI synchronization, and documented the bounded portfolio-memory API flow in the wiki.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_read_request.py`,
+  `tests/unit/dpm/portfolio_memory/test_service.py`,
+  `tests/unit/dpm/api/test_portfolio_memory_api.py`, and
+  `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep future portfolio-memory read or drilldown continuation semantics in the shared
+  request-limit module before changing route-level OpenAPI bounds.
+- Wiki decision: updated `wiki/API-Surface.md` because the API bounds and implementation-backed
+  portfolio-memory flow are operator- and demo-facing product truth.
+
+## BACKEND-REVIEW-20260531-034: Report-safe portfolio-memory context bypassed source bundles
+
+- Date: 2026-05-31
+- Scope: portfolio-memory report/AI/archive handoff context assembly
+- Finding: `src/api/services/portfolio_memory_context_service.py` still built report-safe memory
+  context through the individual-repository service facade even after API and core search paths
+  moved to explicit `PortfolioMemorySourceRepositories` bundles. That left one handoff path outside
+  the source-bundle dependency boundary used by timeline, search, and event lookup.
+- Action: added `build_report_portfolio_memory_context_from_sources`, updated the legacy facade to
+  build a source bundle first, and added a focused equivalence test proving the source-bundle entry
+  point preserves the report-safe context envelope.
+- Status: hardened
+- Evidence: focused test in `tests/unit/api/test_portfolio_memory_context_service.py` plus existing
+  portfolio-memory handoff and API tests.
+- Follow-up: future report/AI/archive portfolio-memory context additions should accept
+  `PortfolioMemorySourceRepositories` first and keep individual-repository facades as compatibility
+  wrappers.
+- Wiki decision: no wiki source change required; this is internal dependency-boundary cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-035: Candidate discovery scan bounds were service-local only
+
+- Date: 2026-05-31
+- Scope: portfolio-memory candidate discovery source scan bounds
+- Finding: portfolio-memory search request normalization validated `source_scan_limit`, but the
+  lower-level `candidate_portfolio_ids_from_sources` helper still accepted direct unsafe scan
+  bounds. Direct callers could therefore bypass the service-level guardrail and ask repositories
+  for zero, negative, or oversized source scans.
+- Action: promoted source-scan validation to a reusable search-request helper, reused it from both
+  search request normalization and candidate discovery, and added focused tests for direct
+  candidate-discovery rejection.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_request.py`.
+- Follow-up: any future repository-scan continuation or cursor semantics should reuse the shared
+  source-scan validation boundary before reaching source repositories.
+- Wiki decision: no wiki source change required; this is internal defensive validation hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-036: Portfolio-memory path parameters lacked Swagger guidance
+
+- Date: 2026-05-31
+- Scope: portfolio-memory detail and event-lookup OpenAPI path parameter documentation
+- Finding: portfolio-memory detail and exact-event lookup routes carried rich endpoint
+  descriptions, but their `portfolio_id` and `event_id` path parameters were plain strings. Swagger
+  therefore lacked parameter-level usage guidance and examples for the audit/demo drilldown path.
+- Action: added FastAPI `Path` descriptions and examples for portfolio-memory `portfolio_id` and
+  `event_id`, and extended the OpenAPI regression test to pin those parameter docs.
+- Status: hardened
+- Evidence: OpenAPI assertions in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep new portfolio-memory route parameters annotated at the API boundary when adding
+  continuation, source-family, or drilldown routes.
+- Wiki decision: no wiki source change required; this improves generated Swagger/OpenAPI guidance
+  without changing route behavior, payloads, or operator-facing wiki truth.
+
+## BACKEND-REVIEW-20260531-037: Search-page assembly owned facet aggregation
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search facet aggregation
+- Finding: `src/core/portfolio_memory/search_page.py` still mixed pagination/envelope assembly with
+  matching-event facet aggregation. That made search-page construction harder to review and left
+  facet counting without a direct unit boundary even though source-system and source-type facets
+  are an audit/demo-facing search contract.
+- Action: extracted facet counting into `src/core/portfolio_memory/search_facets.py`, kept
+  `build_search_page` focused on sorting, pagination, and envelope finalization, and added a
+  focused facet test covering matching events plus portfolio-level source-system coverage.
+- Status: hardened
+- Evidence: focused test in `tests/unit/dpm/portfolio_memory/test_search_facets.py` plus existing
+  search-page and portfolio-memory API tests.
+- Follow-up: add future portfolio-memory facets through the facet module before threading them into
+  the API envelope.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-038: Portfolio-memory module boundaries were not visible in architecture wiki
+
+- Date: 2026-05-31
+- Scope: portfolio-memory architecture wiki and implementation-backed module map
+- Finding: the wiki API and current-state pages described the portfolio-memory capability, but the
+  architecture page did not explain the implemented module boundaries now used by the refactor:
+  source repository bundles, candidate discovery, source-family collectors, search request/filter,
+  search facet/page modules, and report-safe handoff context.
+- Action: added an implementation-backed portfolio-memory module-boundary diagram and reader
+  guidance to `wiki/Architecture.md`, and pinned it with the documentation current-state test pack.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep architecture wiki module maps current when portfolio-memory source families,
+  search facets, or handoff consumers change.
+- Wiki decision: updated `wiki/Architecture.md` because implementation-backed module boundaries are
+  developer, operations, demo, and client-pitch product truth.
+
+## BACKEND-REVIEW-20260531-039: Source-family collection trusted caller read limits
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source-family event collection guardrails
+- Finding: `build_portfolio_memory_from_sources` validated read limits before collecting source
+  events, but `collect_portfolio_memory_events` still accepted direct unsafe limits. Direct
+  internal callers could therefore bypass the shared portfolio-memory read-limit policy before
+  source-family repositories were queried.
+- Action: moved the shared read-limit validation into the source-family collection boundary while
+  keeping the service-level validation as a public facade guardrail.
+- Status: hardened
+- Evidence: focused rejection tests in `tests/unit/dpm/portfolio_memory/test_source_collection.py`.
+- Follow-up: keep future continuation or per-family source scan controls validated before any
+  repository fan-out.
+- Wiki decision: no wiki source change required; this is internal defensive validation with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-040: API routes used deprecated 422 status constants
+
+- Date: 2026-05-31
+- Scope: portfolio-memory and proof-pack API validation responses
+- Finding: portfolio-memory and proof-pack routes still raised validation errors with
+  `HTTP_422_UNPROCESSABLE_ENTITY`, which now emits framework deprecation warnings while other
+  manage routes already use `HTTP_422_UNPROCESSABLE_CONTENT`.
+- Action: replaced the deprecated route-level status constants with the current FastAPI/Starlette
+  422 constant while preserving the public HTTP status code and error payloads.
+- Status: hardened
+- Evidence: focused portfolio-memory and proof-pack API tests plus the portfolio-memory lane.
+- Follow-up: keep new validation routes on `HTTP_422_UNPROCESSABLE_CONTENT` and treat deprecation
+  warnings in focused tests as cleanup candidates rather than tolerated noise.
+- Wiki decision: no wiki source change required; this is route implementation hygiene with no API
+  status-code, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-041: Event deduplication depended on source iteration order
+
+- Date: 2026-05-31
+- Scope: portfolio-memory aggregate event deduplication
+- Finding: portfolio-memory event deduplication used dictionary overwrite semantics, so duplicate
+  event ids were resolved by whichever source-family projection was iterated last. That made the
+  aggregate sensitive to source-family ordering instead of event identity and event time.
+- Action: changed duplicate resolution to keep the latest event by event time with stable
+  source/hash tie-breakers before applying the existing descending timeline sort.
+- Status: hardened
+- Evidence: focused search-filter test proving duplicate resolution is independent of input order.
+- Follow-up: if duplicate ids become a source-quality signal, add explicit duplicate diagnostics
+  rather than reintroducing order-sensitive overwrite behavior.
+- Wiki decision: no wiki source change required; this is deterministic aggregate hygiene with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-042: Search vocabulary validation was router-local
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search request vocabulary validation
+- Finding: unsupported portfolio-memory event types were rejected at the API router, but direct core
+  search callers could still pass unsupported event-type strings and receive empty results. Search
+  supportability-state normalization had the same direct-call drift risk despite API-level pattern
+  validation.
+- Action: moved event-type and supportability-state vocabulary normalization into
+  `src/core/portfolio_memory/search_request.py`, kept the API route translating those validation
+  errors into 422 responses, and added focused request-normalization tests.
+- Status: hardened
+- Evidence: focused search-request tests plus the portfolio-memory API/search lane.
+- Follow-up: add future portfolio-memory search vocabularies through the request-normalization
+  module before exposing them in routers or service facades.
+- Wiki decision: no wiki source change required; this is internal validation-boundary hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-043: Search Swagger did not list supported filter vocabularies
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search OpenAPI parameter guidance
+- Finding: the search API rejected unsupported event-type and supportability-state filters, but
+  Swagger only said unsupported event types are rejected and did not list the implementation-backed
+  accepted vocabularies for client developers, demo operators, or Gateway consumers.
+- Action: wired the search route parameter descriptions to the shared request-normalization
+  vocabulary constants and pinned representative event/supportability values in the OpenAPI test.
+- Status: hardened
+- Evidence: OpenAPI assertions in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep Swagger parameter guidance generated from shared vocabulary constants when new
+  portfolio-memory search filters are added.
+- Wiki decision: no wiki source change required; this improves generated OpenAPI guidance without
+  changing routes, payloads, supported features, or operator wiki truth.
+
+## BACKEND-REVIEW-20260531-044: Supportability query regex duplicated request vocabulary
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search OpenAPI supportability-state query constraint
+- Finding: the search route still carried a hard-coded supportability-state regex even after the
+  request-normalization layer exposed shared supported-state constants. That created another drift
+  point between FastAPI parameter validation, Swagger, and core request validation.
+- Action: generated the FastAPI query regex from the shared supportability-state constants and
+  pinned the OpenAPI pattern in the API test.
+- Status: hardened
+- Evidence: OpenAPI assertion in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep route-level query constraints generated from shared vocabulary constants instead
+  of duplicating allowed values in controller code.
+- Wiki decision: no wiki source change required; this is API contract implementation hygiene with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-045: Search timestamp ties sorted portfolio ids descending
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search-page ordering
+- Finding: search pages sorted by `(latest_event_time, portfolio_id)` with `reverse=True`, so
+  equal-timestamp rows were deterministic but ordered by portfolio id descending. That is a weak
+  UX and audit posture for tie cases because portfolio identifiers should use ascending stable
+  order when event recency is equal.
+- Action: changed search-page sorting to apply portfolio id as the stable ascending tie-breaker
+  after ordering latest event timestamps descending.
+- Status: hardened
+- Evidence: focused search-page test proving equal timestamp rows return in ascending portfolio-id
+  order.
+- Follow-up: keep future search sort additions explicit about descending versus ascending fields
+  instead of relying on whole-tuple reverse sorting.
+- Wiki decision: no wiki source change required; this is deterministic response-order hygiene with
+  no route, payload-shape, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-046: Explicit search portfolio ids were unbounded
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search request candidate bounds
+- Finding: repository source scans were bounded by `source_scan_limit`, but caller-supplied
+  `portfolio_ids` were only normalized and deduplicated. A request with many explicit identifiers
+  could force unbounded portfolio-memory assembly even when repository fan-out was constrained.
+- Action: added explicit portfolio-id normalization that rejects unique caller-supplied candidate
+  counts above `source_scan_limit`, and translated the validation error to a 422 API response.
+- Status: hardened
+- Evidence: focused search-request and API tests for duplicate/blank normalization and over-limit
+  rejection.
+- Follow-up: keep future caller-supplied candidate selectors tied to scan bounds before invoking
+  per-portfolio memory assembly.
+- Wiki decision: no wiki source change required; this is defensive request-boundary hardening with
+  no route, payload-shape, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-047: Search route duplicated validation-error translation
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search API error handling
+- Finding: after moving search validation into the request-normalization layer, the API route had
+  repeated `ValueError` to HTTP 422 translation blocks for vocabulary checks and service request
+  normalization.
+- Action: extracted a small route-local helper for portfolio-memory search validation errors so the
+  controller has one consistent mapping for request-boundary failures.
+- Status: hardened
+- Evidence: focused portfolio-memory API tests covering unsupported event type and excessive
+  explicit portfolio ids.
+- Follow-up: keep route-local validation translation centralized when additional search request
+  validators are added.
+- Wiki decision: no wiki source change required; this is controller maintainability cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-048: Portfolio-memory search candidate bound was not in API wiki
+
+- Date: 2026-05-31
+- Scope: portfolio-memory API wiki bounds documentation
+- Finding: explicit `portfolio_ids` are now bounded by `source_scan_limit`, but the API wiki still
+  described only the query parameters and detail/event lookup event caps. Operators and client
+  developers would not know why an over-limit explicit candidate request returns HTTP 422.
+- Action: documented the explicit candidate-id bound in `wiki/API-Surface.md` and pinned the
+  wording in the documentation current-state test.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep wiki API bounds aligned with request-normalization behavior whenever search
+  pagination, source scan, or explicit candidate semantics change.
+- Wiki decision: updated `wiki/API-Surface.md` because this is implementation-backed API behavior
+  visible to developers, operators, Gateway consumers, and demo preparation.
+
+## BACKEND-REVIEW-20260531-049: Current-state wiki omitted candidate-bound posture
+
+- Date: 2026-05-31
+- Scope: portfolio-memory current-state product truth
+- Finding: the current-state wiki said portfolio-memory search is bounded to Manage-local evidence
+  and explicit caller-supplied identifiers, but it did not mention the new `source_scan_limit`
+  bound for deduplicated explicit identifiers. That left demo and client-facing product posture
+  less precise than the API contract.
+- Action: updated `wiki/Current-State.md` to state the explicit-candidate bound in both the
+  functional matrix and non-claim boundary, and pinned the current-state page test.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep current-state product claims aligned with API behavior when bounded search
+  controls change.
+- Wiki decision: updated `wiki/Current-State.md` because this is implementation-backed
+  product-current-state and demo/client-pitch truth.

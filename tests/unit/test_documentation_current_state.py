@@ -450,6 +450,110 @@ def test_wiki_sidebar_links_resolve_to_authored_pages() -> None:
     assert missing == []
 
 
+def test_wiki_api_surface_documents_portfolio_memory_bounds_and_flow() -> None:
+    api_surface = (ROOT / "wiki" / "API-Surface.md").read_text(encoding="utf-8")
+
+    assert "## Portfolio memory surfaces" in api_surface
+    assert "`GET /api/v1/rebalance/portfolio-memory/search`" in api_surface
+    assert "`GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`" in api_surface
+    assert (
+        "`GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}`" in api_surface
+    )
+    assert "capped at `500` events for API detail responses" in api_surface
+    assert "capped at `1000` events for bounded drilldown" in api_surface
+    assert "explicit `portfolio_ids`" in api_surface
+    assert "must not exceed `source_scan_limit`" in api_surface
+    assert "fail with HTTP `422`" in api_surface
+    assert "flowchart LR" in api_surface
+    assert "Portfolio memory is an audit and lineage read model" in api_surface
+    assert "not discover the global portfolio universe" in api_surface
+    assert "memory-event-id?limit=500" in api_surface
+
+
+def test_wiki_architecture_documents_portfolio_memory_module_boundary() -> None:
+    architecture = (ROOT / "wiki" / "Architecture.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "## Portfolio Memory Module Boundary",
+        "PortfolioMemorySourceRepositories",
+        "candidate_portfolios",
+        "source_collection",
+        "source-family collection modules",
+        "search_request, search_filters, search_facets, search_page",
+        "report/AI/archive-safe context handoff",
+        "It is not a global portfolio-universe search",
+        "source-owner methodology engine",
+        "src/core/portfolio_memory/source_repositories.py",
+        "src/core/portfolio_memory/candidate_portfolios.py",
+        "src/core/portfolio_memory/aggregate.py",
+        "src/core/portfolio_memory/handoffs.py",
+        "src/api/services/portfolio_memory_context_service.py",
+        "each new event family must enter",
+        "through a source-family collector/projection module",
+    ]
+    missing_terms = [term for term in required_terms if term not in architecture]
+
+    assert missing_terms == []
+
+
+def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
+    current_state = (ROOT / "wiki" / "Current-State.md").read_text(encoding="utf-8")
+    home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")
+    sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "# Current State",
+        "## Audience Map",
+        "## Functional Capability Matrix",
+        "## Non-Functional Capability Matrix",
+        "## Primary Feature Flow",
+        "## Source Authority And Boundary Flow",
+        "## Demo-Ready Claims",
+        "## Explicit Non-Claims",
+        "```mermaid",
+        "Portfolio memory",
+        "deduplicated explicit identifiers must stay within",
+        "`source_scan_limit`",
+        "PM operating quality",
+        "External OMS execution",
+        "client communication",
+        "Gateway, Workbench, report, archive, AI",
+    ]
+    missing_terms = [term for term in required_terms if term not in current_state]
+
+    assert missing_terms == []
+    assert "[Current State](Current-State)" in home
+    assert "[Current State](Current-State)" in sidebar
+
+
+def test_wiki_demo_guide_is_client_ready_and_boundary_safe() -> None:
+    demo_guide = (ROOT / "wiki" / "Demo-Guide.md").read_text(encoding="utf-8")
+    home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")
+    sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "# Demo Guide",
+        "## Demo Positioning",
+        "## Recommended Demo Path",
+        "## Client-Facing Flow",
+        "## Feature Demonstration Scenarios",
+        "## Demo Evidence Checklist",
+        "## Objection Handling",
+        "## Presentation Structure",
+        "```mermaid",
+        "External OMS execution remains an explicit non-claim",
+        "Client communication records",
+        "PM operating quality",
+        "portfolio-memory timeline",
+        "Gateway/BFF contracts",
+    ]
+    missing_terms = [term for term in required_terms if term not in demo_guide]
+
+    assert missing_terms == []
+    assert "[Demo Guide](Demo-Guide)" in home
+    assert "[Demo Guide](Demo-Guide)" in sidebar
+
+
 def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     rows = _detailed_wtbd_rows()
     all_ids = {row[0] for row in rows}

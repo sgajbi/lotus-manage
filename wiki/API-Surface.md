@@ -213,6 +213,71 @@ Default capability posture is intentionally conservative: inline bundle executio
 stateful `portfolio_id` execution is disabled until a governed `lotus-core` resolver is configured,
 and solver target generation is runtime-discovered from installed solver dependencies.
 
+## Portfolio memory surfaces
+
+- `GET /api/v1/rebalance/portfolio-memory/search`
+  returns a bounded Manage-local search page across persisted proof packs, rebalance waves,
+  monitoring exceptions, campaign workflow evidence, outcome reviews, PM operating-quality
+  evidence, and explicit caller-supplied portfolio identifiers. It supports `event_type`,
+  `supportability_state`, `source_system`, `source_type`, `limit`, `offset`, and
+  `source_scan_limit`. After trimming blanks and deduplicating values, explicit `portfolio_ids`
+  must not exceed `source_scan_limit`; over-limit requests fail with HTTP `422` instead of forcing
+  unbounded per-portfolio memory assembly.
+- `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`
+  returns the deterministic source-backed portfolio timeline for one portfolio. The route returns
+  at most `100` events by default and is capped at `500` events for API detail responses.
+- `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}`
+  returns one exact event from the source-backed memory timeline. Event lookup scans `500` events by
+  default and is capped at `1000` events for bounded drilldown.
+
+Copy-paste examples:
+
+```bash
+curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/search?portfolio_ids=PB_SG_GLOBAL_BAL_001&event_type=PROOF_PACK_CREATED&source_system=lotus-manage&limit=25"
+```
+
+```bash
+curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001?limit=100"
+```
+
+```bash
+curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001/events/memory-event-id?limit=500"
+```
+
+```mermaid
+flowchart LR
+    Proof[Proof packs]
+    Wave[Waves and campaign workflow]
+    Outcome[Outcome reviews]
+    Quality[PM operating quality]
+    Memory[Portfolio memory assembler]
+    Search[Bounded search page]
+    Detail[Portfolio timeline]
+    Event[Exact event lookup]
+    Gateway[lotus-gateway]
+    Workbench[lotus-workbench]
+    ReportAI[report / archive / AI consumers]
+
+    Proof --> Memory
+    Wave --> Memory
+    Outcome --> Memory
+    Quality --> Memory
+    Memory --> Search
+    Memory --> Detail
+    Detail --> Event
+    Search --> Gateway
+    Detail --> Gateway
+    Event --> Gateway
+    Gateway --> Workbench
+    Memory --> ReportAI
+```
+
+Portfolio memory is an audit and lineage read model. It preserves source refs, content hashes,
+retention, redaction, access, audit, source-event family posture, and exact event identity. It does
+not discover the global portfolio universe, query external source-owner event stores, recalculate
+risk/performance/tax/cash/FX/source-owner methodology, project OMS acknowledgement/fill/settlement
+events, or create client-communication workflow evidence.
+
 Source-service callers must use the canonical snake_case query parameters `consumer_system` and
 `tenant_id`. Gateway may expose camelCase on its public BFF contract, but direct calls into
 `lotus-manage` should not rely on Gateway naming.

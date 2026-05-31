@@ -45,16 +45,48 @@ from src.core.pm_quality.models import (
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
-from src.core.portfolio_memory import service as portfolio_memory_service
 from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.handoffs import (
     DpmPortfolioMemoryReportContext,
     build_portfolio_memory_report_context,
 )
+from src.core.portfolio_memory.pm_quality_projection import score_run_includes_portfolio
+from src.core.portfolio_memory.event_lookup import build_portfolio_memory_event_lookup
+from src.core.portfolio_memory.read_request import (
+    PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX,
+    PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_READ_LIMIT_MIN,
+)
+from src.core.portfolio_memory.search_request import (
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT,
+    PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
+    PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
+)
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
-    build_portfolio_memory_event_lookup,
     search_portfolio_memory,
+)
+from src.core.portfolio_memory.source_refs import (
+    from_outcome_source_ref,
+    from_proof_pack_evidence_ref,
+    from_source_product_lineage,
+    from_wave_source_ref,
+)
+from src.core.portfolio_memory.supportability import (
+    assignment_sla_state,
+    assignment_task_state,
+    maker_checker_state,
+    monitoring_exception_state,
+    pm_quality_review_action_state,
+    portfolio_memory_state,
+    source_supportability_state,
 )
 from src.core.proof_packs import DpmProofPackEvidenceRef
 from src.core.waves.models import (
@@ -1696,6 +1728,75 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
         if parameter["name"] == "event_type"
     )
     assert "Unsupported event types are rejected" in event_type_parameter["description"]
+    assert "Supported event types:" in event_type_parameter["description"]
+    assert "`WAVE_HANDOFF_READY`" in event_type_parameter["description"]
+    assert "`PM_QUALITY_SUMMARY_INVOCATION`" in event_type_parameter["description"]
+    parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/search"]["get"][
+            "parameters"
+        ]
+    }
+    assert "Supported states:" in parameters["supportability_state"]["description"]
+    assert "`READY`" in parameters["supportability_state"]["description"]
+    assert "`PENDING_REVIEW`" in parameters["supportability_state"]["description"]
+    supportability_schema = str(parameters["supportability_state"]["schema"])
+    assert "READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY" in supportability_schema
+    assert parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT
+    assert parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN
+    assert parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX
+    assert parameters["offset"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_OFFSET_DEFAULT
+    assert parameters["offset"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN
+    assert (
+        parameters["source_scan_limit"]["schema"]["default"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT
+    )
+    assert (
+        parameters["source_scan_limit"]["schema"]["minimum"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN
+    )
+    assert (
+        parameters["source_scan_limit"]["schema"]["maximum"]
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX
+    )
+    detail_parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"]["/api/v1/rebalance/portfolio-memory/{portfolio_id}"][
+            "get"
+        ]["parameters"]
+    }
+    event_lookup_parameters = {
+        parameter["name"]: parameter
+        for parameter in openapi_json["paths"][
+            "/api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}"
+        ]["get"]["parameters"]
+    }
+    assert detail_parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT
+    assert detail_parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_READ_LIMIT_MIN
+    assert detail_parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_DETAIL_LIMIT_MAX
+    assert (
+        "Manage-local source-backed memory timeline"
+        in (detail_parameters["portfolio_id"]["description"])
+    )
+    assert detail_parameters["portfolio_id"]["schema"]["examples"] == ["PB_SG_GLOBAL_BAL_001"]
+    assert (
+        event_lookup_parameters["limit"]["schema"]["default"]
+        == PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_DEFAULT
+    )
+    assert event_lookup_parameters["limit"]["schema"]["minimum"] == (
+        PORTFOLIO_MEMORY_READ_LIMIT_MIN
+    )
+    assert event_lookup_parameters["limit"]["schema"]["maximum"] == (
+        PORTFOLIO_MEMORY_EVENT_LOOKUP_LIMIT_MAX
+    )
+    assert (
+        "Manage-local source-backed memory timeline"
+        in (event_lookup_parameters["portfolio_id"]["description"])
+    )
+    assert "Stable portfolio-memory event id" in event_lookup_parameters["event_id"]["description"]
+    assert event_lookup_parameters["event_id"]["schema"]["examples"] == [
+        "memory:proof-pack:dpp_c09f73d0"
+    ]
 
 
 def test_portfolio_memory_search_page_rejects_inconsistent_metadata() -> None:
@@ -2037,6 +2138,42 @@ def test_portfolio_memory_search_rejects_unsupported_event_type_filter() -> None
     assert "PM_QUALITY_SUMMARY_INVOCATION" in response.json()["detail"]
 
 
+def test_portfolio_memory_search_rejects_too_many_explicit_portfolio_ids() -> None:
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_construction_repository] = lambda: InMemoryConstructionRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: (
+        InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params=[
+                ("portfolio_ids", "PB_SEARCH_001"),
+                ("portfolio_ids", "PB_SEARCH_002"),
+                ("source_scan_limit", "1"),
+            ],
+        )
+
+    assert response.status_code == 422
+    assert "explicit portfolio_ids must not exceed source_scan_limit" in response.json()["detail"]
+    assert "portfolio_id_count=2" in response.json()["detail"]
+
+
 def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_scope() -> None:
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
@@ -2226,14 +2363,15 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
         mandate_repository=InMemoryDpmMandateRepository(),
         portfolio_ids=["EMPTY_PORTFOLIO"],
     )
-    event_type_filtered = search_portfolio_memory(
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_repository,
-        mandate_repository=mandate_repository,
-        portfolio_ids=[PORTFOLIO_ID],
-        event_type="NOT_A_MEMORY_EVENT",
-    )
+    with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE"):
+        search_portfolio_memory(
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=wave_repository,
+            outcome_review_repository=outcome_repository,
+            mandate_repository=mandate_repository,
+            portfolio_ids=[PORTFOLIO_ID],
+            event_type="NOT_A_MEMORY_EVENT",
+        )
     state_filtered = search_portfolio_memory(
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
@@ -2260,7 +2398,6 @@ def test_portfolio_memory_search_filters_empty_type_state_and_source_candidates(
     )
 
     assert empty_filtered.returned_count == 0
-    assert event_type_filtered.returned_count == 0
     assert state_filtered.returned_count == 0
     assert source_filtered.returned_count == 0
     assert blank_source_unfiltered.returned_count == 1
@@ -2384,37 +2521,26 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
         source_system="lotus-manage",
         content_hash="sha256:ai-evidence",
     )
+    assert from_proof_pack_evidence_ref(proof_pack_ref).source_id == proof_pack_ref.ref_id
     assert (
-        portfolio_memory_service._from_proof_pack_evidence_ref(proof_pack_ref).source_id
-        == proof_pack_ref.ref_id
-    )
-    assert (
-        portfolio_memory_service._from_source_product_lineage(
-            _mandate_twin().source_lineage[0]
-        ).source_type
+        from_source_product_lineage(_mandate_twin().source_lineage[0]).source_type
         == "CoreMandateBinding"
     )
+    assert from_wave_source_ref(wave.items[0].source_refs[0]).source_version == "v1"
+    assert from_outcome_source_ref(outcome_ref).source_id == outcome_ref.source_id
+    assert portfolio_memory_state([]) == "EMPTY"
+    assert source_supportability_state("FAILED") == "BLOCKED"
+    assert source_supportability_state("PARTIAL") == "DEGRADED"
+    assert source_supportability_state("CREATED") == "PENDING_REVIEW"
     assert (
-        portfolio_memory_service._from_wave_source_ref(wave.items[0].source_refs[0]).source_version
-        == "v1"
-    )
-    assert (
-        portfolio_memory_service._from_outcome_source_ref(outcome_ref).source_id
-        == outcome_ref.source_id
-    )
-    assert portfolio_memory_service._memory_state([]) == "EMPTY"
-    assert portfolio_memory_service._state("FAILED") == "BLOCKED"
-    assert portfolio_memory_service._state("PARTIAL") == "DEGRADED"
-    assert portfolio_memory_service._state("CREATED") == "PENDING_REVIEW"
-    assert (
-        portfolio_memory_service._score_run_includes_portfolio(
+        score_run_includes_portfolio(
             score_run=_pm_quality_score_run().model_copy(update={"book_scope_evidence": None}),
             portfolio_id=PORTFOLIO_ID,
         )
         is False
     )
     assert (
-        portfolio_memory_service._score_run_includes_portfolio(
+        score_run_includes_portfolio(
             score_run=_pm_quality_score_run().model_copy(
                 update={
                     "book_scope_evidence": _pm_quality_score_run().book_scope_evidence.model_copy(
@@ -2436,43 +2562,39 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
         is True
     )
     assert (
-        portfolio_memory_service._monitoring_exception_state(
-            _monitoring_exception().model_copy(update={"state": "RESOLVED"})
-        )
+        monitoring_exception_state(_monitoring_exception().model_copy(update={"state": "RESOLVED"}))
         == "READY"
     )
     assert (
-        portfolio_memory_service._monitoring_exception_state(
+        monitoring_exception_state(
             _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.CRITICAL})
         )
         == "BLOCKED"
     )
-    assert portfolio_memory_service._monitoring_exception_state(_monitoring_exception()) == (
-        "DEGRADED"
-    )
+    assert monitoring_exception_state(_monitoring_exception()) == "DEGRADED"
     assert (
-        portfolio_memory_service._monitoring_exception_state(
+        monitoring_exception_state(
             _monitoring_exception().model_copy(update={"severity": MonitoringSeverity.INFO})
         )
         == "PENDING_REVIEW"
     )
     assert (
-        portfolio_memory_service._pm_quality_review_action_state(
+        pm_quality_review_action_state(
             _pm_quality_review_action().model_copy(update={"action_state": "ESCALATED"})
         )
         == "DEGRADED"
     )
     assert (
-        portfolio_memory_service._pm_quality_review_action_state(
+        pm_quality_review_action_state(
             _pm_quality_review_action().model_copy(update={"action_state": "CLOSED"})
         )
         == "READY"
     )
-    assert portfolio_memory_service._assignment_sla_state("BREACHED_OR_BLOCKED") == "DEGRADED"
-    assert portfolio_memory_service._assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
-    assert portfolio_memory_service._assignment_task_state("BLOCKED", "ON_TRACK") == "DEGRADED"
-    assert portfolio_memory_service._assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
-    assert portfolio_memory_service._assignment_task_state("DONE", "ON_TRACK") == "READY"
-    assert portfolio_memory_service._maker_checker_state("FAILED") == "BLOCKED"
-    assert portfolio_memory_service._maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
-    assert portfolio_memory_service._maker_checker_state("PENDING") == "PENDING_REVIEW"
+    assert assignment_sla_state("BREACHED_OR_BLOCKED") == "DEGRADED"
+    assert assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
+    assert assignment_task_state("BLOCKED", "ON_TRACK") == "DEGRADED"
+    assert assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
+    assert assignment_task_state("DONE", "ON_TRACK") == "READY"
+    assert maker_checker_state("FAILED") == "BLOCKED"
+    assert maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
+    assert maker_checker_state("PENDING") == "PENDING_REVIEW"
