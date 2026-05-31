@@ -11,9 +11,9 @@ from src.api.routers.rebalance_policy_pack_docs import (
 from src.api.routers.rebalance_policy_packs import (
     _record_policy_pack_api_resolution,
     _reject_unexpected_query_params,
-    resolve_dpm_policy_pack,
     router,
 )
+from src.api.services.rebalance_policy_pack_service import resolve_dpm_policy_pack
 from src.core.rebalance.policy_packs import DpmEffectivePolicyPackResolution
 
 

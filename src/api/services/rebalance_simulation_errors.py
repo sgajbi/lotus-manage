@@ -41,6 +41,10 @@ class DpmRebalanceIdempotencyStoreWriteFailedError(DpmRebalanceSimulationError):
     pass
 
 
+class DpmRebalancePolicyPackCatalogUnavailableError(DpmRebalanceSimulationError):
+    pass
+
+
 class DpmRebalanceSupportabilityStoreUnavailableError(DpmRebalanceSimulationError):
     pass
 

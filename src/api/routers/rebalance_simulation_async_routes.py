@@ -11,6 +11,7 @@ from src.api.routers.rebalance_simulation import router
 from src.api.routers.rebalance_simulation_http import (
     rebalance_async_operation_http_exception,
     rebalance_envelope_http_exception,
+    rebalance_simulation_http_exception,
 )
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
@@ -130,5 +131,7 @@ def analyze_scenarios_async(
         )
     except service.DpmRebalanceAsyncOperationError as exc:
         raise rebalance_async_operation_http_exception(exc) from exc
+    except service.DpmRebalanceSimulationError as exc:
+        raise rebalance_simulation_http_exception(exc) from exc
     response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted

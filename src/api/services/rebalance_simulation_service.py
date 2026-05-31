@@ -34,11 +34,13 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyConflictError,
     DpmRebalanceIdempotencyStoreInconsistentError,
     DpmRebalanceIdempotencyStoreWriteFailedError,
+    DpmRebalancePolicyPackCatalogUnavailableError,
     DpmRebalanceSimulationError,
     DpmRebalanceSupportabilityStoreUnavailableError,
     DpmRebalanceStatefulInputDisabledError,
 )
-from src.api.routers.rebalance_policy_packs import (
+from src.api.services.rebalance_policy_pack_service import (
+    DpmPolicyPackCatalogUnavailableError,
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
 )
@@ -203,10 +205,11 @@ def resolve_selected_policy_pack_definition(
 ) -> Optional[DpmPolicyPackDefinition]:
     if policy_pack.selected_policy_pack_id is None:
         return None
-    return resolve_policy_pack_definition(
-        resolution=policy_pack,
-        catalog=load_dpm_policy_pack_catalog(),
-    )
+    try:
+        catalog = load_dpm_policy_pack_catalog()
+    except DpmPolicyPackCatalogUnavailableError as exc:
+        raise DpmRebalancePolicyPackCatalogUnavailableError(exc.detail) from exc
+    return resolve_policy_pack_definition(resolution=policy_pack, catalog=catalog)
 
 
 def _source_input_mode(source_context: Optional[DpmResolvedSourceContext]) -> str:
@@ -773,6 +776,7 @@ __all__ = [
     "DpmRebalanceIdempotencyConflictError",
     "DpmRebalanceIdempotencyStoreInconsistentError",
     "DpmRebalanceIdempotencyStoreWriteFailedError",
+    "DpmRebalancePolicyPackCatalogUnavailableError",
     "DpmRebalanceSimulationError",
     "DpmRebalanceStatefulInputDisabledError",
     "DpmRebalanceSupportabilityStoreUnavailableError",

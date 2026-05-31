@@ -8,7 +8,10 @@ from pydantic import Field
 from src.api.dependencies import get_db_session
 from src.api.request_models import BatchExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
-from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
+from src.api.routers.rebalance_simulation_http import (
+    rebalance_envelope_http_exception,
+    rebalance_simulation_http_exception,
+)
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import ANALYZE_RESPONSE_EXAMPLE
 from src.core.models import BatchRebalanceResult
@@ -96,11 +99,14 @@ def analyze_scenarios(
         )
     except service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc
-    return service.execute_batch_analysis(
-        request=batch_request,
-        correlation_id=x_correlation_id,
-        request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-        tenant_id=x_tenant_id,
-        source_context=source_context,
-    )
+    try:
+        return service.execute_batch_analysis(
+            request=batch_request,
+            correlation_id=x_correlation_id,
+            request_policy_pack_id=x_policy_pack_id,
+            tenant_default_policy_pack_id=x_tenant_policy_pack_id,
+            tenant_id=x_tenant_id,
+            source_context=source_context,
+        )
+    except service.DpmRebalanceSimulationError as exc:
+        raise rebalance_simulation_http_exception(exc) from exc

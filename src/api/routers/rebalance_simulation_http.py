@@ -17,6 +17,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyConflictError,
     DpmRebalanceIdempotencyStoreInconsistentError,
     DpmRebalanceIdempotencyStoreWriteFailedError,
+    DpmRebalancePolicyPackCatalogUnavailableError,
     DpmRebalanceSimulationError,
     DpmRebalanceSupportabilityStoreUnavailableError,
     DpmRebalanceStatefulInputDisabledError,
@@ -46,6 +47,7 @@ def rebalance_simulation_http_exception(exc: DpmRebalanceSimulationError) -> HTT
         (
             DpmRebalanceIdempotencyStoreInconsistentError,
             DpmRebalanceIdempotencyStoreWriteFailedError,
+            DpmRebalancePolicyPackCatalogUnavailableError,
             DpmRebalanceSupportabilityStoreUnavailableError,
         ),
     ):

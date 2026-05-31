@@ -5717,3 +5717,40 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route churn.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-228: Policy-pack service/router boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_service.py`,
+  `src/api/routers/rebalance_policy_packs.py`,
+  `src/api/routers/rebalance_policy_pack_catalog_routes.py`,
+  `src/api/routers/rebalance_policy_pack_effective_routes.py`,
+  `src/api/routers/rebalance_simulation_analyze_routes.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/persistence_profile.py`, and policy-pack/rebalance test fixtures.
+- Finding: policy-pack repository construction, catalog loading, tenant/default resolution, and
+  backend error normalization lived in the policy-pack router module. Rebalance simulation and
+  persistence-profile guardrails imported those helpers from the router, so reusable application
+  logic still depended on transport and route-registration code.
+- Action: moved policy-pack resolution, repository construction, catalog loading, DSN/backend
+  helpers, and catalog-unavailable application errors into
+  `rebalance_policy_pack_service.py`. The policy-pack router now maps service unavailable errors
+  to HTTP, while rebalance simulation maps selected-policy catalog failures through its existing
+  route-edge HTTP mapper. Public routes, response models, OpenAPI output, and existing `503`
+  detail strings were preserved.
+- Status: hardened
+- Evidence: policy-pack config/admin, persistence-profile, and rebalance API regressions
+  (`tests/unit/dpm/api/test_dpm_policy_pack_config.py`,
+  `tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py`,
+  `tests/unit/api/test_persistence_profile.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over touched
+  policy/rebalance modules, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue moving remaining reusable runtime configuration helpers out of router
+  modules when each consumer can switch without widening the public API surface.
+- Wiki decision: no wiki source change required; this is internal service-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

@@ -110,6 +110,6 @@ def postgres_runtime_test_harness(monkeypatch: pytest.MonkeyPatch):
         lambda **_kwargs: InMemoryDpmRunRepository(),
     )
     monkeypatch.setattr(
-        "src.api.routers.rebalance_policy_packs.PostgresDpmPolicyPackRepository",
+        "src.api.services.rebalance_policy_pack_service.PostgresDpmPolicyPackRepository",
         lambda **_kwargs: policy_repo,
     )

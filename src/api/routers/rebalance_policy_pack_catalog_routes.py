@@ -14,9 +14,12 @@ from src.api.routers.rebalance_policy_packs import (
     _get_policy_pack_repository,
     _record_policy_pack_api_resolution,
     _reject_unexpected_query_params,
+    router,
+)
+from src.api.services.rebalance_policy_pack_service import (
+    DpmPolicyPackCatalogUnavailableError,
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
-    router,
 )
 from src.core.rebalance.policy_packs import (
     DpmPolicyPackCatalogResponse,
@@ -63,7 +66,12 @@ def get_dpm_policy_pack_catalog(
         tenant_id=x_tenant_id,
     )
     _record_policy_pack_api_resolution(resolution)
-    catalog = load_dpm_policy_pack_catalog()
+    try:
+        catalog = load_dpm_policy_pack_catalog()
+    except DpmPolicyPackCatalogUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.detail
+        ) from exc
     items = sorted(catalog.values(), key=lambda item: item.policy_pack_id)
     selected_policy_pack_id = resolution.selected_policy_pack_id
     return DpmPolicyPackCatalogResponse(
