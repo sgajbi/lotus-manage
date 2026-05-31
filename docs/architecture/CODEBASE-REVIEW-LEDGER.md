@@ -1031,3 +1031,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assignment, transition, and maker-checker evidence is a larger source-event-family boundary.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-011: Campaign workflow memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign definition, approval decision, assignment action, assignment task,
+  task transition, and maker-checker control memory events
+- Finding: campaign workflow event builders were embedded in
+  `src/core/portfolio_memory/service.py` beside repository filtering. The builders own
+  campaign-version identity, candidate source lineage, no-global-discovery flags, assignment SLA
+  state, task-transition boundary flags, and maker-checker no-external-approval/no-execution
+  evidence, so they are a domain projection boundary rather than service orchestration.
+- Action: moved campaign workflow event builders into
+  `src/core/portfolio_memory/campaign_projection.py`, leaving repository filtering in the
+  service. Added direct tests for source-lineage/no-global-discovery, assignment transition
+  boundary flags, and maker-checker no-external-approval/no-execution evidence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_campaign_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: revisit the remaining mandate-health projection after campaign extraction because it
+  is now the largest domain-event builder still resident in the service.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
