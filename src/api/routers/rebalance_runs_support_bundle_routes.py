@@ -1,42 +1,19 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Path, Query, Request, status
+from fastapi import HTTPException, Path, Request, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_support_bundle_parameters import (
+    SUPPORT_BUNDLE_QUERY_PARAMS,
+    IncludeArtifactQuery,
+    IncludeAsyncOperationQuery,
+    IncludeIdempotencyHistoryQuery,
+)
 from src.core.rebalance_runs import (
     DpmRunNotFoundError,
     DpmRunSupportBundleResponse,
     DpmRunSupportService,
 )
-
-
-_SUPPORT_BUNDLE_QUERY_PARAMS = {
-    "include_artifact",
-    "include_async_operation",
-    "include_idempotency_history",
-}
-
-IncludeArtifactQuery = Annotated[
-    bool,
-    Query(
-        description="Whether to include deterministic run artifact payload in response.",
-        examples=[True],
-    ),
-]
-IncludeAsyncOperationQuery = Annotated[
-    bool,
-    Query(
-        description="Whether to include async operation mapped by run correlation id.",
-        examples=[True],
-    ),
-]
-IncludeIdempotencyHistoryQuery = Annotated[
-    bool,
-    Query(
-        description="Whether to include idempotency mapping history when run has idempotency key.",
-        examples=[True],
-    ),
-]
 
 
 @shared.router.get(
@@ -70,7 +47,7 @@ def get_dpm_run_support_bundle(
 ) -> DpmRunSupportBundleResponse:
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
+    shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle(
             rebalance_run_id=rebalance_run_id,
@@ -115,7 +92,7 @@ def get_dpm_run_support_bundle_by_correlation(
 ) -> DpmRunSupportBundleResponse:
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
+    shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_correlation(
             correlation_id=correlation_id,
@@ -160,7 +137,7 @@ def get_dpm_run_support_bundle_by_idempotency(
 ) -> DpmRunSupportBundleResponse:
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
+    shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_idempotency(
             idempotency_key=idempotency_key,
@@ -205,7 +182,7 @@ def get_dpm_run_support_bundle_by_operation(
 ) -> DpmRunSupportBundleResponse:
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=_SUPPORT_BUNDLE_QUERY_PARAMS)
+    shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
     try:
         return service.get_run_support_bundle_by_operation(
             operation_id=operation_id,

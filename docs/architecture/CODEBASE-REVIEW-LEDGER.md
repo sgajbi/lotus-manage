@@ -2637,3 +2637,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   workflow and async-operation route families follow the same shell-plus-owned-module pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-090: Support-bundle include flags were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: support-bundle include-flag query parameter contract.
+- Finding: `src/api/routers/rebalance_runs_support_bundle_routes.py` owned the shared
+  `include_artifact`, `include_async_operation`, and `include_idempotency_history` query parameter
+  metadata inline with route handlers. That made the include-flag contract harder to reuse as
+  support-bundle route ownership is split by resolver type.
+- Action: moved the support-bundle allowed-query set and typed include-flag aliases into
+  `src/api/routers/rebalance_runs_support_bundle_parameters.py`, preserving query names, defaults,
+  Swagger metadata, unsupported-query rejection, and response behavior.
+- Status: hardened
+- Evidence: focused DPM API support-bundle regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "support_bundle"`), focused Ruff checks,
+  source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split operation-resolved support-bundle lookup from direct run/correlation/idempotency
+  support-bundle routes using the shared include-flag contract.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
