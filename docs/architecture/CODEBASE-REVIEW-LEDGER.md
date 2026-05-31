@@ -5656,3 +5656,37 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   compatibility handling can be narrowed without weakening failure capture.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-226: Rebalance run-support provider HTTP boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_run_support_service.py`,
+  `src/api/routers/rebalance_runs.py`, `src/api/main.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/services/rebalance_simulation_errors.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: the reusable run-support service provider and supportability persistence helper lived in
+  the run-support router module and translated backend initialization failures directly to
+  FastAPI `HTTPException`. Rebalance simulation consumed that router helper for idempotency,
+  supportability persistence, and async analysis submission, which kept transport behavior inside
+  application-service execution paths.
+- Action: moved run-support provider construction and supportability persistence into
+  `rebalance_run_support_service.py` with an application-level unavailable exception, kept
+  `rebalance_runs.py` as the HTTP mapper for route dependencies, and had rebalance simulation
+  consume the non-HTTP provider directly. Support backend initialization failures are translated
+  to rebalance simulation or async-operation domain errors before the router maps them to the
+  preserved `503` response detail.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the touched
+  router/service modules, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue reducing router-owned service-provider state by moving remaining
+  run-support feature guards and route helper exports behind narrower HTTP adapter modules when a
+  route slice already touches those surfaces.
+- Wiki decision: no wiki source change required; this is internal provider-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

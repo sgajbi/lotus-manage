@@ -413,6 +413,7 @@ def test_rebalance_simulation_http_exception_mapping():
         DpmRebalanceIdempotencyStoreInconsistentError,
         DpmRebalanceIdempotencyStoreWriteFailedError,
         DpmRebalanceSimulationError,
+        DpmRebalanceSupportabilityStoreUnavailableError,
     )
 
     mappings = [
@@ -423,6 +424,11 @@ def test_rebalance_simulation_http_exception_mapping():
             "inconsistent",
         ),
         (DpmRebalanceIdempotencyStoreWriteFailedError("write-failed"), 503, "write-failed"),
+        (
+            DpmRebalanceSupportabilityStoreUnavailableError("support-unavailable"),
+            503,
+            "support-unavailable",
+        ),
         (DpmRebalanceSimulationError("generic"), 500, "DpmRebalanceSimulationError"),
     ]
 
@@ -441,6 +447,7 @@ def test_rebalance_async_operation_http_exception_mapping():
         DpmRebalanceAsyncOperationError,
         DpmRebalanceAsyncOperationNotExecutableError,
         DpmRebalanceAsyncOperationNotFoundError,
+        DpmRebalanceAsyncOperationSupportUnavailableError,
         DpmRebalanceAsyncOperationsDisabledError,
     )
 
@@ -450,6 +457,11 @@ def test_rebalance_async_operation_http_exception_mapping():
         (DpmRebalanceAsyncOperationNotFoundError("missing"), 404, "missing"),
         (DpmRebalanceAsyncOperationConflictError("conflict"), 409, "conflict"),
         (DpmRebalanceAsyncOperationNotExecutableError("not-executable"), 409, "not-executable"),
+        (
+            DpmRebalanceAsyncOperationSupportUnavailableError("support-unavailable"),
+            503,
+            "support-unavailable",
+        ),
         (DpmRebalanceAsyncOperationError("generic"), 500, "DpmRebalanceAsyncOperationError"),
     ]
 

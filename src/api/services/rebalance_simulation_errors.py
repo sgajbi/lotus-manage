@@ -41,6 +41,10 @@ class DpmRebalanceIdempotencyStoreWriteFailedError(DpmRebalanceSimulationError):
     pass
 
 
+class DpmRebalanceSupportabilityStoreUnavailableError(DpmRebalanceSimulationError):
+    pass
+
+
 class DpmRebalanceAsyncOperationError(Exception):
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
@@ -64,4 +68,8 @@ class DpmRebalanceAsyncOperationNotExecutableError(DpmRebalanceAsyncOperationErr
 
 
 class DpmRebalanceAsyncOperationNotFoundError(DpmRebalanceAsyncOperationError):
+    pass
+
+
+class DpmRebalanceAsyncOperationSupportUnavailableError(DpmRebalanceAsyncOperationError):
     pass

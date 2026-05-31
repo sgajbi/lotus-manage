@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 import src.api.services.rebalance_simulation_service as service
+import src.api.services.rebalance_run_support_service as run_support_service
 from src.api.request_models import BatchExecutionRequestEnvelope, RebalanceExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
 from src.api.routers.runtime_utils import (
@@ -58,6 +59,22 @@ def test_runtime_utils_feature_and_backend_guards(monkeypatch) -> None:
         == "fallback"
     )
     assert ConnectionError in postgres_connection_exception_types()
+
+
+def test_rebalance_run_support_provider_raises_application_error(monkeypatch) -> None:
+    run_support_service.reset_dpm_run_support_service_for_tests()
+
+    def _raise_missing_dsn():
+        raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
+
+    monkeypatch.setattr(
+        run_support_service.rebalance_runs_config, "build_repository", _raise_missing_dsn
+    )
+
+    with pytest.raises(run_support_service.DpmRunSupportServiceUnavailableError) as exc_info:
+        run_support_service.get_dpm_run_support_service()
+
+    assert exc_info.value.detail == "DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED"
 
 
 def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch) -> None:

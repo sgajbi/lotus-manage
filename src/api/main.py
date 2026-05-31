@@ -22,11 +22,11 @@ from src.api.production_cutover_contract import validate_cutover_migrations_appl
 from src.api.routers.construction import router as construction_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
+    router as rebalance_run_support_router,
+)
+from src.api.services.rebalance_run_support_service import (
     get_dpm_run_support_service,
     record_dpm_run_for_support,
-)
-from src.api.routers.rebalance_runs import (
-    router as rebalance_run_support_router,
 )
 from src.api.routers.rebalance_simulation import (
     analyze_scenarios,

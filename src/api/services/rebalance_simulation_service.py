@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from fastapi import HTTPException
 from pydantic import ValidationError
 
 from src.api.observability import (
@@ -27,6 +26,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceAsyncOperationError,
     DpmRebalanceAsyncOperationNotExecutableError,
     DpmRebalanceAsyncOperationNotFoundError,
+    DpmRebalanceAsyncOperationSupportUnavailableError,
     DpmRebalanceAsyncOperationsDisabledError,
     DpmRebalanceCoreContextIncompleteError,
     DpmRebalanceCoreResolverUnavailableError,
@@ -36,13 +36,15 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyStoreInconsistentError,
     DpmRebalanceIdempotencyStoreWriteFailedError,
     DpmRebalanceSimulationError,
+    DpmRebalanceSupportabilityStoreUnavailableError,
     DpmRebalanceStatefulInputDisabledError,
 )
 from src.api.routers.rebalance_policy_packs import (
     load_dpm_policy_pack_catalog,
     resolve_dpm_policy_pack,
 )
-from src.api.routers.rebalance_runs import (
+from src.api.services.rebalance_run_support_service import (
+    DpmRunSupportServiceUnavailableError,
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
@@ -432,7 +434,10 @@ def simulate_rebalance(
     )
 
     if replay_enabled:
-        support_service = get_dpm_run_support_service()
+        try:
+            support_service = get_dpm_run_support_service()
+        except DpmRunSupportServiceUnavailableError as exc:
+            raise DpmRebalanceSupportabilityStoreUnavailableError(exc.detail) from exc
         existing = None
         try:
             existing = support_service.get_idempotency_lookup(idempotency_key=idempotency_key)
@@ -494,7 +499,7 @@ def simulate_rebalance(
             portfolio_id=request.portfolio_snapshot.portfolio_id,
             idempotency_key=idempotency_key,
         )
-    except (HTTPException, RuntimeError, ValueError) as exc:
+    except (RuntimeError, ValueError) as exc:
         if replay_enabled:
             record_execution_call(
                 operation="simulate",
@@ -591,7 +596,7 @@ def execute_batch_analysis(
                 scenario_result=scenario_result,
                 base_currency=request.portfolio_snapshot.base_currency,
             )
-        except (HTTPException, ValidationError, RuntimeError, ValueError) as exc:
+        except (ValidationError, RuntimeError, ValueError) as exc:
             current_logger.exception("Scenario execution failed")
             failed_scenarios[scenario_name] = f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}"
 
@@ -663,7 +668,7 @@ def run_analyze_async_operation(
             execution_mode=execution_mode,
             outcome="succeeded",
         )
-    except (DpmRunNotFoundError, ValidationError, HTTPException, RuntimeError, ValueError) as exc:
+    except (DpmRunNotFoundError, ValidationError, RuntimeError, ValueError) as exc:
         current_logger.exception("Asynchronous batch analysis failed")
         service.complete_operation_failure(
             operation_id=operation_id,
@@ -689,7 +694,10 @@ def submit_and_optionally_execute_async_analysis(
     current_logger = _resolved_logger()
     if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
-    service = get_dpm_run_support_service()
+    try:
+        service = get_dpm_run_support_service()
+    except DpmRunSupportServiceUnavailableError as exc:
+        raise DpmRebalanceAsyncOperationSupportUnavailableError(exc.detail) from exc
     policy_pack = resolve_dpm_policy_pack(
         request_policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
@@ -790,6 +798,7 @@ __all__ = [
     "DpmRebalanceAsyncOperationError",
     "DpmRebalanceAsyncOperationNotExecutableError",
     "DpmRebalanceAsyncOperationNotFoundError",
+    "DpmRebalanceAsyncOperationSupportUnavailableError",
     "DpmRebalanceAsyncOperationsDisabledError",
     "DpmRebalanceCoreContextIncompleteError",
     "DpmRebalanceCoreResolverUnavailableError",
@@ -800,6 +809,7 @@ __all__ = [
     "DpmRebalanceIdempotencyStoreWriteFailedError",
     "DpmRebalanceSimulationError",
     "DpmRebalanceStatefulInputDisabledError",
+    "DpmRebalanceSupportabilityStoreUnavailableError",
     "async_manual_execution_enabled",
     "env_flag",
     "env_int",

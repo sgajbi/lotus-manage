@@ -8,6 +8,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceAsyncOperationError,
     DpmRebalanceAsyncOperationNotExecutableError,
     DpmRebalanceAsyncOperationNotFoundError,
+    DpmRebalanceAsyncOperationSupportUnavailableError,
     DpmRebalanceAsyncOperationsDisabledError,
     DpmRebalanceCoreContextIncompleteError,
     DpmRebalanceCoreResolverUnavailableError,
@@ -17,6 +18,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceIdempotencyStoreInconsistentError,
     DpmRebalanceIdempotencyStoreWriteFailedError,
     DpmRebalanceSimulationError,
+    DpmRebalanceSupportabilityStoreUnavailableError,
     DpmRebalanceStatefulInputDisabledError,
 )
 
@@ -44,6 +46,7 @@ def rebalance_simulation_http_exception(exc: DpmRebalanceSimulationError) -> HTT
         (
             DpmRebalanceIdempotencyStoreInconsistentError,
             DpmRebalanceIdempotencyStoreWriteFailedError,
+            DpmRebalanceSupportabilityStoreUnavailableError,
         ),
     ):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.detail)
@@ -73,6 +76,8 @@ def rebalance_async_operation_http_exception(
         ),
     ):
         return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail)
+    if isinstance(exc, DpmRebalanceAsyncOperationSupportUnavailableError):
+        return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.detail)
     return HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=type(exc).__name__,

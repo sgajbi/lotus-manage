@@ -7,25 +7,24 @@ from src.api.routers import rebalance_runs_config
 from src.api.routers.route_registration import register_route_modules
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
-    normalize_backend_init_error,
     reject_unexpected_query_params,
 )
+from src.api.services.rebalance_run_support_service import (
+    DpmRunSupportServiceUnavailableError,
+)
+from src.api.services.rebalance_run_support_service import (
+    get_dpm_run_support_service as get_dpm_run_support_application_service,
+)
+from src.api.services.rebalance_run_support_service import (
+    record_dpm_run_for_support as record_dpm_run_for_support_application,
+)
+from src.api.services.rebalance_run_support_service import (
+    reset_dpm_run_support_service_for_tests as reset_dpm_run_support_application_service_for_tests,
+)
 from src.core.rebalance_runs import DpmRunSupportService
-from src.core.rebalance_runs.repository import DpmRunRepository
 from src.core.models import RebalanceResult
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])
-
-_REPOSITORY = None
-_SERVICE: Optional[DpmRunSupportService] = None
-
-
-def _backend_init_error_detail(detail: str) -> str:
-    return normalize_backend_init_error(
-        detail=detail,
-        required_detail="DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED",
-        fallback_detail="DPM_SUPPORTABILITY_POSTGRES_CONNECTION_FAILED",
-    )
 
 
 def _assert_support_apis_enabled() -> None:
@@ -99,40 +98,14 @@ def _supportability_store_backend_name() -> str:
 _reject_unexpected_query_params = reject_unexpected_query_params
 
 
-def _build_repository() -> DpmRunRepository:
-    return rebalance_runs_config.build_repository()
-
-
 def get_dpm_run_support_service() -> DpmRunSupportService:
-    global _REPOSITORY
-    global _SERVICE
-    if _REPOSITORY is None:
-        try:
-            _REPOSITORY = _build_repository()
-        except RuntimeError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=_backend_init_error_detail(str(exc)),
-            ) from exc
-    if _SERVICE is None:
-        _SERVICE = DpmRunSupportService(
-            repository=_REPOSITORY,
-            async_operation_ttl_seconds=rebalance_runs_config.env_int(
-                "DPM_ASYNC_OPERATIONS_TTL_SECONDS",
-                86400,
-            ),
-            supportability_retention_days=rebalance_runs_config.env_non_negative_int(
-                "DPM_SUPPORTABILITY_RETENTION_DAYS",
-                0,
-            ),
-            workflow_enabled=rebalance_runs_config.env_flag("DPM_WORKFLOW_ENABLED", False),
-            workflow_requires_review_for_statuses=rebalance_runs_config.env_csv_set(
-                "DPM_WORKFLOW_REQUIRES_REVIEW_FOR_STATUSES",
-                {"PENDING_REVIEW"},
-            ),
-            artifact_store_mode=rebalance_runs_config.artifact_store_mode(),
-        )
-    return _SERVICE
+    try:
+        return get_dpm_run_support_application_service()
+    except DpmRunSupportServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=exc.detail,
+        ) from exc
 
 
 def record_dpm_run_for_support(
@@ -142,20 +115,22 @@ def record_dpm_run_for_support(
     portfolio_id: str,
     idempotency_key: Optional[str],
 ) -> None:
-    service = get_dpm_run_support_service()
-    service.record_run(
-        result=result,
-        request_hash=request_hash,
-        portfolio_id=portfolio_id,
-        idempotency_key=idempotency_key,
-    )
+    try:
+        record_dpm_run_for_support_application(
+            result=result,
+            request_hash=request_hash,
+            portfolio_id=portfolio_id,
+            idempotency_key=idempotency_key,
+        )
+    except DpmRunSupportServiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=exc.detail,
+        ) from exc
 
 
 def reset_dpm_run_support_service_for_tests() -> None:
-    global _REPOSITORY
-    global _SERVICE
-    _REPOSITORY = None
-    _SERVICE = None
+    reset_dpm_run_support_application_service_for_tests()
 
 
 _ROUTE_MODULES: tuple[str, ...] = (
