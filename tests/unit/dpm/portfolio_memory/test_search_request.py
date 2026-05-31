@@ -10,6 +10,7 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
     build_portfolio_memory_search_query,
+    validate_portfolio_memory_source_scan_limit,
 )
 
 
@@ -66,6 +67,15 @@ def test_build_portfolio_memory_search_query_treats_blank_filters_as_absent() ->
     assert query.limit == 25
     assert query.offset == 10
     assert query.source_scan_limit == 250
+
+
+def test_validate_portfolio_memory_source_scan_limit_preserves_supported_limit() -> None:
+    assert (
+        validate_portfolio_memory_source_scan_limit(
+            source_scan_limit=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT
+        )
+        == PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT
+    )
 
 
 @pytest.mark.parametrize(

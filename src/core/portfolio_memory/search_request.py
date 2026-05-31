@@ -74,6 +74,10 @@ def _validate_search_pagination(
         )
     if offset < PORTFOLIO_MEMORY_SEARCH_OFFSET_MIN:
         raise ValueError("portfolio-memory search offset must be greater than or equal to 0")
+    validate_portfolio_memory_source_scan_limit(source_scan_limit=source_scan_limit)
+
+
+def validate_portfolio_memory_source_scan_limit(*, source_scan_limit: int) -> int:
     if (
         source_scan_limit < PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN
         or source_scan_limit > PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX
@@ -83,3 +87,4 @@ def _validate_search_pagination(
             f"{PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN} and "
             f"{PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX}"
         )
+    return source_scan_limit

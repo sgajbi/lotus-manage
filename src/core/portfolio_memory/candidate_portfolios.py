@@ -8,6 +8,7 @@ from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories,
 )
+from src.core.portfolio_memory.search_request import validate_portfolio_memory_source_scan_limit
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
 
@@ -43,6 +44,9 @@ def candidate_portfolio_ids_from_sources(
     portfolio_ids: list[str] | None,
     source_scan_limit: int,
 ) -> list[str]:
+    source_scan_limit = validate_portfolio_memory_source_scan_limit(
+        source_scan_limit=source_scan_limit
+    )
     candidates: set[str] = {
         portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
     }

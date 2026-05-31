@@ -1526,3 +1526,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   wrappers.
 - Wiki decision: no wiki source change required; this is internal dependency-boundary cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-035: Candidate discovery scan bounds were service-local only
+
+- Date: 2026-05-31
+- Scope: portfolio-memory candidate discovery source scan bounds
+- Finding: portfolio-memory search request normalization validated `source_scan_limit`, but the
+  lower-level `candidate_portfolio_ids_from_sources` helper still accepted direct unsafe scan
+  bounds. Direct callers could therefore bypass the service-level guardrail and ask repositories
+  for zero, negative, or oversized source scans.
+- Action: promoted source-scan validation to a reusable search-request helper, reused it from both
+  search request normalization and candidate discovery, and added focused tests for direct
+  candidate-discovery rejection.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_request.py`.
+- Follow-up: any future repository-scan continuation or cursor semantics should reuse the shared
+  source-scan validation boundary before reaching source repositories.
+- Wiki decision: no wiki source change required; this is internal defensive validation hardening
+  with no route, payload, supported-feature, or operator-contract change.
