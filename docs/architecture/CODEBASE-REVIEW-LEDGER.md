@@ -3572,3 +3572,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   against the PR target.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-134: PM operating-quality builders were embedded in router assembly
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run and review-action builder helpers.
+- Finding: `src/api/routers/pm_operating_quality.py` mixed router assembly with score-run
+  construction, PM-book source evidence materialization, policy resolution, book-scope signal
+  projection, and review-action target lookup. The route shell should coordinate route modules,
+  while builder behavior should be isolated for focused review and testing.
+- Action: moved builder internals into `src/api/routers/pm_operating_quality_builders.py` while
+  keeping the existing private names on `pm_operating_quality.py` as compatibility wrappers for
+  tests and monkeypatch seams. Route registration order, public API paths, PM-book resolver
+  injection, policy lookup semantics, source-reference projection, review-action construction, and
+  error mapping were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review PM operating-quality route registration order and remaining model surface after
+  this behavior-preserving builder split.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
