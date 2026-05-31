@@ -4076,3 +4076,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   dedicated module for consistency with review-action and summary read routing.
 - Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-157: PM quality score-run reads lived in the command module
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/score-runs` and
+  `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`.
+- Finding: score-run command and read registration were already separated by function, but both
+  lived in `src/api/routers/pm_operating_quality_score_run_routes.py`. That left the command module
+  carrying read-side query filters, pagination, immutable lookup, and not-found mapping even after
+  review-action and summary reads were split into dedicated modules.
+- Action: moved score-run list/get route registration into
+  `src/api/routers/pm_operating_quality_score_run_read_routes.py` while keeping
+  `register_pm_quality_score_run_read_routes` import-compatible from the existing command module.
+  Public paths, response models, Swagger guidance, query parameters, pagination bounds, repository
+  dependency wiring, not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect PM operating-quality fairness routes for command/read separation and
+  controller-owned orchestration.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
