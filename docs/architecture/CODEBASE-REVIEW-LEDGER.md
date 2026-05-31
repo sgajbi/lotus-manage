@@ -5171,3 +5171,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   not-found helper after the workflow read surfaces are stable.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-207: Rebalance support-bundle routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_support_bundle_run_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_correlation_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_idempotency_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_operation_routes.py`, and
+  `src/api/routers/rebalance_runs_support_bundle_http.py`.
+- Finding: the run-id, correlation-id, idempotency-key, and async-operation support-bundle
+  routes repeated identical `DpmRunNotFoundError` to `404` mapping around service calls. The
+  repeated branch made supportability lookup behavior easier to drift while future bundle
+  sections are added.
+- Action: extracted `read_support_bundle_with_http_mapping()` and routed all support-bundle
+  service calls through it. Public paths, query parameters, feature-flag assertions, response
+  models, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep optional support-bundle section toggles centralized in
+  `rebalance_runs_support_bundle_parameters.py`; avoid duplicating include-flag vocabulary in
+  future support-bundle route modules.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

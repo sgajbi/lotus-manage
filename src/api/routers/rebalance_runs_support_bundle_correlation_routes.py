@@ -1,8 +1,11 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Path, Request, status
+from fastapi import Path, Request, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_support_bundle_http import (
+    read_support_bundle_with_http_mapping,
+)
 from src.api.routers.rebalance_runs_support_bundle_parameters import (
     SUPPORT_BUNDLE_QUERY_PARAMS,
     IncludeArtifactQuery,
@@ -10,7 +13,6 @@ from src.api.routers.rebalance_runs_support_bundle_parameters import (
     IncludeIdempotencyHistoryQuery,
 )
 from src.core.rebalance_runs import (
-    DpmRunNotFoundError,
     DpmRunSupportBundleResponse,
     DpmRunSupportService,
 )
@@ -50,12 +52,11 @@ def get_dpm_run_support_bundle_by_correlation(
     shared._assert_support_apis_enabled()
     shared._assert_support_bundle_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=SUPPORT_BUNDLE_QUERY_PARAMS)
-    try:
-        return service.get_run_support_bundle_by_correlation(
+    return read_support_bundle_with_http_mapping(
+        lambda: service.get_run_support_bundle_by_correlation(
             correlation_id=correlation_id,
             include_artifact=include_artifact,
             include_async_operation=include_async_operation,
             include_idempotency_history=include_idempotency_history,
         )
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    )
