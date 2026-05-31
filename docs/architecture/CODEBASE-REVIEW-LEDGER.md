@@ -6394,3 +6394,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   services.
 - Wiki decision: no wiki source change required; this is internal source-evidence supportability
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-252: Construction ESG supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_esg_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_esg_supportability.py`.
+- Finding: client-restriction and sustainability-preference supportability logic was still
+  embedded in the broad construction service, including source-owned restriction scope matching,
+  buy/sell applicability, missing-data reason codes, sustainability allocation checks, and
+  classification review posture. That kept ESG/client-preference behavior coupled to unrelated
+  transaction-cost, liquidity, currency-overlay, and source-context code.
+- Action: extracted ESG/restriction supportability into `construction_esg_supportability.py` and
+  left thin compatibility wrappers in the construction service for existing private-helper
+  coverage. Added direct helper tests for active client restriction blocking, asset/issuer/country
+  scope matching, sustainability allocation review, and classification-evidence review posture.
+- Status: hardened
+- Evidence: focused ESG supportability, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_esg_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks,
+  focused mypy over ESG supportability and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting liquidity/currency-overlay/regime-stress supportability and
+  source-product authority-context assembly in small slices with direct helper coverage.
+- Wiki decision: no wiki source change required; this is internal source-evidence supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
