@@ -4859,3 +4859,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior or reusable route policy.
 - Wiki decision: no wiki source change required; this is internal route registration cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-192: Rebalance run parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/rebalance_runs.py`.
+- Finding: after removing composition-only route modules, the rebalance run parent router had a
+  long block of repeated `importlib.import_module()` calls. That made registration order harder to
+  scan and created copy/paste friction for future route slices.
+- Action: centralized the route module names in one ordered tuple and registered them through a
+  single loop. Public paths, route ordering, response models, OpenAPI output, feature gates, and
+  supportability behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.

@@ -158,24 +158,29 @@ def reset_dpm_run_support_service_for_tests() -> None:
     _SERVICE = None
 
 
-importlib.import_module("src.api.routers.rebalance_runs_inventory_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lookup_correlation_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lookup_request_hash_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lookup_idempotency_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lookup_idempotency_history_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lookup_run_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_run_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_correlation_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_idempotency_routes")
-importlib.import_module("src.api.routers.rebalance_runs_support_bundle_operation_routes")
-importlib.import_module("src.api.routers.rebalance_runs_artifact_routes")
-importlib.import_module("src.api.routers.rebalance_runs_async_operation_inventory_routes")
-importlib.import_module("src.api.routers.rebalance_runs_async_operation_lookup_routes")
-importlib.import_module("src.api.routers.rebalance_runs_lineage_routes")
-importlib.import_module("src.api.routers.rebalance_runs_workflow_decision_routes")
-importlib.import_module("src.api.routers.rebalance_runs_workflow_state_routes")
-importlib.import_module("src.api.routers.rebalance_runs_workflow_action_routes")
-importlib.import_module("src.api.routers.rebalance_runs_workflow_history_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.rebalance_runs_inventory_routes",
+    "src.api.routers.rebalance_runs_lookup_correlation_routes",
+    "src.api.routers.rebalance_runs_lookup_request_hash_routes",
+    "src.api.routers.rebalance_runs_lookup_idempotency_routes",
+    "src.api.routers.rebalance_runs_lookup_idempotency_history_routes",
+    "src.api.routers.rebalance_runs_lookup_run_routes",
+    "src.api.routers.rebalance_runs_support_bundle_run_routes",
+    "src.api.routers.rebalance_runs_support_bundle_correlation_routes",
+    "src.api.routers.rebalance_runs_support_bundle_idempotency_routes",
+    "src.api.routers.rebalance_runs_support_bundle_operation_routes",
+    "src.api.routers.rebalance_runs_artifact_routes",
+    "src.api.routers.rebalance_runs_async_operation_inventory_routes",
+    "src.api.routers.rebalance_runs_async_operation_lookup_routes",
+    "src.api.routers.rebalance_runs_lineage_routes",
+    "src.api.routers.rebalance_runs_workflow_decision_routes",
+    "src.api.routers.rebalance_runs_workflow_state_routes",
+    "src.api.routers.rebalance_runs_workflow_action_routes",
+    "src.api.routers.rebalance_runs_workflow_history_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)
 
 __all__ = [
     "Depends",
