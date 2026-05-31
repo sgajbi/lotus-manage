@@ -3082,3 +3082,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modules.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-111: Mandate read routes were mixed with command handlers
+
+- Date: 2026-05-31
+- Scope: mandate latest-by-portfolio, latest-by-id, version history, and version diff routes.
+- Finding: `src/api/routers/mandates.py` mixed read-only mandate state access with core refresh and
+  health recalculation commands. The read routes are repository-backed persisted-state views with
+  not-found and diff-unavailable mappings, while refresh and health routes own command semantics
+  and downstream source dependencies.
+- Action: moved read-only mandate route registration into
+  `src/api/routers/mandate_read_routes.py`, preserving public paths, response models, Swagger
+  guidance, examples, repository dependency wiring, not-found behavior, explicit-version diff
+  behavior, and 409 mapping for unavailable diffs.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split core refresh and health route registrations from the remaining mandate router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
