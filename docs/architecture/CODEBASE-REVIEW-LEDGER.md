@@ -4670,3 +4670,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route imports and downstream callers are proven migrated.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-183: Campaign read compatibility helpers had no internal callers
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/wave_campaign_read_http.py` and
+  `src/api/routers/wave_campaign_readiness_projection_http.py`.
+- Finding: after campaign audit, workflow-overview, preview-readiness, and launch-package helpers
+  were split and routes imported focused modules directly, the legacy read/readiness projection
+  helper modules only re-exported focused helpers and had no internal callers. Keeping them made the
+  route helper surface larger without preserving any active application path.
+- Action: removed the unused compatibility helper modules. Public routes, response models,
+  OpenAPI output, and focused helper ownership were preserved because all route modules already
+  import the focused audit/readiness/launch-package helpers directly.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue retiring compatibility-only modules only after repository-local import scans
+  prove no active callers remain.
+- Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
+  with no route, payload, supported-feature, or operator-contract change.
