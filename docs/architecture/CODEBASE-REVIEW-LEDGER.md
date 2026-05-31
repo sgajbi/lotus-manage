@@ -2114,3 +2114,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   read-side and command-side ownership boundaries.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-066: Wave source-check route lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave source-check route definition
+- Finding: the source-check command still lived directly in `src/api/routers/waves.py` even though
+  its response handling already lived in `src/api/routers/wave_source_check_http.py`. Source-check
+  is a source-readiness command with mandate repository wiring and idempotent replay semantics, so
+  it should not stay mixed with search, detail, simulation, item selection, and workflow command
+  routes.
+- Action: moved the source-check route into `src/api/routers/wave_source_check_routes.py` and
+  mounted it from the main wave router after item read routes, preserving public path order and
+  response contracts. The child router intentionally inherits parent tags to avoid duplicate
+  OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue extracting simulation and item/workflow command groups separately so command
+  dependencies stay visible and independently testable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
