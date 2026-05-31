@@ -15,6 +15,11 @@ def get_core_resolver_client() -> DpmCoreResolverClient:
     return build_core_resolver_client()
 
 
-importlib.import_module("src.api.routers.mandate_read_routes")
-importlib.import_module("src.api.routers.mandate_refresh_routes")
-importlib.import_module("src.api.routers.mandate_health_routes")
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.mandate_read_routes",
+    "src.api.routers.mandate_refresh_routes",
+    "src.api.routers.mandate_health_routes",
+)
+
+for route_module in _ROUTE_MODULES:
+    importlib.import_module(route_module)

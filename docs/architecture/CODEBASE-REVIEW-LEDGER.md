@@ -4936,3 +4936,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   still the safest pattern.
 - Wiki decision: no wiki source change required; this is internal route registration readability
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-196: Mandate parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandates.py`.
+- Finding: the mandate parent router registered read, refresh, and health routes through repeated
+  `importlib.import_module()` calls. That made route order less explicit as an inventory and
+  created copy/paste friction for future mandate route slices.
+- Action: centralized mandate route module names in one ordered tuple and registered them through a
+  single loop. Public paths, route ordering, response models, OpenAPI output, core resolver
+  dependency flow, mandate read, refresh, and health behavior were preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), router-wide Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
