@@ -4484,3 +4484,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   projection module after audit read extraction is stable.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-175: Campaign read compatibility module still owned readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`,
+  `/preview-readiness`, and `/launch-package`.
+- Finding: after audit read extraction, `wave_campaign_read_http.py` still owned workflow overview,
+  preview readiness, and launch-package response helpers. These helpers compose fail-closed launch
+  supportability and operator package projections, which is a separate concern from audit read
+  projection and compatibility re-exports.
+- Action: moved readiness/launch-package response helpers into
+  `src/api/routers/wave_campaign_readiness_projection_http.py`, updated readiness routes to import
+  the focused projection module directly, and reduced `wave_campaign_read_http.py` to compatibility
+  re-exports. Public paths, response models, date validation, not-found mapping, launch-history
+  bounds, launch-package inclusion, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect remaining compatibility-only modules for local route imports before retiring
+  any compatibility surface.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

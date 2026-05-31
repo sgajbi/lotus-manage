@@ -7,7 +7,7 @@ from src.api.routers.wave_campaign_audit_read_http import (
     list_campaign_definition_launch_history_response,
     list_campaign_definition_lifecycle_events_response,
 )
-from src.api.routers.wave_campaign_read_http import (
+from src.api.routers.wave_campaign_readiness_projection_http import (
     get_campaign_definition_launch_package_response,
     get_campaign_definition_preview_readiness_response,
     get_campaign_definition_workflow_overview_response,
