@@ -2766,3 +2766,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   routes so each resolver boundary has focused ownership.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-096: Current idempotency lookup was mixed with run lookup resolvers
+
+- Date: 2026-05-31
+- Scope: current idempotency-key to run mapping lookup route.
+- Finding: `src/api/routers/rebalance_runs_lookup_routes.py` still mixed the current idempotency
+  mapping route with correlation, request-hash, and direct run-id lookup routes. Current
+  idempotency lookup is retry-token supportability behavior and has a distinct resolver boundary
+  from trace, request-fingerprint, and run-id lookup.
+- Action: moved current idempotency lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_idempotency_routes.py`, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API idempotency regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "idempotency"`), focused Ruff checks, source-file
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split request-hash lookup and direct run-id lookup from correlation lookup, preserving
+  route registration order for specific lookup paths before the run-id catch-all route.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
