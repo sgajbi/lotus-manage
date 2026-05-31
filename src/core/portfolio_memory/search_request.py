@@ -62,9 +62,10 @@ def build_portfolio_memory_search_query(
             source_system=normalize_portfolio_memory_search_filter(source_system),
             source_type=normalize_portfolio_memory_search_filter(source_type),
         ),
-        explicit_candidate_ids={
-            portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
-        },
+        explicit_candidate_ids=normalize_portfolio_memory_candidate_ids(
+            portfolio_ids=portfolio_ids,
+            source_scan_limit=source_scan_limit,
+        ),
         limit=limit,
         offset=offset,
         source_scan_limit=source_scan_limit,
@@ -98,6 +99,23 @@ def normalize_portfolio_memory_supportability_state_filter(
             f"{','.join(PORTFOLIO_MEMORY_SUPPORTED_SUPPORTABILITY_STATES)}"
         )
     return cast(PortfolioMemorySupportabilityState, normalized_supportability_state)
+
+
+def normalize_portfolio_memory_candidate_ids(
+    *,
+    portfolio_ids: list[str] | None,
+    source_scan_limit: int,
+) -> set[str]:
+    explicit_candidate_ids = {
+        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
+    }
+    if len(explicit_candidate_ids) > source_scan_limit:
+        raise ValueError(
+            "portfolio-memory explicit portfolio_ids must not exceed source_scan_limit; "
+            f"portfolio_id_count={len(explicit_candidate_ids)}; "
+            f"source_scan_limit={source_scan_limit}"
+        )
+    return explicit_candidate_ids
 
 
 def _validate_search_pagination(

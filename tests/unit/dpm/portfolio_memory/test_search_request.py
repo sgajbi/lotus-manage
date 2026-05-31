@@ -10,6 +10,7 @@ from src.core.portfolio_memory.search_request import (
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
     PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
     build_portfolio_memory_search_query,
+    normalize_portfolio_memory_candidate_ids,
     normalize_portfolio_memory_event_type_filter,
     normalize_portfolio_memory_supportability_state_filter,
     validate_portfolio_memory_source_scan_limit,
@@ -96,6 +97,22 @@ def test_portfolio_memory_search_filter_normalizers_reject_unsupported_vocabular
 
     with pytest.raises(ValueError, match="UNSUPPORTED_PORTFOLIO_MEMORY_SUPPORTABILITY_STATE"):
         normalize_portfolio_memory_supportability_state_filter("NOT_A_SUPPORTABILITY_STATE")
+
+
+def test_portfolio_memory_candidate_ids_are_bounded_by_source_scan_limit() -> None:
+    assert normalize_portfolio_memory_candidate_ids(
+        portfolio_ids=[" PB_SEARCH_001 ", "PB_SEARCH_001", "", "PB_SEARCH_002"],
+        source_scan_limit=2,
+    ) == {"PB_SEARCH_001", "PB_SEARCH_002"}
+
+    with pytest.raises(
+        ValueError,
+        match="explicit portfolio_ids must not exceed source_scan_limit",
+    ):
+        normalize_portfolio_memory_candidate_ids(
+            portfolio_ids=["PB_SEARCH_001", "PB_SEARCH_002", "PB_SEARCH_003"],
+            source_scan_limit=2,
+        )
 
 
 def test_validate_portfolio_memory_source_scan_limit_preserves_supported_limit() -> None:

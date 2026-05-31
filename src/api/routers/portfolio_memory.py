@@ -204,17 +204,23 @@ def search_portfolio_memory_index(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
-    return search_portfolio_memory_from_sources(
-        repositories=repositories,
-        portfolio_ids=portfolio_ids,
-        event_type=normalized_event_type,
-        supportability_state=normalized_supportability_state,
-        source_system=source_system,
-        source_type=source_type,
-        limit=limit,
-        offset=offset,
-        source_scan_limit=source_scan_limit,
-    )
+    try:
+        return search_portfolio_memory_from_sources(
+            repositories=repositories,
+            portfolio_ids=portfolio_ids,
+            event_type=normalized_event_type,
+            supportability_state=normalized_supportability_state,
+            source_system=source_system,
+            source_type=source_type,
+            limit=limit,
+            offset=offset,
+            source_scan_limit=source_scan_limit,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get(

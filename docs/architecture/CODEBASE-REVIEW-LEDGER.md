@@ -1714,3 +1714,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   instead of relying on whole-tuple reverse sorting.
 - Wiki decision: no wiki source change required; this is deterministic response-order hygiene with
   no route, payload-shape, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-046: Explicit search portfolio ids were unbounded
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search request candidate bounds
+- Finding: repository source scans were bounded by `source_scan_limit`, but caller-supplied
+  `portfolio_ids` were only normalized and deduplicated. A request with many explicit identifiers
+  could force unbounded portfolio-memory assembly even when repository fan-out was constrained.
+- Action: added explicit portfolio-id normalization that rejects unique caller-supplied candidate
+  counts above `source_scan_limit`, and translated the validation error to a 422 API response.
+- Status: hardened
+- Evidence: focused search-request and API tests for duplicate/blank normalization and over-limit
+  rejection.
+- Follow-up: keep future caller-supplied candidate selectors tied to scan bounds before invoking
+  per-portfolio memory assembly.
+- Wiki decision: no wiki source change required; this is defensive request-boundary hardening with
+  no route, payload-shape, supported-feature, or operator-contract change.

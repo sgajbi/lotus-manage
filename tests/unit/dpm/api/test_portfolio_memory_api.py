@@ -2138,6 +2138,42 @@ def test_portfolio_memory_search_rejects_unsupported_event_type_filter() -> None
     assert "PM_QUALITY_SUMMARY_INVOCATION" in response.json()["detail"]
 
 
+def test_portfolio_memory_search_rejects_too_many_explicit_portfolio_ids() -> None:
+    app.dependency_overrides[get_proof_pack_repository] = lambda: InMemoryDpmProofPackRepository()
+    app.dependency_overrides[get_construction_repository] = lambda: InMemoryConstructionRepository()
+    app.dependency_overrides[get_wave_repository] = lambda: InMemoryDpmWaveRepository()
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: (
+        InMemoryDpmPmQualityScoreRunRepository()
+    )
+    app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: (
+        InMemoryDpmPmQualityReviewActionRepository()
+    )
+    app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
+        InMemoryDpmPmQualitySummaryInvocationRepository()
+    )
+    app.dependency_overrides[get_campaign_definition_repository] = lambda: (
+        InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    )
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/rebalance/portfolio-memory/search",
+            params=[
+                ("portfolio_ids", "PB_SEARCH_001"),
+                ("portfolio_ids", "PB_SEARCH_002"),
+                ("source_scan_limit", "1"),
+            ],
+        )
+
+    assert response.status_code == 422
+    assert "explicit portfolio_ids must not exceed source_scan_limit" in response.json()["detail"]
+    assert "portfolio_id_count=2" in response.json()["detail"]
+
+
 def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_scope() -> None:
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
     pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
