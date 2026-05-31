@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
-from src.api.observability import record_async_operation, record_execution_call
+from src.api.observability import record_execution_call
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -59,6 +59,9 @@ from src.api.services.rebalance_async_operation_payload import (
 )
 from src.api.services.rebalance_async_submission_payload import build_analyze_async_request_json
 from src.api.services.rebalance_async_submission import submit_analyze_async_request
+from src.api.services.rebalance_async_manual_execution import (
+    execute_analyze_async_operation_now,
+)
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
@@ -396,28 +399,11 @@ def execute_dpm_async_operation(
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     if not async_manual_execution_enabled():
         raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
-    try:
-        run_analyze_async_operation(
-            operation_id=operation_id,
-            service=service,
-            execution_mode="manual",
-        )
-    except DpmRunNotFoundError as exc:
-        detail = str(exc)
-        if detail == "DPM_ASYNC_OPERATION_NOT_EXECUTABLE":
-            record_async_operation(
-                event="execute",
-                execution_mode="manual",
-                outcome="not_executable",
-            )
-            raise DpmRebalanceAsyncOperationNotExecutableError(detail) from exc
-        record_async_operation(
-            event="execute",
-            execution_mode="manual",
-            outcome="not_found",
-        )
-        raise DpmRebalanceAsyncOperationNotFoundError(detail) from exc
-    return service.get_async_operation(operation_id=operation_id)
+    return execute_analyze_async_operation_now(
+        operation_id=operation_id,
+        service=service,
+        runner=run_analyze_async_operation,
+    )
 
 
 __all__ = [

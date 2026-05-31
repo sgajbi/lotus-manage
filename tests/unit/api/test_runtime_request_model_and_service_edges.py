@@ -7,6 +7,7 @@ from pydantic import ValidationError
 
 import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
+import src.api.services.rebalance_async_manual_execution as async_manual_execution
 import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
 import src.api.services.rebalance_async_submission as async_submission
@@ -544,6 +545,46 @@ def test_rebalance_async_submission_records_success_and_conflict() -> None:
             request_json=request_json,
             source_context=None,
             execution_mode_label="inline",
+        )
+
+
+def test_rebalance_async_manual_execution_maps_missing_and_not_executable() -> None:
+    class _StatusService:
+        def get_async_operation(self, *, operation_id: str):
+            return SimpleNamespace(operation_id=operation_id, status="SUCCEEDED")
+
+    calls: list[tuple[str, str]] = []
+
+    def _runner(**kwargs):
+        calls.append((kwargs["operation_id"], kwargs["execution_mode"]))
+
+    status = async_manual_execution.execute_analyze_async_operation_now(
+        operation_id="op_manual",
+        service=_StatusService(),
+        runner=_runner,
+    )
+
+    assert calls == [("op_manual", "manual")]
+    assert status.operation_id == "op_manual"
+
+    def _missing_runner(**_kwargs):
+        raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
+
+    with pytest.raises(service.DpmRebalanceAsyncOperationNotFoundError):
+        async_manual_execution.execute_analyze_async_operation_now(
+            operation_id="op_missing",
+            service=_StatusService(),
+            runner=_missing_runner,
+        )
+
+    def _not_executable_runner(**_kwargs):
+        raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_EXECUTABLE")
+
+    with pytest.raises(service.DpmRebalanceAsyncOperationNotExecutableError):
+        async_manual_execution.execute_analyze_async_operation_now(
+            operation_id="op_done",
+            service=_StatusService(),
+            runner=_not_executable_runner,
         )
 
 

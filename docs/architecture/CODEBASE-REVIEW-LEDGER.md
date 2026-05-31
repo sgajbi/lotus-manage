@@ -6172,3 +6172,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration and manual async execution only.
 - Wiki decision: no wiki source change required; this is internal async intake modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-244: Manual async execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_manual_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `execute_dpm_async_operation` still mixed manual execution gating with operation
+  execution, not-found/not-executable mapping, async telemetry, and final operation-status lookup.
+  This kept manual operation lifecycle edge behavior coupled to the remaining rebalance
+  orchestration module.
+- Action: extracted manual async execution into `rebalance_async_manual_execution.py`, preserving
+  manual execution telemetry, `DPM_ASYNC_OPERATION_NOT_FOUND` mapping, non-executable mapping, and
+  final status lookup. The public service wrapper still owns feature/manual gate checks.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the manual
+  async execution and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` around synchronous simulate
+  orchestration and compatibility exports only.
+- Wiki decision: no wiki source change required; this is internal manual async execution
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
