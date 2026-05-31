@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import get_campaign_definition_repository
 from src.api.routers.wave_campaign_definition_http import (
+    get_campaign_definition_response,
     list_campaign_definitions_response,
     put_campaign_definition_response,
     retire_campaign_definition_response,
@@ -31,6 +32,7 @@ from src.core.waves import (
 
 
 router = APIRouter(tags=["lotus-manage Rebalance Waves"])
+detail_router = APIRouter()
 
 
 @router.put(
@@ -141,5 +143,26 @@ def supersede_bulk_review_campaign_definition(
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,
+        repository=repository,
+    )
+
+
+@detail_router.get(
+    "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+    response_model=DpmBulkReviewCampaignDefinition,
+    status_code=status.HTTP_200_OK,
+    summary="Get bulk-review campaign definition",
+    description="Retrieves one immutable Manage-owned bulk-review campaign definition.",
+)
+def get_bulk_review_campaign_definition(
+    campaign_id: CampaignDefinitionIdPath,
+    campaign_version: CampaignDefinitionVersionPath,
+    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmBulkReviewCampaignDefinition:
+    return get_campaign_definition_response(
+        campaign_id=campaign_id,
+        campaign_version=campaign_version,
         repository=repository,
     )

@@ -1,16 +1,9 @@
 from __future__ import annotations
 
-import logging
+from fastapi import APIRouter
 
-from fastapi import APIRouter, Depends, status
-
-from src.api.dependencies import (
-    get_campaign_definition_repository,
-)
-from src.api.routers.wave_campaign_definition_http import (
-    get_campaign_definition_response,
-)
 from src.api.routers.wave_campaign_definition_routes import (
+    detail_router as campaign_definition_detail_router,
     router as campaign_definition_router,
 )
 from src.api.routers.wave_campaign_evidence_routes import (
@@ -42,44 +35,13 @@ from src.api.routers.wave_read_routes import register_wave_read_routes
 from src.api.routers.wave_read_support_routes import (
     router as wave_read_support_router,
 )
-from src.api.routers.wave_route_parameters import (
-    CampaignDefinitionIdPath,
-    CampaignDefinitionVersionPath,
-)
 from src.api.services.rebalance_simulation_service import build_core_resolver_client
-from src.core.waves import (
-    DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionRepository,
-)
 
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
-logger = logging.getLogger(__name__)
 
 router.include_router(campaign_definition_router)
 router.include_router(campaign_read_model_router)
-
-
-@router.get(
-    "/campaign-definitions/{campaign_id}/versions/{campaign_version}",
-    response_model=DpmBulkReviewCampaignDefinition,
-    status_code=status.HTTP_200_OK,
-    summary="Get bulk-review campaign definition",
-    description="Retrieves one immutable Manage-owned bulk-review campaign definition.",
-)
-def get_bulk_review_campaign_definition(
-    campaign_id: CampaignDefinitionIdPath,
-    campaign_version: CampaignDefinitionVersionPath,
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmBulkReviewCampaignDefinition:
-    return get_campaign_definition_response(
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        repository=repository,
-    )
-
-
+router.include_router(campaign_definition_detail_router)
 router.include_router(campaign_evidence_router)
 router.include_router(campaign_readiness_router)
 router.include_router(campaign_launch_router)

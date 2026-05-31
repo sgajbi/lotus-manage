@@ -2241,3 +2241,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   ownership so the main wave router becomes composition-only.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-072: Campaign definition detail route kept the main router non-compositional
+
+- Date: 2026-05-31
+- Scope: campaign definition detail route definition and main wave router composition
+- Finding: after extracting campaign, wave command, and wave read route groups, the campaign
+  definition detail endpoint was the only remaining business route implemented directly in
+  `src/api/routers/waves.py`. That kept the root router from becoming a composition-only module
+  and left campaign definition ownership split across files.
+- Action: moved the campaign definition detail route into
+  `src/api/routers/wave_campaign_definition_routes.py` using a separate detail router that is
+  mounted after campaign read-model routes, preserving the original public path order and response
+  contract. The main wave router now only composes owned route modules.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review the newly extracted route modules for repeated router construction patterns
+  and consider a lightweight route-registration convention once the split has stabilized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
