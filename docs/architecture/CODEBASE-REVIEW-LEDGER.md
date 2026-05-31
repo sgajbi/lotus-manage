@@ -1010,3 +1010,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and no-summary-text evidence.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-010: PM-quality memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run, review-action, and summary-invocation memory events
+- Finding: PM-quality event builders were embedded in `src/core/portfolio_memory/service.py`
+  beside repository filtering. The builders own private-banking PM-quality boundary semantics,
+  including no numeric score projection, no raw review reason projection, no summary text
+  projection, source refs, and artifact refs, so they are a domain projection boundary rather
+  than service orchestration.
+- Action: moved score-run, review-action, and summary-invocation event builders into
+  `src/core/portfolio_memory/pm_quality_projection.py`, leaving repository filtering and
+  portfolio membership selection in the service. Added direct tests for no-raw-score,
+  no-review-reason, and no-summary-text projection boundaries.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_projection.py`
+  plus existing portfolio-memory API tests.
+- Follow-up: review campaign workflow projection separately because campaign definition,
+  assignment, transition, and maker-checker evidence is a larger source-event-family boundary.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
