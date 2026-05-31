@@ -1053,3 +1053,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   is now the largest domain-event builder still resident in the service.
 - Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-012: Mandate memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: mandate health snapshot and monitoring exception memory events
+- Finding: mandate event builders were embedded in `src/core/portfolio_memory/service.py` beside
+  mandate repository lookup. The builders own source-lineage projection, canonical content hashing,
+  supportability state mapping, evidence refs, and monitoring threshold metadata, so they are a
+  domain projection boundary rather than service orchestration.
+- Action: moved mandate health and monitoring exception event builders into
+  `src/core/portfolio_memory/mandate_projection.py`, leaving repository retrieval in the service.
+  Added direct tests for source lineage, content hash preservation, supportability mapping,
+  monitoring-run artifact refs, and measured/threshold metadata.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_mandate_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review remaining service responsibilities for candidate scanning and repository
+  orchestration now that all major event-family projection builders have dedicated modules.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
