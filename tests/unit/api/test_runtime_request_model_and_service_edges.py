@@ -9,6 +9,7 @@ import src.api.services.core_resolver_service as core_resolver_service
 import src.api.services.rebalance_async_config as async_config
 import src.api.services.rebalance_async_operation_completion as async_completion
 import src.api.services.rebalance_async_operation_payload as async_payload
+import src.api.services.rebalance_async_submission as async_submission
 import src.api.services.rebalance_async_submission_payload as async_submission_payload
 import src.api.services.rebalance_batch_execution as batch_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
@@ -37,7 +38,11 @@ from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
     DpmPolicyPackDefinition,
 )
-from src.core.rebalance_runs import DpmRunNotFoundError
+from src.core.rebalance_runs import (
+    DpmAsyncAcceptedResponse,
+    DpmAsyncOperationConflictError,
+    DpmRunNotFoundError,
+)
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from tests.shared.factories import valid_api_payload
 
@@ -490,6 +495,56 @@ def test_rebalance_async_submission_payload_preserves_policy_context() -> None:
     assert request_json["batch_request"]["scenarios"] == {
         "baseline": {"description": None, "options": {}}
     }
+
+
+def test_rebalance_async_submission_records_success_and_conflict() -> None:
+    accepted = DpmAsyncAcceptedResponse(
+        operation_id="op_submit_001",
+        operation_type="ANALYZE_SCENARIOS",
+        status="PENDING",
+        correlation_id="corr-submit",
+        created_at="2026-06-01T00:00:00+00:00",
+        status_url="/api/v1/rebalance/operations/op_submit_001",
+        execute_url="/api/v1/rebalance/operations/op_submit_001/execute",
+    )
+
+    class _SubmitService:
+        captured: tuple[str | None, dict[str, object]] | None = None
+
+        def submit_analyze_async(self, *, correlation_id: str | None, request_json: dict):
+            self.captured = (correlation_id, request_json)
+            return accepted
+
+    submit_service = _SubmitService()
+    request_json = {"batch_request": {}, "policy_context": {}, "source_context": None}
+
+    assert (
+        async_submission.submit_analyze_async_request(
+            service=submit_service,
+            correlation_id="corr-submit",
+            request_json=request_json,
+            source_context=None,
+            execution_mode_label="inline",
+        )
+        is accepted
+    )
+    assert submit_service.captured == ("corr-submit", request_json)
+
+    class _ConflictService:
+        def submit_analyze_async(self, *, correlation_id: str | None, request_json: dict):
+            raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
+
+    with pytest.raises(
+        service.DpmRebalanceAsyncOperationConflictError,
+        match="DPM_ASYNC_OPERATION_CORRELATION_CONFLICT",
+    ):
+        async_submission.submit_analyze_async_request(
+            service=_ConflictService(),
+            correlation_id="corr-submit",
+            request_json=request_json,
+            source_context=None,
+            execution_mode_label="inline",
+        )
 
 
 def test_rebalance_async_operation_completion_records_success_and_failure() -> None:

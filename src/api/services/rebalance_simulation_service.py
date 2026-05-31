@@ -58,6 +58,7 @@ from src.api.services.rebalance_async_operation_payload import (
     resolve_analyze_async_execution_payload,
 )
 from src.api.services.rebalance_async_submission_payload import build_analyze_async_request_json
+from src.api.services.rebalance_async_submission import submit_analyze_async_request
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_supportability_write import record_simulation_supportability
 from src.api.services.rebalance_run_support_service import (
@@ -84,7 +85,6 @@ from src.core.rebalance.policy_packs import (
 )
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
-    DpmAsyncOperationConflictError,
     DpmAsyncOperationStatusResponse,
     DpmRunNotFoundError,
     DpmRunSupportService,
@@ -365,42 +365,21 @@ def submit_and_optionally_execute_async_analysis(
         policy_pack.source,
         policy_pack.selected_policy_pack_id,
     )
-    try:
-        accepted = service.submit_analyze_async(
-            correlation_id=correlation_id,
-            request_json=build_analyze_async_request_json(
-                request=request,
-                policy_pack_id=policy_pack_id,
-                tenant_default_policy_pack_id=tenant_default_policy_pack_id,
-                tenant_id=tenant_id,
-                source_context=source_context,
-            ),
-        )
-    except DpmAsyncOperationConflictError as exc:
-        record_async_operation(
-            event="submit",
-            execution_mode=resolve_async_execution_mode().lower(),
-            outcome="conflict",
-        )
-        record_execution_call(
-            operation="analyze_async",
-            input_mode=source_input_mode(source_context),
-            outcome="conflict",
-            result_status="failed",
-        )
-        raise DpmRebalanceAsyncOperationConflictError(str(exc)) from exc
-    record_async_operation(
-        event="submit",
-        execution_mode=resolve_async_execution_mode().lower(),
-        outcome="accepted",
+    execution_mode = resolve_async_execution_mode()
+    accepted = submit_analyze_async_request(
+        service=service,
+        correlation_id=correlation_id,
+        request_json=build_analyze_async_request_json(
+            request=request,
+            policy_pack_id=policy_pack_id,
+            tenant_default_policy_pack_id=tenant_default_policy_pack_id,
+            tenant_id=tenant_id,
+            source_context=source_context,
+        ),
+        source_context=source_context,
+        execution_mode_label=execution_mode.lower(),
     )
-    record_execution_call(
-        operation="analyze_async",
-        input_mode=source_input_mode(source_context),
-        outcome="accepted",
-        result_status="accepted",
-    )
-    if resolve_async_execution_mode() == "ACCEPT_ONLY":
+    if execution_mode == "ACCEPT_ONLY":
         return accepted
     run_analyze_async_operation(
         operation_id=accepted.operation_id,

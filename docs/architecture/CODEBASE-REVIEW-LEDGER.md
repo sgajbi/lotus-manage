@@ -6145,3 +6145,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   longer part of a supported public or test contract.
 - Wiki decision: no wiki source change required; this removes internal stale compatibility state
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-243: Async analyze submit helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_submission.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `submit_and_optionally_execute_async_analysis` still mixed support-service submission,
+  correlation-conflict mapping, async submit telemetry, and execution telemetry with feature
+  gating and inline/accept-only execution flow. This kept async intake side effects coupled to the
+  larger orchestration function.
+- Action: extracted support-service submit handling into `rebalance_async_submission.py`, including
+  accepted/conflict telemetry and `DpmRebalanceAsyncOperationConflictError` mapping. The main
+  async orchestration now builds the persisted payload, submits through the helper, and then only
+  decides whether to execute inline. Public routes, OpenAPI output, accepted response shape,
+  conflict detail, and telemetry labels were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  submission and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` around synchronous simulate
+  orchestration and manual async execution only.
+- Wiki decision: no wiki source change required; this is internal async intake modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
