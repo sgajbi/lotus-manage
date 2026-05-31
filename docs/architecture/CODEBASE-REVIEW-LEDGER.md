@@ -4436,3 +4436,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modules after lifecycle extraction has stabilized.
 - Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-173: Campaign definition helper mixed write construction with read lookup and listing
+
+- Date: 2026-05-31
+- Scope:
+  `PUT/GET /api/v1/rebalance/waves/campaign-definitions` helper boundaries and shared definition
+  lookup imports.
+- Finding: `wave_campaign_definition_http.py` still mixed definition write construction with read
+  lookup/list pagination and also served as the lookup import point for downstream campaign helpers.
+  That made unrelated action, launch, and read helpers depend on a compatibility module instead of a
+  focused definition lookup boundary.
+- Action: moved definition lookup/get/list helpers into
+  `src/api/routers/wave_campaign_definition_read_http.py`, moved PUT response construction into
+  `src/api/routers/wave_campaign_definition_write_http.py`, updated routes and downstream helpers
+  to import the focused modules directly, and kept `wave_campaign_definition_http.py`
+  import-compatible. Public paths, request/response models, not-found/conflict/value mapping,
+  pagination count behavior, and route contracts were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_definition_http.py` as compatibility-only unless a later cleanup
+  proves all downstream imports have moved and external import compatibility can be retired.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

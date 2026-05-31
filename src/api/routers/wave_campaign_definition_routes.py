@@ -3,14 +3,16 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_definition_http import (
+from src.api.routers.wave_campaign_definition_read_http import (
     get_campaign_definition_response,
     list_campaign_definitions_response,
-    put_campaign_definition_response,
 )
 from src.api.routers.wave_campaign_definition_lifecycle_http import (
     retire_campaign_definition_response,
     supersede_campaign_definition_response,
+)
+from src.api.routers.wave_campaign_definition_write_http import (
+    put_campaign_definition_response,
 )
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionPage,

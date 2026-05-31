@@ -5,7 +5,7 @@ from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_value_http_exception,
 )
-from src.api.routers.wave_campaign_definition_http import get_campaign_definition_or_404
+from src.api.routers.wave_campaign_definition_read_http import get_campaign_definition_or_404
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
