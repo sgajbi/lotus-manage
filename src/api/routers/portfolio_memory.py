@@ -195,7 +195,7 @@ def search_portfolio_memory_index(
         and normalized_event_type not in _PORTFOLIO_MEMORY_EVENT_TYPE_SET
     ):
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=(
                 f"UNSUPPORTED_PORTFOLIO_MEMORY_EVENT_TYPE: {normalized_event_type}; "
                 f"supported_event_types={','.join(_PORTFOLIO_MEMORY_EVENT_TYPES)}"

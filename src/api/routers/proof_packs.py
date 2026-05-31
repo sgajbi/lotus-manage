@@ -184,7 +184,7 @@ def generate_proof_pack(
         if request.source_type == "REBALANCE_RUN":
             if not request.rebalance_run_id:
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED",
                 )
             proof_pack = proof_pack_service.generate_proof_pack_from_run(
@@ -202,7 +202,7 @@ def generate_proof_pack(
         else:
             if not request.alternative_set_id or not request.selected_alternative_id:
                 raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                     detail="DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED",
                 )
             proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(

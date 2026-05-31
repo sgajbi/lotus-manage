@@ -1614,3 +1614,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   repository fan-out.
 - Wiki decision: no wiki source change required; this is internal defensive validation with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-040: API routes used deprecated 422 status constants
+
+- Date: 2026-05-31
+- Scope: portfolio-memory and proof-pack API validation responses
+- Finding: portfolio-memory and proof-pack routes still raised validation errors with
+  `HTTP_422_UNPROCESSABLE_ENTITY`, which now emits framework deprecation warnings while other
+  manage routes already use `HTTP_422_UNPROCESSABLE_CONTENT`.
+- Action: replaced the deprecated route-level status constants with the current FastAPI/Starlette
+  422 constant while preserving the public HTTP status code and error payloads.
+- Status: hardened
+- Evidence: focused portfolio-memory and proof-pack API tests plus the portfolio-memory lane.
+- Follow-up: keep new validation routes on `HTTP_422_UNPROCESSABLE_CONTENT` and treat deprecation
+  warnings in focused tests as cleanup candidates rather than tolerated noise.
+- Wiki decision: no wiki source change required; this is route implementation hygiene with no API
+  status-code, payload, supported-feature, or operator-contract change.
