@@ -3789,3 +3789,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembly seams or move to the next large wave route surface.
 - Wiki decision: no wiki source change required; this is internal source-resolution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-144: Campaign discovery read model was mixed with queue projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-discovery`.
+- Finding: `src/api/routers/wave_campaign_read_model_routes.py` mixed persisted campaign discovery
+  with operating queue, approval inbox, workflow board, assignment plan, and automation readiness
+  projections. Discovery owns a narrower read model: persisted definition lookup, active-on
+  filtering, expired-row filtering, and universe-posture discovery item construction.
+- Action: moved campaign discovery route registration into
+  `src/api/routers/wave_campaign_discovery_routes.py` and included it before the remaining
+  read-model routes, preserving public path, response model, Swagger guidance, query parameters,
+  repository dependency, query loading, filtering behavior, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split the operating queue and attention/workflow projections from the remaining
+  campaign read-model router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
