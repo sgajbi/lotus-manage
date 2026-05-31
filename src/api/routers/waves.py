@@ -39,6 +39,9 @@ from src.api.routers.wave_campaign_definition_routes import (
 from src.api.routers.wave_campaign_evidence_routes import (
     router as campaign_evidence_router,
 )
+from src.api.routers.wave_campaign_launch_routes import (
+    router as campaign_launch_router,
+)
 from src.api.routers.wave_campaign_read_model_routes import (
     router as campaign_read_model_router,
 )
@@ -52,12 +55,6 @@ from src.api.routers.wave_route_parameters import (
     WaveCreateIdempotencyKeyHeader,
     WaveIdPath,
     WaveItemIdPath,
-)
-from src.api.routers.wave_campaign_models import (
-    DpmBulkReviewCampaignDefinitionLaunchRequest,
-)
-from src.api.routers.wave_campaign_launch_http import (
-    launch_bulk_review_campaign_definition_response,
 )
 from src.api.routers.wave_create_preview_http import create_wave_response, preview_wave_response
 from src.api.routers.wave_openapi_examples import (
@@ -128,40 +125,7 @@ def get_bulk_review_campaign_definition(
 
 router.include_router(campaign_evidence_router)
 router.include_router(campaign_readiness_router)
-
-
-@router.post(
-    "/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch",
-    response_model=DpmWaveResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Launch bulk-review campaign definition",
-    description=(
-        "Creates a durable `BULK_REVIEW_CAMPAIGN` wave from one persisted Manage-owned "
-        "`BulkReviewCampaignDefinition:v1` only when its launch package is ready. The endpoint "
-        "uses the persisted source-backed candidate set and deterministic launch idempotency key; "
-        "it does not discover the global portfolio universe, recalculate membership, run "
-        "maker-checker workflow, approve trades, route orders, or claim OMS execution."
-    ),
-)
-def launch_bulk_review_campaign_definition(
-    campaign_id: CampaignDefinitionIdPath,
-    campaign_version: CampaignDefinitionVersionPath,
-    request: DpmBulkReviewCampaignDefinitionLaunchRequest,
-    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
-    ),
-) -> DpmWaveResponse:
-    return launch_bulk_review_campaign_definition_response(
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        mandate_repository=mandate_repository,
-        wave_repository=wave_repository,
-        campaign_definition_repository=campaign_definition_repository,
-        core_resolver_factory=build_core_resolver_client,
-    )
+router.include_router(campaign_launch_router)
 
 
 @router.post(

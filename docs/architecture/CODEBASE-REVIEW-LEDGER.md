@@ -2071,3 +2071,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   routing when the next slice can preserve command dependency wiring clearly.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-064: Campaign launch route lived beside generic wave commands
+
+- Date: 2026-05-31
+- Scope: durable bulk-review campaign definition launch route definition
+- Finding: the campaign-definition launch endpoint still lived directly in
+  `src/api/routers/waves.py` beside generic wave preview/create routes. The route is a campaign
+  command with campaign-definition repository wiring, launch-package readiness, and deterministic
+  launch idempotency semantics, so keeping it in the generic wave controller blurred ownership.
+- Action: moved the durable campaign launch route into
+  `src/api/routers/wave_campaign_launch_routes.py` and mounted it after the campaign readiness
+  read router, preserving the original public path order and response contract.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review generic wave preview/create/search/detail routes next, because the remaining
+  controller still mixes command, search, detail, item, and workflow subdomains.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
