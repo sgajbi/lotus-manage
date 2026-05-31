@@ -2220,3 +2220,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   group, then move the campaign definition detail route to campaign-definition ownership.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-071: Wave read-support routes lived in the main router
+
+- Date: 2026-05-31
+- Scope: durable wave proof-pack posture, report-input, and supportability route definitions
+- Finding: wave proof-pack posture, report-input, and supportability reads still lived directly in
+  `src/api/routers/waves.py`. These endpoints are read-support views over persisted wave evidence,
+  proof-pack linkage, report materialization inputs, and product-safe diagnostics; keeping them in
+  the root router mixed operational reads with route composition.
+- Action: moved the read-support route group into
+  `src/api/routers/wave_read_support_routes.py` and mounted it after workflow commands, preserving
+  public path order and response contracts. The child router inherits parent tags to avoid
+  duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: move the remaining campaign definition detail route into campaign-definition route
+  ownership so the main wave router becomes composition-only.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
