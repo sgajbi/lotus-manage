@@ -3424,3 +3424,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pattern.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-127: Portfolio-memory search was mixed with detail reads
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/portfolio-memory/search`.
+- Finding: `src/api/routers/portfolio_memory.py` mixed search-index behavior with exact event
+  lookup, detail timeline reads, and source repository dependency wiring. Search owns filter
+  vocabulary guidance, supportability-state pattern validation, source-scan bounds, normalization,
+  pagination, and validation-to-422 mapping; detail reads own a different bounded timeline
+  contract.
+- Action: moved portfolio-memory search route registration into
+  `src/api/routers/portfolio_memory_search_routes.py`, preserving public path, response model,
+  Swagger guidance, supported event/supportability descriptions, query bounds, repository-bundle
+  dependency wiring, filter normalization, service call, and validation error mapping.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split exact event lookup and detail timeline reads from the remaining
+  portfolio-memory router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
