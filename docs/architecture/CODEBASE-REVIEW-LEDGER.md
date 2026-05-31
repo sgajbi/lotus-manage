@@ -1821,3 +1821,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   wave item id routes in a separate slice.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
   existing routes with no behavior, payload, or supported-feature change.
+
+## BACKEND-REVIEW-20260531-052: Durable wave path parameters lacked reusable API documentation
+
+- Date: 2026-05-31
+- Scope: durable rebalance wave route path parameters in `src/api/routers/waves.py`
+- Finding: durable wave endpoints still used bare `wave_id` and `wave_item_id` path parameters
+  after campaign-definition path parameters were standardized. That left core wave detail,
+  item-selection, workflow, proof-pack, report-input, and supportability routes with weaker
+  Swagger parameter descriptions than the campaign route family.
+- Action: added reusable FastAPI `Annotated` path aliases for durable wave id and wave item id,
+  applied them across the durable wave route family, and regenerated the API vocabulary inventory.
+- Status: hardened
+- Evidence: OpenAPI regression coverage in `tests/unit/dpm/api/test_waves_api.py`, focused Ruff
+  checks, source-file mypy on `src/api/routers/waves.py`, OpenAPI quality gate, and regenerated
+  API vocabulary inventory validation.
+- Follow-up: continue using shared path-parameter aliases when new wave subroutes are added.
+- Wiki decision: no wiki source change required; this is Swagger/API documentation hardening for
+  existing routes with no behavior, payload, or supported-feature change.

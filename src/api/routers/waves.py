@@ -164,6 +164,20 @@ CampaignAssignmentTaskRefPath = Annotated[
         examples=["BRC-TASK-2026-05-001"],
     ),
 ]
+WaveIdPath = Annotated[
+    str,
+    Path(
+        description="Durable Manage rebalance wave identifier.",
+        examples=["dwv_001"],
+    ),
+]
+WaveItemIdPath = Annotated[
+    str,
+    Path(
+        description="Durable Manage rebalance wave item identifier.",
+        examples=["dwi_001"],
+    ),
+]
 
 
 @router.put(
@@ -1493,7 +1507,7 @@ def search_waves(
     },
 )
 def get_wave_detail(
-    wave_id: str,
+    wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveDetailResponse:
     return get_wave_detail_response(
@@ -1518,7 +1532,7 @@ def get_wave_detail(
     },
 )
 def get_wave_items(
-    wave_id: str,
+    wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveItemsResponse:
     return get_wave_items_response(
@@ -1587,7 +1601,7 @@ def get_wave_items(
     },
 )
 def source_check_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveSourceCheckRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1628,7 +1642,7 @@ def source_check_wave(
     },
 )
 def simulate_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveSimulationRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1672,8 +1686,8 @@ def simulate_wave(
     },
 )
 def select_wave_item_alternative(
-    wave_id: str,
-    wave_item_id: str,
+    wave_id: WaveIdPath,
+    wave_item_id: WaveItemIdPath,
     request: DpmWaveSelectionRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1720,7 +1734,7 @@ def select_wave_item_alternative(
     },
 )
 def approve_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1759,7 +1773,7 @@ def approve_wave(
     },
 )
 def stage_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1797,7 +1811,7 @@ def stage_wave(
     },
 )
 def handoff_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1838,7 +1852,7 @@ def handoff_wave(
     },
 )
 def cancel_wave(
-    wave_id: str,
+    wave_id: WaveIdPath,
     request: DpmWaveWorkflowCommandRequest,
     x_correlation_id: Annotated[
         str | None,
@@ -1874,7 +1888,7 @@ def cancel_wave(
     },
 )
 def get_wave_proof_pack_posture(
-    wave_id: str,
+    wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveProofPackPostureResponse:
     return get_wave_proof_pack_posture_response(
@@ -1907,7 +1921,7 @@ def get_wave_proof_pack_posture(
     },
 )
 def get_wave_report_input(
-    wave_id: str,
+    wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
     outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
@@ -1939,7 +1953,7 @@ def get_wave_report_input(
     },
 )
 def get_wave_supportability(
-    wave_id: str,
+    wave_id: WaveIdPath,
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveSupportabilityResponse:
     return get_wave_supportability_response(

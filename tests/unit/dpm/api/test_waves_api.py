@@ -6255,6 +6255,9 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
     ]["post"]
+    item_selection = openapi["paths"][
+        "/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select"
+    ]["post"]
     assert preview["tags"] == ["lotus-manage Rebalance Waves"]
     assert create["tags"] == ["lotus-manage Rebalance Waves"]
     assert search["tags"] == ["lotus-manage Rebalance Waves"]
@@ -6337,3 +6340,13 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         for parameter in assignment_transition["parameters"]
     }
     assert assignment_parameters["task_ref"] == "Stable campaign assignment task reference."
+    detail_parameters = {
+        parameter["name"]: parameter["description"] for parameter in detail["parameters"]
+    }
+    assert detail_parameters["wave_id"] == "Durable Manage rebalance wave identifier."
+    selection_parameters = {
+        parameter["name"]: parameter["description"] for parameter in item_selection["parameters"]
+    }
+    assert selection_parameters["wave_item_id"] == (
+        "Durable Manage rebalance wave item identifier."
+    )
