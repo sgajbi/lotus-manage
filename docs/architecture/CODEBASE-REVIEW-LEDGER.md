@@ -3594,3 +3594,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   this behavior-preserving builder split.
 - Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-135: Integration capability schemas were embedded in route code
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/integration/capabilities` response schemas and OpenAPI examples.
+- Finding: `src/api/routers/integration_capabilities.py` mixed the gateway-facing capability route
+  with contract schemas, consumer vocabulary, and a long OpenAPI example payload. This made the
+  runtime feature-resolution logic harder to review separately from the published control-plane
+  contract.
+- Action: moved the consumer type alias, feature/workflow/response models, and capabilities
+  response examples into `src/api/routers/integration_capabilities_models.py`, preserving schema
+  names, field descriptions, examples, supported consumer literals, and OpenAPI example content.
+- Status: hardened
+- Evidence: focused integration-capabilities API regression
+  (`tests/unit/dpm/api/test_integration_capabilities_api.py` plus health contract checks), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the remaining integration-capabilities runtime helpers for a similarly bounded
+  feature-resolution extraction.
+- Wiki decision: no wiki source change required; this is internal schema modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
