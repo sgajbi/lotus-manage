@@ -1984,3 +1984,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Wiki decision: no wiki source change required; this is Swagger/API documentation and controller
   maintainability hardening for an existing route with no behavior, payload, or supported-feature
   change.
+
+## BACKEND-REVIEW-20260531-060: Campaign read-model routes lived in the monolithic wave router
+
+- Date: 2026-05-31
+- Scope: campaign discovery, operating queue, approval inbox, workflow board, assignment plan, and
+  workflow automation route definitions
+- Finding: read-only front-office campaign read-model routes still lived in
+  `src/api/routers/waves.py` after their query contracts and query loader were extracted. That kept
+  queue/projection route ownership mixed with campaign definition commands and durable wave command
+  routes in the same large controller module.
+- Action: moved the campaign read-model route group into
+  `src/api/routers/wave_campaign_read_model_routes.py` and mounted it from the main wave router
+  without changing route paths or response contracts.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and regenerated API vocabulary inventory
+  validation.
+- Follow-up: continue extracting route groups by ownership boundary before touching deeper service
+  orchestration, so route registration stays easy to verify.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
