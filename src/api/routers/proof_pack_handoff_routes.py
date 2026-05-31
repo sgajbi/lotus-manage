@@ -10,6 +10,7 @@ from src.api.dependencies import (
     get_proof_pack_repository,
     get_wave_repository,
 )
+from src.api.routers.proof_pack_http import proof_pack_http_exception
 from src.api.routers.proof_packs import router
 from src.api.services import proof_pack_service
 from src.core.mandate_repository import DpmMandateRepository
@@ -49,7 +50,7 @@ def get_proof_pack_report_input(
             mandate_repository=mandate_repository,
         )
     except Exception as exc:
-        http_exc = proof_pack_service.to_api_http_exception(exc)
+        http_exc = proof_pack_http_exception(exc)
         raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc
 
 
@@ -83,5 +84,5 @@ def get_proof_pack_ai_evidence_input(
             mandate_repository=mandate_repository,
         )
     except Exception as exc:
-        http_exc = proof_pack_service.to_api_http_exception(exc)
+        http_exc = proof_pack_http_exception(exc)
         raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc

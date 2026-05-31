@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from fastapi import HTTPException, status
-
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
@@ -28,10 +26,7 @@ from src.core.proof_packs.models import (
     DpmProofPackEvidenceRef,
     DpmProofPackStoredRef,
 )
-from src.core.proof_packs.repository import (
-    DpmProofPackConflictError,
-    DpmProofPackRepository,
-)
+from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
@@ -335,26 +330,6 @@ def ensure_handoff_refs(
     return _hydrate_handoff_refs(
         proof_pack=proof_pack,
         proof_pack_repository=proof_pack_repository,
-    )
-
-
-def to_api_http_exception(exc: Exception) -> HTTPException:
-    if isinstance(exc, DpmProofPackConflictError):
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    if isinstance(exc, DpmRunNotFoundError):
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    if isinstance(exc, ProofPackSourceValidationError):
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    if isinstance(
-        exc,
-        (
-            DpmProofPackReportInputNotGeneratedError,
-            DpmProofPackAiEvidenceInputNotGeneratedError,
-        ),
-    ):
-        return HTTPException(status_code=status.HTTP_424_FAILED_DEPENDENCY, detail=str(exc))
-    return HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__
     )
 
 

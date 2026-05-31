@@ -5513,3 +5513,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   structured selector-specific detail payloads instead of mandate refresh strings.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-221: Proof-pack service leaked HTTP translation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/proof_pack_service.py`, `src/api/routers/proof_pack_http.py`,
+  `src/api/routers/proof_pack_generate_routes.py`,
+  `src/api/routers/proof_pack_read_routes.py`,
+  `src/api/routers/proof_pack_handoff_routes.py`, and
+  `tests/unit/dpm/proof_packs/test_proof_pack_service.py`.
+- Finding: `proof_pack_service` imported FastAPI and returned `HTTPException` objects from
+  `to_api_http_exception()`. That kept transport-specific error translation inside an API service
+  that otherwise owns proof-pack orchestration and handoff reference hydration.
+- Action: moved proof-pack exception-to-HTTP mapping into the router helper
+  `proof_pack_http.py`, reused it from proof-pack generate/read/handoff routes, and updated the
+  focused mapping regression to assert the router-layer helper. Public paths, response models,
+  OpenAPI output, and existing `404`/`409`/`424`/`500` details were preserved.
+- Status: hardened
+- Evidence: proof-pack service regression
+  (`tests/unit/dpm/proof_packs/test_proof_pack_service.py`), proof-pack router/service Ruff checks,
+  router-wide mypy, no FastAPI transport imports in `proof_pack_service.py`, OpenAPI quality gate,
+  and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect construction and rebalance simulation API services for the same FastAPI
+  transport leakage in separate slices; those have larger route/service seams.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

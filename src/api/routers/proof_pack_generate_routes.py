@@ -14,6 +14,7 @@ from src.api.routers.proof_pack_models import (
     DpmProofPackGenerateRequest,
     DpmProofPackGenerateResponse,
 )
+from src.api.routers.proof_pack_http import proof_pack_http_exception
 from src.api.routers.proof_packs import router
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import proof_pack_service
@@ -122,7 +123,7 @@ def generate_proof_pack(
     except HTTPException:
         raise
     except Exception as exc:
-        http_exc = proof_pack_service.to_api_http_exception(exc)
+        http_exc = proof_pack_http_exception(exc)
         raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc
 
 
