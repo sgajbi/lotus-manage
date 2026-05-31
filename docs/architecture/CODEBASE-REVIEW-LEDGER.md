@@ -2462,3 +2462,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   a composition/service-factory boundary.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-082: Run inventory and summary routes kept supportability router non-compositional
+
+- Date: 2026-05-31
+- Scope: DPM run inventory listing and store-wide supportability summary route registration.
+- Finding: after artifact, support-bundle, and lookup route extraction, the root
+  `src/api/routers/rebalance_runs.py` still directly implemented the run inventory and
+  supportability summary endpoints. That kept request/Swagger/controller logic mixed with the
+  supportability service factory and feature-gate helpers.
+- Action: moved run inventory and supportability summary route registration into
+  `src/api/routers/rebalance_runs_inventory_routes.py`, preserving public paths, response models,
+  Swagger descriptions, unsupported-query rejection, supportability feature gates, retention
+  configuration, and action-register observability recording.
+- Status: hardened
+- Evidence: focused DPM API inventory/summary regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability_summary or support_runs_list"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the supportability parent module for service-factory naming and explicit route
+  composition ordering once operations/workflow modules are aligned with the newer extracted route
+  module pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
