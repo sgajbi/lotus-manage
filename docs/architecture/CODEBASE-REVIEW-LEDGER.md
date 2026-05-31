@@ -928,3 +928,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   evidence.
 - Wiki decision: no wiki source change required; this is internal domain projection cleanup with no
   API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-006: Construction memory event projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: construction alternative set and selected-alternative portfolio-memory event projection
+- Finding: construction event projection was embedded in `src/core/portfolio_memory/service.py`
+  beside repository scanning. The event builders own source-safe projection details such as request
+  hash reuse, method counts, selected-method metadata, artifact refs, and explicit no-raw-payload
+  flags, so they are a domain projection boundary rather than service orchestration.
+- Action: extracted construction alternative set, construction selection, and alternative-set
+  content-hash projection into `src/core/portfolio_memory/construction_projection.py`, leaving
+  repository retrieval in the service. Added direct unit coverage for request-hash preservation,
+  method counts, selected-alternative metadata, artifact refs, fallback content hashing, and
+  no-raw-payload projection flags.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_construction_projection.py`
+  plus existing portfolio-memory API tests.
+- Follow-up: continue extracting source-event-family projection modules only where repository
+  scanning can remain separated from pure event construction.
+- Wiki decision: no wiki source change required; this is internal modularity cleanup with no API,
+  supported-feature, or operator-contract change.
