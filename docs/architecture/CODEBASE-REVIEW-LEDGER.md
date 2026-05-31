@@ -4531,3 +4531,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   route aggregator once compatibility-only helper modules are stable.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-177: Campaign definition routes mixed lifecycle commands with create/read routes
+
+- Date: 2026-05-31
+- Scope:
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`.
+- Finding: `wave_campaign_definition_routes.py` still mixed lifecycle command endpoints with
+  definition create/list/get endpoints after the lifecycle response helper had already been
+  separated. That kept route ownership broader than the underlying helper boundary.
+- Action: moved retire and supersede endpoints into
+  `src/api/routers/wave_campaign_definition_lifecycle_routes.py` and included that router
+  immediately after the campaign definition create/list router in `waves.py`. Public paths,
+  response models, route order, dependency wiring, Swagger descriptions, and lifecycle behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether definition detail/read routing should be grouped under a campaign
+  definition route aggregator once the remaining route modules are stable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -6,6 +6,9 @@ from src.api.routers.wave_campaign_definition_routes import (
     detail_router as campaign_definition_detail_router,
     router as campaign_definition_router,
 )
+from src.api.routers.wave_campaign_definition_lifecycle_routes import (
+    router as campaign_definition_lifecycle_router,
+)
 from src.api.routers.wave_campaign_evidence_routes import (
     router as campaign_evidence_router,
 )
@@ -43,6 +46,7 @@ from src.api.services.rebalance_simulation_service import build_core_resolver_cl
 router = APIRouter(prefix="/rebalance/waves", tags=["lotus-manage Rebalance Waves"])
 
 router.include_router(campaign_definition_router)
+router.include_router(campaign_definition_lifecycle_router)
 router.include_router(campaign_read_model_router)
 router.include_router(campaign_definition_detail_router)
 router.include_router(campaign_evidence_router)
