@@ -1280,3 +1280,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   same source-family collector pattern before introducing any broader orchestration abstraction.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-023: Proof-pack memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: proof-pack repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned proof-pack listing and proof-pack
+  memory event fan-out. That kept proof-pack source-family collection in the top-level memory
+  service instead of beside proof-pack projection, and left portfolio filtering plus timeline
+  fan-out without direct source-family collector tests.
+- Action: extracted proof-pack collection to `src/core/portfolio_memory/proof_pack_collection.py`
+  and updated the service to delegate proof-pack memory event collection. Added focused tests
+  proving portfolio-filtered proof-pack collection and fan-out to created plus all decision-timeline
+  memory events.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_proof_pack_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: review remaining direct outcome-review traversal in `service.py` for the same
+  source-family collector pattern before introducing any broader orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.

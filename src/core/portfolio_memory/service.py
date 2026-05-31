@@ -35,11 +35,11 @@ from src.core.portfolio_memory.mandate_collection import (
 from src.core.portfolio_memory.pm_quality_collection import (
     pm_quality_memory_events as _pm_quality_memory_events,
 )
+from src.core.portfolio_memory.proof_pack_collection import (
+    proof_pack_memory_events as _proof_pack_memory_events,
+)
 from src.core.portfolio_memory.outcome_projection import (
     outcome_review_events as _outcome_review_events,
-)
-from src.core.portfolio_memory.proof_pack_projection import (
-    proof_pack_events as _proof_pack_events,
 )
 from src.core.portfolio_memory.search_filters import (
     normalize_portfolio_memory_search_filter,
@@ -76,9 +76,13 @@ def build_portfolio_memory(
 
     generated_at = generated_at or datetime.now(timezone.utc)
     events: list[DpmPortfolioMemoryEvent] = []
-    proof_packs = proof_pack_repository.list_proof_packs(portfolio_id=portfolio_id, limit=limit)
-    for proof_pack in proof_packs:
-        events.extend(_proof_pack_events(proof_pack))
+    events.extend(
+        _proof_pack_memory_events(
+            portfolio_id=portfolio_id,
+            proof_pack_repository=proof_pack_repository,
+            limit=limit,
+        )
+    )
 
     if mandate_repository is not None:
         events.extend(
