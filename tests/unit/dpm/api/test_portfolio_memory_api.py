@@ -1740,6 +1740,8 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "Supported states:" in parameters["supportability_state"]["description"]
     assert "`READY`" in parameters["supportability_state"]["description"]
     assert "`PENDING_REVIEW`" in parameters["supportability_state"]["description"]
+    supportability_schema = str(parameters["supportability_state"]["schema"])
+    assert "READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY" in supportability_schema
     assert parameters["limit"]["schema"]["default"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_DEFAULT
     assert parameters["limit"]["schema"]["minimum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MIN
     assert parameters["limit"]["schema"]["maximum"] == PORTFOLIO_MEMORY_SEARCH_LIMIT_MAX

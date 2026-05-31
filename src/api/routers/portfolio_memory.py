@@ -70,6 +70,9 @@ _SUPPORTED_EVENT_TYPE_DESCRIPTION = ", ".join(
 _SUPPORTED_SUPPORTABILITY_STATE_DESCRIPTION = ", ".join(
     f"`{state}`" for state in PORTFOLIO_MEMORY_SUPPORTED_SUPPORTABILITY_STATES
 )
+_SUPPORTED_SUPPORTABILITY_STATE_PATTERN = (
+    r"^\s*(" + "|".join(PORTFOLIO_MEMORY_SUPPORTED_SUPPORTABILITY_STATES) + r")\s*$"
+)
 
 
 def get_portfolio_memory_source_repositories(
@@ -146,7 +149,7 @@ def search_portfolio_memory_index(
     ),
     supportability_state: str | None = Query(
         default=None,
-        pattern=r"^\s*(READY|PENDING_REVIEW|DEGRADED|BLOCKED|EMPTY)\s*$",
+        pattern=_SUPPORTED_SUPPORTABILITY_STATE_PATTERN,
         description=(
             "Optional aggregate supportability-state filter. Leading and trailing whitespace is "
             "normalized before matching. Supported states: "

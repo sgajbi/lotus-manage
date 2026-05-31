@@ -1680,3 +1680,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   portfolio-memory search filters are added.
 - Wiki decision: no wiki source change required; this improves generated OpenAPI guidance without
   changing routes, payloads, supported features, or operator wiki truth.
+
+## BACKEND-REVIEW-20260531-044: Supportability query regex duplicated request vocabulary
+
+- Date: 2026-05-31
+- Scope: portfolio-memory search OpenAPI supportability-state query constraint
+- Finding: the search route still carried a hard-coded supportability-state regex even after the
+  request-normalization layer exposed shared supported-state constants. That created another drift
+  point between FastAPI parameter validation, Swagger, and core request validation.
+- Action: generated the FastAPI query regex from the shared supportability-state constants and
+  pinned the OpenAPI pattern in the API test.
+- Status: hardened
+- Evidence: OpenAPI assertion in `tests/unit/dpm/api/test_portfolio_memory_api.py`.
+- Follow-up: keep route-level query constraints generated from shared vocabulary constants instead
+  of duplicating allowed values in controller code.
+- Wiki decision: no wiki source change required; this is API contract implementation hygiene with
+  no route, payload, supported-feature, or operator-contract change.
