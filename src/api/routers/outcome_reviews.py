@@ -23,6 +23,13 @@ from src.api.routers.outcome_review_models import (
     DpmOutcomeReviewRefreshSourcesResponse,
     DpmOutcomeReviewSupportabilityResponse,
 )
+from src.api.routers.outcome_review_observability import (
+    OUTCOME_CREATE_SURFACE,
+    OUTCOME_REFRESH_SURFACE,
+    OUTCOME_SUPPORTABILITY_SURFACE,
+    outcome_review_metric_reason,
+    outcome_review_metric_state,
+)
 from src.api.observability import record_outcome_review_supportability
 from src.api.services.outcome_review_service import (
     DpmOutcomeReviewNotFoundError,
@@ -48,9 +55,6 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.repository import DpmWaveRepository
 
 logger = logging.getLogger("lotus-manage.outcome_reviews")
-OUTCOME_CREATE_SURFACE = "rebalance/outcome-reviews/create"
-OUTCOME_REFRESH_SURFACE = "rebalance/outcome-reviews/refresh-sources"
-OUTCOME_SUPPORTABILITY_SURFACE = "rebalance/outcome-reviews/supportability"
 
 
 router = APIRouter(
@@ -135,8 +139,8 @@ def create_outcome_review_endpoint(
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     record_outcome_review_supportability(
         surface=OUTCOME_CREATE_SURFACE,
-        supportability_state=_metric_state(review.state),
-        reason=_metric_reason(review.state),
+        supportability_state=outcome_review_metric_state(review.state),
+        reason=outcome_review_metric_reason(review.state),
     )
     return DpmOutcomeReviewCreateResponse(outcome_review=review)
 
@@ -295,7 +299,7 @@ def refresh_outcome_review_sources_endpoint(
         ) from exc
     record_outcome_review_supportability(
         surface=OUTCOME_REFRESH_SURFACE,
-        supportability_state=_metric_state(comparison.state),
+        supportability_state=outcome_review_metric_state(comparison.state),
         reason="outcome_review_source_refreshed",
     )
     return DpmOutcomeReviewRefreshSourcesResponse(event=event, comparison=comparison)
@@ -331,15 +335,15 @@ def get_outcome_review_supportability_endpoint(
     response = _supportability_response(review)
     record_outcome_review_supportability(
         surface=OUTCOME_SUPPORTABILITY_SURFACE,
-        supportability_state=_metric_state(review.state),
-        reason=_metric_reason(review.state),
+        supportability_state=outcome_review_metric_state(review.state),
+        reason=outcome_review_metric_reason(review.state),
     )
     logger.info(
         "outcome_review.supportability.inspected",
         extra={
             "extra_fields": {
-                "outcome_state": _metric_state(review.state),
-                "reason": _metric_reason(review.state),
+                "outcome_state": outcome_review_metric_state(review.state),
+                "reason": outcome_review_metric_reason(review.state),
                 "dimension_count": len(review.dimension_results),
                 "blocked_dimension_count": response.blocked_dimension_count,
                 "degraded_dimension_count": response.degraded_dimension_count,
@@ -392,21 +396,6 @@ def _remediation_routes(review: DpmPostTradeOutcomeReview) -> list[str]:
         elif "SOURCE" in reason or "CASH" in reason or "FX" in reason or "TAX" in reason:
             routes.add("source-owner:refresh-realized-outcome-source")
     return sorted(routes)
-
-
-def _metric_state(state: str) -> str:
-    return state.lower()
-
-
-def _metric_reason(state: str) -> str:
-    return {
-        "READY": "outcome_review_ready",
-        "PENDING_REVIEW": "outcome_review_pending_review",
-        "BREACHED": "outcome_review_breached",
-        "DEGRADED": "outcome_review_degraded",
-        "BLOCKED": "outcome_review_blocked",
-        "NOT_SUPPORTED": "outcome_review_not_supported",
-    }.get(state, "outcome_review_error")
 
 
 @router.get(

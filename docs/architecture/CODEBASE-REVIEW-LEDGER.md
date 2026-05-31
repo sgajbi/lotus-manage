@@ -2855,3 +2855,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   raised and CI feedback is available.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-100: Outcome-review observability mapping was embedded in controller
+
+- Date: 2026-05-31
+- Scope: outcome-review supportability metric surfaces and state/reason mapping.
+- Finding: `src/api/routers/outcome_reviews.py` owned supportability surface names and metric
+  state/reason mapping inline with HTTP route handlers. That made controller code responsible for
+  observability policy and increased the blast radius for the upcoming outcome-review route
+  decomposition.
+- Action: moved outcome-review supportability surface constants and metric state/reason mapping
+  into `src/api/routers/outcome_review_observability.py`, preserving metric surface values,
+  supportability states, reason labels, refresh/create/supportability behavior, and structured log
+  fields.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split outcome-review command/read/supportability/handoff routes into owned modules
+  now that shared observability policy is outside the controller.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
