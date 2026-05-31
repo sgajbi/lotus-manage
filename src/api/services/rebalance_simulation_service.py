@@ -26,6 +26,10 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceCoreResolverUnavailableError,
     DpmRebalanceEnvelopeError,
     DpmRebalanceEnvelopeValidationError,
+    DpmRebalanceIdempotencyConflictError,
+    DpmRebalanceIdempotencyStoreInconsistentError,
+    DpmRebalanceIdempotencyStoreWriteFailedError,
+    DpmRebalanceSimulationError,
     DpmRebalanceStatefulInputDisabledError,
 )
 from src.api.routers.rebalance_policy_packs import (
@@ -435,9 +439,8 @@ def simulate_rebalance(
                 outcome="conflict",
                 result_status="failed",
             )
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="IDEMPOTENCY_KEY_CONFLICT: request hash mismatch",
+            raise DpmRebalanceIdempotencyConflictError(
+                "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
             )
         if existing is not None:
             try:
@@ -451,9 +454,8 @@ def simulate_rebalance(
                     outcome="error",
                     result_status="failed",
                 )
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="DPM_IDEMPOTENCY_STORE_INCONSISTENT",
+                raise DpmRebalanceIdempotencyStoreInconsistentError(
+                    "DPM_IDEMPOTENCY_STORE_INCONSISTENT"
                 ) from exc
             replay_result = RebalanceResult.model_validate(replay_run.result)
             record_execution_call(
@@ -494,9 +496,8 @@ def simulate_rebalance(
                 outcome="error",
                 result_status="failed",
             )
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="DPM_IDEMPOTENCY_STORE_WRITE_FAILED",
+            raise DpmRebalanceIdempotencyStoreWriteFailedError(
+                "DPM_IDEMPOTENCY_STORE_WRITE_FAILED"
             ) from exc
         current_logger.exception("Supportability persistence failed")
 
@@ -791,6 +792,10 @@ __all__ = [
     "DpmRebalanceCoreResolverUnavailableError",
     "DpmRebalanceEnvelopeError",
     "DpmRebalanceEnvelopeValidationError",
+    "DpmRebalanceIdempotencyConflictError",
+    "DpmRebalanceIdempotencyStoreInconsistentError",
+    "DpmRebalanceIdempotencyStoreWriteFailedError",
+    "DpmRebalanceSimulationError",
     "DpmRebalanceStatefulInputDisabledError",
     "async_manual_execution_enabled",
     "env_flag",

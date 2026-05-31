@@ -406,6 +406,33 @@ def test_simulate_idempotency_conflict_returns_409(client):
     assert conflict.json()["detail"] == "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
 
 
+def test_rebalance_simulation_http_exception_mapping():
+    from src.api.routers.rebalance_simulation_http import rebalance_simulation_http_exception
+    from src.api.services.rebalance_simulation_errors import (
+        DpmRebalanceIdempotencyConflictError,
+        DpmRebalanceIdempotencyStoreInconsistentError,
+        DpmRebalanceIdempotencyStoreWriteFailedError,
+        DpmRebalanceSimulationError,
+    )
+
+    mappings = [
+        (DpmRebalanceIdempotencyConflictError("conflict"), 409, "conflict"),
+        (
+            DpmRebalanceIdempotencyStoreInconsistentError("inconsistent"),
+            503,
+            "inconsistent",
+        ),
+        (DpmRebalanceIdempotencyStoreWriteFailedError("write-failed"), 503, "write-failed"),
+        (DpmRebalanceSimulationError("generic"), 500, "DpmRebalanceSimulationError"),
+    ]
+
+    for exc, status_code, detail in mappings:
+        http_exc = rebalance_simulation_http_exception(exc)
+
+        assert http_exc.status_code == status_code
+        assert http_exc.detail == detail
+
+
 def test_simulate_idempotency_replay_can_be_disabled(client, monkeypatch):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "false")
     payload = get_valid_payload()

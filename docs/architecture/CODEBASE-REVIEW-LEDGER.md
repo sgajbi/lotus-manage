@@ -5600,3 +5600,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   operation-state semantics.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-224: Rebalance simulation idempotency HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_simulate_routes.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: `simulate_rebalance()` still raised FastAPI `HTTPException` directly for replay
+  idempotency conflicts, inconsistent idempotency lookup state, and support-store write failures.
+  These failures are part of simulation application semantics and should be represented as domain
+  errors before the route layer maps them to HTTP.
+- Action: introduced simulation idempotency domain exceptions, mapped them in
+  `rebalance_simulation_http.py`, and reused that mapper from the simulation route. Public paths,
+  response models, OpenAPI output, observability recording, and existing `409`/`503` detail
+  strings were preserved.
+- Status: hardened
+- Evidence: rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), rebalance
+  router/service Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: move async-operation disabled/conflict/manual execution HTTP mappings out of
+  `rebalance_simulation_service.py` separately; those remain operation-state specific.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
