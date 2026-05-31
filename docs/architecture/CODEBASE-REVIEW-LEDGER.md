@@ -2832,3 +2832,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   explicit route composition only.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-099: Correlation lookup was still owned by the lookup composition shell
+
+- Date: 2026-05-31
+- Scope: latest run lookup by submitted correlation id.
+- Finding: after request-hash, idempotency, idempotency-history, and run-id lookup extraction,
+  `src/api/routers/rebalance_runs_lookup_routes.py` still directly owned the correlation lookup
+  route while also acting as the lookup route composition shell. That left trace-resolution lookup
+  in a different ownership style from the other lookup resolver families.
+- Action: moved correlation-id lookup route registration into
+  `src/api/routers/rebalance_runs_lookup_correlation_routes.py` and reduced the lookup shell to
+  explicit composition imports in specific-before-catch-all order, preserving public path, response
+  model, Swagger metadata, supportability feature gate, unsupported-query rejection, and not-found
+  behavior.
+- Status: hardened
+- Evidence: focused DPM API supportability/idempotency regression selection
+  (`tests/unit/dpm/api/test_api_rebalance.py -k "supportability or support_runs_list or idempotency"`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review route composition shells for a shared readability pattern once this PR slice is
+  raised and CI feedback is available.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
