@@ -1261,3 +1261,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source collectors.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-022: Wave memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: rebalance-wave repository collection for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` still owned wave listing, portfolio-item
+  membership filtering, and wave memory event projection. That kept the rebalance-wave source-family
+  dependency flow in the top-level memory service and left the non-matching portfolio filter without
+  direct source-family tests.
+- Action: extracted wave collection to `src/core/portfolio_memory/wave_collection.py` and updated
+  the service to delegate wave memory event collection. Added focused tests proving matching wave
+  event projection and skipping waves whose items do not include the requested portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_wave_collection.py` plus existing
+  portfolio-memory API tests.
+- Follow-up: review remaining direct proof-pack and outcome-review traversal in `service.py` for the
+  same source-family collector pattern before introducing any broader orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.

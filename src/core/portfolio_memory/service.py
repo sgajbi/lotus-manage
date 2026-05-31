@@ -49,13 +49,10 @@ from src.core.portfolio_memory.search_page import (
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
 )
-from src.core.portfolio_memory.wave_projection import (
-    wave_events as _wave_events,
+from src.core.portfolio_memory.wave_collection import (
+    wave_memory_events as _wave_memory_events,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
-from src.core.waves.models import (
-    DpmRebalanceWave,
-)
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
 
@@ -101,12 +98,13 @@ def build_portfolio_memory(
             )
         )
 
-    for wave in _waves_for_portfolio(
-        portfolio_id=portfolio_id,
-        wave_repository=wave_repository,
-        limit=limit,
-    ):
-        events.extend(_wave_events(wave=wave, portfolio_id=portfolio_id))
+    events.extend(
+        _wave_memory_events(
+            portfolio_id=portfolio_id,
+            wave_repository=wave_repository,
+            limit=limit,
+        )
+    )
 
     if campaign_definition_repository is not None:
         events.extend(
@@ -230,13 +228,3 @@ def search_portfolio_memory(
         offset=offset,
         generated_at=generated_at.isoformat(),
     )
-
-
-def _waves_for_portfolio(
-    *,
-    portfolio_id: str,
-    wave_repository: DpmWaveRepository,
-    limit: int,
-) -> list[DpmRebalanceWave]:
-    waves = wave_repository.list_waves(limit=limit)
-    return [wave for wave in waves if any(item.portfolio_id == portfolio_id for item in wave.items)]
