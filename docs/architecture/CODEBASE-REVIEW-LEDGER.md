@@ -1174,3 +1174,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   handle HTTP status mapping and repository dependency wiring.
 - Wiki decision: no wiki source change required; this is internal lookup modularity cleanup with no
   API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-018: PM-quality memory collection repeated score-run scans
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run, review-action, and summary-invocation repository collection
+  for portfolio-memory events
+- Finding: `src/core/portfolio_memory/service.py` collected PM-quality score-run, review-action,
+  and summary-invocation memory events through three separate helpers, each scanning
+  `list_score_runs(limit=...)` to rebuild the same PM-book scoped score-run map. That duplicated
+  repository work on the portfolio-memory hot path and kept PM-quality collection flow embedded in
+  the service.
+- Action: extracted PM-quality collection to `src/core/portfolio_memory/pm_quality_collection.py`.
+  The collector materializes the portfolio-scoped score-run map once, reuses it for downstream
+  review-action and summary-invocation projection, and avoids downstream scans when no score run is
+  in scope for the portfolio.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_collection.py` prove
+  one score-run scan feeds all PM-quality memory events and that downstream scans are skipped when
+  the portfolio is out of PM-book scope; existing portfolio-memory API tests remain the endpoint
+  regression scope.
+- Follow-up: review remaining repository event collection helpers for similar repeated scans before
+  introducing broader collector abstractions.
+- Wiki decision: no wiki source change required; this is internal memory-collection performance and
+  modularity cleanup with no API, supported-feature, or operator-contract change.

@@ -34,11 +34,8 @@ from src.core.portfolio_memory.mandate_projection import (
     mandate_exception_event as _mandate_exception_event,
     mandate_health_event as _mandate_health_event,
 )
-from src.core.portfolio_memory.pm_quality_projection import (
-    pm_quality_review_action_event as _pm_quality_review_action_event,
-    pm_quality_score_run_event as _pm_quality_score_run_event,
-    pm_quality_summary_invocation_event as _pm_quality_summary_invocation_event,
-    score_run_includes_portfolio as _score_run_includes_portfolio,
+from src.core.portfolio_memory.pm_quality_collection import (
+    pm_quality_memory_events as _pm_quality_memory_events,
 )
 from src.core.portfolio_memory.outcome_projection import (
     outcome_review_events as _outcome_review_events,
@@ -134,32 +131,10 @@ def build_portfolio_memory(
 
     if pm_quality_score_run_repository is not None:
         events.extend(
-            _pm_quality_score_run_events(
-                portfolio_id=portfolio_id,
-                score_run_repository=pm_quality_score_run_repository,
-                limit=limit,
-            )
-        )
-    if (
-        pm_quality_score_run_repository is not None
-        and pm_quality_review_action_repository is not None
-    ):
-        events.extend(
-            _pm_quality_review_action_events(
+            _pm_quality_memory_events(
                 portfolio_id=portfolio_id,
                 score_run_repository=pm_quality_score_run_repository,
                 review_action_repository=pm_quality_review_action_repository,
-                limit=limit,
-            )
-        )
-    if (
-        pm_quality_score_run_repository is not None
-        and pm_quality_summary_invocation_repository is not None
-    ):
-        events.extend(
-            _pm_quality_summary_invocation_events(
-                portfolio_id=portfolio_id,
-                score_run_repository=pm_quality_score_run_repository,
                 summary_invocation_repository=pm_quality_summary_invocation_repository,
                 limit=limit,
             )
@@ -335,68 +310,6 @@ def _campaign_definition_events(
             )
         )
     return events
-
-
-def _pm_quality_score_run_events(
-    *,
-    portfolio_id: str,
-    score_run_repository: DpmPmQualityScoreRunRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    score_runs = score_run_repository.list_score_runs(limit=limit)
-    return [
-        _pm_quality_score_run_event(score_run)
-        for score_run in score_runs
-        if _score_run_includes_portfolio(score_run=score_run, portfolio_id=portfolio_id)
-    ]
-
-
-def _pm_quality_review_action_events(
-    *,
-    portfolio_id: str,
-    score_run_repository: DpmPmQualityScoreRunRepository,
-    review_action_repository: DpmPmQualityReviewActionRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    score_runs_by_id = {
-        score_run.score_run_id: score_run
-        for score_run in score_run_repository.list_score_runs(limit=limit)
-        if _score_run_includes_portfolio(score_run=score_run, portfolio_id=portfolio_id)
-    }
-    if not score_runs_by_id:
-        return []
-    return [
-        _pm_quality_review_action_event(action=action, score_run=score_runs_by_id[action.target_id])
-        for action in review_action_repository.list_review_actions(
-            target_type="SCORE_RUN",
-            limit=limit,
-        )
-        if action.target_id in score_runs_by_id
-    ]
-
-
-def _pm_quality_summary_invocation_events(
-    *,
-    portfolio_id: str,
-    score_run_repository: DpmPmQualityScoreRunRepository,
-    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    score_runs_by_id = {
-        score_run.score_run_id: score_run
-        for score_run in score_run_repository.list_score_runs(limit=limit)
-        if _score_run_includes_portfolio(score_run=score_run, portfolio_id=portfolio_id)
-    }
-    if not score_runs_by_id:
-        return []
-    return [
-        _pm_quality_summary_invocation_event(
-            invocation=invocation,
-            score_run=score_runs_by_id[invocation.score_run_id],
-        )
-        for invocation in summary_invocation_repository.list_summary_invocations(limit=limit)
-        if invocation.score_run_id in score_runs_by_id
-    ]
 
 
 def _waves_for_portfolio(
