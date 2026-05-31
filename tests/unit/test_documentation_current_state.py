@@ -478,6 +478,34 @@ def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
     assert "[Current State](Current-State)" in sidebar
 
 
+def test_wiki_demo_guide_is_client_ready_and_boundary_safe() -> None:
+    demo_guide = (ROOT / "wiki" / "Demo-Guide.md").read_text(encoding="utf-8")
+    home = (ROOT / "wiki" / "Home.md").read_text(encoding="utf-8")
+    sidebar = (ROOT / "wiki" / "_Sidebar.md").read_text(encoding="utf-8")
+
+    required_terms = [
+        "# Demo Guide",
+        "## Demo Positioning",
+        "## Recommended Demo Path",
+        "## Client-Facing Flow",
+        "## Feature Demonstration Scenarios",
+        "## Demo Evidence Checklist",
+        "## Objection Handling",
+        "## Presentation Structure",
+        "```mermaid",
+        "External OMS execution remains an explicit non-claim",
+        "Client communication records",
+        "PM operating quality",
+        "portfolio-memory timeline",
+        "Gateway/BFF contracts",
+    ]
+    missing_terms = [term for term in required_terms if term not in demo_guide]
+
+    assert missing_terms == []
+    assert "[Demo Guide](Demo-Guide)" in home
+    assert "[Demo Guide](Demo-Guide)" in sidebar
+
+
 def test_wtbd_control_snapshot_counts_match_detailed_ledger() -> None:
     rows = _detailed_wtbd_rows()
     all_ids = {row[0] for row in rows}

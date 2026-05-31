@@ -4,6 +4,8 @@
 
 [Current State](Current-State)
 
+[Demo Guide](Demo-Guide)
+
 [Architecture](Architecture)
 
 [API Surface](API-Surface)
