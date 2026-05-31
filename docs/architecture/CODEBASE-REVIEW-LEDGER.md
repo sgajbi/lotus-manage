@@ -5245,3 +5245,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   confirms no semantic distinction is needed.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-210: Rebalance artifact and async lookup routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_artifact_routes.py` and
+  `src/api/routers/rebalance_runs_async_operation_lookup_routes.py`.
+- Finding: artifact lookup and async-operation lookup routes still repeated the same
+  `DpmRunNotFoundError` to `404` mapping after the run lookup routes had moved to the shared
+  rebalance-run HTTP primitive. That left a small but avoidable inconsistency across operator
+  support lookup surfaces.
+- Action: routed artifact, operation-id, and correlation-id async operation reads through
+  `read_run_with_not_found_http_mapping()`. Public paths, response models, feature-flag
+  assertions, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep the workflow action helper separate because it maps additional disabled and
+  conflict workflow outcomes, not only run-not-found lookup behavior.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

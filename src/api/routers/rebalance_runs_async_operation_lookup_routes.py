@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Path, status
+from fastapi import Path, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_http import read_run_with_not_found_http_mapping
 from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
-    DpmRunNotFoundError,
     DpmRunSupportService,
 )
 
@@ -41,10 +41,9 @@ def get_dpm_async_operation(
 ) -> DpmAsyncOperationStatusResponse:
     shared._assert_support_apis_enabled()
     shared._assert_async_operations_enabled()
-    try:
-        return service.get_async_operation(operation_id=operation_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_run_with_not_found_http_mapping(
+        lambda: service.get_async_operation(operation_id=operation_id)
+    )
 
 
 @shared.router.get(
@@ -82,7 +81,6 @@ def get_dpm_async_operation_by_correlation(
 ) -> DpmAsyncOperationStatusResponse:
     shared._assert_support_apis_enabled()
     shared._assert_async_operations_enabled()
-    try:
-        return service.get_async_operation_by_correlation(correlation_id=correlation_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_run_with_not_found_http_mapping(
+        lambda: service.get_async_operation_by_correlation(correlation_id=correlation_id)
+    )
