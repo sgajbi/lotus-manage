@@ -3982,3 +3982,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split maker-checker controls from the remaining campaign evidence router shell.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-153: Campaign maker-checker controls were owned by the evidence shell
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
+- Finding: after extracting approval-decision, assignment-action, and assignment-task routes,
+  `src/api/routers/wave_campaign_evidence_routes.py` still owned maker-checker control endpoints
+  while also acting as the campaign evidence router aggregator. Maker-checker controls own
+  append-only control evidence and distinct submitter/reviewer posture; the shell should only
+  compose evidence subrouters.
+- Action: moved maker-checker control route registration into
+  `src/api/routers/wave_campaign_maker_checker_evidence_routes.py` and reduced
+  `wave_campaign_evidence_routes.py` to a pure aggregator over approval-decision,
+  assignment-action, assignment-task, and maker-checker evidence subrouters. Public paths, response
+  models, Swagger guidance, repository dependency wiring, response helper calls, and route order
+  were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect the next largest wave router seam after campaign evidence routing is fully
+  modularized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
