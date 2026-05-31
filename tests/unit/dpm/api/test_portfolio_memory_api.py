@@ -45,12 +45,12 @@ from src.core.pm_quality.models import (
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
-from src.core.portfolio_memory import service as portfolio_memory_service
 from src.core.portfolio_memory.models import DpmPortfolioMemory, DpmPortfolioMemorySearchPage
 from src.core.portfolio_memory.handoffs import (
     DpmPortfolioMemoryReportContext,
     build_portfolio_memory_report_context,
 )
+from src.core.portfolio_memory.pm_quality_projection import score_run_includes_portfolio
 from src.core.portfolio_memory.service import (
     build_portfolio_memory,
     build_portfolio_memory_event_lookup,
@@ -2411,14 +2411,14 @@ def test_portfolio_memory_helper_edges_preserve_source_safe_states() -> None:
     assert source_supportability_state("PARTIAL") == "DEGRADED"
     assert source_supportability_state("CREATED") == "PENDING_REVIEW"
     assert (
-        portfolio_memory_service._score_run_includes_portfolio(
+        score_run_includes_portfolio(
             score_run=_pm_quality_score_run().model_copy(update={"book_scope_evidence": None}),
             portfolio_id=PORTFOLIO_ID,
         )
         is False
     )
     assert (
-        portfolio_memory_service._score_run_includes_portfolio(
+        score_run_includes_portfolio(
             score_run=_pm_quality_score_run().model_copy(
                 update={
                     "book_scope_evidence": _pm_quality_score_run().book_scope_evidence.model_copy(

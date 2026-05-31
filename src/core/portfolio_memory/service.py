@@ -43,6 +43,9 @@ from src.core.portfolio_memory.governance import (
     portfolio_memory_governance_policy as _portfolio_memory_governance_policy,
     source_event_family_posture as _source_event_family_posture,
 )
+from src.core.portfolio_memory.pm_quality_projection import (
+    score_run_includes_portfolio as _score_run_includes_portfolio,
+)
 from src.core.portfolio_memory.source_refs import (
     campaign_definition_artifact_ref as _campaign_definition_artifact_ref,
     campaign_definition_source_refs as _campaign_definition_source_refs,
@@ -1665,22 +1668,6 @@ def _pm_quality_summary_invocation_event(
             "forbidden_uses": invocation.forbidden_uses,
             "operating_boundaries": invocation.operating_boundaries,
         },
-    )
-
-
-def _score_run_includes_portfolio(
-    *,
-    score_run: DpmPmOperatingQualityScoreRun,
-    portfolio_id: str,
-) -> bool:
-    if score_run.book_scope_evidence is None:
-        return False
-    if portfolio_id in score_run.book_scope_evidence.member_portfolio_ids:
-        return True
-    return any(
-        ref.source_type == "PORTFOLIO_MANAGER_BOOK_MEMBER"
-        and (ref.source_id == portfolio_id or ref.source_id.endswith(f":{portfolio_id}"))
-        for ref in score_run.book_scope_evidence.source_refs
     )
 
 

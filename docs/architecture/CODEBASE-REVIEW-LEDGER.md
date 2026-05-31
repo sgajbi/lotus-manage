@@ -906,3 +906,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   search-index service boundary emerges.
 - Wiki decision: no wiki source change required; this is internal modularity/testability cleanup
   with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-005: PM-quality portfolio membership projection lived in portfolio-memory service
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run membership projection inside
+  `src/core/portfolio_memory/service.py`
+- Finding: the service embedded the rule that links a PM operating-quality score run to a portfolio
+  through Core PM-book evidence. That rule is private-banking domain projection logic, not
+  repository orchestration, and it is reused by score-run, review-action, and summary-invocation
+  event projection.
+- Action: extracted the rule into `src/core/portfolio_memory/pm_quality_projection.py`, updated the
+  service to consume the focused helper, updated API helper-edge tests to assert against the new
+  module boundary, and added direct unit coverage for member portfolio ids, PM-book member source
+  refs, and missing book-scope evidence.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_pm_quality_projection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: keep PM-quality event builders in the service until a coherent source-event-family
+  projection module can be extracted without weakening content-hash or no-unsupported-claim
+  evidence.
+- Wiki decision: no wiki source change required; this is internal domain projection cleanup with no
+  API, supported-feature, or operator-contract change.
