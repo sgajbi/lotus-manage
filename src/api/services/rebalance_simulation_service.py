@@ -32,10 +32,9 @@ from src.api.services.rebalance_simulation_errors import (
 )
 from src.api.services.rebalance_policy_pack_service import (
     load_dpm_policy_pack_catalog,
-    resolve_dpm_policy_pack,
 )
 from src.api.services.rebalance_policy_pack_execution import (
-    record_policy_resolution,
+    resolve_execution_policy_pack_context,
     resolve_selected_policy_pack_definition as resolve_selected_policy_pack_definition_from_catalog,
 )
 from src.api.services.rebalance_request_envelope_resolution import (
@@ -126,14 +125,6 @@ def resolve_selected_policy_pack_definition(
     )
 
 
-def _record_policy_resolution(
-    *,
-    surface: str,
-    policy_pack: DpmEffectivePolicyPackResolution,
-) -> None:
-    record_policy_resolution(surface=surface, policy_pack=policy_pack)
-
-
 def _resolve_stateful_source_context(
     *,
     envelope: RebalanceExecutionRequestEnvelope | BatchExecutionRequestEnvelope,
@@ -190,22 +181,22 @@ def simulate_rebalance(
     default_replay_enabled = env_flag("DPM_IDEMPOTENCY_REPLAY_ENABLED", True)
     request_payload = request.model_dump(mode="json")
     request_hash = hash_canonical_payload(request_payload)
-    policy_pack = resolve_dpm_policy_pack(
+    policy_context = resolve_execution_policy_pack_context(
         request_policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
+        surface="simulate",
+        catalog_loader=load_dpm_policy_pack_catalog,
     )
-    _record_policy_resolution(surface="simulate", policy_pack=policy_pack)
-    policy_pack_definition = resolve_selected_policy_pack_definition(policy_pack)
     replay_enabled = resolve_policy_pack_replay_enabled(
         default_replay_enabled=default_replay_enabled,
-        policy_pack=policy_pack_definition,
+        policy_pack=policy_context.definition,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
-        policy_pack.enabled,
-        policy_pack.source,
-        policy_pack.selected_policy_pack_id,
+        policy_context.resolution.enabled,
+        policy_context.resolution.source,
+        policy_context.resolution.selected_policy_pack_id,
     )
 
     return execute_simulation_request(
@@ -213,7 +204,7 @@ def simulate_rebalance(
         idempotency_key=idempotency_key,
         request_hash=request_hash,
         correlation_id=resolved_correlation_id,
-        policy_pack_definition=policy_pack_definition,
+        policy_pack_definition=policy_context.definition,
         replay_enabled=replay_enabled,
         source_context=source_context,
         support_service_factory=get_dpm_run_support_service,
@@ -237,19 +228,19 @@ def execute_batch_analysis(
     batch_id = f"batch_{uuid.uuid4().hex[:8]}"
     current_logger.info("Analyzing scenario batch")
 
-    policy_resolution = resolve_dpm_policy_pack(
+    policy_context = resolve_execution_policy_pack_context(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
+        surface="analyze",
+        catalog_loader=load_dpm_policy_pack_catalog,
     )
-    _record_policy_resolution(surface="analyze", policy_pack=policy_resolution)
-    policy_definition = resolve_selected_policy_pack_definition(policy_resolution)
 
     return execute_batch_scenarios(
         request=request,
         batch_id=batch_id,
         correlation_id=correlation_id,
-        policy_definition=policy_definition,
+        policy_definition=policy_context.definition,
         source_context=source_context,
         run_simulation_fn=_main_override("run_simulation") or run_simulation,
         record_for_support=_main_override("record_dpm_run_for_support")
@@ -311,17 +302,19 @@ def submit_and_optionally_execute_async_analysis(
         service = get_dpm_run_support_service()
     except DpmRunSupportServiceUnavailableError as exc:
         raise DpmRebalanceAsyncOperationSupportUnavailableError(exc.detail) from exc
-    policy_pack = resolve_dpm_policy_pack(
+    policy_context = resolve_execution_policy_pack_context(
         request_policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
+        surface="analyze_async",
+        catalog_loader=load_dpm_policy_pack_catalog,
+        load_definition=False,
     )
-    _record_policy_resolution(surface="analyze_async", policy_pack=policy_pack)
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
-        policy_pack.enabled,
-        policy_pack.source,
-        policy_pack.selected_policy_pack_id,
+        policy_context.resolution.enabled,
+        policy_context.resolution.source,
+        policy_context.resolution.selected_policy_pack_id,
     )
     execution_mode = resolve_async_execution_mode()
     accepted = submit_analyze_async_request(

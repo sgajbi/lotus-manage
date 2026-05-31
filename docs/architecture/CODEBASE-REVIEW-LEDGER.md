@@ -6224,3 +6224,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   proven unused by repository search and regression coverage.
 - Wiki decision: no wiki source change required; this is internal synchronous execution modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-246: Rebalance policy-pack execution context consolidation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: synchronous simulate, synchronous analyze, and async analyze submission each repeated
+  policy-pack resolution, policy telemetry recording, selected-definition loading, and debug
+  logging setup in the main rebalance orchestration service. That made the remaining service
+  wrapper broader than necessary and increased the chance that async submission would accidentally
+  drift from its existing deferred catalog-lookup behavior.
+- Action: introduced a reusable `DpmExecutionPolicyPackContext` helper that resolves policy-pack
+  selection, records policy resolution telemetry, and optionally loads the selected definition.
+  Synchronous simulate and analyze now use the loaded definition path, while async submission uses
+  the explicit deferred-definition path so accept-only semantics do not force policy-catalog
+  access earlier than before. Added focused unit coverage for both loaded and deferred modes.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over policy-pack
+  execution and simulation services, OpenAPI quality gate, API vocabulary inventory validation,
+  diff check, and service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: continue narrowing remaining `rebalance_simulation_service.py` compatibility seams
+  only where search and regression tests prove existing callers no longer depend on them.
+- Wiki decision: no wiki source change required; this is internal policy-pack orchestration
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

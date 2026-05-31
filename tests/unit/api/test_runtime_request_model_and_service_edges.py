@@ -719,6 +719,46 @@ def test_rebalance_policy_pack_execution_loads_selected_catalog_only_when_needed
     )
 
 
+def test_rebalance_policy_pack_execution_context_preserves_deferred_async_catalog_lookup(
+    monkeypatch,
+) -> None:
+    selected_resolution = DpmEffectivePolicyPackResolution(
+        enabled=True,
+        selected_policy_pack_id="pack-async",
+        source="REQUEST",
+    )
+    monkeypatch.setattr(
+        policy_pack_execution,
+        "resolve_dpm_policy_pack",
+        lambda **_kwargs: selected_resolution,
+    )
+
+    context = policy_pack_execution.resolve_execution_policy_pack_context(
+        request_policy_pack_id="pack-async",
+        tenant_default_policy_pack_id=None,
+        tenant_id=None,
+        surface="analyze_async",
+        catalog_loader=lambda: (_ for _ in ()).throw(
+            AssertionError("async submit should not force catalog resolution")
+        ),
+        load_definition=False,
+    )
+
+    assert context.resolution is selected_resolution
+    assert context.definition is None
+
+    definition = DpmPolicyPackDefinition(policy_pack_id="pack-async", version="1")
+    loaded_context = policy_pack_execution.resolve_execution_policy_pack_context(
+        request_policy_pack_id="pack-async",
+        tenant_default_policy_pack_id=None,
+        tenant_id=None,
+        surface="analyze",
+        catalog_loader=lambda: {"pack-async": definition},
+    )
+
+    assert loaded_context.definition is definition
+
+
 def test_rebalance_idempotency_replay_handles_missing_conflict_and_inconsistent_store() -> None:
     class _MissingService:
         def get_idempotency_lookup(self, *, idempotency_key):
