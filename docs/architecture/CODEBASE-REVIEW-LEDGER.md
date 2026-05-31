@@ -1219,3 +1219,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   own a clear source-family dependency flow and direct tests.
 - Wiki decision: no wiki source change required; this is internal memory-collection modularity
   cleanup with no API, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-020: Construction memory collection lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: construction alternative-set and selection repository collection for portfolio-memory
+  events
+- Finding: `src/core/portfolio_memory/service.py` still owned construction alternative-set listing,
+  selection lookup, and construction memory event projection. That kept construction repository flow
+  in the top-level memory service rather than in a source-family collector with direct tests for
+  alternative-set-only and selected-alternative cases.
+- Action: extracted construction collection to
+  `src/core/portfolio_memory/construction_collection.py` and updated the service to delegate
+  construction event collection. Added focused tests proving alternative-set plus selection
+  projection and preserving alternative-set projection when no selection exists.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_construction_collection.py` plus
+  existing portfolio-memory API tests.
+- Follow-up: continue extracting remaining campaign and wave repository-family collectors with
+  source-family tests before considering a broader service orchestration abstraction.
+- Wiki decision: no wiki source change required; this is internal memory-collection modularity
+  cleanup with no API, supported-feature, or operator-contract change.

@@ -26,9 +26,8 @@ from src.core.portfolio_memory.campaign_projection import (
 from src.core.portfolio_memory.candidate_portfolios import (
     candidate_portfolio_ids as _candidate_portfolio_ids,
 )
-from src.core.portfolio_memory.construction_projection import (
-    construction_alternative_set_event as _construction_alternative_set_event,
-    construction_selection_event as _construction_selection_event,
+from src.core.portfolio_memory.construction_collection import (
+    construction_memory_events as _construction_memory_events,
 )
 from src.core.portfolio_memory.mandate_collection import (
     mandate_memory_events as _mandate_memory_events,
@@ -95,7 +94,7 @@ def build_portfolio_memory(
 
     if construction_repository is not None:
         events.extend(
-            _construction_events(
+            _construction_memory_events(
                 portfolio_id=portfolio_id,
                 construction_repository=construction_repository,
                 limit=limit,
@@ -231,32 +230,6 @@ def search_portfolio_memory(
         offset=offset,
         generated_at=generated_at.isoformat(),
     )
-
-
-def _construction_events(
-    *,
-    portfolio_id: str,
-    construction_repository: ConstructionRepository,
-    limit: int,
-) -> list[DpmPortfolioMemoryEvent]:
-    alternative_sets = construction_repository.list_alternative_sets(
-        portfolio_id=portfolio_id,
-        limit=limit,
-    )
-    events: list[DpmPortfolioMemoryEvent] = []
-    for alternative_set in alternative_sets:
-        events.append(_construction_alternative_set_event(alternative_set))
-        selection = construction_repository.get_selection(
-            alternative_set_id=alternative_set.alternative_set_id
-        )
-        if selection is not None:
-            events.append(
-                _construction_selection_event(
-                    alternative_set=alternative_set,
-                    selection=selection,
-                )
-            )
-    return events
 
 
 def _campaign_definition_events(
