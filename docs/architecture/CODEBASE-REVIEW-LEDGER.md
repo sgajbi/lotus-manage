@@ -4007,3 +4007,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modularized.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-154: PM quality summary route owned invocation construction
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview` and
+  `POST /api/v1/rebalance/pm-operating-quality/summary-invocations`.
+- Finding: `src/api/routers/pm_operating_quality_summary_routes.py` mixed controller handlers with
+  summary-invocation construction orchestration, including score-run/review-action lookup,
+  domain-builder calls, correlation-id fallback, and HTTP error mapping. That made the route module
+  harder to review as a controller and concentrated service-boundary behavior in endpoint code.
+- Action: moved summary-invocation construction and HTTP exception mapping into
+  `src/api/routers/pm_operating_quality_summary_invocation_builder.py`, leaving preview/create
+  endpoints to compose dependencies, call the route-support builder, persist on create, and return
+  response DTOs. Public paths, request/response models, correlation-id behavior, not-found details,
+  validation error mapping, and conflict handling were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect remaining PM operating-quality route modules for repeated controller-owned
+  lookup/build/persist orchestration.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.

@@ -15,14 +15,15 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationResponse,
 )
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
+from src.api.routers.pm_operating_quality_summary_invocation_builder import (
+    build_summary_invocation_response_model,
+)
 from src.core.pm_quality import (
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
-    DpmPmQualitySummaryInvocation,
     DpmPmQualitySummaryInvocationConflictError,
     DpmPmQualitySummaryInvocationRepository,
     PmQualitySummaryInvocationState,
-    build_pm_quality_summary_invocation,
 )
 
 
@@ -57,7 +58,7 @@ def preview_pm_quality_summary_invocation_endpoint(
         get_pm_quality_review_action_repository
     ),
 ) -> DpmPmQualitySummaryInvocationResponse:
-    invocation = _build_summary_invocation(
+    invocation = build_summary_invocation_response_model(
         request=request,
         x_correlation_id=x_correlation_id,
         score_run_repository=score_run_repository,
@@ -94,7 +95,7 @@ def create_pm_quality_summary_invocation_endpoint(
         get_pm_quality_summary_invocation_repository
     ),
 ) -> DpmPmQualitySummaryInvocationResponse:
-    invocation = _build_summary_invocation(
+    invocation = build_summary_invocation_response_model(
         request=request,
         x_correlation_id=x_correlation_id,
         score_run_repository=score_run_repository,
@@ -188,46 +189,3 @@ def get_pm_quality_summary_invocation_endpoint(
             detail=f"PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:{summary_invocation_id}",
         )
     return DpmPmQualitySummaryInvocationResponse(summary_invocation=invocation)
-
-
-def _build_summary_invocation(
-    *,
-    request: DpmPmQualitySummaryInvocationRequest,
-    x_correlation_id: str | None,
-    score_run_repository: DpmPmQualityScoreRunRepository,
-    review_action_repository: DpmPmQualityReviewActionRepository,
-) -> DpmPmQualitySummaryInvocation:
-    score_run = score_run_repository.get_score_run(score_run_id=request.score_run_id)
-    if score_run is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{request.score_run_id}",
-        )
-    review_action = review_action_repository.get_review_action(
-        review_action_id=request.review_action_id
-    )
-    if review_action is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"PM_QUALITY_REVIEW_ACTION_NOT_FOUND:{request.review_action_id}",
-        )
-    try:
-        return build_pm_quality_summary_invocation(
-            score_run=score_run,
-            review_action=review_action,
-            invocation_state=request.invocation_state,
-            summary_ref=request.summary_ref,
-            workflow_pack_name=request.workflow_pack_name,
-            workflow_pack_version=request.workflow_pack_version,
-            workflow_run_id=request.workflow_run_id,
-            summary_artifact_ref=request.summary_artifact_ref,
-            summary_content_hash=request.summary_content_hash,
-            requested_by=request.requested_by,
-            source_refs=request.source_refs,
-            correlation_id=x_correlation_id or request.requested_by,
-        )
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail=str(exc),
-        ) from exc
