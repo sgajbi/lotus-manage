@@ -5626,3 +5626,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `rebalance_simulation_service.py` separately; those remain operation-state specific.
 - Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-225: Rebalance async-operation HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/routers/rebalance_simulation_operation_routes.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: async analysis submit and manual operation execution still raised FastAPI
+  `HTTPException` directly for disabled async operations, correlation conflicts, disabled manual
+  execution, missing operations, and non-executable operation state. These operation-state
+  semantics belong in the application layer and should be mapped to HTTP only at the route edge.
+- Action: introduced rebalance async-operation domain exceptions, extended
+  `rebalance_simulation_http.py` with async-operation HTTP mapping, and reused it from async submit
+  and manual execution routes. Public paths, response models, OpenAPI output, observability
+  recording, and existing `404`/`409` detail strings were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), rebalance router/service Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: after async-operation mapping stabilizes, inspect remaining scenario-loop catches in
+  `execute_batch_analysis()` and `run_analyze_async_operation()` for whether `HTTPException`
+  compatibility handling can be narrowed without weakening failure capture.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.

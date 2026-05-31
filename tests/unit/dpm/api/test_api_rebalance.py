@@ -433,6 +433,33 @@ def test_rebalance_simulation_http_exception_mapping():
         assert http_exc.detail == detail
 
 
+def test_rebalance_async_operation_http_exception_mapping():
+    from src.api.routers.rebalance_simulation_http import rebalance_async_operation_http_exception
+    from src.api.services.rebalance_simulation_errors import (
+        DpmRebalanceAsyncManualExecutionDisabledError,
+        DpmRebalanceAsyncOperationConflictError,
+        DpmRebalanceAsyncOperationError,
+        DpmRebalanceAsyncOperationNotExecutableError,
+        DpmRebalanceAsyncOperationNotFoundError,
+        DpmRebalanceAsyncOperationsDisabledError,
+    )
+
+    mappings = [
+        (DpmRebalanceAsyncOperationsDisabledError("disabled"), 404, "disabled"),
+        (DpmRebalanceAsyncManualExecutionDisabledError("manual-disabled"), 404, "manual-disabled"),
+        (DpmRebalanceAsyncOperationNotFoundError("missing"), 404, "missing"),
+        (DpmRebalanceAsyncOperationConflictError("conflict"), 409, "conflict"),
+        (DpmRebalanceAsyncOperationNotExecutableError("not-executable"), 409, "not-executable"),
+        (DpmRebalanceAsyncOperationError("generic"), 500, "DpmRebalanceAsyncOperationError"),
+    ]
+
+    for exc, status_code, detail in mappings:
+        http_exc = rebalance_async_operation_http_exception(exc)
+
+        assert http_exc.status_code == status_code
+        assert http_exc.detail == detail
+
+
 def test_simulate_idempotency_replay_can_be_disabled(client, monkeypatch):
     monkeypatch.setenv("DPM_IDEMPOTENCY_REPLAY_ENABLED", "false")
     payload = get_valid_payload()

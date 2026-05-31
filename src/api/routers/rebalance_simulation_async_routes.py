@@ -8,7 +8,10 @@ from pydantic import Field
 from src.api.dependencies import get_db_session
 from src.api.request_models import BatchExecutionRequestEnvelope
 from src.api.routers.rebalance_simulation import router
-from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_exception
+from src.api.routers.rebalance_simulation_http import (
+    rebalance_async_operation_http_exception,
+    rebalance_envelope_http_exception,
+)
 from src.api.services import rebalance_simulation_service as service
 from src.api.simulation_examples import (
     ANALYZE_ASYNC_409_EXAMPLE,
@@ -116,13 +119,16 @@ def analyze_scenarios_async(
         )
     except service.DpmRebalanceEnvelopeError as exc:
         raise rebalance_envelope_http_exception(exc) from exc
-    accepted = service.submit_and_optionally_execute_async_analysis(
-        request=batch_request,
-        correlation_id=x_correlation_id,
-        policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-        tenant_id=x_tenant_id,
-        source_context=source_context,
-    )
+    try:
+        accepted = service.submit_and_optionally_execute_async_analysis(
+            request=batch_request,
+            correlation_id=x_correlation_id,
+            policy_pack_id=x_policy_pack_id,
+            tenant_default_policy_pack_id=x_tenant_policy_pack_id,
+            tenant_id=x_tenant_id,
+            source_context=source_context,
+        )
+    except service.DpmRebalanceAsyncOperationError as exc:
+        raise rebalance_async_operation_http_exception(exc) from exc
     response.headers["X-Correlation-Id"] = accepted.correlation_id
     return accepted

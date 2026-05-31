@@ -6,6 +6,7 @@ from fastapi import Depends, Path, status
 
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.routers.rebalance_simulation import router
+from src.api.routers.rebalance_simulation_http import rebalance_async_operation_http_exception
 from src.api.services import rebalance_simulation_service as service
 from src.core.rebalance_runs import (
     DpmAsyncOperationStatusResponse,
@@ -46,7 +47,10 @@ def execute_dpm_async_operation(
     ],
     service_instance: Annotated[DpmRunSupportService, Depends(get_dpm_run_support_service)],
 ) -> DpmAsyncOperationStatusResponse:
-    return service.execute_dpm_async_operation(
-        operation_id=operation_id,
-        service=service_instance,
-    )
+    try:
+        return service.execute_dpm_async_operation(
+            operation_id=operation_id,
+            service=service_instance,
+        )
+    except service.DpmRebalanceAsyncOperationError as exc:
+        raise rebalance_async_operation_http_exception(exc) from exc

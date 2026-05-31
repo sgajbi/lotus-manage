@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from pydantic import ValidationError
 
 from src.api.observability import (
@@ -22,6 +22,12 @@ from src.api.request_models import (
     RebalanceRequest,
 )
 from src.api.services.rebalance_simulation_errors import (
+    DpmRebalanceAsyncManualExecutionDisabledError,
+    DpmRebalanceAsyncOperationConflictError,
+    DpmRebalanceAsyncOperationError,
+    DpmRebalanceAsyncOperationNotExecutableError,
+    DpmRebalanceAsyncOperationNotFoundError,
+    DpmRebalanceAsyncOperationsDisabledError,
     DpmRebalanceCoreContextIncompleteError,
     DpmRebalanceCoreResolverUnavailableError,
     DpmRebalanceEnvelopeError,
@@ -682,10 +688,7 @@ def submit_and_optionally_execute_async_analysis(
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
     if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="DPM_ASYNC_OPERATIONS_DISABLED",
-        )
+        raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     service = get_dpm_run_support_service()
     policy_pack = resolve_dpm_policy_pack(
         request_policy_pack_id=policy_pack_id,
@@ -726,7 +729,7 @@ def submit_and_optionally_execute_async_analysis(
             outcome="conflict",
             result_status="failed",
         )
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        raise DpmRebalanceAsyncOperationConflictError(str(exc)) from exc
     record_async_operation(
         event="submit",
         execution_mode=resolve_async_execution_mode().lower(),
@@ -752,15 +755,9 @@ def execute_dpm_async_operation(
     *, operation_id: str, service: DpmRunSupportService
 ) -> DpmAsyncOperationStatusResponse:
     if not env_flag("DPM_ASYNC_OPERATIONS_ENABLED", True):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="DPM_ASYNC_OPERATIONS_DISABLED",
-        )
+        raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     if not async_manual_execution_enabled():
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="DPM_ASYNC_MANUAL_EXECUTION_DISABLED",
-        )
+        raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
     try:
         run_analyze_async_operation(
             operation_id=operation_id,
@@ -775,19 +772,25 @@ def execute_dpm_async_operation(
                 execution_mode="manual",
                 outcome="not_executable",
             )
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail) from exc
+            raise DpmRebalanceAsyncOperationNotExecutableError(detail) from exc
         record_async_operation(
             event="execute",
             execution_mode="manual",
             outcome="not_found",
         )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail) from exc
+        raise DpmRebalanceAsyncOperationNotFoundError(detail) from exc
     return service.get_async_operation(operation_id=operation_id)
 
 
 __all__ = [
     "DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE",
     "DPM_IDEMPOTENCY_CACHE",
+    "DpmRebalanceAsyncManualExecutionDisabledError",
+    "DpmRebalanceAsyncOperationConflictError",
+    "DpmRebalanceAsyncOperationError",
+    "DpmRebalanceAsyncOperationNotExecutableError",
+    "DpmRebalanceAsyncOperationNotFoundError",
+    "DpmRebalanceAsyncOperationsDisabledError",
     "DpmRebalanceCoreContextIncompleteError",
     "DpmRebalanceCoreResolverUnavailableError",
     "DpmRebalanceEnvelopeError",

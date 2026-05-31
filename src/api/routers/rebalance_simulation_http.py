@@ -3,6 +3,12 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 
 from src.api.services.rebalance_simulation_errors import (
+    DpmRebalanceAsyncManualExecutionDisabledError,
+    DpmRebalanceAsyncOperationConflictError,
+    DpmRebalanceAsyncOperationError,
+    DpmRebalanceAsyncOperationNotExecutableError,
+    DpmRebalanceAsyncOperationNotFoundError,
+    DpmRebalanceAsyncOperationsDisabledError,
     DpmRebalanceCoreContextIncompleteError,
     DpmRebalanceCoreResolverUnavailableError,
     DpmRebalanceEnvelopeError,
@@ -41,6 +47,32 @@ def rebalance_simulation_http_exception(exc: DpmRebalanceSimulationError) -> HTT
         ),
     ):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=exc.detail)
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=type(exc).__name__,
+    )
+
+
+def rebalance_async_operation_http_exception(
+    exc: DpmRebalanceAsyncOperationError,
+) -> HTTPException:
+    if isinstance(
+        exc,
+        (
+            DpmRebalanceAsyncOperationsDisabledError,
+            DpmRebalanceAsyncManualExecutionDisabledError,
+            DpmRebalanceAsyncOperationNotFoundError,
+        ),
+    ):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=exc.detail)
+    if isinstance(
+        exc,
+        (
+            DpmRebalanceAsyncOperationConflictError,
+            DpmRebalanceAsyncOperationNotExecutableError,
+        ),
+    ):
+        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=exc.detail)
     return HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail=type(exc).__name__,

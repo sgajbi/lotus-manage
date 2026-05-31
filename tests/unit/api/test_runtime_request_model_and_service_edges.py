@@ -202,10 +202,9 @@ def test_stateless_envelope_resolution_rejects_missing_constructed_payloads() ->
 def test_async_manual_execution_disabled_is_reported(monkeypatch) -> None:
     monkeypatch.setenv("DPM_ASYNC_MANUAL_EXECUTION_ENABLED", "false")
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(service.DpmRebalanceAsyncManualExecutionDisabledError) as exc_info:
         service.execute_dpm_async_operation(operation_id="op_1", service=object())
 
-    assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "DPM_ASYNC_MANUAL_EXECUTION_DISABLED"
 
 
@@ -228,10 +227,9 @@ def test_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
 def test_async_operation_disabled_is_reported_before_manual_gate(monkeypatch) -> None:
     monkeypatch.setenv("DPM_ASYNC_OPERATIONS_ENABLED", "false")
 
-    with pytest.raises(HTTPException) as exc_info:
+    with pytest.raises(service.DpmRebalanceAsyncOperationsDisabledError) as exc_info:
         service.execute_dpm_async_operation(operation_id="op_1", service=object())
 
-    assert exc_info.value.status_code == 404
     assert exc_info.value.detail == "DPM_ASYNC_OPERATIONS_DISABLED"
 
 
