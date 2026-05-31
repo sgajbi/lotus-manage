@@ -512,6 +512,8 @@ def test_wiki_current_state_page_is_demo_and_operations_ready() -> None:
         "## Explicit Non-Claims",
         "```mermaid",
         "Portfolio memory",
+        "deduplicated explicit identifiers must stay within",
+        "`source_scan_limit`",
         "PM operating quality",
         "External OMS execution",
         "client communication",

@@ -61,7 +61,7 @@ flowchart LR
 | Explicit rebalance waves | Explicit portfolio-list wave preview/create/source-check/simulate/select/approve/stage/handoff, campaign definition workflows, launch packages, launch history, approval inbox, assignment tasks, and maker-checker evidence are implemented. | Suitable for PM/CIO operating cockpit demos when the no-order, no-OMS, no-client-contact boundaries are stated. |
 | Post-trade outcome feedback | Outcome-review preview/create/read/search, source-owned realized source adapters, supportability diagnostics, report input, AI evidence input, and append-only events are implemented. | Suitable for outcome-review and operating-quality demos. External execution and client communication remain explicit non-claims. |
 | PM operating quality | Policy, score-run, fairness-analysis, review-action, and summary-invocation evidence lifecycles are implemented with bounded PM-book membership and support-only boundaries. | Suitable for operating-quality governance demos. It is not a PM ranking, HR, compensation, conduct, trade approval, or autonomous decisioning engine. |
-| Portfolio memory | Deterministic source-backed portfolio timeline, search, source-system/source-type facets, exact event lookup, report/AI/archive lineage, PM-quality lineage, campaign workflow lineage, and source-family posture are implemented. | Suitable for audit and demo lineage walkthroughs. Search is bounded to Manage-local persisted evidence and explicit caller-supplied portfolio identifiers. |
+| Portfolio memory | Deterministic source-backed portfolio timeline, search, source-system/source-type facets, exact event lookup, report/AI/archive lineage, PM-quality lineage, campaign workflow lineage, and source-family posture are implemented. | Suitable for audit and demo lineage walkthroughs. Search is bounded to Manage-local persisted evidence and explicit caller-supplied portfolio identifiers; deduplicated explicit identifiers must stay within `source_scan_limit`. |
 | Integration capability publication | `/api/v1/integration/capabilities` publishes runtime capability posture and stateful mode only when gates prove the source configuration. | Consumers can distinguish configured support from disabled or blocked runtime posture. |
 
 ## Non-Functional Capability Matrix
@@ -162,7 +162,8 @@ These statements should be preserved in client demos and presentations:
 5. Manage does not rank portfolio managers, make HR/conduct/compensation decisions, infer protected
    classes, or autonomously approve trades.
 6. Manage portfolio-memory search is bounded to Manage-local persisted evidence and explicit
-   caller-supplied identifiers; it is not global cross-app source-event search.
+   caller-supplied identifiers; deduplicated explicit identifiers must stay within
+   `source_scan_limit`, and the route is not global cross-app source-event search.
 
 ## Where To Go Next
 

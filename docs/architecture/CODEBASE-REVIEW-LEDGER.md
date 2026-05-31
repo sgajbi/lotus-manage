@@ -1764,3 +1764,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pagination, source scan, or explicit candidate semantics change.
 - Wiki decision: updated `wiki/API-Surface.md` because this is implementation-backed API behavior
   visible to developers, operators, Gateway consumers, and demo preparation.
+
+## BACKEND-REVIEW-20260531-049: Current-state wiki omitted candidate-bound posture
+
+- Date: 2026-05-31
+- Scope: portfolio-memory current-state product truth
+- Finding: the current-state wiki said portfolio-memory search is bounded to Manage-local evidence
+  and explicit caller-supplied identifiers, but it did not mention the new `source_scan_limit`
+  bound for deduplicated explicit identifiers. That left demo and client-facing product posture
+  less precise than the API contract.
+- Action: updated `wiki/Current-State.md` to state the explicit-candidate bound in both the
+  functional matrix and non-claim boundary, and pinned the current-state page test.
+- Status: hardened
+- Evidence: docs regression test in `tests/unit/test_documentation_current_state.py`.
+- Follow-up: keep current-state product claims aligned with API behavior when bounded search
+  controls change.
+- Wiki decision: updated `wiki/Current-State.md` because this is implementation-backed
+  product-current-state and demo/client-pitch truth.
