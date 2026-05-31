@@ -885,3 +885,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   portfolio-memory projection module emerges.
 - Wiki decision: no wiki source change required; this is test ownership cleanup with no API,
   supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-004: Portfolio-memory search and facet helpers lived in service orchestration
+
+- Date: 2026-05-31
+- Scope: `src/core/portfolio_memory/service.py`, search filter normalization, event matching,
+  source-system/source-type facet extraction, deterministic counts, and event dedupe/sort helpers
+- Finding: portfolio-memory search orchestration mixed repository scanning and page construction
+  with pure helper behavior for filter normalization, event source facets, matching, counts, and
+  event ordering. These helpers are part of the search contract and should be testable without
+  constructing repository fixtures or invoking the full read-model service.
+- Action: extracted the pure search/facet helpers into
+  `src/core/portfolio_memory/search_filters.py`, kept service-level aliases for behavior-preserving
+  orchestration, and added direct tests for blank-filter normalization, source/artifact facet
+  inclusion, filter matching, count aggregation, and deterministic dedupe/sort behavior.
+- Status: hardened
+- Evidence: focused tests in `tests/unit/dpm/portfolio_memory/test_search_filters.py`; existing
+  portfolio-memory API search tests remain the endpoint/read-model regression scope.
+- Follow-up: keep candidate repository scanning inside service orchestration until a stable
+  search-index service boundary emerges.
+- Wiki decision: no wiki source change required; this is internal modularity/testability cleanup
+  with no API, supported-feature, or operator-contract change.

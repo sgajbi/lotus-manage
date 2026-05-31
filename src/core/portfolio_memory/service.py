@@ -1,7 +1,7 @@
 """Source-backed portfolio memory read-model assembly."""
 
 from datetime import datetime, timezone
-from typing import Iterable, cast
+from typing import cast
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.models import (
@@ -54,6 +54,14 @@ from src.core.portfolio_memory.source_refs import (
     proof_pack_source_refs as _proof_pack_source_refs,
     wave_source_refs as _wave_source_refs,
 )
+from src.core.portfolio_memory.search_filters import (
+    count_values as _counts,
+    dedupe_and_sort_events as _dedupe_and_sort,
+    event_matches_search_filters as _event_matches_search_filters,
+    event_source_systems as _event_source_systems,
+    event_source_types as _event_source_types,
+    normalize_portfolio_memory_search_filter,
+)
 from src.core.portfolio_memory.supportability import (
     assignment_sla_state as _assignment_sla_state,
     assignment_task_state as _assignment_task_state,
@@ -83,15 +91,6 @@ from src.core.waves.campaign_definitions import (
 )
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.core.waves.repository import DpmWaveRepository
-
-
-def normalize_portfolio_memory_search_filter(value: str | None) -> str | None:
-    """Normalize optional string search filters without inventing aliases."""
-
-    if value is None:
-        return None
-    stripped_value = value.strip()
-    return stripped_value or None
 
 
 def build_portfolio_memory(
@@ -540,49 +539,6 @@ def _memory_candidate_portfolio_ids(
             for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids
         )
     return sorted(candidates)
-
-
-def _event_matches_search_filters(
-    *,
-    event: DpmPortfolioMemoryEvent,
-    event_type: str | None,
-    supportability_state: PortfolioMemorySupportabilityState | None,
-    source_system: str | None,
-    source_type: str | None,
-) -> bool:
-    if event_type is not None and event.event_type != event_type:
-        return False
-    if supportability_state is not None and event.supportability_state != supportability_state:
-        return False
-    if source_system is not None and source_system not in _event_source_systems(event):
-        return False
-    if source_type is not None and source_type not in _event_source_types(event):
-        return False
-    return True
-
-
-def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_system
-        for source_system in [
-            event.source_system,
-            *(ref.source_system for ref in event.source_refs),
-            *(ref.source_system for ref in event.artifact_refs),
-        ]
-        if source_system
-    }
-
-
-def _event_source_types(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_type
-        for source_type in [
-            event.source_type,
-            *(ref.source_type for ref in event.source_refs),
-            *(ref.source_type for ref in event.artifact_refs),
-        ]
-        if source_type
-    }
 
 
 def _mandate_events(
@@ -1736,22 +1692,6 @@ def _waves_for_portfolio(
 ) -> list[DpmRebalanceWave]:
     waves = wave_repository.list_waves(limit=limit)
     return [wave for wave in waves if any(item.portfolio_id == portfolio_id for item in wave.items)]
-
-
-def _dedupe_and_sort(
-    events: Iterable[DpmPortfolioMemoryEvent],
-) -> list[DpmPortfolioMemoryEvent]:
-    unique = {event.event_id: event for event in events}
-    return sorted(
-        unique.values(), key=lambda event: (event.event_time, event.event_id), reverse=True
-    )
-
-
-def _counts(values: Iterable[str]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for value in values:
-        counts[value] = counts.get(value, 0) + 1
-    return counts
 
 
 def _wave_event_metadata(event: DpmRebalanceWaveEvent) -> dict[str, object]:
