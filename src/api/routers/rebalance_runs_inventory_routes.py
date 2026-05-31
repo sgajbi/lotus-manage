@@ -8,7 +8,7 @@ from src.api.observability import (
     record_action_register_supportability,
 )
 from src.api.routers import rebalance_runs as shared
-from src.api.routers import rebalance_runs_config
+from src.api.services import rebalance_run_support_config
 from src.core.rebalance_runs import (
     DpmRunListResponse,
     DpmRunSupportService,
@@ -155,7 +155,7 @@ def get_dpm_supportability_summary(
     shared._reject_unexpected_query_params(request, allowed_params=set())
     response = service.get_supportability_summary(
         store_backend=shared._supportability_store_backend_name(),
-        retention_days=rebalance_runs_config.env_non_negative_int(
+        retention_days=rebalance_run_support_config.env_non_negative_int(
             "DPM_SUPPORTABILITY_RETENTION_DAYS", 0
         ),
     )

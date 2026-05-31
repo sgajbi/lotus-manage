@@ -3,12 +3,12 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from src.api.routers import rebalance_runs_config
 from src.api.routers.route_registration import register_route_modules
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
     reject_unexpected_query_params,
 )
+from src.api.services import rebalance_run_support_config
 from src.api.services.rebalance_run_support_service import (
     DpmRunSupportServiceUnavailableError,
 )
@@ -92,7 +92,7 @@ def _assert_support_bundle_apis_enabled() -> None:
 
 
 def _supportability_store_backend_name() -> str:
-    return rebalance_runs_config.supportability_store_backend_name()
+    return rebalance_run_support_config.supportability_store_backend_name()
 
 
 _reject_unexpected_query_params = reject_unexpected_query_params

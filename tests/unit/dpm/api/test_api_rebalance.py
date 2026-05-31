@@ -873,7 +873,7 @@ def test_dpm_support_repository_backend_init_errors_return_503(client, monkeypat
         "postgresql://user:pass@localhost:5432/dpm",
     )
     monkeypatch.setattr(
-        "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
+        "src.api.services.rebalance_run_support_config.PostgresDpmRunRepository",
         lambda *args, **kwargs: (_ for _ in ()).throw(ConnectionError("boom")),
     )
     reset_dpm_run_support_service_for_tests()

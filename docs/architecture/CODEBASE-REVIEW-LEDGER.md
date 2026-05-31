@@ -5754,3 +5754,38 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modules when each consumer can switch without widening the public API surface.
 - Wiki decision: no wiki source change required; this is internal service-boundary modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-229: Run-support config service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_run_support_config.py`,
+  `src/api/routers/rebalance_runs_config.py`,
+  `src/api/services/rebalance_run_support_service.py`,
+  `src/api/routers/rebalance_runs.py`,
+  `src/api/routers/rebalance_runs_inventory_routes.py`,
+  `src/api/persistence_profile.py`, `src/api/production_cutover_contract.py`, and focused
+  run-support, persistence, cutover, and rebalance tests.
+- Finding: run-support repository/configuration helpers lived under the router package even though
+  they provided application configuration, environment parsing, repository construction, and
+  production guardrail inputs. The run-support service and production guardrails therefore still
+  depended on router package plumbing after the provider extraction.
+- Action: moved run-support configuration and repository-construction helpers into
+  `rebalance_run_support_config.py`, kept `rebalance_runs_config.py` as a compatibility shim for
+  route-local imports, and updated service, persistence-profile, cutover, and test patch paths to
+  use the service module. No public route, payload, OpenAPI, or operator detail changed.
+- Status: hardened
+- Evidence: run-support config, runtime request-model/service edge, persistence-profile,
+  production-cutover, and rebalance API regressions
+  (`tests/unit/dpm/api/test_dpm_runs_config.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/api/test_persistence_profile.py`,
+  `tests/unit/shared/dependencies/test_production_cutover_contract.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over touched
+  run-support modules, service-layer import scan showing no remaining FastAPI/router imports,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: continue decomposing router-adjacent helper modules in other domains, especially
+  wave and PM operating quality builders that still mix request/HTTP concerns with reusable
+  application logic.
+- Wiki decision: no wiki source change required; this is internal configuration-boundary
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

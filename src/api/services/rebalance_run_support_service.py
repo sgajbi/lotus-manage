@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from src.api.routers import rebalance_runs_config
+from src.api.services import rebalance_run_support_config
 from src.core.models import RebalanceResult
 from src.core.rebalance_runs import DpmRunSupportService
 from src.core.rebalance_runs.repository import DpmRunRepository
@@ -24,7 +24,7 @@ def _backend_init_error_detail(detail: str) -> str:
 
 
 def _build_repository() -> DpmRunRepository:
-    return rebalance_runs_config.build_repository()
+    return rebalance_run_support_config.build_repository()
 
 
 def get_dpm_run_support_service() -> DpmRunSupportService:
@@ -40,20 +40,20 @@ def get_dpm_run_support_service() -> DpmRunSupportService:
     if _SERVICE is None:
         _SERVICE = DpmRunSupportService(
             repository=_REPOSITORY,
-            async_operation_ttl_seconds=rebalance_runs_config.env_int(
+            async_operation_ttl_seconds=rebalance_run_support_config.env_int(
                 "DPM_ASYNC_OPERATIONS_TTL_SECONDS",
                 86400,
             ),
-            supportability_retention_days=rebalance_runs_config.env_non_negative_int(
+            supportability_retention_days=rebalance_run_support_config.env_non_negative_int(
                 "DPM_SUPPORTABILITY_RETENTION_DAYS",
                 0,
             ),
-            workflow_enabled=rebalance_runs_config.env_flag("DPM_WORKFLOW_ENABLED", False),
-            workflow_requires_review_for_statuses=rebalance_runs_config.env_csv_set(
+            workflow_enabled=rebalance_run_support_config.env_flag("DPM_WORKFLOW_ENABLED", False),
+            workflow_requires_review_for_statuses=rebalance_run_support_config.env_csv_set(
                 "DPM_WORKFLOW_REQUIRES_REVIEW_FOR_STATUSES",
                 {"PENDING_REVIEW"},
             ),
-            artifact_store_mode=rebalance_runs_config.artifact_store_mode(),
+            artifact_store_mode=rebalance_run_support_config.artifact_store_mode(),
         )
     return _SERVICE
 

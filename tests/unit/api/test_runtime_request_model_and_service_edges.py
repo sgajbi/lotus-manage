@@ -70,7 +70,7 @@ def test_rebalance_run_support_provider_raises_application_error(monkeypatch) ->
         raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
 
     monkeypatch.setattr(
-        run_support_service.rebalance_runs_config, "build_repository", _raise_missing_dsn
+        run_support_service.rebalance_run_support_config, "build_repository", _raise_missing_dsn
     )
 
     with pytest.raises(run_support_service.DpmRunSupportServiceUnavailableError) as exc_info:

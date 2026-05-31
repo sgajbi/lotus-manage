@@ -2,7 +2,7 @@ import builtins
 
 import pytest
 
-from src.api.routers import rebalance_runs_config as dpm_runs_config
+from src.api.services import rebalance_run_support_config as dpm_runs_config
 
 
 def test_supportability_backend_aliases_and_defaults(monkeypatch):
