@@ -1597,3 +1597,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   search facets, or handoff consumers change.
 - Wiki decision: updated `wiki/Architecture.md` because implementation-backed module boundaries are
   developer, operations, demo, and client-pitch product truth.
+
+## BACKEND-REVIEW-20260531-039: Source-family collection trusted caller read limits
+
+- Date: 2026-05-31
+- Scope: portfolio-memory source-family event collection guardrails
+- Finding: `build_portfolio_memory_from_sources` validated read limits before collecting source
+  events, but `collect_portfolio_memory_events` still accepted direct unsafe limits. Direct
+  internal callers could therefore bypass the shared portfolio-memory read-limit policy before
+  source-family repositories were queried.
+- Action: moved the shared read-limit validation into the source-family collection boundary while
+  keeping the service-level validation as a public facade guardrail.
+- Status: hardened
+- Evidence: focused rejection tests in `tests/unit/dpm/portfolio_memory/test_source_collection.py`.
+- Follow-up: keep future continuation or per-family source scan controls validated before any
+  repository fan-out.
+- Wiki decision: no wiki source change required; this is internal defensive validation with no
+  route, payload, supported-feature, or operator-contract change.

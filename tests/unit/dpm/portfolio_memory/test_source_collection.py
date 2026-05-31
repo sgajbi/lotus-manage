@@ -1,3 +1,5 @@
+import pytest
+
 from src.core.portfolio_memory.source_collection import collect_portfolio_memory_events
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
@@ -81,3 +83,23 @@ def test_collect_portfolio_memory_events_skips_optional_empty_repositories() -> 
     )
 
     assert "CONSTRUCTION_ALTERNATIVE_SET" not in {event.event_type for event in events}
+
+
+@pytest.mark.parametrize("limit", [0, 1001])
+def test_collect_portfolio_memory_events_rejects_unsafe_source_scan_limits(
+    limit: int,
+) -> None:
+    proof_pack_repository, wave_repository, outcome_repository, _mandate_repository = (
+        _repositories()
+    )
+
+    with pytest.raises(ValueError, match="portfolio-memory event limit"):
+        collect_portfolio_memory_events(
+            portfolio_id=PORTFOLIO_ID,
+            repositories=PortfolioMemorySourceRepositories(
+                proof_pack_repository=proof_pack_repository,
+                wave_repository=wave_repository,
+                outcome_review_repository=outcome_repository,
+            ),
+            limit=limit,
+        )
