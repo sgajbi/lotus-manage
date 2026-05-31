@@ -2177,3 +2177,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   review the remaining read-only search/detail/proof-pack/report/supportability routes.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-069: Wave workflow commands lived in the main wave router
+
+- Date: 2026-05-31
+- Scope: durable wave approve, stage, handoff, and cancel route definitions
+- Finding: wave workflow state-transition commands still lived directly in
+  `src/api/routers/waves.py` even though their shared HTTP response handling already lived in
+  `src/api/routers/wave_workflow_command_http.py`. These endpoints share a command envelope,
+  correlation-id handling, idempotent replay semantics, and wave repository dependency, so keeping
+  them mixed with read-only search/detail/supportability routes obscured the command boundary.
+- Action: moved the workflow command group into `src/api/routers/wave_workflow_routes.py` and
+  mounted it after item selection, preserving public path order and response contracts. The child
+  router inherits parent tags to avoid duplicate OpenAPI tag entries.
+- Status: hardened
+- Evidence: full wave API regression test (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: extract the remaining read-only wave search/detail/proof-pack/report/supportability
+  routes into read-model route modules and review whether the campaign detail route should join the
+  campaign-definition route module.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
