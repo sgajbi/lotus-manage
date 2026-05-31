@@ -2,16 +2,12 @@ import importlib
 import os
 from typing import Annotated, Optional, cast
 
-from fastapi import APIRouter, Header, HTTPException, Path, Request, status
+from fastapi import APIRouter, HTTPException, Path, Request, status
 
 from src.api.observability import record_policy_pack_resolution
 from src.api.routers.rebalance_policy_pack_docs import (
     POLICY_CATALOG_DELETE_DESCRIPTION,
     POLICY_CATALOG_DELETE_RESPONSES,
-    POLICY_CATALOG_DESCRIPTION,
-    POLICY_CATALOG_ITEM_DESCRIPTION,
-    POLICY_CATALOG_ITEM_RESPONSES,
-    POLICY_CATALOG_RESPONSES,
     POLICY_CATALOG_UPSERT_DESCRIPTION,
     POLICY_CATALOG_UPSERT_RESPONSES,
 )
@@ -25,7 +21,6 @@ from src.core.common.capabilities import psycopg_error_type
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
 from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
-    DpmPolicyPackCatalogResponse,
     DpmPolicyPackDefinition,
     DpmPolicyPackMutationResponse,
     DpmPolicyPackUpsertRequest,
@@ -160,88 +155,7 @@ def _record_policy_pack_api_resolution(resolution: DpmEffectivePolicyPackResolut
 
 
 importlib.import_module("src.api.routers.rebalance_policy_pack_effective_routes")
-
-
-@router.get(
-    "/rebalance/policies/catalog",
-    response_model=DpmPolicyPackCatalogResponse,
-    status_code=status.HTTP_200_OK,
-    summary="List lotus-manage Policy Pack Catalog",
-    description=POLICY_CATALOG_DESCRIPTION,
-    responses=POLICY_CATALOG_RESPONSES,
-)
-def get_dpm_policy_pack_catalog(
-    request: Request,
-    x_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional request-scoped policy-pack identifier.",
-            examples=["dpm_standard_v1"],
-        ),
-    ] = None,
-    x_tenant_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant-default policy-pack identifier from upstream context.",
-            examples=["dpm_tenant_default_v1"],
-        ),
-    ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant identifier used for tenant policy-pack default lookup.",
-            examples=["tenant_001"],
-        ),
-    ] = None,
-) -> DpmPolicyPackCatalogResponse:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    resolution = resolve_dpm_policy_pack(
-        request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-        tenant_id=x_tenant_id,
-    )
-    _record_policy_pack_api_resolution(resolution)
-    catalog = load_dpm_policy_pack_catalog()
-    items = sorted(catalog.values(), key=lambda item: item.policy_pack_id)
-    selected_policy_pack_id = resolution.selected_policy_pack_id
-    return DpmPolicyPackCatalogResponse(
-        enabled=resolution.enabled,
-        total=len(items),
-        selected_policy_pack_id=selected_policy_pack_id,
-        selected_policy_pack_present=(
-            selected_policy_pack_id is not None and selected_policy_pack_id in catalog
-        ),
-        selected_policy_pack_source=resolution.source,
-        items=items,
-    )
-
-
-@router.get(
-    "/rebalance/policies/catalog/{policy_pack_id}",
-    response_model=DpmPolicyPackDefinition,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Policy Pack",
-    description=POLICY_CATALOG_ITEM_DESCRIPTION,
-    responses=POLICY_CATALOG_ITEM_RESPONSES,
-)
-def get_dpm_policy_pack(
-    request: Request,
-    policy_pack_id: Annotated[
-        str,
-        Path(
-            description="Policy-pack identifier.",
-            examples=["dpm_standard_v1"],
-        ),
-    ],
-) -> DpmPolicyPackDefinition:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    repository = _get_policy_pack_repository()
-    policy_pack = repository.get_policy_pack(policy_pack_id=policy_pack_id)
-    if policy_pack is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="DPM_POLICY_PACK_NOT_FOUND"
-        )
-    return policy_pack
+importlib.import_module("src.api.routers.rebalance_policy_pack_catalog_routes")
 
 
 @router.put(

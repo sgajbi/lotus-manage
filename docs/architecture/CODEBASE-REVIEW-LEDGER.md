@@ -3294,3 +3294,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   repository/configuration import seams.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-121: Policy-pack catalog reads were mixed with admin mutations
+
+- Date: 2026-05-31
+- Scope: policy-pack catalog list and catalog item read endpoints.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed read-only catalog inspection with
+  admin upsert/delete controls. Catalog reads own selected-policy context, repository-backed
+  catalog listing, sorted response shape, item lookup, and not-found behavior, while admin routes
+  own feature-gated mutation semantics.
+- Action: moved catalog read route registration into
+  `src/api/routers/rebalance_policy_pack_catalog_routes.py`, preserving public paths, response
+  models, Swagger guidance, request/tenant header metadata, query-parameter rejection, resolution
+  metric recording, sorted item order, selected-policy presence behavior, and missing-item 404
+  mapping.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split admin mutation routes from the remaining policy-pack router shell while
+  preserving repository/configuration import seams.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
