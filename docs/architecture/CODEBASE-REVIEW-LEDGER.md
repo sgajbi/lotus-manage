@@ -9112,3 +9112,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   calls without moving router or HTTP concerns into services.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-374: Mandate optional-source bundle extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_optional_sources.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: even after the readiness helpers were extracted, `refresh_mandate_from_core` still
+  contained a long repeated sequence for resolving each optional source family and assembling the
+  unavailable-source list, making the service harder to scan as orchestration.
+- Action: added a typed `DpmMandateOptionalSources` bundle and moved source-family resolution
+  assembly into `resolve_mandate_optional_sources`; the service now obtains the bundle and passes it
+  into mandate twin and health-input builders while preserving private helper compatibility aliases.
+  Direct tests now verify bundle typing, source-family request parameters, degraded-family
+  filtering, and alias/export surfaces.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_optional_sources.py`; direct optional-source helper
+  tests and selected mandate API regressions passed with 34 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `mandate_service.py` by extracting monitoring-run assembly and
+  portfolio-manager book membership helpers where they remain pure service support logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
