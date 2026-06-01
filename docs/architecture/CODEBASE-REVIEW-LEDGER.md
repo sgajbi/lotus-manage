@@ -7579,3 +7579,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   preserving explicit source-family fields.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-302: Treasury supportability evidence helpers
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: treasury source mapping repeated optional missing-data and blocked-capability extraction
+  for each external treasury source family.
+- Action: added small internal helpers for optional supportability evidence access and reused them
+  in the aggregate missing-data and blocked-capability rollups.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep explicit source-family field mapping in place while extracting only repeated
+  mechanics that do not encode separate treasury business rules.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.

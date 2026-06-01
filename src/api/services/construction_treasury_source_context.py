@@ -30,6 +30,14 @@ def _source_hash(payload: _JsonPayload | None) -> str | None:
     return hash_canonical_payload(payload) if payload is not None else None
 
 
+def _missing_data_families(response: _TreasurySourceResponse | None) -> list[str]:
+    return response.supportability.missing_data_families if response is not None else []
+
+
+def _blocked_capabilities(response: _TreasurySourceResponse | None) -> list[str]:
+    return response.supportability.blocked_capabilities if response is not None else []
+
+
 def external_treasury_currency_overlay_context(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -87,46 +95,16 @@ def external_treasury_currency_overlay_context(
     hedge_policy_source_hash = _source_hash(hedge_policy_payload)
     eligible_hedge_instruments_source_hash = _source_hash(eligible_hedge_instruments_payload)
     fx_forward_curve_source_hash = _source_hash(fx_forward_curve_payload)
-    readiness_missing = (
-        hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
-    )
-    exposure_missing = (
-        currency_exposure.supportability.missing_data_families
-        if currency_exposure is not None
-        else []
-    )
-    hedge_policy_missing = (
-        hedge_policy.supportability.missing_data_families if hedge_policy is not None else []
-    )
-    eligible_hedge_instruments_missing = (
-        eligible_hedge_instruments.supportability.missing_data_families
-        if eligible_hedge_instruments is not None
-        else []
-    )
-    fx_forward_curve_missing = (
-        fx_forward_curve.supportability.missing_data_families
-        if fx_forward_curve is not None
-        else []
-    )
-    readiness_blocked = (
-        hedge_readiness.supportability.blocked_capabilities if hedge_readiness is not None else []
-    )
-    exposure_blocked = (
-        currency_exposure.supportability.blocked_capabilities
-        if currency_exposure is not None
-        else []
-    )
-    hedge_policy_blocked = (
-        hedge_policy.supportability.blocked_capabilities if hedge_policy is not None else []
-    )
-    eligible_hedge_instruments_blocked = (
-        eligible_hedge_instruments.supportability.blocked_capabilities
-        if eligible_hedge_instruments is not None
-        else []
-    )
-    fx_forward_curve_blocked = (
-        fx_forward_curve.supportability.blocked_capabilities if fx_forward_curve is not None else []
-    )
+    readiness_missing = _missing_data_families(hedge_readiness)
+    exposure_missing = _missing_data_families(currency_exposure)
+    hedge_policy_missing = _missing_data_families(hedge_policy)
+    eligible_hedge_instruments_missing = _missing_data_families(eligible_hedge_instruments)
+    fx_forward_curve_missing = _missing_data_families(fx_forward_curve)
+    readiness_blocked = _blocked_capabilities(hedge_readiness)
+    exposure_blocked = _blocked_capabilities(currency_exposure)
+    hedge_policy_blocked = _blocked_capabilities(hedge_policy)
+    eligible_hedge_instruments_blocked = _blocked_capabilities(eligible_hedge_instruments)
+    fx_forward_curve_blocked = _blocked_capabilities(fx_forward_curve)
     reason_codes: list[str] = [supportability_reason]
     if hedge_readiness is not None:
         reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
