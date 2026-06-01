@@ -6538,3 +6538,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source products.
 - Wiki decision: no wiki source change required; this is internal method-readiness modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-257: Construction source analytics posture extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_analytics_posture.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_analytics_posture.py`.
+- Finding: the construction service still embedded the risk/performance source-analytics posture
+  map, including required source products and blocked local methodology claims. This posture is
+  durable product evidence and should be independently testable instead of hidden in orchestration.
+- Action: extracted source-analytics posture into
+  `construction_source_analytics_posture.py` and left the construction service as a thin delegate.
+  Added direct tests that keep `RiskMetricsReport:v1` required for risk-aware readiness,
+  `RegimeScenarioPackEvaluation:v1` required for regime-stress readiness, performance products
+  non-required, and local risk/performance methodology calculations explicitly blocked.
+- Status: hardened
+- Evidence: focused source-analytics posture, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks, and
+  focused mypy over source-analytics posture and construction service passed.
+- Follow-up: continue extracting source-product authority-context assembly for lotus-core treasury,
+  execution acknowledgement, client restriction, sustainability, liquidity, and risk context
+  inputs.
+- Wiki decision: no wiki source change required; this is internal source-posture modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
