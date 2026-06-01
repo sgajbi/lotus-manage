@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -19,10 +17,13 @@ from src.core.outcomes import (
     DpmRealizedOutcomeSnapshot,
     OutcomeComparisonDirection,
     OutcomeDimension,
-    OutcomeEventType,
     build_ai_evidence_input,
     build_report_input,
     compare_outcome_dimensions,
+)
+from src.api.services.outcome_review_creation import (
+    build_created_outcome_event,
+    build_review_content_hash,
 )
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
@@ -78,7 +79,7 @@ def create_outcome_review(
         realized_snapshot=realized_snapshot,
         dimension_configs=dimension_configs,
     )
-    content_hash = _review_content_hash(
+    content_hash = build_review_content_hash(
         expected_snapshot=expected_snapshot,
         realized_snapshot=realized_snapshot,
         comparison=comparison,
@@ -90,15 +91,13 @@ def create_outcome_review(
         return existing
     created_at = datetime.now(timezone.utc)
     outcome_review_id = f"dor_{uuid4().hex[:16]}"
-    event = DpmOutcomeEvent(
-        event_id=f"{outcome_review_id}_created",
-        event_type=_created_event_type(comparison.state),
-        event_time=created_at.isoformat(),
-        actor=actor_id,
+    event = build_created_outcome_event(
         outcome_review_id=outcome_review_id,
-        state=comparison.state,
-        reason_codes=comparison.supportability.reason_codes,
-        source_refs=[*expected_snapshot.source_lineage, *realized_snapshot.source_lineage],
+        comparison=comparison,
+        expected_snapshot=expected_snapshot,
+        realized_snapshot=realized_snapshot,
+        actor_id=actor_id,
+        created_at=created_at,
     )
     review = DpmPostTradeOutcomeReview(
         outcome_review_id=outcome_review_id,
@@ -319,35 +318,3 @@ def _dimension_inputs(
             )
         )
     return inputs
-
-
-def _created_event_type(state: str) -> OutcomeEventType:
-    if state == "BLOCKED":
-        return "OUTCOME_REVIEW_BLOCKED"
-    if state == "DEGRADED":
-        return "OUTCOME_REVIEW_DEGRADED"
-    if state == "READY":
-        return "OUTCOME_REVIEW_READY"
-    return "OUTCOME_REVIEW_CREATED"
-
-
-def _content_hash(payload: dict[str, object]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
-def _review_content_hash(
-    *,
-    expected_snapshot: DpmExpectedOutcomeSnapshot,
-    realized_snapshot: DpmRealizedOutcomeSnapshot,
-    comparison: DpmOutcomeReviewComparison,
-) -> str:
-    return _content_hash(
-        {
-            "expected_snapshot": expected_snapshot.model_dump(mode="json"),
-            "realized_snapshot": realized_snapshot.model_dump(mode="json"),
-            "dimension_results": [
-                result.model_dump(mode="json") for result in comparison.dimension_results
-            ],
-        }
-    )

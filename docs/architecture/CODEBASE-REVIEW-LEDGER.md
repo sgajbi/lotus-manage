@@ -9515,3 +9515,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembly, content-hash support, or transition support only where direct tests can pin behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-391: Outcome review creation-support extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_creation.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_creation.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: outcome-review creation still embedded canonical content hashing and created-event
+  type/source-lineage assembly inside the orchestration service.
+- Action: extracted review content-hash generation, bounded created-event type mapping, and created
+  event assembly into a focused helper while keeping idempotency, review construction, and
+  persistence in `outcome_review_service.py`; added direct tests for state-to-event mapping,
+  expected/realized source-lineage projection, stable hashing, and hash drift when source evidence
+  changes.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_creation.py`; direct creation-support
+  tests and selected outcome-review API regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing service hotspots by extracting dimension-input validation or
+  refresh-event support where tests can pin validation and event semantics directly.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
