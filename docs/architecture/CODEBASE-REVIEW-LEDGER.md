@@ -8243,3 +8243,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   fallback behavior can be preserved without weakening source-boundary proof.
 - Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-336: Treasury source identity helper reuse
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `src/api/services/construction_source_identity.py`, treasury source-context tests, and this
+  ledger.
+- Finding: treasury source-context mapping retained local optional payload, per-source hash, and
+  source-id fallback helpers after shared construction source identity helpers were introduced.
+- Action: rewired optional treasury source payload/hash/source-id handling through the shared
+  source identity helpers while preserving the aggregate currency-overlay content hash and
+  fail-closed per-source fallback semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py` and `construction_source_identity.py`;
+  treasury source-context and source-identity regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep aggregate source-boundary hash behavior explicit when consolidating additional
+  source-product mapper utilities.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
