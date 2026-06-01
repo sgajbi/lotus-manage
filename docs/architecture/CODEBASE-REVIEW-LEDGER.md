@@ -10302,3 +10302,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability boundaries that can be isolated without hiding domain decisions.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-423: Construction source-product identity extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, selected construction source-context
+  regressions, and this ledger.
+- Finding: construction source-product mappers repeated the same product name, product version,
+  source system, source id, and content-hash assembly across liquidity reserve, planned
+  withdrawal, income-needs, restriction, and sustainability contexts, increasing lineage drift risk.
+- Action: introduced a reusable `SourceProductIdentity` bundle in the construction source identity
+  helper, routed liquidity and client-profile source-product mappers through it, removed unused
+  mapper-local source response aliases, and added direct tests proving product identity and lineage
+  hashing are assembled consistently.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`, `construction_liquidity_source_context.py`, and
+  `construction_client_profile_source_context.py`; direct construction source identity tests and
+  selected construction source-context/API regressions passed with 49 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue applying the source-product identity helper to treasury, transaction-cost,
+  and execution acknowledgement mappers where it reduces duplication without weakening contract
+  clarity.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
