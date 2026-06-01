@@ -15,6 +15,7 @@ from src.api.services.wave_event_evidence import (
     idempotency_key_hash as _idempotency_key_hash,
     request_hash as _request_hash,
 )
+from src.api.services.wave_event_append import append_same_state_event as _append_event
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
@@ -51,7 +52,6 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
-    DpmRebalanceWaveEvent,
     DpmWaveAlreadyExistsError,
     DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
@@ -750,21 +750,6 @@ def get_report_input(
         )
     except DpmWaveReportInputBoundaryError as exc:
         raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
-
-
-def _append_event(
-    *,
-    wave: DpmRebalanceWave,
-    event: DpmRebalanceWaveEvent,
-) -> DpmRebalanceWave:
-    if event.wave_id != wave.wave_id:
-        raise DpmWaveValidationError("DPM_WAVE_EVENT_WAVE_MISMATCH", "Wave event mismatch.")
-    if event.from_state != wave.state or event.to_state != wave.state:
-        raise DpmWaveValidationError("DPM_WAVE_EVENT_STATE_MISMATCH", "Wave event state mismatch.")
-    return wave.model_copy(
-        update={"version": wave.version + 1, "events": [*wave.events, event]},
-        deep=True,
-    )
 
 
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
