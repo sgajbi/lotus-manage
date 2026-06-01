@@ -52,9 +52,9 @@ from src.core.construction.repository import (
     ConstructionAlternativeSetNotFoundError,
     ConstructionRepository,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import (
     ConstructionMethod,
-    ConstructionMethodStatus,
     FIRST_WAVE_CONSTRUCTION_METHODS,
 )
 from src.core.dpm_source_context import (
@@ -292,7 +292,7 @@ def _apply_supportability(
         enrichment=enrichment,
         authority_context=authority_context,
     )
-    status = _lowest_status(
+    status = lowest_construction_status(
         [
             alternative.method_status,
             plan.method_status,
@@ -306,27 +306,29 @@ def _apply_supportability(
         ]
     )
     if method == ConstructionMethod.TAX_AWARE:
-        status = _lowest_status([status, enrichment.tax_status])
+        status = lowest_construction_status([status, enrichment.tax_status])
     if method == ConstructionMethod.MIN_TURNOVER:
-        status = _lowest_status([status, enrichment.turnover_status])
+        status = lowest_construction_status([status, enrichment.turnover_status])
     if method == ConstructionMethod.COST_AWARE:
-        status = _lowest_status([status, enrichment.cost_status])
+        status = lowest_construction_status([status, enrichment.cost_status])
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        status = _lowest_status([status, solver_method_status(result=result)])
+        status = lowest_construction_status([status, solver_method_status(result=result)])
     if method == ConstructionMethod.LIQUIDITY_AWARE:
-        status = _lowest_status([status, enrichment.liquidity_status])
+        status = lowest_construction_status([status, enrichment.liquidity_status])
     if method == ConstructionMethod.CURRENCY_OVERLAY:
-        status = _lowest_status([status, enrichment.fx_status])
+        status = lowest_construction_status([status, enrichment.fx_status])
     if method == ConstructionMethod.RISK_AWARE:
-        status = _lowest_status([status, enrichment.risk_status])
+        status = lowest_construction_status([status, enrichment.risk_status])
     if method == ConstructionMethod.LIQUIDITY_AWARE and authority_context.liquidity_context:
-        status = _lowest_status([status, authority_context.liquidity_context.supportability_status])
+        status = lowest_construction_status(
+            [status, authority_context.liquidity_context.supportability_status]
+        )
     if method == ConstructionMethod.CURRENCY_OVERLAY and authority_context.currency_overlay_context:
-        status = _lowest_status(
+        status = lowest_construction_status(
             [status, authority_context.currency_overlay_context.supportability_status]
         )
     if method == ConstructionMethod.REGIME_STRESS_AWARE and authority_context.regime_stress_context:
-        status = _lowest_status(
+        status = lowest_construction_status(
             [status, authority_context.regime_stress_context.supportability_status]
         )
     return alternative.model_copy(
@@ -419,13 +421,3 @@ def _construction_as_of_date(*, request: RebalanceRequest) -> date:
         except ValueError:
             continue
     return datetime.now(timezone.utc).date()
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])

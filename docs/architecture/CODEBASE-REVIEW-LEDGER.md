@@ -6912,3 +6912,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration value before pruning or moving tests to owner modules.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-271: Shared construction status ordering
+
+- Date: 2026-06-01
+- Scope: `src/core/construction/status.py`, construction core helpers, construction supportability
+  services, `tests/unit/dpm/construction/test_status.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction method status ordering was duplicated across orchestration, supportability,
+  solver, enrichment, transaction-cost, ESG, and alternative-set aggregation helpers. Each copy
+  encoded the same conservative ordering from BLOCKED through READY, creating drift risk for
+  future supportability changes.
+- Action: added `lowest_construction_status` and `construction_status_rank` in core construction
+  status helpers, exported them from `src.core.construction`, and replaced local duplicated
+  `_lowest_status` implementations and status-order maps across the affected modules. Added direct
+  status helper tests for conservative ordering and empty-input default behavior.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over touched source files, and focused construction
+  regressions (`tests/unit/dpm/construction/test_status.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_alternative_engine.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 67 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue reducing construction-service orchestration size without introducing new
+  helper-level duplication.
+- Wiki decision: no wiki source change required; this is internal supportability primitive cleanup
+  with no route, payload, supported-feature, or operator-contract change.

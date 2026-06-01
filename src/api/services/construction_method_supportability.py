@@ -6,6 +6,7 @@ from src.core.construction.models import (
     AuthoritativeLiquidityContext,
     AuthoritativeRegimeStressContext,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
 
@@ -22,29 +23,35 @@ def liquidity_status(
         return ConstructionMethodStatus.BLOCKED
     cash_weight = post_trade_cash_weight(result=result)
     if cash_weight is not None and cash_weight < context.minimum_cash_weight:
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
     if context.cashflow_projection is None:
         return status
     cashflow_status = context.cashflow_projection.data_quality_status
     if not context.cashflow_projection.include_projected:
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
+        cashflow_status = lowest_construction_status(
+            [cashflow_status, ConstructionMethodStatus.DEGRADED]
+        )
     if (
         context.cashflow_projection.total_net_cashflow.currency
         != result.after_simulated.total_value.currency
     ):
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
+        cashflow_status = lowest_construction_status(
+            [cashflow_status, ConstructionMethodStatus.DEGRADED]
+        )
     elif result.after_simulated.total_value.amount <= Decimal("0"):
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
+        cashflow_status = lowest_construction_status(
+            [cashflow_status, ConstructionMethodStatus.DEGRADED]
+        )
     elif cash_weight is not None:
         projected_cash_weight = (
             context.cashflow_projection.total_net_cashflow.amount
             / result.after_simulated.total_value.amount
         )
         if cash_weight + projected_cash_weight < context.minimum_cash_weight:
-            cashflow_status = _lowest_status(
+            cashflow_status = lowest_construction_status(
                 [cashflow_status, ConstructionMethodStatus.PENDING_REVIEW]
             )
-    return _lowest_status([status, cashflow_status])
+    return lowest_construction_status([status, cashflow_status])
 
 
 def liquidity_reason_codes(
@@ -195,16 +202,6 @@ def missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:
         if price.currency != base_currency
     }
     return sorted(required_pairs - available_pairs)
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])
 
 
 __all__ = [

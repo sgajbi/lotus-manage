@@ -10,6 +10,7 @@ from src.core.construction.models import (
     AuthoritativeTransactionCostContext,
     ConstructionEnrichmentSummary,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import Money, RebalanceResult, SecurityTradeIntent
 
@@ -71,7 +72,7 @@ def summarize_enrichment_posture(
         liquidity_status = ConstructionMethodStatus.DEGRADED
         reason_codes.append("CASH_WEIGHT_UNAVAILABLE")
     if liquidity_context is not None:
-        liquidity_status = _lowest_status(
+        liquidity_status = lowest_construction_status(
             [
                 liquidity_status,
                 _authoritative_context_status(
@@ -158,18 +159,6 @@ def _liquidity_context_reason_codes(context: AuthoritativeLiquidityContext) -> l
         reason_codes.extend(context.planned_withdrawal_schedule.reason_codes)
         reason_codes.append("PLANNED_WITHDRAWAL_CONTEXT_PRESENT")
     return reason_codes
-
-
-def _lowest_status(
-    statuses: list[ConstructionMethodStatus],
-) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])
 
 
 def _cash_weight(state: object) -> Decimal | None:
