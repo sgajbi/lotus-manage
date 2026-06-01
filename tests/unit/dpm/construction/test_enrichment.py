@@ -18,6 +18,7 @@ from src.api.services.construction_method_supportability import (
     liquidity_reason_codes,
     liquidity_status,
 )
+from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
     external_treasury_currency_overlay_context,
@@ -226,9 +227,7 @@ def test_construction_as_of_date_uses_snapshot_identifier_date() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     request.market_data_snapshot.snapshot_id = "md_2026_05_06"
 
-    assert (
-        construction_service._construction_as_of_date(request=request).isoformat() == "2026-05-06"
-    )
+    assert construction_as_of_date(request=request).isoformat() == "2026-05-06"
 
 
 def test_cashflow_projection_context_marks_future_cash_pressure_pending() -> None:

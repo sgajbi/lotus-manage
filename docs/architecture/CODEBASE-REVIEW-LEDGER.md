@@ -6942,3 +6942,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper-level duplication.
 - Wiki decision: no wiki source change required; this is internal supportability primitive cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-272: Construction request date extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_request_dates.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still owned request snapshot date parsing for
+  authority-context as-of dates. The logic is pure request metadata interpretation rather than
+  alternative construction orchestration.
+- Action: extracted `construction_as_of_date` into `construction_request_dates.py`, updated
+  authority-context orchestration to call the helper, and pointed the existing snapshot-id date
+  regression test at the extracted helper.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction request-date and service modules,
+  focused construction authority/API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue keeping `construction_service.py` focused on orchestration and move pure
+  request/diagnostic assembly into direct helper modules when the boundary is clear.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

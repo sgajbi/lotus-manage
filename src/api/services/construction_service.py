@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
-import re
+from datetime import datetime, timezone
 from typing import Optional
 
 from src.api.services.construction_idempotency import (
@@ -17,6 +16,7 @@ from src.api.services.construction_method_readiness import (
     method_specific_reason_codes,
     method_specific_status,
 )
+from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import (
     solver_method_status,
     with_method_reason_codes,
@@ -66,8 +66,6 @@ from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
 )
-
-_DATE_PATTERN = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
 
 
 def generate_construction_alternative_set(
@@ -383,7 +381,7 @@ def _authority_context_for_method(
         authority_context=authority_context,
         risk_authority_client=risk_authority_client,
         correlation_id=correlation_id,
-        as_of_date=_construction_as_of_date(request=request),
+        as_of_date=construction_as_of_date(request=request),
     )
 
 
@@ -401,23 +399,3 @@ def _authority_context_with_source_products(
     if not context_updates:
         return authority_context
     return authority_context.model_copy(update=context_updates)
-
-
-def _construction_as_of_date(*, request: RebalanceRequest) -> date:
-    snapshot_id = getattr(request.market_data_snapshot, "snapshot_id", "")
-    for candidate in (
-        snapshot_id or "",
-        getattr(request.portfolio_snapshot, "snapshot_id", "") or "",
-    ):
-        match = _DATE_PATTERN.search(candidate)
-        if match is not None:
-            return date(
-                year=int(match.group(1)),
-                month=int(match.group(2)),
-                day=int(match.group(3)),
-            )
-        try:
-            return date.fromisoformat(candidate[:10])
-        except ValueError:
-            continue
-    return datetime.now(timezone.utc).date()
