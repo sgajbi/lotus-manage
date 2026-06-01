@@ -7388,3 +7388,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   areas are touched.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-292: Execution source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_execution_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_execution_source_context.py`, and this ledger.
+- Finding: direct external order execution acknowledgement mapper coverage still lived in the broad
+  source-product context test module after the execution mapper had been extracted.
+- Action: moved direct execution acknowledgement fail-closed tests into a focused execution
+  source-context test module, leaving the broad source-product context tests to cover
+  authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_execution_source_context.py`; focused execution/context regressions
+  passed with 17 tests.
+- Follow-up: continue splitting direct source-family mapper tests away from the source-product
+  composition suite.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
