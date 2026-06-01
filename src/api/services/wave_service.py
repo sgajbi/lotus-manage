@@ -44,7 +44,7 @@ from src.api.services.wave_source_readiness import (
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
-from src.api.services.wave_trigger_validation import trigger_validation_failure
+from src.api.services.wave_trigger_validation import validate_trigger_or_raise as _validate_trigger
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -750,10 +750,3 @@ def get_report_input(
         )
     except DpmWaveReportInputBoundaryError as exc:
         raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
-
-
-def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
-    failure = trigger_validation_failure(trigger_type, portfolios=portfolios)
-    if failure is not None:
-        code, message = failure
-        raise DpmWaveValidationError(code, message)

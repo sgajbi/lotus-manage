@@ -1,3 +1,5 @@
+from src.api.services.wave_errors import DpmWaveValidationError
+
 SUPPORTED_CREATE_TRIGGER_TYPES = {
     "EXPLICIT_PORTFOLIO_LIST",
     "PM_BOOK_REVIEW",
@@ -34,8 +36,20 @@ def trigger_validation_failure(
     return None
 
 
+def validate_trigger_or_raise(
+    trigger_type: str,
+    *,
+    portfolios: list[dict[str, object]],
+) -> None:
+    failure = trigger_validation_failure(trigger_type, portfolios=portfolios)
+    if failure is not None:
+        code, message = failure
+        raise DpmWaveValidationError(code, message)
+
+
 __all__ = [
     "SUPPORTED_CREATE_TRIGGER_TYPES",
     "UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES",
     "trigger_validation_failure",
+    "validate_trigger_or_raise",
 ]

@@ -8814,3 +8814,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   while keeping state-transition orchestration readable and centralized.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-361: Wave trigger validation wrapper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_trigger_validation.py`,
+  `tests/unit/dpm/waves/test_wave_trigger_validation.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` still owned the thin trigger validation raise wrapper even though the
+  underlying trigger support matrix and failure classification already lived in the trigger
+  validation helper module.
+- Action: moved governed trigger validation error raising into `wave_trigger_validation.py`,
+  preserved the existing private service alias for preview/create orchestration compatibility, and
+  added direct tests for success, governed error details, alias preservation, and the expanded module
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_trigger_validation.py`; direct trigger validation tests and
+  selected wave API regressions passed with 140 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep state-changing wave orchestration in `wave_service.py`; continue extracting pure
+  support helpers only when direct tests can pin the service contract.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

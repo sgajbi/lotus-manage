@@ -1,6 +1,11 @@
+import pytest
+
+from src.api.services import wave_service
+from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_trigger_validation import (
     SUPPORTED_CREATE_TRIGGER_TYPES,
     trigger_validation_failure,
+    validate_trigger_or_raise,
 )
 
 
@@ -28,6 +33,30 @@ def test_trigger_validation_rejects_empty_portfolio_set() -> None:
     )
 
 
+def test_validate_trigger_or_raise_accepts_supported_trigger_with_portfolios() -> None:
+    validate_trigger_or_raise(
+        "RISK_EVENT",
+        portfolios=[{"portfolio_id": "PB_SG_TRIGGER"}],
+    )
+
+
+def test_validate_trigger_or_raise_raises_governed_validation_error() -> None:
+    with pytest.raises(DpmWaveValidationError) as exc_info:
+        validate_trigger_or_raise("RISK_EVENT", portfolios=[])
+
+    assert exc_info.value.code == "AFFECTED_PORTFOLIO_SET_EMPTY"
+    assert (
+        exc_info.value.message
+        == "Trigger type RISK_EVENT requires at least one source-backed portfolio."
+    )
+
+
+def test_wave_service_preserves_private_trigger_validation_alias() -> None:
+    from src.api.services import wave_trigger_validation
+
+    assert wave_service._validate_trigger is wave_trigger_validation.validate_trigger_or_raise
+
+
 def test_supported_trigger_set_stays_private_banking_specific() -> None:
     assert SUPPORTED_CREATE_TRIGGER_TYPES == {
         "EXPLICIT_PORTFOLIO_LIST",
@@ -46,4 +75,5 @@ def test_wave_trigger_validation_exports_only_trigger_contract() -> None:
         "SUPPORTED_CREATE_TRIGGER_TYPES",
         "UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES",
         "trigger_validation_failure",
+        "validate_trigger_or_raise",
     ]
