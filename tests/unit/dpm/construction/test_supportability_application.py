@@ -10,7 +10,9 @@ from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
+    AuthoritativeCurrencyOverlayContext,
     AuthoritativeLiquidityContext,
+    AuthoritativeRegimeStressContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
@@ -154,6 +156,29 @@ def _liquidity_context() -> AuthoritativeLiquidityContext:
     )
 
 
+def _blocked_currency_context() -> AuthoritativeCurrencyOverlayContext:
+    return AuthoritativeCurrencyOverlayContext(
+        supportability_status=ConstructionMethodStatus.BLOCKED,
+        source_system="lotus-core",
+        policy_id="currency-overlay-policy.v1",
+        hedge_ratio_min=Decimal("0.00"),
+        hedge_ratio_max=Decimal("0.00"),
+        eligible_currencies=["EUR"],
+        reason_codes=["EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"],
+    )
+
+
+def _blocked_regime_context() -> AuthoritativeRegimeStressContext:
+    return AuthoritativeRegimeStressContext(
+        supportability_status=ConstructionMethodStatus.BLOCKED,
+        source_system="lotus-risk",
+        scenario_pack_id="CIO_REGIME_2026_Q2",
+        worst_case_loss_pct=Decimal("0.18"),
+        maximum_allowed_loss_pct=Decimal("0.10"),
+        reason_codes=["REGIME_SCENARIO_PACK_UNAVAILABLE"],
+    )
+
+
 def test_supportability_application_attaches_cost_evidence_and_diagnostics() -> None:
     result = _trade_result()
     enriched = apply_construction_supportability(
@@ -231,4 +256,57 @@ def test_supportability_application_applies_liquidity_status_overlay() -> None:
     assert (
         enriched.diagnostics["authority_context"]["liquidity_context"]["policy_id"]
         == "liquidity-policy.v1"
+    )
+
+
+def test_supportability_application_applies_currency_context_status_overlay() -> None:
+    result = _trade_result()
+    enriched = apply_construction_supportability(
+        request=_request(),
+        method=ConstructionMethod.CURRENCY_OVERLAY,
+        alternative=build_rebalance_result_alternative(
+            result=result,
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            alternative_id="alt_currency_overlay",
+        ),
+        result=result,
+        plan=resolve_method_plan(ConstructionMethod.CURRENCY_OVERLAY, solver_available=True),
+        authority_context=ConstructionAuthorityContext(
+            currency_overlay_context=_blocked_currency_context()
+        ),
+    )
+
+    assert enriched.method_status == ConstructionMethodStatus.BLOCKED
+    reason_codes = enriched.diagnostics["enrichment_summary"]["reason_codes"]
+    assert "CURRENCY_OVERLAY_CONTEXT_BLOCKED" in reason_codes
+    assert "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED" in reason_codes
+    assert (
+        enriched.diagnostics["authority_context"]["currency_overlay_context"]["policy_id"]
+        == "currency-overlay-policy.v1"
+    )
+
+
+def test_supportability_application_applies_regime_context_status_overlay() -> None:
+    result = _trade_result()
+    enriched = apply_construction_supportability(
+        request=_request(),
+        method=ConstructionMethod.REGIME_STRESS_AWARE,
+        alternative=build_rebalance_result_alternative(
+            result=result,
+            method=ConstructionMethod.REGIME_STRESS_AWARE,
+            alternative_id="alt_regime_stress_aware",
+        ),
+        result=result,
+        plan=resolve_method_plan(ConstructionMethod.REGIME_STRESS_AWARE, solver_available=True),
+        authority_context=ConstructionAuthorityContext(
+            regime_stress_context=_blocked_regime_context()
+        ),
+    )
+
+    assert enriched.method_status == ConstructionMethodStatus.BLOCKED
+    reason_codes = enriched.diagnostics["enrichment_summary"]["reason_codes"]
+    assert "REGIME_SCENARIO_PACK_UNAVAILABLE" in reason_codes
+    assert (
+        enriched.diagnostics["authority_context"]["regime_stress_context"]["scenario_pack_id"]
+        == "CIO_REGIME_2026_Q2"
     )

@@ -7288,3 +7288,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   adding source-family-specific treasury normalization.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-287: Supportability application currency and regime coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py`,
+  `src/api/services/construction_supportability_application.py`, and this ledger.
+- Finding: the extracted supportability application helper had direct branch tests for transaction
+  costs, ESG restrictions, and liquidity, but currency-overlay and regime-stress context status
+  overlays still relied on broader enrichment/API coverage.
+- Action: added direct supportability-application tests for blocked currency-overlay authority
+  context and blocked regime-stress authority context. The tests assert method status roll-up,
+  source reason-code propagation, and authority-context diagnostic provenance.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_supportability_application.py`; focused supportability/enrichment/API
+  regressions passed with 55 tests.
+- Follow-up: use direct branch tests before refactoring remaining supportability status-rollup or
+  diagnostic assembly internals.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
