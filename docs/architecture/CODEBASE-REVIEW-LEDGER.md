@@ -10455,3 +10455,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   test-only surface that can be retired safely in a later cleanup slice.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-429: Wave service stale alias removal
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, selected wave helper/facade regressions, and this
+  ledger.
+- Finding: after wave create, preparation, lifecycle, and selection command extraction,
+  `wave_service.py` still imported and re-exported several private compatibility aliases that were
+  no longer used by service code or direct helper tests.
+- Action: removed stale private aliases and their imports for simulation result state, create helper
+  internals, lifecycle transition builders, and event construction, moved remaining API tests to the
+  owning helper modules, and preserved explicitly covered compatibility aliases that still document
+  helper ownership boundaries.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for `wave_service.py` and the touched wave API
+  regression file; focused mypy passed for `wave_service.py`; selected wave helper/facade tests and
+  wave API regressions passed with 190 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring remaining compatibility aliases only when their direct tests have
+  moved to the owning helper module and no service facade contract depends on them.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

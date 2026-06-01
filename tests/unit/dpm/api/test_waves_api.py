@@ -23,6 +23,9 @@ from src.api.routers import waves as waves_router
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service, proof_pack_service, wave_service
+from src.api.services.wave_aggregate_metrics import simulation_result_state
+from src.api.services.wave_event_append import append_same_state_event
+from src.api.services.wave_event_evidence import build_wave_event
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -5585,7 +5588,7 @@ def test_wave_append_event_rejects_identity_and_state_mismatches() -> None:
             source_degraded_item_count=0,
         ),
     )
-    event = wave_service._event(  # noqa: SLF001
+    event = build_wave_event(
         wave_id=wave.wave_id,
         from_state=wave.state,
         to_state=wave.state,
@@ -5597,14 +5600,14 @@ def test_wave_append_event_rejects_identity_and_state_mismatches() -> None:
     )
 
     with pytest.raises(wave_service.DpmWaveValidationError) as wave_exc:
-        wave_service._append_event(  # noqa: SLF001
+        append_same_state_event(
             wave=wave,
             event=event.model_copy(update={"wave_id": "dwv_other"}),
         )
     assert wave_exc.value.code == "DPM_WAVE_EVENT_WAVE_MISMATCH"
 
     with pytest.raises(wave_service.DpmWaveValidationError) as state_exc:
-        wave_service._append_event(  # noqa: SLF001
+        append_same_state_event(
             wave=wave,
             event=event.model_copy(update={"to_state": "APPROVED"}),
         )
@@ -5809,7 +5812,7 @@ def test_wave_supportability_service_reports_degraded_and_blocked_actions() -> N
 
 
 def test_wave_simulation_rollup_treats_degraded_and_review_items_as_partial() -> None:
-    result_state = wave_service._simulation_result_state(  # noqa: SLF001
+    result_state = simulation_result_state(
         [
             _wave_item(
                 wave_item_id="dwi_simulated",

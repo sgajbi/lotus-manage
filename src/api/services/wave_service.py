@@ -1,23 +1,11 @@
 from src.api.request_models import RebalanceRequest
-from src.api.services.wave_aggregate_metrics import (
-    simulation_result_state,
-)
-from src.api.services.wave_approval_transition import build_approved_wave
-from src.api.services.wave_cancel_transition import build_cancelled_wave
 from src.api.services.wave_construction_selection import select_construction_alternative_for_wave
-from src.api.services.wave_creation import (
-    create_created_wave_id,
-    create_wave_request_hash,
-    promote_preview_to_created_wave,
-)
 from src.api.services.wave_create_command import create_persisted_wave
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
 from src.api.services.wave_event_append import append_same_state_event
-from src.api.services.wave_event_evidence import build_wave_event
-from src.api.services.wave_handoff_transition import build_handoff_ready_wave
 from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.api.services.wave_item_selection_transition import (
     build_wave_with_selected_item_alternative,
@@ -52,7 +40,6 @@ from src.api.services.wave_state_guard import (
     require_wave_state,
     wave_state_is_idempotent,
 )
-from src.api.services.wave_stage_transition import build_staged_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
@@ -81,20 +68,12 @@ from src.core.waves import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
-_simulation_result_state = simulation_result_state
-_create_created_wave_id = create_created_wave_id
-_create_wave_request_hash = create_wave_request_hash
-_promote_preview_to_created_wave = promote_preview_to_created_wave
 _get_wave_or_raise = get_wave_or_raise
 _wave_state_is_idempotent = wave_state_is_idempotent
 _require_wave_state = require_wave_state
 _save_wave_or_raise = save_wave_or_raise
 _update_wave_or_raise = update_wave_or_raise
 _validate_trigger = validate_trigger_or_raise
-_build_approved_wave = build_approved_wave
-_build_cancelled_wave = build_cancelled_wave
-_build_handoff_ready_wave = build_handoff_ready_wave
-_build_staged_wave = build_staged_wave
 _select_construction_alternative_for_wave = select_construction_alternative_for_wave
 _build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
 _selectable_wave_item = selectable_wave_item
@@ -103,7 +82,6 @@ _stage_event_metadata = stage_event_metadata
 _handoff_event_metadata = handoff_event_metadata
 _cancel_event_metadata = cancel_event_metadata
 _selection_event_metadata = selection_event_metadata
-_event = build_wave_event
 _append_event = append_same_state_event
 _wave_with_items_and_aggregate = wave_with_items_and_aggregate
 _prepare_wave_transition = prepare_wave_transition
