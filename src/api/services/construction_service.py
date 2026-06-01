@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from typing import Optional
 
+from src.api.services.construction_alternative_set_assembly import (
+    build_persistable_alternative_set,
+)
 from src.api.services.construction_idempotency import (
     construction_request_hash,
     resolve_existing_construction_alternative_set,
 )
-from src.api.services.construction_alternative_set_lineage import alternative_set_lineage_fields
 from src.api.services.construction_method_execution import (
     run_construction_method,
 )
@@ -21,7 +22,6 @@ from src.api.services.construction_supportability_application import (
 )
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.construction.alternative_engine import (
-    build_alternative_set,
     build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
@@ -99,16 +99,11 @@ def generate_construction_alternative_set(
         risk_authority_client=risk_authority_client,
         run_service=run_service,
     )
-    alternative_set = build_alternative_set(
-        alternative_set_id=f"cas_{uuid.uuid4().hex[:12]}",
+    alternative_set = build_persistable_alternative_set(
         portfolio_id=request.portfolio_snapshot.portfolio_id,
-        as_of=datetime.now(timezone.utc).date().isoformat(),
         alternatives=alternatives,
-    ).model_copy(
-        update=alternative_set_lineage_fields(
-            request_hash=request_hash,
-            source_context=source_context,
-        )
+        request_hash=request_hash,
+        source_context=source_context,
     )
     repository.save_alternative_set(
         alternative_set=alternative_set,

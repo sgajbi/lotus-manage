@@ -8118,3 +8118,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   preserving method orchestration there.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-331: Persistable construction alternative set assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_set_assembly.py`,
+  `tests/unit/dpm/construction/test_alternative_set_assembly.py`, construction API regressions, and
+  this ledger.
+- Finding: construction generation orchestration still owned pure alternative-set assembly details:
+  generated alternative-set identity, business as-of date, request hash, input mode, and
+  source-supportability lineage fields.
+- Action: extracted persistable alternative-set assembly into a focused helper with deterministic
+  identity/as-of injection for direct tests while leaving method execution orchestration in
+  `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py`, `construction_alternative_set_assembly.py`, and
+  `construction_alternative_set_lineage.py`; direct alternative-set assembly and lineage tests
+  passed with 3 tests; selected construction API regressions for first-wave replay and stateful
+  source behavior passed with 2 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue keeping construction generation orchestration readable by extracting only pure
+  assembly or source-boundary helpers.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
