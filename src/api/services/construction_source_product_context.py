@@ -33,6 +33,7 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
+    DpmResolvedSourceContext,
 )
 from src.core.models import Money
 
@@ -661,6 +662,22 @@ def source_product_authority_context_updates(
     return context_updates
 
 
+def authority_context_with_source_products(
+    *,
+    authority_context: ConstructionAuthorityContext,
+    source_context: DpmResolvedSourceContext | None,
+) -> ConstructionAuthorityContext:
+    if source_context is None:
+        return authority_context
+    context_updates = source_product_authority_context_updates(
+        source_context=source_context.context,
+        authority_context=authority_context,
+    )
+    if not context_updates:
+        return authority_context
+    return authority_context.model_copy(update=context_updates)
+
+
 def source_status_to_method_status(status: str) -> ConstructionMethodStatus:
     if status == "READY":
         return ConstructionMethodStatus.READY
@@ -670,6 +687,7 @@ def source_status_to_method_status(status: str) -> ConstructionMethodStatus:
 
 
 __all__ = [
+    "authority_context_with_source_products",
     "client_restriction_profile_context",
     "external_order_execution_acknowledgement_context",
     "external_treasury_currency_overlay_context",

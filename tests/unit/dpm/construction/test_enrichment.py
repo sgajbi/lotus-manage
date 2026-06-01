@@ -22,6 +22,7 @@ from src.api.services.construction_method_readiness import method_specific_reaso
 from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
+    authority_context_with_source_products,
     external_treasury_currency_overlay_context,
     source_status_to_method_status,
 )
@@ -642,7 +643,7 @@ def test_source_context_lifts_client_restriction_and_sustainability_profiles() -
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -767,7 +768,7 @@ def test_source_context_lifts_income_reserve_and_withdrawal_sources() -> None:
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -942,7 +943,7 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -1076,7 +1077,7 @@ def test_source_context_lifts_fx_forward_curve_when_it_is_the_only_currency_sour
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )

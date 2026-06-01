@@ -6990,3 +6990,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundaries, not pass-through behavior.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-274: Source-product authority attachment extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: after source-product authority update assembly was extracted, construction-service
+  orchestration still owned the final null-source guard and authority-context model-copy
+  application. Several tests continued to reach through the service private wrapper for
+  source-boundary behavior.
+- Action: added `authority_context_with_source_products` to the source-product context helper,
+  updated construction orchestration to call it directly, moved remaining tests to the owning
+  helper module, and removed the service private wrapper.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction source-product context and service
+  modules, focused source-product/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 66 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue shrinking construction orchestration only where the extracted boundary has a
+  clear owning module and direct tests.
+- Wiki decision: no wiki source change required; this is internal source-boundary ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

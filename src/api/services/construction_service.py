@@ -23,7 +23,7 @@ from src.api.services.construction_solver_supportability import (
 )
 from src.api.services.construction_source_analytics_posture import source_analytics_posture
 from src.api.services.construction_source_product_context import (
-    source_product_authority_context_updates,
+    authority_context_with_source_products,
 )
 from src.api.services.construction_esg_supportability import (
     with_esg_restriction_constraints,
@@ -100,7 +100,7 @@ def generate_construction_alternative_set(
         request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
         run_service=run_service,
     )
-    resolved_authority_context = _authority_context_with_source_products(
+    resolved_authority_context = authority_context_with_source_products(
         authority_context=authority_context or ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -365,19 +365,3 @@ def _authority_context_for_method(
         correlation_id=correlation_id,
         as_of_date=construction_as_of_date(request=request),
     )
-
-
-def _authority_context_with_source_products(
-    *,
-    authority_context: ConstructionAuthorityContext,
-    source_context: DpmResolvedSourceContext | None,
-) -> ConstructionAuthorityContext:
-    if source_context is None:
-        return authority_context
-    context_updates = source_product_authority_context_updates(
-        source_context=source_context.context,
-        authority_context=authority_context,
-    )
-    if not context_updates:
-        return authority_context
-    return authority_context.model_copy(update=context_updates)
