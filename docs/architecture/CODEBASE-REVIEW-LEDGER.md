@@ -10726,3 +10726,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration can call owning helpers directly and direct helper tests cover behavior.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-441: Mandate health persistence alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_persistence.py`, selected mandate persistence/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still exposed a private health-persistence alias even though the
+  owning helper has direct behavior and export-surface tests, and service orchestration can call the
+  helper directly.
+- Action: removed the private health-persistence alias, routed refresh, recalculation, and
+  monitoring persistence through `persist_mandate_health_evidence`, and retired the alias-pinning
+  test assertion.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate health-persistence tests plus selected mandate
+  refresh, monitoring, and API regressions passed with 40 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; search found no health-persistence private alias
+  remaining in `mandate_service.py`.
+- Follow-up: continue reducing remaining mandate service aliases in cohesive groups with direct
+  helper coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

@@ -1,4 +1,4 @@
-from src.api.services import mandate_health_persistence, mandate_service
+from src.api.services import mandate_health_persistence
 from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
 from src.core.mandates import DpmMandateHealthInput
 from tests.unit.dpm.mandates.test_mandate_health_result import _twin
@@ -52,10 +52,6 @@ def test_persist_mandate_health_evidence_supports_health_only_monitoring_results
     assert repository.saved_twins == []
     assert repository.saved_snapshots == [health_result.snapshot]
     assert repository.saved_exceptions == health_result.monitoring_exceptions
-
-
-def test_mandate_service_preserves_health_persistence_private_alias() -> None:
-    assert mandate_service._persist_mandate_health_evidence is persist_mandate_health_evidence
 
 
 def test_mandate_health_persistence_exports_public_surface() -> None:

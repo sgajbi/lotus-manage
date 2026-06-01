@@ -63,7 +63,6 @@ _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
 _calculate_mandate_health_result = calculate_mandate_health_result
-_persist_mandate_health_evidence = persist_mandate_health_evidence
 _monitoring_run_accumulator = DpmMonitoringRunAccumulator
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
@@ -100,7 +99,7 @@ def refresh_mandate_from_core(
         correlation_id=correlation_id,
     )
 
-    _persist_mandate_health_evidence(
+    persist_mandate_health_evidence(
         repository=repository,
         twin=refresh_result.twin,
         health_snapshot=refresh_result.health_snapshot,
@@ -163,7 +162,7 @@ def recalculate_mandate_health(
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
     health_result = _calculate_mandate_health_result(health_input)
-    _persist_mandate_health_evidence(
+    persist_mandate_health_evidence(
         repository=repository,
         twin=health_input.twin,
         health_snapshot=health_result.snapshot,
@@ -191,7 +190,7 @@ def run_mandate_monitoring_once(
             monitoring_run_id=monitoring_run_id,
         )
         snapshot = mandate_result.health_snapshot
-        _persist_mandate_health_evidence(
+        persist_mandate_health_evidence(
             repository=repository,
             health_snapshot=snapshot,
             monitoring_exceptions=mandate_result.monitoring_exceptions,
