@@ -6887,3 +6887,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   before pruning the next private pass-through group.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-270: ESG wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: ESG, client-restriction, and sustainability supportability tests still depended on
+  construction-service private wrappers, while the actual behavior is owned by
+  `construction_esg_supportability.py`. The service also retained a pass-through wrapper for
+  applying ESG restriction constraints to ESG_AWARE alternatives.
+- Action: moved the affected tests to call the ESG supportability helper module directly, removed
+  the service pass-through wrappers and unused domain-type imports, and had construction
+  orchestration call `with_esg_restriction_constraints` directly where ESG_AWARE supportability is
+  applied.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused ESG and API
+  regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue reviewing remaining construction-service private wrappers for real
+  orchestration value before pruning or moving tests to owner modules.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

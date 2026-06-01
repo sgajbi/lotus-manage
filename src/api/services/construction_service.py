@@ -26,16 +26,6 @@ from src.api.services.construction_source_product_context import (
     source_product_authority_context_updates,
 )
 from src.api.services.construction_esg_supportability import (
-    client_restriction_reason_codes,
-    client_restriction_status,
-    esg_restriction_reason_codes,
-    esg_restriction_status,
-    restriction_matches_intent,
-    sustainability_allocation_breaches,
-    sustainability_classification_review_required,
-    sustainability_preference_reason_codes,
-    sustainability_preference_status,
-    violated_client_restrictions,
     with_esg_restriction_constraints,
 )
 from src.api.services.construction_transaction_cost_supportability import (
@@ -50,10 +40,6 @@ from src.core.construction.alternative_engine import (
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
-    AuthoritativeClientRestrictionContext,
-    AuthoritativeClientRestrictionRule,
-    AuthoritativeSustainabilityPreference,
-    AuthoritativeSustainabilityPreferenceContext,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -75,7 +61,6 @@ from src.core.dpm_source_context import (
     DpmResolvedSourceContext,
 )
 from src.core.models import RebalanceResult
-from src.core.models import SecurityTradeIntent, ShelfEntry
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
@@ -294,7 +279,7 @@ def _apply_supportability(
             context=authority_context.transaction_cost_context,
         )
     if method == ConstructionMethod.ESG_AWARE:
-        alternative = _with_esg_restriction_constraints(
+        alternative = with_esg_restriction_constraints(
             request=request,
             alternative=alternative,
             result=result,
@@ -414,114 +399,6 @@ def _authority_context_with_source_products(
     if not context_updates:
         return authority_context
     return authority_context.model_copy(update=context_updates)
-
-
-def _with_esg_restriction_constraints(
-    *,
-    request: RebalanceRequest,
-    alternative: ConstructionAlternative,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionAlternative:
-    return with_esg_restriction_constraints(
-        request=request,
-        alternative=alternative,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _esg_restriction_status(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionMethodStatus:
-    return esg_restriction_status(
-        request=request,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _esg_restriction_reason_codes(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> list[str]:
-    return esg_restriction_reason_codes(
-        request=request,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _client_restriction_status(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext | None,
-) -> ConstructionMethodStatus:
-    return client_restriction_status(request=request, result=result, context=context)
-
-
-def _client_restriction_reason_codes(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext | None,
-) -> list[str]:
-    return client_restriction_reason_codes(request=request, result=result, context=context)
-
-
-def _violated_client_restrictions(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext,
-) -> list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]]:
-    return violated_client_restrictions(request=request, result=result, context=context)
-
-
-def _restriction_matches_intent(
-    *,
-    intent: SecurityTradeIntent,
-    shelf: ShelfEntry | None,
-    restriction: AuthoritativeClientRestrictionRule,
-) -> bool:
-    return restriction_matches_intent(intent=intent, shelf=shelf, restriction=restriction)
-
-
-def _sustainability_preference_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> ConstructionMethodStatus:
-    return sustainability_preference_status(result=result, context=context)
-
-
-def _sustainability_preference_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> list[str]:
-    return sustainability_preference_reason_codes(result=result, context=context)
-
-
-def _sustainability_allocation_breaches(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> list[AuthoritativeSustainabilityPreference]:
-    return sustainability_allocation_breaches(result=result, context=context)
-
-
-def _sustainability_classification_review_required(
-    *,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> bool:
-    return sustainability_classification_review_required(context=context)
 
 
 def _construction_as_of_date(*, request: RebalanceRequest) -> date:

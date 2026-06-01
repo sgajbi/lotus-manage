@@ -6,6 +6,13 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
+from src.api.services.construction_esg_supportability import (
+    client_restriction_reason_codes,
+    client_restriction_status,
+    restriction_matches_intent,
+    sustainability_preference_reason_codes,
+    sustainability_preference_status,
+)
 from src.api.services.construction_method_supportability import (
     currency_overlay_status,
     liquidity_reason_codes,
@@ -419,14 +426,14 @@ def test_client_restriction_context_applies_source_owned_restriction_scopes() ->
     )
 
     assert (
-        construction_service._client_restriction_status(
+        client_restriction_status(
             request=request,
             result=result,
             context=context,
         )
         == ConstructionMethodStatus.BLOCKED
     )
-    reason_codes = construction_service._client_restriction_reason_codes(
+    reason_codes = client_restriction_reason_codes(
         request=request,
         result=result,
         context=context,
@@ -460,12 +467,12 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
         "restriction_version": 1,
     }
 
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(**base_rule),
     )
-    assert not construction_service._restriction_matches_intent(
+    assert not restriction_matches_intent(
         intent=intent,
         shelf=None,
         restriction=AuthoritativeClientRestrictionRule(
@@ -473,7 +480,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             asset_classes=["EQUITY"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -481,7 +488,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             asset_classes=["EQUITY"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -489,7 +496,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             issuer_ids=["ISSUER_TECH"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -545,13 +552,13 @@ def test_sustainability_context_flags_allocation_and_classification_review() -> 
     )
 
     assert (
-        construction_service._sustainability_preference_status(
+        sustainability_preference_status(
             result=result,
             context=context,
         )
         == ConstructionMethodStatus.DEGRADED
     )
-    reason_codes = construction_service._sustainability_preference_reason_codes(
+    reason_codes = sustainability_preference_reason_codes(
         result=result,
         context=context,
     )
