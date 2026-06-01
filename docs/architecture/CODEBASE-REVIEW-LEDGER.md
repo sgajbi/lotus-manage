@@ -8611,3 +8611,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   only where dependency flow remains explicit and testable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-352: Wave simulation item extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_simulation_item.py`,
+  `tests/unit/dpm/waves/test_wave_simulation_item.py`, selected wave simulation API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still owned per-item simulation execution, construction alternative-set
+  generation calls, missing-input diagnostics, generation-failure diagnostics, and the simulation
+  input dataclass.
+- Action: extracted per-item simulation execution and `DpmWaveSimulationInput` into a focused helper
+  module, preserved `wave_service.DpmWaveSimulationInput` as an imported compatibility surface for
+  routers, and added direct tests for non-source-ready no-op behavior, missing input blocking,
+  successful construction alternative linkage, generation failure handling, and the module export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_simulation_item.py`; full direct simulation item tests
+  passed with 5 tests; selected wave simulation API regressions passed with 11 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: evaluate whether selection/proof-pack item update can be split into a similarly focused
+  helper without hiding external proof-pack service dependency flow.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import cast
 
@@ -10,9 +9,6 @@ from src.api.services import construction_service, proof_pack_service
 from src.api.services.wave_aggregate_metrics import (
     aggregate_wave_items as _aggregate,
     simulation_result_state as _simulation_result_state,
-)
-from src.api.services.wave_construction_diagnostics import (
-    proposed_changes_from_alternative_set as _proposed_changes_from_alternative_set,
 )
 from src.api.services.wave_event_evidence import (
     build_wave_event as _event,
@@ -33,6 +29,10 @@ from src.api.services.wave_portfolio_sources import (
     trigger_source_refs as _trigger_source_refs,
 )
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
+from src.api.services.wave_simulation_item import (
+    DpmWaveSimulationInput,
+    simulate_item as _simulate_item,
+)
 from src.api.services.wave_source_readiness import (
     classify_item_source_readiness as _classify_item_source_readiness,
 )
@@ -43,7 +43,6 @@ from src.api.services.wave_supportability_diagnostics import (
     supportability_issue as _supportability_issue,  # noqa: F401
 )
 from src.api.services.wave_trigger_validation import trigger_validation_failure
-from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -66,9 +65,6 @@ from src.core.waves import (
     apply_wave_transition,
     build_wave_report_input,
 )
-from src.core.waves.source_analytics import (
-    build_source_analytics_from_alternative_set,
-)
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
 )
@@ -89,12 +85,6 @@ class DpmWaveLookupError(LookupError):
         super().__init__(message)
         self.code = code
         self.message = message
-
-
-@dataclass(frozen=True)
-class DpmWaveSimulationInput:
-    stateless_input: RebalanceRequest
-    authority_context: ConstructionAuthorityContext | None = None
 
 
 def preview_wave(
@@ -842,80 +832,6 @@ def _get_wave_or_raise(
     if wave is None:
         raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
     return wave
-
-
-def _simulate_item(
-    *,
-    item: DpmRebalanceWaveItem,
-    correlation_id: str,
-    item_inputs: dict[str, RebalanceRequest | DpmWaveSimulationInput],
-    methods: list[ConstructionMethod] | None,
-    construction_repository: ConstructionRepository,
-    run_service: DpmRunSupportService,
-    risk_authority_client: LotusRiskAuthorityClient | None,
-) -> DpmRebalanceWaveItem:
-    if item.state != "SOURCE_READY":
-        return item
-    simulation_input = item_inputs.get(item.wave_item_id) or item_inputs.get(item.portfolio_id)
-    if simulation_input is None:
-        return item.model_copy(
-            update={
-                "state": "SIMULATION_BLOCKED",
-                "reason_codes": ["CONSTRUCTION_INPUT_MISSING"],
-                "diagnostics": {
-                    **item.diagnostics,
-                    "source_owner": "wave-simulation-request",
-                    "required_action": "SUPPLY_RFC0039_REBALANCE_REQUEST",
-                },
-            },
-            deep=True,
-        )
-    if isinstance(simulation_input, DpmWaveSimulationInput):
-        rebalance_request = simulation_input.stateless_input
-        authority_context = simulation_input.authority_context
-    else:
-        rebalance_request = simulation_input
-        authority_context = None
-    try:
-        alternative_set = construction_service.generate_construction_alternative_set(
-            request=rebalance_request,
-            idempotency_key=f"wave:{item.wave_item_id}:simulate",
-            correlation_id=correlation_id,
-            repository=construction_repository,
-            methods=methods,
-            authority_context=authority_context,
-            risk_authority_client=risk_authority_client,
-            run_service=run_service,
-        )
-    except Exception as exc:
-        return item.model_copy(
-            update={
-                "state": "SIMULATION_BLOCKED",
-                "reason_codes": ["CONSTRUCTION_ALTERNATIVE_GENERATION_FAILED"],
-                "diagnostics": {
-                    **item.diagnostics,
-                    "source_owner": "lotus-manage-construction",
-                    "required_action": "REVIEW_CONSTRUCTION_INPUTS",
-                    "construction_error": type(exc).__name__,
-                },
-            },
-            deep=True,
-        )
-    return item.model_copy(
-        update={
-            "state": "SIMULATED",
-            "alternative_set_id": alternative_set.alternative_set_id,
-            "reason_codes": ["CONSTRUCTION_ALTERNATIVES_GENERATED"],
-            "diagnostics": {
-                **item.diagnostics,
-                "construction_state": alternative_set.status.value,
-                "alternative_count": len(alternative_set.alternatives),
-                "proposed_changes": _proposed_changes_from_alternative_set(alternative_set),
-                "source_analytics": build_source_analytics_from_alternative_set(alternative_set),
-            },
-        },
-        deep=True,
-    )
 
 
 def _with_selection_and_proof_pack(
