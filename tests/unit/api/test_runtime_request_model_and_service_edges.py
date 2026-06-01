@@ -502,6 +502,11 @@ def test_rebalance_simulation_service_does_not_export_core_resolver_helpers() ->
     assert not hasattr(service, "stateful_core_sourcing_enabled")
 
 
+def test_rebalance_simulation_service_does_not_export_core_engine_runner() -> None:
+    assert not hasattr(service, "run_simulation")
+    assert "run_simulation" not in service.__all__
+
+
 def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:
     batch_payload = valid_api_payload()
     batch_payload.pop("options")

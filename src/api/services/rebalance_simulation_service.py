@@ -67,7 +67,7 @@ from src.core.dpm_source_context import (
     build_batch_rebalance_request_from_core_context,
     build_rebalance_request_from_core_context,
 )
-from src.core.rebalance.engine import run_simulation
+from src.core.rebalance.engine import run_simulation as _run_simulation
 from src.api.services.rebalance_simulation_execution_context import (
     DpmSimulationExecutionContext as DpmSimulationExecutionContext,
     build_simulation_execution_context,
@@ -170,7 +170,7 @@ def simulate_rebalance(
         replay_enabled=execution_context.replay_enabled,
         source_context=source_context,
         support_service_factory=get_dpm_run_support_service,
-        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
         record_for_support=resolve_callable_override(
             "record_dpm_run_for_support",
             record_dpm_run_for_support,
@@ -209,7 +209,7 @@ def execute_batch_analysis(
         correlation_id=correlation_id,
         policy_definition=execution_context.policy_pack_definition,
         source_context=source_context,
-        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
         record_for_support=resolve_callable_override(
             "record_dpm_run_for_support",
             record_dpm_run_for_support,
@@ -316,6 +316,5 @@ __all__ = [
     "execute_batch_analysis",
     "execute_dpm_async_operation",
     "run_analyze_async_operation",
-    "run_simulation",
     "simulate_rebalance",
 ]

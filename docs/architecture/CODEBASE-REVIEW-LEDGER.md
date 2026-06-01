@@ -11019,3 +11019,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helpers still prove they are intentional.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-453: Rebalance core engine runner ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still exported the core `run_simulation` engine
+  function even though the service only needs it as an internal default and the active runtime
+  override hook is `src.api.main.run_simulation`.
+- Action: changed the service to use a private `_run_simulation` default, removed the core engine
+  runner from the service export surface, imported `run_simulation` directly in `main.py` for the
+  existing override hook, and added a regression proving the service no longer publishes the core
+  engine runner.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py` and `rebalance_simulation_service.py`; rebalance runtime and API
+  regression tests passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules; targeted scans confirmed `main.py` owns the public `run_simulation`
+  override import, the service uses private `_run_simulation`, and `run_simulation` is no longer in
+  `rebalance_simulation_service.py` `__all__`.
+- Follow-up: continue keeping runtime override hooks explicit at `main.py` while avoiding service
+  facade exports for lower-level core functions.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

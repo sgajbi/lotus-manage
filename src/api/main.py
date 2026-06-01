@@ -52,11 +52,9 @@ from src.api.routers.outcome_reviews import (
 )
 from src.api.routers.waves import router as waves_router
 from src.api.services.rebalance_simulation_service import (
-    run_simulation,
-)
-from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
+from src.core.rebalance.engine import run_simulation
 
 
 class HealthStatusResponse(BaseModel):
