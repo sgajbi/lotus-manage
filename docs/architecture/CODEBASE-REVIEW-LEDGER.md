@@ -6788,3 +6788,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-family attachment decisions only where the extracted boundary remains directly testable.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-266: Source-product authority update extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: construction orchestration still contained the full source-product authority-context
+  update matrix for transaction cost, liquidity, currency-overlay, execution acknowledgement,
+  client restrictions, and sustainability preferences. The mapping was pure source-boundary
+  assembly with existing-context preservation rules, not method orchestration.
+- Action: added `source_product_authority_context_updates` to compute source-derived authority
+  context updates in the helper module. Reduced `_authority_context_with_source_products` to a
+  null-source guard, helper call, and model-copy application. Added direct tests proving all source
+  families are lifted and caller-supplied existing contexts are not overwritten.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 66 tests. Focused Ruff checks,
+  focused mypy over source-product context and construction service, OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue reviewing `construction_service.py` for pass-through supportability wrappers
+  that can move to domain-specific helper modules without weakening method-level readability.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

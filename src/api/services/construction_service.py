@@ -36,12 +36,7 @@ from src.api.services.construction_solver_supportability import (
 )
 from src.api.services.construction_source_analytics_posture import source_analytics_posture
 from src.api.services.construction_source_product_context import (
-    client_restriction_profile_context,
-    external_order_execution_acknowledgement_context,
-    external_treasury_currency_overlay_context,
-    source_liquidity_context,
-    sustainability_preference_profile_context,
-    transaction_cost_context_from_curve,
+    source_product_authority_context_updates,
 )
 from src.api.services.construction_esg_supportability import (
     client_restriction_reason_codes,
@@ -465,80 +460,10 @@ def _authority_context_with_source_products(
 ) -> ConstructionAuthorityContext:
     if source_context is None:
         return authority_context
-    context_updates: dict[str, object] = {}
-    if authority_context.transaction_cost_context is None:
-        curve = source_context.context.transaction_cost_curve
-        if curve is not None:
-            context_updates["transaction_cost_context"] = transaction_cost_context_from_curve(curve)
-    if authority_context.liquidity_context is None:
-        liquidity_context = source_liquidity_context(
-            cashflow_projection=source_context.context.portfolio_cashflow_projection,
-            income_needs=getattr(source_context.context, "client_income_needs_schedule", None),
-            reserve_requirement=getattr(
-                source_context.context, "liquidity_reserve_requirement", None
-            ),
-            planned_withdrawals=getattr(
-                source_context.context, "planned_withdrawal_schedule", None
-            ),
-        )
-        if liquidity_context is not None:
-            context_updates["liquidity_context"] = liquidity_context
-    if authority_context.currency_overlay_context is None:
-        hedge_readiness = getattr(
-            source_context.context,
-            "external_hedge_execution_readiness",
-            None,
-        )
-        currency_exposure = getattr(
-            source_context.context,
-            "external_currency_exposure",
-            None,
-        )
-        hedge_policy = getattr(
-            source_context.context,
-            "external_hedge_policy",
-            None,
-        )
-        eligible_hedge_instruments = getattr(
-            source_context.context,
-            "external_eligible_hedge_instruments",
-            None,
-        )
-        fx_forward_curve = getattr(
-            source_context.context,
-            "external_fx_forward_curve",
-            None,
-        )
-        currency_context = external_treasury_currency_overlay_context(
-            hedge_readiness=hedge_readiness,
-            currency_exposure=currency_exposure,
-            hedge_policy=hedge_policy,
-            eligible_hedge_instruments=eligible_hedge_instruments,
-            fx_forward_curve=fx_forward_curve,
-        )
-        if currency_context is not None:
-            context_updates["currency_overlay_context"] = currency_context
-    if authority_context.execution_acknowledgement_context is None:
-        acknowledgement = getattr(
-            source_context.context,
-            "external_order_execution_acknowledgement",
-            None,
-        )
-        acknowledgement_context = external_order_execution_acknowledgement_context(acknowledgement)
-        if acknowledgement_context is not None:
-            context_updates["execution_acknowledgement_context"] = acknowledgement_context
-    if authority_context.client_restriction_context is None:
-        restriction_profile = source_context.context.client_restriction_profile
-        if restriction_profile is not None:
-            context_updates["client_restriction_context"] = client_restriction_profile_context(
-                restriction_profile
-            )
-    if authority_context.sustainability_preference_context is None:
-        sustainability_profile = source_context.context.sustainability_preference_profile
-        if sustainability_profile is not None:
-            context_updates["sustainability_preference_context"] = (
-                sustainability_preference_profile_context(sustainability_profile)
-            )
+    context_updates = source_product_authority_context_updates(
+        source_context=source_context.context,
+        authority_context=authority_context,
+    )
     if not context_updates:
         return authority_context
     return authority_context.model_copy(update=context_updates)
