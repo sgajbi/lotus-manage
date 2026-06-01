@@ -6838,3 +6838,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pass-through wrappers can be removed without reducing behavioral coverage.
 - Wiki decision: no wiki source change required; this is internal orchestration cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-268: Supportability wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service private wrappers still exposed liquidity, currency-overlay, and
+  solver supportability helpers even though the behavior is owned by
+  `construction_method_supportability.py` and `construction_solver_supportability.py`. The tests
+  were reaching through the orchestration service for helper-owned behavior, which preserved
+  unnecessary service indirection.
+- Action: moved the affected tests to call the owning supportability helpers directly and removed
+  the service pass-through wrappers plus their now-unused imports. `construction_service.py` now
+  calls `solver_method_status` directly where solver-constrained orchestration needs it.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, and focused
+  construction supportability regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, and
+  `tests/unit/dpm/construction/test_solver_supportability.py`) passed with 31 tests.
+- Follow-up: continue migrating transaction-cost and ESG supportability wrapper tests to their
+  owning helper modules before pruning the next set of private pass-through wrappers.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

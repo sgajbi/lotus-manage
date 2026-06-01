@@ -2,24 +2,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import date, datetime, timezone
-from decimal import Decimal
 import re
 from typing import Optional
 
 from src.api.services.construction_idempotency import (
     construction_request_hash,
     resolve_existing_construction_alternative_set,
-)
-from src.api.services.construction_method_supportability import (
-    cashflow_projection_reason_codes,
-    currency_overlay_status,
-    derive_currency_overlay_context,
-    derive_liquidity_context,
-    liquidity_reason_codes,
-    liquidity_status,
-    missing_currency_overlay_pairs,
-    post_trade_cash_weight,
-    regime_stress_status,
 )
 from src.api.services.construction_method_execution import (
     run_construction_method,
@@ -67,9 +55,6 @@ from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
-    AuthoritativeCurrencyOverlayContext,
-    AuthoritativeLiquidityContext,
-    AuthoritativeRegimeStressContext,
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
@@ -346,7 +331,7 @@ def _apply_supportability(
     if method == ConstructionMethod.COST_AWARE:
         status = _lowest_status([status, enrichment.cost_status])
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        status = _lowest_status([status, _solver_method_status(result=result)])
+        status = _lowest_status([status, solver_method_status(result=result)])
     if method == ConstructionMethod.LIQUIDITY_AWARE:
         status = _lowest_status([status, enrichment.liquidity_status])
     if method == ConstructionMethod.CURRENCY_OVERLAY:
@@ -580,49 +565,6 @@ def _sustainability_classification_review_required(
     return sustainability_classification_review_required(context=context)
 
 
-def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
-    return solver_method_status(result=result)
-
-
-def _liquidity_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext | None,
-) -> ConstructionMethodStatus:
-    return liquidity_status(result=result, context=context)
-
-
-def _liquidity_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext | None,
-) -> list[str]:
-    return liquidity_reason_codes(result=result, context=context)
-
-
-def _cashflow_projection_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext,
-) -> list[str]:
-    return cashflow_projection_reason_codes(result=result, context=context)
-
-
-def _post_trade_cash_weight(*, result: RebalanceResult) -> Decimal | None:
-    return post_trade_cash_weight(result=result)
-
-
-def _derive_liquidity_context(*, result: RebalanceResult) -> AuthoritativeLiquidityContext:
-    return derive_liquidity_context(result=result)
-
-
-def _derive_currency_overlay_context(
-    *,
-    result: RebalanceResult,
-) -> AuthoritativeCurrencyOverlayContext:
-    return derive_currency_overlay_context(result=result)
-
-
 def _construction_as_of_date(*, request: RebalanceRequest) -> date:
     snapshot_id = getattr(request.market_data_snapshot, "snapshot_id", "")
     for candidate in (
@@ -641,24 +583,6 @@ def _construction_as_of_date(*, request: RebalanceRequest) -> date:
         except ValueError:
             continue
     return datetime.now(timezone.utc).date()
-
-
-def _currency_overlay_status(
-    *,
-    request: RebalanceRequest,
-    context: AuthoritativeCurrencyOverlayContext | None,
-) -> ConstructionMethodStatus:
-    return currency_overlay_status(request=request, context=context)
-
-
-def _regime_stress_status(
-    context: AuthoritativeRegimeStressContext | None,
-) -> ConstructionMethodStatus:
-    return regime_stress_status(context)
-
-
-def _missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:
-    return missing_currency_overlay_pairs(request=request)
 
 
 def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:

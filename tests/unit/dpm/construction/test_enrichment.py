@@ -6,6 +6,12 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
+from src.api.services.construction_method_supportability import (
+    currency_overlay_status,
+    liquidity_reason_codes,
+    liquidity_status,
+)
+from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
     external_treasury_currency_overlay_context,
     source_status_to_method_status,
@@ -192,18 +198,13 @@ def test_construction_service_supportability_helper_edges() -> None:
 
     assert no_context.liquidity_context is not None
     assert risk_unavailable.risk_context is None
+    assert solver_method_status(result=result) == ConstructionMethodStatus.READY
+    assert liquidity_status(result=result, context=None) == ConstructionMethodStatus.DEGRADED
     assert (
-        construction_service._solver_method_status(result=result) == ConstructionMethodStatus.READY
-    )
-    assert (
-        construction_service._liquidity_status(result=result, context=None)
-        == ConstructionMethodStatus.DEGRADED
-    )
-    assert (
-        construction_service._liquidity_status(result=result, context=liquidity_context)
+        liquidity_status(result=result, context=liquidity_context)
         == ConstructionMethodStatus.PENDING_REVIEW
     )
-    assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in construction_service._liquidity_reason_codes(
+    assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in liquidity_reason_codes(
         result=result,
         context=None,
     )
@@ -240,8 +241,8 @@ def test_cashflow_projection_context_marks_future_cash_pressure_pending() -> Non
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
-    status = construction_service._liquidity_status(result=result, context=context)
-    reason_codes = construction_service._liquidity_reason_codes(
+    status = liquidity_status(result=result, context=context)
+    reason_codes = liquidity_reason_codes(
         result=result,
         context=context,
     )
@@ -273,8 +274,8 @@ def test_cashflow_projection_context_rejects_unusable_projection_posture() -> No
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
-    status = construction_service._liquidity_status(result=result, context=context)
-    reason_codes = construction_service._liquidity_reason_codes(
+    status = liquidity_status(result=result, context=context)
+    reason_codes = liquidity_reason_codes(
         result=result,
         context=context,
     )
@@ -1178,15 +1179,12 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
+    assert solver_method_status(result=warning_result) == ConstructionMethodStatus.BLOCKED
     assert (
-        construction_service._solver_method_status(result=warning_result)
+        liquidity_status(result=blocked_result, context=liquidity_context)
         == ConstructionMethodStatus.BLOCKED
     )
-    assert (
-        construction_service._liquidity_status(result=blocked_result, context=liquidity_context)
-        == ConstructionMethodStatus.BLOCKED
-    )
-    blocked_reason_codes = construction_service._liquidity_reason_codes(
+    blocked_reason_codes = liquidity_reason_codes(
         result=blocked_result,
         context=liquidity_context,
     )
@@ -1198,14 +1196,14 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
     )
     zero_value_result = result.model_copy(update={"after_simulated": zero_value_state})
     assert (
-        construction_service._liquidity_status(
+        liquidity_status(
             result=zero_value_result,
             context=liquidity_context,
         )
         == ConstructionMethodStatus.DEGRADED
     )
     assert "CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE" in (
-        construction_service._liquidity_reason_codes(
+        liquidity_reason_codes(
             result=zero_value_result,
             context=liquidity_context,
         )
@@ -1221,7 +1219,7 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
         }
     )
     no_cash_result = result.model_copy(update={"after_simulated": no_cash_state})
-    assert "CASHFLOW_PROJECTION_READY" not in construction_service._liquidity_reason_codes(
+    assert "CASHFLOW_PROJECTION_READY" not in liquidity_reason_codes(
         result=no_cash_result,
         context=liquidity_context,
     )
@@ -1244,7 +1242,7 @@ def test_construction_service_currency_overlay_helper_edges() -> None:
     )
 
     assert (
-        construction_service._currency_overlay_status(request=request, context=context)
+        currency_overlay_status(request=request, context=context)
         == ConstructionMethodStatus.BLOCKED
     )
     payload["market_data_snapshot"]["fx_rates"] = [
@@ -1253,11 +1251,10 @@ def test_construction_service_currency_overlay_helper_edges() -> None:
     request = RebalanceRequest.model_validate(payload)
 
     assert (
-        construction_service._currency_overlay_status(request=request, context=None)
-        == ConstructionMethodStatus.DEGRADED
+        currency_overlay_status(request=request, context=None) == ConstructionMethodStatus.DEGRADED
     )
     assert (
-        construction_service._currency_overlay_status(request=request, context=context)
+        currency_overlay_status(request=request, context=context)
         == ConstructionMethodStatus.PENDING_REVIEW
     )
 
