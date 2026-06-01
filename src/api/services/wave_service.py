@@ -36,9 +36,11 @@ from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_source_readiness import (
     classify_item_source_readiness as _classify_item_source_readiness,
 )
+from src.api.services.wave_supportability_payload import (
+    wave_supportability_payload as _wave_supportability_payload,
+)
 from src.api.services.wave_supportability_diagnostics import (
-    operator_actions as _operator_actions,
-    supportability_issue as _supportability_issue,
+    supportability_issue as _supportability_issue,  # noqa: F401
 )
 from src.api.services.wave_trigger_validation import trigger_validation_failure
 from src.core.construction.models import ConstructionAuthorityContext
@@ -840,40 +842,6 @@ def _get_wave_or_raise(
     if wave is None:
         raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
     return wave
-
-
-def _wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
-    issues = [
-        issue
-        for index, item in enumerate(wave.items, start=1)
-        if (issue := _supportability_issue(wave_id=wave.wave_id, item=item, item_index=index))
-        is not None
-    ]
-    blocked_count = sum(1 for issue in issues if issue["severity"] == "CRITICAL")
-    degraded_count = sum(1 for issue in issues if issue["severity"] == "WARNING")
-    if blocked_count:
-        state = "blocked"
-        reason = "wave_blocked_items"
-    elif degraded_count:
-        state = "degraded"
-        reason = "wave_degraded_items"
-    else:
-        state = "ready"
-        reason = "wave_supportability_ready"
-    return {
-        "wave_id": wave.wave_id,
-        "wave_state": wave.state,
-        "supportability_state": state,
-        "reason": reason,
-        "item_count": len(wave.items),
-        "issue_counts": {
-            "critical": blocked_count,
-            "warning": degraded_count,
-            "info": sum(1 for issue in issues if issue["severity"] == "INFO"),
-        },
-        "issues": issues,
-        "operator_actions": _operator_actions(state=state, issues=issues),
-    }
 
 
 def _simulate_item(

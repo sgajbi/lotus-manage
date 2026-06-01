@@ -8588,3 +8588,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   external service calls in `wave_service.py` unless a clean dependency boundary emerges.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-351: Wave supportability payload extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_supportability_payload.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`, selected wave supportability API
+  regressions, and this ledger.
+- Finding: after extracting supportability diagnostics, `wave_service.py` still assembled the
+  aggregate supportability payload, issue counts, state reason, and operator actions directly.
+- Action: extracted supportability payload assembly into a focused helper module backed by the
+  supportability diagnostics helper, preserved the existing service-private `_supportability_issue`
+  alias for compatibility tests, and added direct tests for ready, blocked, degraded, issue-count,
+  operator-action, and export-surface behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_supportability_payload.py`; direct supportability payload
+  tests and selected supportability API regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by isolating selection/proof-pack update branches
+  only where dependency flow remains explicit and testable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
