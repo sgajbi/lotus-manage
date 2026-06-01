@@ -29,14 +29,17 @@ def build_construction_alternatives(
     authority_context: ConstructionAuthorityContext,
     risk_authority_client: LotusRiskAuthorityClient | None,
     run_service: DpmRunSupportService | None,
+    solver_available: bool | None = None,
 ) -> list[ConstructionAlternative]:
     alternatives: list[ConstructionAlternative] = []
-    solver_available = has_solver_dependencies()
+    resolved_solver_available = (
+        has_solver_dependencies() if solver_available is None else solver_available
+    )
     for method in method_set:
         if method == ConstructionMethod.DO_NOTHING_BASELINE:
             alternatives.append(build_do_nothing_baseline(result=base_result))
             continue
-        plan = resolve_method_plan(method=method, solver_available=solver_available)
+        plan = resolve_method_plan(method=method, solver_available=resolved_solver_available)
         result = base_result
         if plan.effective_method != ConstructionMethod.HEURISTIC_EXPLAINABLE:
             result = run_construction_method(

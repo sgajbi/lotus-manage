@@ -17,6 +17,7 @@ from src.api.services.construction_selection import build_construction_selection
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
 )
+from src.core.common.capabilities import has_solver_dependencies as has_solver_dependencies
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -86,6 +87,7 @@ def generate_construction_alternative_set(
         authority_context=resolved_authority_context,
         risk_authority_client=risk_authority_client,
         run_service=run_service,
+        solver_available=has_solver_dependencies(),
     )
     alternative_set = build_persistable_alternative_set(
         portfolio_id=request.portfolio_snapshot.portfolio_id,

@@ -2,7 +2,10 @@ import uuid
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
-from src.api.services.wave_aggregate_metrics import aggregate_wave_items as _aggregate
+from src.api.services.wave_aggregate_metrics import (
+    aggregate_wave_items as _aggregate,
+    simulation_result_state,
+)
 from src.api.services.wave_creation import (
     create_wave_request_hash as _create_wave_request_hash,
     promote_preview_to_created_wave as _promote_preview_to_created_wave,
@@ -43,6 +46,7 @@ from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
+from src.api.services.wave_trigger_validation import validate_trigger_or_raise
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -60,6 +64,9 @@ from src.core.waves import (
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
+
+_simulation_result_state = simulation_result_state
+_validate_trigger = validate_trigger_or_raise
 
 
 def preview_wave(

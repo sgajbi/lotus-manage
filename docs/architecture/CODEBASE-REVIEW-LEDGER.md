@@ -8993,3 +8993,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: rerun full `make check` before PR creation to verify the full router surface.
 - Wiki decision: no wiki source change required; this is an internal typing compatibility fix with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-369: Extracted helper compatibility alias fix-forward
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/construction_service.py`, `src/api/services/construction_alternative_builder.py`,
+  focused construction and wave regression tests, and this ledger.
+- Finding: full `make check` surfaced compatibility gaps from helper extraction: existing tests
+  still patch `construction_service.has_solver_dependencies`, and existing wave tests still assert
+  private compatibility aliases for trigger validation and simulation-result classification.
+- Action: restored the construction solver capability hook through `construction_service.py` and
+  passed the resolved value into the extracted alternative builder; restored wave private aliases as
+  explicit assignments while keeping the helper modules as the implementation owners.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source files; focused mypy passed
+  for the touched source files; the five previously failing focused construction/wave tests passed;
+  `git diff --check` passed.
+- Follow-up: rerun full `make check` before PR creation to prove there are no additional
+  compatibility gaps.
+- Wiki decision: no wiki source change required; this is an internal compatibility fix with no
+  route, payload, supported-feature, or operator-contract change.
