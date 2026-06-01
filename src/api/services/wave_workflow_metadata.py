@@ -20,6 +20,23 @@ def approval_event_metadata(
     )
 
 
+def selection_event_metadata(
+    *,
+    wave_item_id: str,
+    alternative_set_id: str,
+    selected_alternative_id: str,
+    proof_pack_id: str | None,
+    proof_pack_state: object | None,
+) -> dict[str, object]:
+    return {
+        "wave_item_id": wave_item_id,
+        "alternative_set_id": alternative_set_id,
+        "selected_alternative_id": selected_alternative_id,
+        "proof_pack_id": proof_pack_id,
+        "proof_pack_state": proof_pack_state,
+    }
+
+
 def stage_event_metadata(
     *,
     staged_item_count: int,
@@ -83,5 +100,6 @@ __all__ = [
     "approval_event_metadata",
     "cancel_event_metadata",
     "handoff_event_metadata",
+    "selection_event_metadata",
     "stage_event_metadata",
 ]

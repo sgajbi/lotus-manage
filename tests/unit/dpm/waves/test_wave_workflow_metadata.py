@@ -3,6 +3,7 @@ from src.api.services.wave_workflow_metadata import (
     approval_event_metadata,
     cancel_event_metadata,
     handoff_event_metadata,
+    selection_event_metadata,
     stage_event_metadata,
 )
 from src.core.waves import DpmWaveHandoffRef
@@ -33,6 +34,22 @@ def test_approval_event_metadata_counts_exceptions_and_preserves_comment() -> No
         "exception_item_count": 1,
         "approval_reason_code": "PM_APPROVED",
         "comment": "approved with exception",
+    }
+
+
+def test_selection_event_metadata_preserves_selected_alternative_and_proof_pack() -> None:
+    assert selection_event_metadata(
+        wave_item_id="dwi_select",
+        alternative_set_id="alt_set_001",
+        selected_alternative_id="alt_balanced",
+        proof_pack_id="proof_pack_001",
+        proof_pack_state="READY_FOR_REVIEW",
+    ) == {
+        "wave_item_id": "dwi_select",
+        "alternative_set_id": "alt_set_001",
+        "selected_alternative_id": "alt_balanced",
+        "proof_pack_id": "proof_pack_001",
+        "proof_pack_state": "READY_FOR_REVIEW",
     }
 
 
@@ -76,6 +93,7 @@ def test_cancel_event_metadata_preserves_no_external_execution_claim() -> None:
 
 def test_wave_service_preserves_workflow_metadata_private_aliases() -> None:
     assert wave_service._approval_event_metadata is approval_event_metadata
+    assert wave_service._selection_event_metadata is selection_event_metadata
     assert wave_service._stage_event_metadata is stage_event_metadata
     assert wave_service._handoff_event_metadata is handoff_event_metadata
     assert wave_service._cancel_event_metadata is cancel_event_metadata
@@ -86,5 +104,6 @@ def test_wave_workflow_metadata_exports_public_surface() -> None:
         "approval_event_metadata",
         "cancel_event_metadata",
         "handoff_event_metadata",
+        "selection_event_metadata",
         "stage_event_metadata",
     ]

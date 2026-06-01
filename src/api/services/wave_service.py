@@ -58,6 +58,7 @@ from src.api.services.wave_workflow_metadata import (
     approval_event_metadata as _approval_event_metadata,
     cancel_event_metadata as _cancel_event_metadata,
     handoff_event_metadata as _handoff_event_metadata,
+    selection_event_metadata as _selection_event_metadata,
     stage_event_metadata as _stage_event_metadata,
 )
 from src.core.construction.repository import ConstructionRepository
@@ -295,13 +296,13 @@ def select_wave_item_alternative(
             correlation_id=correlation_id,
             reason_code="WAVE_ITEM_ALTERNATIVE_SELECTED",
             event_type="ITEM_SELECTION",
-            metadata={
-                "wave_item_id": wave_item_id,
-                "alternative_set_id": selected_item.alternative_set_id,
-                "selected_alternative_id": alternative_id,
-                "proof_pack_id": updated_item.proof_pack_id,
-                "proof_pack_state": updated_item.diagnostics.get("proof_pack_state"),
-            },
+            metadata=_selection_event_metadata(
+                wave_item_id=wave_item_id,
+                alternative_set_id=selected_item.alternative_set_id,
+                selected_alternative_id=alternative_id,
+                proof_pack_id=updated_item.proof_pack_id,
+                proof_pack_state=updated_item.diagnostics.get("proof_pack_state"),
+            ),
         ),
     )
     _update_wave_or_raise(

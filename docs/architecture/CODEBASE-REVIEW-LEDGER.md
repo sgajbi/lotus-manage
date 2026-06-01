@@ -9328,3 +9328,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or construction-selection orchestration helpers where they stay domain-specific and testable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-383: Wave selection metadata extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_workflow_metadata.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave API regressions, and this
+  ledger.
+- Finding: item-selection still built its audit event metadata inline while other wave workflow
+  event metadata had already moved into a directly tested helper module.
+- Action: added `selection_event_metadata` to the wave workflow metadata helper, replaced the inline
+  selection metadata dictionary in `wave_service.py`, preserved the private service alias, and
+  expanded direct metadata tests to cover selected alternative, alternative set, proof-pack id, and
+  proof-pack state evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_workflow_metadata.py`; direct workflow metadata tests and
+  selected wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or construction-selection orchestration helpers where the service can remain workflow-oriented.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
