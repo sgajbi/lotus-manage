@@ -4,7 +4,29 @@ from src.core.construction.models import (
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
 )
-from src.core.dpm_source_context import DpmCoreTransactionCostCurveResponse
+from src.core.dpm_source_context import (
+    DpmCoreTransactionCostCurvePoint,
+    DpmCoreTransactionCostCurveResponse,
+)
+
+
+def _transaction_cost_point(
+    point: DpmCoreTransactionCostCurvePoint,
+) -> AuthoritativeTransactionCostPoint:
+    return AuthoritativeTransactionCostPoint(
+        security_id=point.security_id,
+        transaction_type=point.transaction_type,
+        currency=point.currency,
+        observation_count=point.observation_count,
+        total_notional=point.total_notional,
+        total_cost=point.total_cost,
+        average_cost_bps=point.average_cost_bps,
+        min_cost_bps=point.min_cost_bps,
+        max_cost_bps=point.max_cost_bps,
+        first_observed_date=point.first_observed_date,
+        last_observed_date=point.last_observed_date,
+        sample_transaction_ids=point.sample_transaction_ids[:5],
+    )
 
 
 def transaction_cost_context_from_curve(
@@ -29,23 +51,7 @@ def transaction_cost_context_from_curve(
         window_end_date=curve.window.end_date,
         returned_curve_point_count=curve.supportability.returned_curve_point_count,
         missing_security_ids=curve.supportability.missing_security_ids,
-        curve_points=[
-            AuthoritativeTransactionCostPoint(
-                security_id=point.security_id,
-                transaction_type=point.transaction_type,
-                currency=point.currency,
-                observation_count=point.observation_count,
-                total_notional=point.total_notional,
-                total_cost=point.total_cost,
-                average_cost_bps=point.average_cost_bps,
-                min_cost_bps=point.min_cost_bps,
-                max_cost_bps=point.max_cost_bps,
-                first_observed_date=point.first_observed_date,
-                last_observed_date=point.last_observed_date,
-                sample_transaction_ids=point.sample_transaction_ids[:5],
-            )
-            for point in curve.curve_points[:10]
-        ],
+        curve_points=[_transaction_cost_point(point) for point in curve.curve_points[:10]],
         reason_codes=[curve.supportability.reason],
     )
 

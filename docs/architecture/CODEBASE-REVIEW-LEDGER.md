@@ -7705,3 +7705,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helpers where repetition appears.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-309: Transaction-cost point mapper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  transaction-cost source-context tests, and this ledger.
+- Finding: transaction-cost context mapping embedded per-point row shaping inside the parent context
+  constructor, mixing source metadata assembly with bounded curve-point transformation.
+- Action: extracted transaction-cost point mapping into a private helper while preserving the
+  existing limits of 10 curve points and 5 sample transaction IDs per point.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py`; focused transaction-cost
+  source-context regression passed with 1 test.
+- Follow-up: keep bounded row shaping close to source-context helpers and covered by direct mapper
+  tests.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
