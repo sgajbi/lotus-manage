@@ -7858,3 +7858,1159 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep facade composition tests focused on update/no-update orchestration boundaries.
 - Wiki decision: no wiki source change required; this is internal source-composition test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-318: Client restriction supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_esg_supportability.py`,
+  `src/api/services/construction_client_restriction_supportability.py`, ESG supportability tests,
+  and this ledger.
+- Finding: ESG supportability combined client-restriction rule matching and sustainability
+  preference supportability in one service helper, making the module harder to scan and reuse.
+- Action: extracted client-restriction supportability status, reason-code, violation, and matching
+  helpers into a focused module while preserving the existing ESG facade imports.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the ESG and client-restriction supportability source modules; focused ESG
+  supportability regressions passed with 3 tests.
+- Follow-up: consider the same split for sustainability preference supportability once the
+  client-restriction boundary is stable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-319: Sustainability supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_esg_supportability.py`,
+  `src/api/services/construction_sustainability_supportability.py`, ESG supportability tests, and
+  this ledger.
+- Finding: after the client-restriction split, sustainability preference allocation, classification,
+  status, and reason-code handling still lived inside the ESG facade.
+- Action: extracted sustainability preference supportability helpers into a focused module while
+  keeping the existing ESG facade import surface stable for callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the ESG, client-restriction, and sustainability supportability source modules; focused
+  ESG supportability regressions passed with 3 tests.
+- Follow-up: add direct tests around sustainability helper edge cases now that the boundary is
+  separately reusable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-320: Direct client restriction supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`, client-restriction supportability, and
+  this ledger.
+- Finding: after extracting client-restriction supportability into its own helper module, the
+  focused behavioral tests still lived in the broader ESG supportability test file.
+- Action: moved direct client-restriction supportability and matching tests into a dedicated test
+  module and left the ESG supportability test focused on sustainability preference behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the client-restriction and sustainability supportability source modules; focused
+  client-restriction and ESG/sustainability regressions passed with 3 tests.
+- Follow-up: add a dedicated sustainability supportability test module if additional edge cases
+  make the current ESG test filename misleading.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-321: Sustainability supportability test rename
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_sustainability_supportability.py`, removed
+  `tests/unit/dpm/construction/test_esg_supportability.py`, sustainability supportability tests,
+  and this ledger.
+- Finding: after direct client-restriction tests were split out, the remaining ESG supportability
+  test module only covered sustainability preference supportability behavior.
+- Action: renamed the test module to match the extracted sustainability supportability helper
+  boundary.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_sustainability_supportability.py`; focused sustainability
+  supportability regression passed with 1 test.
+- Follow-up: keep the ESG facade covered by higher-level construction supportability tests and
+  direct helper modules for domain-specific behavior.
+- Wiki decision: no wiki source change required; this is internal test navigation cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-322: Client restriction supportability edge coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  client-restriction supportability, and this ledger.
+- Finding: direct client-restriction supportability tests covered a blocking active buy rule but did
+  not prove fail-soft absence handling or inactive/non-applicable rule handling.
+- Action: added direct regressions for missing source profile degradation and for inactive or
+  non-buy-applicable restrictions applying no block while still recording profile-applied evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  client-restriction supportability regressions passed with 4 tests.
+- Follow-up: keep rule applicability tests explicit so client mandate restrictions remain auditable
+  as supported scopes expand.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-323: Sustainability supportability edge coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  sustainability supportability, and this ledger.
+- Finding: direct sustainability supportability tests covered review-triggering active preferences
+  but did not prove missing source-profile degradation or inactive preference handling.
+- Action: added direct regressions for unavailable source profile degradation and inactive
+  sustainability preferences applying no allocation/classification review findings.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  sustainability supportability regressions passed with 3 tests.
+- Follow-up: keep preference-status handling explicit as sustainability preference schemas expand.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-324: Liquidity supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_liquidity_supportability.py`, construction method supportability
+  tests, and this ledger.
+- Finding: construction method supportability combined liquidity policy, currency overlay, and
+  regime-stress supportability in one helper module.
+- Action: extracted liquidity status, reason-code, cashflow projection, cash-weight, and derived
+  liquidity policy helpers into a focused module while preserving the existing method-supportability
+  facade imports.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and liquidity supportability source modules; focused method supportability
+  regressions passed with 3 tests.
+- Follow-up: split currency overlay and regime-stress supportability into focused modules if the
+  method-supportability facade continues to carry mixed domain logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-325: Direct liquidity supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, liquidity supportability, and this
+  ledger.
+- Finding: after extracting liquidity supportability into a focused module, the direct liquidity
+  policy test still lived in the broader method-supportability test module.
+- Action: moved the liquidity policy supportability regression into a dedicated test module and
+  trimmed now-unused method-supportability fixtures/imports.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the liquidity and method supportability source modules; focused liquidity and method
+  supportability regressions passed with 3 tests.
+- Follow-up: keep method-supportability facade tests focused on the remaining non-liquidity
+  supportability functions until those are split.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-326: Currency overlay supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_currency_overlay_supportability.py`, construction method
+  supportability tests, and this ledger.
+- Finding: after the liquidity split, construction method supportability still mixed
+  currency-overlay policy derivation, missing-pair detection, and status handling with the
+  regime-stress facade.
+- Action: extracted currency-overlay supportability into a focused helper module while preserving
+  the existing method-supportability facade imports for callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and currency-overlay supportability source modules; focused method
+  supportability regressions passed with 2 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: move direct currency-overlay tests into a dedicated test module, then split
+  regime-stress supportability out of the method facade.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-327: Direct currency overlay supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, currency-overlay supportability, and
+  this ledger.
+- Finding: after extracting currency-overlay supportability into a focused module, the direct
+  missing-FX-pair regression still lived in the broader method-supportability test module and did
+  not cover missing context or unsupported-currency review behavior.
+- Action: moved currency-overlay regressions into a dedicated test module and added focused coverage
+  for missing source context degradation and unsupported currency pending-review handling.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the currency-overlay supportability source module; focused currency-overlay and method
+  supportability regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep `test_method_supportability.py` narrowed to regime-stress behavior until
+  regime-stress supportability is extracted into its own helper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-328: Regime stress supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_regime_stress_supportability.py`, construction method
+  supportability tests, and this ledger.
+- Finding: after liquidity and currency-overlay extraction, the method-supportability facade still
+  owned the regime-stress threshold evaluation directly.
+- Action: extracted regime-stress supportability status handling into a focused helper module while
+  preserving the existing method-supportability facade export for callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and regime-stress supportability source modules; focused method
+  supportability regression passed with 1 test; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: move direct regime-stress tests into a dedicated test module and leave
+  `construction_method_supportability.py` as a compatibility facade only.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-329: Direct regime stress supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, regime-stress supportability, and
+  this ledger.
+- Finding: after extracting regime-stress supportability, the direct threshold-breach regression
+  still lived in the broader method-supportability test module and did not prove missing source
+  context or non-breach source-status preservation.
+- Action: moved regime-stress supportability regressions into a dedicated test module, added
+  missing-context and no-threshold-breach cases, and narrowed the method-supportability test to the
+  facade export contract.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and regime-stress supportability source modules; focused regime-stress and
+  method supportability regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue shrinking `construction_service.py` and keep compatibility facades thin,
+  covered, and explicit.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-330: Construction alternative set lineage helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_set_lineage.py`,
+  `tests/unit/dpm/construction/test_alternative_set_lineage.py`, construction API regressions, and
+  this ledger.
+- Finding: `construction_service.py` still assembled alternative-set request hash, input mode, and
+  source-supportability lineage inline inside the generation orchestration path.
+- Action: extracted alternative-set lineage field assembly into a focused helper that reuses the
+  existing rebalance source-lineage input-mode convention, with direct stateless and stateful
+  coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py` and `construction_alternative_set_lineage.py`; direct
+  alternative-set lineage tests passed with 2 tests; selected construction API regressions for
+  first-wave replay and stateful source behavior passed with 2 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: keep pure metadata/source-boundary assembly out of `construction_service.py` while
+  preserving method orchestration there.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-331: Persistable construction alternative set assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_set_assembly.py`,
+  `tests/unit/dpm/construction/test_alternative_set_assembly.py`, construction API regressions, and
+  this ledger.
+- Finding: construction generation orchestration still owned pure alternative-set assembly details:
+  generated alternative-set identity, business as-of date, request hash, input mode, and
+  source-supportability lineage fields.
+- Action: extracted persistable alternative-set assembly into a focused helper with deterministic
+  identity/as-of injection for direct tests while leaving method execution orchestration in
+  `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py`, `construction_alternative_set_assembly.py`, and
+  `construction_alternative_set_lineage.py`; direct alternative-set assembly and lineage tests
+  passed with 3 tests; selected construction API regressions for first-wave replay and stateful
+  source behavior passed with 2 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue keeping construction generation orchestration readable by extracting only pure
+  assembly or source-boundary helpers.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-332: Construction selection assembly helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_selection.py`,
+  `tests/unit/dpm/construction/test_construction_selection.py`, construction API selection
+  regressions, and this ledger.
+- Finding: construction selection orchestration still mixed repository lookup/save with pure
+  alternative membership validation and selection model assembly.
+- Action: extracted construction selection validation and model assembly into a focused helper with
+  deterministic selection-id injection for direct tests, leaving repository orchestration in
+  `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py` and `construction_selection.py`; direct construction
+  selection tests passed with 2 tests; selected construction API selection regression passed with 1
+  test; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep service-level selection behavior covered by API tests while direct helper tests
+  own deterministic validation and model assembly.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-333: Construction alternative builder extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_builder.py`,
+  `tests/unit/dpm/construction/test_alternative_builder.py`, construction API generation
+  regressions, and this ledger.
+- Finding: construction generation orchestration still embedded the method loop that resolved
+  method plans, ran non-heuristic effective methods, wrapped rebalance results as alternatives, and
+  applied supportability.
+- Action: extracted alternative construction into a dedicated builder module with direct coverage
+  for method ordering, baseline handling, effective-method execution, method-plan diagnostics, and
+  request-hash suffix preservation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py` and `construction_alternative_builder.py`; direct
+  alternative-builder regression passed with 1 test; selected construction API generation
+  regressions for first-wave replay and turnover-budget pending review passed with 2 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep `construction_service.py` limited to request hashing, idempotency, persistence,
+  and high-level orchestration while method execution/build policy lives in focused helpers.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-334: Shared construction source identity helpers
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, liquidity/client profile source-context
+  tests, and this ledger.
+- Finding: liquidity and client-profile source-context mappers duplicated canonical payload
+  extraction, source content hashing, and top-level/lineage source-batch fingerprint fallback logic.
+- Action: extracted shared source identity helpers for canonical source payloads, content hashes,
+  and source-id fallback ordering, then rewired liquidity and client-profile source mappers to use
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`, `construction_liquidity_source_context.py`, and
+  `construction_client_profile_source_context.py`; direct source identity, liquidity source-context,
+  and client-profile source-context regressions passed with 17 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: consider migrating treasury, execution acknowledgement, and transaction-cost
+  source-context mappers to the same helper where their source-id fallback semantics match.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-335: Source identity reuse for cost and execution evidence
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_execution_source_context.py`,
+  `src/api/services/construction_source_identity.py`, transaction-cost/execution source-context
+  tests, and this ledger.
+- Finding: transaction-cost and external execution acknowledgement source-context mappers still
+  duplicated canonical payload hashing and source-batch fingerprint fallback logic after the shared
+  source identity helper was introduced.
+- Action: rewired transaction-cost and external execution acknowledgement mappers to reuse the
+  shared source identity helper while preserving transaction-cost page-fingerprint fallback and
+  execution acknowledgement content-hash fallback semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`,
+  `construction_transaction_cost_source_context.py`, and
+  `construction_execution_source_context.py`; direct transaction-cost source-context, execution
+  source-context, and source-identity regressions passed with 8 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: migrate treasury source-context identity helpers only if aggregate hash and per-source
+  fallback behavior can be preserved without weakening source-boundary proof.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-336: Treasury source identity helper reuse
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `src/api/services/construction_source_identity.py`, treasury source-context tests, and this
+  ledger.
+- Finding: treasury source-context mapping retained local optional payload, per-source hash, and
+  source-id fallback helpers after shared construction source identity helpers were introduced.
+- Action: rewired optional treasury source payload/hash/source-id handling through the shared
+  source identity helpers while preserving the aggregate currency-overlay content hash and
+  fail-closed per-source fallback semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py` and `construction_source_identity.py`;
+  treasury source-context and source-identity regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep aggregate source-boundary hash behavior explicit when consolidating additional
+  source-product mapper utilities.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-337: Liquidity source-context export surface cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`, and this ledger.
+- Finding: the liquidity source-context mapper still re-exported
+  `source_status_to_method_status`, even though status mapping now lives in the dedicated source
+  product status helper and no callers import it through the liquidity module.
+- Action: removed the stale liquidity-module export and added a direct module-surface regression so
+  the mapper publicly exposes only liquidity source-context functions.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; direct liquidity source-context
+  regressions passed with 11 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: keep source mapper `__all__` surfaces narrow as helper modules are consolidated.
+- Wiki decision: no wiki source change required; this is internal source-boundary module-surface
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-338: Source-context export surface coverage
+
+- Date: 2026-06-01
+- Scope: client-profile, transaction-cost, execution acknowledgement, and treasury source-context
+  unit tests plus this ledger.
+- Finding: after source-identity helper consolidation, most source-context mappers had explicit
+  `__all__` surfaces but only liquidity source context had direct module-surface coverage.
+- Action: added focused export-surface regressions for client-profile, transaction-cost, execution
+  acknowledgement, and treasury source-context modules so their public mapper boundaries remain
+  intentional.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; source-context
+  regression set passed with 18 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: add module-surface coverage alongside future source-context mapper extractions when
+  helper consolidation changes public imports.
+- Wiki decision: no wiki source change required; this is internal test hardening for mapper module
+  boundaries with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-339: Wave supportability diagnostics extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_supportability_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, wave supportability API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still owned pure supportability diagnostics policy for issue
+  filtering, severity, source-owner classification, remediation routing, and operator action
+  selection.
+- Action: extracted wave supportability diagnostics into a focused helper module, preserved the
+  existing wave service private helper alias for compatibility, and added direct tests for
+  completed-item filtering, explicit owner/action preservation, and sorted remediation routes.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_supportability_diagnostics.py`; direct wave
+  supportability diagnostics and selected wave supportability API regressions passed with 7 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `wave_service.py` by extracting additional pure clusters while
+  keeping repository orchestration and router concerns separate.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-340: Wave boundary evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_boundary_evidence.py`,
+  `tests/unit/dpm/waves/test_wave_boundary_evidence.py`, proof-pack posture boundary regressions,
+  and this ledger.
+- Finding: `wave_service.py` still assembled external-execution and client-communication boundary
+  evidence directly inside the service module.
+- Action: extracted wave boundary evidence builders into a focused module with direct tests for
+  no-execution-owner, unsafe execution claim, and no-client-communication-owner cases while
+  preserving the existing wave service private aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_boundary_evidence.py`; direct wave boundary evidence and
+  selected proof-pack posture boundary regressions passed with 7 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue moving pure wave evidence assembly out of `wave_service.py` while retaining
+  workflow orchestration and repository access in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-341: Wave proof-pack posture extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_proof_pack_posture.py`,
+  `tests/unit/dpm/waves/test_wave_proof_pack_posture.py`, selected wave proof-pack API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled proof-pack posture directly, mixing evidence summary
+  assembly with workflow service orchestration.
+- Action: extracted proof-pack posture assembly into a focused helper module backed by the wave
+  boundary evidence builders, preserved the `wave_service.proof_pack_posture_for_wave` import
+  surface for existing callers, and added direct tests for proof-pack counting, boundary evidence,
+  unlinked item filtering, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_proof_pack_posture.py`; direct wave proof-pack posture
+  tests and selected proof-pack API regressions passed with 7 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave evidence and handoff assembly clusters from
+  `wave_service.py` while leaving repository orchestration in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-342: Wave handoff evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_handoff_evidence.py`,
+  `tests/unit/dpm/waves/test_wave_handoff_evidence.py`, selected wave handoff API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still owned internal operations handoff reference assembly and hashing,
+  even though the logic is pure evidence construction rather than workflow orchestration.
+- Action: extracted handoff reference and content-hash builders into a focused helper module,
+  preserved the existing wave service private alias for orchestration, and added direct tests for
+  internal handoff boundary metadata, optional comments, stable hash canonicalization, and the module
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_handoff_evidence.py`; direct wave handoff evidence tests
+  and selected handoff API regressions passed with 7 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave item-transition assembly from `wave_service.py` while
+  keeping repository writes, version conflict handling, and route-facing lookup behavior in the
+  service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-343: Wave item transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_transitions.py`,
+  `tests/unit/dpm/waves/test_wave_item_transitions.py`, selected wave approve/stage/handoff/cancel
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned item-level approve, stage, handoff, and cancel model-copy
+  assembly even though those transformations are deterministic item transitions rather than
+  repository orchestration.
+- Action: extracted item transition builders into a focused helper module, preserved existing
+  private aliases in the wave service orchestration, and added direct tests for transition
+  diagnostics, no-external-execution markers, no-op states, handoff-ready cancellation preservation,
+  and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_transitions.py`; direct wave item transition tests and
+  selected approve/stage/handoff/cancel API regressions passed with 9 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `wave_service.py` by extracting pure wave trigger, source-ref, and
+  diagnostics assembly while keeping state-machine orchestration in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-344: Wave portfolio source extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_portfolio_sources.py`,
+  `tests/unit/dpm/waves/test_wave_portfolio_sources.py`, selected wave create/search/source helper
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned source-ref flattening, portfolio diagnostics normalization,
+  and optional string normalization for affected portfolio payloads, increasing the service module's
+  non-orchestration surface.
+- Action: extracted portfolio source helpers into a focused module, preserved existing private
+  aliases in `wave_service.py`, and added direct tests for source-ref validation, trigger-level
+  flattening, diagnostics filtering, optional string normalization, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_portfolio_sources.py`; full direct portfolio-source tests
+  passed with 7 tests; selected wave create/search/source helper API regressions passed with 19
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave aggregate and event assembly from `wave_service.py`
+  while leaving state transitions and repository conflict handling in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-345: Wave aggregate metrics extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_aggregate_metrics.py`,
+  `tests/unit/dpm/waves/test_wave_aggregate_metrics.py`, selected wave simulation/create aggregate
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still calculated aggregate metrics and simulation result state directly,
+  keeping deterministic state-counting logic inside the orchestration module.
+- Action: extracted aggregate metric and simulation result classifiers into a focused helper module,
+  preserved the existing private aliases in `wave_service.py`, and added direct tests for ready,
+  blocked, review, degraded, full simulation, partial simulation, failed simulation, and export
+  surfaces.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_aggregate_metrics.py`; direct wave aggregate metric tests
+  and selected simulation/create API regressions passed with 19 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure event and validation helpers from `wave_service.py` while
+  preserving repository orchestration and state-machine boundaries.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-346: Wave event evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_event_evidence.py`,
+  `tests/unit/dpm/waves/test_wave_event_evidence.py`, selected wave create/idempotency/append-event
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still built wave audit events and canonical request/idempotency hashes
+  directly, keeping deterministic evidence construction inside the orchestration module.
+- Action: extracted wave event construction, canonical request hashing, and idempotency-key hashing
+  into a focused helper module, preserved existing private aliases in `wave_service.py`, and added
+  direct tests for audit fields, custom event types, canonical hash stability, idempotency hash
+  shape, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_event_evidence.py`; full direct wave event evidence tests
+  passed with 5 tests; selected wave create/idempotency/append-event API regressions passed with 13
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep `_append_event` in the service layer until validation-error ownership can be moved
+  without coupling helper modules back to service exceptions; continue extracting remaining pure
+  wave item construction and trigger-validation logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-347: Wave item builder extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_builder.py`,
+  `tests/unit/dpm/waves/test_wave_item_builder.py`, selected wave preview/create/source API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled affected-portfolio wave items directly, including
+  portfolio source evidence, mandate digital-twin source refs, candidate diagnostics, and
+  source-blocked diagnostics.
+- Action: extracted affected-portfolio item construction into a focused helper module, preserved
+  service-private compatibility aliases for existing source helper tests, and added direct tests for
+  source-ready item construction, mandate twin enrichment, source-blocked construction, and the
+  module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_builder.py`; full direct wave item builder tests
+  passed with 4 tests; selected wave preview/create/source API regressions passed with 84 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting trigger validation and construction/proof-pack item selection
+  helpers while keeping repository orchestration and version-conflict handling in `wave_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-348: Wave trigger validation extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_trigger_validation.py`,
+  `tests/unit/dpm/waves/test_wave_trigger_validation.py`, selected wave trigger/create API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still owned supported trigger policy and affected-portfolio set
+  validation directly, mixing trigger contract policy with preview/create orchestration.
+- Action: extracted trigger validation policy into a focused helper that returns bounded validation
+  failures, kept service-local translation to `DpmWaveValidationError`, and added direct tests for
+  supported private-banking trigger types, unsupported trigger failures, empty portfolio failures,
+  and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_trigger_validation.py`; direct trigger validation tests and
+  selected trigger/create API regressions passed with 34 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting construction/proof-pack item selection helpers while preserving
+  workflow orchestration and repository error handling in `wave_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-349: Wave construction diagnostics extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_construction_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_construction_diagnostics.py`, selected wave simulation API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still parsed proposed changes from construction alternative diagnostics
+  directly, keeping pure construction-diagnostic normalization inside the wave orchestration module.
+- Action: extracted proposed-change normalization into a focused helper module and added direct tests
+  for first-populated alternative selection, non-dict filtering, missing/non-list diagnostics, and
+  the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_construction_diagnostics.py`; full direct construction
+  diagnostics tests passed with 3 tests; selected wave simulation regressions passed with 8 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting source-readiness lookup and selection/proof-pack item update
+  helpers where dependency boundaries remain clean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-350: Wave source-readiness lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_source_readiness.py`,
+  `tests/unit/dpm/waves/test_wave_source_readiness.py`, selected wave source-check/source-readiness
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned mandate twin resolution and mandate health lookup before
+  invoking the core source-readiness classifier, mixing repository lookup details into the wave
+  orchestration module.
+- Action: extracted source-readiness lookup into a focused helper module that resolves mandate twins,
+  loads mandate health, and delegates classification to the core wave source-readiness policy; added
+  direct tests for mandate-id lookup, portfolio fallback, ready classification, missing-twin blocking,
+  and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_source_readiness.py`; full direct source-readiness helper
+  tests passed with 5 tests; selected source-check/source-readiness API regressions passed with 43
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue evaluating the remaining construction/proof-pack item update path, but keep
+  external service calls in `wave_service.py` unless a clean dependency boundary emerges.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-351: Wave supportability payload extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_supportability_payload.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`, selected wave supportability API
+  regressions, and this ledger.
+- Finding: after extracting supportability diagnostics, `wave_service.py` still assembled the
+  aggregate supportability payload, issue counts, state reason, and operator actions directly.
+- Action: extracted supportability payload assembly into a focused helper module backed by the
+  supportability diagnostics helper, preserved the existing service-private `_supportability_issue`
+  alias for compatibility tests, and added direct tests for ready, blocked, degraded, issue-count,
+  operator-action, and export-surface behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_supportability_payload.py`; direct supportability payload
+  tests and selected supportability API regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by isolating selection/proof-pack update branches
+  only where dependency flow remains explicit and testable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-352: Wave simulation item extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_simulation_item.py`,
+  `tests/unit/dpm/waves/test_wave_simulation_item.py`, selected wave simulation API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still owned per-item simulation execution, construction alternative-set
+  generation calls, missing-input diagnostics, generation-failure diagnostics, and the simulation
+  input dataclass.
+- Action: extracted per-item simulation execution and `DpmWaveSimulationInput` into a focused helper
+  module, preserved `wave_service.DpmWaveSimulationInput` as an imported compatibility surface for
+  routers, and added direct tests for non-source-ready no-op behavior, missing input blocking,
+  successful construction alternative linkage, generation failure handling, and the module export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_simulation_item.py`; full direct simulation item tests
+  passed with 5 tests; selected wave simulation API regressions passed with 11 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: evaluate whether selection/proof-pack item update can be split into a similarly focused
+  helper without hiding external proof-pack service dependency flow.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-353: Wave selection item extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_selection_item.py`,
+  `tests/unit/dpm/waves/test_wave_selection_item.py`, selected wave selection/proof-pack API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still owned per-item selection and proof-pack linkage, including
+  selection diagnostics, no-proof-pack degraded posture, proof-pack generation calls, and failure
+  diagnostics.
+- Action: extracted per-item selection/proof-pack update logic into a focused helper module while
+  keeping the wave-level selection orchestration and construction alternative selection call in
+  `wave_service.py`; added direct tests for no-proof-pack degraded state, successful proof-pack
+  linkage, proof-pack generation failure, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_selection_item.py`; full direct selection item tests passed
+  with 4 tests; selected wave selection/proof-pack API regressions passed with 23 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing the remaining wave orchestration surface for validation/error
+  helper extraction, but keep durable repository writes and state-machine transitions central.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-354: Wave service private helper alias cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/api/test_waves_api.py`,
+  `tests/unit/dpm/waves/test_wave_portfolio_sources.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and this ledger.
+- Finding: after extracting portfolio source helpers and supportability diagnostics, `wave_service.py`
+  still exposed private compatibility aliases that were used only by legacy API tests, widening the
+  service module surface without serving route-facing orchestration.
+- Action: removed stale private helper aliases from `wave_service.py`, narrowed the API supportability
+  regression to public service behavior, and relied on direct helper tests for source-ref,
+  optional-string, excluded-item, and operator-action coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; selected public supportability API regressions plus direct portfolio
+  source and supportability diagnostics tests passed with 7 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue trimming compatibility surfaces as helper modules gain direct tests.
+- Wiki decision: no wiki source change required; this is internal service module-surface cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-355: Wave search projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_search.py`,
+  `tests/unit/dpm/waves/test_wave_search.py`, selected wave search API regressions, and this ledger.
+- Finding: `wave_service.py` still owned read-only wave search summary projection and supportability
+  filtering, even though it is presentation assembly rather than workflow orchestration.
+- Action: extracted wave search summary projection into a focused helper module and made
+  `wave_service.search_waves` delegate to it; added direct tests for repository filter forwarding,
+  summary field projection, supportability-state filtering, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_search.py`; direct wave search tests and selected search API
+  regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue moving read-only response projection helpers out of `wave_service.py` while
+  keeping lookup errors and repository mutation workflows centralized.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-356: Wave detail projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_detail_projection.py`,
+  `tests/unit/dpm/waves/test_wave_detail_projection.py`, selected wave detail/items/proof-pack API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled read-only detail and item-list payloads directly,
+  including supportability and proof-pack posture projections.
+- Action: extracted wave detail and item-list payload builders into a focused helper module and made
+  `retrieve_wave_detail` and `list_wave_items` delegate to it; added direct tests for supportability,
+  proof-pack posture, item payload projection, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_detail_projection.py`; direct detail projection tests and
+  selected detail/items/proof-pack API regressions passed with 7 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue isolating read-only report-input and portfolio-memory context projection where
+  doing so does not obscure boundary-error translation.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-357: Wave report context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_report_context.py`,
+  `tests/unit/dpm/waves/test_wave_report_context.py`, selected wave report-input API regressions,
+  and this ledger.
+- Finding: `wave_service.py` still resolved bounded portfolio-memory context for report input
+  directly, even though the logic is a read-only supportability projection around repository
+  availability and first-item portfolio identity.
+- Action: extracted portfolio-memory report-context resolution into a focused helper module and made
+  report-input assembly delegate to it while preserving service-local boundary-error translation;
+  added direct tests for no-context cases, first-item portfolio routing, and the module export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_report_context.py`; direct report-context tests and selected
+  report-input API regressions passed with 14 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep report-input boundary exception translation in `wave_service.py`; continue
+  reviewing remaining lookup and event-append helpers for clean extraction opportunities.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-358: Wave service error extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_errors.py`,
+  `tests/unit/dpm/waves/test_wave_errors.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still defined reusable wave service exception carrier classes directly,
+  keeping shared error vocabulary embedded in the orchestration module.
+- Action: extracted wave validation and lookup error classes into a focused service error module,
+  preserved the existing `wave_service` import surface for routers and tests, and added direct tests
+  for code/message preservation, string representation, export surface, and compatibility aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_errors.py`; direct wave error tests and selected wave API
+  regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing remaining wave lookup and event-append helpers for clean extraction
+  opportunities now that shared wave service error types are independently owned.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-359: Wave lookup helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_lookup.py`,
+  `tests/unit/dpm/waves/test_wave_lookup.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still owned the repeated repository lookup plus governed
+  not-found-error boundary used by both read and workflow commands.
+- Action: extracted wave lookup-to-governed-error translation into a focused helper module,
+  preserved the existing private service alias for compatibility inside orchestration code, and
+  added direct tests for loaded-wave return, missing-wave error details, alias preservation, and the
+  module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_lookup.py`; direct wave lookup tests and selected wave API
+  regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing non-transition helper boundaries, especially same-state event
+  append validation, for extraction without weakening orchestration clarity.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-360: Wave event append helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_event_append.py`,
+  `tests/unit/dpm/waves/test_wave_event_append.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still owned same-state event append validation and version increment
+  logic used by item-level workflow evidence, even though it is a reusable service-support helper.
+- Action: extracted same-state event append validation into a focused helper module, preserved the
+  existing private service alias for orchestration compatibility, removed the now-unused event model
+  import from `wave_service.py`, and added direct tests for success, identity mismatch, state
+  mismatch, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_event_append.py`; direct wave event append tests and
+  selected wave API regressions passed with 137 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by moving pure validation/supportability helpers
+  while keeping state-transition orchestration readable and centralized.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-361: Wave trigger validation wrapper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_trigger_validation.py`,
+  `tests/unit/dpm/waves/test_wave_trigger_validation.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` still owned the thin trigger validation raise wrapper even though the
+  underlying trigger support matrix and failure classification already lived in the trigger
+  validation helper module.
+- Action: moved governed trigger validation error raising into `wave_trigger_validation.py`,
+  preserved the existing private service alias for preview/create orchestration compatibility, and
+  added direct tests for success, governed error details, alias preservation, and the expanded module
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_trigger_validation.py`; direct trigger validation tests and
+  selected wave API regressions passed with 140 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep state-changing wave orchestration in `wave_service.py`; continue extracting pure
+  support helpers only when direct tests can pin the service contract.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-362: Wave update persistence conflict extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_persistence.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` repeated the same optimistic-concurrency update call and
+  `DPM_WAVE_VERSION_CONFLICT` translation across source-check, simulation, selection, approval,
+  stage, handoff, and cancellation commands.
+- Action: extracted update persistence and version-conflict translation into a focused service
+  helper, replaced repeated try/except blocks in wave orchestration with the shared helper, removed
+  the now-unused conflict import from `wave_service.py`, and added direct tests for successful
+  update forwarding, governed conflict translation, service alias use, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_persistence.py`; direct wave persistence tests and selected
+  wave API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: review create-wave save/idempotency conflict translation separately so the create path
+  remains explicit and idempotency behavior stays directly tested.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-363: Wave create persistence conflict extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_persistence.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave API regressions, and this ledger.
+- Finding: after update conflict extraction, the create-wave path still translated repository
+  save/idempotency conflicts directly in `wave_service.py`, leaving write-boundary error mapping
+  split across orchestration and persistence helper code.
+- Action: extended the wave persistence helper with create/save conflict translation, replaced the
+  create path try/except with the shared helper while keeping idempotency replay orchestration in
+  `wave_service.py`, removed now-unused create-conflict imports from the service, and expanded
+  direct persistence tests for save forwarding, duplicate-wave and idempotency conflict translation,
+  helper aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_persistence.py`; direct wave persistence tests and selected
+  wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing wave creation assembly separately; persistence translation is now
+  centralized, but request hashing and preview-to-create promotion remain orchestration concerns.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-364: Wave creation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_creation.py`,
+  `tests/unit/dpm/waves/test_wave_creation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still mixed create-request hash assembly and preview-to-created wave
+  promotion into the create orchestration path, making idempotency evidence and event re-keying
+  harder to test directly.
+- Action: extracted canonical create request hashing and preview-to-created promotion into a focused
+  creation helper, kept idempotency replay and persistence orchestration in `wave_service.py`, and
+  added direct tests for hash field coverage, preview event re-keying, created transition evidence,
+  idempotency hash metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_creation.py`; direct wave creation tests and selected wave
+  API regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue keeping workflow orchestration explicit while moving deterministic assembly
+  helpers into directly tested modules.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-365: Wave preview assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_preview.py`,
+  `tests/unit/dpm/waves/test_wave_preview.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled preview waves directly, including trigger validation,
+  item construction, trigger source lineage, aggregate metrics, and preview transition evidence.
+- Action: extracted preview wave assembly into a focused helper module, made
+  `wave_service.preview_wave` delegate to it, removed now-unused service imports, and added direct
+  tests for source-backed preview construction, governed empty-set validation, transition evidence,
+  trigger lineage, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_preview.py`; direct wave preview tests and selected wave
+  API regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue shrinking wave command functions only where helper extraction keeps workflow
+  state transitions and repository interactions readable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-366: Wave source-check assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_source_check.py`,
+  `tests/unit/dpm/waves/test_wave_source_check.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled source-check item classification, aggregate metrics,
+  and transition evidence directly inside the command function, even though the repository/state
+  guard and persistence update are the orchestration concerns.
+- Action: extracted source-check transition assembly into a focused helper, kept idempotent state
+  guard and repository update in `wave_service.py`, removed the now-unused source-readiness import
+  from the service, and added direct tests for item classification, aggregate rollup evidence,
+  transition metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_source_check.py`; direct wave source-check tests and
+  selected wave API regressions passed with 134 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue extracting deterministic transition assembly from simulation or later workflow
+  commands only when it reduces duplication without hiding command-state policy.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-367: Wave simulation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_simulation.py`,
+  `tests/unit/dpm/waves/test_wave_simulation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled simulation-start transition evidence, per-item
+  simulation results, aggregate rollup, and completion transition evidence directly inside the
+  command function, blending deterministic assembly with state-policy and persistence orchestration.
+- Action: extracted simulation transition assembly into a focused helper, kept idempotent state guard
+  and repository update in `wave_service.py`, removed the now-unused simulation result import from
+  the service, and added direct tests for missing-input degradation, simulation event sequence,
+  aggregate rollup metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_simulation.py`; direct wave simulation tests and selected
+  wave API regressions passed with 134 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: pause additional feature-branch growth at the 50-commit checkpoint and run the full
+  PR pre-merge gate before opening the PR.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-368: Wave service compatibility re-export fix
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, selected wave router mypy checks, and this ledger.
+- Finding: after extracting wave error and simulation input helpers, runtime compatibility remained
+  intact but full-repo mypy required `wave_service` compatibility imports to be explicit re-exports
+  for routers that still type-check against the existing service surface.
+- Action: marked `DpmWaveValidationError`, `DpmWaveLookupError`, and `DpmWaveSimulationInput` as
+  explicit same-name imports in `wave_service.py` so existing router references remain both runtime
+  and type-check compatible while helper modules own the implementations.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for `wave_service.py`; targeted mypy passed for
+  `wave_service.py`, `wave_simulation_http.py`, and `wave_http_errors.py`.
+- Follow-up: rerun full `make check` before PR creation to verify the full router surface.
+- Wiki decision: no wiki source change required; this is an internal typing compatibility fix with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-369: Extracted helper compatibility alias fix-forward
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/construction_service.py`, `src/api/services/construction_alternative_builder.py`,
+  focused construction and wave regression tests, and this ledger.
+- Finding: full `make check` surfaced compatibility gaps from helper extraction: existing tests
+  still patch `construction_service.has_solver_dependencies`, and existing wave tests still assert
+  private compatibility aliases for trigger validation and simulation-result classification.
+- Action: restored the construction solver capability hook through `construction_service.py` and
+  passed the resolved value into the extracted alternative builder; restored wave private aliases as
+  explicit assignments while keeping the helper modules as the implementation owners.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source files; focused mypy passed
+  for the touched source files; the five previously failing focused construction/wave tests passed;
+  `git diff --check` passed.
+- Follow-up: rerun full `make check` before PR creation to prove there are no additional
+  compatibility gaps.
+- Wiki decision: no wiki source change required; this is an internal compatibility fix with no
+  route, payload, supported-feature, or operator-contract change.

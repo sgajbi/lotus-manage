@@ -1,8 +1,12 @@
 from decimal import Decimal
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 from src.api.services.construction_source_product_status import source_status_to_method_status
-from src.core.common.canonical import hash_canonical_payload
+from src.api.services.construction_source_identity import (
+    response_source_id,
+    source_hash,
+    source_payload,
+)
 from src.core.construction.models import (
     AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeLiquidityCashflowProjection,
@@ -19,29 +23,12 @@ from src.core.dpm_source_context import (
 )
 from src.core.models import Money
 
-_JsonPayload: TypeAlias = dict[str, Any]
 _LiquiditySourceResponse: TypeAlias = (
     DpmCoreClientIncomeNeedsScheduleResponse
     | DpmCoreLiquidityReserveRequirementResponse
     | DpmCorePlannedWithdrawalScheduleResponse
     | DpmCorePortfolioCashflowProjectionResponse
 )
-
-
-def _source_payload(response: _LiquiditySourceResponse) -> _JsonPayload:
-    return response.model_dump(mode="json", exclude_none=True)
-
-
-def _source_hash(payload: _JsonPayload) -> str:
-    return hash_canonical_payload(payload)
-
-
-def _response_source_id(response: _LiquiditySourceResponse, fallback_hash: str) -> str:
-    return (
-        response.source_batch_fingerprint
-        or response.lineage.get("source_batch_fingerprint")
-        or fallback_hash
-    )
 
 
 def _liquidity_reason_codes(
@@ -66,14 +53,14 @@ def _liquidity_reason_codes(
 def client_income_needs_schedule_context(
     income_needs: DpmCoreClientIncomeNeedsScheduleResponse,
 ) -> AuthoritativeClientIncomeNeedsSchedule:
-    payload = _source_payload(income_needs)
-    source_hash = _source_hash(payload)
+    payload = source_payload(income_needs)
+    source_hash_value = source_hash(payload)
     return AuthoritativeClientIncomeNeedsSchedule(
         source_product_name=income_needs.product_name,
         source_product_version=income_needs.product_version,
         source_system="lotus-core",
-        source_id=_response_source_id(income_needs, source_hash),
-        content_hash=source_hash,
+        source_id=response_source_id(income_needs, source_hash_value),
+        content_hash=source_hash_value,
         schedule_count=income_needs.supportability.schedule_count,
         currencies=sorted({entry.currency for entry in income_needs.schedules}),
         highest_priority=(
@@ -89,8 +76,8 @@ def client_income_needs_schedule_context(
 def liquidity_cashflow_projection_context(
     cashflow_projection: DpmCorePortfolioCashflowProjectionResponse,
 ) -> AuthoritativeLiquidityCashflowProjection:
-    payload = _source_payload(cashflow_projection)
-    source_hash = _source_hash(payload)
+    payload = source_payload(cashflow_projection)
+    source_hash_value = source_hash(payload)
     status = (
         cashflow_projection.data_quality_status
         if cashflow_projection.data_quality_status in {"READY", "DEGRADED", "INCOMPLETE"}
@@ -108,7 +95,7 @@ def liquidity_cashflow_projection_context(
         projection_end=cashflow_projection.range_end_date,
         include_projected=cashflow_projection.include_projected,
         latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
-        source_batch_fingerprint=_response_source_id(cashflow_projection, source_hash),
+        source_batch_fingerprint=response_source_id(cashflow_projection, source_hash_value),
         data_quality_status=source_status_to_method_status(status),
         reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
     )
@@ -117,14 +104,14 @@ def liquidity_cashflow_projection_context(
 def liquidity_reserve_requirement_context(
     reserve_requirement: DpmCoreLiquidityReserveRequirementResponse,
 ) -> AuthoritativeLiquidityReserveRequirement:
-    payload = _source_payload(reserve_requirement)
-    source_hash = _source_hash(payload)
+    payload = source_payload(reserve_requirement)
+    source_hash_value = source_hash(payload)
     return AuthoritativeLiquidityReserveRequirement(
         source_product_name=reserve_requirement.product_name,
         source_product_version=reserve_requirement.product_version,
         source_system="lotus-core",
-        source_id=_response_source_id(reserve_requirement, source_hash),
-        content_hash=source_hash,
+        source_id=response_source_id(reserve_requirement, source_hash_value),
+        content_hash=source_hash_value,
         requirement_count=reserve_requirement.supportability.requirement_count,
         currencies=sorted({entry.currency for entry in reserve_requirement.requirements}),
         maximum_horizon_days=(
@@ -145,14 +132,14 @@ def liquidity_reserve_requirement_context(
 def planned_withdrawal_schedule_context(
     planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse,
 ) -> AuthoritativePlannedWithdrawalSchedule:
-    payload = _source_payload(planned_withdrawals)
-    source_hash = _source_hash(payload)
+    payload = source_payload(planned_withdrawals)
+    source_hash_value = source_hash(payload)
     return AuthoritativePlannedWithdrawalSchedule(
         source_product_name=planned_withdrawals.product_name,
         source_product_version=planned_withdrawals.product_version,
         source_system="lotus-core",
-        source_id=_response_source_id(planned_withdrawals, source_hash),
-        content_hash=source_hash,
+        source_id=response_source_id(planned_withdrawals, source_hash_value),
+        content_hash=source_hash_value,
         withdrawal_count=planned_withdrawals.supportability.withdrawal_count,
         currencies=sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
         horizon_days=planned_withdrawals.horizon_days,
@@ -224,5 +211,4 @@ __all__ = [
     "liquidity_reserve_requirement_context",
     "planned_withdrawal_schedule_context",
     "source_liquidity_context",
-    "source_status_to_method_status",
 ]

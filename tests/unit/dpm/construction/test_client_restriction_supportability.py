@@ -1,18 +1,12 @@
-from decimal import Decimal
-
 from src.api.request_models import RebalanceRequest
-from src.api.services.construction_esg_supportability import (
+from src.api.services.construction_client_restriction_supportability import (
     client_restriction_reason_codes,
     client_restriction_status,
     restriction_matches_intent,
-    sustainability_preference_reason_codes,
-    sustainability_preference_status,
 )
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
-    AuthoritativeSustainabilityPreference,
-    AuthoritativeSustainabilityPreferenceContext,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import EngineOptions, RebalanceResult
@@ -50,7 +44,7 @@ def _request() -> RebalanceRequest:
 def _trade_result() -> RebalanceResult:
     return run_simulation(
         portfolio=portfolio_snapshot(
-            portfolio_id="pf_esg_1",
+            portfolio_id="pf_restriction_1",
             base_currency="USD",
             positions=[position("EQ_A", "10")],
             cash_balances=[cash("USD", "0")],
@@ -72,8 +66,8 @@ def _trade_result() -> RebalanceResult:
             shelf_entry("EQ_B", status="APPROVED", asset_class="EQUITY"),
         ],
         options=EngineOptions(),
-        request_hash="hash-esg",
-        correlation_id="corr-esg",
+        request_hash="hash-restriction",
+        correlation_id="corr-restriction",
     )
 
 
@@ -99,7 +93,7 @@ def test_client_restriction_supportability_blocks_matching_active_buy_rule() -> 
     context = AuthoritativeClientRestrictionContext(
         supportability_status=ConstructionMethodStatus.DEGRADED,
         source_system="lotus-core",
-        portfolio_id="pf_esg_1",
+        portfolio_id="pf_restriction_1",
         client_id="client-1",
         mandate_id="mandate-1",
         as_of_date="2026-06-01",
@@ -121,6 +115,48 @@ def test_client_restriction_supportability_blocks_matching_active_buy_rule() -> 
     )
     assert "CLIENT_RESTRICTION_VIOLATION_NO_BUY_EQ_B" in reason_codes
     assert "MISSING_ISSUER_CLASSIFICATION" in reason_codes
+
+
+def test_client_restriction_supportability_degrades_without_source_profile() -> None:
+    request = _request()
+    result = _trade_result()
+
+    assert (
+        client_restriction_status(request=request, result=result, context=None)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert client_restriction_reason_codes(request=request, result=result, context=None) == [
+        "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"
+    ]
+
+
+def test_client_restriction_supportability_ignores_inactive_and_non_applicable_rules() -> None:
+    request = _request()
+    result = _trade_result()
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_restriction_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-06-01",
+        restriction_count=2,
+        missing_data_families=[],
+        restrictions=[
+            _restriction_rule(restriction_status="INACTIVE"),
+            _restriction_rule(restriction_code="SELL_ONLY_EQ_B", applies_to_buy=False),
+        ],
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+    )
+
+    assert (
+        client_restriction_status(request=request, result=result, context=context)
+        == ConstructionMethodStatus.READY
+    )
+    assert client_restriction_reason_codes(request=request, result=result, context=context) == [
+        "CLIENT_RESTRICTION_PROFILE_APPLIED",
+        "CLIENT_RESTRICTION_PROFILE_READY",
+    ]
 
 
 def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> None:
@@ -152,48 +188,3 @@ def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> 
         shelf=shelf,
         restriction=_restriction_rule(instrument_ids=[], country_codes=["US"]),
     )
-
-
-def test_sustainability_supportability_marks_allocation_and_classification_review() -> None:
-    result = _trade_result()
-    context = AuthoritativeSustainabilityPreferenceContext(
-        supportability_status=ConstructionMethodStatus.READY,
-        source_system="lotus-core",
-        portfolio_id="pf_esg_1",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date="2026-06-01",
-        preference_count=2,
-        missing_data_families=[],
-        preferences=[
-            AuthoritativeSustainabilityPreference(
-                preference_framework="BANK_SUSTAINABILITY",
-                preference_code="MAX_EQUITY",
-                preference_status="ACTIVE",
-                preference_source="CLIENT_PROFILE",
-                maximum_allocation=Decimal("0.50"),
-                applies_to_asset_classes=["EQUITY"],
-                effective_from="2026-01-01",
-                preference_version=1,
-            ),
-            AuthoritativeSustainabilityPreference(
-                preference_framework="BANK_SUSTAINABILITY",
-                preference_code="EXCLUSION_REVIEW",
-                preference_status="ACTIVE",
-                preference_source="CLIENT_PROFILE",
-                exclusion_codes=["THERMAL_COAL"],
-                effective_from="2026-01-01",
-                preference_version=1,
-            ),
-        ],
-        reason_codes=["SUSTAINABILITY_PROFILE_READY"],
-    )
-
-    reason_codes = sustainability_preference_reason_codes(result=result, context=context)
-
-    assert (
-        sustainability_preference_status(result=result, context=context)
-        == ConstructionMethodStatus.PENDING_REVIEW
-    )
-    assert "SUSTAINABILITY_ALLOCATION_REVIEW_MAX_EQUITY" in reason_codes
-    assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in reason_codes

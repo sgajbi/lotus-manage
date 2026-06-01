@@ -1,7 +1,13 @@
 from decimal import Decimal
-from typing import Any, TypeAlias
+from typing import TypeAlias
 
 from src.api.services.construction_source_product_status import source_status_to_method_status
+from src.api.services.construction_source_identity import (
+    JsonPayload,
+    response_source_id,
+    source_hash,
+    source_payload,
+)
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import AuthoritativeCurrencyOverlayContext
 from src.core.dpm_source_context import (
@@ -12,7 +18,6 @@ from src.core.dpm_source_context import (
     DpmCoreExternalHedgePolicyResponse,
 )
 
-_JsonPayload: TypeAlias = dict[str, Any]
 _TreasurySourceResponse: TypeAlias = (
     DpmCoreExternalHedgeExecutionReadinessResponse
     | DpmCoreExternalCurrencyExposureResponse
@@ -22,25 +27,21 @@ _TreasurySourceResponse: TypeAlias = (
 )
 
 
-def _source_payload(response: _TreasurySourceResponse | None) -> _JsonPayload | None:
-    return response.model_dump(mode="json", exclude_none=True) if response is not None else None
+def _optional_source_payload(response: _TreasurySourceResponse | None) -> JsonPayload | None:
+    return source_payload(response) if response is not None else None
 
 
-def _source_hash(payload: _JsonPayload | None) -> str | None:
-    return hash_canonical_payload(payload) if payload is not None else None
+def _optional_source_hash(payload: JsonPayload | None) -> str | None:
+    return source_hash(payload) if payload is not None else None
 
 
-def _response_source_id(
+def _optional_response_source_id(
     response: _TreasurySourceResponse | None,
     fallback_hash: str | None,
 ) -> str | None:
-    if response is None:
+    if response is None or fallback_hash is None:
         return None
-    return (
-        response.source_batch_fingerprint
-        or response.lineage.get("source_batch_fingerprint")
-        or fallback_hash
-    )
+    return response_source_id(response, fallback_hash)
 
 
 def _missing_data_families(response: _TreasurySourceResponse | None) -> list[str]:
@@ -107,11 +108,11 @@ def external_treasury_currency_overlay_context(
     ):
         return None
 
-    readiness_payload = _source_payload(hedge_readiness)
-    exposure_payload = _source_payload(currency_exposure)
-    hedge_policy_payload = _source_payload(hedge_policy)
-    eligible_hedge_instruments_payload = _source_payload(eligible_hedge_instruments)
-    fx_forward_curve_payload = _source_payload(fx_forward_curve)
+    readiness_payload = _optional_source_payload(hedge_readiness)
+    exposure_payload = _optional_source_payload(currency_exposure)
+    hedge_policy_payload = _optional_source_payload(hedge_policy)
+    eligible_hedge_instruments_payload = _optional_source_payload(eligible_hedge_instruments)
+    fx_forward_curve_payload = _optional_source_payload(fx_forward_curve)
     source_hash = hash_canonical_payload(
         {
             "external_hedge_execution_readiness": readiness_payload,
@@ -143,10 +144,12 @@ def external_treasury_currency_overlay_context(
         supportability_reason = fx_forward_curve.supportability.reason
         exposure_currencies = fx_forward_curve.exposure_currencies
 
-    exposure_source_hash = _source_hash(exposure_payload)
-    hedge_policy_source_hash = _source_hash(hedge_policy_payload)
-    eligible_hedge_instruments_source_hash = _source_hash(eligible_hedge_instruments_payload)
-    fx_forward_curve_source_hash = _source_hash(fx_forward_curve_payload)
+    exposure_source_hash = _optional_source_hash(exposure_payload)
+    hedge_policy_source_hash = _optional_source_hash(hedge_policy_payload)
+    eligible_hedge_instruments_source_hash = _optional_source_hash(
+        eligible_hedge_instruments_payload
+    )
+    fx_forward_curve_source_hash = _optional_source_hash(fx_forward_curve_payload)
     reason_codes = _fail_closed_reason_codes(
         primary_reason=supportability_reason,
         hedge_readiness=hedge_readiness,
@@ -167,7 +170,7 @@ def external_treasury_currency_overlay_context(
         source_product_version=(
             hedge_readiness.product_version if hedge_readiness is not None else None
         ),
-        source_id=_response_source_id(hedge_readiness, source_hash) or source_hash,
+        source_id=_optional_response_source_id(hedge_readiness, source_hash) or source_hash,
         content_hash=source_hash,
         missing_data_families=_merged_missing_data_families(
             hedge_readiness,
@@ -190,7 +193,7 @@ def external_treasury_currency_overlay_context(
         external_currency_exposure_source_product_version=(
             currency_exposure.product_version if currency_exposure is not None else None
         ),
-        external_currency_exposure_source_id=_response_source_id(
+        external_currency_exposure_source_id=_optional_response_source_id(
             currency_exposure,
             exposure_source_hash,
         ),
@@ -207,7 +210,7 @@ def external_treasury_currency_overlay_context(
         external_hedge_policy_source_product_version=(
             hedge_policy.product_version if hedge_policy is not None else None
         ),
-        external_hedge_policy_source_id=_response_source_id(
+        external_hedge_policy_source_id=_optional_response_source_id(
             hedge_policy,
             hedge_policy_source_hash,
         ),
@@ -226,7 +229,7 @@ def external_treasury_currency_overlay_context(
             if eligible_hedge_instruments is not None
             else None
         ),
-        external_eligible_hedge_instrument_source_id=_response_source_id(
+        external_eligible_hedge_instrument_source_id=_optional_response_source_id(
             eligible_hedge_instruments,
             eligible_hedge_instruments_source_hash,
         ),
@@ -247,7 +250,7 @@ def external_treasury_currency_overlay_context(
         external_fx_forward_curve_source_product_version=(
             fx_forward_curve.product_version if fx_forward_curve is not None else None
         ),
-        external_fx_forward_curve_source_id=_response_source_id(
+        external_fx_forward_curve_source_id=_optional_response_source_id(
             fx_forward_curve,
             fx_forward_curve_source_hash,
         ),

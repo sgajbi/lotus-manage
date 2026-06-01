@@ -1,3 +1,4 @@
+from src.api.services import construction_transaction_cost_source_context
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
 )
@@ -5,6 +6,12 @@ from src.core.construction.vocabulary import ConstructionMethodStatus
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     transaction_cost_curve_response,
 )
+
+
+def test_transaction_cost_source_context_exports_only_curve_mapper() -> None:
+    assert construction_transaction_cost_source_context.__all__ == [
+        "transaction_cost_context_from_curve"
+    ]
 
 
 def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:

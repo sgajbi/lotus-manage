@@ -5553,30 +5553,14 @@ def test_wave_supportability_filters_and_private_helper_edges() -> None:
         wave_id="dwv_filter_blocked",
         wave_repository=repository,
     )
-    excluded_issue = wave_service._supportability_issue(  # noqa: SLF001
-        wave_id="dwv_filter_excluded",
-        item=_wave_item(
-            wave_item_id="dwi_excluded",
-            portfolio_id="PB_SG_EXCLUDED",
-            state="EXCLUDED",
-        ),
-        item_index=0,
-    )
 
     ready_search = wave_service.search_waves(
         wave_repository=repository,
         supportability_state="ready",
     )
-    source_refs = wave_service._source_refs_from_portfolio(  # noqa: SLF001
-        {"portfolio_id": PORTFOLIO_ID, "source_refs": "not-a-list"}
-    )
-    optional_text = wave_service._optional_str(123)  # noqa: SLF001
 
     assert [item["wave_id"] for item in ready_search] == ["dwv_filter_ready"]
     assert blocked["issues"][0]["source_owner"] == "lotus-manage-construction"
-    assert excluded_issue is None
-    assert source_refs == []
-    assert optional_text == "123"
 
 
 def test_wave_append_event_rejects_identity_and_state_mismatches() -> None:

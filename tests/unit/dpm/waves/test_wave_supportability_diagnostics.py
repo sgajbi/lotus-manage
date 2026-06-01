@@ -1,0 +1,63 @@
+from src.api.services.wave_supportability_diagnostics import (
+    operator_actions,
+    supportability_issue,
+)
+from src.core.waves import DpmRebalanceWaveItem
+
+
+def _item(
+    *,
+    state: str,
+    reason_codes: list[str] | None = None,
+    diagnostics: dict[str, object] | None = None,
+) -> DpmRebalanceWaveItem:
+    return DpmRebalanceWaveItem(
+        wave_item_id="dwi_supportability",
+        portfolio_id="PB_SG_CONFIDENTIAL",
+        state=state,  # type: ignore[arg-type]
+        reason_codes=reason_codes or [],
+        diagnostics=diagnostics or {},
+    )
+
+
+def test_supportability_issue_excludes_completed_items_without_degraded_proof_pack() -> None:
+    assert (
+        supportability_issue(wave_id="dwv_1", item=_item(state="HANDOFF_READY"), item_index=1)
+        is None
+    )
+
+
+def test_supportability_issue_preserves_explicit_owner_and_action() -> None:
+    issue = supportability_issue(
+        wave_id="dwv_1",
+        item=_item(
+            state="SIMULATION_BLOCKED",
+            reason_codes=["RISK_INPUT_STALE"],
+            diagnostics={
+                "source_owner": "lotus-risk",
+                "required_action": "REFRESH_RISK_INPUTS",
+            },
+        ),
+        item_index=2,
+    )
+
+    assert issue == {
+        "support_ref": "wave:dwv_1:item:2",
+        "item_state": "SIMULATION_BLOCKED",
+        "severity": "CRITICAL",
+        "source_owner": "lotus-risk",
+        "reason_codes": ["RISK_INPUT_STALE"],
+        "remediation_route": "REFRESH_RISK_INPUTS",
+    }
+
+
+def test_operator_actions_preserve_ready_and_sorted_remediation_routes() -> None:
+    assert operator_actions(state="ready", issues=[]) == ["CONTINUE_GOVERNED_WAVE_WORKFLOW"]
+    assert operator_actions(
+        state="blocked",
+        issues=[
+            {"remediation_route": "REPAIR_SOURCE_DATA"},
+            {"remediation_route": "REFRESH_RISK_INPUTS"},
+            {"remediation_route": "REPAIR_SOURCE_DATA"},
+        ],
+    ) == ["REFRESH_RISK_INPUTS", "REPAIR_SOURCE_DATA"]
