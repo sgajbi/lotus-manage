@@ -91,8 +91,6 @@ from src.core.models import (
 logger = logging.getLogger(__name__)
 
 build_core_resolver_client = core_resolver_service.build_core_resolver_client
-env_float = core_resolver_service.env_float
-env_int = core_resolver_service.env_int
 stateful_core_sourcing_enabled = core_resolver_service.stateful_core_sourcing_enabled
 
 
@@ -326,7 +324,6 @@ __all__ = [
     "async_manual_execution_enabled",
     "async_operations_enabled",
     "env_flag",
-    "env_int",
     "execute_batch_analysis",
     "execute_dpm_async_operation",
     "resolve_async_execution_mode",

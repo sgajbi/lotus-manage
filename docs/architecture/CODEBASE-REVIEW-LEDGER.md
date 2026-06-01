@@ -10894,3 +10894,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   required by orchestration and can be covered directly in helper modules.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-448: Rebalance core-resolver env surface narrowing
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still re-exported low-level core-resolver environment
+  parsing helpers even though environment parsing and resolver configuration belong to
+  `core_resolver_service`; tests reached through the simulation facade to validate the lower-level
+  helper behavior.
+- Action: removed `env_int` and `env_float` from the rebalance simulation service facade, removed
+  the unused `main.py` `_env_int` compatibility export, moved helper assertions to
+  `core_resolver_service`, and added direct export-surface coverage for the core resolver
+  configuration helper module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `core_resolver_service.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 138 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scan found no `env_int`, `env_float`, or `_env_int` compatibility
+  export remaining in `rebalance_simulation_service.py` or `main.py`.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` to orchestration-only behavior
+  while preserving explicit injection points needed by stateful source-context tests.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

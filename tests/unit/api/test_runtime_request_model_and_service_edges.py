@@ -355,20 +355,20 @@ def test_async_manual_execution_disabled_is_reported(monkeypatch) -> None:
     assert exc_info.value.detail == "DPM_ASYNC_MANUAL_EXECUTION_DISABLED"
 
 
-def test_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
+def test_core_resolver_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
     monkeypatch.setenv("DPM_TEST_INT", "not-int")
     monkeypatch.setenv("DPM_TEST_FLOAT", "0")
     monkeypatch.setenv("DPM_TEST_BAD_FLOAT", "not-float")
     monkeypatch.delenv("DPM_TEST_MISSING", raising=False)
     monkeypatch.delenv("DPM_CORE_BASE_URL", raising=False)
 
-    assert service.env_int("DPM_TEST_INT", 3) == 3
-    assert service.env_int("DPM_TEST_FLOAT", 3) == 3
-    assert service.env_float("DPM_TEST_FLOAT", 2.5) == 2.5
-    assert service.env_float("DPM_TEST_BAD_FLOAT", 2.5) == 2.5
-    assert service.env_float("DPM_TEST_MISSING", 2.5) == 2.5
+    assert core_resolver_service.env_int("DPM_TEST_INT", 3) == 3
+    assert core_resolver_service.env_int("DPM_TEST_FLOAT", 3) == 3
+    assert core_resolver_service.env_float("DPM_TEST_FLOAT", 2.5) == 2.5
+    assert core_resolver_service.env_float("DPM_TEST_BAD_FLOAT", 2.5) == 2.5
+    assert core_resolver_service.env_float("DPM_TEST_MISSING", 2.5) == 2.5
     with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_RESOLVER_UNAVAILABLE"):
-        service.build_core_resolver_client()
+        core_resolver_service.build_core_resolver_client()
 
 
 def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> None:
@@ -385,6 +385,16 @@ def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> No
     assert resolver._config.transaction_cost_lookback_days == 30
     assert resolver._config.timeout_seconds == 3.5
     assert resolver._config.max_attempts == 4
+
+
+def test_core_resolver_service_exports_resolver_configuration_surface() -> None:
+    assert core_resolver_service.__all__ == [
+        "build_core_resolver_client",
+        "env_float",
+        "env_flag",
+        "env_int",
+        "stateful_core_sourcing_enabled",
+    ]
 
 
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:

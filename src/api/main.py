@@ -61,9 +61,6 @@ from src.api.services.rebalance_simulation_service import (
     env_flag as _env_flag,
 )
 from src.api.services.rebalance_simulation_service import (
-    env_int as _env_int,
-)
-from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
 from src.api.services.rebalance_simulation_service import (
@@ -283,7 +280,6 @@ __all__ = [
     "HealthStatusResponse",
     "_async_manual_execution_enabled",
     "_env_flag",
-    "_env_int",
     "_execute_batch_analysis",
     "_resolve_async_execution_mode",
     "_run_analyze_async_operation",
