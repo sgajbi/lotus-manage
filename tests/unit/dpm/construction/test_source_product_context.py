@@ -10,10 +10,12 @@ from src.api.services.construction_source_product_context import (
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
     source_liquidity_context,
+    source_product_authority_context_updates,
     source_status_to_method_status,
     sustainability_preference_profile_context,
     transaction_cost_context_from_curve,
 )
+from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
     DpmCoreClientIncomeNeedsScheduleEntry,
@@ -26,6 +28,7 @@ from src.core.dpm_source_context import (
     DpmCoreExternalOrderExecutionAcknowledgementSupportability,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgeExecutionReadinessSupportability,
+    DpmCoreExecutionContext,
     DpmCoreIntegrationWindow,
     DpmCoreLiquidityReserveRequirementEntry,
     DpmCoreLiquidityReserveRequirementResponse,
@@ -335,6 +338,26 @@ def _sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfi
     )
 
 
+def _source_execution_context(**overrides: object) -> DpmCoreExecutionContext:
+    source_products = {
+        "transaction_cost_curve": None,
+        "portfolio_cashflow_projection": None,
+        "client_income_needs_schedule": None,
+        "liquidity_reserve_requirement": None,
+        "planned_withdrawal_schedule": None,
+        "external_hedge_execution_readiness": None,
+        "external_currency_exposure": None,
+        "external_hedge_policy": None,
+        "external_eligible_hedge_instruments": None,
+        "external_fx_forward_curve": None,
+        "external_order_execution_acknowledgement": None,
+        "client_restriction_profile": None,
+        "sustainability_preference_profile": None,
+    }
+    source_products.update(overrides)
+    return DpmCoreExecutionContext.model_construct(**source_products)
+
+
 def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:
     context = client_income_needs_schedule_context(_income_needs_schedule())
 
@@ -437,6 +460,63 @@ def test_source_liquidity_context_absent_without_source_family() -> None:
         )
         is None
     )
+
+
+def test_source_product_authority_context_updates_lifts_all_source_families() -> None:
+    updates = source_product_authority_context_updates(
+        source_context=_source_execution_context(
+            transaction_cost_curve=_transaction_cost_curve(),
+            portfolio_cashflow_projection=_cashflow_projection(),
+            client_income_needs_schedule=_income_needs_schedule(),
+            liquidity_reserve_requirement=_liquidity_reserve_requirement(),
+            planned_withdrawal_schedule=_planned_withdrawal_schedule(),
+            external_hedge_execution_readiness=_hedge_readiness_response(),
+            external_order_execution_acknowledgement=_acknowledgement_response(),
+            client_restriction_profile=_client_restriction_profile(),
+            sustainability_preference_profile=_sustainability_preference_profile(),
+        ),
+        authority_context=ConstructionAuthorityContext(),
+    )
+
+    assert sorted(updates) == [
+        "client_restriction_context",
+        "currency_overlay_context",
+        "execution_acknowledgement_context",
+        "liquidity_context",
+        "sustainability_preference_context",
+        "transaction_cost_context",
+    ]
+    assert updates["transaction_cost_context"].source_id == "curve-lineage"
+    assert updates["liquidity_context"].planned_withdrawal_schedule is not None
+    assert updates["currency_overlay_context"].source_id == "core-hedge-readiness"
+    assert updates["execution_acknowledgement_context"].source_id == "core-ack-fingerprint"
+    assert updates["client_restriction_context"].source_id == "restriction-lineage"
+    assert updates["sustainability_preference_context"].source_id == "sustainability-lineage"
+
+
+def test_source_product_authority_context_updates_preserves_existing_contexts() -> None:
+    existing_liquidity_context = source_liquidity_context(
+        cashflow_projection=_cashflow_projection(),
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+    assert existing_liquidity_context is not None
+    updates = source_product_authority_context_updates(
+        source_context=_source_execution_context(
+            transaction_cost_curve=_transaction_cost_curve(),
+            portfolio_cashflow_projection=_cashflow_projection(),
+            external_order_execution_acknowledgement=_acknowledgement_response(),
+        ),
+        authority_context=ConstructionAuthorityContext(
+            transaction_cost_context=transaction_cost_context_from_curve(_transaction_cost_curve()),
+            liquidity_context=existing_liquidity_context,
+        ),
+    )
+
+    assert "transaction_cost_context" not in updates
+    assert "liquidity_context" not in updates
+    assert sorted(updates) == ["execution_acknowledgement_context"]
 
 
 def test_client_restriction_profile_context_preserves_rules_and_lineage() -> None:
