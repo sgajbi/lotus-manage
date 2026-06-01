@@ -39,6 +39,7 @@ from src.api.services.wave_report_context import portfolio_memory_context_for_re
 from src.api.services.wave_selection_item import (
     with_selection_and_proof_pack as _with_selection_and_proof_pack,
 )
+from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation import build_simulated_wave
 from src.api.services.wave_simulation_item import (
@@ -247,14 +248,8 @@ def select_wave_item_alternative(
         error_code="DPM_WAVE_SELECTION_INVALID_STATE",
         action_phrase="record alternative selection",
     )
-    selected_item = next((item for item in wave.items if item.wave_item_id == wave_item_id), None)
-    if selected_item is None:
-        raise DpmWaveLookupError("DPM_WAVE_ITEM_NOT_FOUND", f"Wave item {wave_item_id} not found.")
-    if selected_item.alternative_set_id is None:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_ITEM_ALTERNATIVES_MISSING",
-            f"Wave item {wave_item_id} has no generated alternatives.",
-        )
+    selected_item = _selectable_wave_item(wave=wave, wave_item_id=wave_item_id)
+    assert selected_item.alternative_set_id is not None
     try:
         construction_service.select_construction_alternative(
             repository=construction_repository,

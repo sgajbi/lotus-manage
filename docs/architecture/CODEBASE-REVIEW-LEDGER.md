@@ -9281,3 +9281,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or selection workflow support where behavior can be directly covered.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-381: Wave selection guard extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_selection_guard.py`,
+  `tests/unit/dpm/waves/test_wave_selection_guard.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `select_wave_item_alternative` still embedded wave-item lookup and alternative-set
+  availability validation inside the larger selection orchestration flow.
+- Action: extracted selectable wave-item validation into a focused helper that returns the governed
+  wave item or raises the existing bounded lookup/validation errors, kept construction selection and
+  proof-pack orchestration in `wave_service.py`, preserved a private service alias, and added direct
+  tests for successful lookup, missing items, missing alternatives, alias preservation, and export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_selection_guard.py`; direct wave selection guard tests and
+  selected wave API regressions passed with 137 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting workflow event metadata builders or
+  persisted transition update support where it improves readability without hiding domain behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
