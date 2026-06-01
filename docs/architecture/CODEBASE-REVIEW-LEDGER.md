@@ -9235,3 +9235,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   once the remaining `mandate_service.py` orchestration is sufficiently lean.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-379: Wave item collection update extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_collection.py`,
+  `tests/unit/dpm/waves/test_wave_item_collection.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` repeated the same item-list replacement plus aggregate-metric
+  recalculation block across selection, approval, staging, handoff, and cancellation workflows.
+- Action: extracted `wave_with_items_and_aggregate` into a focused wave helper module, replaced the
+  repeated model-copy blocks in `wave_service.py`, preserved a private service alias for
+  compatibility, and added direct tests for metric recomputation, handoff-ref extra updates, alias
+  preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_collection.py`; direct wave item collection tests and
+  selected wave API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting wave state guard/idempotent replay
+  checks or workflow persistence patterns where behavior can be directly tested.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

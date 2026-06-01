@@ -3,7 +3,6 @@ import uuid
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
 from src.api.services.wave_aggregate_metrics import (
-    aggregate_wave_items as _aggregate,
     simulation_result_state,
 )
 from src.api.services.wave_creation import (
@@ -25,6 +24,9 @@ from src.api.services.wave_item_transitions import (
     cancel_item as _cancel_item,
     handoff_item as _handoff_item,
     stage_item as _stage_item,
+)
+from src.api.services.wave_item_collection import (
+    wave_with_items_and_aggregate as _wave_with_items_and_aggregate,
 )
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_persistence import (
@@ -273,13 +275,7 @@ def select_wave_item_alternative(
         updated_item if item.wave_item_id == wave_item_id else item for item in wave.items
     ]
     updated = _append_event(
-        wave=wave.model_copy(
-            update={
-                "items": updated_items,
-                "aggregate_metrics": _aggregate(updated_items),
-            },
-            deep=True,
-        ),
+        wave=_wave_with_items_and_aggregate(wave=wave, items=updated_items),
         event=_event(
             wave_id=wave.wave_id,
             from_state=wave.state,
@@ -334,13 +330,7 @@ def approve_wave(
     to_state: WaveState = (
         "APPROVED" if approved_count == len(approved_items) else "APPROVED_WITH_EXCEPTIONS"
     )
-    candidate = wave.model_copy(
-        update={
-            "items": approved_items,
-            "aggregate_metrics": _aggregate(approved_items),
-        },
-        deep=True,
-    )
+    candidate = _wave_with_items_and_aggregate(wave=wave, items=approved_items)
     approved = apply_wave_transition(
         wave=candidate,
         to_state=to_state,
@@ -393,13 +383,7 @@ def stage_wave(
             f"Wave {wave_id} has no approved items to stage.",
         )
 
-    candidate = wave.model_copy(
-        update={
-            "items": staged_items,
-            "aggregate_metrics": _aggregate(staged_items),
-        },
-        deep=True,
-    )
+    candidate = _wave_with_items_and_aggregate(wave=wave, items=staged_items)
     staged = apply_wave_transition(
         wave=candidate,
         to_state="STAGED",
@@ -461,13 +445,10 @@ def handoff_wave(
         correlation_id=correlation_id,
         comment=comment,
     )
-    candidate = wave.model_copy(
-        update={
-            "items": handoff_items,
-            "aggregate_metrics": _aggregate(handoff_items),
-            "handoff_refs": [*wave.handoff_refs, handoff_ref],
-        },
-        deep=True,
+    candidate = _wave_with_items_and_aggregate(
+        wave=wave,
+        items=handoff_items,
+        extra_updates={"handoff_refs": [*wave.handoff_refs, handoff_ref]},
     )
     handoff_ready = apply_wave_transition(
         wave=candidate,
@@ -510,13 +491,7 @@ def cancel_wave(
         return wave, True
 
     cancelled_items = [_cancel_item(item, actor_id, reason_code, comment) for item in wave.items]
-    candidate = wave.model_copy(
-        update={
-            "items": cancelled_items,
-            "aggregate_metrics": _aggregate(cancelled_items),
-        },
-        deep=True,
-    )
+    candidate = _wave_with_items_and_aggregate(wave=wave, items=cancelled_items)
     try:
         cancelled = apply_wave_transition(
             wave=candidate,
