@@ -1,4 +1,4 @@
-from src.api.services import wave_create_command, wave_service
+from src.api.services import wave_create_command
 from src.api.services.wave_create_command import create_persisted_wave
 from src.api.services.wave_creation import create_wave_request_hash
 from src.core.mandates import DpmMandateDigitalTwin
@@ -108,10 +108,6 @@ def test_create_persisted_wave_promotes_preview_and_persists_request_hash(
         actor_id="pm_001",
         portfolios=portfolios,
     )
-
-
-def test_wave_service_delegates_create_command() -> None:
-    assert wave_service.create_persisted_wave is create_persisted_wave
 
 
 def test_wave_create_command_exports_public_surface() -> None:

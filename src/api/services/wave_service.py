@@ -1,5 +1,5 @@
 from src.api.request_models import RebalanceRequest
-from src.api.services.wave_create_command import create_persisted_wave
+from src.api.services import wave_create_command
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
@@ -80,7 +80,7 @@ def create_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return create_persisted_wave(
+    return wave_create_command.create_persisted_wave(
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,

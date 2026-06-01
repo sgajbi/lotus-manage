@@ -11045,3 +11045,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   facade exports for lower-level core functions.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-454: Wave create-command helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_create_command.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` imported and exposed `create_persisted_wave` as a facade attribute even
+  though the create-command helper has direct behavior and export-surface tests, and the service
+  only needs it as an implementation dependency of `create_wave`.
+- Action: changed `wave_service.create_wave` to call `wave_create_command.create_persisted_wave`
+  through the owning module and removed the alias-pinning test assertion from the create-command
+  helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave create-command and wave-creation tests
+  plus selected wave API regressions passed with 139 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; targeted scan found only direct create-command
+  helper tests and the qualified `wave_create_command.create_persisted_wave` owner-module call from
+  `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
