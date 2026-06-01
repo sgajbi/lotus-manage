@@ -13,6 +13,7 @@ from src.api.services.construction_esg_supportability import (
     sustainability_preference_reason_codes,
     sustainability_preference_status,
 )
+from src.api.services.construction_method_authority import authority_context_for_request_method
 from src.api.services.construction_method_supportability import (
     currency_overlay_status,
     liquidity_reason_codes,
@@ -186,7 +187,7 @@ def test_construction_error_mapping_and_missing_set() -> None:
 def test_construction_service_supportability_helper_edges() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     result = _trade_result(max_turnover_pct=Decimal("0.01"))
-    no_context = construction_service._authority_context_for_method(
+    no_context = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.LIQUIDITY_AWARE,
         result=result,
@@ -194,7 +195,7 @@ def test_construction_service_supportability_helper_edges() -> None:
         risk_authority_client=None,
         correlation_id="corr-helper",
     )
-    risk_unavailable = construction_service._authority_context_for_method(
+    risk_unavailable = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.RISK_AWARE,
         result=result,
@@ -1122,7 +1123,7 @@ def test_regime_context_unavailable_is_kept_source_safe() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     result = _trade_result()
 
-    context = construction_service._authority_context_for_method(
+    context = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.REGIME_STRESS_AWARE,
         result=result,

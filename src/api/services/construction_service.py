@@ -11,12 +11,11 @@ from src.api.services.construction_idempotency import (
 from src.api.services.construction_method_execution import (
     run_construction_method,
 )
-from src.api.services.construction_method_authority import authority_context_for_method
+from src.api.services.construction_method_authority import authority_context_for_request_method
 from src.api.services.construction_method_readiness import (
     method_specific_reason_codes,
     method_specific_status,
 )
-from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import (
     solver_method_status,
     with_method_reason_codes,
@@ -216,7 +215,7 @@ def _build_alternatives(
                 alternative=alternative,
                 result=result,
                 plan=plan,
-                authority_context=_authority_context_for_method(
+                authority_context=authority_context_for_request_method(
                     request=request,
                     method=method,
                     result=result,
@@ -327,24 +326,4 @@ def _apply_supportability(
                 ),
             },
         }
-    )
-
-
-def _authority_context_for_method(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-    risk_authority_client: LotusRiskAuthorityClient | None,
-    correlation_id: str | None,
-) -> ConstructionAuthorityContext:
-    return authority_context_for_method(
-        request=request,
-        method=method,
-        result=result,
-        authority_context=authority_context,
-        risk_authority_client=risk_authority_client,
-        correlation_id=correlation_id,
-        as_of_date=construction_as_of_date(request=request),
     )

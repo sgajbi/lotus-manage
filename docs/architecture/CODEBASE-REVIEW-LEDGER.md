@@ -7036,3 +7036,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep remaining private helpers for true construction orchestration only.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-276: Request-aware method authority adapter extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_authority.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still owned a private request-aware adapter around
+  method authority context enrichment. The adapter only supplied the governed request as-of date
+  before delegating to `construction_method_authority.py`, so tests reached through service
+  internals for method-authority behavior.
+- Action: added `authority_context_for_request_method` to the method authority module, updated
+  construction orchestration and tests to call it directly, and removed the service private
+  adapter.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction method-authority and service
+  modules, focused method-authority/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_method_authority.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: leave `construction_service.py` focused on alternative-set orchestration and
+  supportability application.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

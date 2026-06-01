@@ -1,6 +1,7 @@
 from datetime import date
 
 from src.api.request_models import RebalanceRequest
+from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_method_supportability import (
     derive_currency_overlay_context,
     derive_liquidity_context,
@@ -71,4 +72,27 @@ def authority_context_for_method(
     )
 
 
-__all__ = ["authority_context_for_method"]
+def authority_context_for_request_method(
+    *,
+    request: RebalanceRequest,
+    method: ConstructionMethod,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+    risk_authority_client: LotusRiskAuthorityClient | None,
+    correlation_id: str | None,
+) -> ConstructionAuthorityContext:
+    return authority_context_for_method(
+        request=request,
+        method=method,
+        result=result,
+        authority_context=authority_context,
+        risk_authority_client=risk_authority_client,
+        correlation_id=correlation_id,
+        as_of_date=construction_as_of_date(request=request),
+    )
+
+
+__all__ = [
+    "authority_context_for_method",
+    "authority_context_for_request_method",
+]
