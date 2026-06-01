@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from src.api.services import mandate_monitoring_run, mandate_service
 from src.api.services.mandate_monitoring_run import (
+    DpmMonitoringRunAccumulator,
     DpmMonitoringRunMandateResult,
     build_monitoring_run,
     calculate_monitoring_run_mandate_result,
@@ -101,6 +102,24 @@ def test_calculate_monitoring_run_mandate_result_uses_requested_as_of_date_and_r
     }
 
 
+def test_monitoring_run_accumulator_counts_health_source_and_exceptions() -> None:
+    result = calculate_monitoring_run_mandate_result(
+        twin=_twin(),
+        as_of_date=date(2026, 5, 3),
+        monitoring_run_id="dmr_20260503_083004_123456",
+    )
+    accumulator = DpmMonitoringRunAccumulator.empty()
+
+    accumulator.record(result)
+    accumulator.record(result)
+
+    assert accumulator.health_distribution == {result.health_snapshot.health_state.value: 2}
+    assert accumulator.source_readiness_summary == {
+        result.health_snapshot.source_readiness_state: 2
+    }
+    assert accumulator.exception_count == len(result.monitoring_exceptions) * 2
+
+
 def test_build_monitoring_run_projects_terminal_success_summary() -> None:
     requested_at = datetime(2026, 5, 3, 8, 30, tzinfo=timezone.utc)
     completed_at = datetime(2026, 5, 3, 8, 30, 2, tzinfo=timezone.utc)
@@ -127,6 +146,8 @@ def test_build_monitoring_run_projects_terminal_success_summary() -> None:
 
 
 def test_service_preserves_monitoring_run_helper_aliases() -> None:
+    assert mandate_service.DpmMonitoringRunAccumulator is DpmMonitoringRunAccumulator
+    assert mandate_service._monitoring_run_accumulator is DpmMonitoringRunAccumulator
     assert mandate_service.DpmMonitoringRunMandateResult is DpmMonitoringRunMandateResult
     assert mandate_service._monitoring_run_id_for is monitoring_run_id_for
     assert mandate_service._increment_distribution is increment_distribution
@@ -140,6 +161,7 @@ def test_service_preserves_monitoring_run_helper_aliases() -> None:
 
 def test_monitoring_run_helper_exports_public_surface() -> None:
     assert set(mandate_monitoring_run.__all__) == {
+        "DpmMonitoringRunAccumulator",
         "DpmMonitoringRunMandateResult",
         "build_monitoring_run",
         "calculate_monitoring_run_mandate_result",

@@ -20,6 +20,28 @@ class DpmMonitoringRunMandateResult:
     monitoring_exceptions: list[DpmMonitoringException]
 
 
+@dataclass
+class DpmMonitoringRunAccumulator:
+    health_distribution: dict[str, int]
+    source_readiness_summary: dict[str, int]
+    exception_count: int = 0
+
+    @classmethod
+    def empty(cls) -> "DpmMonitoringRunAccumulator":
+        return cls(health_distribution={}, source_readiness_summary={})
+
+    def record(self, result: DpmMonitoringRunMandateResult) -> None:
+        increment_distribution(
+            self.health_distribution,
+            result.health_snapshot.health_state.value,
+        )
+        increment_distribution(
+            self.source_readiness_summary,
+            result.health_snapshot.source_readiness_state,
+        )
+        self.exception_count += len(result.monitoring_exceptions)
+
+
 def monitoring_run_id_for(requested_at: datetime) -> str:
     return f"dmr_{requested_at.strftime('%Y%m%d_%H%M%S_%f')}"
 
@@ -92,6 +114,7 @@ def build_monitoring_run(
 
 
 __all__ = [
+    "DpmMonitoringRunAccumulator",
     "DpmMonitoringRunMandateResult",
     "build_monitoring_run",
     "calculate_monitoring_run_mandate_result",

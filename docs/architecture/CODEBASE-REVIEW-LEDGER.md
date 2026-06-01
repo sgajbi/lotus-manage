@@ -10130,3 +10130,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   can be isolated without hiding lookup or run lifecycle ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-416: Mandate monitoring aggregation extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate regressions, and this
+  ledger.
+- Finding: mandate monitoring orchestration still owned mutable health-distribution,
+  source-readiness, and exception-count aggregation inside the service loop, mixing run accounting
+  with mandate lookup, health calculation, and persistence flow.
+- Action: introduced a monitoring-run accumulator in the monitoring helper, kept repository lookup
+  and run lifecycle orchestration in the service, and added direct tests proving repeated mandate
+  results update health distribution, source-readiness summary, and exception count consistently.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct mandate monitoring
+  helper tests and selected mandate API regressions passed with 31 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing mandate service read-model and command-center assembly boundaries
+  for directly testable extraction opportunities.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

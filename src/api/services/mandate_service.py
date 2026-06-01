@@ -34,6 +34,7 @@ from src.api.services.mandate_health_result import (
 )
 from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
 from src.api.services.mandate_monitoring_run import (
+    DpmMonitoringRunAccumulator as DpmMonitoringRunAccumulator,
     DpmMonitoringRunMandateResult as DpmMonitoringRunMandateResult,
     build_monitoring_run,
     calculate_monitoring_run_mandate_result,
@@ -81,6 +82,7 @@ _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
 _calculate_mandate_health_result = calculate_mandate_health_result
 _persist_mandate_health_evidence = persist_mandate_health_evidence
+_monitoring_run_accumulator = DpmMonitoringRunAccumulator
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
@@ -197,9 +199,7 @@ def run_mandate_monitoring_once(
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
     monitoring_run_id = _monitoring_run_id_for(requested_at)
-    health_distribution: dict[str, int] = {}
-    source_readiness_summary: dict[str, int] = {}
-    exception_count = 0
+    accumulator = _monitoring_run_accumulator.empty()
 
     for mandate_id in mandate_ids:
         twin = get_latest_mandate(repository=repository, mandate_id=mandate_id)
@@ -214,9 +214,7 @@ def run_mandate_monitoring_once(
             health_snapshot=snapshot,
             monitoring_exceptions=mandate_result.monitoring_exceptions,
         )
-        _increment_distribution(health_distribution, snapshot.health_state.value)
-        _increment_distribution(source_readiness_summary, snapshot.source_readiness_state)
-        exception_count += len(mandate_result.monitoring_exceptions)
+        accumulator.record(mandate_result)
 
     run = _build_monitoring_run(
         monitoring_run_id=monitoring_run_id,
@@ -225,9 +223,9 @@ def run_mandate_monitoring_once(
         completed_at=datetime.now(timezone.utc),
         mandate_ids=mandate_ids,
         filters=filters,
-        health_distribution=health_distribution,
-        exception_count=exception_count,
-        source_readiness_summary=source_readiness_summary,
+        health_distribution=accumulator.health_distribution,
+        exception_count=accumulator.exception_count,
+        source_readiness_summary=accumulator.source_readiness_summary,
     )
     repository.save_monitoring_run(run)
     return run
