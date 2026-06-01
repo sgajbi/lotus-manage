@@ -36,13 +36,10 @@ from src.api.services.construction_solver_supportability import (
 )
 from src.api.services.construction_source_analytics_posture import source_analytics_posture
 from src.api.services.construction_source_product_context import (
-    client_income_needs_schedule_context,
     client_restriction_profile_context,
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
-    liquidity_cashflow_projection_context,
-    liquidity_reserve_requirement_context,
-    planned_withdrawal_schedule_context,
+    source_liquidity_context,
     sustainability_preference_profile_context,
     transaction_cost_context_from_curve,
 )
@@ -77,7 +74,6 @@ from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
-    AuthoritativeExecutionAcknowledgementContext,
     AuthoritativeLiquidityContext,
     AuthoritativeRegimeStressContext,
     AuthoritativeSustainabilityPreference,
@@ -101,12 +97,6 @@ from src.core.construction.vocabulary import (
     FIRST_WAVE_CONSTRUCTION_METHODS,
 )
 from src.core.dpm_source_context import (
-    DpmCoreExternalCurrencyExposureResponse,
-    DpmCoreExternalEligibleHedgeInstrumentResponse,
-    DpmCoreExternalFXForwardCurveResponse,
-    DpmCoreExternalHedgeExecutionReadinessResponse,
-    DpmCoreExternalHedgePolicyResponse,
-    DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmResolvedSourceContext,
 )
 from src.core.models import EngineOptions, RebalanceResult
@@ -468,29 +458,6 @@ def _authority_context_for_method(
     )
 
 
-def _external_treasury_currency_overlay_context(
-    *,
-    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
-    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
-    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
-    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
-    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
-) -> AuthoritativeCurrencyOverlayContext | None:
-    return external_treasury_currency_overlay_context(
-        hedge_readiness=hedge_readiness,
-        currency_exposure=currency_exposure,
-        hedge_policy=hedge_policy,
-        eligible_hedge_instruments=eligible_hedge_instruments,
-        fx_forward_curve=fx_forward_curve,
-    )
-
-
-def _external_order_execution_acknowledgement_context(
-    acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
-) -> AuthoritativeExecutionAcknowledgementContext | None:
-    return external_order_execution_acknowledgement_context(acknowledgement)
-
-
 def _authority_context_with_source_products(
     *,
     authority_context: ConstructionAuthorityContext,
@@ -504,51 +471,18 @@ def _authority_context_with_source_products(
         if curve is not None:
             context_updates["transaction_cost_context"] = transaction_cost_context_from_curve(curve)
     if authority_context.liquidity_context is None:
-        cashflow_projection = source_context.context.portfolio_cashflow_projection
-        income_needs = getattr(source_context.context, "client_income_needs_schedule", None)
-        reserve_requirement = getattr(source_context.context, "liquidity_reserve_requirement", None)
-        planned_withdrawals = getattr(source_context.context, "planned_withdrawal_schedule", None)
-        source_reason_codes = ["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"]
-        cashflow_context = None
-        income_context = None
-        reserve_context = None
-        withdrawal_context = None
-        if (
-            cashflow_projection is not None
-            or income_needs is not None
-            or reserve_requirement is not None
-            or planned_withdrawals is not None
-        ):
-            source_reason_codes.append("CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT")
-        if cashflow_projection is not None:
-            cashflow_context = liquidity_cashflow_projection_context(cashflow_projection)
-        if income_needs is not None:
-            income_context = client_income_needs_schedule_context(income_needs)
-            source_reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
-        if reserve_requirement is not None:
-            reserve_context = liquidity_reserve_requirement_context(reserve_requirement)
-            source_reason_codes.append("LIQUIDITY_RESERVE_SOURCE_PRESENT")
-        if planned_withdrawals is not None:
-            withdrawal_context = planned_withdrawal_schedule_context(planned_withdrawals)
-            source_reason_codes.append("PLANNED_WITHDRAWAL_SOURCE_PRESENT")
-        if (
-            cashflow_projection is not None
-            or income_needs is not None
-            or reserve_requirement is not None
-            or planned_withdrawals is not None
-        ):
-            context_updates["liquidity_context"] = AuthoritativeLiquidityContext(
-                supportability_status=ConstructionMethodStatus.READY,
-                source_system="lotus-manage-settlement-engine",
-                policy_id="manage-liquidity-policy.v1",
-                minimum_cash_weight=Decimal("0.02"),
-                allowed_liquidity_tiers=["L1", "L2", "L3"],
-                cashflow_projection=cashflow_context,
-                client_income_needs_schedule=income_context,
-                liquidity_reserve_requirement=reserve_context,
-                planned_withdrawal_schedule=withdrawal_context,
-                reason_codes=source_reason_codes,
-            )
+        liquidity_context = source_liquidity_context(
+            cashflow_projection=source_context.context.portfolio_cashflow_projection,
+            income_needs=getattr(source_context.context, "client_income_needs_schedule", None),
+            reserve_requirement=getattr(
+                source_context.context, "liquidity_reserve_requirement", None
+            ),
+            planned_withdrawals=getattr(
+                source_context.context, "planned_withdrawal_schedule", None
+            ),
+        )
+        if liquidity_context is not None:
+            context_updates["liquidity_context"] = liquidity_context
     if authority_context.currency_overlay_context is None:
         hedge_readiness = getattr(
             source_context.context,
@@ -575,7 +509,7 @@ def _authority_context_with_source_products(
             "external_fx_forward_curve",
             None,
         )
-        currency_context = _external_treasury_currency_overlay_context(
+        currency_context = external_treasury_currency_overlay_context(
             hedge_readiness=hedge_readiness,
             currency_exposure=currency_exposure,
             hedge_policy=hedge_policy,
@@ -590,7 +524,7 @@ def _authority_context_with_source_products(
             "external_order_execution_acknowledgement",
             None,
         )
-        acknowledgement_context = _external_order_execution_acknowledgement_context(acknowledgement)
+        acknowledgement_context = external_order_execution_acknowledgement_context(acknowledgement)
         if acknowledgement_context is not None:
             context_updates["execution_acknowledgement_context"] = acknowledgement_context
     if authority_context.client_restriction_context is None:

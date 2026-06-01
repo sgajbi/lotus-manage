@@ -8,6 +8,7 @@ from src.core.construction.models import (
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
     AuthoritativeLiquidityCashflowProjection,
+    AuthoritativeLiquidityContext,
     AuthoritativeLiquidityReserveRequirement,
     AuthoritativePlannedWithdrawalSchedule,
     AuthoritativeSustainabilityPreference,
@@ -142,6 +143,64 @@ def planned_withdrawal_schedule_context(
             planned_withdrawals.supportability.reason,
             "CORE_PLANNED_WITHDRAWALS_PRESENT",
         ],
+    )
+
+
+def source_liquidity_context(
+    *,
+    cashflow_projection: DpmCorePortfolioCashflowProjectionResponse | None,
+    income_needs: DpmCoreClientIncomeNeedsScheduleResponse | None,
+    reserve_requirement: DpmCoreLiquidityReserveRequirementResponse | None,
+    planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse | None,
+) -> AuthoritativeLiquidityContext | None:
+    if (
+        cashflow_projection is None
+        and income_needs is None
+        and reserve_requirement is None
+        and planned_withdrawals is None
+    ):
+        return None
+
+    source_reason_codes = [
+        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
+        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+    ]
+    cashflow_context = (
+        liquidity_cashflow_projection_context(cashflow_projection)
+        if cashflow_projection is not None
+        else None
+    )
+    income_context = (
+        client_income_needs_schedule_context(income_needs) if income_needs is not None else None
+    )
+    reserve_context = (
+        liquidity_reserve_requirement_context(reserve_requirement)
+        if reserve_requirement is not None
+        else None
+    )
+    withdrawal_context = (
+        planned_withdrawal_schedule_context(planned_withdrawals)
+        if planned_withdrawals is not None
+        else None
+    )
+    if income_context is not None:
+        source_reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
+    if reserve_context is not None:
+        source_reason_codes.append("LIQUIDITY_RESERVE_SOURCE_PRESENT")
+    if withdrawal_context is not None:
+        source_reason_codes.append("PLANNED_WITHDRAWAL_SOURCE_PRESENT")
+
+    return AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="manage-liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.02"),
+        allowed_liquidity_tiers=["L1", "L2", "L3"],
+        cashflow_projection=cashflow_context,
+        client_income_needs_schedule=income_context,
+        liquidity_reserve_requirement=reserve_context,
+        planned_withdrawal_schedule=withdrawal_context,
+        reason_codes=source_reason_codes,
     )
 
 
@@ -565,6 +624,7 @@ __all__ = [
     "liquidity_reserve_requirement_context",
     "planned_withdrawal_schedule_context",
     "source_status_to_method_status",
+    "source_liquidity_context",
     "sustainability_preference_profile_context",
     "transaction_cost_context_from_curve",
 ]

@@ -6,7 +6,10 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
-from src.api.services.construction_source_product_context import source_status_to_method_status
+from src.api.services.construction_source_product_context import (
+    external_treasury_currency_overlay_context,
+    source_status_to_method_status,
+)
 from src.core.construction import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
@@ -979,21 +982,21 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
     )
     assert currency_context.external_fx_forward_curve_point_count == 0
 
-    exposure_only = construction_service._external_treasury_currency_overlay_context(
+    exposure_only = external_treasury_currency_overlay_context(
         hedge_readiness=None,
         currency_exposure=exposure,
         hedge_policy=None,
         eligible_hedge_instruments=None,
         fx_forward_curve=None,
     )
-    hedge_policy_only = construction_service._external_treasury_currency_overlay_context(
+    hedge_policy_only = external_treasury_currency_overlay_context(
         hedge_readiness=None,
         currency_exposure=None,
         hedge_policy=hedge_policy,
         eligible_hedge_instruments=None,
         fx_forward_curve=None,
     )
-    eligible_instruments_only = construction_service._external_treasury_currency_overlay_context(
+    eligible_instruments_only = external_treasury_currency_overlay_context(
         hedge_readiness=None,
         currency_exposure=None,
         hedge_policy=None,
