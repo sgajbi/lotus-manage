@@ -9663,3 +9663,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   remaining workflow support that can be directly tested.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-397: Wave cancel-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_cancel_transition.py`,
+  `tests/unit/dpm/waves/test_wave_cancel_transition.py`, selected wave workflow/API regressions, and
+  this ledger.
+- Finding: `cancel_wave` still embedded item cancellation, no-external-execution diagnostics,
+  aggregate refresh, cancel event assembly, and invalid transition mapping inside the public
+  workflow orchestration function.
+- Action: extracted cancel transition assembly into a focused helper that returns the cancelled wave
+  or maps invalid domain transitions to the existing bounded validation error, preserved the private
+  workflow metadata alias expected by existing tests, and added direct tests for cancellation
+  metadata, handoff-ready item preservation, invalid transition mapping, aggregate refresh, and
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_cancel_transition.py`; direct cancel-transition tests and
+  selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` around remaining orchestration support or move to
+  the next service hotspot once workflow transition assembly is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

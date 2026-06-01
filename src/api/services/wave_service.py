@@ -3,6 +3,7 @@ from src.api.services.wave_aggregate_metrics import (
     simulation_result_state,
 )
 from src.api.services.wave_approval_transition import build_approved_wave as _build_approved_wave
+from src.api.services.wave_cancel_transition import build_cancelled_wave as _build_cancelled_wave
 from src.api.services.wave_construction_selection import (
     select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
@@ -20,9 +21,6 @@ from src.api.services.wave_errors import (
     DpmWaveValidationError as DpmWaveValidationError,
 )
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
-from src.api.services.wave_item_transitions import (
-    cancel_item as _cancel_item,
-)
 from src.api.services.wave_handoff_transition import (
     build_handoff_ready_wave as _build_handoff_ready_wave,
 )
@@ -58,7 +56,7 @@ from src.api.services.wave_supportability_payload import (
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
 from src.api.services.wave_workflow_metadata import (
     approval_event_metadata,
-    cancel_event_metadata as _cancel_event_metadata,
+    cancel_event_metadata,
     handoff_event_metadata,
     selection_event_metadata as _selection_event_metadata,
     stage_event_metadata,
@@ -70,11 +68,9 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
-    DpmWaveInvalidTransitionError,
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    apply_wave_transition,
     build_wave_report_input,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -85,6 +81,7 @@ _validate_trigger = validate_trigger_or_raise
 _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
 _handoff_event_metadata = handoff_event_metadata
+_cancel_event_metadata = cancel_event_metadata
 
 
 def preview_wave(
@@ -432,31 +429,13 @@ def cancel_wave(
     if _wave_state_is_idempotent(wave, replay_states={"CANCELLED"}):
         return wave, True
 
-    cancelled_items = [_cancel_item(item, actor_id, reason_code, comment) for item in wave.items]
-    candidate = _wave_with_items_and_aggregate(wave=wave, items=cancelled_items)
-    try:
-        cancelled = apply_wave_transition(
-            wave=candidate,
-            to_state="CANCELLED",
-            event=_event(
-                wave_id=wave.wave_id,
-                from_state=wave.state,
-                to_state="CANCELLED",
-                actor_id=actor_id,
-                correlation_id=correlation_id,
-                reason_code="WAVE_CANCELLED",
-                metadata=_cancel_event_metadata(
-                    cancelled_item_count=len(cancelled_items),
-                    reason_code=reason_code,
-                    comment=comment,
-                ),
-            ),
-        )
-    except DpmWaveInvalidTransitionError as exc:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_CANCEL_INVALID_STATE",
-            f"Wave {wave_id} cannot be cancelled from state {wave.state}.",
-        ) from exc
+    cancelled = _build_cancelled_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
+    )
     _update_wave_or_raise(
         wave_repository=wave_repository,
         wave=cancelled,
