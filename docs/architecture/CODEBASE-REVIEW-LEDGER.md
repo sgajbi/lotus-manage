@@ -7669,3 +7669,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   changing source-family domain fields.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-307: Liquidity parent reason-code assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, liquidity source-context
+  tests, and this ledger.
+- Finding: parent liquidity context construction mixed child-context orchestration with reason-code
+  list assembly for optional source families.
+- Action: extracted parent liquidity reason-code assembly into a small internal helper keyed by
+  income-needs, reserve-requirement, and planned-withdrawal presence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity source-context
+  regressions passed with 6 tests.
+- Follow-up: keep the parent liquidity mapper focused on child context construction and governed
+  policy fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -44,6 +44,25 @@ def _response_source_id(response: _LiquiditySourceResponse, fallback_hash: str) 
     )
 
 
+def _liquidity_reason_codes(
+    *,
+    has_income_needs: bool,
+    has_reserve_requirement: bool,
+    has_planned_withdrawals: bool,
+) -> list[str]:
+    reason_codes = [
+        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
+        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+    ]
+    if has_income_needs:
+        reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
+    if has_reserve_requirement:
+        reason_codes.append("LIQUIDITY_RESERVE_SOURCE_PRESENT")
+    if has_planned_withdrawals:
+        reason_codes.append("PLANNED_WITHDRAWAL_SOURCE_PRESENT")
+    return reason_codes
+
+
 def client_income_needs_schedule_context(
     income_needs: DpmCoreClientIncomeNeedsScheduleResponse,
 ) -> AuthoritativeClientIncomeNeedsSchedule:
@@ -162,10 +181,6 @@ def source_liquidity_context(
     ):
         return None
 
-    source_reason_codes = [
-        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
-        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
-    ]
     cashflow_context = (
         liquidity_cashflow_projection_context(cashflow_projection)
         if cashflow_projection is not None
@@ -184,12 +199,6 @@ def source_liquidity_context(
         if planned_withdrawals is not None
         else None
     )
-    if income_context is not None:
-        source_reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
-    if reserve_context is not None:
-        source_reason_codes.append("LIQUIDITY_RESERVE_SOURCE_PRESENT")
-    if withdrawal_context is not None:
-        source_reason_codes.append("PLANNED_WITHDRAWAL_SOURCE_PRESENT")
 
     return AuthoritativeLiquidityContext(
         supportability_status=ConstructionMethodStatus.READY,
@@ -201,7 +210,11 @@ def source_liquidity_context(
         client_income_needs_schedule=income_context,
         liquidity_reserve_requirement=reserve_context,
         planned_withdrawal_schedule=withdrawal_context,
-        reason_codes=source_reason_codes,
+        reason_codes=_liquidity_reason_codes(
+            has_income_needs=income_context is not None,
+            has_reserve_requirement=reserve_context is not None,
+            has_planned_withdrawals=withdrawal_context is not None,
+        ),
     )
 
 
