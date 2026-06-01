@@ -8,10 +8,11 @@ from src.api.services.wave_construction_selection import (
     select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
 from src.api.services.wave_creation import (
-    create_created_wave_id as _create_created_wave_id,
-    create_wave_request_hash as _create_wave_request_hash,
-    promote_preview_to_created_wave as _promote_preview_to_created_wave,
+    create_created_wave_id,
+    create_wave_request_hash,
+    promote_preview_to_created_wave,
 )
+from src.api.services.wave_create_command import create_persisted_wave
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
@@ -26,10 +27,7 @@ from src.api.services.wave_item_selection_transition import (
     build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
 )
 from src.api.services.wave_lookup import get_wave_or_raise
-from src.api.services.wave_persistence import (
-    save_wave_or_raise as _save_wave_or_raise,
-    update_wave_or_raise,
-)
+from src.api.services.wave_persistence import save_wave_or_raise, update_wave_or_raise
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_read_model_queries import (
     wave_detail_for_id,
@@ -79,9 +77,13 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
+_create_created_wave_id = create_created_wave_id
+_create_wave_request_hash = create_wave_request_hash
+_promote_preview_to_created_wave = promote_preview_to_created_wave
 _get_wave_or_raise = get_wave_or_raise
 _wave_state_is_idempotent = wave_state_is_idempotent
 _require_wave_state = require_wave_state
+_save_wave_or_raise = save_wave_or_raise
 _update_wave_or_raise = update_wave_or_raise
 _validate_trigger = validate_trigger_or_raise
 _approval_event_metadata = approval_event_metadata
@@ -132,19 +134,7 @@ def create_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    request_hash = _create_wave_request_hash(
-        trigger_type=trigger_type,
-        trigger_id=trigger_id,
-        rationale=rationale,
-        as_of_date=as_of_date,
-        actor_id=actor_id,
-        portfolios=portfolios,
-    )
-    existing = wave_repository.get_wave_by_idempotency(idempotency_key=idempotency_key)
-    if existing is not None:
-        return existing, True
-
-    preview = preview_wave(
+    return create_persisted_wave(
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,
@@ -152,22 +142,10 @@ def create_wave(
         actor_id=actor_id,
         correlation_id=correlation_id,
         portfolios=portfolios,
+        idempotency_key=idempotency_key,
         mandate_repository=mandate_repository,
-    )
-    wave = _promote_preview_to_created_wave(
-        preview=preview,
-        wave_id=_create_created_wave_id(),
-        actor_id=actor_id,
-        correlation_id=correlation_id,
-        idempotency_key=idempotency_key,
-    )
-    _save_wave_or_raise(
         wave_repository=wave_repository,
-        wave=wave,
-        idempotency_key=idempotency_key,
-        request_hash=request_hash,
     )
-    return wave, False
 
 
 def source_check_wave(

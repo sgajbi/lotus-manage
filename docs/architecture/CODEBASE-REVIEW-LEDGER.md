@@ -10277,3 +10277,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   that preserve repository ownership while reducing command-service branching.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-422: Wave create command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_create_command.py`,
+  `tests/unit/dpm/waves/test_wave_create_command.py`, selected wave create/API regressions, and
+  this ledger.
+- Finding: wave creation orchestration still embedded idempotent replay lookup, request-hash
+  construction, preview promotion, and durable save wiring in `wave_service.py`, keeping command
+  persistence mechanics mixed into the public service facade.
+- Action: extracted the idempotent create command into a focused helper that owns replay lookup,
+  preview construction, created-wave promotion, and durable persistence, kept the service API as a
+  stable facade, and added direct tests for replay, persistence request hash, export surface, and
+  service delegation alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_create_command.py`; direct wave create-command tests and
+  selected wave create/API regressions passed with 150 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave command orchestration for lifecycle-specific source and
+  supportability boundaries that can be isolated without hiding domain decisions.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
