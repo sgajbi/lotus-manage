@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -12,6 +10,11 @@ from src.api.services import construction_service, proof_pack_service
 from src.api.services.wave_aggregate_metrics import (
     aggregate_wave_items as _aggregate,
     simulation_result_state as _simulation_result_state,
+)
+from src.api.services.wave_event_evidence import (
+    build_wave_event as _event,
+    idempotency_key_hash as _idempotency_key_hash,
+    request_hash as _request_hash,
 )
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
 from src.api.services.wave_item_transitions import (
@@ -210,7 +213,7 @@ def create_wave(
             actor_id=actor_id,
             correlation_id=correlation_id,
             reason_code="WAVE_CREATED",
-            metadata={"idempotency_key_hash": hashlib.sha256(idempotency_key.encode()).hexdigest()},
+            metadata={"idempotency_key_hash": _idempotency_key_hash(idempotency_key)},
         ),
     )
     try:
@@ -1140,30 +1143,6 @@ def _proposed_changes_from_alternative_set(
     return []
 
 
-def _event(
-    *,
-    wave_id: str,
-    from_state: WaveState,
-    to_state: WaveState,
-    actor_id: str,
-    correlation_id: str,
-    reason_code: str,
-    metadata: dict[str, object],
-    event_type: str = "STATE_TRANSITION",
-) -> DpmRebalanceWaveEvent:
-    return DpmRebalanceWaveEvent(
-        event_id=f"dwe_{uuid.uuid4().hex[:12]}",
-        wave_id=wave_id,
-        from_state=from_state,
-        to_state=to_state,
-        event_type=event_type,
-        actor_id=actor_id,
-        reason_code=reason_code,
-        correlation_id=correlation_id,
-        metadata=metadata,
-    )
-
-
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
     if trigger_type not in SUPPORTED_CREATE_TRIGGER_TYPES:
         source_owner_reason = UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES.get(trigger_type)
@@ -1181,8 +1160,3 @@ def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]])
             "AFFECTED_PORTFOLIO_SET_EMPTY",
             f"Trigger type {trigger_type} requires at least one source-backed portfolio.",
         )
-
-
-def _request_hash(payload: dict[str, object]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
