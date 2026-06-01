@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from src.core.outcomes import (
@@ -23,6 +23,7 @@ from src.api.services.outcome_review_dimensions import (
     DpmOutcomeReviewValidationError as DpmOutcomeReviewValidationError,
     dimension_inputs_for_review,
 )
+from src.api.services.outcome_review_persistence import persist_outcome_review
 from src.api.services.outcome_review_report_inputs import (
     build_outcome_ai_evidence_input,
     build_outcome_report_input,
@@ -36,8 +37,6 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.repository import DpmWaveRepository
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
-
-OUTCOME_REVIEW_RETENTION_DAYS = 365 * 7
 
 
 class DpmOutcomeReviewNotFoundError(Exception):
@@ -127,10 +126,7 @@ def create_outcome_review(
         correlation_id=correlation_id,
         idempotency_key=idempotency_key,
     )
-    repository.save_outcome_review(
-        review=review,
-        retention_expires_at=created_at + timedelta(days=OUTCOME_REVIEW_RETENTION_DAYS),
-    )
+    persist_outcome_review(repository=repository, review=review, persisted_at=created_at)
     return review
 
 

@@ -10009,3 +10009,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   separated without moving source lookup or exception ownership out of the service.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-411: Outcome review persistence retention extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_persistence.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_persistence.py`, selected outcome-review
+  regressions, and this ledger.
+- Finding: outcome review creation orchestration still owned the seven-year evidence-retention
+  calculation directly, duplicating the persistence-policy pattern found in proof-pack generation.
+- Action: extracted outcome-review persistence and retention-expiry calculation into a focused
+  helper, kept review creation orchestration in the service, and added direct tests for
+  deterministic seven-year retention expiry and the helper export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_persistence.py`; direct outcome
+  review persistence tests and selected outcome/API regressions passed with 40 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing outcome-review creation for event/content assembly boundaries that
+  can be tested directly without moving repository idempotency ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
