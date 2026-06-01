@@ -1,12 +1,8 @@
 from src.api.request_models import RebalanceRequest
-from src.api.services.wave_construction_selection import select_construction_alternative_for_wave
 from src.api.services.wave_create_command import create_persisted_wave
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
-)
-from src.api.services.wave_item_selection_transition import (
-    build_wave_with_selected_item_alternative,
 )
 from src.api.services.wave_lifecycle_commands import (
     approve_persisted_wave,
@@ -27,7 +23,6 @@ from src.api.services.wave_read_model_queries import (
     wave_supportability_for_id,
 )
 from src.api.services.wave_selection_command import select_persisted_wave_item_alternative
-from src.api.services.wave_selection_guard import selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
@@ -47,10 +42,6 @@ from src.core.waves import (
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
-
-_select_construction_alternative_for_wave = select_construction_alternative_for_wave
-_build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
-_selectable_wave_item = selectable_wave_item
 
 
 def preview_wave(

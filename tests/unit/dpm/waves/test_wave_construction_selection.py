@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.services import wave_construction_selection, wave_service
+from src.api.services import wave_construction_selection
 from src.api.services.wave_construction_selection import select_construction_alternative_for_wave
 from src.api.services.wave_errors import DpmWaveLookupError
 
@@ -63,13 +63,6 @@ def test_select_construction_alternative_for_wave_maps_selection_failures(
 
     assert exc_info.value.code == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
     assert exc_info.value.message == "alternative missing"
-
-
-def test_wave_service_preserves_construction_selection_private_alias() -> None:
-    assert (
-        wave_service._select_construction_alternative_for_wave
-        is select_construction_alternative_for_wave
-    )
 
 
 def test_wave_construction_selection_exports_public_surface() -> None:

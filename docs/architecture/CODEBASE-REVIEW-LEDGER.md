@@ -10592,3 +10592,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `wave_service.py` that are not public facade entry points or response read models.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-435: Wave selection helper alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_construction_selection.py`,
+  `tests/unit/dpm/waves/test_wave_selection_guard.py`, selected wave selection/API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still retained private selection helper aliases after persisted
+  selection command extraction made the command helper responsible for selection validation,
+  construction side effects, and item transition assembly.
+- Action: removed construction-selection, item-selection-transition, and selection-guard helper
+  imports and aliases from the service facade, and retired remaining facade-alias assertions while
+  preserving direct helper behavior and export-surface coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave construction selection, selection guard, and item
+  selection transition tests plus selected wave API regressions passed with 143 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review `wave_service.py` after alias retirement for further public facade slimming
+  opportunities that do not obscure router-facing orchestration.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
