@@ -8352,3 +8352,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   workflow orchestration and repository access in the service layer.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-341: Wave proof-pack posture extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_proof_pack_posture.py`,
+  `tests/unit/dpm/waves/test_wave_proof_pack_posture.py`, selected wave proof-pack API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled proof-pack posture directly, mixing evidence summary
+  assembly with workflow service orchestration.
+- Action: extracted proof-pack posture assembly into a focused helper module backed by the wave
+  boundary evidence builders, preserved the `wave_service.proof_pack_posture_for_wave` import
+  surface for existing callers, and added direct tests for proof-pack counting, boundary evidence,
+  unlinked item filtering, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_proof_pack_posture.py`; direct wave proof-pack posture
+  tests and selected proof-pack API regressions passed with 7 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave evidence and handoff assembly clusters from
+  `wave_service.py` while leaving repository orchestration in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

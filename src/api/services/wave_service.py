@@ -10,10 +10,7 @@ from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
-from src.api.services.wave_boundary_evidence import (
-    client_communication_boundary as _client_communication_boundary,
-    external_execution_boundary as _external_execution_boundary,
-)
+from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_supportability_diagnostics import (
     operator_actions as _operator_actions,
     supportability_issue as _supportability_issue,
@@ -825,46 +822,6 @@ def _portfolio_memory_context_for_report(
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
     )
-
-
-def proof_pack_posture_for_wave(*, wave: DpmRebalanceWave) -> dict[str, object]:
-    proof_pack_refs = [
-        {
-            "wave_item_id": item.wave_item_id,
-            "proof_pack_id": item.proof_pack_id,
-            "item_state": item.state,
-            "proof_pack_state": item.diagnostics.get("proof_pack_state"),
-            "selected_alternative_id": item.selected_alternative_id,
-        }
-        for item in wave.items
-        if item.proof_pack_id is not None or item.diagnostics.get("proof_pack_state") is not None
-    ]
-    ready_count = sum(
-        1
-        for item in wave.items
-        if item.proof_pack_id is not None and item.diagnostics.get("proof_pack_state") != "DEGRADED"
-    )
-    degraded_count = sum(
-        1 for item in wave.items if item.diagnostics.get("proof_pack_state") == "DEGRADED"
-    )
-    external_execution_claimed = any(
-        handoff.external_execution_claimed for handoff in wave.handoff_refs
-    )
-    return {
-        "wave_id": wave.wave_id,
-        "wave_state": wave.state,
-        "item_count": len(wave.items),
-        "linked_item_count": sum(1 for item in wave.items if item.proof_pack_id is not None),
-        "ready_proof_pack_count": ready_count,
-        "degraded_proof_pack_count": degraded_count,
-        "proof_pack_refs": proof_pack_refs,
-        "handoff_refs": wave.handoff_refs,
-        "external_execution_claimed": external_execution_claimed,
-        "external_execution_boundary": _external_execution_boundary(
-            external_execution_claimed=external_execution_claimed
-        ).model_dump(mode="json"),
-        "client_communication_boundary": _client_communication_boundary().model_dump(mode="json"),
-    }
 
 
 def _get_wave_or_raise(
