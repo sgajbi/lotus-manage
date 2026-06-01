@@ -10638,3 +10638,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   that source-product family mapping and aggregation have clearer ownership.
 - Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-437: Construction source-context no-overwrite proof
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, selected construction
+  source-product/API regressions, and this ledger.
+- Finding: source-product context aggregation had direct no-overwrite coverage for
+  transaction-cost and liquidity contexts, but not for the client restriction, sustainability,
+  currency overlay, and execution acknowledgement authority families.
+- Action: added a direct regression proving all source-derived authority contexts are preserved when
+  already supplied and that `authority_context_with_source_products` returns the existing context
+  object when no source-derived updates are needed.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused mypy passed
+  for `construction_source_product_context.py`; direct source-product context tests plus selected
+  construction enrichment/API regressions passed with 55 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: keep no-overwrite tests aligned with any new source-derived authority family added to
+  `ConstructionAuthorityContext`.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
