@@ -16,6 +16,11 @@ from src.api.services.construction_source_product_context import (
     external_treasury_currency_overlay_context,
     source_status_to_method_status,
 )
+from src.api.services.construction_transaction_cost_supportability import (
+    observed_transaction_cost_estimate,
+    transaction_cost_reason_codes,
+    transaction_cost_status,
+)
 from src.core.construction import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
@@ -313,15 +318,11 @@ def test_transaction_cost_context_marks_missing_observed_evidence_degraded() -> 
         reason_codes=["TRANSACTION_COST_CURVE_READY"],
     )
 
+    assert observed_transaction_cost_estimate(result=result, context=context) is None
     assert (
-        construction_service._observed_transaction_cost_estimate(result=result, context=context)
-        is None
+        transaction_cost_status(result=result, context=context) == ConstructionMethodStatus.DEGRADED
     )
-    assert (
-        construction_service._transaction_cost_status(result=result, context=context)
-        == ConstructionMethodStatus.DEGRADED
-    )
-    reason_codes = construction_service._transaction_cost_reason_codes(
+    reason_codes = transaction_cost_reason_codes(
         result=result,
         context=context,
     )
@@ -364,10 +365,7 @@ def test_transaction_cost_context_ignores_intents_without_base_notional() -> Non
         reason_codes=["TRANSACTION_COST_CURVE_READY"],
     )
 
-    assert (
-        construction_service._observed_transaction_cost_estimate(result=result, context=context)
-        is None
-    )
+    assert observed_transaction_cost_estimate(result=result, context=context) is None
 
 
 def test_client_restriction_context_applies_source_owned_restriction_scopes() -> None:

@@ -6862,3 +6862,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   owning helper modules before pruning the next set of private pass-through wrappers.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-269: Transaction-cost wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: transaction-cost supportability tests still reached through construction-service
+  private wrappers for observed cost estimate, transaction-cost status, and reason-code assembly,
+  even though those behaviors are owned by `construction_transaction_cost_supportability.py`.
+  The service also used a private pass-through wrapper to attach observed transaction-cost
+  estimates to COST_AWARE alternatives.
+- Action: moved the transaction-cost tests to call the owning helper module directly, removed the
+  service pass-through wrappers and unused imports, and had construction orchestration call
+  `with_observed_transaction_cost_estimate` directly when COST_AWARE supportability is applied.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused
+  construction transaction-cost and API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue migrating ESG supportability wrapper tests to their owning helper module
+  before pruning the next private pass-through group.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

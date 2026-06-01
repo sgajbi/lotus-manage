@@ -39,9 +39,6 @@ from src.api.services.construction_esg_supportability import (
     with_esg_restriction_constraints,
 )
 from src.api.services.construction_transaction_cost_supportability import (
-    observed_transaction_cost_estimate,
-    transaction_cost_reason_codes,
-    transaction_cost_status,
     with_observed_transaction_cost_estimate,
 )
 from src.core.common.capabilities import has_solver_dependencies
@@ -57,7 +54,6 @@ from src.core.construction.models import (
     AuthoritativeClientRestrictionRule,
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
-    AuthoritativeTransactionCostContext,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -79,7 +75,7 @@ from src.core.dpm_source_context import (
     DpmResolvedSourceContext,
 )
 from src.core.models import RebalanceResult
-from src.core.models import Money, SecurityTradeIntent, ShelfEntry
+from src.core.models import SecurityTradeIntent, ShelfEntry
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
@@ -292,7 +288,7 @@ def _apply_supportability(
         ),
     )
     if method == ConstructionMethod.COST_AWARE:
-        alternative = _with_observed_transaction_cost_estimate(
+        alternative = with_observed_transaction_cost_estimate(
             alternative=alternative,
             result=result,
             context=authority_context.transaction_cost_context,
@@ -418,43 +414,6 @@ def _authority_context_with_source_products(
     if not context_updates:
         return authority_context
     return authority_context.model_copy(update=context_updates)
-
-
-def _with_observed_transaction_cost_estimate(
-    *,
-    alternative: ConstructionAlternative,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> ConstructionAlternative:
-    return with_observed_transaction_cost_estimate(
-        alternative=alternative,
-        result=result,
-        context=context,
-    )
-
-
-def _observed_transaction_cost_estimate(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> Money | None:
-    return observed_transaction_cost_estimate(result=result, context=context)
-
-
-def _transaction_cost_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> ConstructionMethodStatus:
-    return transaction_cost_status(result=result, context=context)
-
-
-def _transaction_cost_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> list[str]:
-    return transaction_cost_reason_codes(result=result, context=context)
 
 
 def _with_esg_restriction_constraints(
