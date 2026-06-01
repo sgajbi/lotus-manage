@@ -22,7 +22,8 @@ from src.api.services.mandate_errors import (
 from src.api.services.mandate_diff import (
     DpmMandateDiff as DpmMandateDiff,
     DpmMandateFieldChange as DpmMandateFieldChange,
-    build_mandate_diff as _build_mandate_diff,
+    build_mandate_diff,
+    build_mandate_diff_for_versions,
     diff_payloads,
     iter_changed_fields,
     materiality_for_field,
@@ -68,9 +69,11 @@ _attention_buckets = attention_buckets
 _build_command_center_summary = build_command_center_summary
 _command_center_supportability_state = command_center_supportability_state
 _recommended_actions = recommended_actions
+_build_mandate_diff = build_mandate_diff
 _diff_payloads = diff_payloads
 _iter_changed_fields = iter_changed_fields
 _materiality_for_field = materiality_for_field
+_build_mandate_diff_for_versions = build_mandate_diff_for_versions
 _try_resolve_optional_source = try_resolve_optional_source
 _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
@@ -334,21 +337,9 @@ def diff_mandate_versions(
     if not versions:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
 
-    by_version = {version.mandate_version: version for version in versions}
-    if from_version is not None or to_version is not None:
-        if from_version is None or to_version is None:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
-        if from_version not in by_version or to_version not in by_version:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_VERSION_NOT_FOUND")
-        previous = by_version[from_version]
-        current = by_version[to_version]
-    else:
-        if len(versions) < 2:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
-        current, previous = versions[0], versions[1]
-
-    return _build_mandate_diff(
+    return _build_mandate_diff_for_versions(
         mandate_id=mandate_id,
-        previous=previous,
-        current=current,
+        versions=versions,
+        from_version=from_version,
+        to_version=to_version,
     )

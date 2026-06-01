@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.core.mandates import DpmMandateDigitalTwin
 
 
@@ -82,6 +83,33 @@ def build_mandate_diff(
     )
 
 
+def build_mandate_diff_for_versions(
+    *,
+    mandate_id: str,
+    versions: list[DpmMandateDigitalTwin],
+    from_version: str | None,
+    to_version: str | None,
+) -> DpmMandateDiff:
+    by_version = {version.mandate_version: version for version in versions}
+    if from_version is not None or to_version is not None:
+        if from_version is None or to_version is None:
+            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
+        if from_version not in by_version or to_version not in by_version:
+            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_VERSION_NOT_FOUND")
+        previous = by_version[from_version]
+        current = by_version[to_version]
+    else:
+        if len(versions) < 2:
+            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
+        current, previous = versions[0], versions[1]
+
+    return build_mandate_diff(
+        mandate_id=mandate_id,
+        previous=previous,
+        current=current,
+    )
+
+
 def iter_changed_fields(
     previous: dict[str, Any],
     current: dict[str, Any],
@@ -123,6 +151,7 @@ __all__ = [
     "DpmMandateDiff",
     "DpmMandateFieldChange",
     "build_mandate_diff",
+    "build_mandate_diff_for_versions",
     "diff_payloads",
     "iter_changed_fields",
     "materiality_for_field",

@@ -2,10 +2,12 @@ from datetime import date
 from decimal import Decimal
 
 from src.api.services import mandate_diff, mandate_service
+from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.api.services.mandate_diff import (
     DpmMandateDiff,
     DpmMandateFieldChange,
     build_mandate_diff,
+    build_mandate_diff_for_versions,
     diff_payloads,
     iter_changed_fields,
     materiality_for_field,
@@ -99,9 +101,72 @@ def test_build_mandate_diff_projects_version_comparison() -> None:
     ]
 
 
+def test_build_mandate_diff_for_versions_uses_explicit_requested_versions() -> None:
+    diff = build_mandate_diff_for_versions(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        versions=[
+            _twin(version="3", turnover_budget=Decimal("0.15")),
+            _twin(version="2", turnover_budget=Decimal("0.10")),
+            _twin(version="1", turnover_budget=Decimal("0.08")),
+        ],
+        from_version="1",
+        to_version="3",
+    )
+
+    assert diff.from_version == "1"
+    assert diff.to_version == "3"
+    assert ("constraints.turnover_budget", "HIGH") in [
+        (change.field_path, change.materiality) for change in diff.changed_fields
+    ]
+
+
+def test_build_mandate_diff_for_versions_defaults_to_latest_two_versions() -> None:
+    diff = build_mandate_diff_for_versions(
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        versions=[
+            _twin(version="3", turnover_budget=Decimal("0.15")),
+            _twin(version="2", turnover_budget=Decimal("0.10")),
+        ],
+        from_version=None,
+        to_version=None,
+    )
+
+    assert diff.from_version == "2"
+    assert diff.to_version == "3"
+
+
+def test_build_mandate_diff_for_versions_requires_complete_version_pair() -> None:
+    try:
+        build_mandate_diff_for_versions(
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            versions=[_twin(version="3")],
+            from_version="2",
+            to_version=None,
+        )
+    except DpmMandateDiffUnavailableError as exc:
+        assert exc.args == ("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS",)
+    else:
+        raise AssertionError("Expected mandate diff version-pair validation error.")
+
+
+def test_build_mandate_diff_for_versions_rejects_unknown_requested_version() -> None:
+    try:
+        build_mandate_diff_for_versions(
+            mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+            versions=[_twin(version="3"), _twin(version="2")],
+            from_version="1",
+            to_version="3",
+        )
+    except DpmMandateDiffUnavailableError as exc:
+        assert exc.args == ("DPM_MANDATE_DIFF_VERSION_NOT_FOUND",)
+    else:
+        raise AssertionError("Expected mandate diff version-not-found validation error.")
+
+
 def test_service_preserves_existing_diff_import_surface() -> None:
     assert mandate_service.DpmMandateDiff is DpmMandateDiff
     assert mandate_service.DpmMandateFieldChange is DpmMandateFieldChange
+    assert mandate_service._build_mandate_diff_for_versions is build_mandate_diff_for_versions
     assert mandate_service._diff_payloads is diff_payloads
     assert mandate_service._iter_changed_fields is iter_changed_fields
     assert mandate_service._materiality_for_field is materiality_for_field
@@ -112,6 +177,7 @@ def test_mandate_diff_exports_public_helper_surface() -> None:
         "DpmMandateDiff",
         "DpmMandateFieldChange",
         "build_mandate_diff",
+        "build_mandate_diff_for_versions",
         "diff_payloads",
         "iter_changed_fields",
         "materiality_for_field",

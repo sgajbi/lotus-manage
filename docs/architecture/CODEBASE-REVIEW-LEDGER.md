@@ -9787,3 +9787,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   extraction produces directly testable private-banking source-boundary behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-402: Mandate diff version resolution extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, selected mandate API regressions, and this
+  ledger.
+- Finding: `diff_mandate_versions` still embedded requested version-pair validation, latest-two
+  fallback selection, unknown-version error mapping, and diff construction inside the service
+  function even though this is mandate-diff domain behavior.
+- Action: moved version resolution into `build_mandate_diff_for_versions`, preserving repository
+  lookup and missing-mandate handling in the service while adding direct tests for explicit version
+  pairs, default latest-two comparison, incomplete version pairs, unknown versions, helper export,
+  and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_diff.py`; direct mandate-diff tests and selected
+  mandate API regressions passed with 33 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue moving domain-specific selection and validation rules out of
+  `mandate_service.py` while keeping repository access and API-facing orchestration there.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
