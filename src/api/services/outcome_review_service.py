@@ -27,7 +27,6 @@ from src.api.services.outcome_review_persistence import persist_outcome_review
 from src.api.services.outcome_review_report_inputs import (
     build_outcome_ai_evidence_input,
     build_outcome_report_input,
-    portfolio_memory_context_for_report,
 )
 from src.api.services.outcome_review_search import (
     normalize_outcome_review_search_filter as _normalize_outcome_review_search_filter,
@@ -44,7 +43,6 @@ class DpmOutcomeReviewNotFoundError(Exception):
 
 
 _dimension_inputs = dimension_inputs_for_review
-_portfolio_memory_context_for_report = portfolio_memory_context_for_report
 
 
 def preview_outcome_review(

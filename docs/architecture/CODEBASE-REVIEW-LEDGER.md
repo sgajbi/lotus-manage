@@ -10844,3 +10844,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   intentional public re-exports remain.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-446: Report-input portfolio-memory alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/proof_pack_service.py`, `src/api/services/outcome_review_service.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_report_inputs.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_report_inputs.py`, selected report-input/API
+  regressions, and this ledger.
+- Finding: proof-pack and outcome-review services still imported and exposed private
+  portfolio-memory report-context aliases even though the owning report-input helper modules have
+  direct behavior and export-surface tests.
+- Action: removed stale portfolio-memory context imports and private aliases from both service
+  facades, and retired alias-pinning assertions while preserving direct report-input helper
+  coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `outcome_review_service.py`; direct proof-pack and outcome
+  report-input tests plus selected proof-pack/outcome API regressions passed with 23 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules; search found no
+  portfolio-memory report-context private aliases remaining in the proof-pack or outcome-review
+  service facades.
+- Follow-up: continue scanning remaining services for private aliases that are no longer used by
+  orchestration and have direct helper-module coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

@@ -13,7 +13,6 @@ from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofP
 from src.api.services.proof_pack_report_inputs import (
     build_proof_pack_ai_evidence_input,
     build_proof_pack_report_input,
-    portfolio_memory_context_for_report,
 )
 from src.api.services.proof_pack_handoff_refs import (
     ensure_handoff_refs as _ensure_handoff_refs,
@@ -44,9 +43,6 @@ class DpmProofPackReportInputNotGeneratedError(Exception):
 
 class DpmProofPackAiEvidenceInputNotGeneratedError(Exception):
     pass
-
-
-_portfolio_memory_context_for_report = portfolio_memory_context_for_report
 
 
 def generate_proof_pack_from_run(
