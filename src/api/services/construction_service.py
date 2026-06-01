@@ -25,6 +25,10 @@ from src.api.services.construction_method_execution import (
     options_for_construction_method,
     run_construction_method,
 )
+from src.api.services.construction_solver_supportability import (
+    solver_method_status,
+    with_method_reason_codes,
+)
 from src.api.services.construction_esg_supportability import (
     client_restriction_reason_codes,
     client_restriction_status,
@@ -52,7 +56,7 @@ from src.core.construction.alternative_engine import (
     build_rebalance_result_alternative,
 )
 from src.core.construction.enrichment import summarize_enrichment_posture
-from src.core.construction.method_registry import classify_solver_failure, resolve_method_plan
+from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
     AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeClientRestrictionContext,
@@ -1375,20 +1379,11 @@ def _with_method_reason_codes(
     enrichment: ConstructionEnrichmentSummary,
     reason_codes: list[str],
 ) -> ConstructionEnrichmentSummary:
-    return enrichment.model_copy(
-        update={"reason_codes": sorted(set(enrichment.reason_codes) | set(reason_codes))}
-    )
+    return with_method_reason_codes(enrichment=enrichment, reason_codes=reason_codes)
 
 
 def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
-    solver_warnings = [
-        warning
-        for warning in result.diagnostics.warnings
-        if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
-    ]
-    if not solver_warnings:
-        return ConstructionMethodStatus.READY
-    return _lowest_status([classify_solver_failure(warning) for warning in solver_warnings])
+    return solver_method_status(result=result)
 
 
 def _liquidity_status(

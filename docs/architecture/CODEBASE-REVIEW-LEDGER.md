@@ -6483,3 +6483,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   them.
 - Wiki decision: no wiki source change required; this is internal execution-boundary modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-255: Construction solver supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_solver_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_solver_supportability.py`.
+- Finding: solver-constrained readiness logic and method reason-code merging still lived inside
+  the broad construction service. That kept solver warning classification and enrichment
+  diagnostics coupled to orchestration, even though they are bounded method-supportability
+  decisions that can be tested independently.
+- Action: extracted solver warning posture and method reason-code merging into
+  `construction_solver_supportability.py`. The construction service now delegates through thin
+  compatibility wrappers. Added direct helper tests for deterministic reason-code merging, ready
+  solver posture without solver warnings, and lowest-posture selection when solver diagnostics
+  include non-optimal and infeasible warnings.
+- Status: hardened
+- Evidence: focused solver supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over solver supportability and construction service passed.
+- Follow-up: continue extracting construction source-product authority-context assembly and the
+  remaining supportability application orchestration in small, behavior-preserving slices.
+- Wiki decision: no wiki source change required; this is internal solver-supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
