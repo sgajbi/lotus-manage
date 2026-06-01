@@ -6,6 +6,13 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from src.api.services.mandate_command_center import (
+    attention_buckets as _attention_buckets,
+    command_center_supportability_state as _command_center_supportability_state,
+    recommended_actions as _recommended_actions,
+    run_matches_command_center_filters as _run_matches_command_center_filters,
+    severity_rank,
+)
 from src.api.services.mandate_errors import (
     DpmMandateDiffUnavailableError as DpmMandateDiffUnavailableError,
     DpmMandateHealthNotFoundError as DpmMandateHealthNotFoundError,
@@ -16,8 +23,6 @@ from src.api.services.mandate_errors import (
 )
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
-    DpmCommandCenterAttentionBucket,
-    DpmCommandCenterRecommendedAction,
     DpmCommandCenterSummary,
     DpmCommandCenterSupportability,
     DpmMandateDigitalTwin,
@@ -25,10 +30,7 @@ from src.core.mandates import (
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
     DpmMonitoringRun,
-    MandateHealthDimension,
     MandateHealthState,
-    MandateRecommendedAction,
-    MonitoringSeverity,
     build_health_input_from_core_sources,
     calculate_mandate_health,
     compile_mandate_digital_twin_from_core,
@@ -43,6 +45,8 @@ from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
 )
+
+_severity_rank = severity_rank
 
 
 class DpmMandateFieldChange(BaseModel):
@@ -635,118 +639,6 @@ def get_command_center_summary(
             partial_readiness_reasons=partial_reasons,
         ),
     )
-
-
-def _command_center_supportability_state(
-    *,
-    latest_run: Optional[DpmMonitoringRun],
-    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
-    partial_reasons: list[str],
-) -> tuple[Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"], str]:
-    if latest_run is None or completeness == "EMPTY":
-        return "EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
-
-    source_states = {state.upper() for state in latest_run.source_readiness_summary}
-    if source_states.intersection({"INCOMPLETE", "UNAVAILABLE", "BLOCKED"}):
-        return "BLOCKED", "COMMAND_CENTER_SOURCE_READINESS_BLOCKED"
-    if source_states.intersection({"DEGRADED", "STALE"}):
-        return "DEGRADED", "COMMAND_CENTER_SOURCE_READINESS_DEGRADED"
-    if completeness == "PARTIAL" or partial_reasons:
-        return "PARTIAL", partial_reasons[0] if partial_reasons else "COMMAND_CENTER_PARTIAL"
-    return "READY", "COMMAND_CENTER_READY"
-
-
-def _run_matches_command_center_filters(
-    run: DpmMonitoringRun,
-    *,
-    tenant_id: Optional[str],
-    portfolio_manager_id: Optional[str],
-    book_id: Optional[str],
-    as_of_date: Optional[date],
-) -> bool:
-    if as_of_date is not None and run.as_of_date != as_of_date:
-        return False
-    expected_filters = {
-        "tenant_id": tenant_id,
-        "portfolio_manager_id": portfolio_manager_id,
-        "book_id": book_id,
-    }
-    return all(
-        value is None or run.filters.get(key) == value for key, value in expected_filters.items()
-    )
-
-
-def _attention_buckets(
-    exceptions: list[DpmMonitoringException],
-) -> list[DpmCommandCenterAttentionBucket]:
-    bucket_counts: dict[tuple[str, str, str], int] = {}
-    bucket_reason_counts: dict[tuple[str, str, str], dict[str, int]] = {}
-    for exception in exceptions:
-        key = (
-            exception.dimension.value,
-            exception.severity.value,
-            exception.recommended_action.value,
-        )
-        bucket_counts[key] = bucket_counts.get(key, 0) + 1
-        reason_counts = bucket_reason_counts.setdefault(key, {})
-        reason_counts[exception.reason_code] = reason_counts.get(exception.reason_code, 0) + 1
-
-    return [
-        DpmCommandCenterAttentionBucket(
-            dimension=MandateHealthDimension(dimension),
-            severity=MonitoringSeverity(severity),
-            recommended_action=MandateRecommendedAction(recommended_action),
-            exception_count=exception_count,
-            top_reason_codes=[
-                reason_code
-                for reason_code, _ in sorted(
-                    bucket_reason_counts[(dimension, severity, recommended_action)].items(),
-                    key=lambda item: (-item[1], item[0]),
-                )[:3]
-            ],
-        )
-        for (dimension, severity, recommended_action), exception_count in sorted(
-            bucket_counts.items(),
-            key=lambda item: (
-                -_severity_rank(item[0][1]),
-                -item[1],
-                item[0][0],
-            ),
-        )
-    ]
-
-
-def _recommended_actions(
-    exceptions: list[DpmMonitoringException],
-) -> list[DpmCommandCenterRecommendedAction]:
-    action_counts: dict[str, int] = {}
-    action_highest_severity: dict[str, str] = {}
-    for exception in exceptions:
-        action = exception.recommended_action.value
-        action_counts[action] = action_counts.get(action, 0) + 1
-        current_highest = action_highest_severity.setdefault(action, exception.severity.value)
-        if _severity_rank(exception.severity.value) > _severity_rank(current_highest):
-            action_highest_severity[action] = exception.severity.value
-
-    return [
-        DpmCommandCenterRecommendedAction(
-            recommended_action=MandateRecommendedAction(action),
-            exception_count=exception_count,
-            highest_severity=MonitoringSeverity(action_highest_severity[action]),
-        )
-        for action, exception_count in sorted(
-            action_counts.items(),
-            key=lambda item: (
-                -_severity_rank(action_highest_severity[item[0]]),
-                -item[1],
-                item[0],
-            ),
-        )
-    ]
-
-
-def _severity_rank(severity: str) -> int:
-    return {"CRITICAL": 3, "WARNING": 2, "INFO": 1}.get(severity, 0)
 
 
 def diff_mandate_versions(

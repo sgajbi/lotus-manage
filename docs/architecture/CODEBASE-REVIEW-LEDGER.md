@@ -9038,3 +9038,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   service compatibility.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-371: Mandate command-center projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: `mandate_service.py` still owned pure command-center projection helpers for
+  supportability-state classification, monitoring-run filter matching, attention-bucket rollups,
+  recommended-action rollups, and severity ordering.
+- Action: extracted the command-center helper cluster into a focused module, preserved existing
+  private service aliases for compatibility, removed now-unused enum imports from the service, and
+  added direct tests for source-readiness supportability mapping, bounded filter matching, bucket
+  sorting and reason ranking, recommended-action ordering, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct command-center helper
+  tests and selected mandate API regressions passed with 29 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure mandate diff and source-resolution helpers while keeping
+  repository orchestration in `mandate_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
