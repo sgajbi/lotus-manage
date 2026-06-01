@@ -7466,3 +7466,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: split treasury direct source-family tests out of the composition suite next.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-296: Treasury source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_treasury_source_context.py`, and this ledger.
+- Finding: direct external treasury mapper coverage still lived in the broad source-product context
+  test module after treasury mapping had been extracted.
+- Action: moved hedge-readiness, exposure fallback, combined treasury source evidence, and absent
+  source tests into a focused treasury source-context test module. The source-product context suite
+  now covers facade composition only.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury/context regressions passed
+  with 6 tests.
+- Follow-up: use the smaller source-product context suite as the guardrail for composition-only
+  changes and keep source-family contract tests in their focused modules.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
