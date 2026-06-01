@@ -6454,3 +6454,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   when behavior changes.
 - Wiki decision: no wiki source change required; this is internal method-supportability
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-254: Construction method execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_execution.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_execution.py`.
+- Finding: construction method execution mechanics still lived inside the construction service,
+  including method-specific engine option mutation, method-specific correlation-id construction,
+  engine invocation, and optional run-support recording. This kept execution mechanics coupled to
+  alternative-set orchestration and source-authority supportability code.
+- Action: extracted method execution into `construction_method_execution.py`, including
+  `options_for_construction_method` and `run_construction_method`. The construction service now
+  delegates through thin compatibility wrappers. Added direct tests for bounded method option
+  overrides and method-specific correlation/support recording.
+- Status: hardened
+- Evidence: focused method execution, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_execution.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks,
+  focused mypy over method execution and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting construction alternative orchestration and source-product
+  authority-context assembly; keep patch seams explicit only where tests or routes still rely on
+  them.
+- Wiki decision: no wiki source change required; this is internal execution-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
