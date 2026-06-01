@@ -6966,3 +6966,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   request/diagnostic assembly into direct helper modules when the boundary is clear.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-273: Method reason-code wrapper pruning
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still had a private wrapper for method-specific
+  reason-code assembly. The wrapper only forwarded to `construction_method_readiness.py` and kept
+  an unused enrichment parameter, adding indirection without isolating behavior.
+- Action: updated construction orchestration and the remaining regression test to call
+  `method_specific_reason_codes` directly, then removed the private wrapper and its unused type
+  import from `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction service and method-readiness
+  modules, focused construction readiness/API regressions
+  (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: keep the remaining private service helpers only where they express orchestration
+  boundaries, not pass-through behavior.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.

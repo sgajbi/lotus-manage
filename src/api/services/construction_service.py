@@ -44,7 +44,6 @@ from src.core.construction.models import (
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
     ConstructionAuthorityContext,
-    ConstructionEnrichmentSummary,
     ConstructionMethodPlan,
 )
 from src.core.construction.repository import (
@@ -283,11 +282,10 @@ def _apply_supportability(
             result=result,
             authority_context=authority_context,
         )
-    method_reason_codes = _method_specific_reason_codes(
+    method_reason_codes = method_specific_reason_codes(
         request=request,
         method=method,
         result=result,
-        enrichment=enrichment,
         authority_context=authority_context,
     )
     status = lowest_construction_status(
@@ -346,22 +344,6 @@ def _apply_supportability(
                 ),
             },
         }
-    )
-
-
-def _method_specific_reason_codes(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    result: RebalanceResult,
-    enrichment: ConstructionEnrichmentSummary,
-    authority_context: ConstructionAuthorityContext,
-) -> list[str]:
-    return method_specific_reason_codes(
-        request=request,
-        method=method,
-        result=result,
-        authority_context=authority_context,
     )
 
 

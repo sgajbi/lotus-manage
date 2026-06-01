@@ -18,6 +18,7 @@ from src.api.services.construction_method_supportability import (
     liquidity_reason_codes,
     liquidity_status,
 )
+from src.api.services.construction_method_readiness import method_specific_reason_codes
 from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
@@ -1105,13 +1106,11 @@ def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:
     payload["market_data_snapshot"]["fx_rates"] = []
     request = RebalanceRequest.model_validate(payload)
     result = _trade_result()
-    enrichment = summarize_enrichment_posture(result=result, tax_required=False)
 
-    reason_codes = construction_service._method_specific_reason_codes(
+    reason_codes = method_specific_reason_codes(
         request=request,
         method=ConstructionMethod.CURRENCY_OVERLAY,
         result=result,
-        enrichment=enrichment,
         authority_context=ConstructionAuthorityContext(),
     )
 
