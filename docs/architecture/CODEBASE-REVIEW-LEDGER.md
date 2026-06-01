@@ -9014,3 +9014,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   compatibility gaps.
 - Wiki decision: no wiki source change required; this is an internal compatibility fix with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-370: Mandate service error extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_errors.py`,
+  `tests/unit/dpm/mandates/test_mandate_errors.py`, selected mandate API regressions, and this
+  ledger.
+- Finding: `mandate_service.py` still defined reusable mandate service exception carrier classes
+  directly, keeping shared service error vocabulary embedded in a large orchestration module.
+- Action: extracted mandate lookup, diff, source-availability, health, and monitoring-run error
+  types into a focused service error module, preserved the existing `mandate_service` import surface
+  for routers and tests, and added direct tests for compatibility aliases, exception families, and
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_errors.py`; direct mandate error tests and selected
+  mandate API regressions passed with 26 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` by moving pure diff, command-center, and
+  source-resolution support helpers into directly tested modules while preserving route-facing
+  service compatibility.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

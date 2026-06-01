@@ -6,6 +6,14 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from src.api.services.mandate_errors import (
+    DpmMandateDiffUnavailableError as DpmMandateDiffUnavailableError,
+    DpmMandateHealthNotFoundError as DpmMandateHealthNotFoundError,
+    DpmMandateNotFoundError as DpmMandateNotFoundError,
+    DpmMandateSourceIncompleteError as DpmMandateSourceIncompleteError,
+    DpmMandateSourceUnavailableError as DpmMandateSourceUnavailableError,
+    DpmMonitoringRunNotFoundError as DpmMonitoringRunNotFoundError,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmCommandCenterAttentionBucket,
@@ -35,30 +43,6 @@ from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
 )
-
-
-class DpmMandateNotFoundError(LookupError):
-    pass
-
-
-class DpmMandateDiffUnavailableError(LookupError):
-    pass
-
-
-class DpmMandateSourceUnavailableError(RuntimeError):
-    pass
-
-
-class DpmMandateSourceIncompleteError(RuntimeError):
-    pass
-
-
-class DpmMandateHealthNotFoundError(LookupError):
-    pass
-
-
-class DpmMonitoringRunNotFoundError(LookupError):
-    pass
 
 
 class DpmMandateFieldChange(BaseModel):
