@@ -6510,3 +6510,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   remaining supportability application orchestration in small, behavior-preserving slices.
 - Wiki decision: no wiki source change required; this is internal solver-supportability
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-256: Construction method readiness extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_readiness.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_readiness.py`.
+- Finding: method-specific readiness and reason-code assembly still lived inside the top-level
+  construction service after source-specific supportability helpers were extracted. This kept
+  solver diagnostics, risk-authority missing evidence, liquidity settlement posture, transaction
+  cost evidence, ESG restrictions, currency-overlay evidence, and regime scenario posture coupled
+  to alternative-set orchestration.
+- Action: extracted method-specific readiness and reason-code assembly into
+  `construction_method_readiness.py`, reusing the already extracted supportability helpers. The
+  construction service now delegates through thin compatibility wrappers. Added direct tests for
+  solver reason-code evidence and risk-aware missing-authority posture.
+- Status: hardened
+- Evidence: focused method readiness, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_readiness.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks, and
+  focused mypy over method readiness and construction service passed.
+- Follow-up: extract source-product authority-context assembly and source-analytics posture while
+  preserving Manage's non-claim boundary over risk, performance, treasury, execution, and core
+  source products.
+- Wiki decision: no wiki source change required; this is internal method-readiness modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
