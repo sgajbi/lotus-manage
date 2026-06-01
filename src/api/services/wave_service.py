@@ -4,12 +4,7 @@ from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
-from src.api.services.wave_lifecycle_commands import (
-    approve_persisted_wave,
-    cancel_persisted_wave,
-    handoff_persisted_wave,
-    stage_persisted_wave,
-)
+from src.api.services import wave_lifecycle_commands
 from src.api.services import wave_preparation_commands
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_read_model_queries import (
@@ -175,7 +170,7 @@ def approve_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return approve_persisted_wave(
+    return wave_lifecycle_commands.approve_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -194,7 +189,7 @@ def stage_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return stage_persisted_wave(
+    return wave_lifecycle_commands.stage_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -213,7 +208,7 @@ def handoff_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return handoff_persisted_wave(
+    return wave_lifecycle_commands.handoff_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -232,7 +227,7 @@ def cancel_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return cancel_persisted_wave(
+    return wave_lifecycle_commands.cancel_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         reason_code=reason_code,

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from src.api.services import wave_lifecycle_commands, wave_service
+from src.api.services import wave_lifecycle_commands
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items
 from src.api.services.wave_lifecycle_commands import (
     approve_persisted_wave,
@@ -135,13 +135,6 @@ def test_cancel_persisted_wave_replays_existing_cancelled_wave() -> None:
     assert cancelled is wave
     assert replayed is True
     assert repository.updated_wave is None
-
-
-def test_wave_service_delegates_lifecycle_commands() -> None:
-    assert wave_service.approve_persisted_wave is approve_persisted_wave
-    assert wave_service.stage_persisted_wave is stage_persisted_wave
-    assert wave_service.handoff_persisted_wave is handoff_persisted_wave
-    assert wave_service.cancel_persisted_wave is cancel_persisted_wave
 
 
 def test_wave_lifecycle_commands_export_public_surface() -> None:
