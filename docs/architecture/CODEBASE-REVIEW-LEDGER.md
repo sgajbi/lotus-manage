@@ -7842,3 +7842,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   mapper detail.
 - Wiki decision: no wiki source change required; this is internal source-composition test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-317: Source-product facade empty-source coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, source-product authority
+  context facade behavior, and this ledger.
+- Finding: source-product composition tests did not directly guard the empty source-products path
+  where a source context object is present but carries no source-family products.
+- Action: added a direct facade regression asserting no authority-context updates are produced when
+  all source-family products are absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  source-product facade regressions passed with 4 tests.
+- Follow-up: keep facade composition tests focused on update/no-update orchestration boundaries.
+- Wiki decision: no wiki source change required; this is internal source-composition test hardening
+  with no route, payload, supported-feature, or operator-contract change.

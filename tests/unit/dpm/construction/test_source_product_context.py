@@ -54,6 +54,15 @@ def test_authority_context_with_source_products_returns_existing_context_without
     assert resolved_context is authority_context
 
 
+def test_source_product_authority_context_updates_empty_without_source_products() -> None:
+    updates = source_product_authority_context_updates(
+        source_context=_source_execution_context(),
+        authority_context=ConstructionAuthorityContext(),
+    )
+
+    assert updates == {}
+
+
 def test_source_product_authority_context_updates_lifts_all_source_families() -> None:
     updates = source_product_authority_context_updates(
         source_context=_source_execution_context(
