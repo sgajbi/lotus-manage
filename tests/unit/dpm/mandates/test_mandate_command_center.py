@@ -5,6 +5,7 @@ from src.api.services.mandate_command_center import (
     attention_buckets,
     build_command_center_summary,
     command_center_supportability_state,
+    latest_command_center_run,
     recommended_actions,
     run_matches_command_center_filters,
     severity_rank,
@@ -121,6 +122,38 @@ def test_run_matches_command_center_filters_uses_bounded_filter_values() -> None
         portfolio_manager_id="pm_1",
         book_id=None,
         as_of_date=date(2026, 5, 4),
+    )
+
+
+def test_latest_command_center_run_returns_first_matching_run() -> None:
+    latest = _run(
+        filters={"tenant_id": "tenant_1", "portfolio_manager_id": "pm_1"},
+        as_of_date=date(2026, 5, 3),
+    )
+    older = _run(
+        filters={"tenant_id": "tenant_1", "portfolio_manager_id": "pm_1"},
+        as_of_date=date(2026, 5, 2),
+    )
+
+    assert (
+        latest_command_center_run(
+            [latest, older],
+            tenant_id="tenant_1",
+            portfolio_manager_id="pm_1",
+            book_id=None,
+            as_of_date=None,
+        )
+        is latest
+    )
+    assert (
+        latest_command_center_run(
+            [latest, older],
+            tenant_id="missing",
+            portfolio_manager_id=None,
+            book_id=None,
+            as_of_date=None,
+        )
+        is None
     )
 
 
@@ -257,6 +290,9 @@ def test_mandate_service_preserves_command_center_private_aliases() -> None:
     assert mandate_service._build_command_center_summary is (
         mandate_command_center.build_command_center_summary
     )
+    assert mandate_service._latest_command_center_run is (
+        mandate_command_center.latest_command_center_run
+    )
     assert mandate_service._command_center_supportability_state is (
         mandate_command_center.command_center_supportability_state
     )
@@ -276,6 +312,7 @@ def test_mandate_command_center_exports_only_projection_helpers() -> None:
         "attention_buckets",
         "build_command_center_summary",
         "command_center_supportability_state",
+        "latest_command_center_run",
         "recommended_actions",
         "run_matches_command_center_filters",
         "severity_rank",

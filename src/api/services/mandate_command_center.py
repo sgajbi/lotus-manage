@@ -54,6 +54,30 @@ def run_matches_command_center_filters(
     )
 
 
+def latest_command_center_run(
+    runs: list[DpmMonitoringRun],
+    *,
+    tenant_id: str | None,
+    portfolio_manager_id: str | None,
+    book_id: str | None,
+    as_of_date: date | None,
+) -> DpmMonitoringRun | None:
+    return next(
+        (
+            run
+            for run in runs
+            if run_matches_command_center_filters(
+                run,
+                tenant_id=tenant_id,
+                portfolio_manager_id=portfolio_manager_id,
+                book_id=book_id,
+                as_of_date=as_of_date,
+            )
+        ),
+        None,
+    )
+
+
 def build_command_center_summary(
     *,
     tenant_id: str | None,
@@ -193,6 +217,7 @@ __all__ = [
     "attention_buckets",
     "build_command_center_summary",
     "command_center_supportability_state",
+    "latest_command_center_run",
     "recommended_actions",
     "run_matches_command_center_filters",
     "severity_rank",

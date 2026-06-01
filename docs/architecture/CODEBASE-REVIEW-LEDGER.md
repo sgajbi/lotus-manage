@@ -10154,3 +10154,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   for directly testable extraction opportunities.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-417: Mandate command-center run selection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate regressions, and this
+  ledger.
+- Finding: command-center summary orchestration still embedded latest monitoring-run selection in
+  the service, while the command-center helper already owned filter semantics and summary
+  projection.
+- Action: extracted latest command-center run selection into the command-center helper, kept
+  repository reads and active-exception lookup in the service, and added direct tests for first
+  matching run selection, missing-match behavior, export surface, and service compatibility alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct mandate command-center
+  helper tests and selected mandate API regressions passed with 32 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing command-center service orchestration for active-exception query
+  and summary-input boundaries that can be clarified without hiding repository ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

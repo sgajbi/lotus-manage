@@ -7,8 +7,9 @@ from src.api.services.mandate_command_center import (
     attention_buckets,
     build_command_center_summary,
     command_center_supportability_state,
+    latest_command_center_run,
     recommended_actions,
-    run_matches_command_center_filters as _run_matches_command_center_filters,
+    run_matches_command_center_filters,
     severity_rank,
 )
 from src.api.services.mandate_errors import (
@@ -69,7 +70,9 @@ from src.infrastructure.core_sourcing import DpmCoreResolverClient
 _severity_rank = severity_rank
 _attention_buckets = attention_buckets
 _build_command_center_summary = build_command_center_summary
+_latest_command_center_run = latest_command_center_run
 _command_center_supportability_state = command_center_supportability_state
+_run_matches_command_center_filters = run_matches_command_center_filters
 _recommended_actions = recommended_actions
 _build_mandate_diff = build_mandate_diff
 _diff_payloads = diff_payloads
@@ -298,18 +301,13 @@ def get_command_center_summary(
     limit: int,
 ) -> DpmCommandCenterSummary:
     runs, _ = repository.list_monitoring_runs(status=None, limit=200, cursor=None)
-    matching_runs = [
-        run
-        for run in runs
-        if _run_matches_command_center_filters(
-            run,
-            tenant_id=tenant_id,
-            portfolio_manager_id=portfolio_manager_id,
-            book_id=book_id,
-            as_of_date=as_of_date,
-        )
-    ]
-    latest_run = matching_runs[0] if matching_runs else None
+    latest_run = _latest_command_center_run(
+        runs,
+        tenant_id=tenant_id,
+        portfolio_manager_id=portfolio_manager_id,
+        book_id=book_id,
+        as_of_date=as_of_date,
+    )
     active_exceptions, _ = repository.list_monitoring_exceptions(
         monitoring_run_id=latest_run.monitoring_run_id if latest_run else None,
         mandate_id=None,
