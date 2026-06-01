@@ -19,19 +19,20 @@ def prepare_wave_transition(
     wave_id: str,
     wave_repository: DpmWaveRepository,
     replay_states: set[str],
-    allowed_states: set[str],
+    allowed_states: set[str] | None,
     error_code: str,
     action_phrase: str,
 ) -> PreparedWaveTransition:
     wave = get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
     if wave_state_is_idempotent(wave, replay_states=replay_states):
         return PreparedWaveTransition(wave=wave, replayed=True)
-    require_wave_state(
-        wave,
-        allowed_states=allowed_states,
-        error_code=error_code,
-        action_phrase=action_phrase,
-    )
+    if allowed_states is not None:
+        require_wave_state(
+            wave,
+            allowed_states=allowed_states,
+            error_code=error_code,
+            action_phrase=action_phrase,
+        )
     return PreparedWaveTransition(wave=wave, replayed=False)
 
 

@@ -64,6 +64,21 @@ def test_prepare_wave_transition_requires_allowed_state_for_new_transition() -> 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
 
 
+def test_prepare_wave_transition_supports_explicitly_unguarded_transition() -> None:
+    wave = _wave(state="CREATED")
+
+    prepared = prepare_wave_transition(
+        wave_id=wave.wave_id,
+        wave_repository=_WaveRepository(wave),  # type: ignore[arg-type]
+        replay_states={"CANCELLED"},
+        allowed_states=None,
+        error_code="DPM_WAVE_CANCEL_INVALID_STATE",
+        action_phrase="be cancelled",
+    )
+
+    assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
+
+
 def test_prepare_wave_transition_preserves_state_validation_error() -> None:
     wave = _wave(state="CREATED")
 

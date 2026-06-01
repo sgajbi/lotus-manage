@@ -43,7 +43,7 @@ from src.api.services.wave_simulation_item import (
 from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_state_guard import (
     require_wave_state as _require_wave_state,
-    wave_state_is_idempotent as _wave_state_is_idempotent,
+    wave_state_is_idempotent,
 )
 from src.api.services.wave_stage_transition import build_staged_wave as _build_staged_wave
 from src.api.services.wave_supportability_payload import (
@@ -75,6 +75,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
+_wave_state_is_idempotent = wave_state_is_idempotent
 _validate_trigger = validate_trigger_or_raise
 _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
@@ -407,21 +408,28 @@ def cancel_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(wave, replay_states={"CANCELLED"}):
-        return wave, True
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        replay_states={"CANCELLED"},
+        allowed_states=None,
+        error_code="DPM_WAVE_CANCEL_INVALID_STATE",
+        action_phrase="be cancelled",
+    )
+    if prepared.replayed:
+        return prepared.wave, True
 
     cancelled = _build_cancelled_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=cancelled,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=cancelled,
     )
     return cancelled, False
 

@@ -10203,3 +10203,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   can be normalized without hiding route-level business decisions.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-419: Wave cancellation transition normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave cancellation/API
+  regressions, and this ledger.
+- Finding: wave cancellation still repeated load, replay, and optimistic update behavior outside
+  the shared transition execution helper because cancellation is intentionally available without a
+  required source state guard.
+- Action: extended the transition helper to model explicitly unguarded transitions with
+  `allowed_states=None`, routed cancellation through the same preparation and persistence helpers,
+  and added direct tests proving unguarded transitions still load the wave and report non-replay
+  state without applying a state guard.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave cancellation/API regressions passed with 143 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave selection flow for remaining lifecycle orchestration that can
+  share transition persistence without obscuring selection-specific source validation.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
