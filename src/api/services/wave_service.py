@@ -2,6 +2,7 @@ from src.api.request_models import RebalanceRequest
 from src.api.services.wave_aggregate_metrics import (
     simulation_result_state,
 )
+from src.api.services.wave_approval_transition import build_approved_wave as _build_approved_wave
 from src.api.services.wave_construction_selection import (
     select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
@@ -21,7 +22,6 @@ from src.api.services.wave_errors import (
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
 from src.api.services.wave_item_transitions import (
-    approve_item as _approve_item,
     cancel_item as _cancel_item,
     handoff_item as _handoff_item,
     stage_item as _stage_item,
@@ -56,7 +56,7 @@ from src.api.services.wave_supportability_payload import (
 )
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
 from src.api.services.wave_workflow_metadata import (
-    approval_event_metadata as _approval_event_metadata,
+    approval_event_metadata,
     cancel_event_metadata as _cancel_event_metadata,
     handoff_event_metadata as _handoff_event_metadata,
     selection_event_metadata as _selection_event_metadata,
@@ -73,7 +73,6 @@ from src.core.waves import (
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    WaveState,
     apply_wave_transition,
     build_wave_report_input,
 )
@@ -82,6 +81,7 @@ from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
 _validate_trigger = validate_trigger_or_raise
+_approval_event_metadata = approval_event_metadata
 
 
 def preview_wave(
@@ -333,35 +333,12 @@ def approve_wave(
         action_phrase="be approved",
     )
 
-    approved_items = [_approve_item(item, actor_id, reason_code, comment) for item in wave.items]
-    approved_count = sum(1 for item in approved_items if item.state == "APPROVED")
-    if approved_count == 0:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS",
-            f"Wave {wave_id} has no selected or proof-pack-ready items to approve.",
-        )
-
-    to_state: WaveState = (
-        "APPROVED" if approved_count == len(approved_items) else "APPROVED_WITH_EXCEPTIONS"
-    )
-    candidate = _wave_with_items_and_aggregate(wave=wave, items=approved_items)
-    approved = apply_wave_transition(
-        wave=candidate,
-        to_state=to_state,
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state=to_state,
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_APPROVED",
-            metadata=_approval_event_metadata(
-                approved_item_count=approved_count,
-                total_item_count=len(approved_items),
-                reason_code=reason_code,
-                comment=comment,
-            ),
-        ),
+    approved = _build_approved_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,

@@ -9588,3 +9588,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   duplicated orchestration support or directly testable boundary behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-394: Wave approval-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_approval_transition.py`,
+  `tests/unit/dpm/waves/test_wave_approval_transition.py`, selected wave workflow/API
+  regressions, and this ledger.
+- Finding: `approve_wave` still embedded item approval mapping, eligible-item validation,
+  aggregate refresh, target-state selection, and approval event assembly inside the public workflow
+  orchestration function.
+- Action: extracted approval transition assembly into a focused helper that returns the approved
+  wave or raises the existing bounded validation error, preserved the private workflow metadata
+  alias expected by existing tests, and added direct tests for full approval, approval with
+  exceptions, no eligible items, approval metadata, aggregate refresh, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_approval_transition.py`; direct approval-transition tests
+  and selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting stage, handoff, or cancel transition
+  assembly using the same directly tested pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
