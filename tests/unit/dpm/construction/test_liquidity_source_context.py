@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from src.api.services import construction_liquidity_source_context
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
@@ -15,6 +16,16 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
     liquidity_reserve_requirement_response,
     planned_withdrawal_schedule_response,
 )
+
+
+def test_liquidity_source_context_exports_only_liquidity_mappers() -> None:
+    assert construction_liquidity_source_context.__all__ == [
+        "client_income_needs_schedule_context",
+        "liquidity_cashflow_projection_context",
+        "liquidity_reserve_requirement_context",
+        "planned_withdrawal_schedule_context",
+        "source_liquidity_context",
+    ]
 
 
 def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:

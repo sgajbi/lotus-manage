@@ -8265,3 +8265,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-product mapper utilities.
 - Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-337: Liquidity source-context export surface cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`, and this ledger.
+- Finding: the liquidity source-context mapper still re-exported
+  `source_status_to_method_status`, even though status mapping now lives in the dedicated source
+  product status helper and no callers import it through the liquidity module.
+- Action: removed the stale liquidity-module export and added a direct module-surface regression so
+  the mapper publicly exposes only liquidity source-context functions.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; direct liquidity source-context
+  regressions passed with 11 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: keep source mapper `__all__` surfaces narrow as helper modules are consolidated.
+- Wiki decision: no wiki source change required; this is internal source-boundary module-surface
+  cleanup with no route, payload, supported-feature, or operator-contract change.
