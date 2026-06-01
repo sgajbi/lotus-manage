@@ -1,37 +1,16 @@
-from datetime import date
-
 from src.api.services.construction_execution_source_context import (
     external_order_execution_acknowledgement_context,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
-from src.core.dpm_source_context import (
-    DpmCoreExternalOrderExecutionAcknowledgementResponse,
-    DpmCoreExternalOrderExecutionAcknowledgementSupportability,
+from tests.unit.dpm.construction.source_product_context_fixtures import (
+    external_order_acknowledgement_response,
 )
 
 
-def _acknowledgement_response() -> DpmCoreExternalOrderExecutionAcknowledgementResponse:
-    return DpmCoreExternalOrderExecutionAcknowledgementResponse(
-        product_name="ExternalOrderExecutionAcknowledgement",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        supportability=DpmCoreExternalOrderExecutionAcknowledgementSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_OMS_SOURCE_NOT_INGESTED",
-            acknowledgement_count=0,
-            missing_data_families=["external_oms_acknowledgement"],
-            blocked_capabilities=["execution", "fill", "settlement"],
-        ),
-        lineage={"source_batch_fingerprint": "core-ack-fingerprint"},
-        acknowledgements=[],
-    )
-
-
 def test_external_order_acknowledgement_context_is_fail_closed_source_evidence() -> None:
-    context = external_order_execution_acknowledgement_context(_acknowledgement_response())
+    context = external_order_execution_acknowledgement_context(
+        external_order_acknowledgement_response()
+    )
 
     assert context is not None
     assert context.supportability_status == ConstructionMethodStatus.BLOCKED

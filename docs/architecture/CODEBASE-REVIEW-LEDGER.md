@@ -7486,3 +7486,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   changes and keep source-family contract tests in their focused modules.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-297: Shared execution and transaction source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  execution, transaction-cost, and source-product context tests, and this ledger.
+- Finding: after splitting source-family tests, the execution acknowledgement and transaction-cost
+  source response builders were duplicated between focused mapper tests and the facade composition
+  tests.
+- Action: extracted shared source-product fixture builders for external order acknowledgement and
+  transaction-cost curve responses, then updated the focused tests and composition tests to reuse
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related source modules; focused execution/transaction/source-product context regressions
+  passed with 5 tests.
+- Follow-up: continue moving remaining liquidity, client-profile, and treasury source response
+  builders into shared fixtures as those test modules are touched.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
