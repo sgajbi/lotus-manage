@@ -7877,3 +7877,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   client-restriction boundary is stable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-319: Sustainability supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_esg_supportability.py`,
+  `src/api/services/construction_sustainability_supportability.py`, ESG supportability tests, and
+  this ledger.
+- Finding: after the client-restriction split, sustainability preference allocation, classification,
+  status, and reason-code handling still lived inside the ESG facade.
+- Action: extracted sustainability preference supportability helpers into a focused module while
+  keeping the existing ESG facade import surface stable for callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the ESG, client-restriction, and sustainability supportability source modules; focused
+  ESG supportability regressions passed with 3 tests.
+- Follow-up: add direct tests around sustainability helper edge cases now that the boundary is
+  separately reusable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

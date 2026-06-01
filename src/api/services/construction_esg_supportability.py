@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_client_restriction_supportability import (
     client_restriction_reason_codes,
@@ -7,9 +5,13 @@ from src.api.services.construction_client_restriction_supportability import (
     restriction_matches_intent,
     violated_client_restrictions,
 )
+from src.api.services.construction_sustainability_supportability import (
+    sustainability_allocation_breaches,
+    sustainability_classification_review_required,
+    sustainability_preference_reason_codes,
+    sustainability_preference_status,
+)
 from src.core.construction.models import (
-    AuthoritativeSustainabilityPreference,
-    AuthoritativeSustainabilityPreferenceContext,
     ConstructionAlternative,
     ConstructionAuthorityContext,
     ConstructionConstraintTrace,
@@ -113,80 +115,6 @@ def esg_restriction_reason_codes(
                 context=authority_context.sustainability_preference_context,
             )
         )
-    )
-
-
-def sustainability_preference_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    if sustainability_allocation_breaches(result=result, context=context):
-        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    if sustainability_classification_review_required(context=context):
-        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    return status
-
-
-def sustainability_preference_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> list[str]:
-    if context is None:
-        return ["SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"SUSTAINABILITY_PREFERENCE_PROFILE_{context.supportability_status}")
-    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
-    breaches = sustainability_allocation_breaches(result=result, context=context)
-    reason_codes.extend(
-        f"SUSTAINABILITY_ALLOCATION_REVIEW_{preference.preference_code}" for preference in breaches
-    )
-    if sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED")
-    if not breaches and not sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED")
-    return sorted(set(reason_codes))
-
-
-def sustainability_allocation_breaches(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> list[AuthoritativeSustainabilityPreference]:
-    weight_by_asset_class = {
-        allocation.key.lower(): allocation.weight
-        for allocation in result.after_simulated.allocation_by_asset_class
-    }
-    breaches: list[AuthoritativeSustainabilityPreference] = []
-    for preference in context.preferences:
-        if preference.preference_status.lower() != "active":
-            continue
-        if not preference.applies_to_asset_classes:
-            continue
-        weight = sum(
-            weight_by_asset_class.get(asset_class.lower(), Decimal("0"))
-            for asset_class in preference.applies_to_asset_classes
-        )
-        if preference.minimum_allocation is not None and weight < preference.minimum_allocation:
-            breaches.append(preference)
-        if preference.maximum_allocation is not None and weight > preference.maximum_allocation:
-            breaches.append(preference)
-    return breaches
-
-
-def sustainability_classification_review_required(
-    *,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> bool:
-    return any(
-        preference.preference_status.lower() == "active"
-        and (preference.exclusion_codes or preference.positive_tilt_codes)
-        for preference in context.preferences
     )
 
 
