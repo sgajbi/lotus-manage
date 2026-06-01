@@ -1,11 +1,5 @@
-from typing import TypeAlias
-
 from src.api.services.construction_source_product_status import source_status_to_method_status
-from src.api.services.construction_source_identity import (
-    response_source_id,
-    source_hash,
-    source_payload,
-)
+from src.api.services.construction_source_identity import source_product_identity
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
@@ -17,25 +11,20 @@ from src.core.dpm_source_context import (
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
 
-_ClientProfileSourceResponse: TypeAlias = (
-    DpmCoreClientRestrictionProfileResponse | DpmCoreSustainabilityPreferenceProfileResponse
-)
-
 
 def client_restriction_profile_context(
     restriction_profile: DpmCoreClientRestrictionProfileResponse,
 ) -> AuthoritativeClientRestrictionContext:
-    payload = source_payload(restriction_profile)
-    source_hash_value = source_hash(payload)
+    identity = source_product_identity(restriction_profile)
     return AuthoritativeClientRestrictionContext(
         supportability_status=source_status_to_method_status(
             restriction_profile.supportability.state
         ),
-        source_system="lotus-core",
-        source_product_name=restriction_profile.product_name,
-        source_product_version=restriction_profile.product_version,
-        source_id=response_source_id(restriction_profile, source_hash_value),
-        content_hash=source_hash_value,
+        source_system=identity.source_system,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         portfolio_id=restriction_profile.portfolio_id,
         client_id=restriction_profile.client_id,
         mandate_id=restriction_profile.mandate_id,
@@ -53,17 +42,16 @@ def client_restriction_profile_context(
 def sustainability_preference_profile_context(
     sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
 ) -> AuthoritativeSustainabilityPreferenceContext:
-    payload = source_payload(sustainability_profile)
-    source_hash_value = source_hash(payload)
+    identity = source_product_identity(sustainability_profile)
     return AuthoritativeSustainabilityPreferenceContext(
         supportability_status=source_status_to_method_status(
             sustainability_profile.supportability.state
         ),
-        source_system="lotus-core",
-        source_product_name=sustainability_profile.product_name,
-        source_product_version=sustainability_profile.product_version,
-        source_id=response_source_id(sustainability_profile, source_hash_value),
-        content_hash=source_hash_value,
+        source_system=identity.source_system,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         portfolio_id=sustainability_profile.portfolio_id,
         client_id=sustainability_profile.client_id,
         mandate_id=sustainability_profile.mandate_id,

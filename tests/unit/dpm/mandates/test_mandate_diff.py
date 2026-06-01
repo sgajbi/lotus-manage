@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from src.api.services import mandate_diff, mandate_service
+from src.api.services import mandate_diff
 from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.api.services.mandate_diff import (
     DpmMandateDiff,
@@ -164,12 +164,10 @@ def test_build_mandate_diff_for_versions_rejects_unknown_requested_version() -> 
 
 
 def test_service_preserves_existing_diff_import_surface() -> None:
+    from src.api.services import mandate_service
+
     assert mandate_service.DpmMandateDiff is DpmMandateDiff
     assert mandate_service.DpmMandateFieldChange is DpmMandateFieldChange
-    assert mandate_service._build_mandate_diff_for_versions is build_mandate_diff_for_versions
-    assert mandate_service._diff_payloads is diff_payloads
-    assert mandate_service._iter_changed_fields is iter_changed_fields
-    assert mandate_service._materiality_for_field is materiality_for_field
 
 
 def test_mandate_diff_exports_public_helper_surface() -> None:

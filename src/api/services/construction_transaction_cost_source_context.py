@@ -1,9 +1,5 @@
 from src.api.services.construction_source_product_status import source_status_to_method_status
-from src.api.services.construction_source_identity import (
-    response_source_id,
-    source_hash,
-    source_payload,
-)
+from src.api.services.construction_source_identity import source_product_identity
 from src.core.construction.models import (
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
@@ -36,16 +32,17 @@ def _transaction_cost_point(
 def transaction_cost_context_from_curve(
     curve: DpmCoreTransactionCostCurveResponse,
 ) -> AuthoritativeTransactionCostContext:
-    curve_payload = source_payload(curve)
-    source_hash_value = source_hash(curve_payload)
-    source_id = response_source_id(curve, curve.page.request_scope_fingerprint)
+    identity = source_product_identity(
+        curve,
+        fallback_source_id=curve.page.request_scope_fingerprint,
+    )
     return AuthoritativeTransactionCostContext(
         supportability_status=source_status_to_method_status(curve.supportability.state),
-        source_system="lotus-core",
-        source_product_name=curve.product_name,
-        source_product_version=curve.product_version,
-        source_id=source_id,
-        content_hash=source_hash_value,
+        source_system=identity.source_system,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         as_of_date=curve.as_of_date,
         window_start_date=curve.window.start_date,
         window_end_date=curve.window.end_date,

@@ -25,6 +25,7 @@ import src.api.services.rebalance_sync_execution as sync_execution
 import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
+import src.api.main as api_main
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -108,6 +109,11 @@ def test_rebalance_runtime_overrides_fall_back_for_missing_main_exports() -> Non
     assert runtime_overrides.resolve_main_override("__missing_lotus_manage_override__") is None
 
 
+def test_main_does_not_export_unused_async_runner_override() -> None:
+    assert not hasattr(api_main, "_run_analyze_async_operation")
+    assert "_run_analyze_async_operation" not in api_main.__all__
+
+
 def test_rebalance_run_support_provider_raises_application_error(monkeypatch) -> None:
     run_support_service.reset_dpm_run_support_service_for_tests()
 
@@ -149,7 +155,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreResolverUnavailableError("down")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _UnavailableResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _UnavailableResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreResolverUnavailableError) as unavailable:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert rebalance_envelope_http_exception(unavailable.value).status_code == 503
@@ -158,7 +166,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreResolverError("bad")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _IncompleteResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _IncompleteResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
@@ -168,7 +178,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreContextIncompleteError("MARKET_DATA_STALE")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as derived_incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
@@ -178,7 +190,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             DpmStatefulInput.model_validate({})
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _InvalidResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _InvalidResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as invalid:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert rebalance_envelope_http_exception(invalid.value).status_code == 424
@@ -355,20 +369,20 @@ def test_async_manual_execution_disabled_is_reported(monkeypatch) -> None:
     assert exc_info.value.detail == "DPM_ASYNC_MANUAL_EXECUTION_DISABLED"
 
 
-def test_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
+def test_core_resolver_service_env_helpers_reject_invalid_values(monkeypatch) -> None:
     monkeypatch.setenv("DPM_TEST_INT", "not-int")
     monkeypatch.setenv("DPM_TEST_FLOAT", "0")
     monkeypatch.setenv("DPM_TEST_BAD_FLOAT", "not-float")
     monkeypatch.delenv("DPM_TEST_MISSING", raising=False)
     monkeypatch.delenv("DPM_CORE_BASE_URL", raising=False)
 
-    assert service.env_int("DPM_TEST_INT", 3) == 3
-    assert service.env_int("DPM_TEST_FLOAT", 3) == 3
-    assert service.env_float("DPM_TEST_FLOAT", 2.5) == 2.5
-    assert service.env_float("DPM_TEST_BAD_FLOAT", 2.5) == 2.5
-    assert service.env_float("DPM_TEST_MISSING", 2.5) == 2.5
+    assert core_resolver_service.env_int("DPM_TEST_INT", 3) == 3
+    assert core_resolver_service.env_int("DPM_TEST_FLOAT", 3) == 3
+    assert core_resolver_service.env_float("DPM_TEST_FLOAT", 2.5) == 2.5
+    assert core_resolver_service.env_float("DPM_TEST_BAD_FLOAT", 2.5) == 2.5
+    assert core_resolver_service.env_float("DPM_TEST_MISSING", 2.5) == 2.5
     with pytest.raises(DpmCoreResolverUnavailableError, match="DPM_CORE_RESOLVER_UNAVAILABLE"):
-        service.build_core_resolver_client()
+        core_resolver_service.build_core_resolver_client()
 
 
 def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> None:
@@ -385,6 +399,16 @@ def test_core_resolver_service_builds_config_from_environment(monkeypatch) -> No
     assert resolver._config.transaction_cost_lookback_days == 30
     assert resolver._config.timeout_seconds == 3.5
     assert resolver._config.max_attempts == 4
+
+
+def test_core_resolver_service_exports_resolver_configuration_surface() -> None:
+    assert core_resolver_service.__all__ == [
+        "build_core_resolver_client",
+        "env_float",
+        "env_flag",
+        "env_int",
+        "stateful_core_sourcing_enabled",
+    ]
 
 
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:
@@ -456,6 +480,31 @@ def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:
 
     monkeypatch.setenv("DPM_ASYNC_EXECUTION_MODE", "external")
     assert async_config.resolve_async_execution_mode() == "INLINE"
+
+
+def test_rebalance_async_config_exports_async_configuration_surface() -> None:
+    assert async_config.__all__ == [
+        "async_manual_execution_enabled",
+        "async_operations_enabled",
+        "env_flag",
+        "resolve_async_execution_mode",
+    ]
+
+
+def test_rebalance_simulation_service_does_not_export_async_configuration_helpers() -> None:
+    assert "async_manual_execution_enabled" not in service.__all__
+    assert "async_operations_enabled" not in service.__all__
+    assert "resolve_async_execution_mode" not in service.__all__
+
+
+def test_rebalance_simulation_service_does_not_export_core_resolver_helpers() -> None:
+    assert not hasattr(service, "build_core_resolver_client")
+    assert not hasattr(service, "stateful_core_sourcing_enabled")
+
+
+def test_rebalance_simulation_service_does_not_export_core_engine_runner() -> None:
+    assert not hasattr(service, "run_simulation")
+    assert "run_simulation" not in service.__all__
 
 
 def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:

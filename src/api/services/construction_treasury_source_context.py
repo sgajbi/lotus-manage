@@ -4,8 +4,8 @@ from typing import TypeAlias
 from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_identity import (
     JsonPayload,
-    response_source_id,
-    source_hash,
+    SourceProductIdentity,
+    source_product_identity,
     source_payload,
 )
 from src.core.common.canonical import hash_canonical_payload
@@ -31,17 +31,13 @@ def _optional_source_payload(response: _TreasurySourceResponse | None) -> JsonPa
     return source_payload(response) if response is not None else None
 
 
-def _optional_source_hash(payload: JsonPayload | None) -> str | None:
-    return source_hash(payload) if payload is not None else None
-
-
-def _optional_response_source_id(
+def _optional_source_identity(
     response: _TreasurySourceResponse | None,
-    fallback_hash: str | None,
-) -> str | None:
-    if response is None or fallback_hash is None:
+    fallback_source_id: str | None = None,
+) -> SourceProductIdentity | None:
+    if response is None:
         return None
-    return response_source_id(response, fallback_hash)
+    return source_product_identity(response, fallback_source_id=fallback_source_id)
 
 
 def _missing_data_families(response: _TreasurySourceResponse | None) -> list[str]:
@@ -144,12 +140,11 @@ def external_treasury_currency_overlay_context(
         supportability_reason = fx_forward_curve.supportability.reason
         exposure_currencies = fx_forward_curve.exposure_currencies
 
-    exposure_source_hash = _optional_source_hash(exposure_payload)
-    hedge_policy_source_hash = _optional_source_hash(hedge_policy_payload)
-    eligible_hedge_instruments_source_hash = _optional_source_hash(
-        eligible_hedge_instruments_payload
-    )
-    fx_forward_curve_source_hash = _optional_source_hash(fx_forward_curve_payload)
+    readiness_identity = _optional_source_identity(hedge_readiness, source_hash)
+    exposure_identity = _optional_source_identity(currency_exposure)
+    hedge_policy_identity = _optional_source_identity(hedge_policy)
+    eligible_hedge_instruments_identity = _optional_source_identity(eligible_hedge_instruments)
+    fx_forward_curve_identity = _optional_source_identity(fx_forward_curve)
     reason_codes = _fail_closed_reason_codes(
         primary_reason=supportability_reason,
         hedge_readiness=hedge_readiness,
@@ -166,11 +161,13 @@ def external_treasury_currency_overlay_context(
         hedge_ratio_min=Decimal("0.00"),
         hedge_ratio_max=Decimal("0.00"),
         eligible_currencies=exposure_currencies,
-        source_product_name=hedge_readiness.product_name if hedge_readiness is not None else None,
-        source_product_version=(
-            hedge_readiness.product_version if hedge_readiness is not None else None
+        source_product_name=(
+            readiness_identity.source_product_name if readiness_identity is not None else None
         ),
-        source_id=_optional_response_source_id(hedge_readiness, source_hash) or source_hash,
+        source_product_version=(
+            readiness_identity.source_product_version if readiness_identity is not None else None
+        ),
+        source_id=readiness_identity.source_id if readiness_identity is not None else source_hash,
         content_hash=source_hash,
         missing_data_families=_merged_missing_data_families(
             hedge_readiness,
@@ -188,16 +185,17 @@ def external_treasury_currency_overlay_context(
         ),
         readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
         external_currency_exposure_source_product_name=(
-            currency_exposure.product_name if currency_exposure is not None else None
+            exposure_identity.source_product_name if exposure_identity is not None else None
         ),
         external_currency_exposure_source_product_version=(
-            currency_exposure.product_version if currency_exposure is not None else None
+            exposure_identity.source_product_version if exposure_identity is not None else None
         ),
-        external_currency_exposure_source_id=_optional_response_source_id(
-            currency_exposure,
-            exposure_source_hash,
+        external_currency_exposure_source_id=(
+            exposure_identity.source_id if exposure_identity is not None else None
         ),
-        external_currency_exposure_content_hash=exposure_source_hash,
+        external_currency_exposure_content_hash=(
+            exposure_identity.content_hash if exposure_identity is not None else None
+        ),
         external_currency_exposure_count=(
             currency_exposure.supportability.exposure_count if currency_exposure is not None else 0
         ),
@@ -205,35 +203,43 @@ def external_treasury_currency_overlay_context(
             currency_exposure.exposures if currency_exposure is not None else []
         ),
         external_hedge_policy_source_product_name=(
-            hedge_policy.product_name if hedge_policy is not None else None
+            hedge_policy_identity.source_product_name if hedge_policy_identity is not None else None
         ),
         external_hedge_policy_source_product_version=(
-            hedge_policy.product_version if hedge_policy is not None else None
+            hedge_policy_identity.source_product_version
+            if hedge_policy_identity is not None
+            else None
         ),
-        external_hedge_policy_source_id=_optional_response_source_id(
-            hedge_policy,
-            hedge_policy_source_hash,
+        external_hedge_policy_source_id=(
+            hedge_policy_identity.source_id if hedge_policy_identity is not None else None
         ),
-        external_hedge_policy_content_hash=hedge_policy_source_hash,
+        external_hedge_policy_content_hash=(
+            hedge_policy_identity.content_hash if hedge_policy_identity is not None else None
+        ),
         external_hedge_policy_rule_count=(
             hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
         ),
         external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
         external_eligible_hedge_instrument_source_product_name=(
-            eligible_hedge_instruments.product_name
-            if eligible_hedge_instruments is not None
+            eligible_hedge_instruments_identity.source_product_name
+            if eligible_hedge_instruments_identity is not None
             else None
         ),
         external_eligible_hedge_instrument_source_product_version=(
-            eligible_hedge_instruments.product_version
-            if eligible_hedge_instruments is not None
+            eligible_hedge_instruments_identity.source_product_version
+            if eligible_hedge_instruments_identity is not None
             else None
         ),
-        external_eligible_hedge_instrument_source_id=_optional_response_source_id(
-            eligible_hedge_instruments,
-            eligible_hedge_instruments_source_hash,
+        external_eligible_hedge_instrument_source_id=(
+            eligible_hedge_instruments_identity.source_id
+            if eligible_hedge_instruments_identity is not None
+            else None
         ),
-        external_eligible_hedge_instrument_content_hash=(eligible_hedge_instruments_source_hash),
+        external_eligible_hedge_instrument_content_hash=(
+            eligible_hedge_instruments_identity.content_hash
+            if eligible_hedge_instruments_identity is not None
+            else None
+        ),
         external_eligible_hedge_instrument_count=(
             eligible_hedge_instruments.supportability.instrument_count
             if eligible_hedge_instruments is not None
@@ -245,16 +251,23 @@ def external_treasury_currency_overlay_context(
             else []
         ),
         external_fx_forward_curve_source_product_name=(
-            fx_forward_curve.product_name if fx_forward_curve is not None else None
+            fx_forward_curve_identity.source_product_name
+            if fx_forward_curve_identity is not None
+            else None
         ),
         external_fx_forward_curve_source_product_version=(
-            fx_forward_curve.product_version if fx_forward_curve is not None else None
+            fx_forward_curve_identity.source_product_version
+            if fx_forward_curve_identity is not None
+            else None
         ),
-        external_fx_forward_curve_source_id=_optional_response_source_id(
-            fx_forward_curve,
-            fx_forward_curve_source_hash,
+        external_fx_forward_curve_source_id=(
+            fx_forward_curve_identity.source_id if fx_forward_curve_identity is not None else None
         ),
-        external_fx_forward_curve_content_hash=fx_forward_curve_source_hash,
+        external_fx_forward_curve_content_hash=(
+            fx_forward_curve_identity.content_hash
+            if fx_forward_curve_identity is not None
+            else None
+        ),
         external_fx_forward_curve_point_count=(
             fx_forward_curve.supportability.curve_point_count if fx_forward_curve is not None else 0
         ),

@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 from pytest import MonkeyPatch
 
-from src.api.services import proof_pack_report_inputs, proof_pack_service
+from src.api.services import proof_pack_report_inputs
 from src.api.services.proof_pack_report_inputs import (
     build_proof_pack_ai_evidence_input,
     build_proof_pack_report_input,
@@ -134,9 +134,3 @@ def test_proof_pack_report_inputs_exports_report_input_surface() -> None:
         "build_proof_pack_report_input",
         "portfolio_memory_context_for_report",
     ]
-
-
-def test_service_preserves_portfolio_memory_context_alias() -> None:
-    assert proof_pack_service._portfolio_memory_context_for_report is (
-        portfolio_memory_context_for_report
-    )

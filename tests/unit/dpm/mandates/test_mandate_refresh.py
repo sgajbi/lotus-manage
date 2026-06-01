@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import pytest
 from pytest import MonkeyPatch
 
-from src.api.services import mandate_refresh, mandate_service
+from src.api.services import mandate_refresh
 from src.api.services.mandate_errors import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
@@ -253,8 +253,6 @@ def test_mandate_refresh_exports_refresh_result_builder() -> None:
 
 
 def test_service_preserves_mandate_refresh_import_surface() -> None:
+    from src.api.services import mandate_service
+
     assert mandate_service.DpmMandateRefreshResult is DpmMandateRefreshResult
-    assert (
-        mandate_service._build_mandate_refresh_result_from_core
-        is build_mandate_refresh_result_from_core
-    )

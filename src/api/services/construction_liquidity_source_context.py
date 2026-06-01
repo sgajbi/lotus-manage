@@ -1,9 +1,9 @@
 from decimal import Decimal
-from typing import TypeAlias
 
 from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_identity import (
     response_source_id,
+    source_product_identity,
     source_hash,
     source_payload,
 )
@@ -23,12 +23,12 @@ from src.core.dpm_source_context import (
 )
 from src.core.models import Money
 
-_LiquiditySourceResponse: TypeAlias = (
-    DpmCoreClientIncomeNeedsScheduleResponse
-    | DpmCoreLiquidityReserveRequirementResponse
-    | DpmCorePlannedWithdrawalScheduleResponse
-    | DpmCorePortfolioCashflowProjectionResponse
-)
+_MANAGE_LIQUIDITY_SOURCE_SYSTEM = "lotus-manage-settlement-engine"
+_MANAGE_LIQUIDITY_POLICY_ID = "manage-liquidity-policy.v1"
+_MANAGE_MINIMUM_CASH_WEIGHT = Decimal("0.02")
+_MANAGE_ALLOWED_LIQUIDITY_TIERS = ["L1", "L2", "L3"]
+_MANAGE_LIQUIDITY_POLICY_REASON = "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"
+_CORE_LIQUIDITY_SOURCE_REASON = "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT"
 
 
 def _liquidity_reason_codes(
@@ -38,8 +38,8 @@ def _liquidity_reason_codes(
     has_planned_withdrawals: bool,
 ) -> list[str]:
     reason_codes = [
-        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
-        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+        _MANAGE_LIQUIDITY_POLICY_REASON,
+        _CORE_LIQUIDITY_SOURCE_REASON,
     ]
     if has_income_needs:
         reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
@@ -53,14 +53,13 @@ def _liquidity_reason_codes(
 def client_income_needs_schedule_context(
     income_needs: DpmCoreClientIncomeNeedsScheduleResponse,
 ) -> AuthoritativeClientIncomeNeedsSchedule:
-    payload = source_payload(income_needs)
-    source_hash_value = source_hash(payload)
+    identity = source_product_identity(income_needs)
     return AuthoritativeClientIncomeNeedsSchedule(
-        source_product_name=income_needs.product_name,
-        source_product_version=income_needs.product_version,
-        source_system="lotus-core",
-        source_id=response_source_id(income_needs, source_hash_value),
-        content_hash=source_hash_value,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_system=identity.source_system,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         schedule_count=income_needs.supportability.schedule_count,
         currencies=sorted({entry.currency for entry in income_needs.schedules}),
         highest_priority=(
@@ -104,14 +103,13 @@ def liquidity_cashflow_projection_context(
 def liquidity_reserve_requirement_context(
     reserve_requirement: DpmCoreLiquidityReserveRequirementResponse,
 ) -> AuthoritativeLiquidityReserveRequirement:
-    payload = source_payload(reserve_requirement)
-    source_hash_value = source_hash(payload)
+    identity = source_product_identity(reserve_requirement)
     return AuthoritativeLiquidityReserveRequirement(
-        source_product_name=reserve_requirement.product_name,
-        source_product_version=reserve_requirement.product_version,
-        source_system="lotus-core",
-        source_id=response_source_id(reserve_requirement, source_hash_value),
-        content_hash=source_hash_value,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_system=identity.source_system,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         requirement_count=reserve_requirement.supportability.requirement_count,
         currencies=sorted({entry.currency for entry in reserve_requirement.requirements}),
         maximum_horizon_days=(
@@ -132,14 +130,13 @@ def liquidity_reserve_requirement_context(
 def planned_withdrawal_schedule_context(
     planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse,
 ) -> AuthoritativePlannedWithdrawalSchedule:
-    payload = source_payload(planned_withdrawals)
-    source_hash_value = source_hash(payload)
+    identity = source_product_identity(planned_withdrawals)
     return AuthoritativePlannedWithdrawalSchedule(
-        source_product_name=planned_withdrawals.product_name,
-        source_product_version=planned_withdrawals.product_version,
-        source_system="lotus-core",
-        source_id=response_source_id(planned_withdrawals, source_hash_value),
-        content_hash=source_hash_value,
+        source_product_name=identity.source_product_name,
+        source_product_version=identity.source_product_version,
+        source_system=identity.source_system,
+        source_id=identity.source_id,
+        content_hash=identity.content_hash,
         withdrawal_count=planned_withdrawals.supportability.withdrawal_count,
         currencies=sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
         horizon_days=planned_withdrawals.horizon_days,
@@ -189,10 +186,10 @@ def source_liquidity_context(
 
     return AuthoritativeLiquidityContext(
         supportability_status=ConstructionMethodStatus.READY,
-        source_system="lotus-manage-settlement-engine",
-        policy_id="manage-liquidity-policy.v1",
-        minimum_cash_weight=Decimal("0.02"),
-        allowed_liquidity_tiers=["L1", "L2", "L3"],
+        source_system=_MANAGE_LIQUIDITY_SOURCE_SYSTEM,
+        policy_id=_MANAGE_LIQUIDITY_POLICY_ID,
+        minimum_cash_weight=_MANAGE_MINIMUM_CASH_WEIGHT,
+        allowed_liquidity_tiers=_MANAGE_ALLOWED_LIQUIDITY_TIERS,
         cashflow_projection=cashflow_context,
         client_income_needs_schedule=income_context,
         liquidity_reserve_requirement=reserve_context,

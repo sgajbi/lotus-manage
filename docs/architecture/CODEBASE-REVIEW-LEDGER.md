@@ -10178,3 +10178,1203 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and summary-input boundaries that can be clarified without hiding repository ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-418: Wave transition execution extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave regressions, and this
+  ledger.
+- Finding: wave source-check, simulation, approval, staging, and handoff orchestration repeated
+  the same lookup, idempotent replay, state guard, and optimistic update flow, increasing the
+  chance of inconsistent transition enforcement across DPM wave lifecycle endpoints.
+- Action: extracted common wave transition preparation and persistence into a focused helper,
+  preserved transition-specific builder logic in the service, and added direct tests for replay
+  handling, required-state validation, expected-version update behavior, export surface, and
+  service compatibility aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave lifecycle/API regressions passed with 154 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave cancellation and selection flows for transition semantics that
+  can be normalized without hiding route-level business decisions.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-419: Wave cancellation transition normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave cancellation/API
+  regressions, and this ledger.
+- Finding: wave cancellation still repeated load, replay, and optimistic update behavior outside
+  the shared transition execution helper because cancellation is intentionally available without a
+  required source state guard.
+- Action: extended the transition helper to model explicitly unguarded transitions with
+  `allowed_states=None`, routed cancellation through the same preparation and persistence helpers,
+  and added direct tests proving unguarded transitions still load the wave and report non-replay
+  state without applying a state guard.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave cancellation/API regressions passed with 143 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave selection flow for remaining lifecycle orchestration that can
+  share transition persistence without obscuring selection-specific source validation.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-420: Wave selection transition execution normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave selection/API
+  regressions, and this ledger.
+- Finding: wave alternative selection still performed lookup, state guard, and optimistic update
+  directly in the orchestration service after the common transition helper existed, while the
+  selection flow has no idempotent replay state and should model that explicitly.
+- Action: routed selection through the transition helper with `replay_states=set()`, kept
+  selection-specific source validation and proof-pack builder logic in the service, and added direct
+  helper tests proving empty replay-state transitions still enforce the allowed source state.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave selection/API regressions passed with 149 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave selection source-validation and proof-pack generation
+  boundaries for smaller directly tested helper seams.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-421: Wave read-model query extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_read_model_queries.py`,
+  `tests/unit/dpm/waves/test_wave_read_model_queries.py`, selected wave read/API regressions, and
+  this ledger.
+- Finding: wave supportability, detail, item listing, proof-pack posture, and report-input read
+  functions repeated wave lookup and projection wiring in `wave_service.py`, keeping read-model
+  assembly mechanics mixed into the lifecycle command facade.
+- Action: extracted wave-id read-model query helpers that load the governed wave once and delegate
+  to the existing projection/report builders, kept the service API as a thin facade, and added
+  direct tests for read-model loading, report-input assembly, export surface, and service
+  delegation aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_read_model_queries.py`; direct wave read-model query tests
+  and selected wave read/API regressions passed with 149 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave creation/idempotency orchestration for small support helpers
+  that preserve repository ownership while reducing command-service branching.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-422: Wave create command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_create_command.py`,
+  `tests/unit/dpm/waves/test_wave_create_command.py`, selected wave create/API regressions, and
+  this ledger.
+- Finding: wave creation orchestration still embedded idempotent replay lookup, request-hash
+  construction, preview promotion, and durable save wiring in `wave_service.py`, keeping command
+  persistence mechanics mixed into the public service facade.
+- Action: extracted the idempotent create command into a focused helper that owns replay lookup,
+  preview construction, created-wave promotion, and durable persistence, kept the service API as a
+  stable facade, and added direct tests for replay, persistence request hash, export surface, and
+  service delegation alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_create_command.py`; direct wave create-command tests and
+  selected wave create/API regressions passed with 150 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave command orchestration for lifecycle-specific source and
+  supportability boundaries that can be isolated without hiding domain decisions.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-423: Construction source-product identity extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, selected construction source-context
+  regressions, and this ledger.
+- Finding: construction source-product mappers repeated the same product name, product version,
+  source system, source id, and content-hash assembly across liquidity reserve, planned
+  withdrawal, income-needs, restriction, and sustainability contexts, increasing lineage drift risk.
+- Action: introduced a reusable `SourceProductIdentity` bundle in the construction source identity
+  helper, routed liquidity and client-profile source-product mappers through it, removed unused
+  mapper-local source response aliases, and added direct tests proving product identity and lineage
+  hashing are assembled consistently.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`, `construction_liquidity_source_context.py`, and
+  `construction_client_profile_source_context.py`; direct construction source identity tests and
+  selected construction source-context/API regressions passed with 49 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue applying the source-product identity helper to treasury, transaction-cost,
+  and execution acknowledgement mappers where it reduces duplication without weakening contract
+  clarity.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-424: Construction execution source identity normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_execution_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, selected construction transaction-cost and
+  execution source-context regressions, and this ledger.
+- Finding: transaction-cost and external execution acknowledgement mappers still assembled
+  source-product identity fields locally after the shared identity helper existed; transaction-cost
+  also needed its governed page fingerprint fallback preserved explicitly.
+- Action: extended `source_product_identity` with an explicit fallback source-id parameter, routed
+  transaction-cost and execution acknowledgement mappers through the shared helper, and added direct
+  tests proving explicit fallback lineage remains available when source lineage is absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`,
+  `construction_transaction_cost_source_context.py`, and
+  `construction_execution_source_context.py`; direct construction source identity tests and
+  selected transaction-cost/execution source-context/API regressions passed with 41 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review treasury currency-overlay source identity helpers separately because its
+  multi-source aggregate hash and optional child-source fields require a narrower treatment than
+  single-source mappers.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-425: Treasury currency-overlay source identity normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, selected treasury
+  source-context/API regressions, and this ledger.
+- Finding: the treasury currency-overlay mapper retained bespoke optional source-id and content-hash
+  assembly for hedge readiness, currency exposure, hedge policy, eligible instruments, and FX
+  forward curves after the shared source-product identity helper existed.
+- Action: introduced a treasury-local optional identity adapter backed by `source_product_identity`,
+  preserved the aggregate currency-overlay content hash and hedge-readiness aggregate fallback, and
+  routed all optional child source-product identity fields through the shared identity bundle.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; direct treasury source-context tests and
+  selected construction source-context/API regressions passed with 35 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing construction service orchestration now that source-product lineage
+  identity has a consistent helper across single-source and treasury multi-source mappers.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-426: Wave lifecycle command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_lifecycle_commands.py`,
+  `tests/unit/dpm/waves/test_wave_lifecycle_commands.py`, selected wave lifecycle/API regressions,
+  and this ledger.
+- Finding: wave approval, staging, handoff, and cancellation repeated transition preparation,
+  idempotent replay handling, transition builder invocation, and optimistic persistence directly in
+  `wave_service.py`, even after shared transition execution helpers existed.
+- Action: extracted persisted wave lifecycle command helpers for approval, staging, handoff, and
+  cancellation, kept the public service API as a facade, preserved service compatibility aliases,
+  and added direct tests for command persistence, expected-version handling, replay, export surface,
+  and service delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_lifecycle_commands.py`; direct wave lifecycle command
+  tests and selected wave lifecycle/API regressions passed with 162 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing source-check, simulation, and selection command boundaries for
+  similarly narrow command extraction opportunities without obscuring domain-specific dependencies.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-427: Wave preparation command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_preparation_commands.py`,
+  `tests/unit/dpm/waves/test_wave_preparation_commands.py`, selected wave preparation/API
+  regressions, and this ledger.
+- Finding: wave source-check and simulation orchestration still repeated transition preparation,
+  idempotent replay handling, domain builder invocation, and optimistic persistence directly in
+  `wave_service.py`, leaving the facade responsible for command execution mechanics.
+- Action: extracted persisted source-check and simulation command helpers, kept source-readiness and
+  construction simulation builders unchanged, preserved service entry points as facades, and added
+  direct tests for persistence, replay, expected-version handling, export surface, and service
+  delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_preparation_commands.py`; direct wave preparation command
+  tests and selected wave source-check/simulation/API regressions passed with 150 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave alternative selection as the remaining command path with
+  selection-specific repository side effects and proof-pack generation dependencies.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-428: Wave selection command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_selection_command.py`,
+  `tests/unit/dpm/waves/test_wave_selection_command.py`, selected wave selection/API regressions,
+  and this ledger.
+- Finding: wave alternative selection remained the last command body in `wave_service.py`, mixing
+  transition preparation, selectable-item validation, construction alternative selection, proof-pack
+  transition building, and optimistic persistence in the service facade.
+- Action: extracted a persisted wave selection command helper, kept selection-specific side effects
+  and proof-pack generation wiring together, preserved service compatibility aliases, and added
+  direct tests for selection side-effect wiring, expected-version persistence, export surface, and
+  service delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_selection_command.py`; direct wave selection command tests
+  and selected wave selection/API regressions passed with 148 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: review `wave_service.py` compatibility aliases and remaining facade imports for stale
+  test-only surface that can be retired safely in a later cleanup slice.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-429: Wave service stale alias removal
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, selected wave helper/facade regressions, and this
+  ledger.
+- Finding: after wave create, preparation, lifecycle, and selection command extraction,
+  `wave_service.py` still imported and re-exported several private compatibility aliases that were
+  no longer used by service code or direct helper tests.
+- Action: removed stale private aliases and their imports for simulation result state, create helper
+  internals, lifecycle transition builders, and event construction, moved remaining API tests to the
+  owning helper modules, and preserved explicitly covered compatibility aliases that still document
+  helper ownership boundaries.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for `wave_service.py` and the touched wave API
+  regression file; focused mypy passed for `wave_service.py`; selected wave helper/facade tests and
+  wave API regressions passed with 190 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring remaining compatibility aliases only when their direct tests have
+  moved to the owning helper module and no service facade contract depends on them.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-430: Wave workflow metadata alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave workflow metadata/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still retained private aliases for workflow metadata helpers even
+  though the owning `wave_workflow_metadata` module has direct behavior and export-surface tests.
+- Action: removed workflow metadata helper imports and private aliases from the service facade, and
+  retired the service-alias assertion so tests verify the owning helper module instead of preserving
+  stale facade surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct workflow metadata tests and selected wave command/API
+  regressions passed with 146 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring remaining service compatibility aliases in small batches when direct
+  helper tests already prove ownership and no route or service API depends on the alias.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-431: Wave event collection alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_event_append.py`,
+  `tests/unit/dpm/waves/test_wave_item_collection.py`, selected wave event/item API regressions,
+  and this ledger.
+- Finding: `wave_service.py` still imported and exposed private compatibility aliases for wave event
+  append and item collection helpers even though the owning helper modules already carry direct
+  behavior and export-surface tests.
+- Action: removed the stale event append and item collection imports and aliases from the service
+  facade, and retired tests that pinned obsolete private facade surface while keeping direct helper
+  behavior coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave event append and item collection tests plus selected
+  wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring lookup, persistence, state-guard, transition, and selection
+  compatibility aliases in similarly narrow slices when their owning helper tests provide direct
+  coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-432: Wave lookup persistence alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_lookup.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave lookup/write API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still exposed private lookup and persistence aliases after command
+  extraction moved persisted wave reads and writes into owning helper modules.
+- Action: removed the stale lookup, save, and update imports and aliases from the service facade,
+  and retired alias-pinning assertions so tests verify `wave_lookup` and `wave_persistence`
+  directly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave lookup and persistence tests plus selected wave API
+  regressions passed with 141 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring the remaining state guard, trigger validation, transition execution,
+  and selection helper aliases without changing public wave route behavior.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-433: Wave state trigger alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_state_guard.py`,
+  `tests/unit/dpm/waves/test_wave_trigger_validation.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` still retained private state guard and trigger validation aliases even
+  though wave command helpers own guard invocation and direct helper tests prove the validation
+  behavior.
+- Action: removed state guard and trigger validation imports and aliases from the service facade,
+  and retired facade-alias assertions while preserving helper behavior and export-surface coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave state guard and trigger validation tests plus selected
+  wave API regressions passed with 143 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring transition execution and selection helper aliases now that remaining
+  service imports are concentrated around command facade delegation and public read/write entry
+  points.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-434: Wave transition execution alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave transition/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still retained private transition execution aliases after persisted
+  lifecycle, preparation, and selection command helpers became the owners of transition preparation
+  and optimistic persistence.
+- Action: removed transition execution imports and aliases from the service facade, and retired the
+  facade-alias assertion while preserving direct helper behavior and export-surface tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave transition execution tests plus selected wave API
+  regressions passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: review the remaining selection helper aliases as the last private helper imports in
+  `wave_service.py` that are not public facade entry points or response read models.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-435: Wave selection helper alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_construction_selection.py`,
+  `tests/unit/dpm/waves/test_wave_selection_guard.py`, selected wave selection/API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still retained private selection helper aliases after persisted
+  selection command extraction made the command helper responsible for selection validation,
+  construction side effects, and item transition assembly.
+- Action: removed construction-selection, item-selection-transition, and selection-guard helper
+  imports and aliases from the service facade, and retired remaining facade-alias assertions while
+  preserving direct helper behavior and export-surface coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave construction selection, selection guard, and item
+  selection transition tests plus selected wave API regressions passed with 143 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review `wave_service.py` after alias retirement for further public facade slimming
+  opportunities that do not obscure router-facing orchestration.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-436: Construction source-product context update builders
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`, direct source-product context
+  tests, selected construction enrichment/API regressions, and this ledger.
+- Finding: the source-product authority-context aggregator still mixed transaction-cost,
+  liquidity, treasury, execution acknowledgement, client restriction, and sustainability update
+  assembly in one inline function after the individual family mappers had been extracted.
+- Action: split the aggregator into focused family-specific update builders and kept
+  `source_product_authority_context_updates` as a small composition point that preserves the public
+  helper contract and no-overwrite semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_context.py`; direct source-product context tests plus
+  selected construction enrichment/API regressions passed with 54 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue checking construction enrichment helpers for similar local complexity now
+  that source-product family mapping and aggregation have clearer ownership.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-437: Construction source-context no-overwrite proof
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, selected construction
+  source-product/API regressions, and this ledger.
+- Finding: source-product context aggregation had direct no-overwrite coverage for
+  transaction-cost and liquidity contexts, but not for the client restriction, sustainability,
+  currency overlay, and execution acknowledgement authority families.
+- Action: added a direct regression proving all source-derived authority contexts are preserved when
+  already supplied and that `authority_context_with_source_products` returns the existing context
+  object when no source-derived updates are needed.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused mypy passed
+  for `construction_source_product_context.py`; direct source-product context tests plus selected
+  construction enrichment/API regressions passed with 55 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: keep no-overwrite tests aligned with any new source-derived authority family added to
+  `ConstructionAuthorityContext`.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-438: Liquidity source policy constants
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, selected liquidity
+  source-context/API regressions, and this ledger.
+- Finding: the liquidity source-context mapper repeated manage-owned settlement policy identity,
+  minimum cash-weight, liquidity tiers, and source-family reason codes directly inside assembly.
+- Action: moved manage-owned liquidity policy literals into module-local constants while preserving
+  the public mapper contract, source-product lineage fields, and reason-code output.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; direct liquidity source-context tests plus
+  selected construction source-product/enrichment/API regressions passed with 66 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review other source-family mappers for similar manage-owned policy literals that
+  should be named once near the owning mapper.
+- Wiki decision: no wiki source change required; this is internal mapper maintainability cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-439: Mandate command-center alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate command-center/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private command-center projection
+  aliases even though command-center behavior and export surface are directly covered in the owning
+  helper module.
+- Action: removed unused command-center helper imports and private aliases from the service facade,
+  routed the service through the two helper calls it actually needs, and retired alias-pinning test
+  assertions.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate command-center tests plus selected mandate API
+  regressions passed with 31 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules; search found no command-center private aliases remaining in
+  `mandate_service.py`.
+- Follow-up: continue reviewing remaining mandate service compatibility aliases with search
+  evidence before pruning them.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-440: Mandate diff alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `tests/unit/dpm/mandates/test_mandate_diff.py`,
+  selected mandate diff/API regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private mandate-diff helper aliases even
+  though the owning `mandate_diff` module has direct behavior and export-surface tests; the service
+  only needs the version-comparison builder for its public diff endpoint.
+- Action: removed unused mandate-diff helper imports and private aliases from the service facade,
+  routed the public diff endpoint directly through `build_mandate_diff_for_versions`, and kept only
+  the public diff model re-exports required by existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate diff tests plus selected mandate API regressions
+  passed with 33 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate
+  passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in service
+  modules; search found no mandate-diff private aliases remaining in `mandate_service.py`.
+- Follow-up: continue retiring remaining mandate service compatibility aliases only when service
+  orchestration can call owning helpers directly and direct helper tests cover behavior.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-441: Mandate health persistence alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_persistence.py`, selected mandate persistence/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still exposed a private health-persistence alias even though the
+  owning helper has direct behavior and export-surface tests, and service orchestration can call the
+  helper directly.
+- Action: removed the private health-persistence alias, routed refresh, recalculation, and
+  monitoring persistence through `persist_mandate_health_evidence`, and retired the alias-pinning
+  test assertion.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate health-persistence tests plus selected mandate
+  refresh, monitoring, and API regressions passed with 40 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; search found no health-persistence private alias
+  remaining in `mandate_service.py`.
+- Follow-up: continue reducing remaining mandate service aliases in cohesive groups with direct
+  helper coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-442: Mandate health result alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_result.py`, selected mandate health/API regressions,
+  and this ledger.
+- Finding: `mandate_service.py` still exposed a private mandate health-result calculation alias even
+  though the owning helper module has direct behavior and export-surface tests, and the service only
+  needs the calculation helper for recalculation orchestration.
+- Action: removed the private health-result alias, routed recalculation directly through
+  `calculate_mandate_health_result`, and kept only the public calculation-result model re-export
+  required by existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate health-result and health-persistence tests plus
+  selected mandate API regressions passed with 29 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no health-result private alias remaining in
+  `mandate_service.py`.
+- Follow-up: continue pruning mandate service compatibility aliases in small groups with direct
+  helper tests and service call-site evidence.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-443: Mandate refresh alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `tests/unit/dpm/mandates/test_mandate_refresh.py`,
+  selected mandate refresh/API regressions, and this ledger.
+- Finding: `mandate_service.py` still exposed a private mandate-refresh builder alias even though
+  the owning refresh helper has direct source-resolution, health-calculation, error-mapping, and
+  export-surface tests.
+- Action: removed the private refresh builder alias, routed refresh orchestration directly through
+  `build_mandate_refresh_result_from_core`, and kept the public refresh-result model re-export for
+  existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate refresh and health-persistence tests plus selected
+  mandate API regressions passed with 32 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no refresh private alias remaining in
+  `mandate_service.py`.
+- Follow-up: continue reviewing optional-source and monitoring-run alias groups separately because
+  they have broader service orchestration call surfaces.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-444: Mandate optional-source alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, selected mandate refresh/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private optional-source resolution
+  aliases after mandate refresh extraction made `mandate_refresh` the owner of optional-source
+  dependency flow.
+- Action: removed stale optional-source imports and private aliases from the service facade, and
+  retired alias-pinning assertions while preserving direct optional-source helper behavior and
+  export-surface tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate optional-source and refresh tests plus selected
+  mandate API regressions passed with 39 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no optional-source private aliases remaining
+  in `mandate_service.py`.
+- Follow-up: review the remaining monitoring-run aliases separately because they are still used by
+  service orchestration.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-445: Mandate monitoring-run alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate monitoring/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still routed monitoring-run orchestration through private helper
+  aliases and imported helper functions used only to preserve that private facade surface.
+- Action: replaced private monitoring-run aliases with direct calls to the owning helper module,
+  removed unused monitoring helper imports, and retired alias-pinning assertions while retaining
+  public monitoring model re-exports required by callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate monitoring-run and health-persistence tests plus
+  selected mandate API regressions passed with 34 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; search found no monitoring-run private aliases
+  remaining in `mandate_service.py`.
+- Follow-up: run a final mandate-service alias scan before the PR checkpoint to confirm only
+  intentional public re-exports remain.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-446: Report-input portfolio-memory alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/proof_pack_service.py`, `src/api/services/outcome_review_service.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_report_inputs.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_report_inputs.py`, selected report-input/API
+  regressions, and this ledger.
+- Finding: proof-pack and outcome-review services still imported and exposed private
+  portfolio-memory report-context aliases even though the owning report-input helper modules have
+  direct behavior and export-surface tests.
+- Action: removed stale portfolio-memory context imports and private aliases from both service
+  facades, and retired alias-pinning assertions while preserving direct report-input helper
+  coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `outcome_review_service.py`; direct proof-pack and outcome
+  report-input tests plus selected proof-pack/outcome API regressions passed with 23 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules; search found no
+  portfolio-memory report-context private aliases remaining in the proof-pack or outcome-review
+  service facades.
+- Follow-up: continue scanning remaining services for private aliases that are no longer used by
+  orchestration and have direct helper-module coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-447: Outcome review dimension alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/outcome_review_service.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_dimensions.py`, selected outcome review/API
+  regressions, and this ledger.
+- Finding: `outcome_review_service.py` still exposed a private `_dimension_inputs` alias even though
+  preview orchestration already calls the owning `outcome_review_dimensions` helper directly and
+  the helper has direct behavior plus export-surface tests.
+- Action: removed the stale private alias from the service facade and retired the alias-pinning test
+  assertion while preserving the public dimension model and validation-error import surface used by
+  callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `outcome_review_service.py`; direct outcome dimension tests plus selected
+  outcome creation/API regressions passed with 14 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; targeted scan found no `_dimension_inputs`
+  service alias remaining.
+- Follow-up: continue scanning outcome/proof-pack service facades for private aliases that are not
+  required by orchestration and can be covered directly in helper modules.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-448: Rebalance core-resolver env surface narrowing
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still re-exported low-level core-resolver environment
+  parsing helpers even though environment parsing and resolver configuration belong to
+  `core_resolver_service`; tests reached through the simulation facade to validate the lower-level
+  helper behavior.
+- Action: removed `env_int` and `env_float` from the rebalance simulation service facade, removed
+  the unused `main.py` `_env_int` compatibility export, moved helper assertions to
+  `core_resolver_service`, and added direct export-surface coverage for the core resolver
+  configuration helper module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `core_resolver_service.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 138 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scan found no `env_int`, `env_float`, or `_env_int` compatibility
+  export remaining in `rebalance_simulation_service.py` or `main.py`.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` to orchestration-only behavior
+  while preserving explicit injection points needed by stateful source-context tests.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-449: Rebalance async env surface narrowing
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` and `main.py` still re-exported async environment-flag
+  parsing even though async mode and feature toggles are owned by `rebalance_async_config`.
+- Action: removed the `env_flag` compatibility export from the rebalance simulation facade, removed
+  the unused `main.py` `_env_flag` export, and added direct export-surface coverage for
+  `rebalance_async_config`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `rebalance_async_config.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scan found no `env_flag` or `_env_flag` compatibility export remaining
+  in `rebalance_simulation_service.py` or `main.py`.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` to runtime orchestration and
+  keep low-level configuration helpers in their owning modules.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-450: Rebalance async configuration ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still imported async configuration helpers as facade
+  attributes and exposed them in `__all__`, while `main.py` also re-exported unused async
+  configuration compatibility names.
+- Action: changed the simulation service to call `rebalance_async_config` through the owning module,
+  removed async configuration helper names from the simulation facade export list, removed the
+  unused `main.py` compatibility exports, and added a direct regression asserting the simulation
+  service no longer publishes async configuration helpers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `rebalance_async_config.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scans found no direct async-config helper import, no `_async_*`
+  compatibility exports in `main.py`, and no async configuration helper names in
+  `rebalance_simulation_service.py` `__all__`.
+- Follow-up: continue reviewing `rebalance_simulation_service.py` for public exports that are
+  runtime orchestration dependencies rather than durable service API.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-451: Rebalance core-resolver helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, selected rebalance runtime/API regressions, and this
+  ledger.
+- Finding: `rebalance_simulation_service.py` still exposed core-resolver construction and stateful
+  sourcing flag aliases purely as test patch points even though `core_resolver_service` owns those
+  helpers and already has direct export-surface coverage.
+- Action: changed stateful source-context orchestration to call `core_resolver_service` directly,
+  moved runtime-edge tests to patch the owning module, and added a regression proving the simulation
+  service no longer exposes core-resolver helper aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `rebalance_simulation_service.py` and `core_resolver_service.py`;
+  rebalance runtime, simulation execution-context, and API regression tests passed with 141 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules; targeted
+  scan found no core-resolver helper alias assignments or stale `rebalance_service` test patching
+  remaining in the touched service/test files.
+- Follow-up: continue reviewing `rebalance_simulation_service.py` public exports and runtime
+  override hooks, keeping only explicit orchestration seams needed by API behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-452: Main async-runner override cleanup
+
+- Date: 2026-06-02
+- Scope: `src/api/main.py`, `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  selected rebalance runtime/API regressions, and this ledger.
+- Finding: `main.py` still imported and exported `_run_analyze_async_operation` as a compatibility
+  override even though no API route, service, or test used that main-module hook; active runtime
+  override coverage remains on `_execute_batch_analysis` and `run_simulation`.
+- Action: removed the unused `_run_analyze_async_operation` import/export from `main.py` and added a
+  regression proving the stale override hook is no longer published.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`; rebalance runtime and API regression tests passed with 139
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules; targeted
+  scan found no `_run_analyze_async_operation` export remaining in `main.py`.
+- Follow-up: preserve active `main.py` runtime override hooks only where tests or runtime override
+  helpers still prove they are intentional.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-453: Rebalance core engine runner ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still exported the core `run_simulation` engine
+  function even though the service only needs it as an internal default and the active runtime
+  override hook is `src.api.main.run_simulation`.
+- Action: changed the service to use a private `_run_simulation` default, removed the core engine
+  runner from the service export surface, imported `run_simulation` directly in `main.py` for the
+  existing override hook, and added a regression proving the service no longer publishes the core
+  engine runner.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py` and `rebalance_simulation_service.py`; rebalance runtime and API
+  regression tests passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules; targeted scans confirmed `main.py` owns the public `run_simulation`
+  override import, the service uses private `_run_simulation`, and `run_simulation` is no longer in
+  `rebalance_simulation_service.py` `__all__`.
+- Follow-up: continue keeping runtime override hooks explicit at `main.py` while avoiding service
+  facade exports for lower-level core functions.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-454: Wave create-command helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_create_command.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` imported and exposed `create_persisted_wave` as a facade attribute even
+  though the create-command helper has direct behavior and export-surface tests, and the service
+  only needs it as an implementation dependency of `create_wave`.
+- Action: changed `wave_service.create_wave` to call `wave_create_command.create_persisted_wave`
+  through the owning module and removed the alias-pinning test assertion from the create-command
+  helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave create-command and wave-creation tests
+  plus selected wave API regressions passed with 139 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; targeted scan found only direct create-command
+  helper tests and the qualified `wave_create_command.create_persisted_wave` owner-module call from
+  `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-455: Wave preparation-command helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_preparation_commands.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` imported and exposed `source_check_persisted_wave` and
+  `simulate_persisted_wave` as facade attributes even though the preparation-command helper module
+  has direct behavior and export-surface tests, and the service only needs these helpers behind
+  `source_check_wave` and `simulate_wave` orchestration.
+- Action: changed `wave_service` to call `wave_preparation_commands` through the owning module and
+  removed preparation-command alias-pinning assertions from the helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave preparation-command, source-check, and
+  simulation tests plus selected wave API regressions passed with 140 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  preparation-command helper tests and qualified `wave_preparation_commands` owner-module calls from
+  `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-456: Refactor health report baseline
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/refactor_health_report.md`, and this
+  ledger.
+- Finding: The refactor branch had detailed per-slice ledger evidence but no compact measurable
+  branch-level health report comparing current code health against `origin/main`, despite the
+  refactor objective requiring tangible baseline/current quality evidence.
+- Action: added a dependency-free engineering health report generator that compares `origin/main`
+  with the current branch for Python file count, LOC, test count, largest files/functions, service
+  boundary findings, router infrastructure imports, and current OpenAPI completeness; generated the
+  first report under `quality/refactor_health_report.md`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the report script and ledger; focused mypy
+  passed for `engineering_health_report.py`; report generation wrote
+  `quality/refactor_health_report.md`; report content shows 767 current-branch Python files versus
+  754 on `origin/main`, 145857 current Python LOC versus 144347 on `origin/main`, 1856 current test
+  functions versus 1834 on `origin/main`, zero service boundary findings in both snapshots, 135
+  current OpenAPI operations, and three operations missing a 4xx/5xx response marker; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: optimize baseline loading before making this report a CI gate, then add richer
+  optional-tool measurements in later slices, including complexity, dead-code, dependency, security,
+  coverage, and architecture contracts once report-only baselines are stable.
+- Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
+  and does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-457: Wave lifecycle-command helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_lifecycle_commands.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` imported and exposed persisted lifecycle command helpers as facade
+  attributes even though the lifecycle-command module has direct behavior and export-surface tests,
+  and the service only needs them behind public wave workflow commands.
+- Action: changed `wave_service` to call `wave_lifecycle_commands` through the owning module and
+  removed lifecycle-command alias-pinning assertions from the helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave lifecycle, approval, stage, handoff, and
+  cancellation tests plus selected wave API regressions passed with 152 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  lifecycle-command helper tests and qualified `wave_lifecycle_commands` owner-module calls from
+  `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-458: Wave read-model query helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_read_model_queries.py`, selected wave read-model/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` imported and exposed read-model query helpers as facade attributes even
+  though the read-model query module has direct behavior and export-surface tests, and the service
+  only needs those helpers behind public wave query orchestration functions.
+- Action: changed `wave_service` to call `wave_read_model_queries` through the owning module and
+  removed read-model alias-pinning assertions from the helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave read-model, detail, proof-pack posture,
+  report-input, and selected wave API regressions passed with 144 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed with only
+  line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan found only direct read-model helper tests and qualified `wave_read_model_queries`
+  owner-module calls from `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-459: Wave selection-command helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_selection_command.py`, selected wave selection/API regressions,
+  and this ledger.
+- Finding: `wave_service.py` imported and exposed `select_persisted_wave_item_alternative` as a
+  facade attribute even though the selection-command module has direct behavior and export-surface
+  tests, and the service only needs the helper behind the public `select_wave_item_alternative`
+  workflow command.
+- Action: changed `wave_service` to call `wave_selection_command` through the owning module and
+  removed the selection-command alias-pinning assertion from the helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave selection-command tests and selected wave
+  API regressions passed with 134 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed with only line-ending warnings; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  selection-command helper tests and the qualified `wave_selection_command` owner-module call from
+  `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-460: Wave search helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_search.py`, selected
+  wave search/API regressions, and this ledger.
+- Finding: `wave_service.py` imported and exposed `search_wave_summaries` as a facade attribute even
+  though the wave-search module has direct behavior and export-surface tests, and the service only
+  needs the helper behind the public `search_waves` query function.
+- Action: changed `wave_service` to call `wave_search.search_wave_summaries` through the owning
+  module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave search tests and selected wave API
+  regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed with only line-ending warnings; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  search helper tests and the qualified `wave_search` owner-module call from `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-461: Wave supportability-payload helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`, selected wave supportability/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` imported the supportability payload builder as a private function alias,
+  which kept pure payload assembly wired through the service module rather than the owning helper
+  module.
+- Action: preserved the public `wave_service.wave_supportability_payload` wrapper but changed it to
+  delegate through the owning `wave_supportability_payload` module alias, keeping the helper's direct
+  behavior and export-surface tests as the ownership proof.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave supportability-payload, read-model,
+  detail, report-input, and selected wave API regressions passed with 145 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed with
+  only line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan confirmed the old private `_wave_supportability_payload` function alias is gone and
+  the service delegates through the `wave_supportability_payload` owner-module alias.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-462: Wave preview helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_preview.py`, selected
+  wave preview/API regressions, and this ledger.
+- Finding: `wave_service.py` imported and exposed `build_preview_wave` as a facade attribute even
+  though the wave-preview module has direct behavior and export-surface tests, and the service only
+  needs the helper behind the public `preview_wave` workflow function.
+- Action: changed `wave_service.preview_wave` to call `wave_preview.build_preview_wave` through the
+  owning module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave preview tests and selected wave API
+  regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed with only line-ending warnings; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  preview helper tests and the qualified `wave_preview` owner-module call from `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-463: Construction source-product helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, selected construction source-product
+  helper regressions, and this ledger.
+- Finding: `construction_source_product_context.py` imported individual source-product mapping
+  helpers directly, leaving the orchestration module with facade attributes for liquidity,
+  transaction-cost, treasury, execution, restriction, and sustainability mapping functions that are
+  already owned and tested by dedicated helper modules.
+- Action: changed the source-product context orchestrator to call the dedicated mapping helpers
+  through their owning modules while preserving its public `authority_context_with_source_products`
+  and `source_product_authority_context_updates` surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `construction_source_product_context.py`; direct source-product,
+  liquidity, and client-profile context regressions passed with 21 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; scoped `git diff --check` passed with
+  only line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan found no direct construction helper imports in the orchestrator and only
+  owner-module qualified helper calls.
+- Follow-up: keep pure source-product mapping helpers owned by dedicated modules and reserve
+  `construction_source_product_context.py` for authority-context orchestration only.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-464: Construction API core-resolver test hook ownership
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/api/test_construction_api.py` and this ledger.
+- Finding: selected construction API regressions still monkeypatched
+  `rebalance_simulation_service.build_core_resolver_client`, a stale facade hook removed earlier in
+  this hardening branch after core-resolver ownership moved to `core_resolver_service`.
+- Action: changed the construction API tests to monkeypatch
+  `core_resolver_service.build_core_resolver_client`, the hook currently used by rebalance
+  simulation stateful sourcing.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger;
+  construction API regressions passed with 25 tests, including the previously failing stateful
+  source-product cases; OpenAPI quality gate passed; API vocabulary inventory validate-only gate
+  passed; scoped `git diff --check` passed with only a ledger line-ending warning; service leakage
+  scan found no router/HTTP imports in service modules; targeted scan found no stale
+  `rebalance_service` monkeypatch hook references in `test_construction_api.py`.
+- Follow-up: keep tests patching owner modules instead of retired service facade attributes so full
+  `make check` does not depend on stale helper exports.
+- Wiki decision: no wiki source change required; this is test-maintenance for internal service
+  ownership and does not change route, payload, supported-feature, or operator-contract truth.
+
+## BACKEND-REVIEW-20260602-465: Construction source-product public surface guard
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py` and this ledger.
+- Finding: after the source-product context orchestrator stopped importing individual mapping
+  helpers directly, the direct tests still lacked a small assertion pinning its intended public
+  export surface to orchestration functions only.
+- Action: added a direct `__all__` regression proving
+  `construction_source_product_context.py` exports only `authority_context_with_source_products` and
+  `source_product_authority_context_updates`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger; direct
+  source-product context regressions passed with 6 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed with only line-ending
+  warnings; service leakage scan found no router/HTTP imports in service modules; targeted scan
+  confirmed the new `construction_source_product_context.__all__` guard and existing orchestrator
+  function coverage.
+- Follow-up: keep helper modules carrying their own export-surface tests where they own pure
+  source-product mapping behavior.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-466: Wave service helper alias regression guard
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/waves/test_wave_service_public_surface.py` and this ledger.
+- Finding: the wave-service hardening slices removed multiple direct helper aliases from
+  `wave_service.py`, but the branch lacked one compact regression proving the retired helper
+  function names are no longer re-exported from the service module.
+- Action: added a wave-service public-surface test that asserts retired persisted-command,
+  read-model, search, preview, and selection helper names are absent from `wave_service.py`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger; direct
+  wave-service public-surface, preview, read-model, selection-command, and search regressions passed
+  with 12 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed;
+  `git diff --check` passed with only a ledger line-ending warning; service leakage scan found no
+  router/HTTP imports in service modules; targeted scan found retired helper names only in the
+  negative test list and as qualified owner-module calls from `wave_service.py`.
+- Follow-up: keep public workflow functions on `wave_service.py`, but keep pure helpers and
+  persisted command implementations owned by their dedicated modules.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-467: Refactor health report checkpoint refresh
+
+- Date: 2026-06-02
+- Scope: `quality/refactor_health_report.md` and this ledger.
+- Finding: after the wave-service and construction source-product hardening slices, the branch-level
+  health report still pointed at an earlier commit and no longer reflected the current checkpoint
+  evidence for a roughly 50-commit PR batch.
+- Action: regenerated the dependency-free refactor health report against `origin/main` so the PR
+  carries current report-only evidence for code size, test count, boundary findings, router
+  infrastructure import findings, largest files/functions, and OpenAPI completeness.
+- Status: hardened
+- Evidence: report generation completed and wrote `quality/refactor_health_report.md`; refreshed
+  report points at current ref `8dc39c9`, shows 768 current-branch Python files versus 754 on
+  `origin/main`, 145874 current Python LOC versus 144347 on `origin/main`, 1855 current test
+  functions versus 1834 on `origin/main`, zero service boundary findings in both snapshots, 135
+  current OpenAPI operations, and three operations missing a 4xx/5xx response marker; `git diff
+  --check` passed with only line-ending warnings.
+- Follow-up: optimize baseline loading before making this report a CI gate, then extend report-only
+  baselines toward complexity, dead-code, dependency, security, coverage, architecture, docs, and
+  observability checks.
+- Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
+  and does not change route behavior, product feature truth, or operator procedure.

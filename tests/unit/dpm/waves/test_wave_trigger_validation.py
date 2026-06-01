@@ -1,6 +1,5 @@
 import pytest
 
-from src.api.services import wave_service
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_trigger_validation import (
     SUPPORTED_CREATE_TRIGGER_TYPES,
@@ -49,12 +48,6 @@ def test_validate_trigger_or_raise_raises_governed_validation_error() -> None:
         exc_info.value.message
         == "Trigger type RISK_EVENT requires at least one source-backed portfolio."
     )
-
-
-def test_wave_service_preserves_private_trigger_validation_alias() -> None:
-    from src.api.services import wave_trigger_validation
-
-    assert wave_service._validate_trigger is wave_trigger_validation.validate_trigger_or_raise
 
 
 def test_supported_trigger_set_stays_private_banking_specific() -> None:

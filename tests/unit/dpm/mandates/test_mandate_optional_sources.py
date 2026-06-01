@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Any
 
-from src.api.services import mandate_optional_sources, mandate_service
+from src.api.services import mandate_optional_sources
 from src.api.services.mandate_optional_sources import (
     DpmMandateOptionalSources,
     ready_benchmark_assignment_source,
@@ -228,13 +228,6 @@ def test_resolve_mandate_optional_sources_builds_typed_bundle_and_family_gaps() 
     assert calls["planned_withdrawal_schedule"]["horizon_days"] == 365
     assert calls["planned_withdrawal_schedule"]["include_inactive_withdrawals"] is False
     assert calls["benchmark_assignment"]["reporting_currency"] == "SGD"
-
-
-def test_service_preserves_optional_source_helper_aliases() -> None:
-    assert mandate_service._try_resolve_optional_source is try_resolve_optional_source
-    assert mandate_service._ready_optional_source is ready_optional_source
-    assert mandate_service._ready_benchmark_assignment_source is ready_benchmark_assignment_source
-    assert mandate_service._resolve_mandate_optional_sources is resolve_mandate_optional_sources
 
 
 def test_optional_source_helper_exports_public_surface() -> None:

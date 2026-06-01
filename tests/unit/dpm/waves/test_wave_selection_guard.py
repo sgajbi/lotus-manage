@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.services import wave_selection_guard, wave_service
+from src.api.services import wave_selection_guard
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_selection_guard import selectable_wave_item
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem
@@ -54,10 +54,6 @@ def test_selectable_wave_item_raises_validation_error_without_alternatives() -> 
         exc_info.value.message
         == "Wave item dwi_missing_alternatives has no generated alternatives."
     )
-
-
-def test_wave_service_preserves_selection_guard_private_alias() -> None:
-    assert wave_service._selectable_wave_item is selectable_wave_item
 
 
 def test_wave_selection_guard_exports_public_surface() -> None:

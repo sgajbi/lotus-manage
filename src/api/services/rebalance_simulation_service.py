@@ -32,12 +32,7 @@ from src.api.services.rebalance_request_envelope_resolution import (
     resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
     resolve_rebalance_request_envelope as resolve_rebalance_request_envelope_from_source,
 )
-from src.api.services.rebalance_async_config import (
-    async_manual_execution_enabled,
-    async_operations_enabled,
-    env_flag,
-    resolve_async_execution_mode,
-)
+from src.api.services import rebalance_async_config
 from src.api.services.rebalance_async_operation_runner import (
     run_analyze_async_operation_from_store,
 )
@@ -72,7 +67,7 @@ from src.core.dpm_source_context import (
     build_batch_rebalance_request_from_core_context,
     build_rebalance_request_from_core_context,
 )
-from src.core.rebalance.engine import run_simulation
+from src.core.rebalance.engine import run_simulation as _run_simulation
 from src.api.services.rebalance_simulation_execution_context import (
     DpmSimulationExecutionContext as DpmSimulationExecutionContext,
     build_simulation_execution_context,
@@ -90,11 +85,6 @@ from src.core.models import (
 
 logger = logging.getLogger(__name__)
 
-build_core_resolver_client = core_resolver_service.build_core_resolver_client
-env_float = core_resolver_service.env_float
-env_int = core_resolver_service.env_int
-stateful_core_sourcing_enabled = core_resolver_service.stateful_core_sourcing_enabled
-
 
 def _resolved_logger() -> logging.Logger | Any:
     return resolve_logger(logger)
@@ -107,12 +97,12 @@ def _resolve_stateful_source_context(
 ) -> DpmResolvedSourceContext:
     resolver_factory = resolve_callable_override(
         "build_core_resolver_client",
-        build_core_resolver_client,
+        core_resolver_service.build_core_resolver_client,
     )
     return resolve_stateful_source_context(
         envelope=envelope,
         correlation_id=correlation_id,
-        stateful_enabled=stateful_core_sourcing_enabled(),
+        stateful_enabled=core_resolver_service.stateful_core_sourcing_enabled(),
         resolver_factory=resolver_factory,
     )
 
@@ -180,7 +170,7 @@ def simulate_rebalance(
         replay_enabled=execution_context.replay_enabled,
         source_context=source_context,
         support_service_factory=get_dpm_run_support_service,
-        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
         record_for_support=resolve_callable_override(
             "record_dpm_run_for_support",
             record_dpm_run_for_support,
@@ -219,7 +209,7 @@ def execute_batch_analysis(
         correlation_id=correlation_id,
         policy_definition=execution_context.policy_pack_definition,
         source_context=source_context,
-        run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
+        run_simulation_fn=resolve_callable_override("run_simulation", _run_simulation),
         record_for_support=resolve_callable_override(
             "record_dpm_run_for_support",
             record_dpm_run_for_support,
@@ -256,7 +246,7 @@ def submit_and_optionally_execute_async_analysis(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
-    if not async_operations_enabled():
+    if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     submission_context = build_async_submission_context(
         request=request,
@@ -293,9 +283,9 @@ def submit_and_optionally_execute_async_analysis(
 def execute_dpm_async_operation(
     *, operation_id: str, service: DpmRunSupportService
 ) -> DpmAsyncOperationStatusResponse:
-    if not async_operations_enabled():
+    if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
-    if not async_manual_execution_enabled():
+    if not rebalance_async_config.async_manual_execution_enabled():
         raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
     return execute_analyze_async_operation_now(
         operation_id=operation_id,
@@ -323,14 +313,8 @@ __all__ = [
     "DpmRebalanceSimulationError",
     "DpmRebalanceStatefulInputDisabledError",
     "DpmRebalanceSupportabilityStoreUnavailableError",
-    "async_manual_execution_enabled",
-    "async_operations_enabled",
-    "env_flag",
-    "env_int",
     "execute_batch_analysis",
     "execute_dpm_async_operation",
-    "resolve_async_execution_mode",
     "run_analyze_async_operation",
-    "run_simulation",
     "simulate_rebalance",
 ]

@@ -1,6 +1,14 @@
 from src.api.services.construction_liquidity_source_context import (
     source_liquidity_context,
 )
+from src.api.services.construction_client_profile_source_context import (
+    client_restriction_profile_context,
+    sustainability_preference_profile_context,
+)
+from src.api.services.construction_execution_source_context import (
+    external_order_execution_acknowledgement_context,
+)
+from src.api.services import construction_source_product_context
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
     source_product_authority_context_updates,
@@ -8,8 +16,11 @@ from src.api.services.construction_source_product_context import (
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
 )
+from src.api.services.construction_treasury_source_context import (
+    external_treasury_currency_overlay_context,
+)
 from src.core.construction.models import ConstructionAuthorityContext
-from src.core.dpm_source_context import DpmCoreExecutionContext
+from src.core.dpm_source_context import DpmCoreExecutionContext, DpmResolvedSourceContext
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     cashflow_projection_response,
     client_income_needs_schedule_response,
@@ -120,3 +131,69 @@ def test_source_product_authority_context_updates_preserves_existing_contexts() 
     assert "transaction_cost_context" not in updates
     assert "liquidity_context" not in updates
     assert sorted(updates) == ["execution_acknowledgement_context"]
+
+
+def test_source_product_authority_context_updates_preserves_all_existing_source_contexts() -> None:
+    existing_liquidity_context = source_liquidity_context(
+        cashflow_projection=cashflow_projection_response(),
+        income_needs=client_income_needs_schedule_response(),
+        reserve_requirement=liquidity_reserve_requirement_response(),
+        planned_withdrawals=planned_withdrawal_schedule_response(),
+    )
+    existing_currency_context = external_treasury_currency_overlay_context(
+        hedge_readiness=hedge_readiness_response(),
+        currency_exposure=None,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+    existing_execution_context = external_order_execution_acknowledgement_context(
+        external_order_acknowledgement_response()
+    )
+    assert existing_liquidity_context is not None
+    assert existing_currency_context is not None
+    assert existing_execution_context is not None
+    authority_context = ConstructionAuthorityContext(
+        transaction_cost_context=transaction_cost_context_from_curve(
+            transaction_cost_curve_response()
+        ),
+        liquidity_context=existing_liquidity_context,
+        currency_overlay_context=existing_currency_context,
+        execution_acknowledgement_context=existing_execution_context,
+        client_restriction_context=client_restriction_profile_context(
+            client_restriction_profile_response()
+        ),
+        sustainability_preference_context=sustainability_preference_profile_context(
+            sustainability_preference_profile_response()
+        ),
+    )
+    source_context = _source_execution_context(
+        transaction_cost_curve=transaction_cost_curve_response(),
+        portfolio_cashflow_projection=cashflow_projection_response(),
+        client_income_needs_schedule=client_income_needs_schedule_response(),
+        liquidity_reserve_requirement=liquidity_reserve_requirement_response(),
+        planned_withdrawal_schedule=planned_withdrawal_schedule_response(),
+        external_hedge_execution_readiness=hedge_readiness_response(),
+        external_order_execution_acknowledgement=external_order_acknowledgement_response(),
+        client_restriction_profile=client_restriction_profile_response(),
+        sustainability_preference_profile=sustainability_preference_profile_response(),
+    )
+
+    updates = source_product_authority_context_updates(
+        source_context=source_context,
+        authority_context=authority_context,
+    )
+    resolved_context = authority_context_with_source_products(
+        authority_context=authority_context,
+        source_context=DpmResolvedSourceContext.model_construct(context=source_context),
+    )
+
+    assert updates == {}
+    assert resolved_context is authority_context
+
+
+def test_construction_source_product_context_exports_only_orchestration_surface() -> None:
+    assert construction_source_product_context.__all__ == [
+        "authority_context_with_source_products",
+        "source_product_authority_context_updates",
+    ]

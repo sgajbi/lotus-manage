@@ -52,26 +52,9 @@ from src.api.routers.outcome_reviews import (
 )
 from src.api.routers.waves import router as waves_router
 from src.api.services.rebalance_simulation_service import (
-    run_simulation,
-)
-from src.api.services.rebalance_simulation_service import (
-    async_manual_execution_enabled as _async_manual_execution_enabled,
-)
-from src.api.services.rebalance_simulation_service import (
-    env_flag as _env_flag,
-)
-from src.api.services.rebalance_simulation_service import (
-    env_int as _env_int,
-)
-from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
-from src.api.services.rebalance_simulation_service import (
-    resolve_async_execution_mode as _resolve_async_execution_mode,
-)
-from src.api.services.rebalance_simulation_service import (
-    run_analyze_async_operation as _run_analyze_async_operation,
-)
+from src.core.rebalance.engine import run_simulation
 
 
 class HealthStatusResponse(BaseModel):
@@ -281,12 +264,7 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 
 __all__ = [
     "HealthStatusResponse",
-    "_async_manual_execution_enabled",
-    "_env_flag",
-    "_env_int",
     "_execute_batch_analysis",
-    "_resolve_async_execution_mode",
-    "_run_analyze_async_operation",
     "analyze_scenarios",
     "analyze_scenarios_async",
     "app",

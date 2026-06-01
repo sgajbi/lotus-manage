@@ -1,7 +1,7 @@
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
-from src.api.services import mandate_monitoring_run, mandate_service
+from src.api.services import mandate_monitoring_run
 from src.api.services.mandate_monitoring_run import (
     DpmMonitoringRunAccumulator,
     DpmMonitoringRunMandateResult,
@@ -146,17 +146,10 @@ def test_build_monitoring_run_projects_terminal_success_summary() -> None:
 
 
 def test_service_preserves_monitoring_run_helper_aliases() -> None:
+    from src.api.services import mandate_service
+
     assert mandate_service.DpmMonitoringRunAccumulator is DpmMonitoringRunAccumulator
-    assert mandate_service._monitoring_run_accumulator is DpmMonitoringRunAccumulator
     assert mandate_service.DpmMonitoringRunMandateResult is DpmMonitoringRunMandateResult
-    assert mandate_service._monitoring_run_id_for is monitoring_run_id_for
-    assert mandate_service._increment_distribution is increment_distribution
-    assert mandate_service._exceptions_for_monitoring_run is exceptions_for_monitoring_run
-    assert (
-        mandate_service._calculate_monitoring_run_mandate_result
-        is calculate_monitoring_run_mandate_result
-    )
-    assert mandate_service._build_monitoring_run is build_monitoring_run
 
 
 def test_monitoring_run_helper_exports_public_surface() -> None:
