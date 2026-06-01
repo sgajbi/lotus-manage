@@ -8028,3 +8028,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   regime-stress supportability out of the method facade.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-327: Direct currency overlay supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, currency-overlay supportability, and
+  this ledger.
+- Finding: after extracting currency-overlay supportability into a focused module, the direct
+  missing-FX-pair regression still lived in the broader method-supportability test module and did
+  not cover missing context or unsupported-currency review behavior.
+- Action: moved currency-overlay regressions into a dedicated test module and added focused coverage
+  for missing source context degradation and unsupported currency pending-review handling.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the currency-overlay supportability source module; focused currency-overlay and method
+  supportability regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep `test_method_supportability.py` narrowed to regime-stress behavior until
+  regime-stress supportability is extracted into its own helper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
