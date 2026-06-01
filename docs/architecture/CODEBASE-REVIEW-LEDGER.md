@@ -7223,3 +7223,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   fail-closed source-boundary helper.
 - Wiki decision: no wiki source change required; this is internal module factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-284: Treasury currency-overlay source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: the external treasury currency-overlay source mapper was the last large pure
+  source-product assembly block in the construction source-product facade, mixing fail-closed
+  treasury evidence handling with authority-context composition.
+- Action: moved the external hedge readiness, exposure, hedge policy, eligible instrument, and FX
+  forward-curve mapping into a dedicated treasury source-context helper. The source-product facade
+  now imports and re-exports the helper while retaining only authority-context composition and
+  call-site compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: keep subsequent changes to treasury fail-closed behavior inside the dedicated helper
+  with direct branch coverage for each external source family.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
