@@ -23,11 +23,7 @@ from src.api.services.wave_item_transitions import (
     stage_item as _stage_item,
 )
 from src.api.services.wave_item_builder import build_wave_item as _build_item
-from src.api.services.wave_portfolio_sources import (
-    optional_str as _optional_str,  # noqa: F401
-    source_refs_from_portfolio as _source_refs_from_portfolio,  # noqa: F401
-    trigger_source_refs as _trigger_source_refs,
-)
+from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_selection_item import (
     with_selection_and_proof_pack as _with_selection_and_proof_pack,
@@ -41,9 +37,6 @@ from src.api.services.wave_source_readiness import (
 )
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
-)
-from src.api.services.wave_supportability_diagnostics import (
-    supportability_issue as _supportability_issue,  # noqa: F401
 )
 from src.api.services.wave_trigger_validation import trigger_validation_failure
 from src.core.construction.repository import ConstructionRepository

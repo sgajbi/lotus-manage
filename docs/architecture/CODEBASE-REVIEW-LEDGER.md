@@ -8660,3 +8660,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper extraction, but keep durable repository writes and state-machine transitions central.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-354: Wave service private helper alias cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/api/test_waves_api.py`,
+  `tests/unit/dpm/waves/test_wave_portfolio_sources.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and this ledger.
+- Finding: after extracting portfolio source helpers and supportability diagnostics, `wave_service.py`
+  still exposed private compatibility aliases that were used only by legacy API tests, widening the
+  service module surface without serving route-facing orchestration.
+- Action: removed stale private helper aliases from `wave_service.py`, narrowed the API supportability
+  regression to public service behavior, and relied on direct helper tests for source-ref,
+  optional-string, excluded-item, and operator-action coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; selected public supportability API regressions plus direct portfolio
+  source and supportability diagnostics tests passed with 7 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue trimming compatibility surfaces as helper modules gain direct tests.
+- Wiki decision: no wiki source change required; this is internal service module-surface cleanup with
+  no route, payload, supported-feature, or operator-contract change.
