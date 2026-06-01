@@ -2,23 +2,33 @@ from decimal import Decimal
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
     AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
     AuthoritativeLiquidityCashflowProjection,
+    AuthoritativeLiquidityReserveRequirement,
+    AuthoritativePlannedWithdrawalSchedule,
+    AuthoritativeSustainabilityPreference,
+    AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
     DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreClientRestrictionProfileResponse,
     DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalEligibleHedgeInstrumentResponse,
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
+    DpmCoreLiquidityReserveRequirementResponse,
+    DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
 )
 from src.core.models import Money
@@ -76,6 +86,62 @@ def liquidity_cashflow_projection_context(
         or source_hash,
         data_quality_status=source_status_to_method_status(status),
         reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
+    )
+
+
+def liquidity_reserve_requirement_context(
+    reserve_requirement: DpmCoreLiquidityReserveRequirementResponse,
+) -> AuthoritativeLiquidityReserveRequirement:
+    payload = reserve_requirement.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativeLiquidityReserveRequirement(
+        source_product_name=reserve_requirement.product_name,
+        source_product_version=reserve_requirement.product_version,
+        source_system="lotus-core",
+        source_id=reserve_requirement.source_batch_fingerprint
+        or reserve_requirement.lineage.get("source_batch_fingerprint")
+        or source_hash,
+        content_hash=source_hash,
+        requirement_count=reserve_requirement.supportability.requirement_count,
+        currencies=sorted({entry.currency for entry in reserve_requirement.requirements}),
+        maximum_horizon_days=(
+            max(entry.horizon_days for entry in reserve_requirement.requirements)
+            if reserve_requirement.requirements
+            else None
+        ),
+        supportability_status=source_status_to_method_status(
+            reserve_requirement.supportability.state
+        ),
+        reason_codes=[
+            reserve_requirement.supportability.reason,
+            "CORE_LIQUIDITY_RESERVE_PRESENT",
+        ],
+    )
+
+
+def planned_withdrawal_schedule_context(
+    planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse,
+) -> AuthoritativePlannedWithdrawalSchedule:
+    payload = planned_withdrawals.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativePlannedWithdrawalSchedule(
+        source_product_name=planned_withdrawals.product_name,
+        source_product_version=planned_withdrawals.product_version,
+        source_system="lotus-core",
+        source_id=planned_withdrawals.source_batch_fingerprint
+        or planned_withdrawals.lineage.get("source_batch_fingerprint")
+        or source_hash,
+        content_hash=source_hash,
+        withdrawal_count=planned_withdrawals.supportability.withdrawal_count,
+        currencies=sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
+        horizon_days=planned_withdrawals.horizon_days,
+        supportability_status=source_status_to_method_status(
+            planned_withdrawals.supportability.state
+        ),
+        reason_codes=[
+            planned_withdrawals.supportability.reason,
+            "CORE_PLANNED_WITHDRAWALS_PRESENT",
+        ],
     )
 
 
@@ -391,6 +457,68 @@ def external_treasury_currency_overlay_context(
     )
 
 
+def client_restriction_profile_context(
+    restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> AuthoritativeClientRestrictionContext:
+    payload = restriction_profile.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativeClientRestrictionContext(
+        supportability_status=source_status_to_method_status(
+            restriction_profile.supportability.state
+        ),
+        source_system="lotus-core",
+        source_product_name=restriction_profile.product_name,
+        source_product_version=restriction_profile.product_version,
+        source_id=restriction_profile.source_batch_fingerprint
+        or restriction_profile.lineage.get("source_batch_fingerprint")
+        or source_hash,
+        content_hash=source_hash,
+        portfolio_id=restriction_profile.portfolio_id,
+        client_id=restriction_profile.client_id,
+        mandate_id=restriction_profile.mandate_id,
+        as_of_date=restriction_profile.as_of_date,
+        restriction_count=restriction_profile.supportability.restriction_count,
+        missing_data_families=restriction_profile.supportability.missing_data_families,
+        restrictions=[
+            AuthoritativeClientRestrictionRule.model_validate(rule.model_dump(mode="python"))
+            for rule in restriction_profile.restrictions
+        ],
+        reason_codes=[restriction_profile.supportability.reason],
+    )
+
+
+def sustainability_preference_profile_context(
+    sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
+) -> AuthoritativeSustainabilityPreferenceContext:
+    payload = sustainability_profile.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativeSustainabilityPreferenceContext(
+        supportability_status=source_status_to_method_status(
+            sustainability_profile.supportability.state
+        ),
+        source_system="lotus-core",
+        source_product_name=sustainability_profile.product_name,
+        source_product_version=sustainability_profile.product_version,
+        source_id=sustainability_profile.source_batch_fingerprint
+        or sustainability_profile.lineage.get("source_batch_fingerprint")
+        or source_hash,
+        content_hash=source_hash,
+        portfolio_id=sustainability_profile.portfolio_id,
+        client_id=sustainability_profile.client_id,
+        mandate_id=sustainability_profile.mandate_id,
+        as_of_date=sustainability_profile.as_of_date,
+        preference_count=sustainability_profile.supportability.preference_count,
+        missing_data_families=sustainability_profile.supportability.missing_data_families,
+        preferences=[
+            AuthoritativeSustainabilityPreference.model_validate(
+                preference.model_dump(mode="python")
+            )
+            for preference in sustainability_profile.preferences
+        ],
+        reason_codes=[sustainability_profile.supportability.reason],
+    )
+
+
 def external_order_execution_acknowledgement_context(
     acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
 ) -> AuthoritativeExecutionAcknowledgementContext | None:
@@ -429,10 +557,14 @@ def source_status_to_method_status(status: str) -> ConstructionMethodStatus:
 
 
 __all__ = [
+    "client_restriction_profile_context",
     "external_order_execution_acknowledgement_context",
     "external_treasury_currency_overlay_context",
     "client_income_needs_schedule_context",
     "liquidity_cashflow_projection_context",
+    "liquidity_reserve_requirement_context",
+    "planned_withdrawal_schedule_context",
     "source_status_to_method_status",
+    "sustainability_preference_profile_context",
     "transaction_cost_context_from_curve",
 ]

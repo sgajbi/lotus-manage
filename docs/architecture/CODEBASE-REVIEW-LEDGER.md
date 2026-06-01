@@ -6729,3 +6729,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   withdrawals.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-264: Remaining source-product context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: liquidity reserve requirements, planned withdrawal schedules, client restriction
+  profiles, and sustainability preference profiles still mapped lotus-core source products inside
+  construction orchestration. These mappings preserve lineage, content hashes, supportability
+  states, represented currencies, horizons, restriction rules, and sustainability preferences, but
+  they are pure source-boundary assembly rather than orchestration.
+- Action: extracted the four remaining source-product mappings into
+  `construction_source_product_context.py`, keeping `_authority_context_with_source_products`
+  responsible only for deciding when to attach source-derived contexts. Added direct helper tests
+  for reserve requirement, planned withdrawal, client restriction, and sustainability preference
+  source evidence.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 62 tests. Focused Ruff checks,
+  focused mypy over source-product context and construction service, OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue shrinking `construction_service.py` by extracting larger source-family
+  attachment orchestration only when it can be done without hiding method-specific behavior.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

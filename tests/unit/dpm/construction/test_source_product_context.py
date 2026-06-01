@@ -3,10 +3,14 @@ from decimal import Decimal
 
 from src.api.services.construction_source_product_context import (
     client_income_needs_schedule_context,
+    client_restriction_profile_context,
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
     liquidity_cashflow_projection_context,
+    liquidity_reserve_requirement_context,
+    planned_withdrawal_schedule_context,
     source_status_to_method_status,
+    sustainability_preference_profile_context,
     transaction_cost_context_from_curve,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -14,12 +18,24 @@ from src.core.dpm_source_context import (
     DpmCoreClientIncomeNeedsScheduleEntry,
     DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreClientIncomeNeedsScheduleSupportability,
+    DpmCoreClientRestrictionEntry,
+    DpmCoreClientRestrictionProfileResponse,
+    DpmCoreClientRestrictionSupportability,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExternalOrderExecutionAcknowledgementSupportability,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgeExecutionReadinessSupportability,
     DpmCoreIntegrationWindow,
+    DpmCoreLiquidityReserveRequirementEntry,
+    DpmCoreLiquidityReserveRequirementResponse,
+    DpmCoreLiquidityReserveRequirementSupportability,
+    DpmCorePlannedWithdrawalScheduleEntry,
+    DpmCorePlannedWithdrawalScheduleResponse,
+    DpmCorePlannedWithdrawalScheduleSupportability,
     DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceEntry,
+    DpmCoreSustainabilityPreferenceProfileResponse,
+    DpmCoreSustainabilityPreferenceSupportability,
     DpmCoreTransactionCostCurvePageMetadata,
     DpmCoreTransactionCostCurvePoint,
     DpmCoreTransactionCostCurveResponse,
@@ -171,6 +187,153 @@ def _income_needs_schedule() -> DpmCoreClientIncomeNeedsScheduleResponse:
     )
 
 
+def _liquidity_reserve_requirement() -> DpmCoreLiquidityReserveRequirementResponse:
+    return DpmCoreLiquidityReserveRequirementResponse(
+        product_name="LiquidityReserveRequirement",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        requirements=[
+            DpmCoreLiquidityReserveRequirementEntry(
+                reserve_requirement_id="reserve-1",
+                reserve_type="OPERATING_CASH",
+                reserve_status="ACTIVE",
+                required_amount=Decimal("7500"),
+                currency="USD",
+                horizon_days=30,
+                priority=1,
+                policy_source="BANK_POLICY",
+                effective_from=date(2026, 6, 1),
+                requirement_version=1,
+            ),
+            DpmCoreLiquidityReserveRequirementEntry(
+                reserve_requirement_id="reserve-2",
+                reserve_type="CLIENT_BUFFER",
+                reserve_status="ACTIVE",
+                required_amount=Decimal("10000"),
+                currency="SGD",
+                horizon_days=90,
+                priority=2,
+                policy_source="CLIENT_POLICY",
+                effective_from=date(2026, 6, 1),
+                requirement_version=1,
+            ),
+        ],
+        supportability=DpmCoreLiquidityReserveRequirementSupportability(
+            state="READY",
+            reason="LIQUIDITY_RESERVE_READY",
+            requirement_count=2,
+        ),
+        lineage={"source_batch_fingerprint": "reserve-lineage"},
+    )
+
+
+def _planned_withdrawal_schedule() -> DpmCorePlannedWithdrawalScheduleResponse:
+    return DpmCorePlannedWithdrawalScheduleResponse(
+        product_name="PlannedWithdrawalSchedule",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        horizon_days=120,
+        withdrawals=[
+            DpmCorePlannedWithdrawalScheduleEntry(
+                withdrawal_schedule_id="withdrawal-1",
+                withdrawal_type="TUITION",
+                withdrawal_status="ACTIVE",
+                amount=Decimal("12000"),
+                currency="USD",
+                scheduled_date=date(2026, 7, 15),
+                recurrence_frequency="ONE_TIME",
+            ),
+            DpmCorePlannedWithdrawalScheduleEntry(
+                withdrawal_schedule_id="withdrawal-2",
+                withdrawal_type="LIFESTYLE",
+                withdrawal_status="ACTIVE",
+                amount=Decimal("5000"),
+                currency="SGD",
+                scheduled_date=date(2026, 8, 1),
+                recurrence_frequency="MONTHLY",
+            ),
+        ],
+        supportability=DpmCorePlannedWithdrawalScheduleSupportability(
+            state="INCOMPLETE",
+            reason="PLANNED_WITHDRAWALS_PARTIAL",
+            withdrawal_count=2,
+            missing_data_families=["external_planning_review"],
+        ),
+        lineage={"source_batch_fingerprint": "withdrawal-lineage"},
+    )
+
+
+def _client_restriction_profile() -> DpmCoreClientRestrictionProfileResponse:
+    return DpmCoreClientRestrictionProfileResponse(
+        product_name="ClientRestrictionProfile",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        restrictions=[
+            DpmCoreClientRestrictionEntry(
+                restriction_scope="INSTRUMENT",
+                restriction_code="NO_SINGLE_STOCK_A",
+                restriction_status="ACTIVE",
+                restriction_source="CLIENT_MANDATE",
+                applies_to_buy=True,
+                applies_to_sell=False,
+                instrument_ids=["EQ_A"],
+                effective_from=date(2026, 1, 1),
+                restriction_version=3,
+                source_record_id="restriction-record-1",
+            )
+        ],
+        supportability=DpmCoreClientRestrictionSupportability(
+            state="READY",
+            reason="CLIENT_RESTRICTIONS_READY",
+            restriction_count=1,
+            missing_data_families=[],
+        ),
+        lineage={"source_batch_fingerprint": "restriction-lineage"},
+    )
+
+
+def _sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfileResponse:
+    return DpmCoreSustainabilityPreferenceProfileResponse(
+        product_name="SustainabilityPreferenceProfile",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        preferences=[
+            DpmCoreSustainabilityPreferenceEntry(
+                preference_framework="SFDR",
+                preference_code="MIN_ARTICLE_8",
+                preference_status="ACTIVE",
+                preference_source="CLIENT_MANDATE",
+                minimum_allocation=Decimal("0.40"),
+                applies_to_asset_classes=["EQUITY"],
+                exclusion_codes=["THERMAL_COAL"],
+                positive_tilt_codes=["LOW_CARBON"],
+                effective_from=date(2026, 1, 1),
+                preference_version=2,
+                source_record_id="preference-record-1",
+            )
+        ],
+        supportability=DpmCoreSustainabilityPreferenceSupportability(
+            state="INCOMPLETE",
+            reason="SUSTAINABILITY_PREFERENCES_PARTIAL",
+            preference_count=1,
+            missing_data_families=["classification_review"],
+        ),
+        lineage={"source_batch_fingerprint": "sustainability-lineage"},
+    )
+
+
 def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:
     context = client_income_needs_schedule_context(_income_needs_schedule())
 
@@ -187,6 +350,38 @@ def test_client_income_needs_context_preserves_priority_currency_and_status() ->
     ]
 
 
+def test_liquidity_reserve_requirement_context_preserves_horizon_currency_and_status() -> None:
+    context = liquidity_reserve_requirement_context(_liquidity_reserve_requirement())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "LiquidityReserveRequirement"
+    assert context.source_id == "reserve-lineage"
+    assert context.requirement_count == 2
+    assert context.currencies == ["SGD", "USD"]
+    assert context.maximum_horizon_days == 90
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert context.reason_codes == [
+        "LIQUIDITY_RESERVE_READY",
+        "CORE_LIQUIDITY_RESERVE_PRESENT",
+    ]
+
+
+def test_planned_withdrawal_context_preserves_horizon_currency_and_status() -> None:
+    context = planned_withdrawal_schedule_context(_planned_withdrawal_schedule())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "PlannedWithdrawalSchedule"
+    assert context.source_id == "withdrawal-lineage"
+    assert context.withdrawal_count == 2
+    assert context.currencies == ["SGD", "USD"]
+    assert context.horizon_days == 120
+    assert context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert context.reason_codes == [
+        "PLANNED_WITHDRAWALS_PARTIAL",
+        "CORE_PLANNED_WITHDRAWALS_PRESENT",
+    ]
+
+
 def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_status() -> None:
     context = liquidity_cashflow_projection_context(_cashflow_projection())
 
@@ -198,6 +393,39 @@ def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_stat
     assert context.include_projected is True
     assert context.data_quality_status == ConstructionMethodStatus.DEGRADED
     assert context.reason_codes == ["CORE_CASHFLOW_PROJECTION_READY"]
+
+
+def test_client_restriction_profile_context_preserves_rules_and_lineage() -> None:
+    context = client_restriction_profile_context(_client_restriction_profile())
+
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "ClientRestrictionProfile"
+    assert context.source_id == "restriction-lineage"
+    assert context.portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert context.client_id == "client-1"
+    assert context.restriction_count == 1
+    assert context.reason_codes == ["CLIENT_RESTRICTIONS_READY"]
+    assert len(context.restrictions) == 1
+    assert context.restrictions[0].restriction_code == "NO_SINGLE_STOCK_A"
+    assert context.restrictions[0].instrument_ids == ["EQ_A"]
+    assert context.restrictions[0].source_record_id == "restriction-record-1"
+
+
+def test_sustainability_preference_context_preserves_preferences_and_status() -> None:
+    context = sustainability_preference_profile_context(_sustainability_preference_profile())
+
+    assert context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "SustainabilityPreferenceProfile"
+    assert context.source_id == "sustainability-lineage"
+    assert context.preference_count == 1
+    assert context.missing_data_families == ["classification_review"]
+    assert context.reason_codes == ["SUSTAINABILITY_PREFERENCES_PARTIAL"]
+    assert len(context.preferences) == 1
+    assert context.preferences[0].preference_code == "MIN_ARTICLE_8"
+    assert context.preferences[0].minimum_allocation == Decimal("0.40")
+    assert context.preferences[0].positive_tilt_codes == ["LOW_CARBON"]
 
 
 def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:
