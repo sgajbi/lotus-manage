@@ -117,6 +117,48 @@ def test_client_restriction_supportability_blocks_matching_active_buy_rule() -> 
     assert "MISSING_ISSUER_CLASSIFICATION" in reason_codes
 
 
+def test_client_restriction_supportability_degrades_without_source_profile() -> None:
+    request = _request()
+    result = _trade_result()
+
+    assert (
+        client_restriction_status(request=request, result=result, context=None)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert client_restriction_reason_codes(request=request, result=result, context=None) == [
+        "CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"
+    ]
+
+
+def test_client_restriction_supportability_ignores_inactive_and_non_applicable_rules() -> None:
+    request = _request()
+    result = _trade_result()
+    context = AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_restriction_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-06-01",
+        restriction_count=2,
+        missing_data_families=[],
+        restrictions=[
+            _restriction_rule(restriction_status="INACTIVE"),
+            _restriction_rule(restriction_code="SELL_ONLY_EQ_B", applies_to_buy=False),
+        ],
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+    )
+
+    assert (
+        client_restriction_status(request=request, result=result, context=context)
+        == ConstructionMethodStatus.READY
+    )
+    assert client_restriction_reason_codes(request=request, result=result, context=context) == [
+        "CLIENT_RESTRICTION_PROFILE_APPLIED",
+        "CLIENT_RESTRICTION_PROFILE_READY",
+    ]
+
+
 def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> None:
     intent = next(intent for intent in _trade_result().intents if intent.instrument_id == "EQ_B")
     shelf = shelf_entry(

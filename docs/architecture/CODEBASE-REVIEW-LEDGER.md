@@ -7934,3 +7934,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   direct helper modules for domain-specific behavior.
 - Wiki decision: no wiki source change required; this is internal test navigation cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-322: Client restriction supportability edge coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  client-restriction supportability, and this ledger.
+- Finding: direct client-restriction supportability tests covered a blocking active buy rule but did
+  not prove fail-soft absence handling or inactive/non-applicable rule handling.
+- Action: added direct regressions for missing source profile degradation and for inactive or
+  non-buy-applicable restrictions applying no block while still recording profile-applied evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  client-restriction supportability regressions passed with 4 tests.
+- Follow-up: keep rule applicability tests explicit so client mandate restrictions remain auditable
+  as supported scopes expand.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
