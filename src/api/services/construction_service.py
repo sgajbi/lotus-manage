@@ -39,6 +39,7 @@ from src.api.services.construction_source_product_context import (
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
     source_status_to_method_status,
+    transaction_cost_context_from_curve,
 )
 from src.api.services.construction_esg_supportability import (
     client_restriction_reason_codes,
@@ -82,7 +83,6 @@ from src.core.construction.models import (
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
-    AuthoritativeTransactionCostPoint,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
@@ -502,44 +502,7 @@ def _authority_context_with_source_products(
     if authority_context.transaction_cost_context is None:
         curve = source_context.context.transaction_cost_curve
         if curve is not None:
-            curve_payload = curve.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(curve_payload)
-            source_id = (
-                curve.source_batch_fingerprint
-                or curve.lineage.get("source_batch_fingerprint")
-                or curve.page.request_scope_fingerprint
-            )
-            context_updates["transaction_cost_context"] = AuthoritativeTransactionCostContext(
-                supportability_status=_source_status_to_method_status(curve.supportability.state),
-                source_system="lotus-core",
-                source_product_name=curve.product_name,
-                source_product_version=curve.product_version,
-                source_id=source_id,
-                content_hash=source_hash,
-                as_of_date=curve.as_of_date,
-                window_start_date=curve.window.start_date,
-                window_end_date=curve.window.end_date,
-                returned_curve_point_count=curve.supportability.returned_curve_point_count,
-                missing_security_ids=curve.supportability.missing_security_ids,
-                curve_points=[
-                    AuthoritativeTransactionCostPoint(
-                        security_id=point.security_id,
-                        transaction_type=point.transaction_type,
-                        currency=point.currency,
-                        observation_count=point.observation_count,
-                        total_notional=point.total_notional,
-                        total_cost=point.total_cost,
-                        average_cost_bps=point.average_cost_bps,
-                        min_cost_bps=point.min_cost_bps,
-                        max_cost_bps=point.max_cost_bps,
-                        first_observed_date=point.first_observed_date,
-                        last_observed_date=point.last_observed_date,
-                        sample_transaction_ids=point.sample_transaction_ids[:5],
-                    )
-                    for point in curve.curve_points[:10]
-                ],
-                reason_codes=[curve.supportability.reason],
-            )
+            context_updates["transaction_cost_context"] = transaction_cost_context_from_curve(curve)
     if authority_context.liquidity_context is None:
         cashflow_projection = source_context.context.portfolio_cashflow_projection
         income_needs = getattr(source_context.context, "client_income_needs_schedule", None)

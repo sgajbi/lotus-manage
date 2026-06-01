@@ -6650,3 +6650,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   starting with transaction cost and liquidity source products.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-261: Transaction-cost source curve context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: lotus-core `TransactionCostCurve:v1` mapping into Manage's authoritative
+  transaction-cost context remained embedded in construction orchestration. This mapping controls
+  lineage, completeness posture, evidence-window dates, missing securities, and bounded sample
+  transaction evidence for cost-aware alternatives.
+- Action: extracted transaction-cost curve mapping into
+  `transaction_cost_context_from_curve`. Added direct tests that preserve source lineage, degraded
+  supportability, returned/missing-security evidence, and the five-transaction sample bound.
+- Status: hardened
+- Evidence: focused source-product context, transaction-cost supportability, construction
+  enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 58 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining source-product authority-context assembly for liquidity,
+  restriction, and sustainability source products.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
