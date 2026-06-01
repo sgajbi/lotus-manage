@@ -9420,3 +9420,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   resolution or mandate-evidence resolution where the service can remain orchestration-focused.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-387: Proof pack selected-source extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_selected_source.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_selected_source.py`, selected proof-pack service
+  regressions, and this ledger.
+- Finding: selected-alternative proof-pack generation still performed source lookup, selected
+  alternative validation, optional selection lookup, and linked-run degradation inline in the public
+  service function.
+- Action: extracted selected-alternative source resolution into a focused helper that returns the
+  alternative set, persisted selection, optional linked run, and workflow decisions while preserving
+  existing missing-source validation and missing-run degradation behavior; updated service
+  regressions to import the source validation error from the core proof-pack owner.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_selected_source.py`; direct selected-source
+  tests and selected proof-pack service regressions passed with 16 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `proof_pack_service.py` by extracting mandate evidence resolution or
+  proof-pack persistence/idempotency replay support where direct coverage remains clear.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -10,6 +10,7 @@ from src.core.construction import (
     build_rebalance_result_alternative,
 )
 from src.core.mandates import DpmMandateHealthInput, calculate_mandate_health
+from src.core.proof_packs import ProofPackSourceValidationError
 from src.core.proof_packs.models import DpmProofPackStoredRef
 from src.core.proof_packs.repository import DpmProofPackConflictError
 from src.core.rebalance_runs.service import DpmRunNotFoundError
@@ -189,7 +190,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
     repository, alternative_set_id, selected_alternative_id = _construction_repository()
     proof_repository = InMemoryDpmProofPackRepository()
 
-    with pytest.raises(proof_pack_service.ProofPackSourceValidationError, match="NOT_FOUND"):
+    with pytest.raises(ProofPackSourceValidationError, match="NOT_FOUND"):
         proof_pack_service.generate_proof_pack_from_selected_alternative(
             alternative_set_id="missing",
             selected_alternative_id=selected_alternative_id,
@@ -204,7 +205,7 @@ def test_selected_alternative_service_validates_sources_and_missing_run_degrades
             proof_pack_repository=proof_repository,
         )
     with pytest.raises(
-        proof_pack_service.ProofPackSourceValidationError,
+        ProofPackSourceValidationError,
         match="DPM_SELECTED_ALTERNATIVE_NOT_FOUND",
     ):
         proof_pack_service.generate_proof_pack_from_selected_alternative(
@@ -501,7 +502,7 @@ def test_proof_pack_http_exception_mapping() -> None:
     mappings = [
         (DpmProofPackConflictError("conflict"), 409, "conflict"),
         (DpmRunNotFoundError("missing"), 404, "missing"),
-        (proof_pack_service.ProofPackSourceValidationError("bad-source"), 404, "bad-source"),
+        (ProofPackSourceValidationError("bad-source"), 404, "bad-source"),
         (
             proof_pack_service.DpmProofPackReportInputNotGeneratedError("no-report"),
             424,

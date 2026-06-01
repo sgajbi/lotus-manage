@@ -8,7 +8,6 @@ from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.proof_packs import (
     AI_EVIDENCE_REF_TYPE,
     REPORT_INPUT_REF_TYPE,
-    ProofPackSourceValidationError,
     build_ai_evidence_input,
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
@@ -27,6 +26,7 @@ from src.api.services.proof_pack_handoff_refs import (
     hydrate_handoff_refs,
     stored_ref_to_evidence_ref,
 )
+from src.api.services.proof_pack_selected_source import resolve_selected_alternative_source
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackEvidenceRef,
@@ -129,43 +129,22 @@ def generate_proof_pack_from_selected_alternative(
     )
     if existing is not None:
         return existing
-    alternative_set = construction_repository.get_alternative_set(
-        alternative_set_id=alternative_set_id
+    selected_source = resolve_selected_alternative_source(
+        alternative_set_id=alternative_set_id,
+        selected_alternative_id=selected_alternative_id,
+        construction_repository=construction_repository,
+        run_service=run_service,
     )
-    if alternative_set is None:
-        raise ProofPackSourceValidationError("DPM_ALTERNATIVE_SET_NOT_FOUND")
-    selection = construction_repository.get_selection(alternative_set_id=alternative_set_id)
-    selected = next(
-        (
-            alternative
-            for alternative in alternative_set.alternatives
-            if alternative.alternative_id == selected_alternative_id
-        ),
-        None,
-    )
-    if selected is None:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
-    run = None
-    workflow_decisions = []
-    if selected.rebalance_run_id is not None:
-        try:
-            run = run_service.get_run_record(rebalance_run_id=selected.rebalance_run_id)
-            workflow_decisions = run_service.list_workflow_decision_records(
-                rebalance_run_id=selected.rebalance_run_id
-            )
-        except DpmRunNotFoundError:
-            run = None
-            workflow_decisions = []
     mandate_twin, mandate_health, mandate_evidence_gap_codes = _resolve_mandate_evidence(
         mandate_id=mandate_id,
-        portfolio_id=alternative_set.portfolio_id,
+        portfolio_id=selected_source.alternative_set.portfolio_id,
         mandate_repository=mandate_repository,
     )
     proof_pack = build_proof_pack_from_selected_alternative(
-        alternative_set=alternative_set,
+        alternative_set=selected_source.alternative_set,
         selected_alternative_id=selected_alternative_id,
-        run=run,
-        selection=selection,
+        run=selected_source.run,
+        selection=selected_source.selection,
         created_by=actor_id,
         reason=reason,
         correlation_id=correlation_id,
@@ -173,7 +152,7 @@ def generate_proof_pack_from_selected_alternative(
         mandate_twin=mandate_twin,
         mandate_health=mandate_health,
         mandate_evidence_gap_codes=mandate_evidence_gap_codes,
-        workflow_decisions=workflow_decisions,
+        workflow_decisions=selected_source.workflow_decisions,
         direct_regime_stress_context=direct_regime_stress_context,
     )
     _persist(
