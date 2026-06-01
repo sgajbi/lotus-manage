@@ -8167,3 +8167,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   own deterministic validation and model assembly.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-333: Construction alternative builder extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_builder.py`,
+  `tests/unit/dpm/construction/test_alternative_builder.py`, construction API generation
+  regressions, and this ledger.
+- Finding: construction generation orchestration still embedded the method loop that resolved
+  method plans, ran non-heuristic effective methods, wrapped rebalance results as alternatives, and
+  applied supportability.
+- Action: extracted alternative construction into a dedicated builder module with direct coverage
+  for method ordering, baseline handling, effective-method execution, method-plan diagnostics, and
+  request-hash suffix preservation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py` and `construction_alternative_builder.py`; direct
+  alternative-builder regression passed with 1 test; selected construction API generation
+  regressions for first-wave replay and turnover-budget pending review passed with 2 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: keep `construction_service.py` limited to request hashing, idempotency, persistence,
+  and high-level orchestration while method execution/build policy lives in focused helpers.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
