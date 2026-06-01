@@ -6621,3 +6621,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-product authority-context assembly by source family.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-260: External treasury currency-overlay context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: external treasury currency-overlay context construction remained embedded in the
+  construction service. The logic preserves fail-closed source evidence for hedge execution
+  readiness, currency exposure, hedge policy, eligible hedge instruments, and FX forward curves,
+  but does not authorize local treasury, OMS, execution, or forward-pricing claims. Keeping this
+  source-product boundary inside orchestration made it harder to audit.
+- Action: moved external treasury currency-overlay context construction into
+  `construction_source_product_context.py`, alongside the extracted external execution
+  acknowledgement boundary. Added direct tests for absent source response and fail-closed hedge
+  execution readiness evidence, including lineage preservation, blocked treasury/OMS/execution
+  capabilities, zero hedge-ratio defaults, eligible-currency preservation, and reason-code
+  propagation.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 55 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining source-product authority-context assembly by source family,
+  starting with transaction cost and liquidity source products.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
