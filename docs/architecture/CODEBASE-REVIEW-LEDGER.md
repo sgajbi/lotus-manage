@@ -8861,3 +8861,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   remains explicit and idempotency behavior stays directly tested.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-363: Wave create persistence conflict extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_persistence.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave API regressions, and this ledger.
+- Finding: after update conflict extraction, the create-wave path still translated repository
+  save/idempotency conflicts directly in `wave_service.py`, leaving write-boundary error mapping
+  split across orchestration and persistence helper code.
+- Action: extended the wave persistence helper with create/save conflict translation, replaced the
+  create path try/except with the shared helper while keeping idempotency replay orchestration in
+  `wave_service.py`, removed now-unused create-conflict imports from the service, and expanded
+  direct persistence tests for save forwarding, duplicate-wave and idempotency conflict translation,
+  helper aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_persistence.py`; direct wave persistence tests and selected
+  wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing wave creation assembly separately; persistence translation is now
+  centralized, but request hashing and preview-to-create promotion remain orchestration concerns.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

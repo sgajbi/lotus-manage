@@ -27,7 +27,10 @@ from src.api.services.wave_item_transitions import (
 )
 from src.api.services.wave_item_builder import build_wave_item as _build_item
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
-from src.api.services.wave_persistence import update_wave_or_raise as _update_wave_or_raise
+from src.api.services.wave_persistence import (
+    save_wave_or_raise as _save_wave_or_raise,
+    update_wave_or_raise as _update_wave_or_raise,
+)
 from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_report_context import portfolio_memory_context_for_report
@@ -53,8 +56,6 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
-    DpmWaveAlreadyExistsError,
-    DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
@@ -181,14 +182,12 @@ def create_wave(
             metadata={"idempotency_key_hash": _idempotency_key_hash(idempotency_key)},
         ),
     )
-    try:
-        wave_repository.save_wave(
-            wave=wave,
-            idempotency_key=idempotency_key,
-            request_hash=request_hash,
-        )
-    except (DpmWaveAlreadyExistsError, DpmWaveIdempotencyConflictError) as exc:
-        raise DpmWaveValidationError("WAVE_CREATE_CONFLICT", str(exc)) from exc
+    _save_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=wave,
+        idempotency_key=idempotency_key,
+        request_hash=request_hash,
+    )
     return wave, False
 
 
