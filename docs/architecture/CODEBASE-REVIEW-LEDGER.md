@@ -7157,3 +7157,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   their mapping logic, while preserving the authority-context facade for call-site stability.
 - Wiki decision: no wiki source change required; this is internal module factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-281: Client profile source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_client_profile_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: client restriction and sustainability preference source-product mapping was pure
+  source-boundary assembly, but it still lived in the broad construction source-product facade after
+  the liquidity family was separated.
+- Action: moved client restriction profile and sustainability preference profile mapping into a
+  dedicated client-profile source-context helper. The construction source-product facade imports and
+  re-exports the functions so existing authority-context composition remains stable while direct
+  tests target the narrower source-family module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: continue decomposing the remaining transaction-cost, external treasury, and execution
+  acknowledgement mapping families as independent slices.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.

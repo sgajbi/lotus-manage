@@ -1,6 +1,10 @@
 from decimal import Decimal
 
 from src.core.common.canonical import hash_canonical_payload
+from src.api.services.construction_client_profile_source_context import (
+    client_restriction_profile_context,
+    sustainability_preference_profile_context,
+)
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
@@ -10,18 +14,13 @@ from src.api.services.construction_liquidity_source_context import (
     source_status_to_method_status,
 )
 from src.core.construction.models import (
-    AuthoritativeClientRestrictionContext,
-    AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
-    AuthoritativeSustainabilityPreference,
-    AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
 )
 from src.core.dpm_source_context import (
-    DpmCoreClientRestrictionProfileResponse,
     DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalEligibleHedgeInstrumentResponse,
     DpmCoreExternalFXForwardCurveResponse,
@@ -29,7 +28,6 @@ from src.core.dpm_source_context import (
     DpmCoreExternalHedgePolicyResponse,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExecutionContext,
-    DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
     DpmResolvedSourceContext,
 )
@@ -344,68 +342,6 @@ def external_treasury_currency_overlay_context(
             fx_forward_curve.curve_points if fx_forward_curve is not None else []
         ),
         reason_codes=reason_codes,
-    )
-
-
-def client_restriction_profile_context(
-    restriction_profile: DpmCoreClientRestrictionProfileResponse,
-) -> AuthoritativeClientRestrictionContext:
-    payload = restriction_profile.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
-    return AuthoritativeClientRestrictionContext(
-        supportability_status=source_status_to_method_status(
-            restriction_profile.supportability.state
-        ),
-        source_system="lotus-core",
-        source_product_name=restriction_profile.product_name,
-        source_product_version=restriction_profile.product_version,
-        source_id=restriction_profile.source_batch_fingerprint
-        or restriction_profile.lineage.get("source_batch_fingerprint")
-        or source_hash,
-        content_hash=source_hash,
-        portfolio_id=restriction_profile.portfolio_id,
-        client_id=restriction_profile.client_id,
-        mandate_id=restriction_profile.mandate_id,
-        as_of_date=restriction_profile.as_of_date,
-        restriction_count=restriction_profile.supportability.restriction_count,
-        missing_data_families=restriction_profile.supportability.missing_data_families,
-        restrictions=[
-            AuthoritativeClientRestrictionRule.model_validate(rule.model_dump(mode="python"))
-            for rule in restriction_profile.restrictions
-        ],
-        reason_codes=[restriction_profile.supportability.reason],
-    )
-
-
-def sustainability_preference_profile_context(
-    sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
-) -> AuthoritativeSustainabilityPreferenceContext:
-    payload = sustainability_profile.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
-    return AuthoritativeSustainabilityPreferenceContext(
-        supportability_status=source_status_to_method_status(
-            sustainability_profile.supportability.state
-        ),
-        source_system="lotus-core",
-        source_product_name=sustainability_profile.product_name,
-        source_product_version=sustainability_profile.product_version,
-        source_id=sustainability_profile.source_batch_fingerprint
-        or sustainability_profile.lineage.get("source_batch_fingerprint")
-        or source_hash,
-        content_hash=source_hash,
-        portfolio_id=sustainability_profile.portfolio_id,
-        client_id=sustainability_profile.client_id,
-        mandate_id=sustainability_profile.mandate_id,
-        as_of_date=sustainability_profile.as_of_date,
-        preference_count=sustainability_profile.supportability.preference_count,
-        missing_data_families=sustainability_profile.supportability.missing_data_families,
-        preferences=[
-            AuthoritativeSustainabilityPreference.model_validate(
-                preference.model_dump(mode="python")
-            )
-            for preference in sustainability_profile.preferences
-        ],
-        reason_codes=[sustainability_profile.supportability.reason],
     )
 
 
