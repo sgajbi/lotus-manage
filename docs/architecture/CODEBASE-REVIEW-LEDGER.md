@@ -7134,3 +7134,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   diagnostic assembly internals.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-280: Liquidity source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: liquidity-family source-product mapping had been correctly extracted from construction
+  orchestration but remained embedded in the broader source-product context helper alongside
+  transaction-cost, external treasury, client restriction, sustainability, and execution evidence.
+- Action: moved the liquidity cashflow, income-needs, reserve-requirement, planned-withdrawal, and
+  source-status mapping helpers into a dedicated liquidity source-context module. The broader helper
+  now imports and re-exports those functions while retaining authority-context composition, keeping
+  existing callers stable and making the pure liquidity mapping boundary easier to review directly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: continue splitting non-liquidity source-product families when the next slice touches
+  their mapping logic, while preserving the authority-context facade for call-site stability.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
