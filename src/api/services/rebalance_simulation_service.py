@@ -28,9 +28,6 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceStatefulInputDisabledError,
 )
 from src.api.services.rebalance_policy_pack_service import load_dpm_policy_pack_catalog
-from src.api.services.rebalance_policy_pack_execution import (
-    resolve_execution_policy_pack_context,
-)
 from src.api.services.rebalance_request_envelope_resolution import (
     resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
     resolve_rebalance_request_envelope as resolve_rebalance_request_envelope_from_source,
@@ -44,8 +41,11 @@ from src.api.services.rebalance_async_config import (
 from src.api.services.rebalance_async_operation_runner import (
     run_analyze_async_operation_from_store,
 )
-from src.api.services.rebalance_async_submission_payload import build_analyze_async_request_json
 from src.api.services.rebalance_async_submission import submit_analyze_async_request
+from src.api.services.rebalance_async_submission_context import (
+    DpmAsyncSubmissionContext as DpmAsyncSubmissionContext,
+    build_async_submission_context,
+)
 from src.api.services.rebalance_async_manual_execution import (
     execute_analyze_async_operation_now,
 )
@@ -56,7 +56,6 @@ from src.api.services.rebalance_batch_execution_context import (
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_sync_execution import execute_simulation_request
 from src.api.services.rebalance_run_support_service import (
-    DpmRunSupportServiceUnavailableError,
     get_dpm_run_support_service,
     record_dpm_run_for_support,
 )
@@ -163,6 +162,7 @@ def simulate_rebalance(
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
         request_hasher=hash_canonical_payload,
+        catalog_loader=load_dpm_policy_pack_catalog,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
@@ -204,6 +204,7 @@ def execute_batch_analysis(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
+        catalog_loader=load_dpm_policy_pack_catalog,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze. enabled=%s source=%s policy_pack_id=%s",
@@ -257,43 +258,33 @@ def submit_and_optionally_execute_async_analysis(
     current_logger = _resolved_logger()
     if not async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
-    try:
-        service = get_dpm_run_support_service()
-    except DpmRunSupportServiceUnavailableError as exc:
-        raise DpmRebalanceAsyncOperationSupportUnavailableError(exc.detail) from exc
-    policy_context = resolve_execution_policy_pack_context(
-        request_policy_pack_id=policy_pack_id,
+    submission_context = build_async_submission_context(
+        request=request,
+        policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
-        surface="analyze_async",
+        source_context=source_context,
+        support_service_factory=get_dpm_run_support_service,
         catalog_loader=load_dpm_policy_pack_catalog,
-        load_definition=False,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for analyze async. enabled=%s source=%s policy_pack_id=%s",
-        policy_context.resolution.enabled,
-        policy_context.resolution.source,
-        policy_context.resolution.selected_policy_pack_id,
+        submission_context.policy_resolution_enabled,
+        submission_context.policy_resolution_source,
+        submission_context.selected_policy_pack_id,
     )
-    execution_mode = resolve_async_execution_mode()
     accepted = submit_analyze_async_request(
-        service=service,
+        service=submission_context.service,
         correlation_id=correlation_id,
-        request_json=build_analyze_async_request_json(
-            request=request,
-            policy_pack_id=policy_pack_id,
-            tenant_default_policy_pack_id=tenant_default_policy_pack_id,
-            tenant_id=tenant_id,
-            source_context=source_context,
-        ),
+        request_json=submission_context.request_json,
         source_context=source_context,
-        execution_mode_label=execution_mode.lower(),
+        execution_mode_label=submission_context.execution_mode.lower(),
     )
-    if execution_mode == "ACCEPT_ONLY":
+    if submission_context.execution_mode == "ACCEPT_ONLY":
         return accepted
     run_analyze_async_operation(
         operation_id=accepted.operation_id,
-        service=service,
+        service=submission_context.service,
         execution_mode="inline",
     )
     return accepted

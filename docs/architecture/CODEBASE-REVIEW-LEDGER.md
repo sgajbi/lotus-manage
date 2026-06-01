@@ -9861,3 +9861,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   similarly testable context assembly or supportability-boundary extraction.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-405: Rebalance async submission-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_async_submission_context.py`,
+  `tests/unit/api/test_rebalance_async_submission_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `submit_and_optionally_execute_async_analysis` still mixed async support-service
+  resolution, supportability-store unavailable mapping, analyze-async policy resolution,
+  execution-mode resolution, and request-json assembly inside the public orchestration function.
+- Action: extracted async submission-context assembly into a focused helper that returns the
+  support service, persisted request payload, execution mode, and policy resolution metadata while
+  preserving service-level support-service factory injection for test and runtime override
+  compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py`,
+  `rebalance_async_submission_context.py`, and the related rebalance execution-context helpers;
+  direct async submission-context tests and selected rebalance API/runtime regressions passed with
+  144 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git
+  diff --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing rebalance manual execution and async runner seams for directly
+  testable supportability and operation-lifecycle boundaries.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

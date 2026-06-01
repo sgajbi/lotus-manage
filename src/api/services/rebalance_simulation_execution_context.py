@@ -7,7 +7,10 @@ from typing import Optional
 from src.api.request_models import RebalanceRequest
 from src.api.services.rebalance_async_config import env_flag
 from src.api.services.rebalance_operation_identity import resolve_rebalance_correlation_id
-from src.api.services.rebalance_policy_pack_execution import resolve_execution_policy_pack_context
+from src.api.services.rebalance_policy_pack_execution import (
+    PolicyPackCatalogLoader,
+    resolve_execution_policy_pack_context,
+)
 from src.api.services.rebalance_policy_pack_service import load_dpm_policy_pack_catalog
 from src.core.common.canonical import hash_canonical_payload
 from src.core.rebalance.policy_packs import (
@@ -37,13 +40,14 @@ def build_simulation_execution_context(
     tenant_default_policy_pack_id: Optional[str],
     tenant_id: Optional[str],
     request_hasher: RequestHasher = hash_canonical_payload,
+    catalog_loader: PolicyPackCatalogLoader = load_dpm_policy_pack_catalog,
 ) -> DpmSimulationExecutionContext:
     policy_context = resolve_execution_policy_pack_context(
         request_policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
         surface="simulate",
-        catalog_loader=load_dpm_policy_pack_catalog,
+        catalog_loader=catalog_loader,
     )
     return DpmSimulationExecutionContext(
         request_hash=request_hasher(request.model_dump(mode="json")),

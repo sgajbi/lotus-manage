@@ -4,7 +4,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 from src.api.services.rebalance_operation_identity import create_batch_analysis_id
-from src.api.services.rebalance_policy_pack_execution import resolve_execution_policy_pack_context
+from src.api.services.rebalance_policy_pack_execution import (
+    PolicyPackCatalogLoader,
+    resolve_execution_policy_pack_context,
+)
 from src.api.services.rebalance_policy_pack_service import load_dpm_policy_pack_catalog
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 
@@ -23,13 +26,14 @@ def build_batch_execution_context(
     request_policy_pack_id: Optional[str],
     tenant_default_policy_pack_id: Optional[str],
     tenant_id: Optional[str],
+    catalog_loader: PolicyPackCatalogLoader = load_dpm_policy_pack_catalog,
 ) -> DpmBatchExecutionContext:
     policy_context = resolve_execution_policy_pack_context(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
         surface="analyze",
-        catalog_loader=load_dpm_policy_pack_catalog,
+        catalog_loader=catalog_loader,
     )
     return DpmBatchExecutionContext(
         batch_id=create_batch_analysis_id(),
