@@ -8682,3 +8682,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: continue trimming compatibility surfaces as helper modules gain direct tests.
 - Wiki decision: no wiki source change required; this is internal service module-surface cleanup with
   no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-355: Wave search projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_search.py`,
+  `tests/unit/dpm/waves/test_wave_search.py`, selected wave search API regressions, and this ledger.
+- Finding: `wave_service.py` still owned read-only wave search summary projection and supportability
+  filtering, even though it is presentation assembly rather than workflow orchestration.
+- Action: extracted wave search summary projection into a focused helper module and made
+  `wave_service.search_waves` delegate to it; added direct tests for repository filter forwarding,
+  summary field projection, supportability-state filtering, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_search.py`; direct wave search tests and selected search API
+  regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue moving read-only response projection helpers out of `wave_service.py` while
+  keeping lookup errors and repository mutation workflows centralized.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

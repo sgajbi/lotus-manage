@@ -28,6 +28,7 @@ from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_selection_item import (
     with_selection_and_proof_pack as _with_selection_and_proof_pack,
 )
+from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput,
     simulate_item as _simulate_item,
@@ -699,39 +700,15 @@ def search_waves(
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, object]]:
-    waves = wave_repository.list_waves(
+    return search_wave_summaries(
+        wave_repository=wave_repository,
         state=state,
         trigger_type=trigger_type,
         as_of_date=as_of_date,
+        supportability_state=supportability_state,
         limit=limit,
         offset=offset,
     )
-    items: list[dict[str, object]] = []
-    for wave in waves:
-        supportability = _wave_supportability_payload(wave)
-        if (
-            supportability_state is not None
-            and supportability["supportability_state"] != supportability_state
-        ):
-            continue
-        items.append(
-            {
-                "wave_id": wave.wave_id,
-                "wave_state": wave.state,
-                "trigger_type": wave.trigger.trigger_type,
-                "trigger_id": wave.trigger.trigger_id,
-                "as_of_date": wave.as_of_date,
-                "created_at": wave.created_at,
-                "created_by": wave.created_by,
-                "item_count": len(wave.items),
-                "aggregate_metrics": wave.aggregate_metrics,
-                "supportability_state": supportability["supportability_state"],
-                "supportability_reason": supportability["reason"],
-                "latest_event_type": wave.events[-1].event_type if wave.events else None,
-                "latest_event_reason_code": wave.events[-1].reason_code if wave.events else None,
-            }
-        )
-    return items
 
 
 def retrieve_wave_detail(
