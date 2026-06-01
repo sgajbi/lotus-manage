@@ -10750,3 +10750,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper coverage.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-442: Mandate health result alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_result.py`, selected mandate health/API regressions,
+  and this ledger.
+- Finding: `mandate_service.py` still exposed a private mandate health-result calculation alias even
+  though the owning helper module has direct behavior and export-surface tests, and the service only
+  needs the calculation helper for recalculation orchestration.
+- Action: removed the private health-result alias, routed recalculation directly through
+  `calculate_mandate_health_result`, and kept only the public calculation-result model re-export
+  required by existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate health-result and health-persistence tests plus
+  selected mandate API regressions passed with 29 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no health-result private alias remaining in
+  `mandate_service.py`.
+- Follow-up: continue pruning mandate service compatibility aliases in small groups with direct
+  helper tests and service call-site evidence.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

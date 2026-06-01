@@ -62,7 +62,6 @@ _try_resolve_optional_source = try_resolve_optional_source
 _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
-_calculate_mandate_health_result = calculate_mandate_health_result
 _monitoring_run_accumulator = DpmMonitoringRunAccumulator
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
@@ -161,7 +160,7 @@ def recalculate_mandate_health(
 ) -> DpmMandateHealthSnapshot:
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
-    health_result = _calculate_mandate_health_result(health_input)
+    health_result = calculate_mandate_health_result(health_input)
     persist_mandate_health_evidence(
         repository=repository,
         twin=health_input.twin,

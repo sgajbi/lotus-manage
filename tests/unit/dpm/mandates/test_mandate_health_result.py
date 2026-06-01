@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from src.api.services import mandate_health_result, mandate_service
+from src.api.services import mandate_health_result
 from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult,
     calculate_mandate_health_result,
@@ -49,8 +49,9 @@ def test_calculate_mandate_health_result_returns_snapshot_and_exceptions() -> No
 
 
 def test_service_preserves_health_result_import_surface() -> None:
+    from src.api.services import mandate_service
+
     assert mandate_service.DpmMandateHealthCalculationResult is DpmMandateHealthCalculationResult
-    assert mandate_service._calculate_mandate_health_result is calculate_mandate_health_result
 
 
 def test_health_result_helper_exports_public_surface() -> None:
