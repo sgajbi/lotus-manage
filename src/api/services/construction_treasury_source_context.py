@@ -30,6 +30,19 @@ def _source_hash(payload: _JsonPayload | None) -> str | None:
     return hash_canonical_payload(payload) if payload is not None else None
 
 
+def _response_source_id(
+    response: _TreasurySourceResponse | None,
+    fallback_hash: str | None,
+) -> str | None:
+    if response is None:
+        return None
+    return (
+        response.source_batch_fingerprint
+        or response.lineage.get("source_batch_fingerprint")
+        or fallback_hash
+    )
+
+
 def _missing_data_families(response: _TreasurySourceResponse | None) -> list[str]:
     return response.supportability.missing_data_families if response is not None else []
 
@@ -154,13 +167,7 @@ def external_treasury_currency_overlay_context(
         source_product_version=(
             hedge_readiness.product_version if hedge_readiness is not None else None
         ),
-        source_id=(
-            hedge_readiness.source_batch_fingerprint
-            or hedge_readiness.lineage.get("source_batch_fingerprint")
-            or source_hash
-            if hedge_readiness is not None
-            else source_hash
-        ),
+        source_id=_response_source_id(hedge_readiness, source_hash) or source_hash,
         content_hash=source_hash,
         missing_data_families=_merged_missing_data_families(
             hedge_readiness,
@@ -183,12 +190,9 @@ def external_treasury_currency_overlay_context(
         external_currency_exposure_source_product_version=(
             currency_exposure.product_version if currency_exposure is not None else None
         ),
-        external_currency_exposure_source_id=(
-            currency_exposure.source_batch_fingerprint
-            or currency_exposure.lineage.get("source_batch_fingerprint")
-            or exposure_source_hash
-            if currency_exposure is not None
-            else None
+        external_currency_exposure_source_id=_response_source_id(
+            currency_exposure,
+            exposure_source_hash,
         ),
         external_currency_exposure_content_hash=exposure_source_hash,
         external_currency_exposure_count=(
@@ -203,12 +207,9 @@ def external_treasury_currency_overlay_context(
         external_hedge_policy_source_product_version=(
             hedge_policy.product_version if hedge_policy is not None else None
         ),
-        external_hedge_policy_source_id=(
-            hedge_policy.source_batch_fingerprint
-            or hedge_policy.lineage.get("source_batch_fingerprint")
-            or hedge_policy_source_hash
-            if hedge_policy is not None
-            else None
+        external_hedge_policy_source_id=_response_source_id(
+            hedge_policy,
+            hedge_policy_source_hash,
         ),
         external_hedge_policy_content_hash=hedge_policy_source_hash,
         external_hedge_policy_rule_count=(
@@ -225,12 +226,9 @@ def external_treasury_currency_overlay_context(
             if eligible_hedge_instruments is not None
             else None
         ),
-        external_eligible_hedge_instrument_source_id=(
-            eligible_hedge_instruments.source_batch_fingerprint
-            or eligible_hedge_instruments.lineage.get("source_batch_fingerprint")
-            or eligible_hedge_instruments_source_hash
-            if eligible_hedge_instruments is not None
-            else None
+        external_eligible_hedge_instrument_source_id=_response_source_id(
+            eligible_hedge_instruments,
+            eligible_hedge_instruments_source_hash,
         ),
         external_eligible_hedge_instrument_content_hash=(eligible_hedge_instruments_source_hash),
         external_eligible_hedge_instrument_count=(
@@ -249,12 +247,9 @@ def external_treasury_currency_overlay_context(
         external_fx_forward_curve_source_product_version=(
             fx_forward_curve.product_version if fx_forward_curve is not None else None
         ),
-        external_fx_forward_curve_source_id=(
-            fx_forward_curve.source_batch_fingerprint
-            or fx_forward_curve.lineage.get("source_batch_fingerprint")
-            or fx_forward_curve_source_hash
-            if fx_forward_curve is not None
-            else None
+        external_fx_forward_curve_source_id=_response_source_id(
+            fx_forward_curve,
+            fx_forward_curve_source_hash,
         ),
         external_fx_forward_curve_content_hash=fx_forward_curve_source_hash,
         external_fx_forward_curve_point_count=(

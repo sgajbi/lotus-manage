@@ -7633,3 +7633,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability evidence.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-305: Treasury source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: treasury source-id selection repeated the same source-batch, lineage, and content-hash
+  fallback chain across multiple source-family fields.
+- Action: extracted source-id fallback selection into a shared internal helper and reused it for the
+  primary hedge-readiness source and optional treasury family source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep product-specific source-id output fields explicit while sharing the common
+  canonical fallback rule.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
