@@ -7987,3 +7987,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   method-supportability facade continues to carry mixed domain logic.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-325: Direct liquidity supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, liquidity supportability, and this
+  ledger.
+- Finding: after extracting liquidity supportability into a focused module, the direct liquidity
+  policy test still lived in the broader method-supportability test module.
+- Action: moved the liquidity policy supportability regression into a dedicated test module and
+  trimmed now-unused method-supportability fixtures/imports.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the liquidity and method supportability source modules; focused liquidity and method
+  supportability regressions passed with 3 tests.
+- Follow-up: keep method-supportability facade tests focused on the remaining non-liquidity
+  supportability functions until those are split.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
