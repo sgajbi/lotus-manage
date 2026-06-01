@@ -6,6 +6,7 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
+from src.api.services.construction_source_product_context import source_status_to_method_status
 from src.core.construction import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
@@ -648,10 +649,7 @@ def test_source_context_lifts_client_restriction_and_sustainability_profiles() -
         == ConstructionMethodStatus.READY
     )
     assert context.sustainability_preference_context.content_hash
-    assert (
-        construction_service._source_status_to_method_status("INCOMPLETE")
-        == ConstructionMethodStatus.BLOCKED
-    )
+    assert source_status_to_method_status("INCOMPLETE") == ConstructionMethodStatus.BLOCKED
 
 
 def test_source_context_lifts_income_reserve_and_withdrawal_sources() -> None:
