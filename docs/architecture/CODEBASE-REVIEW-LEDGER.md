@@ -7349,3 +7349,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the facade composition behavior itself is under test.
 - Wiki decision: no wiki source change required; this is internal test-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-290: Source-product facade export narrowing
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`,
+  source-product/enrichment tests, and this ledger.
+- Finding: after mapper-family extraction and test import realignment, the source-product facade
+  still re-exported individual mapper helpers. That kept the broad module's surface larger than its
+  remaining responsibility: authority-context composition from source products.
+- Action: narrowed the facade exports to `authority_context_with_source_products` and
+  `source_product_authority_context_updates`, and removed unused re-export-only imports. Split
+  mapper helpers remain available from their family-specific modules.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_context.py`; focused source-product/enrichment
+  regressions passed with 43 tests.
+- Follow-up: keep the facade limited to composition; import source-family mappers directly in tests
+  or code that exercises those mapping contracts.
+- Wiki decision: no wiki source change required; this is internal API-surface narrowing for services
+  with no route, payload, supported-feature, or operator-contract change.
