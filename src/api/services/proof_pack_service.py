@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import (
@@ -26,6 +24,7 @@ from src.api.services.proof_pack_handoff_refs import (
     stored_ref_to_evidence_ref,
 )
 from src.api.services.proof_pack_mandate_evidence import resolve_mandate_evidence
+from src.api.services.proof_pack_persistence import persist_proof_pack
 from src.api.services.proof_pack_replay import find_replayable_proof_pack
 from src.api.services.proof_pack_selected_source import resolve_selected_alternative_source
 from src.core.proof_packs.models import (
@@ -36,8 +35,6 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.waves.repository import DpmWaveRepository
-
-PROOF_PACK_RETENTION_DAYS = 365 * 7
 
 
 class DpmProofPackReportInputNotGeneratedError(Exception):
@@ -91,7 +88,7 @@ def generate_proof_pack_from_run(
         ),
         direct_regime_stress_context=direct_regime_stress_context,
     )
-    _persist(
+    persist_proof_pack(
         proof_pack_repository=proof_pack_repository,
         proof_pack=proof_pack,
         idempotency_key=idempotency_key,
@@ -150,7 +147,7 @@ def generate_proof_pack_from_selected_alternative(
         workflow_decisions=selected_source.workflow_decisions,
         direct_regime_stress_context=direct_regime_stress_context,
     )
-    _persist(
+    persist_proof_pack(
         proof_pack_repository=proof_pack_repository,
         proof_pack=proof_pack,
         idempotency_key=idempotency_key,
@@ -272,17 +269,4 @@ def ensure_handoff_refs(
         proof_pack_repository=proof_pack_repository,
         include_report_input=include_report_input,
         include_ai_evidence_input=include_ai_evidence_input,
-    )
-
-
-def _persist(
-    *,
-    proof_pack_repository: DpmProofPackRepository,
-    proof_pack: DpmPreTradeProofPack,
-    idempotency_key: str | None,
-) -> None:
-    proof_pack_repository.save_proof_pack(
-        proof_pack=proof_pack,
-        idempotency_key=idempotency_key,
-        retention_expires_at=datetime.now(timezone.utc) + timedelta(days=PROOF_PACK_RETENTION_DAYS),
     )

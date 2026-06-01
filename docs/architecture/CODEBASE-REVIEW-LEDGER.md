@@ -9961,3 +9961,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   directly tested without hiding persistence ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-409: Proof-pack persistence retention extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_persistence.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_persistence.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack generation orchestration still owned the append-only persistence retention
+  calculation directly, leaving the seven-year evidence-retention policy hidden in the service
+  rather than in a small supportability helper with direct tests.
+- Action: extracted proof-pack persistence and retention-expiry calculation into a focused helper,
+  kept proof-pack generation orchestration in the service, and added direct tests for deterministic
+  seven-year retention expiry and the helper export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_persistence.py`; direct proof-pack
+  persistence tests and selected proof-pack service/repository regressions passed with 19 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flow for source-resolution and builder-input
+  assembly that can be separated without moving repository lookup ownership out of the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
