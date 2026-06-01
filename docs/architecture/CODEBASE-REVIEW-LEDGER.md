@@ -10921,3 +10921,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   while preserving explicit injection points needed by stateful source-context tests.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-449: Rebalance async env surface narrowing
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` and `main.py` still re-exported async environment-flag
+  parsing even though async mode and feature toggles are owned by `rebalance_async_config`.
+- Action: removed the `env_flag` compatibility export from the rebalance simulation facade, removed
+  the unused `main.py` `_env_flag` export, and added direct export-surface coverage for
+  `rebalance_async_config`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `rebalance_async_config.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scan found no `env_flag` or `_env_flag` compatibility export remaining
+  in `rebalance_simulation_service.py` or `main.py`.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` to runtime orchestration and
+  keep low-level configuration helpers in their owning modules.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

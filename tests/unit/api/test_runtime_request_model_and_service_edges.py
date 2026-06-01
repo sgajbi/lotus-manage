@@ -468,6 +468,15 @@ def test_rebalance_async_config_normalizes_modes_and_flags(monkeypatch) -> None:
     assert async_config.resolve_async_execution_mode() == "INLINE"
 
 
+def test_rebalance_async_config_exports_async_configuration_surface() -> None:
+    assert async_config.__all__ == [
+        "async_manual_execution_enabled",
+        "async_operations_enabled",
+        "env_flag",
+        "resolve_async_execution_mode",
+    ]
+
+
 def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:
     batch_payload = valid_api_payload()
     batch_payload.pop("options")

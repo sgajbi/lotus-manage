@@ -35,7 +35,6 @@ from src.api.services.rebalance_request_envelope_resolution import (
 from src.api.services.rebalance_async_config import (
     async_manual_execution_enabled,
     async_operations_enabled,
-    env_flag,
     resolve_async_execution_mode,
 )
 from src.api.services.rebalance_async_operation_runner import (
@@ -323,7 +322,6 @@ __all__ = [
     "DpmRebalanceSupportabilityStoreUnavailableError",
     "async_manual_execution_enabled",
     "async_operations_enabled",
-    "env_flag",
     "execute_batch_analysis",
     "execute_dpm_async_operation",
     "resolve_async_execution_mode",
