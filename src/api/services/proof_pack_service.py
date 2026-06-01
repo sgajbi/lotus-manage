@@ -4,7 +4,6 @@ from datetime import datetime, timedelta, timezone
 
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.proof_packs import (
     AI_EVIDENCE_REF_TYPE,
     REPORT_INPUT_REF_TYPE,
@@ -26,6 +25,7 @@ from src.api.services.proof_pack_handoff_refs import (
     hydrate_handoff_refs,
     stored_ref_to_evidence_ref,
 )
+from src.api.services.proof_pack_mandate_evidence import resolve_mandate_evidence
 from src.api.services.proof_pack_selected_source import resolve_selected_alternative_source
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -73,7 +73,7 @@ def generate_proof_pack_from_run(
     if existing is not None:
         return existing
     run = run_service.get_run_record(rebalance_run_id=rebalance_run_id)
-    mandate_twin, mandate_health, mandate_evidence_gap_codes = _resolve_mandate_evidence(
+    mandate_evidence = resolve_mandate_evidence(
         mandate_id=mandate_id,
         portfolio_id=run.portfolio_id,
         mandate_repository=mandate_repository,
@@ -84,9 +84,9 @@ def generate_proof_pack_from_run(
         reason=reason,
         correlation_id=correlation_id,
         mandate_id=mandate_id,
-        mandate_twin=mandate_twin,
-        mandate_health=mandate_health,
-        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        mandate_twin=mandate_evidence.twin,
+        mandate_health=mandate_evidence.health,
+        mandate_evidence_gap_codes=mandate_evidence.gap_codes,
         workflow_decisions=run_service.list_workflow_decision_records(
             rebalance_run_id=rebalance_run_id
         ),
@@ -135,7 +135,7 @@ def generate_proof_pack_from_selected_alternative(
         construction_repository=construction_repository,
         run_service=run_service,
     )
-    mandate_twin, mandate_health, mandate_evidence_gap_codes = _resolve_mandate_evidence(
+    mandate_evidence = resolve_mandate_evidence(
         mandate_id=mandate_id,
         portfolio_id=selected_source.alternative_set.portfolio_id,
         mandate_repository=mandate_repository,
@@ -149,9 +149,9 @@ def generate_proof_pack_from_selected_alternative(
         reason=reason,
         correlation_id=correlation_id,
         mandate_id=mandate_id,
-        mandate_twin=mandate_twin,
-        mandate_health=mandate_health,
-        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        mandate_twin=mandate_evidence.twin,
+        mandate_health=mandate_evidence.health,
+        mandate_evidence_gap_codes=mandate_evidence.gap_codes,
         workflow_decisions=selected_source.workflow_decisions,
         direct_regime_stress_context=direct_regime_stress_context,
     )
@@ -316,19 +316,3 @@ def _persist(
         idempotency_key=idempotency_key,
         retention_expires_at=datetime.now(timezone.utc) + timedelta(days=PROOF_PACK_RETENTION_DAYS),
     )
-
-
-def _resolve_mandate_evidence(
-    *,
-    mandate_id: str | None,
-    portfolio_id: str,
-    mandate_repository: DpmMandateRepository | None,
-) -> tuple[DpmMandateDigitalTwin | None, DpmMandateHealthSnapshot | None, list[str]]:
-    if mandate_id is None or mandate_repository is None:
-        return None, None, []
-    twin = mandate_repository.get_latest_mandate(mandate_id=mandate_id)
-    if twin is None:
-        return None, None, []
-    if twin.portfolio_id != portfolio_id:
-        return None, None, ["DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH"]
-    return twin, mandate_repository.get_latest_health_snapshot(mandate_id=mandate_id), []
