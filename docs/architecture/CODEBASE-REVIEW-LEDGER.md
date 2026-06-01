@@ -9468,3 +9468,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or portfolio-memory handoff context support where behavior remains directly testable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-389: Proof pack replay lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`, `src/api/services/proof_pack_replay.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_replay.py`, selected proof-pack service regressions,
+  and this ledger.
+- Finding: run-based and selected-alternative proof-pack generation duplicated replay lookup logic
+  for idempotency-key matches and immutable source-identity matches.
+- Action: extracted replay lookup into a focused helper that preserves idempotency precedence before
+  falling back to proof-pack source identity; updated both generation paths to use the helper and
+  added direct tests for idempotency replay, source-identity fallback, and no-match behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_replay.py`; direct replay tests and selected
+  proof-pack service regressions passed with 15 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing proof-pack and other service hotspots by extracting only reusable
+  support logic with direct tests; keep proof-pack generation orchestration in the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

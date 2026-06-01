@@ -26,6 +26,7 @@ from src.api.services.proof_pack_handoff_refs import (
     stored_ref_to_evidence_ref,
 )
 from src.api.services.proof_pack_mandate_evidence import resolve_mandate_evidence
+from src.api.services.proof_pack_replay import find_replayable_proof_pack
 from src.api.services.proof_pack_selected_source import resolve_selected_alternative_source
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -61,14 +62,10 @@ def generate_proof_pack_from_run(
     proof_pack_repository: DpmProofPackRepository,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
-    if idempotency_key is not None:
-        existing = proof_pack_repository.get_proof_pack_by_idempotency(
-            idempotency_key=idempotency_key
-        )
-        if existing is not None:
-            return existing
-    existing = proof_pack_repository.get_proof_pack(
-        proof_pack_id=proof_pack_id_for_rebalance_run(rebalance_run_id=rebalance_run_id)
+    existing = find_replayable_proof_pack(
+        proof_pack_id=proof_pack_id_for_rebalance_run(rebalance_run_id=rebalance_run_id),
+        idempotency_key=idempotency_key,
+        proof_pack_repository=proof_pack_repository,
     )
     if existing is not None:
         return existing
@@ -115,17 +112,13 @@ def generate_proof_pack_from_selected_alternative(
     proof_pack_repository: DpmProofPackRepository,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
-    if idempotency_key is not None:
-        existing = proof_pack_repository.get_proof_pack_by_idempotency(
-            idempotency_key=idempotency_key
-        )
-        if existing is not None:
-            return existing
-    existing = proof_pack_repository.get_proof_pack(
+    existing = find_replayable_proof_pack(
         proof_pack_id=proof_pack_id_for_selected_alternative(
             alternative_set_id=alternative_set_id,
             selected_alternative_id=selected_alternative_id,
-        )
+        ),
+        idempotency_key=idempotency_key,
+        proof_pack_repository=proof_pack_repository,
     )
     if existing is not None:
         return existing
