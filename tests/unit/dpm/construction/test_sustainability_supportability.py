@@ -96,3 +96,52 @@ def test_sustainability_supportability_marks_allocation_and_classification_revie
     )
     assert "SUSTAINABILITY_ALLOCATION_REVIEW_MAX_EQUITY" in reason_codes
     assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in reason_codes
+
+
+def test_sustainability_supportability_degrades_without_source_profile() -> None:
+    result = _trade_result()
+
+    assert (
+        sustainability_preference_status(result=result, context=None)
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert sustainability_preference_reason_codes(result=result, context=None) == [
+        "SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"
+    ]
+
+
+def test_sustainability_supportability_ignores_inactive_preferences() -> None:
+    result = _trade_result()
+    context = AuthoritativeSustainabilityPreferenceContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_sustainability_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-06-01",
+        preference_count=1,
+        missing_data_families=[],
+        preferences=[
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="INACTIVE_EXCLUSION",
+                preference_status="INACTIVE",
+                preference_source="CLIENT_PROFILE",
+                maximum_allocation=Decimal("0.10"),
+                applies_to_asset_classes=["EQUITY"],
+                exclusion_codes=["THERMAL_COAL"],
+                effective_from="2026-01-01",
+                preference_version=1,
+            )
+        ],
+        reason_codes=["SUSTAINABILITY_PROFILE_READY"],
+    )
+
+    assert (
+        sustainability_preference_status(result=result, context=context)
+        == ConstructionMethodStatus.READY
+    )
+    assert sustainability_preference_reason_codes(result=result, context=context) == [
+        "SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED",
+        "SUSTAINABILITY_PROFILE_READY",
+    ]

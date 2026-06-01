@@ -7951,3 +7951,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   as supported scopes expand.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-323: Sustainability supportability edge coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  sustainability supportability, and this ledger.
+- Finding: direct sustainability supportability tests covered review-triggering active preferences
+  but did not prove missing source-profile degradation or inactive preference handling.
+- Action: added direct regressions for unavailable source profile degradation and inactive
+  sustainability preferences applying no allocation/classification review findings.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  sustainability supportability regressions passed with 3 tests.
+- Follow-up: keep preference-status handling explicit as sustainability preference schemas expand.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
