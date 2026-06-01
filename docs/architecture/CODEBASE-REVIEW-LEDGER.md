@@ -8908,3 +8908,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helpers into directly tested modules.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-365: Wave preview assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_preview.py`,
+  `tests/unit/dpm/waves/test_wave_preview.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled preview waves directly, including trigger validation,
+  item construction, trigger source lineage, aggregate metrics, and preview transition evidence.
+- Action: extracted preview wave assembly into a focused helper module, made
+  `wave_service.preview_wave` delegate to it, removed now-unused service imports, and added direct
+  tests for source-backed preview construction, governed empty-set validation, transition evidence,
+  trigger lineage, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_preview.py`; direct wave preview tests and selected wave
+  API regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue shrinking wave command functions only where helper extraction keeps workflow
+  state transitions and repository interactions readable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -1,8 +1,4 @@
-from __future__ import annotations
-
 import uuid
-from datetime import datetime, timezone
-from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
@@ -27,13 +23,12 @@ from src.api.services.wave_item_transitions import (
     handoff_item as _handoff_item,
     stage_item as _stage_item,
 )
-from src.api.services.wave_item_builder import build_wave_item as _build_item
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_persistence import (
     save_wave_or_raise as _save_wave_or_raise,
     update_wave_or_raise as _update_wave_or_raise,
 )
-from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
+from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_report_context import portfolio_memory_context_for_report
 from src.api.services.wave_selection_item import (
@@ -50,7 +45,6 @@ from src.api.services.wave_source_readiness import (
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
-from src.api.services.wave_trigger_validation import validate_trigger_or_raise as _validate_trigger
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -62,8 +56,6 @@ from src.core.waves import (
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    DpmWaveTrigger,
-    WaveTriggerType,
     WaveState,
     apply_wave_transition,
     build_wave_report_input,
@@ -83,44 +75,15 @@ def preview_wave(
     portfolios: list[dict[str, object]],
     mandate_repository: DpmMandateRepository,
 ) -> DpmRebalanceWave:
-    _validate_trigger(trigger_type, portfolios=portfolios)
-    validated_trigger_type = cast(WaveTriggerType, trigger_type)
-    items = [
-        _build_item(
-            index=index,
-            portfolio=portfolio,
-            mandate_repository=mandate_repository,
-        )
-        for index, portfolio in enumerate(portfolios, start=1)
-    ]
-    wave = DpmRebalanceWave(
-        wave_id=f"dwv_preview_{uuid.uuid4().hex[:12]}",
-        state="DRAFT",
-        trigger=DpmWaveTrigger(
-            trigger_type=validated_trigger_type,
-            trigger_id=trigger_id,
-            rationale=rationale,
-            source_refs=_trigger_source_refs(portfolios),
-        ),
+    return build_preview_wave(
+        trigger_type=trigger_type,
+        trigger_id=trigger_id,
+        rationale=rationale,
         as_of_date=as_of_date,
-        created_at=datetime.now(timezone.utc),
-        created_by=actor_id,
+        actor_id=actor_id,
         correlation_id=correlation_id,
-        items=items,
-        aggregate_metrics=_aggregate(items),
-    )
-    return apply_wave_transition(
-        wave=wave,
-        to_state="PREVIEWED",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="DRAFT",
-            to_state="PREVIEWED",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_PREVIEWED",
-            metadata={"item_count": len(items)},
-        ),
+        portfolios=portfolios,
+        mandate_repository=mandate_repository,
     )
 
 
