@@ -8703,3 +8703,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   keeping lookup errors and repository mutation workflows centralized.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-356: Wave detail projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_detail_projection.py`,
+  `tests/unit/dpm/waves/test_wave_detail_projection.py`, selected wave detail/items/proof-pack API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled read-only detail and item-list payloads directly,
+  including supportability and proof-pack posture projections.
+- Action: extracted wave detail and item-list payload builders into a focused helper module and made
+  `retrieve_wave_detail` and `list_wave_items` delegate to it; added direct tests for supportability,
+  proof-pack posture, item payload projection, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_detail_projection.py`; direct detail projection tests and
+  selected detail/items/proof-pack API regressions passed with 7 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue isolating read-only report-input and portfolio-memory context projection where
+  doing so does not obscure boundary-error translation.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

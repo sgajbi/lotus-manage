@@ -15,6 +15,7 @@ from src.api.services.wave_event_evidence import (
     idempotency_key_hash as _idempotency_key_hash,
     request_hash as _request_hash,
 )
+from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
 from src.api.services.wave_item_transitions import (
     approve_item as _approve_item,
@@ -717,11 +718,7 @@ def retrieve_wave_detail(
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return {
-        "wave": wave,
-        "supportability": _wave_supportability_payload(wave),
-        "proof_pack_posture": proof_pack_posture_for_wave(wave=wave),
-    }
+    return wave_detail_payload(wave)
 
 
 def list_wave_items(
@@ -730,12 +727,7 @@ def list_wave_items(
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return {
-        "wave_id": wave.wave_id,
-        "wave_state": wave.state,
-        "items": wave.items,
-        "aggregate_metrics": wave.aggregate_metrics,
-    }
+    return wave_items_payload(wave)
 
 
 def proof_pack_posture(
