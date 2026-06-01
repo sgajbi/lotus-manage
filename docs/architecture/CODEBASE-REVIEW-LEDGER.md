@@ -7016,3 +7016,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   clear owning module and direct tests.
 - Wiki decision: no wiki source change required; this is internal source-boundary ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-275: Method execution wrapper pruning
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still kept a private `_run_method` wrapper that only
+  forwarded to `run_construction_method`. It added no domain boundary beyond the existing
+  construction method execution module and obscured the two actual orchestration call sites.
+- Action: removed the pass-through wrapper and called `run_construction_method` directly for the
+  heuristic base run and non-heuristic effective method runs.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused method
+  execution/enrichment/API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_execution.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: keep remaining private helpers for true construction orchestration only.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.

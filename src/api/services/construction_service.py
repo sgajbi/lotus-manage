@@ -93,7 +93,7 @@ def generate_construction_alternative_set(
     if existing is not None:
         return existing
 
-    base_result = _run_method(
+    base_result = run_construction_method(
         request=request,
         method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
         correlation_id=correlation_id,
@@ -197,7 +197,7 @@ def _build_alternatives(
         plan = resolve_method_plan(method=method, solver_available=solver_available)
         result = base_result
         if plan.effective_method != ConstructionMethod.HEURISTIC_EXPLAINABLE:
-            result = _run_method(
+            result = run_construction_method(
                 request=request,
                 method=plan.effective_method,
                 correlation_id=correlation_id,
@@ -227,23 +227,6 @@ def _build_alternatives(
             )
         )
     return alternatives
-
-
-def _run_method(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    correlation_id: Optional[str],
-    request_hash: str,
-    run_service: DpmRunSupportService | None,
-) -> RebalanceResult:
-    return run_construction_method(
-        request=request,
-        method=method,
-        correlation_id=correlation_id,
-        request_hash=request_hash,
-        run_service=run_service,
-    )
 
 
 def _apply_supportability(
