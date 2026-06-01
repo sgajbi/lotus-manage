@@ -1,4 +1,4 @@
-from src.api.services import wave_selection_command, wave_service
+from src.api.services import wave_selection_command
 from src.api.services.wave_selection_command import select_persisted_wave_item_alternative
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem
 
@@ -84,13 +84,6 @@ def test_select_persisted_wave_item_alternative_records_selection_and_persists(
     assert captured["selection"]["alternative_id"] == "alt_selected"
     assert captured["build"]["selected_item"] is wave.items[0]
     assert captured["build"]["generate_proof_pack"] is True
-
-
-def test_wave_service_delegates_selection_command() -> None:
-    assert (
-        wave_service.select_persisted_wave_item_alternative
-        is select_persisted_wave_item_alternative
-    )
 
 
 def test_wave_selection_command_exports_public_surface() -> None:

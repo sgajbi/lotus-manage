@@ -7,8 +7,8 @@ from src.api.services.wave_errors import (
 from src.api.services import wave_lifecycle_commands
 from src.api.services import wave_preparation_commands
 from src.api.services import wave_read_model_queries
+from src.api.services import wave_selection_command
 from src.api.services.wave_preview import build_preview_wave
-from src.api.services.wave_selection_command import select_persisted_wave_item_alternative
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
@@ -138,7 +138,7 @@ def select_wave_item_alternative(
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
-    return select_persisted_wave_item_alternative(
+    return wave_selection_command.select_persisted_wave_item_alternative(
         wave_id=wave_id,
         wave_item_id=wave_item_id,
         alternative_id=alternative_id,
