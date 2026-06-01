@@ -10252,3 +10252,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   boundaries for smaller directly tested helper seams.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-421: Wave read-model query extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_read_model_queries.py`,
+  `tests/unit/dpm/waves/test_wave_read_model_queries.py`, selected wave read/API regressions, and
+  this ledger.
+- Finding: wave supportability, detail, item listing, proof-pack posture, and report-input read
+  functions repeated wave lookup and projection wiring in `wave_service.py`, keeping read-model
+  assembly mechanics mixed into the lifecycle command facade.
+- Action: extracted wave-id read-model query helpers that load the governed wave once and delegate
+  to the existing projection/report builders, kept the service API as a thin facade, and added
+  direct tests for read-model loading, report-input assembly, export surface, and service
+  delegation aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_read_model_queries.py`; direct wave read-model query tests
+  and selected wave read/API regressions passed with 149 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave creation/idempotency orchestration for small support helpers
+  that preserve repository ownership while reducing command-service branching.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

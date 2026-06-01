@@ -16,7 +16,6 @@ from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
-from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
 from src.api.services.wave_event_append import append_same_state_event
 from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_handoff_transition import (
@@ -26,14 +25,19 @@ from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.api.services.wave_item_selection_transition import (
     build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
 )
-from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
+from src.api.services.wave_lookup import get_wave_or_raise
 from src.api.services.wave_persistence import (
     save_wave_or_raise as _save_wave_or_raise,
     update_wave_or_raise,
 )
 from src.api.services.wave_preview import build_preview_wave
-from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
-from src.api.services.wave_report_input import build_report_input_for_wave
+from src.api.services.wave_read_model_queries import (
+    wave_detail_for_id,
+    wave_items_for_id,
+    wave_proof_pack_posture_for_id,
+    wave_report_input_for_id,
+    wave_supportability_for_id,
+)
 from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation import build_simulated_wave
@@ -75,6 +79,7 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
+_get_wave_or_raise = get_wave_or_raise
 _wave_state_is_idempotent = wave_state_is_idempotent
 _require_wave_state = require_wave_state
 _update_wave_or_raise = update_wave_or_raise
@@ -446,8 +451,7 @@ def wave_supportability(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return wave_supportability_payload(wave)
+    return wave_supportability_for_id(wave_id=wave_id, wave_repository=wave_repository)
 
 
 def search_waves(
@@ -476,8 +480,7 @@ def retrieve_wave_detail(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return wave_detail_payload(wave)
+    return wave_detail_for_id(wave_id=wave_id, wave_repository=wave_repository)
 
 
 def list_wave_items(
@@ -485,8 +488,7 @@ def list_wave_items(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return wave_items_payload(wave)
+    return wave_items_for_id(wave_id=wave_id, wave_repository=wave_repository)
 
 
 def proof_pack_posture(
@@ -494,8 +496,7 @@ def proof_pack_posture(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return proof_pack_posture_for_wave(wave=wave)
+    return wave_proof_pack_posture_for_id(wave_id=wave_id, wave_repository=wave_repository)
 
 
 def get_report_input(
@@ -506,9 +507,8 @@ def get_report_input(
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmWaveReportInput:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    return build_report_input_for_wave(
-        wave=wave,
+    return wave_report_input_for_id(
+        wave_id=wave_id,
         wave_repository=wave_repository,
         proof_pack_repository=proof_pack_repository,
         outcome_review_repository=outcome_review_repository,
