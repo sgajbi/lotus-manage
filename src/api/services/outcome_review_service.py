@@ -27,6 +27,10 @@ from src.core.outcomes import (
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
 )
+from src.api.services.outcome_review_search import (
+    normalize_outcome_review_search_filter as _normalize_outcome_review_search_filter,
+    search_outcome_review_page,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -166,45 +170,26 @@ def search_outcome_reviews(
 ]:
     """Search persisted outcome reviews without querying source-owner systems."""
 
-    normalized_source_system = normalize_outcome_review_search_filter(source_system)
-    normalized_source_type = normalize_outcome_review_search_filter(source_type)
-    candidate_reviews = repository.list_outcome_reviews(
+    page = search_outcome_review_page(
+        repository=repository,
         portfolio_id=portfolio_id,
         mandate_id=mandate_id,
         wave_id=wave_id,
         rebalance_run_id=rebalance_run_id,
         state=state,
-        limit=source_scan_limit,
-        offset=0,
+        source_system=source_system,
+        source_type=source_type,
+        limit=limit,
+        offset=offset,
+        source_scan_limit=source_scan_limit,
     )
-    matching_reviews = [
-        review
-        for review in candidate_reviews
-        if _review_matches_source_lineage_filters(
-            review=review,
-            source_system=normalized_source_system,
-            source_type=normalized_source_type,
-        )
-    ]
-    source_owner_counts: dict[str, int] = {}
-    source_type_counts: dict[str, int] = {}
-    for review in matching_reviews:
-        for represented_source_system in _review_source_systems(review):
-            source_owner_counts[represented_source_system] = (
-                source_owner_counts.get(represented_source_system, 0) + 1
-            )
-        for represented_source_type in _review_source_types(review):
-            source_type_counts[represented_source_type] = (
-                source_type_counts.get(represented_source_type, 0) + 1
-            )
-    page = matching_reviews[offset : offset + limit]
     return (
-        page,
-        len(matching_reviews),
-        dict(sorted(source_owner_counts.items())),
-        dict(sorted(source_type_counts.items())),
-        normalized_source_system,
-        normalized_source_type,
+        page.items,
+        page.total,
+        page.source_owner_counts,
+        page.source_type_counts,
+        page.normalized_source_system,
+        page.normalized_source_type,
     )
 
 
@@ -237,31 +222,7 @@ def refresh_outcome_review_sources(
 
 
 def normalize_outcome_review_search_filter(value: str | None) -> str | None:
-    if value is None:
-        return None
-    normalized = value.strip()
-    return normalized or None
-
-
-def _review_matches_source_lineage_filters(
-    *,
-    review: DpmPostTradeOutcomeReview,
-    source_system: str | None,
-    source_type: str | None,
-) -> bool:
-    if source_system is not None and source_system not in _review_source_systems(review):
-        return False
-    if source_type is not None and source_type not in _review_source_types(review):
-        return False
-    return True
-
-
-def _review_source_systems(review: DpmPostTradeOutcomeReview) -> set[str]:
-    return {ref.source_system for ref in review.source_lineage if ref.source_system}
-
-
-def _review_source_types(review: DpmPostTradeOutcomeReview) -> set[str]:
-    return {ref.source_type for ref in review.source_lineage if ref.source_type}
+    return _normalize_outcome_review_search_filter(value)
 
 
 def get_report_input(

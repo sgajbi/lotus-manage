@@ -9490,3 +9490,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   support logic with direct tests; keep proof-pack generation orchestration in the service.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-390: Outcome review source-search extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_search.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_search.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: outcome-review source-lineage search normalization, filtering, facet counting, bounded
+  scan behavior, and pagination were embedded in `outcome_review_service.py`, making source-boundary
+  search behavior harder to test directly.
+- Action: extracted source-lineage search into a focused helper returning a typed search page,
+  preserved the public service tuple contract for existing routers, and added direct tests for
+  blank-filter normalization, conjunctive source-owner/source-type matching, sorted facet counts,
+  pagination, bounded source-scan behavior, and current latest-first repository ordering.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_search.py`; direct outcome-review
+  search tests and selected API regressions passed with 9 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing outcome-review or wave service hotspots by extracting creation event
+  assembly, content-hash support, or transition support only where direct tests can pin behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
