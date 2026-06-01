@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from src.api.request_models import RebalanceRequest
+from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
 from src.core.construction import (
     AuthoritativeClientRestrictionContext,
@@ -42,6 +43,7 @@ from src.core.dpm_source_context import (
 )
 from src.core.models import EngineOptions, Money, RebalanceResult
 from src.core.rebalance.engine import run_simulation
+from src.infrastructure.risk_authority import LotusRiskAuthorityUnavailableError
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import (
     cash,
@@ -135,20 +137,20 @@ def test_enrichment_summary_flags_missing_fx_and_cash_weight_sources() -> None:
     assert "CASH_WEIGHT_UNAVAILABLE" in summary.reason_codes
 
 
-def test_construction_service_error_mapping_and_missing_set() -> None:
+def test_construction_error_mapping_and_missing_set() -> None:
     with pytest.raises(ConstructionAlternativeSetNotFoundError):
         construction_service.get_construction_alternative_set(
             repository=InMemoryConstructionRepository(),
             alternative_set_id="missing",
         )
 
-    conflict = construction_service.to_api_http_exception(
+    conflict = construction_http_exception(
         ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
     )
-    missing = construction_service.to_api_http_exception(
+    missing = construction_http_exception(
         ConstructionAlternativeSetNotFoundError("CONSTRUCTION_ALTERNATIVE_SET_NOT_FOUND")
     )
-    unknown = construction_service.to_api_http_exception(RuntimeError("boom"))
+    unknown = construction_http_exception(RuntimeError("boom"))
 
     assert conflict.status_code == 409
     assert missing.status_code == 404
@@ -1293,10 +1295,10 @@ def test_construction_service_uses_method_specific_run_correlation_ids() -> None
 
 class _UnavailableRiskClient:
     def concentration_context(self, *, result, correlation_id):
-        raise construction_service.LotusRiskAuthorityUnavailableError("risk down")
+        raise LotusRiskAuthorityUnavailableError("risk down")
 
     def regime_scenario_context(self, *, result, portfolio_id, as_of_date, correlation_id):
-        raise construction_service.LotusRiskAuthorityUnavailableError("regime down")
+        raise LotusRiskAuthorityUnavailableError("regime down")
 
 
 def test_enrichment_summary_marks_turnover_pending_review_when_budget_drops_intents() -> None:

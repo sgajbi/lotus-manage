@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Path, Request, status
+from fastapi import Path, Request, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_http import read_run_with_not_found_http_mapping
 from src.core.rebalance_runs import (
     DpmRunIdempotencyHistoryResponse,
-    DpmRunNotFoundError,
     DpmRunSupportService,
 )
 
@@ -48,7 +48,6 @@ def get_run_idempotency_history(
     shared._assert_support_apis_enabled()
     shared._assert_idempotency_history_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_idempotency_history(idempotency_key=idempotency_key)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_run_with_not_found_http_mapping(
+        lambda: service.get_idempotency_history(idempotency_key=idempotency_key)
+    )

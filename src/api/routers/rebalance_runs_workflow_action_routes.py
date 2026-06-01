@@ -1,18 +1,16 @@
 from typing import Annotated, Any, Optional
 
-from fastapi import Header, HTTPException, Path, Request, status
+from fastapi import Header, Path, Request, status
 
-from src.api.observability import record_workflow_decision
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_workflow_action_http import (
+    apply_workflow_action_with_http_mapping,
+)
 from src.core.rebalance_runs import (
-    DpmRunNotFoundError,
     DpmRunSupportService,
     DpmRunWorkflowActionRequest,
     DpmRunWorkflowResponse,
-    DpmWorkflowDisabledError,
-    DpmWorkflowTransitionError,
 )
-from src.core.rebalance_runs.models import DpmWorkflowActionType
 
 
 _WORKFLOW_ACTION_DESCRIPTION = (
@@ -30,19 +28,6 @@ _WORKFLOW_ACTION_RESPONSES: _RouteResponses = {
     409: {"description": "Workflow action is not valid for the current run state."},
     422: {"description": "Invalid action payload or unsupported query parameters were supplied."},
 }
-
-
-def _record_workflow_action_metric(
-    *,
-    surface: str,
-    action: DpmWorkflowActionType,
-    outcome: str,
-) -> None:
-    record_workflow_decision(
-        surface=surface,
-        action=action.lower(),
-        outcome=outcome,
-    )
 
 
 @shared.router.post(
@@ -72,26 +57,18 @@ def apply_dpm_run_workflow_action(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        response = service.apply_workflow_action(
+    return apply_workflow_action_with_http_mapping(
+        surface="run",
+        action=payload.action,
+        apply_action=lambda: service.apply_workflow_action(
             rebalance_run_id=rebalance_run_id,
             action=payload.action,
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
             correlation_id=x_correlation_id or "c_none",
-        )
-        _record_workflow_action_metric(surface="run", action=payload.action, outcome="success")
-        return response
-    except DpmRunNotFoundError as exc:
-        _record_workflow_action_metric(surface="run", action=payload.action, outcome="not_found")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowDisabledError as exc:
-        _record_workflow_action_metric(surface="run", action=payload.action, outcome="disabled")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowTransitionError as exc:
-        _record_workflow_action_metric(surface="run", action=payload.action, outcome="conflict")
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        ),
+    )
 
 
 @shared.router.post(
@@ -129,42 +106,18 @@ def apply_dpm_run_workflow_action_by_correlation(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        response = service.apply_workflow_action_by_correlation(
+    return apply_workflow_action_with_http_mapping(
+        surface="trace",
+        action=payload.action,
+        apply_action=lambda: service.apply_workflow_action_by_correlation(
             correlation_id=correlation_id,
             action=payload.action,
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
             action_correlation_id=x_correlation_id or "c_none",
-        )
-        _record_workflow_action_metric(
-            surface="trace",
-            action=payload.action,
-            outcome="success",
-        )
-        return response
-    except DpmRunNotFoundError as exc:
-        _record_workflow_action_metric(
-            surface="trace",
-            action=payload.action,
-            outcome="not_found",
-        )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowDisabledError as exc:
-        _record_workflow_action_metric(
-            surface="trace",
-            action=payload.action,
-            outcome="disabled",
-        )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowTransitionError as exc:
-        _record_workflow_action_metric(
-            surface="trace",
-            action=payload.action,
-            outcome="conflict",
-        )
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        ),
+    )
 
 
 @shared.router.post(
@@ -202,39 +155,15 @@ def apply_dpm_run_workflow_action_by_idempotency(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        response = service.apply_workflow_action_by_idempotency(
+    return apply_workflow_action_with_http_mapping(
+        surface="retry",
+        action=payload.action,
+        apply_action=lambda: service.apply_workflow_action_by_idempotency(
             idempotency_key=idempotency_key,
             action=payload.action,
             reason_code=payload.reason_code,
             comment=payload.comment,
             actor_id=payload.actor_id,
             action_correlation_id=x_correlation_id or "c_none",
-        )
-        _record_workflow_action_metric(
-            surface="retry",
-            action=payload.action,
-            outcome="success",
-        )
-        return response
-    except DpmRunNotFoundError as exc:
-        _record_workflow_action_metric(
-            surface="retry",
-            action=payload.action,
-            outcome="not_found",
-        )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowDisabledError as exc:
-        _record_workflow_action_metric(
-            surface="retry",
-            action=payload.action,
-            outcome="disabled",
-        )
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except DpmWorkflowTransitionError as exc:
-        _record_workflow_action_metric(
-            surface="retry",
-            action=payload.action,
-            outcome="conflict",
-        )
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+        ),
+    )

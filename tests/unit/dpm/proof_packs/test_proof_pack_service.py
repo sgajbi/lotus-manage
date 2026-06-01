@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from src.api.services import proof_pack_service
+from src.api.routers.proof_pack_http import proof_pack_http_exception
 from src.core.construction import (
     ConstructionAlternativeSelection,
     build_alternative_set,
@@ -496,7 +497,7 @@ def test_handoff_ref_lookup_prefers_latest_append_only_ref() -> None:
     assert report_ref.content_hash == "sha256:new"
 
 
-def test_proof_pack_service_exception_mapping() -> None:
+def test_proof_pack_http_exception_mapping() -> None:
     mappings = [
         (DpmProofPackConflictError("conflict"), 409, "conflict"),
         (DpmRunNotFoundError("missing"), 404, "missing"),
@@ -510,7 +511,7 @@ def test_proof_pack_service_exception_mapping() -> None:
     ]
 
     for exc, status_code, detail in mappings:
-        http_exc = proof_pack_service.to_api_http_exception(exc)
+        http_exc = proof_pack_http_exception(exc)
 
         assert http_exc.status_code == status_code
         assert http_exc.detail == detail

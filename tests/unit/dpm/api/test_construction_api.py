@@ -1604,6 +1604,28 @@ def test_generate_construction_alternative_set_idempotency_conflict() -> None:
     assert conflict.json()["detail"] == "CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT"
 
 
+def test_construction_http_exception_mapping() -> None:
+    from src.api.routers.construction_http import construction_http_exception
+    from src.core.construction.repository import (
+        ConstructionAlternativeNotFoundError,
+        ConstructionAlternativeSetNotFoundError,
+        ConstructionIdempotencyConflictError,
+    )
+
+    mappings = [
+        (ConstructionIdempotencyConflictError("conflict"), 409, "conflict"),
+        (ConstructionAlternativeSetNotFoundError("missing-set"), 404, "missing-set"),
+        (ConstructionAlternativeNotFoundError("missing-alternative"), 404, "missing-alternative"),
+        (RuntimeError("boom"), 500, "RuntimeError"),
+    ]
+
+    for exc, status_code, detail in mappings:
+        http_exc = construction_http_exception(exc)
+
+        assert http_exc.status_code == status_code
+        assert http_exc.detail == detail
+
+
 def test_read_and_select_construction_alternative_set() -> None:
     repository = InMemoryConstructionRepository()
     with _client(repository) as client:

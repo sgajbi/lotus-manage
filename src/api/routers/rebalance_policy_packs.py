@@ -1,207 +1,46 @@
-import os
-from typing import Annotated, Any, Optional, cast
-
-from fastapi import APIRouter, Header, HTTPException, Path, Request, status
+from fastapi import APIRouter, HTTPException, status
 
 from src.api.observability import record_policy_pack_resolution
 from src.api.routers.runtime_utils import (
     assert_feature_enabled,
-    env_flag,
-    normalize_backend_init_error,
     reject_unexpected_query_params,
 )
-from src.core.common.capabilities import psycopg_error_type
+from src.api.routers.route_registration import register_route_modules
+from src.api.services.rebalance_policy_pack_service import (
+    DpmPolicyPackCatalogUnavailableError,
+)
+from src.api.services.rebalance_policy_pack_service import (
+    get_policy_pack_repository as get_policy_pack_application_repository,
+)
+from src.api.services.rebalance_policy_pack_service import (
+    load_dpm_policy_pack_catalog,
+    policy_pack_catalog_backend_name,
+    policy_pack_postgres_dsn,
+    postgres_connection_exception_types,
+    reset_dpm_policy_pack_repository_for_tests,
+    resolve_dpm_policy_pack,
+)
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
 from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
-    DpmPolicyPackCatalogResponse,
-    DpmPolicyPackDefinition,
-    DpmPolicyPackMutationResponse,
-    DpmPolicyPackUpsertRequest,
-    resolve_effective_policy_pack,
-)
-from src.core.rebalance.tenant_policy_packs import build_tenant_policy_pack_resolver
-from src.infrastructure.dpm_policy_packs import (
-    PostgresDpmPolicyPackRepository,
 )
 
 router = APIRouter(tags=["lotus-manage Run Supportability"])
 
-_RouteResponses = dict[int | str, dict[str, Any]]
-
-_POLICY_RESOLUTION_DESCRIPTION = (
-    "Returns the effective discretionary mandate policy-pack resolution using configured "
-    "precedence: request-scoped `X-Policy-Pack-Id`, tenant default "
-    "`X-Tenant-Policy-Pack-Id` or tenant resolver lookup by `X-Tenant-Id`, then global default. "
-    "Use this read-only endpoint for supportability and integration diagnostics before invoking "
-    "rebalance execution. Supply resolution context via the documented headers rather than query "
-    "parameters; unsupported query parameters are rejected."
-)
-
-_POLICY_CATALOG_DESCRIPTION = (
-    "Returns the configured discretionary mandate policy-pack catalog from the governed "
-    "PostgreSQL policy-pack repository plus the effective selection context for optional request "
-    "and tenant headers. Use this endpoint when operators or downstream integration checks need "
-    "to confirm which policy packs are available and whether the selected policy pack is present. "
-    "Supply resolution context via the documented headers rather than query parameters; "
-    "unsupported query parameters are rejected."
-)
-
-_POLICY_CATALOG_ITEM_DESCRIPTION = (
-    "Returns one discretionary mandate policy-pack definition from the governed PostgreSQL "
-    "policy-pack repository by identifier. Use this read-only route when an operator, Gateway "
-    "integration, or certification probe already has a policy-pack id and needs the exact "
-    "turnover, tax, settlement, constraint, workflow, and idempotency controls that would be "
-    "applied by execution; unsupported query parameters are rejected."
-)
-
-_POLICY_CATALOG_UPSERT_DESCRIPTION = (
-    "Creates or updates one discretionary mandate policy-pack definition in the governed "
-    "PostgreSQL policy-pack repository. This is an operator/admin control-plane endpoint and is "
-    "available only when `DPM_POLICY_PACK_ADMIN_APIS_ENABLED=true`; keep it disabled in normal "
-    "runtime unless policy governance operations are explicitly required. The path identifier is "
-    "authoritative; unsupported query parameters are rejected."
-)
-
-_POLICY_CATALOG_DELETE_DESCRIPTION = (
-    "Deletes one discretionary mandate policy-pack definition from the governed PostgreSQL "
-    "policy-pack repository. This is an operator/admin control-plane endpoint and is available "
-    "only when `DPM_POLICY_PACK_ADMIN_APIS_ENABLED=true`; use it for governed cleanup of obsolete "
-    "mandate policy packs, not for advisory proposal lifecycle workflows; unsupported query "
-    "parameters are rejected."
-)
-
-_POLICY_RESOLUTION_RESPONSES: _RouteResponses = {
-    200: {"description": "Effective policy-pack selection and resolution source."},
-    422: {"description": "Unsupported query parameters were supplied."},
-}
-
-_POLICY_CATALOG_RESPONSES: _RouteResponses = {
-    200: {"description": "Policy-pack catalog with effective selection context."},
-    503: {"description": "Policy-pack repository is unavailable or not configured."},
-    422: {"description": "Unsupported query parameters were supplied."},
-}
-
-_POLICY_CATALOG_ITEM_RESPONSES: _RouteResponses = {
-    200: {"description": "Requested policy-pack definition."},
-    404: {"description": "Policy-pack identifier was not found."},
-    422: {"description": "Unsupported query parameters were supplied."},
-    503: {"description": "Policy-pack repository is unavailable or not configured."},
-}
-
-_POLICY_CATALOG_UPSERT_RESPONSES: _RouteResponses = {
-    200: {"description": "Policy-pack definition created or updated."},
-    404: {"description": "Policy-pack admin APIs are disabled for this runtime."},
-    422: {
-        "description": "Request body validation failed or unsupported query parameters were supplied."
-    },
-    503: {"description": "Policy-pack repository is unavailable or not configured."},
-}
-
-_POLICY_CATALOG_DELETE_RESPONSES: _RouteResponses = {
-    204: {"description": "Policy-pack definition was deleted."},
-    404: {"description": "Policy-pack admin APIs are disabled or the policy pack was not found."},
-    422: {"description": "Unsupported query parameters were supplied."},
-    503: {"description": "Policy-pack repository is unavailable or not configured."},
-}
-
-
 _reject_unexpected_query_params = reject_unexpected_query_params
-
-
-def resolve_dpm_policy_pack(
-    *,
-    request_policy_pack_id: Optional[str],
-    tenant_default_policy_pack_id: Optional[str] = None,
-    tenant_id: Optional[str] = None,
-) -> DpmEffectivePolicyPackResolution:
-    resolved_tenant_default_policy_pack_id = tenant_default_policy_pack_id
-    if resolved_tenant_default_policy_pack_id is None:
-        tenant_policy_pack_resolver = build_tenant_policy_pack_resolver(
-            enabled=env_flag("DPM_TENANT_POLICY_PACK_RESOLUTION_ENABLED", False),
-            mapping_json=os.getenv("DPM_TENANT_POLICY_PACK_MAP_JSON"),
-        )
-        resolved_tenant_default_policy_pack_id = tenant_policy_pack_resolver.resolve(
-            tenant_id=tenant_id
-        )
-    return resolve_effective_policy_pack(
-        policy_packs_enabled=env_flag("DPM_POLICY_PACKS_ENABLED", False),
-        request_policy_pack_id=request_policy_pack_id,
-        tenant_default_policy_pack_id=resolved_tenant_default_policy_pack_id,
-        global_default_policy_pack_id=os.getenv("DPM_DEFAULT_POLICY_PACK_ID"),
-    )
-
-
-def load_dpm_policy_pack_catalog() -> dict[str, DpmPolicyPackDefinition]:
-    repository = _get_policy_pack_repository()
-    items = repository.list_policy_packs()
-    return {item.policy_pack_id: item for item in items}
-
-
-def _policy_pack_catalog_backend_name() -> str:
-    value = os.getenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES").strip().upper()
-    if value != "POSTGRES":
-        raise RuntimeError("DPM_POLICY_PACK_CATALOG_BACKEND_UNSUPPORTED")
-    return value
-
-
-def policy_pack_catalog_backend_name() -> str:
-    return _policy_pack_catalog_backend_name()
-
-
-def _policy_pack_postgres_dsn() -> str:
-    return os.getenv(
-        "DPM_POLICY_PACK_POSTGRES_DSN",
-        os.getenv("DPM_SUPPORTABILITY_POSTGRES_DSN", ""),
-    ).strip()
-
-
-def policy_pack_postgres_dsn() -> str:
-    return _policy_pack_postgres_dsn()
-
-
-def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    types: list[type[BaseException]] = [
-        ConnectionError,
-        OSError,
-        TimeoutError,
-        TypeError,
-        ValueError,
-    ]
-    error_type = psycopg_error_type()
-    if error_type is not None:
-        types.append(error_type)
-    return tuple(types)
 
 
 def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
     return postgres_connection_exception_types()
 
 
-def _build_policy_pack_repository() -> DpmPolicyPackRepository:
-    _ = _policy_pack_catalog_backend_name()
-    dsn = _policy_pack_postgres_dsn()
-    if not dsn:
-        raise RuntimeError("DPM_POLICY_PACK_POSTGRES_DSN_REQUIRED")
-    try:
-        return cast(DpmPolicyPackRepository, PostgresDpmPolicyPackRepository(dsn=dsn))
-    except RuntimeError:
-        raise
-    except _postgres_connection_exception_types() as exc:
-        raise RuntimeError("DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED") from exc
-
-
 def _get_policy_pack_repository() -> DpmPolicyPackRepository:
     try:
-        return _build_policy_pack_repository()
-    except RuntimeError as exc:
+        return get_policy_pack_application_repository()
+    except DpmPolicyPackCatalogUnavailableError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=normalize_backend_init_error(
-                detail=str(exc),
-                required_detail="DPM_POLICY_PACK_POSTGRES_DSN_REQUIRED",
-                fallback_detail="DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED",
-            ),
+            detail=exc.detail,
         ) from exc
 
 
@@ -213,11 +52,6 @@ def _assert_policy_pack_admin_apis_enabled() -> None:
     )
 
 
-def reset_dpm_policy_pack_repository_for_tests() -> None:
-    # no cached repository state is maintained in POSTGRES-only runtime mode
-    return None
-
-
 def _record_policy_pack_api_resolution(resolution: DpmEffectivePolicyPackResolution) -> None:
     record_policy_pack_resolution(
         surface="api",
@@ -227,188 +61,24 @@ def _record_policy_pack_api_resolution(resolution: DpmEffectivePolicyPackResolut
     )
 
 
-@router.get(
-    "/rebalance/policies/effective",
-    response_model=DpmEffectivePolicyPackResolution,
-    status_code=status.HTTP_200_OK,
-    summary="Resolve Effective lotus-manage Policy Pack",
-    description=_POLICY_RESOLUTION_DESCRIPTION,
-    responses=_POLICY_RESOLUTION_RESPONSES,
+_ROUTE_MODULES: tuple[str, ...] = (
+    "src.api.routers.rebalance_policy_pack_effective_routes",
+    "src.api.routers.rebalance_policy_pack_catalog_routes",
+    "src.api.routers.rebalance_policy_pack_admin_routes",
 )
-def get_effective_dpm_policy_pack(
-    request: Request,
-    x_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional request-scoped policy-pack identifier.",
-            examples=["dpm_standard_v1"],
-        ),
-    ] = None,
-    x_tenant_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant-default policy-pack identifier from upstream context.",
-            examples=["dpm_tenant_default_v1"],
-        ),
-    ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant identifier used for tenant policy-pack default lookup.",
-            examples=["tenant_001"],
-        ),
-    ] = None,
-) -> DpmEffectivePolicyPackResolution:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    resolution = resolve_dpm_policy_pack(
-        request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-        tenant_id=x_tenant_id,
-    )
-    _record_policy_pack_api_resolution(resolution)
-    return resolution
 
+register_route_modules(_ROUTE_MODULES)
 
-@router.get(
-    "/rebalance/policies/catalog",
-    response_model=DpmPolicyPackCatalogResponse,
-    status_code=status.HTTP_200_OK,
-    summary="List lotus-manage Policy Pack Catalog",
-    description=_POLICY_CATALOG_DESCRIPTION,
-    responses=_POLICY_CATALOG_RESPONSES,
-)
-def get_dpm_policy_pack_catalog(
-    request: Request,
-    x_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional request-scoped policy-pack identifier.",
-            examples=["dpm_standard_v1"],
-        ),
-    ] = None,
-    x_tenant_policy_pack_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant-default policy-pack identifier from upstream context.",
-            examples=["dpm_tenant_default_v1"],
-        ),
-    ] = None,
-    x_tenant_id: Annotated[
-        Optional[str],
-        Header(
-            description="Optional tenant identifier used for tenant policy-pack default lookup.",
-            examples=["tenant_001"],
-        ),
-    ] = None,
-) -> DpmPolicyPackCatalogResponse:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    resolution = resolve_dpm_policy_pack(
-        request_policy_pack_id=x_policy_pack_id,
-        tenant_default_policy_pack_id=x_tenant_policy_pack_id,
-        tenant_id=x_tenant_id,
-    )
-    _record_policy_pack_api_resolution(resolution)
-    catalog = load_dpm_policy_pack_catalog()
-    items = sorted(catalog.values(), key=lambda item: item.policy_pack_id)
-    selected_policy_pack_id = resolution.selected_policy_pack_id
-    return DpmPolicyPackCatalogResponse(
-        enabled=resolution.enabled,
-        total=len(items),
-        selected_policy_pack_id=selected_policy_pack_id,
-        selected_policy_pack_present=(
-            selected_policy_pack_id is not None and selected_policy_pack_id in catalog
-        ),
-        selected_policy_pack_source=resolution.source,
-        items=items,
-    )
-
-
-@router.get(
-    "/rebalance/policies/catalog/{policy_pack_id}",
-    response_model=DpmPolicyPackDefinition,
-    status_code=status.HTTP_200_OK,
-    summary="Get lotus-manage Policy Pack",
-    description=_POLICY_CATALOG_ITEM_DESCRIPTION,
-    responses=_POLICY_CATALOG_ITEM_RESPONSES,
-)
-def get_dpm_policy_pack(
-    request: Request,
-    policy_pack_id: Annotated[
-        str,
-        Path(
-            description="Policy-pack identifier.",
-            examples=["dpm_standard_v1"],
-        ),
-    ],
-) -> DpmPolicyPackDefinition:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    repository = _get_policy_pack_repository()
-    policy_pack = repository.get_policy_pack(policy_pack_id=policy_pack_id)
-    if policy_pack is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="DPM_POLICY_PACK_NOT_FOUND"
-        )
-    return policy_pack
-
-
-@router.put(
-    "/rebalance/policies/catalog/{policy_pack_id}",
-    response_model=DpmPolicyPackMutationResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Upsert lotus-manage Policy Pack",
-    description=_POLICY_CATALOG_UPSERT_DESCRIPTION,
-    responses=_POLICY_CATALOG_UPSERT_RESPONSES,
-)
-def upsert_dpm_policy_pack(
-    http_request: Request,
-    policy_pack_id: Annotated[
-        str,
-        Path(
-            description="Policy-pack identifier.",
-            examples=["dpm_standard_v2"],
-        ),
-    ],
-    upsert_request: DpmPolicyPackUpsertRequest,
-) -> DpmPolicyPackMutationResponse:
-    _reject_unexpected_query_params(http_request, allowed_params=set())
-    _assert_policy_pack_admin_apis_enabled()
-    repository = _get_policy_pack_repository()
-    policy_pack = DpmPolicyPackDefinition(
-        policy_pack_id=policy_pack_id,
-        version=upsert_request.version,
-        turnover_policy=upsert_request.turnover_policy,
-        tax_policy=upsert_request.tax_policy,
-        settlement_policy=upsert_request.settlement_policy,
-        constraint_policy=upsert_request.constraint_policy,
-        workflow_policy=upsert_request.workflow_policy,
-        idempotency_policy=upsert_request.idempotency_policy,
-    )
-    repository.upsert_policy_pack(policy_pack)
-    return DpmPolicyPackMutationResponse(item=policy_pack)
-
-
-@router.delete(
-    "/rebalance/policies/catalog/{policy_pack_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    summary="Delete lotus-manage Policy Pack",
-    description=_POLICY_CATALOG_DELETE_DESCRIPTION,
-    responses=_POLICY_CATALOG_DELETE_RESPONSES,
-)
-def delete_dpm_policy_pack(
-    request: Request,
-    policy_pack_id: Annotated[
-        str,
-        Path(
-            description="Policy-pack identifier.",
-            examples=["dpm_standard_v2"],
-        ),
-    ],
-) -> None:
-    _reject_unexpected_query_params(request, allowed_params=set())
-    _assert_policy_pack_admin_apis_enabled()
-    repository = _get_policy_pack_repository()
-    deleted = repository.delete_policy_pack(policy_pack_id=policy_pack_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="DPM_POLICY_PACK_NOT_FOUND"
-        )
+__all__ = [
+    "_assert_policy_pack_admin_apis_enabled",
+    "_get_policy_pack_repository",
+    "_postgres_connection_exception_types",
+    "_record_policy_pack_api_resolution",
+    "_reject_unexpected_query_params",
+    "load_dpm_policy_pack_catalog",
+    "policy_pack_catalog_backend_name",
+    "policy_pack_postgres_dsn",
+    "reset_dpm_policy_pack_repository_for_tests",
+    "resolve_dpm_policy_pack",
+    "router",
+]

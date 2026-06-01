@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
 import src.api.services.rebalance_simulation_service as rebalance_service
-from src.api.main import DPM_IDEMPOTENCY_CACHE, app, get_db_session
+from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
     reset_dpm_run_support_service_for_tests,
@@ -41,10 +41,8 @@ async def override_get_db_session():
 def override_db_dependency():
     original_overrides = dict(app.dependency_overrides)
     app.dependency_overrides[get_db_session] = override_get_db_session
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     yield
-    DPM_IDEMPOTENCY_CACHE.clear()
     reset_dpm_run_support_service_for_tests()
     app.dependency_overrides = original_overrides
 
@@ -404,6 +402,72 @@ def test_simulate_idempotency_conflict_returns_409(client):
     conflict = client.post("/api/v1/rebalance/simulate", json=changed, headers=headers)
     assert conflict.status_code == 409
     assert conflict.json()["detail"] == "IDEMPOTENCY_KEY_CONFLICT: request hash mismatch"
+
+
+def test_rebalance_simulation_http_exception_mapping():
+    from src.api.routers.rebalance_simulation_http import rebalance_simulation_http_exception
+    from src.api.services.rebalance_simulation_errors import (
+        DpmRebalanceIdempotencyConflictError,
+        DpmRebalanceIdempotencyStoreInconsistentError,
+        DpmRebalanceIdempotencyStoreWriteFailedError,
+        DpmRebalanceSimulationError,
+        DpmRebalanceSupportabilityStoreUnavailableError,
+    )
+
+    mappings = [
+        (DpmRebalanceIdempotencyConflictError("conflict"), 409, "conflict"),
+        (
+            DpmRebalanceIdempotencyStoreInconsistentError("inconsistent"),
+            503,
+            "inconsistent",
+        ),
+        (DpmRebalanceIdempotencyStoreWriteFailedError("write-failed"), 503, "write-failed"),
+        (
+            DpmRebalanceSupportabilityStoreUnavailableError("support-unavailable"),
+            503,
+            "support-unavailable",
+        ),
+        (DpmRebalanceSimulationError("generic"), 500, "DpmRebalanceSimulationError"),
+    ]
+
+    for exc, status_code, detail in mappings:
+        http_exc = rebalance_simulation_http_exception(exc)
+
+        assert http_exc.status_code == status_code
+        assert http_exc.detail == detail
+
+
+def test_rebalance_async_operation_http_exception_mapping():
+    from src.api.routers.rebalance_simulation_http import rebalance_async_operation_http_exception
+    from src.api.services.rebalance_simulation_errors import (
+        DpmRebalanceAsyncManualExecutionDisabledError,
+        DpmRebalanceAsyncOperationConflictError,
+        DpmRebalanceAsyncOperationError,
+        DpmRebalanceAsyncOperationNotExecutableError,
+        DpmRebalanceAsyncOperationNotFoundError,
+        DpmRebalanceAsyncOperationSupportUnavailableError,
+        DpmRebalanceAsyncOperationsDisabledError,
+    )
+
+    mappings = [
+        (DpmRebalanceAsyncOperationsDisabledError("disabled"), 404, "disabled"),
+        (DpmRebalanceAsyncManualExecutionDisabledError("manual-disabled"), 404, "manual-disabled"),
+        (DpmRebalanceAsyncOperationNotFoundError("missing"), 404, "missing"),
+        (DpmRebalanceAsyncOperationConflictError("conflict"), 409, "conflict"),
+        (DpmRebalanceAsyncOperationNotExecutableError("not-executable"), 409, "not-executable"),
+        (
+            DpmRebalanceAsyncOperationSupportUnavailableError("support-unavailable"),
+            503,
+            "support-unavailable",
+        ),
+        (DpmRebalanceAsyncOperationError("generic"), 500, "DpmRebalanceAsyncOperationError"),
+    ]
+
+    for exc, status_code, detail in mappings:
+        http_exc = rebalance_async_operation_http_exception(exc)
+
+        assert http_exc.status_code == status_code
+        assert http_exc.detail == detail
 
 
 def test_simulate_idempotency_replay_can_be_disabled(client, monkeypatch):
@@ -807,7 +871,7 @@ def test_dpm_support_repository_backend_init_errors_return_503(client, monkeypat
         "postgresql://user:pass@localhost:5432/dpm",
     )
     monkeypatch.setattr(
-        "src.api.routers.rebalance_runs_config.PostgresDpmRunRepository",
+        "src.api.services.rebalance_run_support_config.PostgresDpmRunRepository",
         lambda *args, **kwargs: (_ for _ in ()).throw(ConnectionError("boom")),
     )
     reset_dpm_run_support_service_for_tests()

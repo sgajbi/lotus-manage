@@ -1,10 +1,12 @@
 from typing import Annotated, Any
 
-from fastapi import HTTPException, Path, Request, status
+from fastapi import Path, Request, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_workflow_read_http import (
+    read_workflow_with_http_mapping,
+)
 from src.core.rebalance_runs import (
-    DpmRunNotFoundError,
     DpmRunSupportService,
     DpmRunWorkflowResponse,
 )
@@ -45,10 +47,9 @@ def get_dpm_run_workflow(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow(rebalance_run_id=rebalance_run_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_workflow_with_http_mapping(
+        lambda: service.get_workflow(rebalance_run_id=rebalance_run_id)
+    )
 
 
 @shared.router.get(
@@ -77,10 +78,9 @@ def get_dpm_run_workflow_by_correlation(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow_by_correlation(correlation_id=correlation_id)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_workflow_with_http_mapping(
+        lambda: service.get_workflow_by_correlation(correlation_id=correlation_id)
+    )
 
 
 @shared.router.get(
@@ -109,7 +109,6 @@ def get_dpm_run_workflow_by_idempotency(
     shared._assert_support_apis_enabled()
     shared._assert_workflow_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_workflow_by_idempotency(idempotency_key=idempotency_key)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_workflow_with_http_mapping(
+        lambda: service.get_workflow_by_idempotency(idempotency_key=idempotency_key)
+    )

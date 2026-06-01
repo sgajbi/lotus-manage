@@ -18,6 +18,7 @@ from src.core.mandates import (
     MonitoringSeverity,
 )
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
+from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 
 
@@ -98,6 +99,16 @@ class _PmBookResolver:
     def resolve_portfolio_manager_book_membership(self, **kwargs: object):
         self.requests.append(kwargs)
         return DpmCorePortfolioManagerBookMembershipResponse.model_validate(self.payload)
+
+
+class _UnavailablePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object) -> object:
+        raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
+
+
+class _IncompletePmBookResolver:
+    def resolve_portfolio_manager_book_membership(self, **_kwargs: object) -> object:
+        raise DpmCoreResolverError("DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE")
 
 
 def teardown_function() -> None:
@@ -271,6 +282,43 @@ def test_monitoring_run_once_blocks_non_ready_pm_book_membership(monkeypatch) ->
         response.json()["detail"]["message"]
         == "PM-book membership is not source-ready for monitoring."
     )
+
+
+def test_monitoring_run_once_maps_core_resolver_source_failures(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: _UnavailablePmBookResolver(),
+    )
+    with _client(InMemoryDpmMandateRepository()) as client:
+        unavailable = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+            },
+        )
+
+    monkeypatch.setattr(
+        "src.api.routers.monitoring.build_core_resolver_client",
+        lambda: _IncompletePmBookResolver(),
+    )
+    with _client(InMemoryDpmMandateRepository()) as client:
+        incomplete = client.post(
+            "/api/v1/dpm/monitoring/run-once",
+            json={
+                "mandate_ids": [],
+                "as_of_date": "2026-05-03",
+                "tenant_id": "default",
+                "portfolio_manager_id": "PM_SG_DPM_001",
+            },
+        )
+
+    assert unavailable.status_code == 503
+    assert unavailable.json()["detail"]["code"] == "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"
+    assert incomplete.status_code == 424
+    assert incomplete.json()["detail"]["code"] == "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"
 
 
 def test_command_center_summarizes_latest_monitoring_run_and_attention_queue() -> None:

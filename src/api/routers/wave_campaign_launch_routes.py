@@ -16,7 +16,7 @@ from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
 )
-from src.api.services.rebalance_simulation_service import build_core_resolver_client
+from src.api.services.core_resolver_service import build_core_resolver_client
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import (
     DpmBulkReviewCampaignDefinitionRepository,

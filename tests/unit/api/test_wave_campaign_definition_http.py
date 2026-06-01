@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 from fastapi import HTTPException
 
-from src.api.routers.wave_campaign_definition_http import (
+from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_launch_blocked_http_exception,
     campaign_definition_lifecycle_http_exception,

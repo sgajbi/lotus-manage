@@ -2855,3 +2855,3825 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   raised and CI feedback is available.
 - Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-100: Outcome-review observability mapping was embedded in controller
+
+- Date: 2026-05-31
+- Scope: outcome-review supportability metric surfaces and state/reason mapping.
+- Finding: `src/api/routers/outcome_reviews.py` owned supportability surface names and metric
+  state/reason mapping inline with HTTP route handlers. That made controller code responsible for
+  observability policy and increased the blast radius for the upcoming outcome-review route
+  decomposition.
+- Action: moved outcome-review supportability surface constants and metric state/reason mapping
+  into `src/api/routers/outcome_review_observability.py`, preserving metric surface values,
+  supportability states, reason labels, refresh/create/supportability behavior, and structured log
+  fields.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split outcome-review command/read/supportability/handoff routes into owned modules
+  now that shared observability policy is outside the controller.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-101: Outcome-review preview route was mixed with durable review routes
+
+- Date: 2026-05-31
+- Scope: non-durable outcome-review preview endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed the read-only preview comparison endpoint
+  with durable creation, source refresh, lookup, supportability, report, AI evidence, run lookup,
+  and wave lookup routes. Preview has no persistence side effect and owns validation-only
+  comparison behavior, so it should be reviewed separately from durable command paths.
+- Action: moved preview route registration into
+  `src/api/routers/outcome_review_preview_routes.py`, preserving public path, response model,
+  Swagger guidance, validation error mapping, and source-owner truth boundary text.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split durable create and source-refresh command routes from read/supportability
+  outcome-review routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-102: Outcome-review create command was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: durable outcome-review creation endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed immutable review creation with search,
+  lookup, supportability, source refresh, report, AI evidence, run lookup, and wave lookup routes.
+  Creation owns idempotency, conflict handling, persistence, correlation fallback, and
+  supportability metric emission, so it should have a focused command-route owner.
+- Action: moved create route registration into `src/api/routers/outcome_review_create_routes.py`,
+  preserving public path, response model, Swagger guidance, idempotency header metadata,
+  correlation-id behavior, validation and conflict error mapping, persistence dependency, and
+  supportability metrics.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split source-refresh command handling from read/supportability/handoff routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-103: Outcome-review source refresh was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: durable outcome-review source-refresh endpoint.
+- Finding: `src/api/routers/outcome_reviews.py` mixed source refresh with search, lookup,
+  supportability, report, AI evidence, run lookup, and wave lookup routes. Refresh appends
+  source-refresh events, owns refreshed comparison validation, and emits not-found/supportability
+  metrics, so it belongs in a command-specific route module.
+- Action: moved source-refresh route registration into
+  `src/api/routers/outcome_review_refresh_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, validation and not-found error mapping, append-only
+  refresh event behavior, and supportability metrics.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split read/search/supportability/report/AI handoff routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-104: Outcome-review supportability diagnostics were mixed with reads
+
+- Date: 2026-05-31
+- Scope: outcome-review supportability endpoint, remediation routing, boundary projection, and
+  structured diagnostics.
+- Finding: `src/api/routers/outcome_reviews.py` mixed operator supportability diagnostics with
+  plain search/lookup and downstream report/AI handoff routes. Supportability owns bounded
+  diagnostic counts, remediation routes, external execution and client communication boundaries,
+  supportability metrics, and structured logging, so it should be reviewed independently.
+- Action: moved supportability route registration, response assembly, remediation route mapping,
+  and structured diagnostic logging into
+  `src/api/routers/outcome_review_supportability_routes.py`, preserving public path, response
+  model, Swagger guidance, not-found mapping, supportability metrics, remediation route outputs,
+  and boundary projections.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split downstream report/AI evidence handoff routes from remaining search and lookup
+  routes.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-105: Outcome-review handoff routes were mixed with local reads
+
+- Date: 2026-05-31
+- Scope: downstream report input and AI evidence input routes.
+- Finding: `src/api/routers/outcome_reviews.py` mixed downstream handoff routes for
+  `lotus-report`/render/archive and `lotus-ai` consumers with local search and lookup routes.
+  These handoff routes share proof-pack, wave, mandate, and outcome-review dependencies and expose
+  bounded integration payloads rather than simple persisted review reads.
+- Action: moved report-input and AI-evidence-input route registration into
+  `src/api/routers/outcome_review_handoff_routes.py`, preserving public paths, response models,
+  Swagger guidance, repository dependencies, not-found behavior, external execution boundary
+  projection, client communication boundary projection, portfolio-memory context, and AI forbidden
+  action payloads.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split outcome-review search, direct lookup, run lookup, and wave lookup into
+  separately owned read modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-106: Outcome-review search was mixed with point lookups
+
+- Date: 2026-05-31
+- Scope: outcome-review search route with metadata, source-owner, source-type, and pagination
+  filters.
+- Finding: `src/api/routers/outcome_reviews.py` mixed query-heavy outcome-review search with
+  direct lookup, run lookup, and wave lookup routes. Search owns bounded pagination, source-lineage
+  scan limits, normalized source filters, applied-filter response shaping, and source owner/type
+  facets, so it should be isolated from point lookup routes.
+- Action: moved search route registration into `src/api/routers/outcome_review_search_routes.py`,
+  preserving public path, response model, Swagger guidance, query parameter metadata, normalized
+  filter behavior, applied-filter payloads, source owner/type counts, and source-owner boundary
+  text.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split direct review lookup, run lookup, and wave lookup routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-107: Direct outcome-review lookup was mixed with cross-resource lookups
+
+- Date: 2026-05-31
+- Scope: direct outcome-review lookup by outcome-review id.
+- Finding: `src/api/routers/outcome_reviews.py` mixed direct persisted review lookup with run and
+  wave lookup routes. Direct lookup is a simple manage-owned identifier read, while run and wave
+  lookup routes are cross-resource views under different router prefixes.
+- Action: moved direct outcome-review lookup route registration into
+  `src/api/routers/outcome_review_lookup_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, persisted-truth boundary text, and not-found behavior.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split run lookup and wave lookup routes from the remaining composition shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-108: Run outcome-review lookup was mixed with wave lookup
+
+- Date: 2026-05-31
+- Scope: run-scoped outcome-review lookup under `/rebalance/runs`.
+- Finding: `src/api/routers/outcome_reviews.py` still mixed the run-scoped lookup route with the
+  wave-scoped lookup route while also coordinating the base outcome-review router. The run lookup
+  is a cross-resource view that connects RFC-0039/RFC-0040/RFC-0041 run evidence to RFC-0042
+  closure truth and has different routing ownership than wave-level review lists.
+- Action: moved run-scoped outcome-review lookup route registration into
+  `src/api/routers/outcome_review_run_lookup_routes.py`, preserving public path, response model,
+  Swagger guidance, repository dependency, first-review lookup behavior, and not-found mapping.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split wave outcome-review listing into its own route module and reduce
+  `outcome_reviews.py` to router construction plus composition imports.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-109: Wave outcome-review listing was still owned by the router shell
+
+- Date: 2026-05-31
+- Scope: wave-scoped outcome-review listing under `/rebalance/waves`.
+- Finding: after extracting base outcome-review routes and run lookup, `src/api/routers/outcome_reviews.py`
+  still directly owned the wave-scoped outcome-review listing while also acting as router
+  construction and composition. Wave lookup is a cross-resource list view with its own pagination
+  and applied wave filter semantics.
+- Action: moved wave-scoped outcome-review listing into
+  `src/api/routers/outcome_review_wave_lookup_routes.py` and reduced `outcome_reviews.py` to router
+  construction plus explicit composition imports, preserving public path, response model, Swagger
+  guidance, pagination parameters, repository dependency, applied wave filter payload, and source
+  owner/type facet behavior.
+- Status: hardened
+- Evidence: focused outcome-review API regression
+  (`tests/unit/api/test_outcome_reviews_api.py`), focused Ruff checks, source-file mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the next largest router for the same command/read/supportability route
+  ownership pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-110: Mandate API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: mandate API response examples and core-refresh request/response models.
+- Finding: `src/api/routers/mandates.py` mixed OpenAPI examples and Pydantic contract models with
+  read, refresh, and health route handlers. The refresh response contract owns serialization of
+  compiled mandate twins, health snapshots, monitoring exceptions, and field-gap codes, so it
+  should be independently reviewable from route registration.
+- Action: moved the mandate response example and refresh request/response contracts into
+  `src/api/routers/mandate_models.py`, preserving public schemas, Swagger examples, response
+  serialization, and route behavior.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split mandate read, refresh, and health route registrations into separately owned
+  modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-111: Mandate read routes were mixed with command handlers
+
+- Date: 2026-05-31
+- Scope: mandate latest-by-portfolio, latest-by-id, version history, and version diff routes.
+- Finding: `src/api/routers/mandates.py` mixed read-only mandate state access with core refresh and
+  health recalculation commands. The read routes are repository-backed persisted-state views with
+  not-found and diff-unavailable mappings, while refresh and health routes own command semantics
+  and downstream source dependencies.
+- Action: moved read-only mandate route registration into
+  `src/api/routers/mandate_read_routes.py`, preserving public paths, response models, Swagger
+  guidance, examples, repository dependency wiring, not-found behavior, explicit-version diff
+  behavior, and 409 mapping for unavailable diffs.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split core refresh and health route registrations from the remaining mandate router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-112: Mandate core-refresh command was mixed with health routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/mandates/{mandate_id}/refresh-from-core`.
+- Finding: the mandate router still coupled the lotus-core acquisition command with persisted
+  health read/recalculate routes. The refresh route owns core resolver dependency injection,
+  correlation propagation, source-unavailable and source-incomplete mappings, and source-backed
+  response assembly, which is a distinct integration boundary from local health access.
+- Action: moved core-refresh route registration into
+  `src/api/routers/mandate_refresh_routes.py`, preserving public path, response model, Swagger
+  guidance, response example, repository and core resolver dependencies, correlation forwarding,
+  503 mapping for unavailable core sources, and 424 mapping for incomplete source products.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split mandate health read/recalculate routes from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-113: Mandate health routes were still owned by the composition shell
+
+- Date: 2026-05-31
+- Scope: mandate health snapshot read and health recalculation routes.
+- Finding: after moving mandate reads and core refresh, `src/api/routers/mandates.py` still owned
+  health read/recalculate route handlers while also acting as the router composition shell. Health
+  access owns persisted health state, explicit recalculation input validation, source analytics
+  posture persistence, and 404/424 error mappings, so it should be reviewed independently from
+  route composition.
+- Action: moved health route registration into `src/api/routers/mandate_health_routes.py` and
+  reduced `mandates.py` to router construction, the core resolver dependency hook, and explicit
+  route-module imports. Public paths, response models, Swagger guidance, repository dependency
+  wiring, health-not-found behavior, recalculation behavior, and source-incomplete mapping were
+  preserved.
+- Status: hardened
+- Evidence: focused mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the next largest router for the same composition-shell and route-family
+  ownership pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-114: Monitoring API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: monitoring run-once request, monitoring run page, monitoring exception page, and
+  exception-resolution request models.
+- Finding: `src/api/routers/monitoring.py` mixed Pydantic API contracts with command-center,
+  run-once, monitoring-run lookup, and exception queue handlers. These models define public
+  operator-facing payload shape and pagination semantics, so they should be reviewable separately
+  from route orchestration logic.
+- Action: moved monitoring API request/page contracts into
+  `src/api/routers/monitoring_models.py`, preserving public schemas, Swagger field descriptions,
+  examples, default portfolio-type behavior, pagination cursors, and exception resolution payload
+  shape.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split command-center, run-once, monitoring-run lookup, and exception queue route
+  registrations into separately owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-115: Command-center summary was mixed with monitoring execution
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/dpm/command-center`.
+- Finding: `src/api/routers/monitoring.py` mixed the command-center read model with monitoring
+  run execution, run lookup, and exception queue mutations. The command-center route owns bounded
+  PM/supervision summary filters, supportability posture, attention bucket limits, and Gateway /
+  Workbench read-model semantics, so it should be reviewed independently from execution commands.
+- Action: moved command-center route registration into
+  `src/api/routers/monitoring_command_center_routes.py`, preserving public path, response model,
+  Swagger guidance, query filters, health-state validation, active-exception limit bounds,
+  repository dependency wiring, and supportability response behavior.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split monitoring run-once execution, monitoring run lookup/listing, and exception
+  queue routes into owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-116: Monitoring run reads were mixed with execution and exception queues
+
+- Date: 2026-05-31
+- Scope: monitoring run list and monitoring run detail endpoints.
+- Finding: `src/api/routers/monitoring.py` mixed persisted monitoring-run search/detail reads with
+  run-once execution and exception queue mutation. Run reads own bounded pagination, terminal
+  status filtering, cursor handling, and run-not-found mapping, which are separate from source
+  cohort resolution and exception resolution behavior.
+- Action: moved monitoring-run read route registration into
+  `src/api/routers/monitoring_run_read_routes.py`, preserving public paths, response models,
+  Swagger guidance, status filter vocabulary, pagination bounds, repository dependency wiring,
+  cursor response behavior, and 404 mapping for missing run ids.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split exception queue routes and source-backed run-once execution from the remaining
+  monitoring router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-117: Monitoring exception queue routes were mixed with run execution
+
+- Date: 2026-05-31
+- Scope: monitoring exception search and exception resolution endpoints.
+- Finding: `src/api/routers/monitoring.py` still mixed operator exception queue reads and
+  resolution mutations with source-backed monitoring run execution. Exception queues own
+  mandate/portfolio/state filtering, bounded pagination, resolution reason capture, and 404
+  mapping for missing exception ids, so they should be isolated from cohort resolution logic.
+- Action: moved monitoring exception route registration into
+  `src/api/routers/monitoring_exception_routes.py`, preserving public paths, response models,
+  Swagger guidance, state filter vocabulary, pagination bounds, repository dependency wiring,
+  cursor response behavior, resolution semantics, and missing-exception 404 mapping.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split source-backed run-once execution from the remaining monitoring router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-118: Monitoring run-once execution was owned by the router shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/dpm/monitoring/run-once`.
+- Finding: after extracting command-center, run-read, and exception queue routes,
+  `src/api/routers/monitoring.py` still owned the source-backed run-once executor while also acting
+  as the router composition shell. Run-once owns explicit mandate execution, PM-book cohort
+  discovery through lotus-core, source supportability gating, source lineage filters, run
+  persistence, and 422/424/503/404 mappings, so it should be independently reviewable.
+- Action: moved run-once route registration into `src/api/routers/monitoring_run_once_routes.py`
+  and reduced `monitoring.py` to router construction, the core resolver dependency hook, and
+  explicit route-module imports. The existing `build_core_resolver_client` monkeypatch seam is
+  preserved through `get_core_resolver_client`, and public path, response model, Swagger guidance,
+  PM-book source filters, source-readiness handling, and error mappings were preserved.
+- Status: hardened
+- Evidence: focused monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next largest router or source-resolution module for route-family and
+  integration-boundary ownership.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-119: Policy-pack route documentation constants hid route ownership
+
+- Date: 2026-05-31
+- Scope: policy-pack OpenAPI descriptions and response maps.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed long Swagger descriptions and
+  response maps with policy-pack resolution, repository setup, catalog reads, and admin mutations.
+  The documentation constants define the operator-facing supportability contract but do not own
+  runtime behavior, so keeping them in the router made the route file harder to review.
+- Action: moved policy-pack route descriptions and response maps into
+  `src/api/routers/rebalance_policy_pack_docs.py`, preserving public OpenAPI text, status-code
+  descriptions, unsupported query-parameter documentation, admin API disabled guidance, and all
+  runtime exports from the original router module.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split policy-pack catalog read routes and admin mutation routes while preserving the
+  existing service/test import seams from `rebalance_policy_packs.py`.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-120: Effective policy-pack resolution route was mixed with catalog APIs
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/policies/effective`.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed effective policy-pack resolution with
+  catalog reads, admin mutations, and repository setup. The effective route is a read-only
+  supportability diagnostic over request, tenant, and global default precedence; it does not own
+  catalog item retrieval or mutation.
+- Action: moved effective policy-pack route registration into
+  `src/api/routers/rebalance_policy_pack_effective_routes.py`, preserving public path, response
+  model, Swagger guidance, request/tenant header metadata, query-parameter rejection,
+  policy-resolution metric recording, and the existing resolver exports from
+  `rebalance_policy_packs.py`.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split catalog read routes and admin mutation routes while preserving existing
+  repository/configuration import seams.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-121: Policy-pack catalog reads were mixed with admin mutations
+
+- Date: 2026-05-31
+- Scope: policy-pack catalog list and catalog item read endpoints.
+- Finding: `src/api/routers/rebalance_policy_packs.py` mixed read-only catalog inspection with
+  admin upsert/delete controls. Catalog reads own selected-policy context, repository-backed
+  catalog listing, sorted response shape, item lookup, and not-found behavior, while admin routes
+  own feature-gated mutation semantics.
+- Action: moved catalog read route registration into
+  `src/api/routers/rebalance_policy_pack_catalog_routes.py`, preserving public paths, response
+  models, Swagger guidance, request/tenant header metadata, query-parameter rejection, resolution
+  metric recording, sorted item order, selected-policy presence behavior, and missing-item 404
+  mapping.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split admin mutation routes from the remaining policy-pack router shell while
+  preserving repository/configuration import seams.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-122: Policy-pack admin mutations were owned by helper module
+
+- Date: 2026-05-31
+- Scope: policy-pack upsert and delete admin endpoints.
+- Finding: after extracting policy-pack documentation, effective resolution, and catalog reads,
+  `src/api/routers/rebalance_policy_packs.py` still owned admin mutation routes while also
+  carrying repository/configuration helper exports used by services and tests. Admin mutation
+  routes have a distinct feature-gated control-plane boundary and should be reviewed separately.
+- Action: moved policy-pack admin route registration into
+  `src/api/routers/rebalance_policy_pack_admin_routes.py`, preserving public paths, response
+  models, Swagger guidance, admin feature gating, query-parameter rejection, upsert payload
+  projection, repository mutation behavior, delete behavior, and missing-item 404 mapping. The
+  original module now retains router construction, route composition, and repository/configuration
+  helpers for existing import seams.
+- Status: hardened
+- Evidence: focused policy-pack API/config regression, focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review whether repository/configuration helpers should move behind an explicit
+  policy-pack dependency module once service/test import seams can be updated safely.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-123: Proof-pack API contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: proof-pack OpenAPI example, generate request/response, and lookup response models.
+- Finding: `src/api/routers/proof_packs.py` mixed public API contracts with proof-pack generation,
+  lookup, Markdown, report-input, and AI-evidence-input route handlers. These contracts define
+  source selection, idempotent generation options, governed regime-stress context, and handoff URL
+  response shape, so they should be reviewable separately from route orchestration.
+- Action: moved proof-pack API models and example payload into
+  `src/api/routers/proof_pack_models.py`, preserving public schemas, Swagger descriptions,
+  examples, default include flags, regime-stress authority text, and response URL fields.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split proof-pack generation, lookup/Markdown, and downstream handoff input routes
+  into separately owned modules.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-124: Proof-pack generation was mixed with read and handoff routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/proof-packs`.
+- Finding: `src/api/routers/proof_packs.py` mixed the idempotent proof-pack generation command
+  with persisted proof-pack reads, Markdown rendering, and downstream report/AI handoff input
+  routes. Generation owns source selection, required idempotency, rebalance-run versus selected
+  alternative validation, source-backed regime-stress context, handoff reference materialization,
+  and governed service exception mapping.
+- Action: moved generation route registration and response URL assembly into
+  `src/api/routers/proof_pack_generate_routes.py`, preserving public path, response model, Swagger
+  guidance, idempotency and correlation headers, dependency wiring, request validation behavior,
+  service calls, handoff-ref creation, URL fields, and HTTP exception mapping.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split proof-pack lookup/Markdown and downstream handoff input routes from the
+  remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-125: Proof-pack reads were mixed with downstream handoff routes
+
+- Date: 2026-05-31
+- Scope: proof-pack persisted lookup and deterministic Markdown summary routes.
+- Finding: after extracting proof-pack generation, `src/api/routers/proof_packs.py` still mixed
+  basic persisted proof-pack reads with downstream report-input and AI-evidence-input routes. The
+  lookup and Markdown routes own local proof-pack retrieval and deterministic human-readable
+  rendering, while handoff routes own downstream payload assembly with wave, outcome, and mandate
+  dependencies.
+- Action: moved proof-pack lookup and Markdown route registration into
+  `src/api/routers/proof_pack_read_routes.py`, preserving public paths, response model, Markdown
+  response class, Swagger guidance, repository dependency wiring, deterministic renderer call, and
+  proof-pack-not-found mapping.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split report-input and AI-evidence-input handoff routes from the remaining router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-126: Proof-pack handoff routes were still owned by the router shell
+
+- Date: 2026-05-31
+- Scope: proof-pack report-input and AI-evidence-input routes.
+- Finding: after extracting proof-pack API models, generation, and local reads,
+  `src/api/routers/proof_packs.py` still owned downstream handoff routes while also acting as the
+  composition shell. Handoff routes require proof-pack, wave, outcome-review, and mandate
+  repositories and expose deterministic payloads for `lotus-report` and `lotus-ai`, so they should
+  be reviewed independently from local proof-pack reads.
+- Action: moved report-input and AI-evidence-input route registration into
+  `src/api/routers/proof_pack_handoff_routes.py` and reduced `proof_packs.py` to router
+  construction plus explicit route-module imports. Public paths, response models, Swagger
+  guidance, repository dependency wiring, handoff service calls, and proof-pack-not-found mapping
+  were preserved.
+- Status: hardened
+- Evidence: focused proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next largest route surface for the same command/read/handoff ownership
+  pattern.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-127: Portfolio-memory search was mixed with detail reads
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/portfolio-memory/search`.
+- Finding: `src/api/routers/portfolio_memory.py` mixed search-index behavior with exact event
+  lookup, detail timeline reads, and source repository dependency wiring. Search owns filter
+  vocabulary guidance, supportability-state pattern validation, source-scan bounds, normalization,
+  pagination, and validation-to-422 mapping; detail reads own a different bounded timeline
+  contract.
+- Action: moved portfolio-memory search route registration into
+  `src/api/routers/portfolio_memory_search_routes.py`, preserving public path, response model,
+  Swagger guidance, supported event/supportability descriptions, query bounds, repository-bundle
+  dependency wiring, filter normalization, service call, and validation error mapping.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split exact event lookup and detail timeline reads from the remaining
+  portfolio-memory router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-128: Portfolio-memory event lookup was mixed with detail reads
+
+- Date: 2026-05-31
+- Scope: exact portfolio-memory event lookup route.
+- Finding: after extracting search, `src/api/routers/portfolio_memory.py` still mixed exact event
+  lookup with detail timeline assembly and source repository dependency wiring. Event lookup owns
+  a distinct drill-down contract: bounded scan, exact event id matching, content-hash
+  reconciliation, and a detailed not-found diagnostic that reports the scanned event count.
+- Action: moved exact event lookup route registration into
+  `src/api/routers/portfolio_memory_event_routes.py`, preserving public path, response model,
+  Swagger guidance, path/query parameter metadata, source repository dependency wiring, support
+  boundary text, lookup behavior, and 404 diagnostic shape.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: split portfolio-memory detail timeline read from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-129: Portfolio-memory detail read was owned by the dependency shell
+
+- Date: 2026-05-31
+- Scope: source-backed portfolio-memory detail timeline route.
+- Finding: after extracting search and exact event lookup, `src/api/routers/portfolio_memory.py`
+  still owned the detail timeline route while also carrying source repository dependency wiring.
+  The detail route owns bounded timeline assembly, portfolio path metadata, and the source-backed
+  memory contract, while the remaining module should only construct the router and dependency
+  bundle used across route modules.
+- Action: moved detail timeline route registration into
+  `src/api/routers/portfolio_memory_detail_routes.py` and reduced `portfolio_memory.py` to router
+  construction, source repository dependency wiring, and explicit route-module imports. Public
+  path, response model, Swagger guidance, limit bounds, repository-bundle dependency wiring, and
+  service call were preserved.
+- Status: hardened
+- Evidence: focused portfolio-memory API regression
+  (`tests/unit/dpm/api/test_portfolio_memory_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review the next large route surface for route-family decomposition after checking
+  branch commit count against the PR target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-130: Construction request contracts were embedded in route handlers
+
+- Date: 2026-05-31
+- Scope: construction alternative-set API request contracts and Swagger example payload.
+- Finding: `src/api/routers/construction.py` mixed route registration with generated alternative
+  set request contracts, selection request contracts, stateful/stateless envelope conversion, and
+  OpenAPI example payloads. These models are shared by the generate and selection route families
+  and should remain independently reviewable from handler orchestration.
+- Action: moved construction request models and the alternative-set example payload into
+  `src/api/routers/construction_models.py`, preserving field names, defaults, examples,
+  descriptions, envelope conversion behavior, and imported domain vocabularies.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction generate, read, and selection route handlers into bounded route
+  modules while preserving the parent router import used by `src/api/main.py`.
+- Wiki decision: no wiki source change required; this is internal router/model modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-131: Construction generate orchestration was mixed with read routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/construction/alternative-sets/generate`.
+- Finding: the construction router still mixed the generate command path with alternative-set read
+  and selection routes. Generation owns idempotency replay, stateful/stateless rebalance-envelope
+  resolution, optional risk-authority enrichment, run-support persistence, and source-context error
+  mapping; read and selection handlers have narrower repository-only contracts.
+- Action: moved the generate route registration and handler into
+  `src/api/routers/construction_generate_routes.py`, preserving public path, response model,
+  Swagger guidance, idempotency and correlation headers, database/session dependency wiring,
+  source-resolution call, risk-authority and run-support dependencies, service arguments, and API
+  exception mapping.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction read and selection handlers from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-132: Construction read lookup was mixed with selection commands
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/construction/alternative-sets/{alternative_set_id}`.
+- Finding: after extracting generation, the construction router still mixed the persisted
+  alternative-set read model with selection command behavior. The read route owns a repository-only
+  lookup and audit/presentation Swagger contract, while selection owns PM decision capture and
+  explicit selection error translation.
+- Action: moved the alternative-set read route registration into
+  `src/api/routers/construction_read_routes.py`, preserving public path, response model, Swagger
+  description, example payload, path metadata, repository dependency, service call, and exception
+  mapping.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: split construction selection command from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-133: Construction selection command was owned by the router shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/construction/alternative-sets/{alternative_set_id}/selections`.
+- Finding: after extracting generate and read routes, `src/api/routers/construction.py` still
+  owned the alternative-selection command while also acting as the route registration shell. The
+  selection command owns PM decision capture, bounded reason/comment request semantics,
+  correlation propagation, and explicit API error translation.
+- Action: moved construction selection route registration into
+  `src/api/routers/construction_selection_routes.py` and reduced `construction.py` to router
+  construction plus explicit route-module imports. Public path, response model, Swagger guidance,
+  path/header metadata, repository dependency, service call arguments, and HTTP error mapping were
+  preserved.
+- Status: hardened
+- Evidence: focused construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  focused Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation with no drift.
+- Follow-up: review the next large route or service surface after checking branch commit count
+  against the PR target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-134: PM operating-quality builders were embedded in router assembly
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run and review-action builder helpers.
+- Finding: `src/api/routers/pm_operating_quality.py` mixed router assembly with score-run
+  construction, PM-book source evidence materialization, policy resolution, book-scope signal
+  projection, and review-action target lookup. The route shell should coordinate route modules,
+  while builder behavior should be isolated for focused review and testing.
+- Action: moved builder internals into `src/api/routers/pm_operating_quality_builders.py` while
+  keeping the existing private names on `pm_operating_quality.py` as compatibility wrappers for
+  tests and monkeypatch seams. Route registration order, public API paths, PM-book resolver
+  injection, policy lookup semantics, source-reference projection, review-action construction, and
+  error mapping were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: review PM operating-quality route registration order and remaining model surface after
+  this behavior-preserving builder split.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-135: Integration capability schemas were embedded in route code
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/integration/capabilities` response schemas and OpenAPI examples.
+- Finding: `src/api/routers/integration_capabilities.py` mixed the gateway-facing capability route
+  with contract schemas, consumer vocabulary, and a long OpenAPI example payload. This made the
+  runtime feature-resolution logic harder to review separately from the published control-plane
+  contract.
+- Action: moved the consumer type alias, feature/workflow/response models, and capabilities
+  response examples into `src/api/routers/integration_capabilities_models.py`, preserving schema
+  names, field descriptions, examples, supported consumer literals, and OpenAPI example content.
+- Status: hardened
+- Evidence: focused integration-capabilities API regression
+  (`tests/unit/dpm/api/test_integration_capabilities_api.py` plus health contract checks), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the remaining integration-capabilities runtime helpers for a similarly bounded
+  feature-resolution extraction.
+- Wiki decision: no wiki source change required; this is internal schema modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-136: Integration capability feature resolution lived in the route module
+
+- Date: 2026-05-31
+- Scope: integration-capabilities environment and feature-resolution helpers.
+- Finding: after extracting schemas, `src/api/routers/integration_capabilities.py` still mixed the
+  HTTP route with environment parsing, stateful publishability checks, supported input-mode
+  ordering, feature capability assembly, workflow assembly, and response construction. This
+  control-plane logic is cross-app contract-sensitive and should be reviewable without scanning
+  FastAPI route metadata.
+- Action: moved feature-resolution builders into
+  `src/api/routers/integration_capabilities_builders.py` while retaining compatibility wrapper
+  names in `integration_capabilities.py`. The route still owns query validation and solver
+  dependency injection so existing tests and monkeypatch seams remain intact.
+- Status: hardened
+- Evidence: focused integration-capabilities API regression
+  (`tests/unit/dpm/api/test_integration_capabilities_api.py` plus health contract checks), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: monitor neighboring `lotus-gateway` and `lotus-core` capability/source-contract
+  refactors for consumer vocabulary or stateful resolver posture changes.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-137: Single-run rebalance simulation was mixed with batch analysis
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/simulate`.
+- Finding: `src/api/routers/rebalance_simulation.py` mixed the single-run simulation command with
+  synchronous batch analysis, asynchronous batch submission, and async operation execution. The
+  single-run command owns idempotency-key semantics, policy-pack override headers, stateful/source
+  envelope resolution, and the simulation response examples.
+- Action: moved the single-run simulation route registration into
+  `src/api/routers/rebalance_simulation_simulate_routes.py`, preserving public path, response
+  model, Swagger guidance, header metadata, example payloads, database dependency, source-envelope
+  resolution, service call arguments, and route registration order.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split synchronous and asynchronous batch-analysis routes from the remaining router
+  shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-138: Synchronous batch analysis was mixed with async execution routes
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/analyze`.
+- Finding: after extracting single-run simulation, the rebalance simulation router still mixed
+  immediate batch analysis with asynchronous batch acceptance and manual operation execution.
+  Synchronous analysis owns immediate batch result semantics, scenario-order execution, batch
+  response examples, and policy-pack header propagation.
+- Action: moved synchronous batch-analysis route registration into
+  `src/api/routers/rebalance_simulation_analyze_routes.py`, preserving public path, response model,
+  Swagger guidance, header metadata, request field metadata, source-envelope resolution, service
+  call arguments, compatibility import from `src/api/main.py`, and route registration order.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split asynchronous batch acceptance and manual operation execution from the remaining
+  router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-139: Async batch acceptance was mixed with manual execution
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/analyze/async`.
+- Finding: after extracting simulation and synchronous analysis routes, the rebalance simulation
+  router still mixed async batch acceptance with manual pending-operation execution. Async
+  acceptance owns `202 Accepted`, polling-handle semantics, correlation response headers,
+  conflict examples, and policy-pack header propagation for deferred scenario analysis.
+- Action: moved asynchronous batch-analysis route registration into
+  `src/api/routers/rebalance_simulation_async_routes.py`, preserving public path, response model,
+  Swagger guidance, `X-Correlation-Id` response header, header metadata, request field metadata,
+  source-envelope resolution, service call arguments, compatibility import from `src/api/main.py`,
+  and route registration order.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: split manual pending-operation execution from the remaining router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-140: Manual async operation execution was owned by the route shell
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/operations/{operation_id}/execute`.
+- Finding: after extracting simulation, synchronous analysis, and async acceptance, the rebalance
+  simulation router still owned manual pending-operation execution while also acting as the route
+  registration shell. Manual execution owns run-support service dependency wiring, pending-state
+  execution semantics, and terminal operation status response mapping.
+- Action: moved manual async operation execution route registration into
+  `src/api/routers/rebalance_simulation_operation_routes.py` and reduced
+  `rebalance_simulation.py` to router construction plus explicit route-module imports and
+  compatibility handler re-exports used by `src/api/main.py`. Public path, response model, Swagger
+  guidance, path metadata, service dependency, service call, and route order were preserved.
+- Status: hardened
+- Evidence: focused rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), focused
+  Ruff checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with
+  no drift.
+- Follow-up: review the next large route surface after checking branch commit count against the PR
+  target.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-141: Campaign definition materialization was mixed with source discovery
+
+- Date: 2026-05-31
+- Scope: persisted bulk-review campaign definition request materialization.
+- Finding: `src/api/routers/wave_campaign_source_resolution.py` mixed persisted campaign-definition
+  materialization with live Core DPM portfolio-universe discovery and membership/governance
+  source-resolution logic. Persisted definitions own a separate fail-closed contract: reference
+  completeness, status eligibility, as-of-date parity, candidate projection, and governance
+  hydration.
+- Action: moved persisted campaign-definition request materialization into
+  `src/api/routers/wave_campaign_definition_resolution.py`, preserving validation codes/messages,
+  source-reference construction, candidate projection, governance hydration, and the wave portfolio
+  resolution call path through an explicit direct import.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split Core DPM portfolio-universe discovery and campaign membership governance from
+  the remaining source-resolution module.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-142: Core DPM universe discovery was mixed with campaign membership
+
+- Date: 2026-05-31
+- Scope: Core DPM portfolio-universe candidate discovery for bulk-review campaign waves.
+- Finding: `src/api/routers/wave_campaign_source_resolution.py` still mixed live Core
+  portfolio-universe paging and source-readiness guards with Manage-owned campaign membership
+  hashing and governance projection. Core discovery owns upstream availability mapping,
+  non-terminating page protection, truncated-page rejection, duplicate candidate detection, and
+  Core source-reference construction.
+- Action: moved Core DPM portfolio-universe discovery into
+  `src/api/routers/wave_core_portfolio_universe_resolution.py`, preserving page bounds,
+  supportability checks, error codes/messages, candidate deduplication, source refs, and the
+  campaign membership call path.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split campaign membership governance projection from the remaining source-resolution
+  module.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-143: Campaign governance projection was mixed with membership assembly
+
+- Date: 2026-05-31
+- Scope: bulk-review campaign governance diagnostics and source-reference projection.
+- Finding: after extracting persisted definitions and Core candidate discovery,
+  `src/api/routers/wave_campaign_source_resolution.py` still mixed campaign governance validation
+  and source-reference projection with membership selection and membership hashing. Governance owns
+  approval posture, expiry posture, actor entitlement posture, governance hashing, and governance
+  lineage projection.
+- Action: moved campaign governance projection into
+  `src/api/routers/wave_campaign_governance_resolution.py`, preserving not-supplied diagnostics,
+  approval/expiry/entitlement calculations, governance hash inputs, source refs, and membership
+  assembly behavior.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: review the remaining wave campaign source-resolution module for smaller membership
+  assembly seams or move to the next large wave route surface.
+- Wiki decision: no wiki source change required; this is internal source-resolution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-144: Campaign discovery read model was mixed with queue projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-discovery`.
+- Finding: `src/api/routers/wave_campaign_read_model_routes.py` mixed persisted campaign discovery
+  with operating queue, approval inbox, workflow board, assignment plan, and automation readiness
+  projections. Discovery owns a narrower read model: persisted definition lookup, active-on
+  filtering, expired-row filtering, and universe-posture discovery item construction.
+- Action: moved campaign discovery route registration into
+  `src/api/routers/wave_campaign_discovery_routes.py` and included it before the remaining
+  read-model routes, preserving public path, response model, Swagger guidance, query parameters,
+  repository dependency, query loading, filtering behavior, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split the operating queue and attention/workflow projections from the remaining
+  campaign read-model router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-145: Campaign operating queue was mixed with attention projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-operating-queue`.
+- Finding: after extracting campaign discovery, the campaign read-model router still mixed the
+  operating queue with approval inbox, workflow board, assignment plan, and automation readiness.
+  The operating queue owns launch-ready versus attention posture over persisted definitions,
+  requested-as-of/actor context, active-on filtering, and expired-row inclusion.
+- Action: moved the operating queue route registration into
+  `src/api/routers/wave_campaign_operating_queue_routes.py` and included it after discovery,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split approval inbox and workflow-board projections from the remaining campaign
+  read-model router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-146: Campaign approval inbox was mixed with workflow projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-approval-inbox`.
+- Finding: after extracting discovery and operating queue routes, the campaign read-model router
+  still mixed approval attention inbox behavior with workflow board, assignment plan, and
+  automation readiness. Approval inbox owns approval-complete/required/incomplete, expiry
+  attention, entitlement attention, closed-row inclusion, and optional inbox-status filtering.
+- Action: moved the approval inbox route registration into
+  `src/api/routers/wave_campaign_approval_inbox_routes.py` and included it after operating queue,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split workflow-board and assignment projections from the remaining campaign read-model
+  router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-147: Campaign workflow board was mixed with assignment projections
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-workflow-board`.
+- Finding: after extracting discovery, operating queue, and approval inbox routes, the campaign
+  read-model router still mixed workflow-board behavior with assignment plan and automation
+  readiness. The workflow board owns cross-actor next-action rows, board-status filtering,
+  next-action filtering, and closed-row inclusion over persisted definitions.
+- Action: moved workflow-board route registration into
+  `src/api/routers/wave_campaign_workflow_board_routes.py` and included it after approval inbox,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment plan and automation readiness from the remaining campaign read-model
+  router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-148: Campaign assignment plan was mixed with automation readiness
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-assignment-plan`.
+- Finding: after extracting workflow-board routing, the campaign read-model router still mixed
+  assignment planning with automation readiness. Assignment planning owns assigned-actor,
+  escalation-tier, SLA posture, next-action filtering, closed-row inclusion, and reason-code
+  projection derived from workflow-board posture.
+- Action: moved assignment-plan route registration into
+  `src/api/routers/wave_campaign_assignment_plan_routes.py` and included it after workflow board,
+  preserving public path, response model, Swagger guidance, query parameters, repository
+  dependency, read-model query loading, page builder arguments, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split automation readiness from the remaining campaign read-model router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-149: Campaign automation readiness was owned by the read-model shell
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/waves/campaign-workflow-automation`.
+- Finding: after extracting discovery, queue, approval inbox, workflow board, and assignment plan,
+  `src/api/routers/wave_campaign_read_model_routes.py` still owned automation readiness while also
+  acting as the read-model router aggregator. Automation readiness owns Manage-side assignment-task
+  proposal posture, automation-status/action filtering, external workflow orchestration boundary
+  wording, and capability-posture publication.
+- Action: moved automation-readiness route registration into
+  `src/api/routers/wave_campaign_workflow_automation_routes.py` and reduced
+  `wave_campaign_read_model_routes.py` to a pure subrouter aggregator. Public path, response
+  model, Swagger guidance, query parameters, repository dependency, read-model query loading, page
+  builder arguments, capability-posture contract, and route order were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: prepare the ~50-commit branch for PR gate validation.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-150: Campaign evidence mixed approval decisions with task controls
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`.
+- Finding: `src/api/routers/wave_campaign_evidence_routes.py` mixed approval-decision evidence
+  with assignment-action, assignment-task, and maker-checker control routes. Approval decisions own
+  append-only approval evidence and read-page posture, while the remaining routes own separate
+  assignment workflow and maker-checker control lifecycles.
+- Action: moved approval-decision route registration into
+  `src/api/routers/wave_campaign_approval_decision_evidence_routes.py` and included it first from
+  `wave_campaign_evidence_routes.py`, preserving public paths, response models, Swagger guidance,
+  repository dependency wiring, response helper calls, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-action evidence from the remaining campaign evidence router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-151: Campaign evidence mixed assignment actions with task state
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`.
+- Finding: after extracting approval-decision evidence, the campaign evidence router still mixed
+  assignment-action append-only evidence with assignment-task state transitions and maker-checker
+  control evidence. Assignment actions own assignment/escalation posture history and bounded page
+  projection, while task and maker-checker routes own separate mutable-control lifecycles.
+- Action: moved assignment-action route registration into
+  `src/api/routers/wave_campaign_assignment_action_evidence_routes.py` and included it after
+  approval-decision evidence from `wave_campaign_evidence_routes.py`, preserving public paths,
+  response models, Swagger guidance, repository dependency wiring, response helper calls, and
+  route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-task lifecycle evidence from the remaining campaign evidence router.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-152: Campaign evidence mixed assignment task lifecycle with controls
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`.
+- Finding: after extracting approval-decision and assignment-action evidence, the campaign
+  evidence router still mixed mutable assignment-task lifecycle routing with maker-checker control
+  evidence. Assignment tasks own controlled open/transition state, task-status filtering, and SLA
+  posture paging, while maker-checker controls own separate approval-control evidence.
+- Action: moved assignment-task route registration into
+  `src/api/routers/wave_campaign_assignment_task_evidence_routes.py` and included it after
+  assignment-action evidence from `wave_campaign_evidence_routes.py`, preserving public paths,
+  response models, Swagger guidance, status filtering, repository dependency wiring, response
+  helper calls, and route order.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split maker-checker controls from the remaining campaign evidence router shell.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-153: Campaign maker-checker controls were owned by the evidence shell
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
+- Finding: after extracting approval-decision, assignment-action, and assignment-task routes,
+  `src/api/routers/wave_campaign_evidence_routes.py` still owned maker-checker control endpoints
+  while also acting as the campaign evidence router aggregator. Maker-checker controls own
+  append-only control evidence and distinct submitter/reviewer posture; the shell should only
+  compose evidence subrouters.
+- Action: moved maker-checker control route registration into
+  `src/api/routers/wave_campaign_maker_checker_evidence_routes.py` and reduced
+  `wave_campaign_evidence_routes.py` to a pure aggregator over approval-decision,
+  assignment-action, assignment-task, and maker-checker evidence subrouters. Public paths, response
+  models, Swagger guidance, repository dependency wiring, response helper calls, and route order
+  were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect the next largest wave router seam after campaign evidence routing is fully
+  modularized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-154: PM quality summary route owned invocation construction
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/pm-operating-quality/summary-invocations/preview` and
+  `POST /api/v1/rebalance/pm-operating-quality/summary-invocations`.
+- Finding: `src/api/routers/pm_operating_quality_summary_routes.py` mixed controller handlers with
+  summary-invocation construction orchestration, including score-run/review-action lookup,
+  domain-builder calls, correlation-id fallback, and HTTP error mapping. That made the route module
+  harder to review as a controller and concentrated service-boundary behavior in endpoint code.
+- Action: moved summary-invocation construction and HTTP exception mapping into
+  `src/api/routers/pm_operating_quality_summary_invocation_builder.py`, leaving preview/create
+  endpoints to compose dependencies, call the route-support builder, persist on create, and return
+  response DTOs. Public paths, request/response models, correlation-id behavior, not-found details,
+  validation error mapping, and conflict handling were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect remaining PM operating-quality route modules for repeated controller-owned
+  lookup/build/persist orchestration.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-155: PM quality summary route mixed command and read endpoints
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/summary-invocations` and
+  `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`.
+- Finding: after extracting summary-invocation construction, the summary route still mixed
+  preview/create command endpoints with persisted read endpoints. The read side owns bounded query
+  filters, pagination, immutable lookup, and not-found mapping, while preview/create own
+  review-gated invocation construction and persistence.
+- Action: moved summary-invocation list/get route registration into
+  `src/api/routers/pm_operating_quality_summary_read_routes.py` and included it after preview/create
+  commands from `pm_operating_quality_summary_routes.py`. Public paths, response models, Swagger
+  guidance, query parameters, pagination bounds, repository dependency wiring, not-found details,
+  and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect PM operating-quality score-run and review-action route modules for the same
+  command/read split pattern.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-156: PM quality review-action routes mixed command and read registration
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/review-actions` and
+  `GET /api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}`.
+- Finding: `src/api/routers/pm_operating_quality_review_action_routes.py` registered preview/create
+  command endpoints and persisted read endpoints in one module. Review-action reads own bounded
+  target/policy/date/state filters, pagination, immutable lookup, and not-found mapping, while the
+  command side owns review-action construction and conflict-safe persistence.
+- Action: moved review-action list/get route registration into
+  `src/api/routers/pm_operating_quality_review_action_read_routes.py` and kept
+  `register_pm_quality_review_action_routes` as the stable parent registration entry point. Public
+  paths, response models, Swagger guidance, query parameters, pagination bounds, repository
+  dependency wiring, not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect whether PM operating-quality score-run read registration should be moved to a
+  dedicated module for consistency with review-action and summary read routing.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-157: PM quality score-run reads lived in the command module
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/score-runs` and
+  `GET /api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}`.
+- Finding: score-run command and read registration were already separated by function, but both
+  lived in `src/api/routers/pm_operating_quality_score_run_routes.py`. That left the command module
+  carrying read-side query filters, pagination, immutable lookup, and not-found mapping even after
+  review-action and summary reads were split into dedicated modules.
+- Action: moved score-run list/get route registration into
+  `src/api/routers/pm_operating_quality_score_run_read_routes.py` while keeping
+  `register_pm_quality_score_run_read_routes` import-compatible from the existing command module.
+  Public paths, response models, Swagger guidance, query parameters, pagination bounds, repository
+  dependency wiring, not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect PM operating-quality fairness routes for command/read separation and
+  controller-owned orchestration.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-158: PM quality fairness route mixed command and read endpoints
+
+- Date: 2026-05-31
+- Scope: `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses` and
+  `GET /api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}`.
+- Finding: `src/api/routers/pm_operating_quality_fairness_routes.py` mixed preview/create command
+  endpoints, persisted read endpoints, and fairness-analysis construction. The read side owns
+  policy/date/state filters, pagination, immutable lookup, and not-found mapping, while preview and
+  create own cross-segment command construction and conflict-safe persistence.
+- Action: moved fairness-analysis list/get route registration into
+  `src/api/routers/pm_operating_quality_fairness_read_routes.py` and included it after the
+  preview/create routes from `pm_operating_quality_fairness_routes.py`. Public paths, response
+  models, Swagger guidance, query parameters, pagination bounds, repository dependency wiring,
+  not-found details, and route order were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: extract fairness-analysis command construction from the remaining fairness command
+  route module.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-159: PM quality fairness route owned command construction
+
+- Date: 2026-05-31
+- Scope: `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview` and
+  `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`.
+- Finding: after splitting fairness-analysis reads, the fairness command route still owned
+  cross-segment command construction and service-error-to-HTTP mapping. That kept request-to-command
+  transformation, correlation-id fallback, service invocation, and error status selection inside
+  endpoint code rather than a route-support boundary.
+- Action: moved fairness-analysis command construction and HTTP exception mapping into
+  `src/api/routers/pm_operating_quality_fairness_builder.py`, leaving preview/create endpoints to
+  compose dependencies, call the builder, persist on create, and return response DTOs. Public
+  paths, request/response models, correlation-id behavior, not-found mapping for missing score
+  runs, validation error mapping, and conflict handling were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect remaining PM operating-quality parent router private wrappers for stale
+  compatibility shims that can be reduced without breaking tests.
+- Wiki decision: no wiki source change required; this is internal controller modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-160: PM quality builders mixed score-run assembly with Core book sourcing
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run construction with optional `pm_book_scope`.
+- Finding: `src/api/routers/pm_operating_quality_builders.py` mixed score-run assembly and
+  review-action assembly with Core PM-book membership sourcing. The PM-book scope path owns
+  Core resolver invocation, unavailable/incomplete source mapping, source-ready validation, empty
+  membership fail-closed behavior, source refs, bounded member projection, and conversion into a
+  `SOURCE_QUALITY` evidence signal.
+- Action: moved PM-book scope sourcing and signal conversion into
+  `src/api/routers/pm_operating_quality_book_scope_builder.py` while keeping the existing
+  `pm_operating_quality_builders` import surface intact for parent-router compatibility and tests.
+  Public routes, request/response models, failure status codes/details, source refs, member limits,
+  reason codes, and correlation-id behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect whether policy resolution should be split from score-run assembly once PM-book
+  sourcing is stable in its own module.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-161: PM quality policy resolution lived inside score-run builders
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run policy resolution.
+- Finding: after separating Core PM-book sourcing, `pm_operating_quality_builders.py` still owned
+  policy reference resolution. Policy resolution has its own contract: prefer inline bank-owned
+  policy when supplied, require both `policy_id` and `policy_version` for repository lookup, return
+  governed 422 for missing references, and return governed 404 for unknown policy versions.
+- Action: moved policy resolution into
+  `src/api/routers/pm_operating_quality_policy_resolution.py` while keeping the existing
+  `pm_operating_quality_builders.resolve_policy` import surface intact for parent-router
+  compatibility and tests. Public routes, request/response models, error status codes/details, and
+  score-run construction behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: continue reducing `pm_operating_quality_builders.py` toward score-run and review-action
+  orchestration only.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-162: PM quality builders mixed score-run and review-action assembly
+
+- Date: 2026-05-31
+- Scope: PM operating-quality review-action construction.
+- Finding: after separating PM-book sourcing and policy resolution,
+  `pm_operating_quality_builders.py` still mixed score-run construction with review-action target
+  lookup, fairness/score-run not-found mapping, review-action builder invocation, correlation-id
+  fallback, and validation error mapping.
+- Action: moved review-action construction into
+  `src/api/routers/pm_operating_quality_review_action_builder.py` while keeping the existing
+  `pm_operating_quality_builders.build_review_action` import surface intact for parent-router
+  compatibility and tests. Public routes, request/response models, target lookup semantics,
+  not-found details, validation mapping, and correlation-id behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: reduce `pm_operating_quality_builders.py` to a score-run builder compatibility module
+  or move score-run construction into a dedicated module.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-163: PM quality score-run construction owned the compatibility builder
+
+- Date: 2026-05-31
+- Scope: PM operating-quality score-run construction.
+- Finding: after extracting review-action construction, `pm_operating_quality_builders.py` still
+  owned score-run assembly directly. That left outcome-review lookup, policy resolution,
+  optional PM-book scope enrichment, evidence aggregation, domain score-run builder invocation,
+  correlation-id fallback, and validation error mapping in the compatibility module.
+- Action: moved score-run construction into
+  `src/api/routers/pm_operating_quality_score_run_builder.py` and reduced
+  `pm_operating_quality_builders.py` to a compatibility re-export module for score-run,
+  review-action, PM-book scope, and policy helper imports used by the parent router and tests.
+  Public routes, request/response models, outcome-review not-found behavior, policy/PM-book
+  enrichment, validation mapping, and correlation-id behavior were preserved.
+- Status: hardened
+- Evidence: focused PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, source-file mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation with no drift.
+- Follow-up: inspect larger wave route helper modules after PM operating-quality builders are split.
+- Wiki decision: no wiki source change required; this is internal builder modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-164: Campaign action HTTP mixed approval evidence with other evidence helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions`.
+- Finding: after campaign evidence routes were split, `wave_campaign_action_http.py` still mixed
+  approval-decision response helpers with assignment-action, assignment-task, and maker-checker
+  response helpers. Approval decisions own append-only approval mutation, approval page projection,
+  conflict/value HTTP mapping, and persisted-definition not-found handling.
+- Action: moved approval-decision HTTP response helpers into
+  `src/api/routers/wave_campaign_approval_decision_http.py`, moved persisted-definition not-found
+  handling into `src/api/routers/wave_campaign_action_common.py`, and kept
+  `wave_campaign_action_http.py` as a compatibility import surface for existing evidence route
+  modules. Public paths, request/response models, repository calls, conflict/value/not-found
+  mappings, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-action, assignment-task, and maker-checker HTTP helpers from the
+  remaining campaign action compatibility module.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-165: Campaign action HTTP mixed assignment-action helpers with task lifecycle helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`.
+- Finding: `wave_campaign_action_http.py` still owned assignment-action append/projection helpers
+  alongside assignment-task lifecycle and maker-checker control helpers. That kept separate evidence
+  families in one module after the route families had already been split.
+- Action: moved assignment-action HTTP response helpers into
+  `src/api/routers/wave_campaign_assignment_action_http.py`, updated the assignment-action evidence
+  route to import the focused helper module directly, and kept `wave_campaign_action_http.py` as a
+  compatibility import surface for existing callers. Public paths, request/response models,
+  repository calls, conflict/value/not-found mappings, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split assignment-task and maker-checker HTTP helpers from the remaining campaign action
+  compatibility module.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-166: Campaign action HTTP mixed assignment-task lifecycle with maker-checker controls
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`
+  and `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions`.
+- Finding: `wave_campaign_action_http.py` still owned assignment-task open, transition, and list
+  helpers alongside maker-checker controls. That blurred task lifecycle response construction with
+  a separate control evidence family.
+- Action: moved assignment-task HTTP response helpers into
+  `src/api/routers/wave_campaign_assignment_task_http.py`, updated the assignment-task evidence
+  route to import the focused helper module directly, and kept `wave_campaign_action_http.py` as a
+  compatibility import surface for existing callers. Public paths, request/response models,
+  repository calls, conflict/value/not-found mappings, status filtering, and route behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split maker-checker HTTP helpers from the remaining campaign action compatibility
+  module.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-167: Campaign action HTTP compatibility module still owned maker-checker helpers
+
+- Date: 2026-05-31
+- Scope:
+  `POST/GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
+- Finding: after approval-decision, assignment-action, and assignment-task helpers were extracted,
+  `wave_campaign_action_http.py` still owned maker-checker control response helpers. That prevented
+  the legacy action helper module from becoming a pure compatibility surface.
+- Action: moved maker-checker HTTP response helpers into
+  `src/api/routers/wave_campaign_maker_checker_http.py`, updated the maker-checker evidence route
+  to import the focused helper module directly, and reduced `wave_campaign_action_http.py` to
+  compatibility re-exports for existing callers. Public paths, request/response models, repository
+  calls, conflict/value/not-found mappings, control pagination, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether remaining compatibility imports can be retired after downstream callers
+  have moved to the focused helper modules.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-168: Approval-decision route still depended on campaign action compatibility imports
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_approval_decision_evidence_routes.py` helper imports.
+- Finding: after the approval-decision HTTP helpers were extracted, the approval-decision evidence
+  route still imported them through `wave_campaign_action_http.py`. That kept a local route coupled
+  to a compatibility module instead of the focused helper boundary.
+- Action: updated the approval-decision evidence route to import
+  `src/api/routers/wave_campaign_approval_decision_http.py` directly. The action compatibility
+  module remains available for existing external/internal callers that have not moved yet.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_action_http.py` as compatibility-only unless a later cleanup can
+  prove no downstream import consumers remain.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-169: Campaign definition HTTP mixed response orchestration with reusable error mapping
+
+- Date: 2026-05-31
+- Scope: `src/api/routers/wave_campaign_definition_http.py` HTTP error/date mapping helpers.
+- Finding: campaign-definition response orchestration lived in the same module as reusable HTTP
+  exception builders and campaign discovery date parsing. Downstream campaign helpers imported that
+  module for error mapping even when they did not need definition response orchestration.
+- Action: moved reusable campaign-definition HTTP exception builders and discovery date parsing into
+  `src/api/routers/wave_campaign_definition_errors.py`, kept `wave_campaign_definition_http.py`
+  import-compatible for existing callers, and moved focused helper tests to the new boundary.
+  Not-found, conflict, validation, lifecycle, launch-blocked, and discovery-date behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused campaign-definition helper tests
+  (`tests/unit/api/test_wave_campaign_definition_http.py`), focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff checks, source-file mypy, OpenAPI quality
+  gate, and API vocabulary inventory validation with no drift.
+- Follow-up: move downstream helper imports from `wave_campaign_definition_http.py` to the focused
+  error module when touching those modules for adjacent work.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-170: Campaign action helpers depended on definition response module for error mapping
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_*_http.py` action/evidence helper imports for campaign-definition
+  error mapping.
+- Finding: the extracted approval-decision, assignment-action, assignment-task, maker-checker, and
+  shared action helpers still imported reusable campaign-definition error builders through
+  `wave_campaign_definition_http.py`. That kept action evidence helpers coupled to definition
+  response orchestration after the reusable mapping boundary had been extracted.
+- Action: moved action/evidence helper imports for conflict, validation, and not-found mapping to
+  `src/api/routers/wave_campaign_definition_errors.py` while keeping
+  `get_campaign_definition_or_404()` sourced from `wave_campaign_definition_http.py`. Route behavior,
+  status codes, and response payloads were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: apply the same direct error-module import pattern to launch/read helpers when touching
+  those modules for adjacent work.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-171: Campaign launch/read helpers imported error mapping through definition responses
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_launch_http.py`, `src/api/routers/wave_campaign_read_http.py`, and
+  `src/api/routers/wave_campaign_read_model_query.py`.
+- Finding: launch and read-model helpers still imported campaign-definition conflict,
+  launch-blocked, and discovery-date parsing through `wave_campaign_definition_http.py`. That kept
+  read/launch helpers coupled to definition response orchestration for reusable mapping utilities.
+- Action: moved those imports to `src/api/routers/wave_campaign_definition_errors.py` while keeping
+  `get_campaign_definition_or_404()` sourced from the definition response helper. Launch error
+  mapping, discovery-date validation, read-model query behavior, and route contracts were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_definition_http.py` as the definition response/lookup helper
+  boundary and use `wave_campaign_definition_errors.py` for reusable HTTP mapping in new helpers.
+- Wiki decision: no wiki source change required; this is internal import-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-172: Campaign definition response helper mixed create/read with lifecycle commands
+
+- Date: 2026-05-31
+- Scope:
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`.
+- Finding: `wave_campaign_definition_http.py` still owned retire and supersede response
+  orchestration alongside definition create/list/get helpers. The lifecycle commands have distinct
+  validation, lifecycle-error mapping, and audit semantics from definition persistence and reads.
+- Action: moved retire/supersede response helpers into
+  `src/api/routers/wave_campaign_definition_lifecycle_http.py`, updated the definition route to
+  import lifecycle helpers directly, and kept `wave_campaign_definition_http.py` import-compatible
+  for existing callers. Public paths, request/response models, lifecycle status mapping,
+  not-found/conflict/value mapping, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether definition create/list/get helpers should be split into write and read
+  modules after lifecycle extraction has stabilized.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-173: Campaign definition helper mixed write construction with read lookup and listing
+
+- Date: 2026-05-31
+- Scope:
+  `PUT/GET /api/v1/rebalance/waves/campaign-definitions` helper boundaries and shared definition
+  lookup imports.
+- Finding: `wave_campaign_definition_http.py` still mixed definition write construction with read
+  lookup/list pagination and also served as the lookup import point for downstream campaign helpers.
+  That made unrelated action, launch, and read helpers depend on a compatibility module instead of a
+  focused definition lookup boundary.
+- Action: moved definition lookup/get/list helpers into
+  `src/api/routers/wave_campaign_definition_read_http.py`, moved PUT response construction into
+  `src/api/routers/wave_campaign_definition_write_http.py`, updated routes and downstream helpers
+  to import the focused modules directly, and kept `wave_campaign_definition_http.py`
+  import-compatible. Public paths, request/response models, not-found/conflict/value mapping,
+  pagination count behavior, and route contracts were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_definition_http.py` as compatibility-only unless a later cleanup
+  proves all downstream imports have moved and external import compatibility can be retired.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-174: Campaign read helper mixed audit projections with readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/lifecycle-events`
+  and
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`.
+- Finding: `wave_campaign_read_http.py` owned simple audit projections alongside workflow overview,
+  preview readiness, and launch-package projections. Lifecycle events and launch history have a
+  distinct append-only audit/read-model purpose from readiness and launch packaging.
+- Action: moved lifecycle-event and launch-history response helpers into
+  `src/api/routers/wave_campaign_audit_read_http.py`, updated readiness routes to import audit
+  helpers directly, and kept `wave_campaign_read_http.py` import-compatible for existing callers.
+  Public paths, response models, pagination, not-found mapping, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split workflow overview/readiness/launch-package helpers into a focused readiness
+  projection module after audit read extraction is stable.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-175: Campaign read compatibility module still owned readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`,
+  `/preview-readiness`, and `/launch-package`.
+- Finding: after audit read extraction, `wave_campaign_read_http.py` still owned workflow overview,
+  preview readiness, and launch-package response helpers. These helpers compose fail-closed launch
+  supportability and operator package projections, which is a separate concern from audit read
+  projection and compatibility re-exports.
+- Action: moved readiness/launch-package response helpers into
+  `src/api/routers/wave_campaign_readiness_projection_http.py`, updated readiness routes to import
+  the focused projection module directly, and reduced `wave_campaign_read_http.py` to compatibility
+  re-exports. Public paths, response models, date validation, not-found mapping, launch-history
+  bounds, launch-package inclusion, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect remaining compatibility-only modules for local route imports before retiring
+  any compatibility surface.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-176: Campaign readiness router mixed audit endpoints with readiness endpoints
+
+- Date: 2026-05-31
+- Scope:
+  campaign-definition audit endpoints under `/lifecycle-events` and `/launch-history` in
+  `src/api/routers/wave_campaign_readiness_routes.py`.
+- Finding: after audit/readiness helper extraction, the route module still combined append-only
+  audit read endpoints with workflow overview, preview-readiness, and launch-package endpoints.
+  This kept route ownership less clear even though the helper boundaries were already separated.
+- Action: moved lifecycle-events and launch-history endpoints into
+  `src/api/routers/wave_campaign_audit_read_routes.py`, included that router before readiness
+  routes from `waves.py`, and left `wave_campaign_readiness_routes.py` focused on readiness and
+  launch-package projections. Public paths, response models, route order, pagination, dependency
+  wiring, Swagger descriptions, and route behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether campaign-definition route modules should be grouped under a higher-level
+  route aggregator once compatibility-only helper modules are stable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-177: Campaign definition routes mixed lifecycle commands with create/read routes
+
+- Date: 2026-05-31
+- Scope:
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`
+  and
+  `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/supersede`.
+- Finding: `wave_campaign_definition_routes.py` still mixed lifecycle command endpoints with
+  definition create/list/get endpoints after the lifecycle response helper had already been
+  separated. That kept route ownership broader than the underlying helper boundary.
+- Action: moved retire and supersede endpoints into
+  `src/api/routers/wave_campaign_definition_lifecycle_routes.py` and included that router
+  immediately after the campaign definition create/list router in `waves.py`. Public paths,
+  response models, route order, dependency wiring, Swagger descriptions, and lifecycle behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether definition detail/read routing should be grouped under a campaign
+  definition route aggregator once the remaining route modules are stable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-178: Campaign readiness router mixed workflow overview with readiness endpoints
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview`.
+- Finding: `wave_campaign_readiness_routes.py` still combined the workflow overview route with
+  preview-readiness and launch-package endpoints. Workflow overview composes audit, readiness, and
+  optional launch-package posture for operators, while the remaining readiness routes expose direct
+  supportability and package projections.
+- Action: moved the workflow-overview endpoint into
+  `src/api/routers/wave_campaign_workflow_overview_routes.py`, included that router before the
+  readiness router in `waves.py`, and left `wave_campaign_readiness_routes.py` focused on
+  preview-readiness and launch-package endpoints. Public path, response model, query parameters,
+  route order, dependency wiring, Swagger description, and behavior were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect whether preview-readiness and launch-package routes should remain together or
+  split once launch-package projection ownership is stable.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-179: Campaign readiness router mixed preview readiness with launch package routing
+
+- Date: 2026-05-31
+- Scope:
+  `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package`.
+- Finding: after workflow-overview route extraction, `wave_campaign_readiness_routes.py` still mixed
+  direct preview-readiness checks with launch-package routing. Launch package is operator packaging
+  for a future create request with idempotency/correlation guidance, while preview-readiness is the
+  direct fail-closed supportability check.
+- Action: moved the launch-package endpoint into
+  `src/api/routers/wave_campaign_launch_package_routes.py`, included that router after
+  preview-readiness routes and before durable launch routes in `waves.py`, and left
+  `wave_campaign_readiness_routes.py` focused on preview-readiness. Public path, response model,
+  query parameters, route order, dependency wiring, Swagger description, and behavior were
+  preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect route aggregation once campaign-definition read/write/lifecycle/audit/readiness
+  routing has stabilized.
+- Wiki decision: no wiki source change required; this is internal route modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-180: Campaign readiness projection helper mixed workflow overview with direct readiness projections
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_readiness_projection_http.py` workflow-overview response helper.
+- Finding: after workflow-overview routing was split, the projection helper still lived with direct
+  preview-readiness and launch-package projection helpers. Workflow overview composes readiness,
+  lifecycle audit, launch-history, active-on filtering, and optional launch-package posture, which is
+  broader than direct readiness/package construction.
+- Action: moved workflow-overview response construction into
+  `src/api/routers/wave_campaign_workflow_overview_http.py`, updated the workflow-overview route to
+  import the focused helper directly, and kept `wave_campaign_readiness_projection_http.py`
+  import-compatible for existing callers. Public behavior, date validation, not-found mapping,
+  launch-history bounds, launch-package inclusion, and response shape were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: split launch-package projection from preview-readiness projection if future route or
+  helper work touches that boundary.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260531-181: Campaign readiness projection helper mixed launch package with preview readiness
+
+- Date: 2026-05-31
+- Scope:
+  `src/api/routers/wave_campaign_readiness_projection_http.py` launch-package response helper.
+- Finding: after launch-package route extraction, launch-package response construction still lived
+  in the preview-readiness projection helper module. Launch package builds operator create-request
+  guidance with idempotency and correlation metadata, while preview readiness is the direct
+  fail-closed supportability check.
+- Action: moved launch-package response construction into
+  `src/api/routers/wave_campaign_launch_package_http.py`, updated the launch-package route to import
+  that focused helper directly, and kept `wave_campaign_readiness_projection_http.py`
+  import-compatible for existing callers. Public behavior, not-found mapping, requested as-of date,
+  actor, correlation, and response shape were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: keep `wave_campaign_readiness_projection_http.py` as preview-readiness plus
+  compatibility re-exports unless a future cleanup can safely retire compatibility imports.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-182: Campaign readiness projection compatibility module still owned preview readiness
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/wave_campaign_readiness_projection_http.py` preview-readiness response helper.
+- Finding: after workflow-overview and launch-package helper extraction, the readiness projection
+  module still owned preview-readiness response construction while also acting as a compatibility
+  re-export surface. That left the direct fail-closed supportability check in a compatibility module.
+- Action: moved preview-readiness response construction into
+  `src/api/routers/wave_campaign_preview_readiness_http.py`, updated the preview-readiness route to
+  import the focused helper directly, and reduced `wave_campaign_readiness_projection_http.py` to
+  compatibility re-exports. Public behavior, not-found mapping, requested as-of date, optional
+  actor entitlement input, and response shape were preserved.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), focused Ruff
+  checks, source-file mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: inspect compatibility-only campaign helper modules for safe retirement only after local
+  route imports and downstream callers are proven migrated.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-183: Campaign read compatibility helpers had no internal callers
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/wave_campaign_read_http.py` and
+  `src/api/routers/wave_campaign_readiness_projection_http.py`.
+- Finding: after campaign audit, workflow-overview, preview-readiness, and launch-package helpers
+  were split and routes imported focused modules directly, the legacy read/readiness projection
+  helper modules only re-exported focused helpers and had no internal callers. Keeping them made the
+  route helper surface larger without preserving any active application path.
+- Action: removed the unused compatibility helper modules. Public routes, response models,
+  OpenAPI output, and focused helper ownership were preserved because all route modules already
+  import the focused audit/readiness/launch-package helpers directly.
+- Status: hardened
+- Evidence: focused waves API regression (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation with no
+  drift.
+- Follow-up: continue retiring compatibility-only modules only after repository-local import scans
+  prove no active callers remain.
+- Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-184: Campaign action compatibility helper had no internal callers
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/wave_campaign_action_http.py`.
+- Finding: after assignment-action, assignment-task, maker-checker, and approval-decision helpers
+  were split and routes imported focused modules directly, the action helper only re-exported those
+  focused helpers and had no repository-local callers.
+- Action: removed the unused compatibility helper module. Public routes, response models, OpenAPI
+  output, and focused action helper ownership were preserved because all route modules already
+  import the focused helpers directly.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: continue retiring compatibility-only modules only after repository-local import scans
+  prove no active callers remain.
+- Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-185: Campaign definition compatibility helper had no internal callers
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/wave_campaign_definition_http.py`.
+- Finding: after definition read, write, error, and lifecycle helpers were split and routes imported
+  focused modules directly, the definition helper only re-exported those focused helpers and had no
+  repository-local callers.
+- Action: removed the unused compatibility helper module. Public routes, response models, OpenAPI
+  output, validation-error mapping, not-found mapping, conflict mapping, and focused definition
+  helper ownership were preserved because all route modules already import the focused helpers
+  directly.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: continue retiring compatibility-only modules only after repository-local import scans
+  prove no active callers remain.
+- Wiki decision: no wiki source change required; this is internal dead compatibility module cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-186: PM operating quality compatibility builder had one parent-router caller
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality.py` and
+  `src/api/routers/pm_operating_quality_builders.py`.
+- Finding: after PM quality score-run, review-action, policy-resolution, and PM-book scope builders
+  were split, the compatibility builder only re-exported focused helpers. The only active
+  repository-local caller was the parent PM operating quality router, which kept the router coupled
+  to an obsolete import surface.
+- Action: updated the parent router to import focused helper modules directly and removed the
+  unused compatibility builder. Public routes, request/response models, private edge helpers,
+  repository wiring, OpenAPI output, and PM-book fail-closed behavior were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; PM operating quality API
+  regression (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks,
+  router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no
+  drift.
+- Follow-up: continue removing compatibility-only router modules only after route and test imports
+  are proven migrated.
+- Wiki decision: no wiki source change required; this is internal helper import cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-187: Rebalance operations composition route only imported leaf routes
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs.py` and
+  `src/api/routers/rebalance_runs_operations_routes.py`.
+- Finding: after async operation inventory and lookup routes were split, the operations composition
+  module only imported those two leaf route modules. Keeping the extra import layer made parent
+  router registration less direct without owning behavior.
+- Action: registered the async operation inventory and lookup leaf routes directly from the parent
+  rebalance run router and removed the obsolete composition module. Public paths, route ordering,
+  response models, OpenAPI output, feature gates, and query-parameter rejection behavior were
+  preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; DPM rebalance API regression
+  (`tests/unit/dpm/api/test_api_rebalance.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect remaining composition-only rebalance run route modules for the same safe
+  direct-registration cleanup.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-188: Rebalance support-bundle composition route only imported leaf routes
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs.py` and
+  `src/api/routers/rebalance_runs_support_bundle_routes.py`.
+- Finding: after support-bundle run, correlation, idempotency, and operation routes were split, the
+  support-bundle composition module only imported those leaf route modules. Keeping the extra import
+  layer made parent router registration less direct without owning behavior.
+- Action: registered support-bundle leaf routes directly from the parent rebalance run router and
+  removed the obsolete composition module. Public paths, route ordering, response models, OpenAPI
+  output, feature gates, and lookup semantics were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; DPM rebalance API regression
+  (`tests/unit/dpm/api/test_api_rebalance.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect remaining composition-only rebalance run route modules for the same safe
+  direct-registration cleanup.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-189: Rebalance workflow composition route only imported leaf routes
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs.py` and
+  `src/api/routers/rebalance_runs_workflow_routes.py`.
+- Finding: after workflow state, action, and history routes were split, the workflow composition
+  module only imported those leaf route modules. Keeping the extra import layer made parent router
+  registration less direct without owning behavior.
+- Action: registered workflow leaf routes directly from the parent rebalance run router and removed
+  the obsolete composition module. Public paths, route ordering, response models, OpenAPI output,
+  workflow feature gates, and action/history semantics were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; DPM rebalance API regression
+  (`tests/unit/dpm/api/test_api_rebalance.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect remaining composition-only rebalance run route modules for the same safe
+  direct-registration cleanup.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-190: Rebalance lookup composition route only imported leaf routes
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs.py` and
+  `src/api/routers/rebalance_runs_lookup_routes.py`.
+- Finding: after correlation, request-hash, idempotency, idempotency-history, and run-id lookup
+  routes were split, the lookup composition module only imported those leaf route modules. Keeping
+  the extra import layer made parent router registration less direct without owning behavior.
+- Action: registered lookup leaf routes directly from the parent rebalance run router and removed
+  the obsolete composition module. Public paths, route ordering, response models, OpenAPI output,
+  feature gates, and lookup semantics were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; DPM rebalance API regression
+  (`tests/unit/dpm/api/test_api_rebalance.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep rebalance run route registration direct unless a composition module owns real
+  behavior or reusable route grouping.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-191: Wave campaign evidence composition route only included leaf routers
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/waves.py` and `src/api/routers/wave_campaign_evidence_routes.py`.
+- Finding: after approval-decision, assignment-action, assignment-task, and maker-checker evidence
+  routes were split, the campaign evidence route module only grouped those leaf routers. Keeping an
+  extra aggregator made the campaign route registration less direct without owning behavior.
+- Action: registered campaign evidence leaf routers directly from the parent wave router and
+  removed the obsolete aggregation module. Public paths, route ordering, response models, OpenAPI
+  output, evidence persistence semantics, and maker-checker behavior were preserved.
+- Status: hardened
+- Evidence: repository-local import scan found no active callers; focused waves API regression
+  (`tests/unit/dpm/api/test_waves_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep wave campaign route registration direct unless a grouping module owns real
+  behavior or reusable route policy.
+- Wiki decision: no wiki source change required; this is internal route registration cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-192: Rebalance run parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/rebalance_runs.py`.
+- Finding: after removing composition-only route modules, the rebalance run parent router had a
+  long block of repeated `importlib.import_module()` calls. That made registration order harder to
+  scan and created copy/paste friction for future route slices.
+- Action: centralized the route module names in one ordered tuple and registered them through a
+  single loop. Public paths, route ordering, response models, OpenAPI output, feature gates, and
+  supportability behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-193: Outcome review parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/outcome_reviews.py`.
+- Finding: the outcome review parent router registered primary outcome-review routes and cross-link
+  run/wave lookup routes through repeated `importlib.import_module()` calls. That made route order
+  harder to scan and increased copy/paste friction for future outcome-review route slices.
+- Action: centralized primary route module names and cross-link route module names in ordered
+  tuples and registered each group through a single loop after its owning parent router was
+  initialized. Public paths, route ordering, response models, OpenAPI output, lookup prefixes,
+  supportability behavior, and handoff behavior were preserved.
+- Status: hardened
+- Evidence: outcome review API regression (`tests/unit/api/test_outcome_reviews_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-194: Proof-pack parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/proof_packs.py`.
+- Finding: the proof-pack parent router registered generate, read, and handoff routes through
+  repeated `importlib.import_module()` calls. That made route order less explicit as an inventory
+  and created copy/paste friction for future proof-pack slices.
+- Action: centralized proof-pack route module names in one ordered tuple and registered them through
+  a single loop. Public paths, route ordering, response models, OpenAPI output, proof-pack
+  generation, read, and handoff behavior were preserved.
+- Status: hardened
+- Evidence: proof-pack API regression (`tests/unit/dpm/api/test_proof_pack_api.py`), router-wide
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-195: Construction parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/construction.py`.
+- Finding: the construction parent router registered generate, read, and selection routes through
+  repeated `importlib.import_module()` calls. That made route order less explicit as an inventory
+  and created copy/paste friction for future construction route slices.
+- Action: centralized construction route module names in one ordered tuple and registered them
+  through a single loop. Public paths, route ordering, response models, OpenAPI output,
+  construction alternative generation, read, and selection behavior were preserved.
+- Status: hardened
+- Evidence: construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-196: Mandate parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandates.py`.
+- Finding: the mandate parent router registered read, refresh, and health routes through repeated
+  `importlib.import_module()` calls. That made route order less explicit as an inventory and
+  created copy/paste friction for future mandate route slices.
+- Action: centralized mandate route module names in one ordered tuple and registered them through a
+  single loop. Public paths, route ordering, response models, OpenAPI output, core resolver
+  dependency flow, mandate read, refresh, and health behavior were preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), router-wide Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-197: Monitoring parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/monitoring.py`.
+- Finding: the monitoring parent router registered command-center, run-once, run-read, and
+  exception routes through repeated `importlib.import_module()` calls. That made route order less
+  explicit as an inventory and created copy/paste friction for future monitoring route slices.
+- Action: centralized monitoring route module names in one ordered tuple and registered them
+  through a single loop. Public paths, route ordering, response models, OpenAPI output, core
+  resolver dependency flow, command-center, monitoring run, and exception behavior were preserved.
+- Status: hardened
+- Evidence: monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`), router-wide
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-198: Portfolio memory parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/portfolio_memory.py`.
+- Finding: the portfolio memory parent router registered search, event, and detail routes through
+  repeated `importlib.import_module()` calls. That made route order less explicit as an inventory
+  and created copy/paste friction for future portfolio-memory route slices.
+- Action: centralized portfolio memory route module names in one ordered tuple and registered them
+  through a single loop. Public paths, route ordering, response models, OpenAPI output, source
+  repository dependency flow, search, event, and detail behavior were preserved.
+- Status: hardened
+- Evidence: portfolio memory API regression (`tests/unit/dpm/api/test_portfolio_memory_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-199: Policy-pack parent router repeated route-module imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/rebalance_policy_packs.py`.
+- Finding: the policy-pack parent router registered effective-resolution, catalog, and admin
+  routes through repeated `importlib.import_module()` calls. That made route order less explicit as
+  an inventory and created copy/paste friction for future policy-pack route slices.
+- Action: centralized policy-pack route module names in one ordered tuple and registered them
+  through a single loop. Public paths, route ordering, response models, OpenAPI output, backend
+  initialization behavior, policy-pack resolution metrics, catalog, and admin behavior were
+  preserved.
+- Status: hardened
+- Evidence: policy-pack API regression (`tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: use ordered route-module inventories for parent routers when dynamic registration is
+  still the safest pattern.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-200: Rebalance simulation parent router repeated dynamic callable imports
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/rebalance_simulation.py`.
+- Finding: the rebalance simulation parent router still used repeated dynamic module imports plus
+  repeated attribute extraction for simulate, analyze, async analyze, and operation execution
+  routes. Unlike simple parent routers, this module also exposes compatibility callables consumed by
+  `src/api/main.py`, so removing those exports would be a behavior risk.
+- Action: introduced a focused route-callable loader and kept the explicit compatibility exports for
+  `simulate_rebalance`, `analyze_scenarios`, `analyze_scenarios_async`, and
+  `execute_dpm_async_operation`. Public paths, route ordering, response models, OpenAPI output,
+  idempotency behavior, async operation behavior, and `src/api/main.py` imports were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep explicit route callable exports until `src/api/main.py` no longer imports endpoint
+  functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration readability
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-201: Parent routers duplicated route-module registration loops
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/route_registration.py`, `src/api/routers/construction.py`,
+  `src/api/routers/mandates.py`, and `src/api/routers/monitoring.py`.
+- Finding: after construction, mandate, and monitoring parent routers were converted to ordered
+  route-module inventories, each still repeated the same dynamic registration loop. That duplicated
+  parent-router mechanics across services and made future registration changes more error-prone.
+- Action: introduced `register_route_modules()` as the shared router registration helper and applied
+  it to the construction, mandate, and monitoring parent routers. Public paths, route ordering,
+  response models, OpenAPI output, dependency flow, and route behavior were preserved.
+- Status: hardened
+- Evidence: construction, mandate, and monitoring API regressions
+  (`tests/unit/dpm/api/test_construction_api.py`, `tests/unit/dpm/api/test_mandates_api.py`, and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy, OpenAPI
+  quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: apply the helper to remaining parent routers in small, focused slices after their
+  focused regressions pass.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-202: Proof, portfolio-memory, and policy-pack routers duplicated registration loops
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/proof_packs.py`, `src/api/routers/portfolio_memory.py`, and
+  `src/api/routers/rebalance_policy_packs.py`.
+- Finding: proof-pack, portfolio-memory, and policy-pack parent routers still repeated local
+  route-module registration loops after their route inventories were centralized. That left the
+  same import mechanics duplicated across business surfaces.
+- Action: replaced the local loops with the shared `register_route_modules()` helper while
+  preserving each router's ordered route inventory. Public paths, route ordering, response models,
+  OpenAPI output, repository/dependency flow, proof-pack, portfolio-memory, and policy-pack
+  behavior were preserved.
+- Status: hardened
+- Evidence: proof-pack, portfolio-memory, and policy-pack API regressions
+  (`tests/unit/dpm/api/test_proof_pack_api.py`,
+  `tests/unit/dpm/api/test_portfolio_memory_api.py`, and
+  `tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py`), router-wide Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: apply the helper to remaining parent routers in small, focused slices after their
+  focused regressions pass.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-203: Outcome and rebalance parent routers duplicated registration loops
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/outcome_reviews.py` and `src/api/routers/rebalance_runs.py`.
+- Finding: outcome-review and rebalance-run parent routers still repeated local route-module
+  registration loops after their route inventories were centralized. That duplicated the same
+  parent-router mechanics across two of the larger operational API surfaces.
+- Action: replaced the local loops with the shared `register_route_modules()` helper while
+  preserving each router's ordered route inventory. Public paths, route ordering, response models,
+  OpenAPI output, outcome-review lookup prefixes, rebalance run supportability behavior, and
+  workflow/async operation registration were preserved.
+- Status: hardened
+- Evidence: outcome-review and DPM rebalance API regressions
+  (`tests/unit/api/test_outcome_reviews_api.py` and `tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep `rebalance_simulation.py` on its callable-loader pattern while `src/api/main.py`
+  imports endpoint functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-204: Rebalance simulation kept a local route-callable loader
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/route_registration.py` and `src/api/routers/rebalance_simulation.py`.
+- Finding: after route registration mechanics were centralized, rebalance simulation still owned a
+  local dynamic callable loader for compatibility endpoint exports consumed by `src/api/main.py`.
+  That left dynamic route import mechanics split between the shared utility and one parent router.
+- Action: moved the callable loading helper into `route_registration.py` and updated
+  `rebalance_simulation.py` to reuse it while keeping explicit exports for `simulate_rebalance`,
+  `analyze_scenarios`, `analyze_scenarios_async`, and `execute_dpm_async_operation`. Public paths,
+  route ordering, response models, OpenAPI output, idempotency behavior, async operation behavior,
+  and `src/api/main.py` imports were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep explicit route callable exports until `src/api/main.py` no longer imports endpoint
+  functions for compatibility.
+- Wiki decision: no wiki source change required; this is internal route registration reuse cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-205: Rebalance workflow action routes duplicated HTTP mapping and metrics
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_workflow_action_routes.py` and
+  `src/api/routers/rebalance_runs_workflow_action_http.py`.
+- Finding: the run-id, correlation-id, and idempotency-key workflow action routes repeated the same
+  success metric, not-found mapping, disabled mapping, and conflict mapping. That duplicated
+  operational behavior across three command routes and increased drift risk for future workflow
+  action changes.
+- Action: extracted the shared workflow-action metric and HTTP exception mapping into
+  `apply_workflow_action_with_http_mapping()` and kept each route focused on request validation,
+  handle resolution, and service invocation. Public paths, request/response models, OpenAPI output,
+  unsupported-query rejection, correlation-id fallback behavior, metric labels, disabled/not-found
+  `404` mapping, and conflict `409` mapping were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: inspect remaining high-traffic command routes for duplicated HTTP mapping before
+  adding new workflow behavior.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-206: Rebalance workflow read routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_workflow_state_routes.py`,
+  `src/api/routers/rebalance_runs_workflow_history_routes.py`,
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, and
+  `src/api/routers/rebalance_runs_workflow_read_http.py`.
+- Finding: workflow state, history, and correlation decision read routes each repeated the same
+  `DpmRunNotFoundError` to `404` HTTP mapping after feature-flag and query-parameter checks. The
+  duplicated branch was mechanically identical and raised drift risk across the three operational
+  run handles.
+- Action: extracted `read_workflow_with_http_mapping()` and routed workflow read service calls
+  through it. Public paths, response models, feature-flag assertions, unsupported-query rejection,
+  OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: evaluate whether non-workflow rebalance run lookups should share a broader run
+  not-found helper after the workflow read surfaces are stable.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-207: Rebalance support-bundle routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_support_bundle_run_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_correlation_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_idempotency_routes.py`,
+  `src/api/routers/rebalance_runs_support_bundle_operation_routes.py`, and
+  `src/api/routers/rebalance_runs_support_bundle_http.py`.
+- Finding: the run-id, correlation-id, idempotency-key, and async-operation support-bundle
+  routes repeated identical `DpmRunNotFoundError` to `404` mapping around service calls. The
+  repeated branch made supportability lookup behavior easier to drift while future bundle
+  sections are added.
+- Action: extracted `read_support_bundle_with_http_mapping()` and routed all support-bundle
+  service calls through it. Public paths, query parameters, feature-flag assertions, response
+  models, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep optional support-bundle section toggles centralized in
+  `rebalance_runs_support_bundle_parameters.py`; avoid duplicating include-flag vocabulary in
+  future support-bundle route modules.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-208: Rebalance route helpers duplicated run not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_http.py`,
+  `src/api/routers/rebalance_runs_workflow_read_http.py`, and
+  `src/api/routers/rebalance_runs_support_bundle_http.py`.
+- Finding: the workflow-read and support-bundle helper modules each carried their own
+  `DpmRunNotFoundError` to `404` mapping. That avoided route-level duplication but introduced a
+  second layer where the same HTTP primitive could drift as more rebalance helper modules are
+  added.
+- Action: introduced `read_run_with_not_found_http_mapping()` as the shared rebalance-run HTTP
+  primitive and made the workflow-read and support-bundle helpers delegate to it. Public routes,
+  response models, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: reuse the shared primitive when consolidating remaining rebalance run lookup routes
+  that map `DpmRunNotFoundError` to `404`.
+- Wiki decision: no wiki source change required; this is internal helper consolidation with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-209: Rebalance run lookup routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_lookup_run_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_correlation_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_idempotency_routes.py`,
+  `src/api/routers/rebalance_runs_lookup_request_hash_routes.py`, and
+  `src/api/routers/rebalance_runs_lookup_idempotency_history_routes.py`.
+- Finding: run lookup endpoints for run id, correlation id, idempotency key, request hash, and
+  idempotency history repeated identical `DpmRunNotFoundError` to `404` handling. That made
+  operational lookup behavior more verbose and easier to drift from support-bundle and workflow
+  lookup behavior.
+- Action: routed the lookup service calls through `read_run_with_not_found_http_mapping()`.
+  Public paths, response models, feature-flag assertions, unsupported-query rejection, OpenAPI
+  output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: apply the same primitive to artifact and async-operation lookup routes if validation
+  confirms no semantic distinction is needed.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-210: Rebalance artifact and async lookup routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/rebalance_runs_artifact_routes.py` and
+  `src/api/routers/rebalance_runs_async_operation_lookup_routes.py`.
+- Finding: artifact lookup and async-operation lookup routes still repeated the same
+  `DpmRunNotFoundError` to `404` mapping after the run lookup routes had moved to the shared
+  rebalance-run HTTP primitive. That left a small but avoidable inconsistency across operator
+  support lookup surfaces.
+- Action: routed artifact, operation-id, and correlation-id async operation reads through
+  `read_run_with_not_found_http_mapping()`. Public paths, response models, feature-flag
+  assertions, OpenAPI output, and `404` detail behavior were preserved.
+- Status: hardened
+- Evidence: DPM rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: keep the workflow action helper separate because it maps additional disabled and
+  conflict workflow outcomes, not only run-not-found lookup behavior.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-211: Mandate and monitoring routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/mandate_http.py`, `src/api/routers/mandate_read_routes.py`,
+  `src/api/routers/mandate_health_routes.py`,
+  `src/api/routers/monitoring_exception_routes.py`,
+  `src/api/routers/monitoring_run_read_routes.py`, and
+  `src/api/routers/monitoring_run_once_routes.py`.
+- Finding: mandate read, mandate health, monitoring run read, monitoring exception resolution,
+  and monitoring run-once routes repeated the same domain not-found to `404` HTTP mapping. The
+  repeated branches made mandate supportability routes more verbose and raised drift risk for
+  future DPM command-center surfaces.
+- Action: introduced `read_mandate_with_not_found_http_mapping()` and routed the not-found read
+  and command service calls through it. Public paths, response models, source-readiness handling,
+  OpenAPI output, and `404` detail behavior were preserved. The run-once filter assembly was moved
+  into a small helper so the route body stays focused on selector validation and service
+  invocation.
+- Status: hardened
+- Evidence: mandate and monitoring API regressions
+  (`tests/unit/dpm/api/test_mandates_api.py` and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect mandate source-incomplete `424` handling for possible shared helper reuse
+  after the not-found mapping has settled.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-212: Mandate source-incomplete routes repeated 424 mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/mandate_http.py`, `src/api/routers/mandate_health_routes.py`, and
+  `src/api/routers/mandate_refresh_routes.py`.
+- Finding: mandate health recalculation and refresh-from-core routes repeated identical
+  `DpmMandateSourceIncompleteError` to `424 Failed Dependency` HTTP mapping with string detail.
+  PM-book monitoring kept a separate structured code payload and was intentionally left outside
+  this helper.
+- Action: added `mandate_source_incomplete_http_exception()` to the mandate HTTP helper and reused
+  it from the two matching route branches. Public paths, response models, OpenAPI output,
+  source-unavailable `503` behavior, and existing `424` detail strings were preserved.
+- Status: hardened
+- Evidence: mandate and monitoring API regressions
+  (`tests/unit/dpm/api/test_mandates_api.py` and
+  `tests/unit/dpm/api/test_monitoring_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep structured PM-book source-readiness failures explicit until a broader
+  source-dependency error envelope is introduced.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-213: Outcome-review routes repeated HTTP exception construction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/outcome_review_http.py`,
+  `src/api/routers/outcome_review_create_routes.py`,
+  `src/api/routers/outcome_review_preview_routes.py`,
+  `src/api/routers/outcome_review_refresh_routes.py`,
+  `src/api/routers/outcome_review_lookup_routes.py`,
+  `src/api/routers/outcome_review_run_lookup_routes.py`,
+  `src/api/routers/outcome_review_supportability_routes.py`, and
+  `src/api/routers/outcome_review_handoff_routes.py`.
+- Finding: outcome-review routes repeated construction of the same `404`, `409`, and `422` HTTP
+  exceptions with identical public details. The repeated branches made RFC-0042 operator and
+  handoff routes harder to keep consistent as report, AI, supportability, and source-refresh
+  surfaces evolve.
+- Action: introduced `outcome_review_http.py` with shared not-found, conflict, and validation
+  HTTP helpers and reused them from the matching routes. Public paths, response models,
+  observability emission, OpenAPI output, and existing error details were preserved.
+- Status: hardened
+- Evidence: outcome-review API regression (`tests/unit/api/test_outcome_reviews_api.py`),
+  router-wide Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: inspect PM-operating-quality route builders for the same repeated validation/conflict
+  mapping pattern after outcome-review helper behavior is stable.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-214: PM operating quality routes repeated conflict mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_score_run_routes.py`,
+  `src/api/routers/pm_operating_quality_fairness_routes.py`,
+  `src/api/routers/pm_operating_quality_review_action_routes.py`,
+  `src/api/routers/pm_operating_quality_summary_routes.py`, and
+  `src/api/routers/pm_operating_quality_policy_routes.py`.
+- Finding: persisted PM operating-quality score runs, fairness analyses, review actions, summary
+  invocations, and policy versions each repeated the same persistence-conflict to `409` HTTP
+  mapping. The repeated branches made PM-quality governance routes noisier and increased drift
+  risk for future persisted evidence surfaces.
+- Action: introduced `pm_quality_conflict_http_exception()` and reused it from the persisted
+  command routes while leaving route-specific validation, missing-resource, and source-dependency
+  failures unchanged. Public paths, response models, OpenAPI output, and `409` detail strings were
+  preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect PM-quality read-route not-found handling and builder validation handling as
+  separate slices; those carry distinct detail payloads and should not be mixed into this conflict
+  helper.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-215: PM operating quality read routes repeated not-found mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_score_run_read_routes.py`,
+  `src/api/routers/pm_operating_quality_fairness_read_routes.py`,
+  `src/api/routers/pm_operating_quality_review_action_read_routes.py`,
+  `src/api/routers/pm_operating_quality_summary_read_routes.py`, and
+  `src/api/routers/pm_operating_quality_policy_routes.py`.
+- Finding: PM operating-quality read routes repeated the same `404` response construction with
+  a governed `PM_QUALITY_*_NOT_FOUND:<identifier>` detail. The detail codes differed by evidence
+  family, but the HTTP construction pattern was identical and duplicated across score runs,
+  fairness analyses, review actions, summary invocations, and policy versions.
+- Action: added `pm_quality_not_found_http_exception()` to the PM-quality HTTP helper and reused
+  it from the matching read routes. Public paths, response models, OpenAPI output, and existing
+  `404` detail strings were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), router-wide Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect PM-quality builder validation handling separately because those failures
+  intentionally mix missing persisted inputs and validation/conflict semantics.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-216: PM operating quality builders repeated validation mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py`,
+  `src/api/routers/pm_operating_quality_policy_resolution.py`,
+  `src/api/routers/pm_operating_quality_score_run_builder.py`,
+  `src/api/routers/pm_operating_quality_fairness_builder.py`,
+  `src/api/routers/pm_operating_quality_review_action_builder.py`, and
+  `src/api/routers/pm_operating_quality_summary_invocation_builder.py`.
+- Finding: PM operating-quality builder modules repeated the same `422` validation HTTP mapping
+  and several matching PM-quality prerequisite `404` mappings. The repeated branches made the
+  builder layer less consistent with the route-level PM-quality HTTP helper introduced for
+  persisted reads and writes.
+- Action: added `pm_quality_validation_http_exception()` and reused the existing
+  `pm_quality_not_found_http_exception()` across PM-quality policy resolution, score-run,
+  fairness, review-action, and summary-invocation builders. Public paths, response models,
+  OpenAPI output, and existing `404`/`422` detail strings were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API and service regressions
+  (`tests/unit/api/test_pm_operating_quality_api.py` and
+  `tests/unit/api/test_pm_operating_quality_service.py`), router-wide Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: leave outcome-review prerequisite lookup in the score-run builder separate until a
+  broader cross-domain prerequisite error helper is introduced.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-217: PM operating quality PM-book source dependency mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/pm_operating_quality_http.py` and
+  `src/api/routers/pm_operating_quality_book_scope_builder.py`.
+- Finding: PM operating-quality PM-book scope materialization still constructed source dependency
+  HTTP failures inline for core resolver unavailability, incomplete PM-book membership data,
+  source-readiness failure, and empty membership results. These mappings are PM-quality-specific
+  contract details and should stay reusable near the rest of the PM-quality HTTP translation layer
+  as Manage integrates with ongoing core and gateway refactors.
+- Action: added PM-quality PM-book source dependency HTTP helpers and reused them from the book
+  scope builder. Public paths, response models, OpenAPI output, and existing `503`/`424` detail
+  payloads were preserved.
+- Status: hardened
+- Evidence: PM operating-quality API regression
+  (`tests/unit/api/test_pm_operating_quality_api.py`), focused Ruff checks, router-wide mypy,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: keep monitoring PM-book selector source-readiness mappings separate until monitoring
+  and PM-quality agree on a shared source-dependency error envelope.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-218: Monitoring run-once PM-book selector HTTP mapping
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/routers/monitoring_http.py`, `src/api/routers/monitoring_run_once_routes.py`, and
+  `tests/unit/dpm/api/test_monitoring_api.py`.
+- Finding: monitoring run-once PM-book discovery constructed selector validation, core resolver
+  source dependency, source-readiness, empty membership, and mandate snapshot dependency HTTP
+  failures inline. That route-level branching mixed workflow orchestration with contract-specific
+  error translation and made Manage more brittle while lotus-core and lotus-gateway integration
+  surfaces are being refactored by other agents.
+- Action: introduced monitoring-specific PM-book selector HTTP helpers and reused them from the
+  run-once route. Added regression coverage for core resolver unavailable and incomplete source
+  dependency mappings. Public paths, response models, OpenAPI output, and existing `422`,
+  `503`, and `424` detail payloads were preserved.
+- Status: hardened
+- Evidence: monitoring API regression (`tests/unit/dpm/api/test_monitoring_api.py`), focused
+  Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: evaluate whether wave PM-book review source dependency mapping can reuse a shared
+  lower-level envelope after core/gateway refactors settle; do not prematurely merge monitoring,
+  PM-quality, and wave-specific messages.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-219: Mandate diff conflict HTTP mapping
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandate_http.py` and `src/api/routers/mandate_read_routes.py`.
+- Finding: mandate read routes already reused shared not-found HTTP mapping, but the mandate diff
+  route still constructed its `409` unavailable-comparison response inline. The remaining branch
+  was small, but it kept diff-specific contract translation outside the mandate HTTP helper layer.
+- Action: added `mandate_diff_unavailable_http_exception()` and reused it from the mandate diff
+  route. Public paths, response models, OpenAPI output, and existing `409` detail strings were
+  preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: inspect mandate refresh source-unavailable mapping separately; it is a `503`
+  dependency failure and should not be mixed into the diff conflict helper.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-220: Mandate refresh source-unavailable HTTP mapping
+
+- Date: 2026-06-01
+- Scope: `src/api/routers/mandate_http.py` and `src/api/routers/mandate_refresh_routes.py`.
+- Finding: mandate refresh already reused the shared source-incomplete `424` helper, but still
+  constructed the source-unavailable `503` dependency failure inline. Keeping only one side of the
+  refresh dependency contract in the helper layer made the route noisier and less consistent.
+- Action: added `mandate_source_unavailable_http_exception()` and reused it from refresh-from-core.
+  Public paths, response models, OpenAPI output, and existing `503` detail strings were preserved.
+- Status: hardened
+- Evidence: mandate API regression (`tests/unit/dpm/api/test_mandates_api.py`), focused Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: keep mandate PM-book monitoring mappings in `monitoring_http.py` because those expose
+  structured selector-specific detail payloads instead of mandate refresh strings.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-221: Proof-pack service leaked HTTP translation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/proof_pack_service.py`, `src/api/routers/proof_pack_http.py`,
+  `src/api/routers/proof_pack_generate_routes.py`,
+  `src/api/routers/proof_pack_read_routes.py`,
+  `src/api/routers/proof_pack_handoff_routes.py`, and
+  `tests/unit/dpm/proof_packs/test_proof_pack_service.py`.
+- Finding: `proof_pack_service` imported FastAPI and returned `HTTPException` objects from
+  `to_api_http_exception()`. That kept transport-specific error translation inside an API service
+  that otherwise owns proof-pack orchestration and handoff reference hydration.
+- Action: moved proof-pack exception-to-HTTP mapping into the router helper
+  `proof_pack_http.py`, reused it from proof-pack generate/read/handoff routes, and updated the
+  focused mapping regression to assert the router-layer helper. Public paths, response models,
+  OpenAPI output, and existing `404`/`409`/`424`/`500` details were preserved.
+- Status: hardened
+- Evidence: proof-pack service regression
+  (`tests/unit/dpm/proof_packs/test_proof_pack_service.py`), proof-pack router/service Ruff checks,
+  router-wide mypy, no FastAPI transport imports in `proof_pack_service.py`, OpenAPI quality gate,
+  and API vocabulary inventory validation passed with no drift.
+- Follow-up: inspect construction and rebalance simulation API services for the same FastAPI
+  transport leakage in separate slices; those have larger route/service seams.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-222: Construction service leaked HTTP translation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_service.py`, `src/api/routers/construction_http.py`,
+  `src/api/routers/construction_generate_routes.py`,
+  `src/api/routers/construction_read_routes.py`,
+  `src/api/routers/construction_selection_routes.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`.
+- Finding: `construction_service` imported FastAPI solely to convert construction domain errors
+  into HTTP responses for generation, read, and selection routes. That transport dependency made a
+  large construction orchestration module harder to treat as reusable application logic.
+- Action: moved construction exception-to-HTTP mapping into `construction_http.py`, reused it from
+  the construction routes, and added focused mapping regression coverage. Public paths, response
+  models, OpenAPI output, and existing `404`/`409`/`500` detail strings were preserved.
+- Status: hardened
+- Evidence: construction API regression (`tests/unit/dpm/api/test_construction_api.py`),
+  construction router/service Ruff checks, router-wide mypy, no FastAPI transport imports in
+  `construction_service.py`, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue decomposing `construction_service.py` by construction concern; the HTTP
+  boundary cleanup removes one transport dependency but the module remains too large for the
+  long-term enterprise maintainability target.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-223: Rebalance envelope source-resolution HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_simulate_routes.py`,
+  `src/api/routers/rebalance_simulation_analyze_routes.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/routers/construction_generate_routes.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: rebalance execution-envelope and stateful source-resolution helpers raised FastAPI
+  `HTTPException` directly for missing stateless/stateful input, disabled stateful sourcing,
+  unavailable core resolver, and incomplete core context. These helpers are reused by simulation,
+  batch analysis, async analysis, and construction generation, so transport-specific failures in
+  the service layer made shared source-resolution logic harder to reuse and test as application
+  logic.
+- Action: introduced domain-level rebalance envelope/source-resolution exceptions, added
+  `rebalance_simulation_http.py` for route-layer HTTP mapping, and reused it from simulation,
+  analysis, async-analysis, and construction generation routes. Public paths, response models,
+  OpenAPI output, observability recording, and existing `422`/`409`/`503`/`424` detail strings
+  were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge, rebalance API, and construction API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`), rebalance/construction router/service Ruff
+  checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue moving idempotency and async-operation HTTP mappings out of
+  `rebalance_simulation_service.py` in smaller slices; those paths have separate persistence and
+  operation-state semantics.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-224: Rebalance simulation idempotency HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_simulate_routes.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: `simulate_rebalance()` still raised FastAPI `HTTPException` directly for replay
+  idempotency conflicts, inconsistent idempotency lookup state, and support-store write failures.
+  These failures are part of simulation application semantics and should be represented as domain
+  errors before the route layer maps them to HTTP.
+- Action: introduced simulation idempotency domain exceptions, mapped them in
+  `rebalance_simulation_http.py`, and reused that mapper from the simulation route. Public paths,
+  response models, OpenAPI output, observability recording, and existing `409`/`503` detail
+  strings were preserved.
+- Status: hardened
+- Evidence: rebalance API regression (`tests/unit/dpm/api/test_api_rebalance.py`), rebalance
+  router/service Ruff checks, router-wide mypy, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: move async-operation disabled/conflict/manual execution HTTP mappings out of
+  `rebalance_simulation_service.py` separately; those remain operation-state specific.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-225: Rebalance async-operation HTTP leakage
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/routers/rebalance_simulation_operation_routes.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: async analysis submit and manual operation execution still raised FastAPI
+  `HTTPException` directly for disabled async operations, correlation conflicts, disabled manual
+  execution, missing operations, and non-executable operation state. These operation-state
+  semantics belong in the application layer and should be mapped to HTTP only at the route edge.
+- Action: introduced rebalance async-operation domain exceptions, extended
+  `rebalance_simulation_http.py` with async-operation HTTP mapping, and reused it from async submit
+  and manual execution routes. Public paths, response models, OpenAPI output, observability
+  recording, and existing `404`/`409` detail strings were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), rebalance router/service Ruff checks, router-wide
+  mypy, OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: after async-operation mapping stabilizes, inspect remaining scenario-loop catches in
+  `execute_batch_analysis()` and `run_analyze_async_operation()` for whether `HTTPException`
+  compatibility handling can be narrowed without weakening failure capture.
+- Wiki decision: no wiki source change required; this is internal route/helper modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-226: Rebalance run-support provider HTTP boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_run_support_service.py`,
+  `src/api/routers/rebalance_runs.py`, `src/api/main.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/services/rebalance_simulation_errors.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`.
+- Finding: the reusable run-support service provider and supportability persistence helper lived in
+  the run-support router module and translated backend initialization failures directly to
+  FastAPI `HTTPException`. Rebalance simulation consumed that router helper for idempotency,
+  supportability persistence, and async analysis submission, which kept transport behavior inside
+  application-service execution paths.
+- Action: moved run-support provider construction and supportability persistence into
+  `rebalance_run_support_service.py` with an application-level unavailable exception, kept
+  `rebalance_runs.py` as the HTTP mapper for route dependencies, and had rebalance simulation
+  consume the non-HTTP provider directly. Support backend initialization failures are translated
+  to rebalance simulation or async-operation domain errors before the router maps them to the
+  preserved `503` response detail.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the touched
+  router/service modules, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue reducing router-owned service-provider state by moving remaining
+  run-support feature guards and route helper exports behind narrower HTTP adapter modules when a
+  route slice already touches those surfaces.
+- Wiki decision: no wiki source change required; this is internal provider-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-227: Rebalance batch-analysis helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_batch_analysis.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still mixed orchestration with pure batch-analysis
+  helper logic for invalid scenario-option formatting, base snapshot identity resolution, and
+  comparison-metric construction. That made the already-large simulation service harder to scan
+  and harder to test at the helper boundary.
+- Action: extracted the pure batch-analysis helpers into `rebalance_batch_analysis.py` and kept
+  `execute_batch_analysis()` focused on orchestration, policy application, simulation execution,
+  supportability persistence, observability, and response assembly. Public routes, payloads,
+  OpenAPI output, and comparison metric behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the helper
+  and simulation service, OpenAPI quality gate, and API vocabulary inventory validation passed with
+  no drift.
+- Follow-up: continue extracting independent source-resolution, policy-pack, and async-operation
+  helper families from `rebalance_simulation_service.py` when each can be covered without broad
+  route churn.
+- Wiki decision: no wiki source change required; this is internal helper modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-228: Policy-pack service/router boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_service.py`,
+  `src/api/routers/rebalance_policy_packs.py`,
+  `src/api/routers/rebalance_policy_pack_catalog_routes.py`,
+  `src/api/routers/rebalance_policy_pack_effective_routes.py`,
+  `src/api/routers/rebalance_simulation_analyze_routes.py`,
+  `src/api/routers/rebalance_simulation_async_routes.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_simulation_errors.py`,
+  `src/api/routers/rebalance_simulation_http.py`,
+  `src/api/persistence_profile.py`, and policy-pack/rebalance test fixtures.
+- Finding: policy-pack repository construction, catalog loading, tenant/default resolution, and
+  backend error normalization lived in the policy-pack router module. Rebalance simulation and
+  persistence-profile guardrails imported those helpers from the router, so reusable application
+  logic still depended on transport and route-registration code.
+- Action: moved policy-pack resolution, repository construction, catalog loading, DSN/backend
+  helpers, and catalog-unavailable application errors into
+  `rebalance_policy_pack_service.py`. The policy-pack router now maps service unavailable errors
+  to HTTP, while rebalance simulation maps selected-policy catalog failures through its existing
+  route-edge HTTP mapper. Public routes, response models, OpenAPI output, and existing `503`
+  detail strings were preserved.
+- Status: hardened
+- Evidence: policy-pack config/admin, persistence-profile, and rebalance API regressions
+  (`tests/unit/dpm/api/test_dpm_policy_pack_config.py`,
+  `tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py`,
+  `tests/unit/api/test_persistence_profile.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over touched
+  policy/rebalance modules, OpenAPI quality gate, and API vocabulary inventory validation passed
+  with no drift.
+- Follow-up: continue moving remaining reusable runtime configuration helpers out of router
+  modules when each consumer can switch without widening the public API surface.
+- Wiki decision: no wiki source change required; this is internal service-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-229: Run-support config service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_run_support_config.py`,
+  `src/api/routers/rebalance_runs_config.py`,
+  `src/api/services/rebalance_run_support_service.py`,
+  `src/api/routers/rebalance_runs.py`,
+  `src/api/routers/rebalance_runs_inventory_routes.py`,
+  `src/api/persistence_profile.py`, `src/api/production_cutover_contract.py`, and focused
+  run-support, persistence, cutover, and rebalance tests.
+- Finding: run-support repository/configuration helpers lived under the router package even though
+  they provided application configuration, environment parsing, repository construction, and
+  production guardrail inputs. The run-support service and production guardrails therefore still
+  depended on router package plumbing after the provider extraction.
+- Action: moved run-support configuration and repository-construction helpers into
+  `rebalance_run_support_config.py`, kept `rebalance_runs_config.py` as a compatibility shim for
+  route-local imports, and updated service, persistence-profile, cutover, and test patch paths to
+  use the service module. No public route, payload, OpenAPI, or operator detail changed.
+- Status: hardened
+- Evidence: run-support config, runtime request-model/service edge, persistence-profile,
+  production-cutover, and rebalance API regressions
+  (`tests/unit/dpm/api/test_dpm_runs_config.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/api/test_persistence_profile.py`,
+  `tests/unit/shared/dependencies/test_production_cutover_contract.py`, and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over touched
+  run-support modules, service-layer import scan showing no remaining FastAPI/router imports,
+  OpenAPI quality gate, and API vocabulary inventory validation passed with no drift.
+- Follow-up: continue decomposing router-adjacent helper modules in other domains, especially
+  wave and PM operating quality builders that still mix request/HTTP concerns with reusable
+  application logic.
+- Wiki decision: no wiki source change required; this is internal configuration-boundary
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-230: Core resolver construction service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/core_resolver_service.py`,
+  `src/api/services/rebalance_simulation_service.py`,
+  core-resolver-consuming routers for mandates, monitoring, PM operating quality, and waves, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned DPM core resolver client construction and
+  source-sourcing environment parsing even though mandate refresh, monitoring, PM operating
+  quality, wave preview, and campaign launch routes also consumed that capability. This made a
+  rebalance orchestration module the de facto owner of cross-domain core integration plumbing.
+- Action: extracted core resolver client construction and DPM core resolver environment parsing
+  into `core_resolver_service.py`, updated consuming routers to import the resolver factory from
+  that module, and kept compatibility exports in `rebalance_simulation_service.py` for existing
+  stateful envelope tests and callers. Public routes, OpenAPI output, resolver defaults, timeout
+  and retry semantics, and stateful source-resolution behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge, rebalance API, mandate API, monitoring API, PM
+  operating quality API, and waves API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, `tests/unit/dpm/api/test_mandates_api.py`,
+  `tests/unit/dpm/api/test_monitoring_api.py`,
+  `tests/unit/api/test_pm_operating_quality_api.py`, and
+  `tests/unit/dpm/api/test_waves_api.py`), focused Ruff checks, focused mypy over the resolver
+  service and consuming routers, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: move stateful envelope resolution itself out of `rebalance_simulation_service.py` in a
+  later slice once the compatibility path for existing tests and main-module overrides is narrowed.
+- Wiki decision: no wiki source change required; this is internal integration-helper modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-231: Rebalance source-lineage helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_source_lineage.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned source-input mode classification and
+  result lineage stamping while also coordinating policy packs, idempotency, run-support
+  recording, batch analysis, and async execution. That kept audit-lineage mutation coupled to a
+  broad orchestration module and made the stateful/stateless behavior harder to verify directly.
+- Action: extracted source-input mode classification and result source-lineage stamping into
+  `rebalance_source_lineage.py`, updated simulation orchestration to call the helper, and kept
+  compatibility aliases for existing private helper callers. Public routes, OpenAPI output,
+  result payload shape, source-lineage field names, and supportability semantics were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  source-lineage and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` by extracting stateful envelope
+  resolution and async execution helpers in later small slices once their test seams are direct.
+- Wiki decision: no wiki source change required; this is internal service-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-232: Rebalance async configuration service boundary
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_config.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: async operation feature flags, manual-execution gating, and execution-mode
+  normalization were still embedded in `rebalance_simulation_service.py`, even though they are
+  reusable runtime configuration concerns and are also compatibility-exported through
+  `src/api/main.py`. This kept configuration parsing mixed into simulation orchestration.
+- Action: extracted async flag and mode helpers into `rebalance_async_config.py`, updated
+  simulation orchestration to use the dedicated helper for async operation gating, and preserved
+  compatibility exports from `rebalance_simulation_service.py`. Public routes, OpenAPI output,
+  accepted execution modes, default behavior, and async disabled/manual-disabled error details
+  were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  config and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue extracting async execution orchestration from `rebalance_simulation_service.py`
+  once the operation lifecycle can be isolated without widening the HTTP error-mapping surface.
+- Wiki decision: no wiki source change required; this is internal runtime-configuration modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-233: Rebalance idempotency replay helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_idempotency_replay.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still contained the full idempotency replay lookup path,
+  including support-service availability mapping, request-hash conflict detection, missing-run
+  consistency handling, replay result validation, and execution telemetry. This made the main
+  simulation orchestration harder to read and kept replay edge behavior coupled to unrelated
+  policy-pack and persistence-write flow.
+- Action: extracted replay lookup/conflict/inconsistent-store handling into
+  `rebalance_idempotency_replay.py`, kept the support-service factory injectable so existing
+  test/main patch seams remain valid, and updated `simulate_rebalance` to return replayed results
+  through the helper. Public routes, OpenAPI output, idempotency error details, telemetry labels,
+  and replay payload shape were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  idempotency replay and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract simulation supportability-write handling next, so replay lookup and
+  persistence failure behavior are both independently testable service helpers.
+- Wiki decision: no wiki source change required; this is internal orchestration modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-234: Rebalance supportability-write helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_supportability_write.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still owned post-run supportability persistence and the
+  fail-closed/fail-open split between replay-enabled idempotency writes and replay-disabled best
+  effort persistence. That made supportability-store failure semantics harder to test without a
+  full simulation request path.
+- Action: extracted simulation supportability recording into `rebalance_supportability_write.py`,
+  preserved the main-module override for `record_dpm_run_for_support`, and kept replay-enabled
+  write failures mapped to `DPM_IDEMPOTENCY_STORE_WRITE_FAILED` while replay-disabled failures are
+  logged and do not block simulation. Public routes, OpenAPI output, result payloads, and error
+  details were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  supportability-write and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue extracting the remaining policy-resolution and batch-execution orchestration
+  from `rebalance_simulation_service.py` only in small slices with direct lower-level coverage.
+- Wiki decision: no wiki source change required; this is internal supportability-write modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-235: Async analyze payload parser extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_payload.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still parsed both current persisted async-operation
+  envelopes and legacy raw batch payloads inline before delegating to batch analysis. That made
+  backward-compatibility behavior for stored operations hard to test without running the async
+  operation executor.
+- Action: extracted current/legacy async analyze payload parsing into
+  `rebalance_async_operation_payload.py`, including batch request validation, optional persisted
+  source-context validation, and policy-context selectors. The operation executor now consumes a
+  typed payload object before invoking batch analysis. Public routes, OpenAPI output, stored
+  operation payload compatibility, and policy-pack selector behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  payload and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue reducing `run_analyze_async_operation` by extracting completion/failure
+  recording once the operation lifecycle can be isolated without changing support-service calls.
+- Wiki decision: no wiki source change required; this is internal async-operation modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-236: Async analyze completion helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_completion.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still mixed batch execution with support-service
+  completion/failure writes and async telemetry recording. This made operation lifecycle side
+  effects harder to verify without inducing execution success and failure paths through the full
+  async executor.
+- Action: extracted async analyze success and failure completion into
+  `rebalance_async_operation_completion.py`, preserving support-service calls, failure code/message
+  derivation, logger behavior, and async telemetry outcomes. Public routes, OpenAPI output, stored
+  operation state transitions, and response payloads were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  completion and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: move batch scenario execution out of `rebalance_simulation_service.py` in a later
+  slice once the run-function and support-write seams can be passed explicitly.
+- Wiki decision: no wiki source change required; this is internal async-operation lifecycle
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-237: Batch scenario execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_batch_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `execute_batch_analysis` still owned scenario option validation, per-scenario engine
+  invocation, source-lineage stamping, supportability recording, comparison-metric assembly,
+  partial-failure warnings, and execution telemetry. That made the batch API orchestration too
+  broad and kept invalid-option behavior tied to the full route-level request path.
+- Action: extracted batch scenario execution into `rebalance_batch_execution.py`, passing the run
+  function and supportability recorder explicitly so existing override seams remain intact.
+  `execute_batch_analysis` now resolves policy context and delegates scenario execution to the
+  helper. Public routes, OpenAPI output, batch result shape, invalid-option messages, partial
+  failure warnings, and supportability writes were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the batch
+  execution and simulation services, OpenAPI quality gate, and API vocabulary inventory validation
+  passed with no drift.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` toward policy-context
+  resolution, sync simulation orchestration, and async operation orchestration only.
+- Wiki decision: no wiki source change required; this is internal batch-execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-238: Rebalance policy-pack execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned selected policy-pack catalog loading,
+  catalog-unavailable error translation, and policy-resolution telemetry. These behaviors are
+  execution-policy concerns used by simulate/analyze/analyze-async paths and should be directly
+  testable without the larger simulation orchestration.
+- Action: extracted selected policy-pack definition resolution and telemetry recording into
+  `rebalance_policy_pack_execution.py`, while preserving the existing
+  `rebalance_simulation_service.load_dpm_policy_pack_catalog` patch seam through a compatibility
+  wrapper. Public routes, OpenAPI output, disabled-policy catalog short-circuit behavior,
+  policy-pack telemetry labels, and catalog-unavailable error details were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  policy-pack execution and simulation services, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` by extracting stateful envelope
+  resolution and async submission envelope construction in small compatibility-preserving slices.
+- Wiki decision: no wiki source change required; this is internal policy-execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-239: Stateful source-context helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_stateful_source_context.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `_resolve_stateful_source_context` still owned stateful payload gating, resolver
+  construction, core-resolver exception mapping, resolver telemetry, and canonical context hashing.
+  That kept source-data integration mechanics in the main rebalance orchestration module and made
+  gate behavior harder to test without the compatibility wrapper.
+- Action: extracted stateful source-context resolution into
+  `rebalance_stateful_source_context.py`, with explicit resolver factory and feature flag inputs.
+  The existing `_resolve_stateful_source_context` wrapper remains as the compatibility seam for
+  current tests and main-module overrides. Public routes, OpenAPI output, stateful disabled/missing
+  payload details, core resolver error mapping, telemetry labels, and context hash behavior were
+  preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  stateful-source and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract stateless/stateful envelope-to-request transformation next so core-context
+  validation and request materialization have direct helper tests.
+- Wiki decision: no wiki source change required; this is internal core-sourcing modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-240: Rebalance request-envelope resolution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_request_envelope_resolution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `rebalance_simulation_service.py` still owned stateless envelope validation,
+  stateful source-context resolution delegation, core-context-to-request transformation, and
+  transform-error mapping for both simulate and batch analyze paths. That kept request
+  materialization mixed into orchestration and made stateless pass-through/stateful failure mapping
+  harder to prove directly.
+- Action: extracted rebalance and batch request-envelope materialization into
+  `rebalance_request_envelope_resolution.py`, with explicit stateful resolver and request-builder
+  dependencies. The existing service functions remain as compatibility wrappers for route callers
+  and tests. Public routes, OpenAPI output, stateless missing-payload details, core-context
+  incomplete mapping, and request payload shape were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  request-envelope and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract async submission payload construction and submit telemetry next so async
+  operation intake has direct helper coverage.
+- Wiki decision: no wiki source change required; this is internal request-materialization
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-241: Async analyze submission payload helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_submission_payload.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `submit_and_optionally_execute_async_analysis` still built the persisted async analyze
+  request envelope inline, including batch request serialization, policy-context selectors, and
+  optional source-context serialization. That made the stored-operation contract harder to test
+  without exercising the full async submit path.
+- Action: extracted async analyze request-json construction into
+  `rebalance_async_submission_payload.py` and updated async submission to use the helper. Public
+  routes, OpenAPI output, stored operation envelope shape, policy context keys, and source-context
+  serialization behavior were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  submission and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: extract async submit telemetry/conflict handling once support-service submit behavior
+  can remain injectable and independently testable.
+- Wiki decision: no wiki source change required; this is internal async submission modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-242: Stale in-memory idempotency cache removal
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`,
+  `tests/unit/dpm/api/test_proof_pack_api.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`.
+- Finding: `DPM_IDEMPOTENCY_CACHE` and `DEFAULT_DPM_IDEMPOTENCY_CACHE_SIZE` remained exported
+  compatibility state from the earlier in-memory replay implementation. Production replay and
+  run lookup now use the run-support service/repository path, and current tests only cleared the
+  stale cache without any code path reading or writing it.
+- Action: removed the stale cache object, default cache-size constant, and `src.api.main` exports,
+  then updated unit and integration fixtures to reset the real run-support service only. This
+  removes misleading state that could imply an unsupported in-process idempotency replay path.
+- Status: hardened
+- Evidence: rebalance API, proof-pack API, and DPM workflow integration regressions
+  (`tests/unit/dpm/api/test_api_rebalance.py`, `tests/unit/dpm/api/test_proof_pack_api.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`), focused Ruff checks, focused
+  mypy over `src/api/services/rebalance_simulation_service.py` and `src/api/main.py`, repository
+  search showing no remaining stale cache symbols, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: keep pruning exported compatibility state only when search and tests prove it is no
+  longer part of a supported public or test contract.
+- Wiki decision: no wiki source change required; this removes internal stale compatibility state
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-243: Async analyze submit helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_submission.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `submit_and_optionally_execute_async_analysis` still mixed support-service submission,
+  correlation-conflict mapping, async submit telemetry, and execution telemetry with feature
+  gating and inline/accept-only execution flow. This kept async intake side effects coupled to the
+  larger orchestration function.
+- Action: extracted support-service submit handling into `rebalance_async_submission.py`, including
+  accepted/conflict telemetry and `DpmRebalanceAsyncOperationConflictError` mapping. The main
+  async orchestration now builds the persisted payload, submits through the helper, and then only
+  decides whether to execute inline. Public routes, OpenAPI output, accepted response shape,
+  conflict detail, and telemetry labels were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  submission and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue narrowing `rebalance_simulation_service.py` around synchronous simulate
+  orchestration and manual async execution only.
+- Wiki decision: no wiki source change required; this is internal async intake modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-244: Manual async execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_manual_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `execute_dpm_async_operation` still mixed manual execution gating with operation
+  execution, not-found/not-executable mapping, async telemetry, and final operation-status lookup.
+  This kept manual operation lifecycle edge behavior coupled to the remaining rebalance
+  orchestration module.
+- Action: extracted manual async execution into `rebalance_async_manual_execution.py`, preserving
+  manual execution telemetry, `DPM_ASYNC_OPERATION_NOT_FOUND` mapping, non-executable mapping, and
+  final status lookup. The public service wrapper still owns feature/manual gate checks.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the manual
+  async execution and simulation services, OpenAPI quality gate, and API vocabulary inventory
+  validation passed with no drift.
+- Follow-up: continue reducing `rebalance_simulation_service.py` around synchronous simulate
+  orchestration and compatibility exports only.
+- Wiki decision: no wiki source change required; this is internal manual async execution
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-245: Synchronous simulate execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_sync_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `simulate_rebalance` still owned policy application to engine options, idempotency
+  replay lookup, engine invocation, source-lineage stamping, supportability persistence,
+  blocked-run warning, and execution telemetry. That kept the main service wrapper broad even
+  after policy and source-context extraction.
+- Action: extracted the synchronous simulate execution flow into `rebalance_sync_execution.py`,
+  passing support-service, engine, and supportability recorder dependencies explicitly so existing
+  `src.api.main` patch seams remain intact. The wrapper now resolves request hash, correlation id,
+  and policy context before delegating execution. Public routes, OpenAPI output, replay behavior,
+  supportability write behavior, lineage stamping, and telemetry labels were preserved.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  synchronous execution and simulation services, OpenAPI quality gate, and API vocabulary
+  inventory validation passed with no drift.
+- Follow-up: review remaining compatibility exports and main override seams to remove only those
+  proven unused by repository search and regression coverage.
+- Wiki decision: no wiki source change required; this is internal synchronous execution modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-246: Rebalance policy-pack execution context consolidation
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_policy_pack_execution.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: synchronous simulate, synchronous analyze, and async analyze submission each repeated
+  policy-pack resolution, policy telemetry recording, selected-definition loading, and debug
+  logging setup in the main rebalance orchestration service. That made the remaining service
+  wrapper broader than necessary and increased the chance that async submission would accidentally
+  drift from its existing deferred catalog-lookup behavior.
+- Action: introduced a reusable `DpmExecutionPolicyPackContext` helper that resolves policy-pack
+  selection, records policy resolution telemetry, and optionally loads the selected definition.
+  Synchronous simulate and analyze now use the loaded definition path, while async submission uses
+  the explicit deferred-definition path so accept-only semantics do not force policy-catalog
+  access earlier than before. Added focused unit coverage for both loaded and deferred modes.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over policy-pack
+  execution and simulation services, OpenAPI quality gate, API vocabulary inventory validation,
+  diff check, and service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: continue narrowing remaining `rebalance_simulation_service.py` compatibility seams
+  only where search and regression tests prove existing callers no longer depend on them.
+- Wiki decision: no wiki source change required; this is internal policy-pack orchestration
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-247: Async analyze operation runner extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_async_operation_runner.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: `run_analyze_async_operation` still mixed stored-operation payload retrieval,
+  current/legacy async payload parsing, batch execution dispatch, completion writes, and
+  failure-state mapping inside the main rebalance orchestration service. That kept async lifecycle
+  behavior harder to test directly and made the remaining compatibility wrapper broader than
+  needed.
+- Action: extracted the stored async analyze operation lifecycle into
+  `rebalance_async_operation_runner.py`, with an explicit typed batch-execution dependency and
+  logger dependency. The public service function now preserves the existing `src.api.main`
+  override behavior and delegates to the runner. Added focused coverage proving current async
+  payload policy context is passed through to batch execution and completion is recorded.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the async
+  operation runner and simulation service, OpenAPI quality gate, API vocabulary inventory
+  validation, diff check, and service-layer HTTP leakage scan passed with no behavioral or
+  contract drift.
+- Follow-up: review whether remaining `src.api.main` patch seams can be replaced with a
+  dedicated dependency override module after route and test callers are aligned.
+- Wiki decision: no wiki source change required; this is internal async lifecycle modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-248: Rebalance runtime override helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_runtime_overrides.py`,
+  `src/api/services/rebalance_simulation_service.py`, and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: the remaining rebalance service compatibility seams still performed ad hoc dynamic
+  lookups into `src.api.main` for logger, core resolver factory, engine invocation,
+  supportability recording, and async batch execution overrides. The behavior was required for
+  existing route/test compatibility, but the mechanism was hidden inside the broad orchestration
+  module.
+- Action: introduced `rebalance_runtime_overrides.py` to centralize main-module override lookup,
+  callable fallback resolution, and logger fallback resolution. The rebalance service now consumes
+  that helper for all remaining compatibility override paths. Added focused coverage for missing
+  main-export fallback behavior while preserving existing `src.api.main` patch-seam regression
+  tests.
+- Status: hardened
+- Evidence: runtime request-model/service edge and rebalance API regressions
+  (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over runtime
+  overrides and simulation service, OpenAPI quality gate, API vocabulary inventory validation,
+  diff check, and service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: migrate route tests toward explicit dependency injection before deleting legacy
+  `src.api.main` compatibility exports.
+- Wiki decision: no wiki source change required; this is internal compatibility-boundary
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-249: Stale rebalance compatibility alias removal
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/rebalance_simulation_service.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: after the policy-pack, source-lineage, and runtime-override extractions, the rebalance
+  simulation service still carried stale private aliases for selected policy-pack definition
+  resolution and source-lineage helpers. Repository search showed no route, service, or test
+  callers for those aliases, while active env/core aliases still had callers and were left intact.
+- Action: removed the unused service-local selected-policy wrapper and the stale source-lineage
+  alias exports/imports. This keeps the remaining compatibility surface limited to paths that are
+  still exercised by routes, `src.api.main`, or regression tests.
+- Status: hardened
+- Evidence: repository search for the removed aliases, runtime request-model/service edge and
+  rebalance API regressions (`tests/unit/api/test_runtime_request_model_and_service_edges.py` and
+  `tests/unit/dpm/api/test_api_rebalance.py`), focused Ruff checks, focused mypy over the
+  simulation service, OpenAPI quality gate, API vocabulary inventory validation, diff check, and
+  service-layer HTTP leakage scan passed with no behavioral or contract drift.
+- Follow-up: continue pruning compatibility aliases only with search evidence and focused
+  regression coverage; do not remove the remaining env/core exports until their callers migrate.
+- Wiki decision: no wiki source change required; this is internal stale-alias cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-250: Construction idempotency helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_idempotency.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_construction_idempotency.py`.
+- Finding: construction alternative-set generation embedded canonical request-hash construction,
+  method/source-context participation, idempotency replay lookup, and conflict detection directly
+  in the large construction service. That made a production-critical replay/audit boundary harder
+  to test without running the full construction generation path.
+- Action: extracted construction request-hash construction and existing alternative-set replay
+  resolution into `construction_idempotency.py`. The generation service now delegates this
+  idempotency boundary before executing methods. Added focused tests proving methods and stateful
+  source context participate in the hash and that replay/conflict behavior is enforced directly.
+- Status: hardened
+- Evidence: focused construction idempotency and construction API regressions
+  (`tests/unit/dpm/construction/test_construction_idempotency.py` and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 27 tests, focused Ruff checks,
+  focused mypy over construction idempotency and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  behavioral or contract drift.
+- Follow-up: continue extracting construction source-product authority context and method-specific
+  supportability in small compatibility-preserving slices; keep tests direct at the helper layer
+  where the behavior is not inherently route-level.
+- Wiki decision: no wiki source change required; this is internal idempotency-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-251: Construction transaction-cost supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_transaction_cost_supportability.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`, and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: observed transaction-cost supportability logic was embedded in the large construction
+  service, including source-owned curve coverage checks, estimated-cost objective/constraint
+  trace composition, reason-code derivation, and local cost estimation from candidate trade
+  notionals. This made a source-authority boundary hard to test independently and kept
+  transaction-cost behavior coupled to unrelated ESG/liquidity/currency-overlay helpers.
+- Action: extracted transaction-cost supportability into
+  `construction_transaction_cost_supportability.py`, kept thin service compatibility wrappers for
+  existing private-helper tests, and added direct helper coverage for applied observed curves and
+  degraded missing-security coverage. Also updated a stale enrichment test to assert construction
+  HTTP exception mapping through `src.api.routers.construction_http` instead of reintroducing HTTP
+  translation into the service layer.
+- Status: hardened
+- Evidence: focused transaction-cost supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks,
+  focused mypy over transaction-cost supportability and construction service, OpenAPI quality
+  gate, API vocabulary inventory validation, diff check, and service-layer HTTP leakage scan
+  passed with no API contract drift.
+- Follow-up: continue extracting ESG/restriction and source-product authority-context helpers into
+  dedicated service modules while keeping business logic outside routers and HTTP mapping outside
+  services.
+- Wiki decision: no wiki source change required; this is internal source-evidence supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-252: Construction ESG supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_esg_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_esg_supportability.py`.
+- Finding: client-restriction and sustainability-preference supportability logic was still
+  embedded in the broad construction service, including source-owned restriction scope matching,
+  buy/sell applicability, missing-data reason codes, sustainability allocation checks, and
+  classification review posture. That kept ESG/client-preference behavior coupled to unrelated
+  transaction-cost, liquidity, currency-overlay, and source-context code.
+- Action: extracted ESG/restriction supportability into `construction_esg_supportability.py` and
+  left thin compatibility wrappers in the construction service for existing private-helper
+  coverage. Added direct helper tests for active client restriction blocking, asset/issuer/country
+  scope matching, sustainability allocation review, and classification-evidence review posture.
+- Status: hardened
+- Evidence: focused ESG supportability, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_esg_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks,
+  focused mypy over ESG supportability and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting liquidity/currency-overlay/regime-stress supportability and
+  source-product authority-context assembly in small slices with direct helper coverage.
+- Wiki decision: no wiki source change required; this is internal source-evidence supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-253: Construction method supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_supportability.py`.
+- Finding: liquidity, cashflow projection, currency-overlay, and regime-stress supportability
+  decisions remained embedded in the large construction service after transaction-cost and ESG
+  extraction. These helpers encode private-banking method-readiness behavior and source-evidence
+  posture, but were still coupled to construction orchestration and authority-context assembly.
+- Action: extracted method supportability decisions into
+  `construction_method_supportability.py`, including liquidity status/reason codes, derived
+  manage liquidity policy context, currency-overlay missing-pair handling, derived FX overlay
+  context, and regime-stress threshold posture. The construction service now keeps thin
+  compatibility wrappers for existing private-helper coverage. Added direct helper tests for
+  derived liquidity policy, missing FX pair blocking, and regime-stress threshold breach review.
+- Status: hardened
+- Evidence: focused method supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_method_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks,
+  focused mypy over method supportability and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting construction authority-context source-product assembly and method
+  orchestration in small slices; keep source-owner non-claim boundaries explicit in tests and docs
+  when behavior changes.
+- Wiki decision: no wiki source change required; this is internal method-supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-254: Construction method execution helper extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_execution.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_execution.py`.
+- Finding: construction method execution mechanics still lived inside the construction service,
+  including method-specific engine option mutation, method-specific correlation-id construction,
+  engine invocation, and optional run-support recording. This kept execution mechanics coupled to
+  alternative-set orchestration and source-authority supportability code.
+- Action: extracted method execution into `construction_method_execution.py`, including
+  `options_for_construction_method` and `run_construction_method`. The construction service now
+  delegates through thin compatibility wrappers. Added direct tests for bounded method option
+  overrides and method-specific correlation/support recording.
+- Status: hardened
+- Evidence: focused method execution, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_execution.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks,
+  focused mypy over method execution and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting construction alternative orchestration and source-product
+  authority-context assembly; keep patch seams explicit only where tests or routes still rely on
+  them.
+- Wiki decision: no wiki source change required; this is internal execution-boundary modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-255: Construction solver supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_solver_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_solver_supportability.py`.
+- Finding: solver-constrained readiness logic and method reason-code merging still lived inside
+  the broad construction service. That kept solver warning classification and enrichment
+  diagnostics coupled to orchestration, even though they are bounded method-supportability
+  decisions that can be tested independently.
+- Action: extracted solver warning posture and method reason-code merging into
+  `construction_solver_supportability.py`. The construction service now delegates through thin
+  compatibility wrappers. Added direct helper tests for deterministic reason-code merging, ready
+  solver posture without solver warnings, and lowest-posture selection when solver diagnostics
+  include non-optimal and infeasible warnings.
+- Status: hardened
+- Evidence: focused solver supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over solver supportability and construction service passed.
+- Follow-up: continue extracting construction source-product authority-context assembly and the
+  remaining supportability application orchestration in small, behavior-preserving slices.
+- Wiki decision: no wiki source change required; this is internal solver-supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-256: Construction method readiness extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_readiness.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_readiness.py`.
+- Finding: method-specific readiness and reason-code assembly still lived inside the top-level
+  construction service after source-specific supportability helpers were extracted. This kept
+  solver diagnostics, risk-authority missing evidence, liquidity settlement posture, transaction
+  cost evidence, ESG restrictions, currency-overlay evidence, and regime scenario posture coupled
+  to alternative-set orchestration.
+- Action: extracted method-specific readiness and reason-code assembly into
+  `construction_method_readiness.py`, reusing the already extracted supportability helpers. The
+  construction service now delegates through thin compatibility wrappers. Added direct tests for
+  solver reason-code evidence and risk-aware missing-authority posture.
+- Status: hardened
+- Evidence: focused method readiness, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_readiness.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks, and
+  focused mypy over method readiness and construction service passed.
+- Follow-up: extract source-product authority-context assembly and source-analytics posture while
+  preserving Manage's non-claim boundary over risk, performance, treasury, execution, and core
+  source products.
+- Wiki decision: no wiki source change required; this is internal method-readiness modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-257: Construction source analytics posture extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_analytics_posture.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_analytics_posture.py`.
+- Finding: the construction service still embedded the risk/performance source-analytics posture
+  map, including required source products and blocked local methodology claims. This posture is
+  durable product evidence and should be independently testable instead of hidden in orchestration.
+- Action: extracted source-analytics posture into
+  `construction_source_analytics_posture.py` and left the construction service as a thin delegate.
+  Added direct tests that keep `RiskMetricsReport:v1` required for risk-aware readiness,
+  `RegimeScenarioPackEvaluation:v1` required for regime-stress readiness, performance products
+  non-required, and local risk/performance methodology calculations explicitly blocked.
+- Status: hardened
+- Evidence: focused source-analytics posture, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests, focused Ruff checks, and
+  focused mypy over source-analytics posture and construction service passed.
+- Follow-up: continue extracting source-product authority-context assembly for lotus-core treasury,
+  execution acknowledgement, client restriction, sustainability, liquidity, and risk context
+  inputs.
+- Wiki decision: no wiki source change required; this is internal source-posture modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-258: Construction method authority-context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_authority.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`, and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: per-method authority-context resolution still lived inside the construction service,
+  including risk concentration fetches, fail-closed risk-unavailable behavior, derived liquidity
+  and currency-overlay contexts, and regime scenario fetches using the governed construction
+  as-of date. That kept source-boundary behavior embedded in orchestration.
+- Action: extracted method authority-context resolution into
+  `construction_method_authority.py`. The construction service now delegates with the resolved
+  construction as-of date. Added direct tests for risk-authority context fetch, fail-closed risk
+  unavailability, and governed as-of-date propagation to regime scenario context. Updated
+  enrichment tests to import the risk-authority exception from the infrastructure boundary rather
+  than via the construction service.
+- Status: hardened
+- Evidence: focused method authority, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_authority.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over method authority and construction service passed.
+- Follow-up: continue extracting source-product authority-context assembly for lotus-core external
+  treasury and order-execution acknowledgement contexts.
+- Wiki decision: no wiki source change required; this is internal authority-context modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-259: External execution acknowledgement context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: external OMS order-execution acknowledgement context construction remained embedded in
+  the construction service together with general source-status mapping. This fail-closed boundary
+  is an enterprise control: Manage may preserve source acknowledgement evidence but must not claim
+  order, fill, settlement, or OMS truth locally.
+- Action: extracted external order-execution acknowledgement context construction and source
+  supportability status mapping into `construction_source_product_context.py`. Added direct tests
+  for absent source response, fail-closed unavailable acknowledgement posture, source lineage
+  preservation, blocked execution/fill/settlement capabilities, and non-ready source status mapping
+  to blocked method posture.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: continue extracting external treasury currency-overlay context and the remaining
+  source-product authority-context assembly by source family.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-260: External treasury currency-overlay context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: external treasury currency-overlay context construction remained embedded in the
+  construction service. The logic preserves fail-closed source evidence for hedge execution
+  readiness, currency exposure, hedge policy, eligible hedge instruments, and FX forward curves,
+  but does not authorize local treasury, OMS, execution, or forward-pricing claims. Keeping this
+  source-product boundary inside orchestration made it harder to audit.
+- Action: moved external treasury currency-overlay context construction into
+  `construction_source_product_context.py`, alongside the extracted external execution
+  acknowledgement boundary. Added direct tests for absent source response and fail-closed hedge
+  execution readiness evidence, including lineage preservation, blocked treasury/OMS/execution
+  capabilities, zero hedge-ratio defaults, eligible-currency preservation, and reason-code
+  propagation.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 55 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining source-product authority-context assembly by source family,
+  starting with transaction cost and liquidity source products.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-261: Transaction-cost source curve context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: lotus-core `TransactionCostCurve:v1` mapping into Manage's authoritative
+  transaction-cost context remained embedded in construction orchestration. This mapping controls
+  lineage, completeness posture, evidence-window dates, missing securities, and bounded sample
+  transaction evidence for cost-aware alternatives.
+- Action: extracted transaction-cost curve mapping into
+  `transaction_cost_context_from_curve`. Added direct tests that preserve source lineage, degraded
+  supportability, returned/missing-security evidence, and the five-transaction sample bound.
+- Status: hardened
+- Evidence: focused source-product context, transaction-cost supportability, construction
+  enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 58 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining source-product authority-context assembly for liquidity,
+  restriction, and sustainability source products.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

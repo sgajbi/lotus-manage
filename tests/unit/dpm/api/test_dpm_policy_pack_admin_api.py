@@ -1,8 +1,8 @@
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.api.routers.rebalance_policy_packs import (
-    _postgres_connection_exception_types,
+from src.api.services.rebalance_policy_pack_service import (
+    postgres_connection_exception_types,
     reset_dpm_policy_pack_repository_for_tests,
 )
 
@@ -151,5 +151,5 @@ def test_postgres_connection_exception_types_handles_missing_psycopg(monkeypatch
         return original_import(name, *args, **kwargs)
 
     monkeypatch.setattr(builtins, "__import__", _import)
-    exception_types = _postgres_connection_exception_types()
+    exception_types = postgres_connection_exception_types()
     assert ConnectionError in exception_types

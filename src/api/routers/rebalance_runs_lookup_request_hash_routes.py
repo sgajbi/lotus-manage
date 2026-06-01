@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from fastapi import HTTPException, Path, Request, status
+from fastapi import Path, Request, status
 
 from src.api.routers import rebalance_runs as shared
+from src.api.routers.rebalance_runs_http import read_run_with_not_found_http_mapping
 from src.core.rebalance_runs import (
     DpmRunLookupResponse,
-    DpmRunNotFoundError,
     DpmRunSupportService,
 )
 
@@ -42,7 +42,6 @@ def get_run_by_request_hash(
 ) -> DpmRunLookupResponse:
     shared._assert_support_apis_enabled()
     shared._reject_unexpected_query_params(request, allowed_params=set())
-    try:
-        return service.get_run_by_request_hash(request_hash=request_hash)
-    except DpmRunNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return read_run_with_not_found_http_mapping(
+        lambda: service.get_run_by_request_hash(request_hash=request_hash)
+    )

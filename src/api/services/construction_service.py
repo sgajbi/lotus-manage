@@ -6,8 +6,60 @@ from decimal import Decimal
 import re
 from typing import Optional
 
-from fastapi import HTTPException, status
-
+from src.api.services.construction_idempotency import (
+    construction_request_hash,
+    resolve_existing_construction_alternative_set,
+)
+from src.api.services.construction_method_supportability import (
+    cashflow_projection_reason_codes,
+    currency_overlay_status,
+    derive_currency_overlay_context,
+    derive_liquidity_context,
+    liquidity_reason_codes,
+    liquidity_status,
+    missing_currency_overlay_pairs,
+    post_trade_cash_weight,
+    regime_stress_status,
+)
+from src.api.services.construction_method_execution import (
+    options_for_construction_method,
+    run_construction_method,
+)
+from src.api.services.construction_method_authority import authority_context_for_method
+from src.api.services.construction_method_readiness import (
+    method_specific_reason_codes,
+    method_specific_status,
+)
+from src.api.services.construction_solver_supportability import (
+    solver_method_status,
+    with_method_reason_codes,
+)
+from src.api.services.construction_source_analytics_posture import source_analytics_posture
+from src.api.services.construction_source_product_context import (
+    external_order_execution_acknowledgement_context,
+    external_treasury_currency_overlay_context,
+    source_status_to_method_status,
+    transaction_cost_context_from_curve,
+)
+from src.api.services.construction_esg_supportability import (
+    client_restriction_reason_codes,
+    client_restriction_status,
+    esg_restriction_reason_codes,
+    esg_restriction_status,
+    restriction_matches_intent,
+    sustainability_allocation_breaches,
+    sustainability_classification_review_required,
+    sustainability_preference_reason_codes,
+    sustainability_preference_status,
+    violated_client_restrictions,
+    with_esg_restriction_constraints,
+)
+from src.api.services.construction_transaction_cost_supportability import (
+    observed_transaction_cost_estimate,
+    transaction_cost_reason_codes,
+    transaction_cost_status,
+    with_observed_transaction_cost_estimate,
+)
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.alternative_engine import (
@@ -16,7 +68,7 @@ from src.core.construction.alternative_engine import (
     build_rebalance_result_alternative,
 )
 from src.core.construction.enrichment import summarize_enrichment_posture
-from src.core.construction.method_registry import classify_solver_failure, resolve_method_plan
+from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
     AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeClientRestrictionContext,
@@ -31,27 +83,21 @@ from src.core.construction.models import (
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
     AuthoritativeTransactionCostContext,
-    AuthoritativeTransactionCostPoint,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
     ConstructionAuthorityContext,
-    ConstructionConstraintTrace,
     ConstructionEnrichmentSummary,
     ConstructionMethodPlan,
-    ConstructionObjectiveTerm,
 )
 from src.core.construction.repository import (
     ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
-    ConstructionIdempotencyConflictError,
     ConstructionRepository,
 )
 from src.core.construction.vocabulary import (
     ConstructionMethod,
     ConstructionMethodStatus,
-    ConstructionSourceFamily,
-    ConstructionTraceTerm,
     FIRST_WAVE_CONSTRUCTION_METHODS,
 )
 from src.core.dpm_source_context import (
@@ -63,19 +109,15 @@ from src.core.dpm_source_context import (
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmResolvedSourceContext,
 )
-from src.core.models import EngineOptions, RebalanceResult, TargetMethod
+from src.core.models import EngineOptions, RebalanceResult
 from src.core.models import Money, SecurityTradeIntent, ShelfEntry
-from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
-    LotusRiskAuthorityUnavailableError,
 )
 
-_MIN_TURNOVER_DEFAULT = Decimal("0.10")
 _DATE_PATTERN = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
-_MONEY_QUANT = Decimal("0.0001")
 
 
 def generate_construction_alternative_set(
@@ -91,18 +133,17 @@ def generate_construction_alternative_set(
     run_service: DpmRunSupportService | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
-    request_payload = {
-        "request": request.model_dump(mode="json"),
-        "methods": [method.value for method in method_set],
-        "source_context_hash": (
-            source_context.stateful_context_hash if source_context is not None else None
-        ),
-    }
-    request_hash = hash_canonical_payload(request_payload)
-    existing = repository.get_alternative_set_by_idempotency(idempotency_key=idempotency_key)
+    request_hash = construction_request_hash(
+        request=request,
+        methods=method_set,
+        source_context=source_context,
+    )
+    existing = resolve_existing_construction_alternative_set(
+        repository=repository,
+        idempotency_key=idempotency_key,
+        request_hash=request_hash,
+    )
     if existing is not None:
-        if existing.request_hash != request_hash:
-            raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
         return existing
 
     base_result = _run_method(
@@ -189,18 +230,6 @@ def select_construction_alternative(
     return selection
 
 
-def to_api_http_exception(exc: Exception) -> HTTPException:
-    if isinstance(exc, ConstructionIdempotencyConflictError):
-        return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
-    if isinstance(
-        exc, (ConstructionAlternativeSetNotFoundError, ConstructionAlternativeNotFoundError)
-    ):
-        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
-    return HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=type(exc).__name__
-    )
-
-
 def _build_alternatives(
     *,
     request: RebalanceRequest,
@@ -261,29 +290,13 @@ def _run_method(
     request_hash: str,
     run_service: DpmRunSupportService | None,
 ) -> RebalanceResult:
-    options = _options_for_method(options=request.options, method=method)
-    run_correlation_id = (
-        f"{correlation_id}:{method.value.lower()}"
-        if correlation_id
-        else f"corr_construction_{method.value.lower()}_{uuid.uuid4().hex[:10]}"
-    )
-    result = run_simulation(
-        portfolio=request.portfolio_snapshot,
-        market_data=request.market_data_snapshot,
-        model=request.model_portfolio,
-        shelf=request.shelf_entries,
-        options=options,
+    return run_construction_method(
+        request=request,
+        method=method,
+        correlation_id=correlation_id,
         request_hash=request_hash,
-        correlation_id=run_correlation_id,
+        run_service=run_service,
     )
-    if run_service is not None:
-        run_service.record_run(
-            result=result,
-            request_hash=request_hash,
-            portfolio_id=request.portfolio_snapshot.portfolio_id,
-            idempotency_key=None,
-        )
-    return result
 
 
 def _options_for_method(
@@ -291,38 +304,7 @@ def _options_for_method(
     options: EngineOptions,
     method: ConstructionMethod,
 ) -> EngineOptions:
-    if method == ConstructionMethod.MIN_TURNOVER:
-        max_turnover_pct = options.max_turnover_pct
-        if max_turnover_pct is None or max_turnover_pct > _MIN_TURNOVER_DEFAULT:
-            max_turnover_pct = _MIN_TURNOVER_DEFAULT
-        return options.model_copy(update={"max_turnover_pct": max_turnover_pct})
-    if method == ConstructionMethod.TAX_AWARE:
-        return options.model_copy(update={"enable_tax_awareness": True})
-    if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        return options.model_copy(
-            update={"target_method": TargetMethod.SOLVER, "compare_target_methods": True}
-        )
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        return options.model_copy(
-            update={
-                "enable_settlement_awareness": True,
-                "min_cash_buffer_pct": max(options.min_cash_buffer_pct, Decimal("0.03")),
-            }
-        )
-    if method == ConstructionMethod.CURRENCY_OVERLAY:
-        return options.model_copy(
-            update={
-                "block_on_missing_fx": True,
-                "enable_settlement_awareness": True,
-                "fx_buffer_pct": max(options.fx_buffer_pct, Decimal("0.01")),
-            }
-        )
-    if method == ConstructionMethod.RISK_AWARE:
-        max_weight = options.single_position_max_weight
-        if max_weight is None or max_weight > Decimal("0.30"):
-            max_weight = Decimal("0.30")
-        return options.model_copy(update={"single_position_max_weight": max_weight})
-    return options
+    return options_for_construction_method(options=options, method=method)
 
 
 def _apply_supportability(
@@ -433,32 +415,13 @@ def _method_specific_status(
     enrichment: ConstructionEnrichmentSummary,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
-    if method == ConstructionMethod.ESG_AWARE:
-        return _esg_restriction_status(
-            request=request,
-            result=result,
-            authority_context=authority_context,
-        )
-    if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        return _regime_stress_status(authority_context.regime_stress_context)
-    if method == ConstructionMethod.CURRENCY_OVERLAY and not result.diagnostics.missing_fx_pairs:
-        return _currency_overlay_status(
-            request=request,
-            context=authority_context.currency_overlay_context,
-        )
-    if method == ConstructionMethod.RISK_AWARE:
-        return enrichment.risk_status
-    if method == ConstructionMethod.COST_AWARE:
-        return _transaction_cost_status(
-            result=result,
-            context=authority_context.transaction_cost_context,
-        )
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        return _liquidity_status(
-            result=result,
-            context=authority_context.liquidity_context,
-        )
-    return ConstructionMethodStatus.READY
+    return method_specific_status(
+        request=request,
+        method=method,
+        result=result,
+        enrichment=enrichment,
+        authority_context=authority_context,
+    )
 
 
 def _method_specific_reason_codes(
@@ -469,64 +432,12 @@ def _method_specific_reason_codes(
     enrichment: ConstructionEnrichmentSummary,
     authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
-    reason_codes: list[str] = []
-    if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        reason_codes.extend(
-            warning
-            for warning in result.diagnostics.warnings
-            if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
-        )
-        if result.explanation.get("target_method_comparison"):
-            reason_codes.append("TARGET_METHOD_COMPARISON_AVAILABLE")
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        reason_codes.append("SETTLEMENT_AWARENESS_ENABLED")
-        reason_codes.extend(
-            _liquidity_reason_codes(result=result, context=authority_context.liquidity_context)
-        )
-    if method == ConstructionMethod.RISK_AWARE:
-        if authority_context.risk_context is None:
-            reason_codes.append("RISK_AUTHORITY_NOT_CONNECTED")
-        else:
-            reason_codes.extend(authority_context.risk_context.reason_codes)
-    if method == ConstructionMethod.COST_AWARE:
-        reason_codes.extend(
-            _transaction_cost_reason_codes(
-                result=result,
-                context=authority_context.transaction_cost_context,
-            )
-        )
-    if method == ConstructionMethod.ESG_AWARE:
-        reason_codes.extend(
-            _esg_restriction_reason_codes(
-                request=request,
-                result=result,
-                authority_context=authority_context,
-            )
-        )
-    if method == ConstructionMethod.CURRENCY_OVERLAY:
-        missing_pairs = _missing_currency_overlay_pairs(request=request)
-        overlay_status = _currency_overlay_status(
-            request=request,
-            context=authority_context.currency_overlay_context,
-        )
-        if result.diagnostics.missing_fx_pairs or missing_pairs:
-            reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_MISSING")
-        elif overlay_status == ConstructionMethodStatus.BLOCKED:
-            reason_codes.append("CURRENCY_OVERLAY_CONTEXT_BLOCKED")
-        elif overlay_status == ConstructionMethodStatus.DEGRADED:
-            reason_codes.append("CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE")
-        else:
-            reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_READY")
-        if authority_context.currency_overlay_context is None:
-            reason_codes.append("CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING")
-        else:
-            reason_codes.extend(authority_context.currency_overlay_context.reason_codes)
-    if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        if authority_context.regime_stress_context is None:
-            reason_codes.append("REGIME_SCENARIO_PACK_UNAVAILABLE")
-        else:
-            reason_codes.extend(authority_context.regime_stress_context.reason_codes)
-    return sorted(set(reason_codes))
+    return method_specific_reason_codes(
+        request=request,
+        method=method,
+        result=result,
+        authority_context=authority_context,
+    )
 
 
 def _source_analytics_posture(
@@ -534,71 +445,7 @@ def _source_analytics_posture(
     method: ConstructionMethod,
     authority_context: ConstructionAuthorityContext,
 ) -> dict[str, object]:
-    return {
-        "product_family": "CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT",
-        "risk_context_preservation": "SUPPORTED_WHEN_SUPPLIED",
-        "performance_context_preservation": "SUPPORTED_WHEN_SUPPLIED",
-        "risk_context_supplied": authority_context.risk_context is not None,
-        "performance_context_supplied": authority_context.performance_context is not None,
-        "risk_required_for_method": method == ConstructionMethod.RISK_AWARE,
-        "performance_required_for_method": False,
-        "required_source_products": [
-            {
-                "source_system": "lotus-risk",
-                "source_product_name": "RiskMetricsReport",
-                "source_product_version": "v1",
-                "required_for_ready": method == ConstructionMethod.RISK_AWARE,
-            },
-            {
-                "source_system": "lotus-risk",
-                "source_product_name": "DrawdownAnalyticsReport",
-                "source_product_version": "v1",
-                "required_for_ready": False,
-            },
-            {
-                "source_system": "lotus-risk",
-                "source_product_name": "HistoricalRiskAttribution",
-                "source_product_version": "v1",
-                "required_for_ready": False,
-            },
-            {
-                "source_system": "lotus-risk",
-                "source_product_name": "RegimeScenarioPackEvaluation",
-                "source_product_version": "v1",
-                "required_for_ready": method == ConstructionMethod.REGIME_STRESS_AWARE,
-            },
-            {
-                "source_system": "lotus-performance",
-                "source_product_name": "BenchmarkExposureContext",
-                "source_product_version": "v1",
-                "required_for_ready": False,
-            },
-            {
-                "source_system": "lotus-performance",
-                "source_product_name": "ContributionAnalytics",
-                "source_product_version": "v1",
-                "required_for_ready": False,
-            },
-            {
-                "source_system": "lotus-performance",
-                "source_product_name": "AttributionAnalytics",
-                "source_product_version": "v1",
-                "required_for_ready": False,
-            },
-        ],
-        "blocked_capabilities": [
-            "LOCAL_TRACKING_ERROR_CALCULATION",
-            "LOCAL_VOLATILITY_CALCULATION",
-            "LOCAL_DRAWDOWN_CALCULATION",
-            "LOCAL_STRESS_CONTRIBUTION_CALCULATION",
-            "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION",
-            "LOCAL_BENCHMARK_RELATIVE_PERFORMANCE_CALCULATION",
-        ],
-        "reason_codes": [
-            "SOURCE_ANALYTICS_CONTEXT_PRESERVED_WHEN_SUPPLIED",
-            "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED",
-        ],
-    }
+    return source_analytics_posture(method=method, authority_context=authority_context)
 
 
 def _authority_context_for_method(
@@ -610,46 +457,14 @@ def _authority_context_for_method(
     risk_authority_client: LotusRiskAuthorityClient | None,
     correlation_id: str | None,
 ) -> ConstructionAuthorityContext:
-    risk_context = authority_context.risk_context
-    if method == ConstructionMethod.RISK_AWARE and risk_context is None and risk_authority_client:
-        try:
-            risk_context = risk_authority_client.concentration_context(
-                result=result,
-                correlation_id=correlation_id,
-            )
-        except LotusRiskAuthorityUnavailableError:
-            risk_context = None
-    liquidity_context = authority_context.liquidity_context
-    if method == ConstructionMethod.LIQUIDITY_AWARE and liquidity_context is None:
-        liquidity_context = _derive_liquidity_context(result=result)
-    currency_context = authority_context.currency_overlay_context
-    if method == ConstructionMethod.CURRENCY_OVERLAY and currency_context is None:
-        currency_context = _derive_currency_overlay_context(result=result)
-    regime_context = authority_context.regime_stress_context
-    if (
-        method == ConstructionMethod.REGIME_STRESS_AWARE
-        and regime_context is None
-        and risk_authority_client
-    ):
-        try:
-            regime_context = risk_authority_client.regime_scenario_context(
-                result=result,
-                portfolio_id=request.portfolio_snapshot.portfolio_id,
-                as_of_date=_construction_as_of_date(request=request),
-                correlation_id=correlation_id,
-            )
-        except LotusRiskAuthorityUnavailableError:
-            regime_context = None
-    return ConstructionAuthorityContext(
-        risk_context=risk_context,
-        performance_context=authority_context.performance_context,
-        transaction_cost_context=authority_context.transaction_cost_context,
-        liquidity_context=liquidity_context,
-        currency_overlay_context=currency_context,
-        execution_acknowledgement_context=authority_context.execution_acknowledgement_context,
-        regime_stress_context=regime_context,
-        client_restriction_context=authority_context.client_restriction_context,
-        sustainability_preference_context=authority_context.sustainability_preference_context,
+    return authority_context_for_method(
+        request=request,
+        method=method,
+        result=result,
+        authority_context=authority_context,
+        risk_authority_client=risk_authority_client,
+        correlation_id=correlation_id,
+        as_of_date=_construction_as_of_date(request=request),
     )
 
 
@@ -661,297 +476,19 @@ def _external_treasury_currency_overlay_context(
     eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
     fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
 ) -> AuthoritativeCurrencyOverlayContext | None:
-    if (
-        hedge_readiness is None
-        and currency_exposure is None
-        and hedge_policy is None
-        and eligible_hedge_instruments is None
-        and fx_forward_curve is None
-    ):
-        return None
-
-    readiness_payload = (
-        hedge_readiness.model_dump(mode="json", exclude_none=True)
-        if hedge_readiness is not None
-        else None
-    )
-    exposure_payload = (
-        currency_exposure.model_dump(mode="json", exclude_none=True)
-        if currency_exposure is not None
-        else None
-    )
-    hedge_policy_payload = (
-        hedge_policy.model_dump(mode="json", exclude_none=True)
-        if hedge_policy is not None
-        else None
-    )
-    eligible_hedge_instruments_payload = (
-        eligible_hedge_instruments.model_dump(mode="json", exclude_none=True)
-        if eligible_hedge_instruments is not None
-        else None
-    )
-    fx_forward_curve_payload = (
-        fx_forward_curve.model_dump(mode="json", exclude_none=True)
-        if fx_forward_curve is not None
-        else None
-    )
-    source_hash = hash_canonical_payload(
-        {
-            "external_hedge_execution_readiness": readiness_payload,
-            "external_currency_exposure": exposure_payload,
-            "external_hedge_policy": hedge_policy_payload,
-            "external_eligible_hedge_instruments": eligible_hedge_instruments_payload,
-            "external_fx_forward_curve": fx_forward_curve_payload,
-        }
-    )
-    if hedge_readiness is not None:
-        supportability_state = hedge_readiness.supportability.state
-        supportability_reason = hedge_readiness.supportability.reason
-        exposure_currencies = hedge_readiness.exposure_currencies
-    elif currency_exposure is not None:
-        assert currency_exposure is not None
-        supportability_state = currency_exposure.supportability.state
-        supportability_reason = currency_exposure.supportability.reason
-        exposure_currencies = currency_exposure.exposure_currencies
-    elif hedge_policy is not None:
-        assert hedge_policy is not None
-        supportability_state = hedge_policy.supportability.state
-        supportability_reason = hedge_policy.supportability.reason
-        exposure_currencies = hedge_policy.exposure_currencies
-    elif eligible_hedge_instruments is not None:
-        assert eligible_hedge_instruments is not None
-        supportability_state = eligible_hedge_instruments.supportability.state
-        supportability_reason = eligible_hedge_instruments.supportability.reason
-        exposure_currencies = eligible_hedge_instruments.exposure_currencies
-    else:
-        assert fx_forward_curve is not None
-        supportability_state = fx_forward_curve.supportability.state
-        supportability_reason = fx_forward_curve.supportability.reason
-        exposure_currencies = fx_forward_curve.exposure_currencies
-
-    exposure_source_hash = (
-        hash_canonical_payload(exposure_payload) if exposure_payload is not None else None
-    )
-    hedge_policy_source_hash = (
-        hash_canonical_payload(hedge_policy_payload) if hedge_policy_payload is not None else None
-    )
-    eligible_hedge_instruments_source_hash = (
-        hash_canonical_payload(eligible_hedge_instruments_payload)
-        if eligible_hedge_instruments_payload is not None
-        else None
-    )
-    fx_forward_curve_source_hash = (
-        hash_canonical_payload(fx_forward_curve_payload)
-        if fx_forward_curve_payload is not None
-        else None
-    )
-    readiness_missing = (
-        hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
-    )
-    exposure_missing = (
-        currency_exposure.supportability.missing_data_families
-        if currency_exposure is not None
-        else []
-    )
-    hedge_policy_missing = (
-        hedge_policy.supportability.missing_data_families if hedge_policy is not None else []
-    )
-    eligible_hedge_instruments_missing = (
-        eligible_hedge_instruments.supportability.missing_data_families
-        if eligible_hedge_instruments is not None
-        else []
-    )
-    fx_forward_curve_missing = (
-        fx_forward_curve.supportability.missing_data_families
-        if fx_forward_curve is not None
-        else []
-    )
-    readiness_blocked = (
-        hedge_readiness.supportability.blocked_capabilities if hedge_readiness is not None else []
-    )
-    exposure_blocked = (
-        currency_exposure.supportability.blocked_capabilities
-        if currency_exposure is not None
-        else []
-    )
-    hedge_policy_blocked = (
-        hedge_policy.supportability.blocked_capabilities if hedge_policy is not None else []
-    )
-    eligible_hedge_instruments_blocked = (
-        eligible_hedge_instruments.supportability.blocked_capabilities
-        if eligible_hedge_instruments is not None
-        else []
-    )
-    fx_forward_curve_blocked = (
-        fx_forward_curve.supportability.blocked_capabilities if fx_forward_curve is not None else []
-    )
-    reason_codes: list[str] = [supportability_reason]
-    if hedge_readiness is not None:
-        reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
-    if currency_exposure is not None:
-        reason_codes.append("EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED")
-    if hedge_policy is not None:
-        reason_codes.append("EXTERNAL_HEDGE_POLICY_FAIL_CLOSED")
-    if eligible_hedge_instruments is not None:
-        reason_codes.append("EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED")
-    if fx_forward_curve is not None:
-        reason_codes.append("EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED")
-
-    return AuthoritativeCurrencyOverlayContext(
-        supportability_status=_source_status_to_method_status(supportability_state),
-        source_system="lotus-core",
-        policy_id="external-hedge-execution-readiness.v1",
-        hedge_ratio_min=Decimal("0.00"),
-        hedge_ratio_max=Decimal("0.00"),
-        eligible_currencies=exposure_currencies,
-        source_product_name=hedge_readiness.product_name if hedge_readiness is not None else None,
-        source_product_version=(
-            hedge_readiness.product_version if hedge_readiness is not None else None
-        ),
-        source_id=(
-            hedge_readiness.source_batch_fingerprint
-            or hedge_readiness.lineage.get("source_batch_fingerprint")
-            or source_hash
-            if hedge_readiness is not None
-            else source_hash
-        ),
-        content_hash=source_hash,
-        missing_data_families=sorted(
-            {
-                *readiness_missing,
-                *exposure_missing,
-                *hedge_policy_missing,
-                *eligible_hedge_instruments_missing,
-                *fx_forward_curve_missing,
-            }
-        ),
-        blocked_capabilities=sorted(
-            {
-                *readiness_blocked,
-                *exposure_blocked,
-                *hedge_policy_blocked,
-                *eligible_hedge_instruments_blocked,
-                *fx_forward_curve_blocked,
-            }
-        ),
-        readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
-        external_currency_exposure_source_product_name=(
-            currency_exposure.product_name if currency_exposure is not None else None
-        ),
-        external_currency_exposure_source_product_version=(
-            currency_exposure.product_version if currency_exposure is not None else None
-        ),
-        external_currency_exposure_source_id=(
-            currency_exposure.source_batch_fingerprint
-            or currency_exposure.lineage.get("source_batch_fingerprint")
-            or exposure_source_hash
-            if currency_exposure is not None
-            else None
-        ),
-        external_currency_exposure_content_hash=exposure_source_hash,
-        external_currency_exposure_count=(
-            currency_exposure.supportability.exposure_count if currency_exposure is not None else 0
-        ),
-        external_currency_exposure_rows=(
-            currency_exposure.exposures if currency_exposure is not None else []
-        ),
-        external_hedge_policy_source_product_name=(
-            hedge_policy.product_name if hedge_policy is not None else None
-        ),
-        external_hedge_policy_source_product_version=(
-            hedge_policy.product_version if hedge_policy is not None else None
-        ),
-        external_hedge_policy_source_id=(
-            hedge_policy.source_batch_fingerprint
-            or hedge_policy.lineage.get("source_batch_fingerprint")
-            or hedge_policy_source_hash
-            if hedge_policy is not None
-            else None
-        ),
-        external_hedge_policy_content_hash=hedge_policy_source_hash,
-        external_hedge_policy_rule_count=(
-            hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
-        ),
-        external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
-        external_eligible_hedge_instrument_source_product_name=(
-            eligible_hedge_instruments.product_name
-            if eligible_hedge_instruments is not None
-            else None
-        ),
-        external_eligible_hedge_instrument_source_product_version=(
-            eligible_hedge_instruments.product_version
-            if eligible_hedge_instruments is not None
-            else None
-        ),
-        external_eligible_hedge_instrument_source_id=(
-            eligible_hedge_instruments.source_batch_fingerprint
-            or eligible_hedge_instruments.lineage.get("source_batch_fingerprint")
-            or eligible_hedge_instruments_source_hash
-            if eligible_hedge_instruments is not None
-            else None
-        ),
-        external_eligible_hedge_instrument_content_hash=(eligible_hedge_instruments_source_hash),
-        external_eligible_hedge_instrument_count=(
-            eligible_hedge_instruments.supportability.instrument_count
-            if eligible_hedge_instruments is not None
-            else 0
-        ),
-        external_eligible_hedge_instruments=(
-            eligible_hedge_instruments.eligible_instruments
-            if eligible_hedge_instruments is not None
-            else []
-        ),
-        external_fx_forward_curve_source_product_name=(
-            fx_forward_curve.product_name if fx_forward_curve is not None else None
-        ),
-        external_fx_forward_curve_source_product_version=(
-            fx_forward_curve.product_version if fx_forward_curve is not None else None
-        ),
-        external_fx_forward_curve_source_id=(
-            fx_forward_curve.source_batch_fingerprint
-            or fx_forward_curve.lineage.get("source_batch_fingerprint")
-            or fx_forward_curve_source_hash
-            if fx_forward_curve is not None
-            else None
-        ),
-        external_fx_forward_curve_content_hash=fx_forward_curve_source_hash,
-        external_fx_forward_curve_point_count=(
-            fx_forward_curve.supportability.curve_point_count if fx_forward_curve is not None else 0
-        ),
-        external_fx_forward_curve_points=(
-            fx_forward_curve.curve_points if fx_forward_curve is not None else []
-        ),
-        reason_codes=reason_codes,
+    return external_treasury_currency_overlay_context(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=fx_forward_curve,
     )
 
 
 def _external_order_execution_acknowledgement_context(
     acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
 ) -> AuthoritativeExecutionAcknowledgementContext | None:
-    if acknowledgement is None:
-        return None
-    payload = acknowledgement.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
-    return AuthoritativeExecutionAcknowledgementContext(
-        supportability_status=_source_status_to_method_status(acknowledgement.supportability.state),
-        source_system="lotus-core",
-        source_product_name=acknowledgement.product_name,
-        source_product_version=acknowledgement.product_version,
-        source_id=(
-            acknowledgement.source_batch_fingerprint
-            or acknowledgement.lineage.get("source_batch_fingerprint")
-            or source_hash
-        ),
-        content_hash=source_hash,
-        acknowledgement_count=acknowledgement.supportability.acknowledgement_count,
-        missing_data_families=acknowledgement.supportability.missing_data_families,
-        blocked_capabilities=acknowledgement.supportability.blocked_capabilities,
-        acknowledgements=acknowledgement.acknowledgements,
-        reason_codes=[
-            acknowledgement.supportability.reason,
-            "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
-        ],
-    )
+    return external_order_execution_acknowledgement_context(acknowledgement)
 
 
 def _authority_context_with_source_products(
@@ -965,44 +502,7 @@ def _authority_context_with_source_products(
     if authority_context.transaction_cost_context is None:
         curve = source_context.context.transaction_cost_curve
         if curve is not None:
-            curve_payload = curve.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(curve_payload)
-            source_id = (
-                curve.source_batch_fingerprint
-                or curve.lineage.get("source_batch_fingerprint")
-                or curve.page.request_scope_fingerprint
-            )
-            context_updates["transaction_cost_context"] = AuthoritativeTransactionCostContext(
-                supportability_status=_source_status_to_method_status(curve.supportability.state),
-                source_system="lotus-core",
-                source_product_name=curve.product_name,
-                source_product_version=curve.product_version,
-                source_id=source_id,
-                content_hash=source_hash,
-                as_of_date=curve.as_of_date,
-                window_start_date=curve.window.start_date,
-                window_end_date=curve.window.end_date,
-                returned_curve_point_count=curve.supportability.returned_curve_point_count,
-                missing_security_ids=curve.supportability.missing_security_ids,
-                curve_points=[
-                    AuthoritativeTransactionCostPoint(
-                        security_id=point.security_id,
-                        transaction_type=point.transaction_type,
-                        currency=point.currency,
-                        observation_count=point.observation_count,
-                        total_notional=point.total_notional,
-                        total_cost=point.total_cost,
-                        average_cost_bps=point.average_cost_bps,
-                        min_cost_bps=point.min_cost_bps,
-                        max_cost_bps=point.max_cost_bps,
-                        first_observed_date=point.first_observed_date,
-                        last_observed_date=point.last_observed_date,
-                        sample_transaction_ids=point.sample_transaction_ids[:5],
-                    )
-                    for point in curve.curve_points[:10]
-                ],
-                reason_codes=[curve.supportability.reason],
-            )
+            context_updates["transaction_cost_context"] = transaction_cost_context_from_curve(curve)
     if authority_context.liquidity_context is None:
         cashflow_projection = source_context.context.portfolio_cashflow_projection
         income_needs = getattr(source_context.context, "client_income_needs_schedule", None)
@@ -1250,11 +750,7 @@ def _authority_context_with_source_products(
 
 
 def _source_status_to_method_status(status: str) -> ConstructionMethodStatus:
-    if status == "READY":
-        return ConstructionMethodStatus.READY
-    if status == "DEGRADED":
-        return ConstructionMethodStatus.DEGRADED
-    return ConstructionMethodStatus.BLOCKED
+    return source_status_to_method_status(status)
 
 
 def _with_observed_transaction_cost_estimate(
@@ -1263,43 +759,10 @@ def _with_observed_transaction_cost_estimate(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> ConstructionAlternative:
-    estimate = _observed_transaction_cost_estimate(result=result, context=context)
-    if estimate is None:
-        return alternative
-    metrics = alternative.comparison_metrics.model_copy(
-        update={"estimated_transaction_cost": estimate}
-    )
-    objective_trace = [
-        *alternative.objective_trace,
-        ConstructionObjectiveTerm(
-            term=ConstructionTraceTerm.ESTIMATED_COST,
-            value=estimate.amount,
-            unit=estimate.currency,
-            direction="lower_is_better",
-            description=(
-                "Source-observed transaction-cost bps applied to candidate trade notionals; "
-                "not a predictive execution quote."
-            ),
-        ),
-    ]
-    constraint_trace = [
-        *alternative.constraint_trace,
-        ConstructionConstraintTrace(
-            constraint=ConstructionTraceTerm.ESTIMATED_COST,
-            status=_transaction_cost_status(result=result, context=context),
-            source_family=ConstructionSourceFamily.TRANSACTION_COST,
-            reason_codes=_transaction_cost_reason_codes(result=result, context=context),
-            description=(
-                "Observed TransactionCostCurve:v1 evidence supports cost-aware comparison only."
-            ),
-        ),
-    ]
-    return alternative.model_copy(
-        update={
-            "comparison_metrics": metrics,
-            "objective_trace": objective_trace,
-            "constraint_trace": constraint_trace,
-        }
+    return with_observed_transaction_cost_estimate(
+        alternative=alternative,
+        result=result,
+        context=context,
     )
 
 
@@ -1308,25 +771,7 @@ def _observed_transaction_cost_estimate(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> Money | None:
-    if context is None or context.supportability_status != ConstructionMethodStatus.READY:
-        return None
-    point_by_key = {
-        (point.security_id, point.transaction_type): point for point in context.curve_points
-    }
-    total = Decimal("0")
-    currency = result.before.total_value.currency
-    matched = False
-    for intent in result.intents:
-        if not isinstance(intent, SecurityTradeIntent) or intent.notional_base is None:
-            continue
-        point = point_by_key.get((intent.instrument_id, intent.side))
-        if point is None:
-            continue
-        matched = True
-        total += abs(intent.notional_base.amount) * point.average_cost_bps / Decimal("10000")
-    if not matched:
-        return None
-    return Money(amount=total.quantize(_MONEY_QUANT), currency=currency)
+    return observed_transaction_cost_estimate(result=result, context=context)
 
 
 def _transaction_cost_status(
@@ -1334,18 +779,7 @@ def _transaction_cost_status(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
-    if traded_security_ids and not traded_security_ids <= covered_security_ids:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
-    if _observed_transaction_cost_estimate(result=result, context=context) is None:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
-    return status
+    return transaction_cost_status(result=result, context=context)
 
 
 def _transaction_cost_reason_codes(
@@ -1353,21 +787,7 @@ def _transaction_cost_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeTransactionCostContext | None,
 ) -> list[str]:
-    if context is None:
-        return ["TRANSACTION_COST_CURVE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
-    missing_security_ids = sorted(traded_security_ids - covered_security_ids)
-    if missing_security_ids:
-        reason_codes.append("TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES")
-    if _observed_transaction_cost_estimate(result=result, context=context) is None:
-        reason_codes.append("TRANSACTION_COST_ESTIMATE_UNAVAILABLE")
-    else:
-        reason_codes.append("TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS")
-    return sorted(set(reason_codes))
+    return transaction_cost_reason_codes(result=result, context=context)
 
 
 def _with_esg_restriction_constraints(
@@ -1377,47 +797,11 @@ def _with_esg_restriction_constraints(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionAlternative:
-    return alternative.model_copy(
-        update={
-            "constraint_trace": [
-                *alternative.constraint_trace,
-                ConstructionConstraintTrace(
-                    constraint=ConstructionTraceTerm.CLIENT_RESTRICTION,
-                    status=_client_restriction_status(
-                        request=request,
-                        result=result,
-                        context=authority_context.client_restriction_context,
-                    ),
-                    source_family=ConstructionSourceFamily.ESG_PROFILE,
-                    reason_codes=_client_restriction_reason_codes(
-                        request=request,
-                        result=result,
-                        context=authority_context.client_restriction_context,
-                    ),
-                    description=(
-                        "Source-owned ClientRestrictionProfile:v1 evidence is applied to "
-                        "candidate buy/sell intents when available."
-                    ),
-                ),
-                ConstructionConstraintTrace(
-                    constraint=ConstructionTraceTerm.SUSTAINABILITY_PREFERENCE,
-                    status=_sustainability_preference_status(
-                        result=result,
-                        context=authority_context.sustainability_preference_context,
-                    ),
-                    source_family=ConstructionSourceFamily.ESG_PROFILE,
-                    reason_codes=_sustainability_preference_reason_codes(
-                        result=result,
-                        context=authority_context.sustainability_preference_context,
-                    ),
-                    description=(
-                        "Source-owned SustainabilityPreferenceProfile:v1 evidence is attached; "
-                        "classification-dependent controls remain pending review when the "
-                        "source profile alone is insufficient."
-                    ),
-                ),
-            ]
-        }
+    return with_esg_restriction_constraints(
+        request=request,
+        alternative=alternative,
+        result=result,
+        authority_context=authority_context,
     )
 
 
@@ -1427,18 +811,10 @@ def _esg_restriction_status(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
-    return _lowest_status(
-        [
-            _client_restriction_status(
-                request=request,
-                result=result,
-                context=authority_context.client_restriction_context,
-            ),
-            _sustainability_preference_status(
-                result=result,
-                context=authority_context.sustainability_preference_context,
-            ),
-        ]
+    return esg_restriction_status(
+        request=request,
+        result=result,
+        authority_context=authority_context,
     )
 
 
@@ -1448,18 +824,10 @@ def _esg_restriction_reason_codes(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
-    return sorted(
-        set(
-            _client_restriction_reason_codes(
-                request=request,
-                result=result,
-                context=authority_context.client_restriction_context,
-            )
-            + _sustainability_preference_reason_codes(
-                result=result,
-                context=authority_context.sustainability_preference_context,
-            )
-        )
+    return esg_restriction_reason_codes(
+        request=request,
+        result=result,
+        authority_context=authority_context,
     )
 
 
@@ -1469,12 +837,7 @@ def _client_restriction_status(
     result: RebalanceResult,
     context: AuthoritativeClientRestrictionContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    if _violated_client_restrictions(request=request, result=result, context=context):
-        return ConstructionMethodStatus.BLOCKED
-    return status
+    return client_restriction_status(request=request, result=result, context=context)
 
 
 def _client_restriction_reason_codes(
@@ -1483,21 +846,7 @@ def _client_restriction_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeClientRestrictionContext | None,
 ) -> list[str]:
-    if context is None:
-        return ["CLIENT_RESTRICTION_PROFILE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"CLIENT_RESTRICTION_PROFILE_{context.supportability_status}")
-    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
-    violations = _violated_client_restrictions(request=request, result=result, context=context)
-    if violations:
-        reason_codes.extend(
-            f"CLIENT_RESTRICTION_VIOLATION_{restriction.restriction_code}"
-            for _, restriction in violations
-        )
-    else:
-        reason_codes.append("CLIENT_RESTRICTION_PROFILE_APPLIED")
-    return sorted(set(reason_codes))
+    return client_restriction_reason_codes(request=request, result=result, context=context)
 
 
 def _violated_client_restrictions(
@@ -1506,25 +855,7 @@ def _violated_client_restrictions(
     result: RebalanceResult,
     context: AuthoritativeClientRestrictionContext,
 ) -> list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]]:
-    shelf_by_instrument = {entry.instrument_id: entry for entry in request.shelf_entries}
-    violations: list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]] = []
-    for intent in result.intents:
-        if not isinstance(intent, SecurityTradeIntent):
-            continue
-        for restriction in context.restrictions:
-            if restriction.restriction_status.lower() != "active":
-                continue
-            if intent.side == "BUY" and not restriction.applies_to_buy:
-                continue
-            if intent.side == "SELL" and not restriction.applies_to_sell:
-                continue
-            if _restriction_matches_intent(
-                intent=intent,
-                shelf=shelf_by_instrument.get(intent.instrument_id),
-                restriction=restriction,
-            ):
-                violations.append((intent, restriction))
-    return violations
+    return violated_client_restrictions(request=request, result=result, context=context)
 
 
 def _restriction_matches_intent(
@@ -1533,24 +864,7 @@ def _restriction_matches_intent(
     shelf: ShelfEntry | None,
     restriction: AuthoritativeClientRestrictionRule,
 ) -> bool:
-    scoped_values = (
-        restriction.instrument_ids
-        or restriction.asset_classes
-        or restriction.issuer_ids
-        or restriction.country_codes
-    )
-    if not scoped_values:
-        return True
-    if intent.instrument_id in restriction.instrument_ids:
-        return True
-    if shelf is None:
-        return False
-    if shelf.asset_class in restriction.asset_classes:
-        return True
-    if shelf.issuer_id and shelf.issuer_id in restriction.issuer_ids:
-        return True
-    country_of_risk = shelf.attributes.get("country_of_risk") or shelf.attributes.get("country")
-    return bool(country_of_risk and country_of_risk in restriction.country_codes)
+    return restriction_matches_intent(intent=intent, shelf=shelf, restriction=restriction)
 
 
 def _sustainability_preference_status(
@@ -1558,14 +872,7 @@ def _sustainability_preference_status(
     result: RebalanceResult,
     context: AuthoritativeSustainabilityPreferenceContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    if _sustainability_allocation_breaches(result=result, context=context):
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    if _sustainability_classification_review_required(context=context):
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    return status
+    return sustainability_preference_status(result=result, context=context)
 
 
 def _sustainability_preference_reason_codes(
@@ -1573,21 +880,7 @@ def _sustainability_preference_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeSustainabilityPreferenceContext | None,
 ) -> list[str]:
-    if context is None:
-        return ["SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"SUSTAINABILITY_PREFERENCE_PROFILE_{context.supportability_status}")
-    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
-    breaches = _sustainability_allocation_breaches(result=result, context=context)
-    reason_codes.extend(
-        f"SUSTAINABILITY_ALLOCATION_REVIEW_{preference.preference_code}" for preference in breaches
-    )
-    if _sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED")
-    if not breaches and not _sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED")
-    return sorted(set(reason_codes))
+    return sustainability_preference_reason_codes(result=result, context=context)
 
 
 def _sustainability_allocation_breaches(
@@ -1595,36 +888,14 @@ def _sustainability_allocation_breaches(
     result: RebalanceResult,
     context: AuthoritativeSustainabilityPreferenceContext,
 ) -> list[AuthoritativeSustainabilityPreference]:
-    weight_by_asset_class = {
-        allocation.key.lower(): allocation.weight
-        for allocation in result.after_simulated.allocation_by_asset_class
-    }
-    breaches: list[AuthoritativeSustainabilityPreference] = []
-    for preference in context.preferences:
-        if preference.preference_status.lower() != "active":
-            continue
-        if not preference.applies_to_asset_classes:
-            continue
-        weight = sum(
-            weight_by_asset_class.get(asset_class.lower(), Decimal("0"))
-            for asset_class in preference.applies_to_asset_classes
-        )
-        if preference.minimum_allocation is not None and weight < preference.minimum_allocation:
-            breaches.append(preference)
-        if preference.maximum_allocation is not None and weight > preference.maximum_allocation:
-            breaches.append(preference)
-    return breaches
+    return sustainability_allocation_breaches(result=result, context=context)
 
 
 def _sustainability_classification_review_required(
     *,
     context: AuthoritativeSustainabilityPreferenceContext,
 ) -> bool:
-    return any(
-        preference.preference_status.lower() == "active"
-        and (preference.exclusion_codes or preference.positive_tilt_codes)
-        for preference in context.preferences
-    )
+    return sustainability_classification_review_required(context=context)
 
 
 def _with_method_reason_codes(
@@ -1632,20 +903,11 @@ def _with_method_reason_codes(
     enrichment: ConstructionEnrichmentSummary,
     reason_codes: list[str],
 ) -> ConstructionEnrichmentSummary:
-    return enrichment.model_copy(
-        update={"reason_codes": sorted(set(enrichment.reason_codes) | set(reason_codes))}
-    )
+    return with_method_reason_codes(enrichment=enrichment, reason_codes=reason_codes)
 
 
 def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
-    solver_warnings = [
-        warning
-        for warning in result.diagnostics.warnings
-        if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
-    ]
-    if not solver_warnings:
-        return ConstructionMethodStatus.READY
-    return _lowest_status([classify_solver_failure(warning) for warning in solver_warnings])
+    return solver_method_status(result=result)
 
 
 def _liquidity_status(
@@ -1653,36 +915,7 @@ def _liquidity_status(
     result: RebalanceResult,
     context: AuthoritativeLiquidityContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    status = context.supportability_status
-    if result.diagnostics.cash_ladder_breaches or result.diagnostics.insufficient_cash:
-        return ConstructionMethodStatus.BLOCKED
-    cash_weight = _post_trade_cash_weight(result=result)
-    if cash_weight is not None and cash_weight < context.minimum_cash_weight:
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    if context.cashflow_projection is None:
-        return status
-    cashflow_status = context.cashflow_projection.data_quality_status
-    if not context.cashflow_projection.include_projected:
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
-    if (
-        context.cashflow_projection.total_net_cashflow.currency
-        != result.after_simulated.total_value.currency
-    ):
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
-    elif result.after_simulated.total_value.amount <= Decimal("0"):
-        cashflow_status = _lowest_status([cashflow_status, ConstructionMethodStatus.DEGRADED])
-    elif cash_weight is not None:
-        projected_cash_weight = (
-            context.cashflow_projection.total_net_cashflow.amount
-            / result.after_simulated.total_value.amount
-        )
-        if cash_weight + projected_cash_weight < context.minimum_cash_weight:
-            cashflow_status = _lowest_status(
-                [cashflow_status, ConstructionMethodStatus.PENDING_REVIEW]
-            )
-    return _lowest_status([status, cashflow_status])
+    return liquidity_status(result=result, context=context)
 
 
 def _liquidity_reason_codes(
@@ -1690,19 +923,7 @@ def _liquidity_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeLiquidityContext | None,
 ) -> list[str]:
-    reason_codes: list[str] = []
-    if context is None:
-        reason_codes.append("LIQUIDITY_POLICY_CONTEXT_DERIVED")
-    else:
-        reason_codes.extend(context.reason_codes)
-        reason_codes.extend(_cashflow_projection_reason_codes(result=result, context=context))
-    if result.diagnostics.cash_ladder:
-        reason_codes.append("SETTLEMENT_CASH_LADDER_PRESENT")
-    if result.diagnostics.cash_ladder_breaches:
-        reason_codes.append("SETTLEMENT_CASH_LADDER_BREACH")
-    if result.diagnostics.insufficient_cash:
-        reason_codes.append("LIQUIDITY_FUNDING_DEFICIT")
-    return reason_codes
+    return liquidity_reason_codes(result=result, context=context)
 
 
 def _cashflow_projection_reason_codes(
@@ -1710,82 +931,22 @@ def _cashflow_projection_reason_codes(
     result: RebalanceResult,
     context: AuthoritativeLiquidityContext,
 ) -> list[str]:
-    projection = context.cashflow_projection
-    if projection is None:
-        return []
-    reason_codes = ["CASHFLOW_PROJECTION_CONTEXT_PRESENT", *projection.reason_codes]
-    is_usable = True
-    if projection.data_quality_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"CASHFLOW_PROJECTION_{projection.data_quality_status}_BY_SOURCE")
-        is_usable = False
-    if not projection.include_projected:
-        reason_codes.append("CASHFLOW_PROJECTION_PROJECTED_ROWS_NOT_INCLUDED")
-        is_usable = False
-    if projection.total_net_cashflow.currency != result.after_simulated.total_value.currency:
-        reason_codes.append("CASHFLOW_PROJECTION_CURRENCY_MISMATCH")
-        return reason_codes
-    if result.after_simulated.total_value.amount <= Decimal("0"):
-        reason_codes.append("CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE")
-        return reason_codes
-    cash_weight = _post_trade_cash_weight(result=result)
-    if cash_weight is None:
-        return reason_codes
-    projected_cash_weight = (
-        projection.total_net_cashflow.amount / result.after_simulated.total_value.amount
-    )
-    if cash_weight + projected_cash_weight < context.minimum_cash_weight:
-        reason_codes.append("CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY")
-    elif is_usable:
-        reason_codes.append("CASHFLOW_PROJECTION_READY")
-    return reason_codes
+    return cashflow_projection_reason_codes(result=result, context=context)
 
 
 def _post_trade_cash_weight(*, result: RebalanceResult) -> Decimal | None:
-    return next(
-        (
-            allocation.weight
-            for allocation in result.after_simulated.allocation_by_asset_class
-            if allocation.key == "CASH"
-        ),
-        None,
-    )
+    return post_trade_cash_weight(result=result)
 
 
 def _derive_liquidity_context(*, result: RebalanceResult) -> AuthoritativeLiquidityContext:
-    return AuthoritativeLiquidityContext(
-        supportability_status=ConstructionMethodStatus.READY,
-        source_system="lotus-manage-settlement-engine",
-        policy_id="manage-liquidity-policy.v1",
-        minimum_cash_weight=Decimal("0.03"),
-        allowed_liquidity_tiers=["L1", "L2", "L3"],
-        reason_codes=["LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"],
-    )
+    return derive_liquidity_context(result=result)
 
 
 def _derive_currency_overlay_context(
     *,
     result: RebalanceResult,
 ) -> AuthoritativeCurrencyOverlayContext:
-    non_base_currencies = sorted(
-        {
-            position.instrument_currency
-            for position in result.after_simulated.positions
-            if position.instrument_currency != result.after_simulated.total_value.currency
-        }
-    )
-    return AuthoritativeCurrencyOverlayContext(
-        supportability_status=(
-            ConstructionMethodStatus.READY
-            if non_base_currencies
-            else ConstructionMethodStatus.DEGRADED
-        ),
-        source_system="lotus-manage-fx-policy",
-        policy_id="manage-currency-overlay-policy.v1",
-        hedge_ratio_min=Decimal("0.00"),
-        hedge_ratio_max=Decimal("1.00"),
-        eligible_currencies=non_base_currencies,
-        reason_codes=["CURRENCY_OVERLAY_POLICY_DERIVED_FROM_MANAGE_FX_RULES"],
-    )
+    return derive_currency_overlay_context(result=result)
 
 
 def _construction_as_of_date(*, request: RebalanceRequest) -> date:
@@ -1813,46 +974,17 @@ def _currency_overlay_status(
     request: RebalanceRequest,
     context: AuthoritativeCurrencyOverlayContext | None,
 ) -> ConstructionMethodStatus:
-    if _missing_currency_overlay_pairs(request=request):
-        return ConstructionMethodStatus.BLOCKED
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    if context.supportability_status != ConstructionMethodStatus.READY:
-        return context.supportability_status
-    base_currency = request.portfolio_snapshot.base_currency
-    instrument_currencies = {
-        price.currency
-        for price in request.market_data_snapshot.prices
-        if price.currency != base_currency
-    }
-    if instrument_currencies - set(context.eligible_currencies):
-        return ConstructionMethodStatus.PENDING_REVIEW
-    return (
-        ConstructionMethodStatus.READY
-        if instrument_currencies
-        else ConstructionMethodStatus.DEGRADED
-    )
+    return currency_overlay_status(request=request, context=context)
 
 
 def _regime_stress_status(
     context: AuthoritativeRegimeStressContext | None,
 ) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    if context.worst_case_loss_pct > context.maximum_allowed_loss_pct:
-        return ConstructionMethodStatus.PENDING_REVIEW
-    return context.supportability_status
+    return regime_stress_status(context)
 
 
 def _missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:
-    base_currency = request.portfolio_snapshot.base_currency
-    available_pairs = {fx_rate.pair for fx_rate in request.market_data_snapshot.fx_rates}
-    required_pairs = {
-        f"{price.currency}/{base_currency}"
-        for price in request.market_data_snapshot.prices
-        if price.currency != base_currency
-    }
-    return sorted(required_pairs - available_pairs)
+    return missing_currency_overlay_pairs(request=request)
 
 
 def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
