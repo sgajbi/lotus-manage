@@ -8329,3 +8329,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   keeping repository orchestration and router concerns separate.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-340: Wave boundary evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_boundary_evidence.py`,
+  `tests/unit/dpm/waves/test_wave_boundary_evidence.py`, proof-pack posture boundary regressions,
+  and this ledger.
+- Finding: `wave_service.py` still assembled external-execution and client-communication boundary
+  evidence directly inside the service module.
+- Action: extracted wave boundary evidence builders into a focused module with direct tests for
+  no-execution-owner, unsafe execution claim, and no-client-communication-owner cases while
+  preserving the existing wave service private aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_boundary_evidence.py`; direct wave boundary evidence and
+  selected proof-pack posture boundary regressions passed with 7 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue moving pure wave evidence assembly out of `wave_service.py` while retaining
+  workflow orchestration and repository access in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
