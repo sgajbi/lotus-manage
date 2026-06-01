@@ -7825,3 +7825,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   products evolve.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-316: Source-product facade stateless pass-through coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, source-product authority
+  context facade behavior, and this ledger.
+- Finding: source-product composition tests covered source-family updates but did not directly guard
+  the stateless path where no resolved source context is supplied.
+- Action: added a direct facade regression asserting the existing authority context is returned
+  unchanged when source context is absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  source-product facade regressions passed with 3 tests.
+- Follow-up: keep facade tests focused on orchestration behavior while source-family tests own
+  mapper detail.
+- Wiki decision: no wiki source change required; this is internal source-composition test hardening
+  with no route, payload, supported-feature, or operator-contract change.

@@ -2,6 +2,7 @@ from src.api.services.construction_liquidity_source_context import (
     source_liquidity_context,
 )
 from src.api.services.construction_source_product_context import (
+    authority_context_with_source_products,
     source_product_authority_context_updates,
 )
 from src.api.services.construction_transaction_cost_source_context import (
@@ -40,6 +41,17 @@ def _source_execution_context(**overrides: object) -> DpmCoreExecutionContext:
     }
     source_products.update(overrides)
     return DpmCoreExecutionContext.model_construct(**source_products)
+
+
+def test_authority_context_with_source_products_returns_existing_context_without_source() -> None:
+    authority_context = ConstructionAuthorityContext()
+
+    resolved_context = authority_context_with_source_products(
+        authority_context=authority_context,
+        source_context=None,
+    )
+
+    assert resolved_context is authority_context
 
 
 def test_source_product_authority_context_updates_lifts_all_source_families() -> None:
