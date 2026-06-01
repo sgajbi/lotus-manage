@@ -32,7 +32,6 @@ from src.api.services.rebalance_policy_pack_service import (
 )
 from src.api.services.rebalance_operation_identity import (
     create_batch_analysis_id,
-    resolve_rebalance_correlation_id,
 )
 from src.api.services.rebalance_policy_pack_execution import (
     resolve_execution_policy_pack_context,
@@ -76,8 +75,9 @@ from src.core.dpm_source_context import (
     build_rebalance_request_from_core_context,
 )
 from src.core.rebalance.engine import run_simulation
-from src.core.rebalance.policy_packs import (
-    resolve_policy_pack_replay_enabled,
+from src.api.services.rebalance_simulation_execution_context import (
+    DpmSimulationExecutionContext as DpmSimulationExecutionContext,
+    build_simulation_execution_context,
 )
 from src.core.rebalance_runs import (
     DpmAsyncAcceptedResponse,
@@ -156,36 +156,29 @@ def simulate_rebalance(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
-    resolved_correlation_id = resolve_rebalance_correlation_id(correlation_id)
     current_logger.info("Simulating rebalance request")
-    default_replay_enabled = env_flag("DPM_IDEMPOTENCY_REPLAY_ENABLED", True)
-    request_payload = request.model_dump(mode="json")
-    request_hash = hash_canonical_payload(request_payload)
-    policy_context = resolve_execution_policy_pack_context(
-        request_policy_pack_id=policy_pack_id,
+    execution_context = build_simulation_execution_context(
+        request=request,
+        correlation_id=correlation_id,
+        policy_pack_id=policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
-        surface="simulate",
-        catalog_loader=load_dpm_policy_pack_catalog,
-    )
-    replay_enabled = resolve_policy_pack_replay_enabled(
-        default_replay_enabled=default_replay_enabled,
-        policy_pack=policy_context.definition,
+        request_hasher=hash_canonical_payload,
     )
     current_logger.debug(
         "Resolved lotus-manage policy pack for simulate. enabled=%s source=%s policy_pack_id=%s",
-        policy_context.resolution.enabled,
-        policy_context.resolution.source,
-        policy_context.resolution.selected_policy_pack_id,
+        execution_context.policy_resolution_enabled,
+        execution_context.policy_resolution_source,
+        execution_context.selected_policy_pack_id,
     )
 
     return execute_simulation_request(
         request=request,
         idempotency_key=idempotency_key,
-        request_hash=request_hash,
-        correlation_id=resolved_correlation_id,
-        policy_pack_definition=policy_context.definition,
-        replay_enabled=replay_enabled,
+        request_hash=execution_context.request_hash,
+        correlation_id=execution_context.correlation_id,
+        policy_pack_definition=execution_context.policy_pack_definition,
+        replay_enabled=execution_context.replay_enabled,
         source_context=source_context,
         support_service_factory=get_dpm_run_support_service,
         run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),

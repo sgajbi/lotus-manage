@@ -9811,3 +9811,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `mandate_service.py` while keeping repository access and API-facing orchestration there.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-403: Rebalance simulation execution-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_simulation_execution_context.py`,
+  `tests/unit/api/test_rebalance_simulation_execution_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `simulate_rebalance` still assembled request hash, resolved correlation id, policy-pack
+  context, policy-pack replay flag, and policy-resolution observability fields inline before
+  delegating to sync execution.
+- Action: extracted simulation execution-context assembly into a focused helper that returns the
+  request hash, resolved correlation id, selected policy definition, replay flag, and policy
+  resolution metadata, keeping `simulate_rebalance` focused on logging and sync execution
+  delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and
+  `rebalance_simulation_execution_context.py`; direct execution-context tests and selected
+  rebalance API/runtime regressions passed with 140 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing rebalance orchestration around async submission and batch execution
+  where extracted helpers improve auditability without hiding runtime gates.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
