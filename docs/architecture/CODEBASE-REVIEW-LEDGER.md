@@ -10105,3 +10105,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   seams that can be clarified without hiding ownership or idempotency behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-415: Mandate health persistence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_health_persistence.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_persistence.py`, selected mandate regressions, and
+  this ledger.
+- Finding: mandate refresh, recalculation, and monitoring flows repeated health-snapshot and
+  monitoring-exception persistence loops in the orchestration service, making evidence persistence
+  behavior harder to test directly.
+- Action: extracted mandate health evidence persistence into a focused helper, kept source
+  resolution, health calculation, monitoring-run aggregation, and repository lookup ownership in
+  the service, and added direct tests for twin-backed and health-only persistence paths plus the
+  service compatibility alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_health_persistence.py`; direct mandate health
+  persistence tests and selected mandate refresh/API regressions passed with 36 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing mandate monitoring orchestration for aggregation boundaries that
+  can be isolated without hiding lookup or run lifecycle ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

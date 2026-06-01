@@ -32,6 +32,7 @@ from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult as DpmMandateHealthCalculationResult,
     calculate_mandate_health_result,
 )
+from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
 from src.api.services.mandate_monitoring_run import (
     DpmMonitoringRunMandateResult as DpmMonitoringRunMandateResult,
     build_monitoring_run,
@@ -79,6 +80,7 @@ _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
 _calculate_mandate_health_result = calculate_mandate_health_result
+_persist_mandate_health_evidence = persist_mandate_health_evidence
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
@@ -114,10 +116,12 @@ def refresh_mandate_from_core(
         correlation_id=correlation_id,
     )
 
-    repository.save_mandate_snapshot(refresh_result.twin)
-    repository.save_health_snapshot(refresh_result.health_snapshot)
-    for exception in refresh_result.monitoring_exceptions:
-        repository.save_monitoring_exception(exception)
+    _persist_mandate_health_evidence(
+        repository=repository,
+        twin=refresh_result.twin,
+        health_snapshot=refresh_result.health_snapshot,
+        monitoring_exceptions=refresh_result.monitoring_exceptions,
+    )
 
     return refresh_result
 
@@ -175,10 +179,12 @@ def recalculate_mandate_health(
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
     health_result = _calculate_mandate_health_result(health_input)
-    repository.save_mandate_snapshot(health_input.twin)
-    repository.save_health_snapshot(health_result.snapshot)
-    for exception in health_result.monitoring_exceptions:
-        repository.save_monitoring_exception(exception)
+    _persist_mandate_health_evidence(
+        repository=repository,
+        twin=health_input.twin,
+        health_snapshot=health_result.snapshot,
+        monitoring_exceptions=health_result.monitoring_exceptions,
+    )
     return health_result.snapshot
 
 
@@ -203,12 +209,14 @@ def run_mandate_monitoring_once(
             monitoring_run_id=monitoring_run_id,
         )
         snapshot = mandate_result.health_snapshot
-        repository.save_health_snapshot(snapshot)
+        _persist_mandate_health_evidence(
+            repository=repository,
+            health_snapshot=snapshot,
+            monitoring_exceptions=mandate_result.monitoring_exceptions,
+        )
         _increment_distribution(health_distribution, snapshot.health_state.value)
         _increment_distribution(source_readiness_summary, snapshot.source_readiness_state)
         exception_count += len(mandate_result.monitoring_exceptions)
-        for exception in mandate_result.monitoring_exceptions:
-            repository.save_monitoring_exception(exception)
 
     run = _build_monitoring_run(
         monitoring_run_id=monitoring_run_id,
