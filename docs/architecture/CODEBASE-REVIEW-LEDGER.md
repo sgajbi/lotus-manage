@@ -11334,3 +11334,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-product mapping behavior.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-466: Wave service helper alias regression guard
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/waves/test_wave_service_public_surface.py` and this ledger.
+- Finding: the wave-service hardening slices removed multiple direct helper aliases from
+  `wave_service.py`, but the branch lacked one compact regression proving the retired helper
+  function names are no longer re-exported from the service module.
+- Action: added a wave-service public-surface test that asserts retired persisted-command,
+  read-model, search, preview, and selection helper names are absent from `wave_service.py`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger; direct
+  wave-service public-surface, preview, read-model, selection-command, and search regressions passed
+  with 12 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed;
+  `git diff --check` passed with only a ledger line-ending warning; service leakage scan found no
+  router/HTTP imports in service modules; targeted scan found retired helper names only in the
+  negative test list and as qualified owner-module calls from `wave_service.py`.
+- Follow-up: keep public workflow functions on `wave_service.py`, but keep pure helpers and
+  persisted command implementations owned by their dedicated modules.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
