@@ -7723,3 +7723,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   tests.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-310: Transaction-cost source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  transaction-cost source-context mapping, and this ledger.
+- Finding: transaction-cost source context tests covered lineage source IDs but did not prove the
+  page request-scope fingerprint fallback used when source-batch and lineage fingerprints are
+  absent.
+- Action: added a direct transaction-cost mapper regression asserting fallback to
+  `request_scope_fingerprint` as the source ID.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  transaction-cost source-context regressions passed with 2 tests.
+- Follow-up: add similarly focused fallback tests where source-boundary identity has non-lineage
+  fallback behavior.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.

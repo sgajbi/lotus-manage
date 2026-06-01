@@ -25,3 +25,16 @@ def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_sample
         "tx4",
         "tx5",
     ]
+
+
+def test_transaction_cost_context_falls_back_to_page_fingerprint_source_id() -> None:
+    curve = transaction_cost_curve_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+
+    context = transaction_cost_context_from_curve(curve)
+
+    assert context.source_id == "curve-page-fingerprint"
