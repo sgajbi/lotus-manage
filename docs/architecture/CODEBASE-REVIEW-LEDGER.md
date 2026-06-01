@@ -7308,3 +7308,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   diagnostic assembly internals.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-288: Supportability status roll-up helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`, and this ledger.
+- Finding: after extracting supportability application orchestration, method status roll-up still
+  lived inline as a sequence of method-specific conditional overlays, making the main helper harder
+  to scan and riskier to change.
+- Action: moved status roll-up into private helpers for base method status, method enrichment
+  statuses, and authority-context status overlays. The public application helper now reads as
+  enrichment, method-specific evidence attachment, reason-code collection, status roll-up, and
+  diagnostic assembly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_supportability_application.py`; focused supportability/enrichment/API
+  regressions passed with 55 tests.
+- Follow-up: keep additional supportability branches behind direct tests before changing roll-up
+  semantics.
+- Wiki decision: no wiki source change required; this is internal service factoring with no route,
+  payload, supported-feature, or operator-contract change.
