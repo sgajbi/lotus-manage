@@ -10178,3 +10178,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and summary-input boundaries that can be clarified without hiding repository ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-418: Wave transition execution extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave regressions, and this
+  ledger.
+- Finding: wave source-check, simulation, approval, staging, and handoff orchestration repeated
+  the same lookup, idempotent replay, state guard, and optimistic update flow, increasing the
+  chance of inconsistent transition enforcement across DPM wave lifecycle endpoints.
+- Action: extracted common wave transition preparation and persistence into a focused helper,
+  preserved transition-specific builder logic in the service, and added direct tests for replay
+  handling, required-state validation, expected-version update behavior, export surface, and
+  service compatibility aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave lifecycle/API regressions passed with 154 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave cancellation and selection flows for transition semantics that
+  can be normalized without hiding route-level business decisions.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

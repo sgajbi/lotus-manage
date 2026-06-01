@@ -49,6 +49,10 @@ from src.api.services.wave_stage_transition import build_staged_wave as _build_s
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
+from src.api.services.wave_transition_execution import (
+    persist_transitioned_wave,
+    prepare_wave_transition,
+)
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
 from src.api.services.wave_workflow_metadata import (
     approval_event_metadata,
@@ -80,6 +84,8 @@ _selection_event_metadata = selection_event_metadata
 _event = build_wave_event
 _append_event = append_same_state_event
 _wave_with_items_and_aggregate = wave_with_items_and_aggregate
+_prepare_wave_transition = prepare_wave_transition
+_persist_transitioned_wave = persist_transitioned_wave
 
 
 def preview_wave(
@@ -164,26 +170,27 @@ def source_check_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(wave, replay_states={"SOURCE_CHECKED"}):
-        return wave, True
-    _require_wave_state(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        replay_states={"SOURCE_CHECKED"},
         allowed_states={"CREATED"},
         error_code="DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
         action_phrase="be source-checked",
     )
+    if prepared.replayed:
+        return prepared.wave, True
 
     checked = build_source_checked_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         correlation_id=correlation_id,
         mandate_repository=mandate_repository,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=checked,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=checked,
     )
     return checked, False
 
@@ -200,21 +207,19 @@ def simulate_wave(
     wave_repository: DpmWaveRepository,
     risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
         replay_states={"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"},
-    ):
-        return wave, True
-    _require_wave_state(
-        wave,
         allowed_states={"SOURCE_CHECKED"},
         error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
         action_phrase="be simulated",
     )
+    if prepared.replayed:
+        return prepared.wave, True
 
     completed = build_simulated_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         correlation_id=correlation_id,
         item_inputs=item_inputs,
@@ -223,10 +228,10 @@ def simulate_wave(
         run_service=run_service,
         risk_authority_client=risk_authority_client,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=completed,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=completed,
     )
     return completed, False
 
@@ -297,30 +302,28 @@ def approve_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
         replay_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
-    ):
-        return wave, True
-    _require_wave_state(
-        wave,
         allowed_states={"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"},
         error_code="DPM_WAVE_APPROVAL_INVALID_STATE",
         action_phrase="be approved",
     )
+    if prepared.replayed:
+        return prepared.wave, True
 
     approved = _build_approved_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=approved,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=approved,
     )
     return approved, False
 
@@ -334,27 +337,28 @@ def stage_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(wave, replay_states={"STAGED", "HANDOFF_READY"}):
-        return wave, True
-    _require_wave_state(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        replay_states={"STAGED", "HANDOFF_READY"},
         allowed_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
         error_code="DPM_WAVE_STAGE_INVALID_STATE",
         action_phrase="be staged",
     )
+    if prepared.replayed:
+        return prepared.wave, True
 
     staged = _build_staged_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=staged,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=staged,
     )
     return staged, False
 
@@ -368,27 +372,28 @@ def handoff_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if _wave_state_is_idempotent(wave, replay_states={"HANDOFF_READY"}):
-        return wave, True
-    _require_wave_state(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        replay_states={"HANDOFF_READY"},
         allowed_states={"STAGED"},
         error_code="DPM_WAVE_HANDOFF_INVALID_STATE",
         action_phrase="create handoff evidence",
     )
+    if prepared.replayed:
+        return prepared.wave, True
 
     handoff_ready = _build_handoff_ready_wave(
-        wave=wave,
+        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=handoff_ready,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=handoff_ready,
     )
     return handoff_ready, False
 
