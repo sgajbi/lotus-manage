@@ -11264,3 +11264,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage already proves behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-463: Construction source-product helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, selected construction source-product
+  helper regressions, and this ledger.
+- Finding: `construction_source_product_context.py` imported individual source-product mapping
+  helpers directly, leaving the orchestration module with facade attributes for liquidity,
+  transaction-cost, treasury, execution, restriction, and sustainability mapping functions that are
+  already owned and tested by dedicated helper modules.
+- Action: changed the source-product context orchestrator to call the dedicated mapping helpers
+  through their owning modules while preserving its public `authority_context_with_source_products`
+  and `source_product_authority_context_updates` surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `construction_source_product_context.py`; direct source-product,
+  liquidity, and client-profile context regressions passed with 21 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; scoped `git diff --check` passed with
+  only line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan found no direct construction helper imports in the orchestrator and only
+  owner-module qualified helper calls.
+- Follow-up: keep pure source-product mapping helpers owned by dedicated modules and reserve
+  `construction_source_product_context.py` for authority-context orchestration only.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
