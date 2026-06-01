@@ -8,6 +8,16 @@ from src.core.dpm_source_context import (
     DpmCoreClientRestrictionEntry,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreClientRestrictionSupportability,
+    DpmCoreExternalCurrencyExposureResponse,
+    DpmCoreExternalCurrencyExposureSupportability,
+    DpmCoreExternalEligibleHedgeInstrumentResponse,
+    DpmCoreExternalEligibleHedgeInstrumentSupportability,
+    DpmCoreExternalFXForwardCurveResponse,
+    DpmCoreExternalFXForwardCurveSupportability,
+    DpmCoreExternalHedgeExecutionReadinessResponse,
+    DpmCoreExternalHedgeExecutionReadinessSupportability,
+    DpmCoreExternalHedgePolicyResponse,
+    DpmCoreExternalHedgePolicySupportability,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExternalOrderExecutionAcknowledgementSupportability,
     DpmCoreIntegrationWindow,
@@ -91,6 +101,116 @@ def transaction_cost_curve_response() -> DpmCoreTransactionCostCurveResponse:
             missing_security_ids=["EQ_B"],
         ),
         lineage={"source_batch_fingerprint": "curve-lineage"},
+    )
+
+
+def hedge_readiness_response() -> DpmCoreExternalHedgeExecutionReadinessResponse:
+    return DpmCoreExternalHedgeExecutionReadinessResponse(
+        product_name="ExternalHedgeExecutionReadiness",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        reporting_currency="USD",
+        exposure_currencies=["EUR", "GBP"],
+        readiness_checks=[{"check": "source_ingestion", "status": "missing"}],
+        supportability=DpmCoreExternalHedgeExecutionReadinessSupportability(
+            state="UNAVAILABLE",
+            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            missing_data_families=["external_treasury_hedge_readiness"],
+            blocked_capabilities=["treasury", "oms", "execution"],
+        ),
+        lineage={"source_batch_fingerprint": "core-hedge-readiness"},
+    )
+
+
+def currency_exposure_response() -> DpmCoreExternalCurrencyExposureResponse:
+    return DpmCoreExternalCurrencyExposureResponse(
+        product_name="ExternalCurrencyExposure",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        reporting_currency="USD",
+        exposure_currencies=["EUR", "JPY"],
+        exposures=[{"currency": "EUR", "net_exposure": "125000"}],
+        supportability=DpmCoreExternalCurrencyExposureSupportability(
+            state="UNAVAILABLE",
+            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            exposure_count=1,
+            missing_data_families=["external_currency_exposure"],
+            blocked_capabilities=["fx", "treasury"],
+        ),
+        lineage={"source_batch_fingerprint": "core-currency-exposure"},
+    )
+
+
+def hedge_policy_response() -> DpmCoreExternalHedgePolicyResponse:
+    return DpmCoreExternalHedgePolicyResponse(
+        product_name="ExternalHedgePolicy",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        reporting_currency="USD",
+        exposure_currencies=["EUR"],
+        policy_rules=[{"currency": "EUR", "hedge_ratio": "0.50"}],
+        supportability=DpmCoreExternalHedgePolicySupportability(
+            state="UNAVAILABLE",
+            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            policy_rule_count=1,
+            missing_data_families=["external_hedge_policy"],
+            blocked_capabilities=["hedge-policy", "treasury"],
+        ),
+        lineage={"source_batch_fingerprint": "core-hedge-policy"},
+    )
+
+
+def eligible_hedge_instruments_response() -> DpmCoreExternalEligibleHedgeInstrumentResponse:
+    return DpmCoreExternalEligibleHedgeInstrumentResponse(
+        product_name="ExternalEligibleHedgeInstrument",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        reporting_currency="USD",
+        exposure_currencies=["EUR"],
+        instrument_types=["FX_FORWARD"],
+        eligible_instruments=[{"instrument_id": "FXFWD_EURUSD_1M", "currency": "EUR"}],
+        supportability=DpmCoreExternalEligibleHedgeInstrumentSupportability(
+            state="UNAVAILABLE",
+            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            instrument_count=1,
+            missing_data_families=["external_eligible_hedge_instruments"],
+            blocked_capabilities=["eligible-instrument", "suitability"],
+        ),
+        lineage={"source_batch_fingerprint": "core-eligible-hedges"},
+    )
+
+
+def fx_forward_curve_response() -> DpmCoreExternalFXForwardCurveResponse:
+    return DpmCoreExternalFXForwardCurveResponse(
+        product_name="ExternalFXForwardCurve",
+        product_version="v1",
+        portfolio_id=None,
+        client_id=None,
+        mandate_id=None,
+        as_of_date=date(2026, 6, 1),
+        reporting_currency="USD",
+        exposure_currencies=["EUR/USD"],
+        curve_points=[{"tenor": "1M", "forward_points": "12.5"}],
+        supportability=DpmCoreExternalFXForwardCurveSupportability(
+            state="UNAVAILABLE",
+            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+            curve_point_count=1,
+            missing_data_families=["external_fx_forward_curve"],
+            blocked_capabilities=["forward-pricing", "treasury"],
+        ),
+        lineage={"source_batch_fingerprint": "core-fx-forward-curve"},
     )
 
 

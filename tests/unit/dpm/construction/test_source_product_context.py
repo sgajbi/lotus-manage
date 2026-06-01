@@ -1,4 +1,3 @@
-from datetime import date
 from src.api.services.construction_liquidity_source_context import (
     source_liquidity_context,
 )
@@ -9,42 +8,18 @@ from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
 )
 from src.core.construction.models import ConstructionAuthorityContext
-from src.core.dpm_source_context import (
-    DpmCoreExternalHedgeExecutionReadinessResponse,
-    DpmCoreExternalHedgeExecutionReadinessSupportability,
-    DpmCoreExecutionContext,
-)
+from src.core.dpm_source_context import DpmCoreExecutionContext
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     cashflow_projection_response,
     client_income_needs_schedule_response,
     client_restriction_profile_response,
     external_order_acknowledgement_response,
+    hedge_readiness_response,
     liquidity_reserve_requirement_response,
     planned_withdrawal_schedule_response,
     sustainability_preference_profile_response,
     transaction_cost_curve_response,
 )
-
-
-def _hedge_readiness_response() -> DpmCoreExternalHedgeExecutionReadinessResponse:
-    return DpmCoreExternalHedgeExecutionReadinessResponse(
-        product_name="ExternalHedgeExecutionReadiness",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR", "GBP"],
-        readiness_checks=[{"check": "source_ingestion", "status": "missing"}],
-        supportability=DpmCoreExternalHedgeExecutionReadinessSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            missing_data_families=["external_treasury_hedge_readiness"],
-            blocked_capabilities=["treasury", "oms", "execution"],
-        ),
-        lineage={"source_batch_fingerprint": "core-hedge-readiness"},
-    )
 
 
 def _source_execution_context(**overrides: object) -> DpmCoreExecutionContext:
@@ -75,7 +50,7 @@ def test_source_product_authority_context_updates_lifts_all_source_families() ->
             client_income_needs_schedule=client_income_needs_schedule_response(),
             liquidity_reserve_requirement=liquidity_reserve_requirement_response(),
             planned_withdrawal_schedule=planned_withdrawal_schedule_response(),
-            external_hedge_execution_readiness=_hedge_readiness_response(),
+            external_hedge_execution_readiness=hedge_readiness_response(),
             external_order_execution_acknowledgement=external_order_acknowledgement_response(),
             client_restriction_profile=client_restriction_profile_response(),
             sustainability_preference_profile=sustainability_preference_profile_response(),

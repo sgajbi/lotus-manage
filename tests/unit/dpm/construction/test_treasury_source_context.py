@@ -1,136 +1,19 @@
-from datetime import date
-
 from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
-from src.core.dpm_source_context import (
-    DpmCoreExternalCurrencyExposureResponse,
-    DpmCoreExternalCurrencyExposureSupportability,
-    DpmCoreExternalEligibleHedgeInstrumentResponse,
-    DpmCoreExternalEligibleHedgeInstrumentSupportability,
-    DpmCoreExternalFXForwardCurveResponse,
-    DpmCoreExternalFXForwardCurveSupportability,
-    DpmCoreExternalHedgeExecutionReadinessResponse,
-    DpmCoreExternalHedgeExecutionReadinessSupportability,
-    DpmCoreExternalHedgePolicyResponse,
-    DpmCoreExternalHedgePolicySupportability,
+from tests.unit.dpm.construction.source_product_context_fixtures import (
+    currency_exposure_response,
+    eligible_hedge_instruments_response,
+    fx_forward_curve_response,
+    hedge_policy_response,
+    hedge_readiness_response,
 )
-
-
-def _hedge_readiness_response() -> DpmCoreExternalHedgeExecutionReadinessResponse:
-    return DpmCoreExternalHedgeExecutionReadinessResponse(
-        product_name="ExternalHedgeExecutionReadiness",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR", "GBP"],
-        readiness_checks=[{"check": "source_ingestion", "status": "missing"}],
-        supportability=DpmCoreExternalHedgeExecutionReadinessSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            missing_data_families=["external_treasury_hedge_readiness"],
-            blocked_capabilities=["treasury", "oms", "execution"],
-        ),
-        lineage={"source_batch_fingerprint": "core-hedge-readiness"},
-    )
-
-
-def _currency_exposure_response() -> DpmCoreExternalCurrencyExposureResponse:
-    return DpmCoreExternalCurrencyExposureResponse(
-        product_name="ExternalCurrencyExposure",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR", "JPY"],
-        exposures=[{"currency": "EUR", "net_exposure": "125000"}],
-        supportability=DpmCoreExternalCurrencyExposureSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            exposure_count=1,
-            missing_data_families=["external_currency_exposure"],
-            blocked_capabilities=["fx", "treasury"],
-        ),
-        lineage={"source_batch_fingerprint": "core-currency-exposure"},
-    )
-
-
-def _hedge_policy_response() -> DpmCoreExternalHedgePolicyResponse:
-    return DpmCoreExternalHedgePolicyResponse(
-        product_name="ExternalHedgePolicy",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR"],
-        policy_rules=[{"currency": "EUR", "hedge_ratio": "0.50"}],
-        supportability=DpmCoreExternalHedgePolicySupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            policy_rule_count=1,
-            missing_data_families=["external_hedge_policy"],
-            blocked_capabilities=["hedge-policy", "treasury"],
-        ),
-        lineage={"source_batch_fingerprint": "core-hedge-policy"},
-    )
-
-
-def _eligible_hedge_instruments_response() -> DpmCoreExternalEligibleHedgeInstrumentResponse:
-    return DpmCoreExternalEligibleHedgeInstrumentResponse(
-        product_name="ExternalEligibleHedgeInstrument",
-        product_version="v1",
-        portfolio_id="PB_SG_GLOBAL_BAL_001",
-        client_id="client-1",
-        mandate_id="mandate-1",
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR"],
-        instrument_types=["FX_FORWARD"],
-        eligible_instruments=[{"instrument_id": "FXFWD_EURUSD_1M", "currency": "EUR"}],
-        supportability=DpmCoreExternalEligibleHedgeInstrumentSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            instrument_count=1,
-            missing_data_families=["external_eligible_hedge_instruments"],
-            blocked_capabilities=["eligible-instrument", "suitability"],
-        ),
-        lineage={"source_batch_fingerprint": "core-eligible-hedges"},
-    )
-
-
-def _fx_forward_curve_response() -> DpmCoreExternalFXForwardCurveResponse:
-    return DpmCoreExternalFXForwardCurveResponse(
-        product_name="ExternalFXForwardCurve",
-        product_version="v1",
-        portfolio_id=None,
-        client_id=None,
-        mandate_id=None,
-        as_of_date=date(2026, 6, 1),
-        reporting_currency="USD",
-        exposure_currencies=["EUR/USD"],
-        curve_points=[{"tenor": "1M", "forward_points": "12.5"}],
-        supportability=DpmCoreExternalFXForwardCurveSupportability(
-            state="UNAVAILABLE",
-            reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
-            curve_point_count=1,
-            missing_data_families=["external_fx_forward_curve"],
-            blocked_capabilities=["forward-pricing", "treasury"],
-        ),
-        lineage={"source_batch_fingerprint": "core-fx-forward-curve"},
-    )
 
 
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:
     context = external_treasury_currency_overlay_context(
-        hedge_readiness=_hedge_readiness_response(),
+        hedge_readiness=hedge_readiness_response(),
         currency_exposure=None,
         hedge_policy=None,
         eligible_hedge_instruments=None,
@@ -156,7 +39,7 @@ def test_external_treasury_currency_overlay_context_preserves_fail_closed_readin
 def test_external_treasury_currency_overlay_context_preserves_exposure_fallback() -> None:
     context = external_treasury_currency_overlay_context(
         hedge_readiness=None,
-        currency_exposure=_currency_exposure_response(),
+        currency_exposure=currency_exposure_response(),
         hedge_policy=None,
         eligible_hedge_instruments=None,
         fx_forward_curve=None,
@@ -180,11 +63,11 @@ def test_external_treasury_currency_overlay_context_preserves_exposure_fallback(
 
 def test_external_treasury_currency_overlay_context_combines_source_family_evidence() -> None:
     context = external_treasury_currency_overlay_context(
-        hedge_readiness=_hedge_readiness_response(),
-        currency_exposure=_currency_exposure_response(),
-        hedge_policy=_hedge_policy_response(),
-        eligible_hedge_instruments=_eligible_hedge_instruments_response(),
-        fx_forward_curve=_fx_forward_curve_response(),
+        hedge_readiness=hedge_readiness_response(),
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=hedge_policy_response(),
+        eligible_hedge_instruments=eligible_hedge_instruments_response(),
+        fx_forward_curve=fx_forward_curve_response(),
     )
 
     assert context is not None

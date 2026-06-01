@@ -7542,3 +7542,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: extract treasury source response builders from duplicated test modules next.
 - Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-300: Shared treasury source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  treasury and source-product context tests, and this ledger.
+- Finding: external treasury source response builders were duplicated between the focused treasury
+  mapper tests and the source-product composition tests.
+- Action: moved hedge-readiness, currency exposure, hedge policy, eligible hedge instrument, and FX
+  forward-curve source response builders into shared source-product fixtures and updated both test
+  modules to reuse them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related treasury/source-product source modules; focused treasury/source-product context
+  regressions passed with 6 tests.
+- Follow-up: continue shrinking construction test support by keeping shared fixtures in the fixture
+  module and source-family assertions in focused mapper suites.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
