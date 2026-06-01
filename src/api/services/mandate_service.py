@@ -33,7 +33,9 @@ from src.api.services.mandate_health_result import (
     calculate_mandate_health_result,
 )
 from src.api.services.mandate_monitoring_run import (
+    DpmMonitoringRunMandateResult as DpmMonitoringRunMandateResult,
     build_monitoring_run,
+    calculate_monitoring_run_mandate_result,
     exceptions_for_monitoring_run,
     increment_distribution,
     monitoring_run_id_for,
@@ -56,9 +58,7 @@ from src.core.mandates import (
     DpmMonitoringException,
     DpmMonitoringRun,
     build_health_input_from_core_sources,
-    calculate_mandate_health,
     compile_mandate_digital_twin_from_core,
-    monitoring_exceptions_from_health,
 )
 from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
@@ -82,6 +82,7 @@ _calculate_mandate_health_result = calculate_mandate_health_result
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
+_calculate_monitoring_run_mandate_result = calculate_monitoring_run_mandate_result
 _build_monitoring_run = build_monitoring_run
 
 
@@ -258,22 +259,17 @@ def run_mandate_monitoring_once(
 
     for mandate_id in mandate_ids:
         twin = get_latest_mandate(repository=repository, mandate_id=mandate_id)
-        health_input = DpmMandateHealthInput(
-            twin=twin.model_copy(update={"as_of_date": as_of_date})
+        mandate_result = _calculate_monitoring_run_mandate_result(
+            twin=twin,
+            as_of_date=as_of_date,
+            monitoring_run_id=monitoring_run_id,
         )
-        snapshot = calculate_mandate_health(health_input)
+        snapshot = mandate_result.health_snapshot
         repository.save_health_snapshot(snapshot)
         _increment_distribution(health_distribution, snapshot.health_state.value)
         _increment_distribution(source_readiness_summary, snapshot.source_readiness_state)
-        exceptions = monitoring_exceptions_from_health(
-            snapshot,
-            source_lineage=twin.source_lineage,
-        )
-        exception_count += len(exceptions)
-        for exception in _exceptions_for_monitoring_run(
-            exceptions,
-            monitoring_run_id=monitoring_run_id,
-        ):
+        exception_count += len(mandate_result.monitoring_exceptions)
+        for exception in mandate_result.monitoring_exceptions:
             repository.save_monitoring_exception(exception)
 
     run = _build_monitoring_run(

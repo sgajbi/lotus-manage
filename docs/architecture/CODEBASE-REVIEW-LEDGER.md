@@ -9739,3 +9739,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration with directly testable domain assembly; otherwise shift to the next service hotspot.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-400: Mandate monitoring run item calculation extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate monitoring
+  regressions, and this ledger.
+- Finding: `run_mandate_monitoring_once` still mixed repository writes with per-mandate health
+  recalculation, exception derivation, requested as-of-date projection, and monitoring-run id
+  attachment inside the service loop.
+- Action: extracted per-mandate monitoring calculation into a focused result helper that returns
+  the health snapshot and run-scoped exceptions, preserving service ownership of repository reads,
+  writes, run summary distribution, and monitoring-run persistence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct monitoring-run helper
+  tests and selected mandate API regressions passed with 33 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` where source resolution, persistence, or
+  command-center orchestration can be separated without hiding repository ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

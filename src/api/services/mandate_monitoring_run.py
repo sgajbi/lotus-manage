@@ -1,8 +1,23 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime
 
-from src.core.mandates import DpmMonitoringException, DpmMonitoringRun
+from src.core.mandates import (
+    DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
+    DpmMandateHealthSnapshot,
+    DpmMonitoringException,
+    DpmMonitoringRun,
+    calculate_mandate_health,
+    monitoring_exceptions_from_health,
+)
+
+
+@dataclass(frozen=True)
+class DpmMonitoringRunMandateResult:
+    health_snapshot: DpmMandateHealthSnapshot
+    monitoring_exceptions: list[DpmMonitoringException]
 
 
 def monitoring_run_id_for(requested_at: datetime) -> str:
@@ -25,6 +40,28 @@ def exceptions_for_monitoring_run(
         exception.model_copy(update={"monitoring_run_id": monitoring_run_id})
         for exception in exceptions
     ]
+
+
+def calculate_monitoring_run_mandate_result(
+    *,
+    twin: DpmMandateDigitalTwin,
+    as_of_date: date,
+    monitoring_run_id: str,
+) -> DpmMonitoringRunMandateResult:
+    snapshot = calculate_mandate_health(
+        DpmMandateHealthInput(twin=twin.model_copy(update={"as_of_date": as_of_date}))
+    )
+    exceptions = monitoring_exceptions_from_health(
+        snapshot,
+        source_lineage=twin.source_lineage,
+    )
+    return DpmMonitoringRunMandateResult(
+        health_snapshot=snapshot,
+        monitoring_exceptions=exceptions_for_monitoring_run(
+            exceptions,
+            monitoring_run_id=monitoring_run_id,
+        ),
+    )
 
 
 def build_monitoring_run(
@@ -55,7 +92,9 @@ def build_monitoring_run(
 
 
 __all__ = [
+    "DpmMonitoringRunMandateResult",
     "build_monitoring_run",
+    "calculate_monitoring_run_mandate_result",
     "exceptions_for_monitoring_run",
     "increment_distribution",
     "monitoring_run_id_for",
