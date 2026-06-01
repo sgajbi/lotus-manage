@@ -11095,3 +11095,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage already proves behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-456: Refactor health report baseline
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/refactor_health_report.md`, and this
+  ledger.
+- Finding: The refactor branch had detailed per-slice ledger evidence but no compact measurable
+  branch-level health report comparing current code health against `origin/main`, despite the
+  refactor objective requiring tangible baseline/current quality evidence.
+- Action: added a dependency-free engineering health report generator that compares `origin/main`
+  with the current branch for Python file count, LOC, test count, largest files/functions, service
+  boundary findings, router infrastructure imports, and current OpenAPI completeness; generated the
+  first report under `quality/refactor_health_report.md`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the report script and ledger; focused mypy
+  passed for `engineering_health_report.py`; report generation wrote
+  `quality/refactor_health_report.md`; report content shows 767 current-branch Python files versus
+  754 on `origin/main`, 145857 current Python LOC versus 144347 on `origin/main`, 1856 current test
+  functions versus 1834 on `origin/main`, zero service boundary findings in both snapshots, 135
+  current OpenAPI operations, and three operations missing a 4xx/5xx response marker; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: optimize baseline loading before making this report a CI gate, then add richer
+  optional-tool measurements in later slices, including complexity, dead-code, dependency, security,
+  coverage, and architecture contracts once report-only baselines are stable.
+- Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
+  and does not change route behavior, product feature truth, or operator procedure.
