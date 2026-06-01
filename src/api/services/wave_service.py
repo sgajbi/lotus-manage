@@ -14,8 +14,6 @@ from src.api.services.wave_lifecycle_commands import (
     handoff_persisted_wave,
     stage_persisted_wave,
 )
-from src.api.services.wave_lookup import get_wave_or_raise
-from src.api.services.wave_persistence import save_wave_or_raise, update_wave_or_raise
 from src.api.services.wave_preparation_commands import (
     simulate_persisted_wave,
     source_check_persisted_wave,
@@ -59,11 +57,8 @@ from src.core.waves import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
-_get_wave_or_raise = get_wave_or_raise
 _wave_state_is_idempotent = wave_state_is_idempotent
 _require_wave_state = require_wave_state
-_save_wave_or_raise = save_wave_or_raise
-_update_wave_or_raise = update_wave_or_raise
 _validate_trigger = validate_trigger_or_raise
 _select_construction_alternative_for_wave = select_construction_alternative_for_wave
 _build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative

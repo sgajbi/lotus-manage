@@ -10525,3 +10525,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-432: Wave lookup persistence alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_lookup.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave lookup/write API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still exposed private lookup and persistence aliases after command
+  extraction moved persisted wave reads and writes into owning helper modules.
+- Action: removed the stale lookup, save, and update imports and aliases from the service facade,
+  and retired alias-pinning assertions so tests verify `wave_lookup` and `wave_persistence`
+  directly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave lookup and persistence tests plus selected wave API
+  regressions passed with 141 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring the remaining state guard, trigger validation, transition execution,
+  and selection helper aliases without changing public wave route behavior.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

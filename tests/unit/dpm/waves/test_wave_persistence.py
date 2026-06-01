@@ -1,6 +1,5 @@
 import pytest
 
-from src.api.services import wave_service
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_persistence import save_wave_or_raise, update_wave_or_raise
 from src.core.waves import (
@@ -110,13 +109,6 @@ def test_update_wave_or_raise_translates_version_conflict() -> None:
 
     assert exc_info.value.code == "DPM_WAVE_VERSION_CONFLICT"
     assert exc_info.value.message == "expected version mismatch"
-
-
-def test_wave_service_uses_shared_update_helper_alias() -> None:
-    from src.api.services import wave_persistence
-
-    assert wave_service._save_wave_or_raise is wave_persistence.save_wave_or_raise
-    assert wave_service._update_wave_or_raise is wave_persistence.update_wave_or_raise
 
 
 def test_wave_persistence_exports_only_write_helpers() -> None:
