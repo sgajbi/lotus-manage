@@ -10358,3 +10358,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   single-source mappers.
 - Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-425: Treasury currency-overlay source identity normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, selected treasury
+  source-context/API regressions, and this ledger.
+- Finding: the treasury currency-overlay mapper retained bespoke optional source-id and content-hash
+  assembly for hedge readiness, currency exposure, hedge policy, eligible instruments, and FX
+  forward curves after the shared source-product identity helper existed.
+- Action: introduced a treasury-local optional identity adapter backed by `source_product_identity`,
+  preserved the aggregate currency-overlay content hash and hedge-readiness aggregate fallback, and
+  routed all optional child source-product identity fields through the shared identity bundle.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; direct treasury source-context tests and
+  selected construction source-context/API regressions passed with 35 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing construction service orchestration now that source-product lineage
+  identity has a consistent helper across single-source and treasury multi-source mappers.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
