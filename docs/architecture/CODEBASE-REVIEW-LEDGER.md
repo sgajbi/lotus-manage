@@ -9887,3 +9887,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   testable supportability and operation-lifecycle boundaries.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-406: Outcome review dimension-input extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_dimensions.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_dimensions.py`, selected outcome review/API
+  regressions, and this ledger.
+- Finding: outcome review preview and refresh flows still depended on a private service function
+  for expected-versus-realized dimension input assembly and missing-evidence validation, leaving a
+  domain validation boundary embedded inside orchestration.
+- Action: extracted dimension configuration, validation error, and dimension input assembly into a
+  focused helper module with direct tests for configured dimension projection, missing expected
+  evidence, missing realized evidence, helper export surface, and service import compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_dimensions.py`; direct outcome
+  dimension tests and selected outcome/proof-pack regressions passed with 107 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting outcome review report/AI input context assembly or creation
+  support where it produces directly testable source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

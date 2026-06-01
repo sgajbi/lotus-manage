@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from uuid import uuid4
 
 from src.core.outcomes import (
     DpmExpectedOutcomeSnapshot,
-    DpmOutcomeDimensionInput,
     DpmOutcomeEvent,
     DpmOutcomeAiEvidenceInput,
     DpmOutcomeReviewComparison,
     DpmOutcomeReportInput,
-    DpmOutcomeTolerance,
     DpmPostTradeOutcomeReview,
     DpmRealizedOutcomeSnapshot,
-    OutcomeComparisonDirection,
-    OutcomeDimension,
     build_ai_evidence_input,
     build_report_input,
     compare_outcome_dimensions,
@@ -26,6 +20,11 @@ from src.api.services.outcome_review_creation import (
     build_review_content_hash,
 )
 from src.api.services.outcome_review_refresh import build_source_refreshed_event
+from src.api.services.outcome_review_dimensions import (
+    DpmOutcomeDimensionConfig as DpmOutcomeDimensionConfig,
+    DpmOutcomeReviewValidationError as DpmOutcomeReviewValidationError,
+    dimension_inputs_for_review,
+)
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
 )
@@ -42,12 +41,11 @@ from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutco
 OUTCOME_REVIEW_RETENTION_DAYS = 365 * 7
 
 
-class DpmOutcomeReviewValidationError(Exception):
-    pass
-
-
 class DpmOutcomeReviewNotFoundError(Exception):
     pass
+
+
+_dimension_inputs = dimension_inputs_for_review
 
 
 def preview_outcome_review(
@@ -57,7 +55,7 @@ def preview_outcome_review(
     dimension_configs: list[DpmOutcomeDimensionConfig],
 ) -> DpmOutcomeReviewComparison:
     return compare_outcome_dimensions(
-        _dimension_inputs(
+        dimension_inputs_for_review(
             expected_snapshot=expected_snapshot,
             realized_snapshot=realized_snapshot,
             dimension_configs=dimension_configs,
@@ -283,38 +281,3 @@ def _portfolio_memory_context_for_report(
         outcome_review_repository=outcome_review_repository,
         mandate_repository=mandate_repository,
     )
-
-
-@dataclass(frozen=True)
-class DpmOutcomeDimensionConfig:
-    dimension: OutcomeDimension
-    tolerance: DpmOutcomeTolerance
-    materiality: Decimal
-    direction: OutcomeComparisonDirection
-
-
-def _dimension_inputs(
-    *,
-    expected_snapshot: DpmExpectedOutcomeSnapshot,
-    realized_snapshot: DpmRealizedOutcomeSnapshot,
-    dimension_configs: list[DpmOutcomeDimensionConfig],
-) -> list[DpmOutcomeDimensionInput]:
-    inputs: list[DpmOutcomeDimensionInput] = []
-    for config in dimension_configs:
-        expected = expected_snapshot.expected_values.get(config.dimension)
-        realized = realized_snapshot.realized_values.get(config.dimension)
-        if expected is None or realized is None:
-            raise DpmOutcomeReviewValidationError(
-                f"DPM_OUTCOME_DIMENSION_EVIDENCE_MISSING:{config.dimension}"
-            )
-        inputs.append(
-            DpmOutcomeDimensionInput(
-                dimension=config.dimension,
-                expected=expected,
-                realized=realized,
-                tolerance=config.tolerance,
-                materiality=config.materiality,
-                direction=config.direction,
-            )
-        )
-    return inputs
