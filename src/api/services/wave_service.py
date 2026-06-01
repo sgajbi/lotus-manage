@@ -8,8 +8,8 @@ from src.api.services import wave_lifecycle_commands
 from src.api.services import wave_preparation_commands
 from src.api.services import wave_read_model_queries
 from src.api.services import wave_selection_command
+from src.api.services import wave_search
 from src.api.services.wave_preview import build_preview_wave
-from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
@@ -256,7 +256,7 @@ def search_waves(
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict[str, object]]:
-    return search_wave_summaries(
+    return wave_search.search_wave_summaries(
         wave_repository=wave_repository,
         state=state,
         trigger_type=trigger_type,
