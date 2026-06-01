@@ -33,7 +33,7 @@ from src.api.services.wave_persistence import (
 )
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
-from src.api.services.wave_report_context import portfolio_memory_context_for_report
+from src.api.services.wave_report_input import build_report_input_for_wave
 from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation import build_simulated_wave
@@ -65,9 +65,7 @@ from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
     DpmWaveRepository,
-    DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    build_wave_report_input,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
@@ -493,20 +491,10 @@ def get_report_input(
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmWaveReportInput:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    supportability = wave_supportability_payload(wave)
-    proof_pack_posture_payload = proof_pack_posture_for_wave(wave=wave)
-    try:
-        return build_wave_report_input(
-            wave=wave,
-            supportability=supportability,
-            proof_pack_posture=proof_pack_posture_payload,
-            portfolio_memory_context=portfolio_memory_context_for_report(
-                wave=wave,
-                proof_pack_repository=proof_pack_repository,
-                wave_repository=wave_repository,
-                outcome_review_repository=outcome_review_repository,
-                mandate_repository=mandate_repository,
-            ),
-        )
-    except DpmWaveReportInputBoundaryError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
+    return build_report_input_for_wave(
+        wave=wave,
+        wave_repository=wave_repository,
+        proof_pack_repository=proof_pack_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+    )
