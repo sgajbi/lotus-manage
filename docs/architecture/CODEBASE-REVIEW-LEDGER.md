@@ -9137,3 +9137,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   portfolio-manager book membership helpers where they remain pure service support logic.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-375: Mandate monitoring-run support extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected monitoring API regressions,
+  and this ledger.
+- Finding: `run_mandate_monitoring_once` still mixed repository orchestration with reusable
+  monitoring-run support logic for run-id generation, distribution counting, exception run-id
+  attachment, and terminal run projection.
+- Action: extracted the pure monitoring-run support functions into a focused service helper module,
+  kept mandate lookup, health recalculation, persistence, and error propagation in
+  `mandate_service.py`, preserved private service helper aliases for compatibility, and added
+  direct tests for deterministic run ids, distribution counts, immutable exception run-id
+  attachment, terminal run projection, aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct monitoring-run helper
+  tests and selected monitoring API regressions passed with 16 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` by extracting portfolio-manager book
+  membership mandate-id resolution and monitoring command-center assembly where they remain pure
+  support logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -27,6 +27,12 @@ from src.api.services.mandate_diff import (
     iter_changed_fields,
     materiality_for_field,
 )
+from src.api.services.mandate_monitoring_run import (
+    build_monitoring_run,
+    exceptions_for_monitoring_run,
+    increment_distribution,
+    monitoring_run_id_for,
+)
 from src.api.services.mandate_optional_sources import (
     ready_benchmark_assignment_source,
     ready_optional_source,
@@ -65,6 +71,10 @@ _try_resolve_optional_source = try_resolve_optional_source
 _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
+_monitoring_run_id_for = monitoring_run_id_for
+_increment_distribution = increment_distribution
+_exceptions_for_monitoring_run = exceptions_for_monitoring_run
+_build_monitoring_run = build_monitoring_run
 
 
 @dataclass(frozen=True)
@@ -241,7 +251,7 @@ def run_mandate_monitoring_once(
     filters: dict[str, str],
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
-    monitoring_run_id = f"dmr_{requested_at.strftime('%Y%m%d_%H%M%S_%f')}"
+    monitoring_run_id = _monitoring_run_id_for(requested_at)
     health_distribution: dict[str, int] = {}
     source_readiness_summary: dict[str, int] = {}
     exception_count = 0
@@ -253,31 +263,26 @@ def run_mandate_monitoring_once(
         )
         snapshot = calculate_mandate_health(health_input)
         repository.save_health_snapshot(snapshot)
-        health_distribution[snapshot.health_state.value] = (
-            health_distribution.get(snapshot.health_state.value, 0) + 1
-        )
-        source_readiness_summary[snapshot.source_readiness_state] = (
-            source_readiness_summary.get(snapshot.source_readiness_state, 0) + 1
-        )
+        _increment_distribution(health_distribution, snapshot.health_state.value)
+        _increment_distribution(source_readiness_summary, snapshot.source_readiness_state)
         exceptions = monitoring_exceptions_from_health(
             snapshot,
             source_lineage=twin.source_lineage,
         )
         exception_count += len(exceptions)
-        for exception in exceptions:
-            repository.save_monitoring_exception(
-                exception.model_copy(update={"monitoring_run_id": monitoring_run_id})
-            )
+        for exception in _exceptions_for_monitoring_run(
+            exceptions,
+            monitoring_run_id=monitoring_run_id,
+        ):
+            repository.save_monitoring_exception(exception)
 
-    run = DpmMonitoringRun(
+    run = _build_monitoring_run(
         monitoring_run_id=monitoring_run_id,
         as_of_date=as_of_date,
         requested_at=requested_at,
         completed_at=datetime.now(timezone.utc),
-        status="SUCCEEDED",
         mandate_ids=mandate_ids,
         filters=filters,
-        total_mandates=len(mandate_ids),
         health_distribution=health_distribution,
         exception_count=exception_count,
         source_readiness_summary=source_readiness_summary,
