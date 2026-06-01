@@ -10405,3 +10405,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   similarly narrow command extraction opportunities without obscuring domain-specific dependencies.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-427: Wave preparation command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_preparation_commands.py`,
+  `tests/unit/dpm/waves/test_wave_preparation_commands.py`, selected wave preparation/API
+  regressions, and this ledger.
+- Finding: wave source-check and simulation orchestration still repeated transition preparation,
+  idempotent replay handling, domain builder invocation, and optimistic persistence directly in
+  `wave_service.py`, leaving the facade responsible for command execution mechanics.
+- Action: extracted persisted source-check and simulation command helpers, kept source-readiness and
+  construction simulation builders unchanged, preserved service entry points as facades, and added
+  direct tests for persistence, replay, expected-version handling, export surface, and service
+  delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_preparation_commands.py`; direct wave preparation command
+  tests and selected wave source-check/simulation/API regressions passed with 150 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave alternative selection as the remaining command path with
+  selection-specific repository side effects and proof-pack generation dependencies.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

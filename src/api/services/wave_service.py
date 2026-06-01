@@ -32,6 +32,10 @@ from src.api.services.wave_lifecycle_commands import (
 )
 from src.api.services.wave_lookup import get_wave_or_raise
 from src.api.services.wave_persistence import save_wave_or_raise, update_wave_or_raise
+from src.api.services.wave_preparation_commands import (
+    simulate_persisted_wave,
+    source_check_persisted_wave,
+)
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_read_model_queries import (
     wave_detail_for_id,
@@ -42,11 +46,9 @@ from src.api.services.wave_read_model_queries import (
 )
 from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
-from src.api.services.wave_simulation import build_simulated_wave
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
-from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_state_guard import (
     require_wave_state,
     wave_state_is_idempotent,
@@ -164,29 +166,13 @@ def source_check_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return source_check_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"SOURCE_CHECKED"},
-        allowed_states={"CREATED"},
-        error_code="DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
-        action_phrase="be source-checked",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    checked = build_source_checked_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         correlation_id=correlation_id,
         mandate_repository=mandate_repository,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=checked,
     )
-    return checked, False
 
 
 def simulate_wave(
@@ -201,33 +187,17 @@ def simulate_wave(
     wave_repository: DpmWaveRepository,
     risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return simulate_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"},
-        allowed_states={"SOURCE_CHECKED"},
-        error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
-        action_phrase="be simulated",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    completed = build_simulated_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         correlation_id=correlation_id,
         item_inputs=item_inputs,
         methods=methods,
         construction_repository=construction_repository,
         run_service=run_service,
+        wave_repository=wave_repository,
         risk_authority_client=risk_authority_client,
     )
-    _persist_transitioned_wave(
-        wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=completed,
-    )
-    return completed, False
 
 
 def select_wave_item_alternative(
