@@ -7428,3 +7428,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   treasury families.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-294: Client-profile source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`, and this ledger.
+- Finding: direct client restriction and sustainability preference mapper coverage still lived in
+  the broad source-product context test module after client-profile mapping had been extracted.
+- Action: moved client-profile source mapper tests into a focused client-profile source-context test
+  module and removed now-stale imports from the composition test.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py`; focused client-profile/context
+  regressions passed with 14 tests.
+- Follow-up: continue splitting liquidity and treasury direct source-family tests out of the
+  composition suite.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
