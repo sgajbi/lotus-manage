@@ -9014,3 +9014,1167 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   compatibility gaps.
 - Wiki decision: no wiki source change required; this is an internal compatibility fix with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-370: Mandate service error extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_errors.py`,
+  `tests/unit/dpm/mandates/test_mandate_errors.py`, selected mandate API regressions, and this
+  ledger.
+- Finding: `mandate_service.py` still defined reusable mandate service exception carrier classes
+  directly, keeping shared service error vocabulary embedded in a large orchestration module.
+- Action: extracted mandate lookup, diff, source-availability, health, and monitoring-run error
+  types into a focused service error module, preserved the existing `mandate_service` import surface
+  for routers and tests, and added direct tests for compatibility aliases, exception families, and
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_errors.py`; direct mandate error tests and selected
+  mandate API regressions passed with 26 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` by moving pure diff, command-center, and
+  source-resolution support helpers into directly tested modules while preserving route-facing
+  service compatibility.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-371: Mandate command-center projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: `mandate_service.py` still owned pure command-center projection helpers for
+  supportability-state classification, monitoring-run filter matching, attention-bucket rollups,
+  recommended-action rollups, and severity ordering.
+- Action: extracted the command-center helper cluster into a focused module, preserved existing
+  private service aliases for compatibility, removed now-unused enum imports from the service, and
+  added direct tests for source-readiness supportability mapping, bounded filter matching, bucket
+  sorting and reason ranking, recommended-action ordering, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct command-center helper
+  tests and selected mandate API regressions passed with 29 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure mandate diff and source-resolution helpers while keeping
+  repository orchestration in `mandate_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-372: Mandate diff projection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, selected mandate API regressions, and this
+  ledger.
+- Finding: `mandate_service.py` still owned mandate diff DTOs, recursive payload comparison, and
+  materiality classification even though the service method only needs to orchestrate repository
+  version selection.
+- Action: extracted the mandate diff DTO and pure diff projection helpers into a focused module,
+  kept repository version selection in `mandate_service.py`, preserved the existing service import
+  and private-helper compatibility surface, and added direct helper tests for recursive comparison,
+  lineage-ignore behavior, deterministic sorting, materiality classification, diff projection, and
+  export aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_diff.py`; direct mandate diff helper tests and
+  selected mandate API regressions passed with 29 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting optional mandate source-resolution helpers while keeping
+  core-resolver orchestration in `mandate_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-373: Mandate optional-source readiness extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_optional_sources.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: `mandate_service.py` still owned reusable optional core-source resolver and readiness
+  screening logic for missing resolver methods, resolver errors, supportability states, data-quality
+  statuses, and benchmark-assignment lifecycle status.
+- Action: extracted optional source resolution and readiness helpers into a focused service helper
+  module, kept refresh orchestration and hard failure handling in `mandate_service.py`, preserved
+  existing private service helper aliases for compatibility, and added direct tests for resolver
+  dispatch, absent optional methods, resolver error family mapping, ready/degraded/stale source
+  screening, benchmark assignment status screening, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_optional_sources.py`; direct optional-source helper
+  tests and selected mandate API regressions passed with 33 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking mandate refresh orchestration by grouping source-family resolution
+  calls without moving router or HTTP concerns into services.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-374: Mandate optional-source bundle extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_optional_sources.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: even after the readiness helpers were extracted, `refresh_mandate_from_core` still
+  contained a long repeated sequence for resolving each optional source family and assembling the
+  unavailable-source list, making the service harder to scan as orchestration.
+- Action: added a typed `DpmMandateOptionalSources` bundle and moved source-family resolution
+  assembly into `resolve_mandate_optional_sources`; the service now obtains the bundle and passes it
+  into mandate twin and health-input builders while preserving private helper compatibility aliases.
+  Direct tests now verify bundle typing, source-family request parameters, degraded-family
+  filtering, and alias/export surfaces.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_optional_sources.py`; direct optional-source helper
+  tests and selected mandate API regressions passed with 34 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `mandate_service.py` by extracting monitoring-run assembly and
+  portfolio-manager book membership helpers where they remain pure service support logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-375: Mandate monitoring-run support extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected monitoring API regressions,
+  and this ledger.
+- Finding: `run_mandate_monitoring_once` still mixed repository orchestration with reusable
+  monitoring-run support logic for run-id generation, distribution counting, exception run-id
+  attachment, and terminal run projection.
+- Action: extracted the pure monitoring-run support functions into a focused service helper module,
+  kept mandate lookup, health recalculation, persistence, and error propagation in
+  `mandate_service.py`, preserved private service helper aliases for compatibility, and added
+  direct tests for deterministic run ids, distribution counts, immutable exception run-id
+  attachment, terminal run projection, aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct monitoring-run helper
+  tests and selected monitoring API regressions passed with 16 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` by extracting portfolio-manager book
+  membership mandate-id resolution and monitoring command-center assembly where they remain pure
+  support logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-376: Mandate PM-book membership helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_pm_book.py`,
+  `tests/unit/dpm/mandates/test_mandate_pm_book.py`, selected monitoring API regressions, and this
+  ledger.
+- Finding: `mandate_service.py` still owned portfolio-manager book membership mandate-id resolution
+  even though the logic is reusable support code for resolving source-owned PM book membership
+  products into locally persisted mandate snapshots.
+- Action: extracted PM-book membership mandate-id resolution into a focused service helper module,
+  preserved the existing `mandate_service.mandate_ids_from_pm_book_membership` router import
+  surface, and added direct tests for successful member resolution, missing mandate snapshots,
+  empty membership payloads, service import compatibility, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_pm_book.py`; direct PM-book helper tests and selected
+  monitoring API regressions passed with 15 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue extracting command-center summary assembly and health recalculation support
+  where repository orchestration can remain in `mandate_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-377: Mandate command-center summary extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected monitoring API regressions,
+  and this ledger.
+- Finding: `get_command_center_summary` still mixed repository reads with DTO projection,
+  health-state filtering, partial-readiness reason assembly, supportability classification, and
+  attention/recommended-action aggregation.
+- Action: moved command-center summary projection into `build_command_center_summary` in the
+  existing command-center helper module, kept repository reads and monitoring-run selection in
+  `mandate_service.py`, preserved private compatibility aliases, and added direct tests for
+  populated and empty summary projection, selected health-state filtering, source-run provenance,
+  partial reasons, limit handling, supportability, aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct command-center helper
+  tests and selected monitoring API regressions passed with 18 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting health recalculation support and repository lookup wrappers where
+  they can be made directly testable without hiding orchestration.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-378: Mandate health-result helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_health_result.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_result.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: mandate refresh and recalculation paths both performed the same health snapshot
+  calculation followed by monitoring-exception derivation from the mandate twin source lineage.
+- Action: extracted the repeated health-calculation result assembly into a focused helper returning
+  a typed `DpmMandateHealthCalculationResult`, kept persistence and mismatch validation in
+  `mandate_service.py`, preserved the service compatibility alias, and added direct tests for
+  snapshot/exception projection, service import compatibility, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_health_result.py`; direct health-result helper tests
+  and selected mandate API regressions passed with 26 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting small repository lookup wrappers or move to another service hotspot
+  once the remaining `mandate_service.py` orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-379: Wave item collection update extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_collection.py`,
+  `tests/unit/dpm/waves/test_wave_item_collection.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` repeated the same item-list replacement plus aggregate-metric
+  recalculation block across selection, approval, staging, handoff, and cancellation workflows.
+- Action: extracted `wave_with_items_and_aggregate` into a focused wave helper module, replaced the
+  repeated model-copy blocks in `wave_service.py`, preserved a private service alias for
+  compatibility, and added direct tests for metric recomputation, handoff-ref extra updates, alias
+  preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_collection.py`; direct wave item collection tests and
+  selected wave API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting wave state guard/idempotent replay
+  checks or workflow persistence patterns where behavior can be directly tested.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-380: Wave state guard extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_state_guard.py`,
+  `tests/unit/dpm/waves/test_wave_state_guard.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` repeated idempotent replay checks and invalid-state validation error
+  construction across source-check, simulation, selection, approval, staging, handoff, and
+  cancellation workflows.
+- Action: extracted wave state replay and allowed-state guard helpers into a focused module,
+  replaced inline workflow guard checks in `wave_service.py`, preserved private service aliases, and
+  added direct tests for replay-state matching, allowed-state acceptance, governed error code/message
+  construction, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_state_guard.py`; direct wave state guard tests and selected
+  wave API regressions passed with 137 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update helpers
+  or selection workflow support where behavior can be directly covered.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-381: Wave selection guard extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_selection_guard.py`,
+  `tests/unit/dpm/waves/test_wave_selection_guard.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `select_wave_item_alternative` still embedded wave-item lookup and alternative-set
+  availability validation inside the larger selection orchestration flow.
+- Action: extracted selectable wave-item validation into a focused helper that returns the governed
+  wave item or raises the existing bounded lookup/validation errors, kept construction selection and
+  proof-pack orchestration in `wave_service.py`, preserved a private service alias, and added direct
+  tests for successful lookup, missing items, missing alternatives, alias preservation, and export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_selection_guard.py`; direct wave selection guard tests and
+  selected wave API regressions passed with 137 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting workflow event metadata builders or
+  persisted transition update support where it improves readability without hiding domain behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-382: Wave workflow metadata extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_workflow_metadata.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave API regressions, and this
+  ledger.
+- Finding: approval, staging, handoff, and cancellation workflows still built audit/event metadata
+  inline, duplicating optional-comment handling and no-external-execution boundary fields.
+- Action: extracted workflow event metadata builders into a focused helper module, replaced inline
+  metadata dictionaries in `wave_service.py`, preserved private service aliases, and added direct
+  tests for approval exception counts, stage comments, handoff no-external-execution evidence,
+  cancellation no-external-execution evidence, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_workflow_metadata.py`; direct workflow metadata tests and
+  selected wave API regressions passed with 138 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or construction-selection orchestration helpers where they stay domain-specific and testable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-383: Wave selection metadata extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_workflow_metadata.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave API regressions, and this
+  ledger.
+- Finding: item-selection still built its audit event metadata inline while other wave workflow
+  event metadata had already moved into a directly tested helper module.
+- Action: added `selection_event_metadata` to the wave workflow metadata helper, replaced the inline
+  selection metadata dictionary in `wave_service.py`, preserved the private service alias, and
+  expanded direct metadata tests to cover selected alternative, alternative set, proof-pack id, and
+  proof-pack state evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_workflow_metadata.py`; direct workflow metadata tests and
+  selected wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or construction-selection orchestration helpers where the service can remain workflow-oriented.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-384: Wave construction-selection adapter extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_construction_selection.py`,
+  `tests/unit/dpm/waves/test_wave_construction_selection.py`, selected wave API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still imported `construction_service` directly to select a construction
+  alternative and translate construction lookup failures into bounded wave errors.
+- Action: extracted the construction selection call and wave-specific error mapping into a focused
+  adapter module, removed the direct construction-service import from `wave_service.py`, preserved a
+  private service alias for compatibility, and added direct tests for delegation arguments, bounded
+  lookup-error mapping, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_construction_selection.py`; direct wave construction
+  selection tests and selected wave API regressions passed with 136 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or moving to the next largest service hotspot once wave orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-385: Wave created-id helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_creation.py`,
+  `tests/unit/dpm/waves/test_wave_creation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still generated durable wave identifiers directly with `uuid`, while
+  the rest of the create-wave request hashing and preview-promotion mechanics already lived in
+  `wave_creation.py`.
+- Action: moved created-wave id generation into `create_created_wave_id`, removed the direct `uuid`
+  dependency from `wave_service.py`, and added a deterministic direct test for the governed
+  `dwv_` identifier prefix and 12-character entropy slice.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_creation.py`; direct wave creation tests and selected wave
+  API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or move to the next largest service hotspot once wave orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-386: Proof pack handoff-ref helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_handoff_refs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_handoff_refs.py`, selected proof-pack service
+  regressions, and this ledger.
+- Finding: `proof_pack_service.py` still embedded append-only handoff reference lookup, hydration,
+  and idempotent append mechanics inside the public proof-pack orchestration service.
+- Action: extracted handoff reference support into a focused helper module, kept public proof-pack
+  not-generated error translation in `proof_pack_service.py`, and added direct tests for latest
+  append-only reference selection, immutable hydration overlay, idempotent handoff reference
+  generation, and stored-ref to evidence-ref identity preservation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_handoff_refs.py`; direct handoff-ref tests and
+  selected proof-pack service regressions passed with 16 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `proof_pack_service.py` by extracting selected-alternative source
+  resolution or mandate-evidence resolution where the service can remain orchestration-focused.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-387: Proof pack selected-source extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_selected_source.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_selected_source.py`, selected proof-pack service
+  regressions, and this ledger.
+- Finding: selected-alternative proof-pack generation still performed source lookup, selected
+  alternative validation, optional selection lookup, and linked-run degradation inline in the public
+  service function.
+- Action: extracted selected-alternative source resolution into a focused helper that returns the
+  alternative set, persisted selection, optional linked run, and workflow decisions while preserving
+  existing missing-source validation and missing-run degradation behavior; updated service
+  regressions to import the source validation error from the core proof-pack owner.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_selected_source.py`; direct selected-source
+  tests and selected proof-pack service regressions passed with 16 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `proof_pack_service.py` by extracting mandate evidence resolution or
+  proof-pack persistence/idempotency replay support where direct coverage remains clear.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-388: Proof pack mandate-evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_mandate_evidence.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_mandate_evidence.py`, selected proof-pack service
+  regressions, and this ledger.
+- Finding: proof-pack generation still resolved mandate twin and health evidence inline, mixing
+  portfolio-ownership validation and evidence-gap construction into the orchestration service.
+- Action: extracted mandate evidence resolution into a focused helper that returns the optional
+  twin, optional health snapshot, and bounded evidence gap codes; updated run-based and
+  selected-alternative proof-pack paths to consume the helper result directly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_mandate_evidence.py`; direct mandate-evidence
+  tests and selected proof-pack service regressions passed with 16 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `proof_pack_service.py` by extracting proof-pack idempotency replay
+  or portfolio-memory handoff context support where behavior remains directly testable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-389: Proof pack replay lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`, `src/api/services/proof_pack_replay.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_replay.py`, selected proof-pack service regressions,
+  and this ledger.
+- Finding: run-based and selected-alternative proof-pack generation duplicated replay lookup logic
+  for idempotency-key matches and immutable source-identity matches.
+- Action: extracted replay lookup into a focused helper that preserves idempotency precedence before
+  falling back to proof-pack source identity; updated both generation paths to use the helper and
+  added direct tests for idempotency replay, source-identity fallback, and no-match behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_replay.py`; direct replay tests and selected
+  proof-pack service regressions passed with 15 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing proof-pack and other service hotspots by extracting only reusable
+  support logic with direct tests; keep proof-pack generation orchestration in the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-390: Outcome review source-search extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_search.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_search.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: outcome-review source-lineage search normalization, filtering, facet counting, bounded
+  scan behavior, and pagination were embedded in `outcome_review_service.py`, making source-boundary
+  search behavior harder to test directly.
+- Action: extracted source-lineage search into a focused helper returning a typed search page,
+  preserved the public service tuple contract for existing routers, and added direct tests for
+  blank-filter normalization, conjunctive source-owner/source-type matching, sorted facet counts,
+  pagination, bounded source-scan behavior, and current latest-first repository ordering.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_search.py`; direct outcome-review
+  search tests and selected API regressions passed with 9 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing outcome-review or wave service hotspots by extracting creation event
+  assembly, content-hash support, or transition support only where direct tests can pin behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-391: Outcome review creation-support extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_creation.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_creation.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: outcome-review creation still embedded canonical content hashing and created-event
+  type/source-lineage assembly inside the orchestration service.
+- Action: extracted review content-hash generation, bounded created-event type mapping, and created
+  event assembly into a focused helper while keeping idempotency, review construction, and
+  persistence in `outcome_review_service.py`; added direct tests for state-to-event mapping,
+  expected/realized source-lineage projection, stable hashing, and hash drift when source evidence
+  changes.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_creation.py`; direct creation-support
+  tests and selected outcome-review API regressions passed with 8 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing service hotspots by extracting dimension-input validation or
+  refresh-event support where tests can pin validation and event semantics directly.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-392: Outcome review refresh-event extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_refresh.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_refresh.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: source-refresh event identity, bounded event type, state/reason projection, and
+  expected-plus-realized source lineage assembly were embedded in the refresh orchestration path.
+- Action: extracted source-refresh event assembly into a focused helper while preserving lookup,
+  comparison, persistence append, and return orchestration in `outcome_review_service.py`; added a
+  direct deterministic test for event identity, timestamp, actor, state, reason codes, and source
+  lineage projection.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_refresh.py`; direct refresh-event tests
+  and selected outcome-review API regressions passed with 6 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing service hotspots; evaluate whether dimension-input validation should
+  move only after preserving router-owned validation-error imports cleanly.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-393: Rebalance operation identity extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_operation_identity.py`,
+  `tests/unit/api/test_rebalance_operation_identity.py`, selected runtime/service edge regressions,
+  and this ledger.
+- Finding: rebalance simulation orchestration directly formatted generated correlation ids and
+  batch analysis ids with inline UUID slicing, leaving identifier conventions untested outside
+  broad endpoint flows.
+- Action: extracted generated operation identity helpers for rebalance correlation ids and batch
+  analysis ids, preserved caller-supplied correlation ids, removed the direct UUID dependency from
+  the orchestration service, and added direct deterministic tests for each identifier convention.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and `rebalance_operation_identity.py`; direct
+  identity tests and selected runtime/service edge regressions passed with 33 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing rebalance or wave service hotspots where extraction removes
+  duplicated orchestration support or directly testable boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-394: Wave approval-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_approval_transition.py`,
+  `tests/unit/dpm/waves/test_wave_approval_transition.py`, selected wave workflow/API
+  regressions, and this ledger.
+- Finding: `approve_wave` still embedded item approval mapping, eligible-item validation,
+  aggregate refresh, target-state selection, and approval event assembly inside the public workflow
+  orchestration function.
+- Action: extracted approval transition assembly into a focused helper that returns the approved
+  wave or raises the existing bounded validation error, preserved the private workflow metadata
+  alias expected by existing tests, and added direct tests for full approval, approval with
+  exceptions, no eligible items, approval metadata, aggregate refresh, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_approval_transition.py`; direct approval-transition tests
+  and selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting stage, handoff, or cancel transition
+  assembly using the same directly tested pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-395: Wave stage-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_stage_transition.py`,
+  `tests/unit/dpm/waves/test_wave_stage_transition.py`, selected wave workflow/API regressions, and
+  this ledger.
+- Finding: `stage_wave` still embedded item staging, no-external-execution diagnostics, eligible
+  item validation, aggregate refresh, and stage event assembly inside the public workflow
+  orchestration function.
+- Action: extracted stage transition assembly into a focused helper that returns the staged wave or
+  raises the existing bounded validation error, preserved the private workflow metadata alias
+  expected by existing tests, and added direct tests for staging approved items, preserving
+  unapproved exception items, no eligible items, stage metadata, aggregate refresh, and export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_stage_transition.py`; direct stage-transition tests and
+  selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting handoff or cancel transition
+  assembly using the same directly tested pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-396: Wave handoff-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_handoff_transition.py`,
+  `tests/unit/dpm/waves/test_wave_handoff_transition.py`, selected wave workflow/API regressions,
+  and this ledger.
+- Finding: `handoff_wave` still embedded handoff item transition mapping, operations handoff-ref
+  construction, no-external-execution boundary evidence, aggregate refresh, and handoff event
+  assembly inside the public workflow orchestration function.
+- Action: extracted handoff transition assembly into a focused helper that returns the
+  handoff-ready wave or raises the existing bounded validation error, preserved the private
+  workflow metadata alias expected by existing tests, and added direct tests for handoff ref
+  creation, partial handoff, no eligible items, no external execution claim, handoff metadata,
+  aggregate refresh, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_handoff_transition.py`; direct handoff-transition tests
+  and selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting cancel transition assembly or other
+  remaining workflow support that can be directly tested.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-397: Wave cancel-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_cancel_transition.py`,
+  `tests/unit/dpm/waves/test_wave_cancel_transition.py`, selected wave workflow/API regressions, and
+  this ledger.
+- Finding: `cancel_wave` still embedded item cancellation, no-external-execution diagnostics,
+  aggregate refresh, cancel event assembly, and invalid transition mapping inside the public
+  workflow orchestration function.
+- Action: extracted cancel transition assembly into a focused helper that returns the cancelled wave
+  or maps invalid domain transitions to the existing bounded validation error, preserved the private
+  workflow metadata alias expected by existing tests, and added direct tests for cancellation
+  metadata, handoff-ready item preservation, invalid transition mapping, aggregate refresh, and
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_cancel_transition.py`; direct cancel-transition tests and
+  selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` around remaining orchestration support or move to
+  the next service hotspot once workflow transition assembly is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-398: Wave item-selection transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_item_selection_transition.py`,
+  `tests/unit/dpm/waves/test_wave_item_selection_transition.py`, selected wave workflow/API
+  regressions, and this ledger.
+- Finding: `select_wave_item_alternative` still embedded selected-item mutation, proof-pack state
+  projection, aggregate refresh, and item-selection audit event assembly inside the public workflow
+  orchestration function after performing lookup, state guarding, construction selection, and
+  persistence.
+- Action: extracted item-selection transition assembly into a focused helper while keeping lookup,
+  state guards, construction repository selection, and persistence in the service; preserved the
+  private workflow metadata alias expected by existing tests; and added direct tests for selected
+  item replacement, retained-item preservation, aggregate refresh, degraded proof-pack metadata,
+  generated proof-pack metadata, selection event evidence, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_selection_transition.py`; direct item-selection
+  transition tests and selected wave workflow/API regressions passed with 147 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` only where remaining orchestration support has a
+  directly testable boundary; otherwise move to the next service hotspot.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-399: Wave report-input assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_report_input.py`,
+  `tests/unit/dpm/waves/test_wave_report_input.py`, selected wave report/API regressions, and this
+  ledger.
+- Finding: `get_report_input` still assembled supportability, proof-pack posture, portfolio-memory
+  context, and external-execution boundary error mapping inside the public service function instead
+  of keeping the service focused on lookup and orchestration.
+- Action: extracted report-input assembly into a focused helper that builds supportability and
+  proof-pack posture, resolves optional portfolio-memory report context, maps core boundary
+  failures to the existing bounded service error, and leaves `wave_service.py` responsible only for
+  wave lookup and delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_report_input.py`; direct report-input tests and selected
+  wave report/API regressions passed with 145 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` only where remaining workflow functions still mix
+  orchestration with directly testable domain assembly; otherwise shift to the next service hotspot.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-400: Mandate monitoring run item calculation extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate monitoring
+  regressions, and this ledger.
+- Finding: `run_mandate_monitoring_once` still mixed repository writes with per-mandate health
+  recalculation, exception derivation, requested as-of-date projection, and monitoring-run id
+  attachment inside the service loop.
+- Action: extracted per-mandate monitoring calculation into a focused result helper that returns
+  the health snapshot and run-scoped exceptions, preserving service ownership of repository reads,
+  writes, run summary distribution, and monitoring-run persistence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct monitoring-run helper
+  tests and selected mandate API regressions passed with 33 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `mandate_service.py` where source resolution, persistence, or
+  command-center orchestration can be separated without hiding repository ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-401: Mandate refresh assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_refresh.py`,
+  `tests/unit/dpm/mandates/test_mandate_refresh.py`, selected mandate refresh/API regressions, and
+  this ledger.
+- Finding: `refresh_mandate_from_core` still mixed core source resolution, model-target fallback,
+  optional source assembly, market-data coverage resolution, twin compilation, health input
+  assembly, source error mapping, health calculation, and repository persistence in a single
+  service function.
+- Action: extracted source-backed refresh result assembly into a focused helper that resolves core
+  inputs, maps core source errors to bounded mandate service errors, builds the digital twin and
+  health result, and returns a refresh result for the service to persist.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_refresh.py`; direct mandate-refresh tests and
+  selected mandate API regressions passed with 32 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing mandate service persistence/orchestration seams where helper
+  extraction produces directly testable private-banking source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-402: Mandate diff version resolution extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, selected mandate API regressions, and this
+  ledger.
+- Finding: `diff_mandate_versions` still embedded requested version-pair validation, latest-two
+  fallback selection, unknown-version error mapping, and diff construction inside the service
+  function even though this is mandate-diff domain behavior.
+- Action: moved version resolution into `build_mandate_diff_for_versions`, preserving repository
+  lookup and missing-mandate handling in the service while adding direct tests for explicit version
+  pairs, default latest-two comparison, incomplete version pairs, unknown versions, helper export,
+  and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_diff.py`; direct mandate-diff tests and selected
+  mandate API regressions passed with 33 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue moving domain-specific selection and validation rules out of
+  `mandate_service.py` while keeping repository access and API-facing orchestration there.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-403: Rebalance simulation execution-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_simulation_execution_context.py`,
+  `tests/unit/api/test_rebalance_simulation_execution_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `simulate_rebalance` still assembled request hash, resolved correlation id, policy-pack
+  context, policy-pack replay flag, and policy-resolution observability fields inline before
+  delegating to sync execution.
+- Action: extracted simulation execution-context assembly into a focused helper that returns the
+  request hash, resolved correlation id, selected policy definition, replay flag, and policy
+  resolution metadata, keeping `simulate_rebalance` focused on logging and sync execution
+  delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and
+  `rebalance_simulation_execution_context.py`; direct execution-context tests and selected
+  rebalance API/runtime regressions passed with 140 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing rebalance orchestration around async submission and batch execution
+  where extracted helpers improve auditability without hiding runtime gates.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-404: Rebalance batch execution-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_batch_execution_context.py`,
+  `tests/unit/api/test_rebalance_batch_execution_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `execute_batch_analysis` still assembled generated batch id, analyze policy-pack
+  context, and policy-resolution observability fields inline before delegating to batch scenario
+  execution.
+- Action: extracted batch execution-context assembly into a focused helper that returns the batch
+  id, selected policy definition, and policy resolution metadata, keeping batch analysis focused on
+  logging and execution delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and `rebalance_batch_execution_context.py`; direct
+  batch execution-context tests and selected rebalance API/runtime regressions passed with 140
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing rebalance async submission and manual execution paths for
+  similarly testable context assembly or supportability-boundary extraction.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-405: Rebalance async submission-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_async_submission_context.py`,
+  `tests/unit/api/test_rebalance_async_submission_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `submit_and_optionally_execute_async_analysis` still mixed async support-service
+  resolution, supportability-store unavailable mapping, analyze-async policy resolution,
+  execution-mode resolution, and request-json assembly inside the public orchestration function.
+- Action: extracted async submission-context assembly into a focused helper that returns the
+  support service, persisted request payload, execution mode, and policy resolution metadata while
+  preserving service-level support-service factory injection for test and runtime override
+  compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py`,
+  `rebalance_async_submission_context.py`, and the related rebalance execution-context helpers;
+  direct async submission-context tests and selected rebalance API/runtime regressions passed with
+  144 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git
+  diff --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing rebalance manual execution and async runner seams for directly
+  testable supportability and operation-lifecycle boundaries.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-406: Outcome review dimension-input extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_dimensions.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_dimensions.py`, selected outcome review/API
+  regressions, and this ledger.
+- Finding: outcome review preview and refresh flows still depended on a private service function
+  for expected-versus-realized dimension input assembly and missing-evidence validation, leaving a
+  domain validation boundary embedded inside orchestration.
+- Action: extracted dimension configuration, validation error, and dimension input assembly into a
+  focused helper module with direct tests for configured dimension projection, missing expected
+  evidence, missing realized evidence, helper export surface, and service import compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_dimensions.py`; direct outcome
+  dimension tests and selected outcome/proof-pack regressions passed with 107 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting outcome review report/AI input context assembly or creation
+  support where it produces directly testable source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-407: Outcome review report-input context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_report_inputs.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_report_inputs.py`, selected outcome/proof-pack
+  regressions, and this ledger.
+- Finding: outcome review report-input and AI-evidence input accessors duplicated
+  portfolio-memory context assembly inside the service, keeping downstream handoff context
+  construction embedded in lookup orchestration.
+- Action: extracted outcome report/AI evidence input builders and portfolio-memory context
+  assembly into a focused helper module, preserving service ownership of review lookup while adding
+  direct tests for missing repository gating, portfolio id propagation, report input context
+  passing, AI evidence context passing, export surface, and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_report_inputs.py`; direct outcome
+  report-input tests and selected outcome/proof-pack regressions passed with 113 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack report/AI input helpers for the same handoff-context
+  duplication pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-408: Proof-pack report-input context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_report_inputs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_report_inputs.py`, selected proof-pack/API
+  regressions, and this ledger.
+- Finding: proof-pack report-input and AI-evidence input accessors duplicated portfolio-memory
+  context assembly inside the service, mirroring the outcome-review handoff-context duplication and
+  leaving downstream handoff context construction embedded in lookup orchestration.
+- Action: extracted proof-pack report/AI evidence input builders and portfolio-memory context
+  assembly into a focused helper module, preserving service ownership of proof-pack lookup while
+  adding direct tests for missing repository gating, portfolio id propagation, report input context
+  passing, AI evidence context passing, export surface, and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_report_inputs.py`; direct proof-pack
+  report-input tests and selected proof-pack/outcome regressions passed with 119 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flows for source/replay assembly that can be
+  directly tested without hiding persistence ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-409: Proof-pack persistence retention extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_persistence.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_persistence.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack generation orchestration still owned the append-only persistence retention
+  calculation directly, leaving the seven-year evidence-retention policy hidden in the service
+  rather than in a small supportability helper with direct tests.
+- Action: extracted proof-pack persistence and retention-expiry calculation into a focused helper,
+  kept proof-pack generation orchestration in the service, and added direct tests for deterministic
+  seven-year retention expiry and the helper export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_persistence.py`; direct proof-pack
+  persistence tests and selected proof-pack service/repository regressions passed with 19 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flow for source-resolution and builder-input
+  assembly that can be separated without moving repository lookup ownership out of the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-410: Proof-pack handoff-ref lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_handoff_refs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_handoff_refs.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack report-input and AI-evidence ref accessors repeated the hydrated-ref,
+  append-only stored-ref, and missing-generated-ref decision path inside the service, making the
+  supportability fallback harder to test directly.
+- Action: extracted the common handoff-ref resolution decision into the handoff-ref helper,
+  preserving service-specific generated-ref exceptions while adding direct tests for hydrated-ref
+  preference, latest stored-ref fallback, and missing-ref return behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_handoff_refs.py`; direct proof-pack
+  handoff-ref tests and selected proof-pack service regressions passed with 19 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flow for builder-input assembly that can be
+  separated without moving source lookup or exception ownership out of the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-411: Outcome review persistence retention extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_persistence.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_persistence.py`, selected outcome-review
+  regressions, and this ledger.
+- Finding: outcome review creation orchestration still owned the seven-year evidence-retention
+  calculation directly, duplicating the persistence-policy pattern found in proof-pack generation.
+- Action: extracted outcome-review persistence and retention-expiry calculation into a focused
+  helper, kept review creation orchestration in the service, and added direct tests for
+  deterministic seven-year retention expiry and the helper export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_persistence.py`; direct outcome
+  review persistence tests and selected outcome/API regressions passed with 40 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing outcome-review creation for event/content assembly boundaries that
+  can be tested directly without moving repository idempotency ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-412: Outcome review creation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_creation.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_creation.py`, selected outcome-review regressions,
+  and this ledger.
+- Finding: outcome review creation orchestration still assembled the full persisted review object
+  directly after idempotency validation, mixing repository control flow with pure review/event
+  payload assembly already partially owned by `outcome_review_creation.py`.
+- Action: extracted persisted outcome-review assembly into the creation helper, kept idempotency,
+  clock/id generation, and persistence in the service, and added direct tests for source lineage,
+  identity, event, hash, actor, correlation, and idempotency propagation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_creation.py`; direct outcome review
+  creation tests and selected outcome/API regressions passed with 41 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing outcome refresh and proof-pack generation for pure event/input
+  assembly that can move out of orchestration services with direct tests.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-413: Outcome review refresh assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_refresh.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_refresh.py`, selected outcome-review regressions,
+  and this ledger.
+- Finding: outcome review source-refresh orchestration still performed dimension comparison and
+  refreshed-event assembly inline, mixing repository lookup/append control flow with pure refresh
+  payload assembly.
+- Action: extracted source-refresh comparison and event assembly into the refresh helper, kept
+  review lookup, clock/suffix generation, and append persistence in the service, and added direct
+  tests that prove snapshot comparison output drives refreshed-event state, reason codes, and
+  source lineage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_refresh.py`; direct outcome review
+  refresh tests and selected outcome/API regressions passed with 42 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation and rebalance orchestration for pure
+  builder-input assembly that can move behind direct helper tests.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-414: Proof-pack generation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_generation.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_generation.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack generation orchestration still mapped resolved run, selected-alternative,
+  mandate-evidence, workflow-decision, and regime-stress inputs directly into core proof-pack
+  builders, mixing source lookup/replay/persistence control flow with pure builder-input assembly.
+- Action: extracted run and selected-alternative proof-pack assembly into a focused helper, kept
+  replay, source lookup, mandate evidence lookup, and persistence in the service, and added direct
+  tests for resolved source/evidence propagation into the core builders.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_generation.py`; direct proof-pack generation
+  tests and selected proof-pack service/builder regressions passed with 43 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed;
+  service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing generation services for remaining source lookup and persistence
+  seams that can be clarified without hiding ownership or idempotency behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-415: Mandate health persistence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_health_persistence.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_persistence.py`, selected mandate regressions, and
+  this ledger.
+- Finding: mandate refresh, recalculation, and monitoring flows repeated health-snapshot and
+  monitoring-exception persistence loops in the orchestration service, making evidence persistence
+  behavior harder to test directly.
+- Action: extracted mandate health evidence persistence into a focused helper, kept source
+  resolution, health calculation, monitoring-run aggregation, and repository lookup ownership in
+  the service, and added direct tests for twin-backed and health-only persistence paths plus the
+  service compatibility alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_health_persistence.py`; direct mandate health
+  persistence tests and selected mandate refresh/API regressions passed with 36 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing mandate monitoring orchestration for aggregation boundaries that
+  can be isolated without hiding lookup or run lifecycle ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-416: Mandate monitoring aggregation extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_monitoring_run.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate regressions, and this
+  ledger.
+- Finding: mandate monitoring orchestration still owned mutable health-distribution,
+  source-readiness, and exception-count aggregation inside the service loop, mixing run accounting
+  with mandate lookup, health calculation, and persistence flow.
+- Action: introduced a monitoring-run accumulator in the monitoring helper, kept repository lookup
+  and run lifecycle orchestration in the service, and added direct tests proving repeated mandate
+  results update health distribution, source-readiness summary, and exception count consistently.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_monitoring_run.py`; direct mandate monitoring
+  helper tests and selected mandate API regressions passed with 31 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing mandate service read-model and command-center assembly boundaries
+  for directly testable extraction opportunities.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-417: Mandate command-center run selection extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate regressions, and this
+  ledger.
+- Finding: command-center summary orchestration still embedded latest monitoring-run selection in
+  the service, while the command-center helper already owned filter semantics and summary
+  projection.
+- Action: extracted latest command-center run selection into the command-center helper, kept
+  repository reads and active-exception lookup in the service, and added direct tests for first
+  matching run selection, missing-match behavior, export surface, and service compatibility alias.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct mandate command-center
+  helper tests and selected mandate API regressions passed with 32 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing command-center service orchestration for active-exception query
+  and summary-input boundaries that can be clarified without hiding repository ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

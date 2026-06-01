@@ -1,3 +1,5 @@
+import uuid
+
 from src.api.services.wave_event_evidence import (
     build_wave_event,
     idempotency_key_hash,
@@ -25,6 +27,10 @@ def create_wave_request_hash(
             "portfolios": portfolios,
         }
     )
+
+
+def create_created_wave_id() -> str:
+    return f"dwv_{uuid.uuid4().hex[:12]}"
 
 
 def promote_preview_to_created_wave(
@@ -60,4 +66,8 @@ def promote_preview_to_created_wave(
     )
 
 
-__all__ = ["create_wave_request_hash", "promote_preview_to_created_wave"]
+__all__ = [
+    "create_created_wave_id",
+    "create_wave_request_hash",
+    "promote_preview_to_created_wave",
+]

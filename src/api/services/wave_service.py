@@ -1,30 +1,30 @@
-import uuid
-
 from src.api.request_models import RebalanceRequest
-from src.api.services import construction_service
 from src.api.services.wave_aggregate_metrics import (
-    aggregate_wave_items as _aggregate,
     simulation_result_state,
 )
+from src.api.services.wave_approval_transition import build_approved_wave as _build_approved_wave
+from src.api.services.wave_cancel_transition import build_cancelled_wave as _build_cancelled_wave
+from src.api.services.wave_construction_selection import (
+    select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
+)
 from src.api.services.wave_creation import (
+    create_created_wave_id as _create_created_wave_id,
     create_wave_request_hash as _create_wave_request_hash,
     promote_preview_to_created_wave as _promote_preview_to_created_wave,
 )
-from src.api.services.wave_event_evidence import (
-    build_wave_event as _event,
-)
-from src.api.services.wave_event_append import append_same_state_event as _append_event
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
-from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
-from src.api.services.wave_item_transitions import (
-    approve_item as _approve_item,
-    cancel_item as _cancel_item,
-    handoff_item as _handoff_item,
-    stage_item as _stage_item,
+from src.api.services.wave_event_append import append_same_state_event
+from src.api.services.wave_event_evidence import build_wave_event
+from src.api.services.wave_handoff_transition import (
+    build_handoff_ready_wave as _build_handoff_ready_wave,
+)
+from src.api.services.wave_item_collection import wave_with_items_and_aggregate
+from src.api.services.wave_item_selection_transition import (
+    build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
 )
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_persistence import (
@@ -33,20 +33,30 @@ from src.api.services.wave_persistence import (
 )
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
-from src.api.services.wave_report_context import portfolio_memory_context_for_report
-from src.api.services.wave_selection_item import (
-    with_selection_and_proof_pack as _with_selection_and_proof_pack,
-)
+from src.api.services.wave_report_input import build_report_input_for_wave
+from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation import build_simulated_wave
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
 from src.api.services.wave_source_check import build_source_checked_wave
+from src.api.services.wave_state_guard import (
+    require_wave_state as _require_wave_state,
+    wave_state_is_idempotent as _wave_state_is_idempotent,
+)
+from src.api.services.wave_stage_transition import build_staged_wave as _build_staged_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
+from src.api.services.wave_workflow_metadata import (
+    approval_event_metadata,
+    cancel_event_metadata,
+    handoff_event_metadata,
+    selection_event_metadata,
+    stage_event_metadata,
+)
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -54,19 +64,22 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import (
     DpmRebalanceWave,
-    DpmWaveInvalidTransitionError,
     DpmWaveRepository,
-    DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    WaveState,
-    apply_wave_transition,
-    build_wave_report_input,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
 _validate_trigger = validate_trigger_or_raise
+_approval_event_metadata = approval_event_metadata
+_stage_event_metadata = stage_event_metadata
+_handoff_event_metadata = handoff_event_metadata
+_cancel_event_metadata = cancel_event_metadata
+_selection_event_metadata = selection_event_metadata
+_event = build_wave_event
+_append_event = append_same_state_event
+_wave_with_items_and_aggregate = wave_with_items_and_aggregate
 
 
 def preview_wave(
@@ -129,7 +142,7 @@ def create_wave(
     )
     wave = _promote_preview_to_created_wave(
         preview=preview,
-        wave_id=f"dwv_{uuid.uuid4().hex[:12]}",
+        wave_id=_create_created_wave_id(),
         actor_id=actor_id,
         correlation_id=correlation_id,
         idempotency_key=idempotency_key,
@@ -152,13 +165,14 @@ def source_check_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "SOURCE_CHECKED":
+    if _wave_state_is_idempotent(wave, replay_states={"SOURCE_CHECKED"}):
         return wave, True
-    if wave.state != "CREATED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
-            f"Wave {wave_id} cannot be source-checked from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"CREATED"},
+        error_code="DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
+        action_phrase="be source-checked",
+    )
 
     checked = build_source_checked_wave(
         wave=wave,
@@ -187,13 +201,17 @@ def simulate_wave(
     risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"}:
+    if _wave_state_is_idempotent(
+        wave,
+        replay_states={"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"},
+    ):
         return wave, True
-    if wave.state != "SOURCE_CHECKED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SIMULATION_INVALID_STATE",
-            f"Wave {wave_id} cannot be simulated from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"SOURCE_CHECKED"},
+        error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
+        action_phrase="be simulated",
+    )
 
     completed = build_simulated_wave(
         wave=wave,
@@ -230,34 +248,27 @@ def select_wave_item_alternative(
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SELECTION_INVALID_STATE",
-            f"Wave {wave_id} cannot record alternative selection from state {wave.state}.",
-        )
-    selected_item = next((item for item in wave.items if item.wave_item_id == wave_item_id), None)
-    if selected_item is None:
-        raise DpmWaveLookupError("DPM_WAVE_ITEM_NOT_FOUND", f"Wave item {wave_item_id} not found.")
-    if selected_item.alternative_set_id is None:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_ITEM_ALTERNATIVES_MISSING",
-            f"Wave item {wave_item_id} has no generated alternatives.",
-        )
-    try:
-        construction_service.select_construction_alternative(
-            repository=construction_repository,
-            alternative_set_id=selected_item.alternative_set_id,
-            alternative_id=alternative_id,
-            actor_id=actor_id,
-            reason_code=reason_code,
-            comment=comment,
-            correlation_id=correlation_id,
-        )
-    except Exception as exc:
-        raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc
+    _require_wave_state(
+        wave,
+        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
+        error_code="DPM_WAVE_SELECTION_INVALID_STATE",
+        action_phrase="record alternative selection",
+    )
+    selected_item = _selectable_wave_item(wave=wave, wave_item_id=wave_item_id)
+    assert selected_item.alternative_set_id is not None
+    _select_construction_alternative_for_wave(
+        repository=construction_repository,
+        alternative_set_id=selected_item.alternative_set_id,
+        alternative_id=alternative_id,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
+    )
 
-    updated_item = _with_selection_and_proof_pack(
-        item=selected_item,
+    updated = _build_wave_with_selected_item_alternative(
+        wave=wave,
+        selected_item=selected_item,
         alternative_id=alternative_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -268,34 +279,6 @@ def select_wave_item_alternative(
         proof_pack_repository=proof_pack_repository,
         mandate_repository=mandate_repository,
         run_service=run_service,
-    )
-    updated_items = [
-        updated_item if item.wave_item_id == wave_item_id else item for item in wave.items
-    ]
-    updated = _append_event(
-        wave=wave.model_copy(
-            update={
-                "items": updated_items,
-                "aggregate_metrics": _aggregate(updated_items),
-            },
-            deep=True,
-        ),
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state=wave.state,
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_ITEM_ALTERNATIVE_SELECTED",
-            event_type="ITEM_SELECTION",
-            metadata={
-                "wave_item_id": wave_item_id,
-                "alternative_set_id": selected_item.alternative_set_id,
-                "selected_alternative_id": alternative_id,
-                "proof_pack_id": updated_item.proof_pack_id,
-                "proof_pack_state": updated_item.diagnostics.get("proof_pack_state"),
-            },
-        ),
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
@@ -315,49 +298,24 @@ def approve_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
+    if _wave_state_is_idempotent(
+        wave,
+        replay_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
+    ):
         return wave, True
-    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_APPROVAL_INVALID_STATE",
-            f"Wave {wave_id} cannot be approved from state {wave.state}.",
-        )
-
-    approved_items = [_approve_item(item, actor_id, reason_code, comment) for item in wave.items]
-    approved_count = sum(1 for item in approved_items if item.state == "APPROVED")
-    if approved_count == 0:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_APPROVAL_NO_ELIGIBLE_ITEMS",
-            f"Wave {wave_id} has no selected or proof-pack-ready items to approve.",
-        )
-
-    to_state: WaveState = (
-        "APPROVED" if approved_count == len(approved_items) else "APPROVED_WITH_EXCEPTIONS"
+    _require_wave_state(
+        wave,
+        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"},
+        error_code="DPM_WAVE_APPROVAL_INVALID_STATE",
+        action_phrase="be approved",
     )
-    candidate = wave.model_copy(
-        update={
-            "items": approved_items,
-            "aggregate_metrics": _aggregate(approved_items),
-        },
-        deep=True,
-    )
-    approved = apply_wave_transition(
-        wave=candidate,
-        to_state=to_state,
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state=to_state,
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_APPROVED",
-            metadata={
-                "approved_item_count": approved_count,
-                "exception_item_count": len(approved_items) - approved_count,
-                "approval_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
-        ),
+
+    approved = _build_approved_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
@@ -377,45 +335,21 @@ def stage_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"STAGED", "HANDOFF_READY"}:
+    if _wave_state_is_idempotent(wave, replay_states={"STAGED", "HANDOFF_READY"}):
         return wave, True
-    if wave.state not in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_STAGE_INVALID_STATE",
-            f"Wave {wave_id} cannot be staged from state {wave.state}.",
-        )
-
-    staged_items = [_stage_item(item, actor_id, reason_code, comment) for item in wave.items]
-    staged_count = sum(1 for item in staged_items if item.state == "STAGED")
-    if staged_count == 0:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_STAGE_NO_ELIGIBLE_ITEMS",
-            f"Wave {wave_id} has no approved items to stage.",
-        )
-
-    candidate = wave.model_copy(
-        update={
-            "items": staged_items,
-            "aggregate_metrics": _aggregate(staged_items),
-        },
-        deep=True,
+    _require_wave_state(
+        wave,
+        allowed_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
+        error_code="DPM_WAVE_STAGE_INVALID_STATE",
+        action_phrase="be staged",
     )
-    staged = apply_wave_transition(
-        wave=candidate,
-        to_state="STAGED",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state="STAGED",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_STAGED",
-            metadata={
-                "staged_item_count": staged_count,
-                "stage_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
-        ),
+
+    staged = _build_staged_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
@@ -435,58 +369,21 @@ def handoff_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "HANDOFF_READY":
+    if _wave_state_is_idempotent(wave, replay_states={"HANDOFF_READY"}):
         return wave, True
-    if wave.state != "STAGED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_HANDOFF_INVALID_STATE",
-            f"Wave {wave_id} cannot create handoff evidence from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"STAGED"},
+        error_code="DPM_WAVE_HANDOFF_INVALID_STATE",
+        action_phrase="create handoff evidence",
+    )
 
-    handoff_items = [_handoff_item(item, actor_id, reason_code, comment) for item in wave.items]
-    handoff_item_ids = [
-        item.wave_item_id for item in handoff_items if item.state == "HANDOFF_READY"
-    ]
-    if not handoff_item_ids:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_HANDOFF_NO_ELIGIBLE_ITEMS",
-            f"Wave {wave_id} has no staged items for operations handoff.",
-        )
-
-    handoff_ref = _handoff_ref(
-        wave_id=wave.wave_id,
-        item_ids=handoff_item_ids,
+    handoff_ready = _build_handoff_ready_wave(
+        wave=wave,
         actor_id=actor_id,
         reason_code=reason_code,
-        correlation_id=correlation_id,
         comment=comment,
-    )
-    candidate = wave.model_copy(
-        update={
-            "items": handoff_items,
-            "aggregate_metrics": _aggregate(handoff_items),
-            "handoff_refs": [*wave.handoff_refs, handoff_ref],
-        },
-        deep=True,
-    )
-    handoff_ready = apply_wave_transition(
-        wave=candidate,
-        to_state="HANDOFF_READY",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="STAGED",
-            to_state="HANDOFF_READY",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_HANDOFF_READY",
-            metadata={
-                "handoff_ref_id": handoff_ref.handoff_ref_id,
-                "handoff_item_count": len(handoff_item_ids),
-                "external_execution_claimed": False,
-                "handoff_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
-        ),
+        correlation_id=correlation_id,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
@@ -506,41 +403,16 @@ def cancel_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "CANCELLED":
+    if _wave_state_is_idempotent(wave, replay_states={"CANCELLED"}):
         return wave, True
 
-    cancelled_items = [_cancel_item(item, actor_id, reason_code, comment) for item in wave.items]
-    candidate = wave.model_copy(
-        update={
-            "items": cancelled_items,
-            "aggregate_metrics": _aggregate(cancelled_items),
-        },
-        deep=True,
+    cancelled = _build_cancelled_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
     )
-    try:
-        cancelled = apply_wave_transition(
-            wave=candidate,
-            to_state="CANCELLED",
-            event=_event(
-                wave_id=wave.wave_id,
-                from_state=wave.state,
-                to_state="CANCELLED",
-                actor_id=actor_id,
-                correlation_id=correlation_id,
-                reason_code="WAVE_CANCELLED",
-                metadata={
-                    "cancel_reason_code": reason_code,
-                    "cancelled_item_count": len(cancelled_items),
-                    "external_execution_claimed": False,
-                    **({"comment": comment} if comment else {}),
-                },
-            ),
-        )
-    except DpmWaveInvalidTransitionError as exc:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_CANCEL_INVALID_STATE",
-            f"Wave {wave_id} cannot be cancelled from state {wave.state}.",
-        ) from exc
     _update_wave_or_raise(
         wave_repository=wave_repository,
         wave=cancelled,
@@ -619,20 +491,10 @@ def get_report_input(
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmWaveReportInput:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    supportability = wave_supportability_payload(wave)
-    proof_pack_posture_payload = proof_pack_posture_for_wave(wave=wave)
-    try:
-        return build_wave_report_input(
-            wave=wave,
-            supportability=supportability,
-            proof_pack_posture=proof_pack_posture_payload,
-            portfolio_memory_context=portfolio_memory_context_for_report(
-                wave=wave,
-                proof_pack_repository=proof_pack_repository,
-                wave_repository=wave_repository,
-                outcome_review_repository=outcome_review_repository,
-                mandate_repository=mandate_repository,
-            ),
-        )
-    except DpmWaveReportInputBoundaryError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
+    return build_report_input_for_wave(
+        wave=wave,
+        wave_repository=wave_repository,
+        proof_pack_repository=proof_pack_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+    )
