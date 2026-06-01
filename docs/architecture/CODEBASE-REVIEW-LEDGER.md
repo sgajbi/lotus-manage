@@ -8071,3 +8071,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `construction_method_supportability.py` as a compatibility facade only.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-329: Direct regime stress supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, regime-stress supportability, and
+  this ledger.
+- Finding: after extracting regime-stress supportability, the direct threshold-breach regression
+  still lived in the broader method-supportability test module and did not prove missing source
+  context or non-breach source-status preservation.
+- Action: moved regime-stress supportability regressions into a dedicated test module, added
+  missing-context and no-threshold-breach cases, and narrowed the method-supportability test to the
+  facade export contract.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and regime-stress supportability source modules; focused regime-stress and
+  method supportability regressions passed with 4 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue shrinking `construction_service.py` and keep compatibility facades thin,
+  covered, and explicit.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
