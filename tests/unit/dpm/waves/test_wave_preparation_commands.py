@@ -1,4 +1,4 @@
-from src.api.services import wave_preparation_commands, wave_service
+from src.api.services import wave_preparation_commands
 from src.api.services.wave_preparation_commands import (
     simulate_persisted_wave,
     source_check_persisted_wave,
@@ -129,11 +129,6 @@ def test_simulate_persisted_wave_replays_completed_simulation() -> None:
     assert simulated is wave
     assert replayed is True
     assert repository.updated_wave is None
-
-
-def test_wave_service_delegates_preparation_commands() -> None:
-    assert wave_service.source_check_persisted_wave is source_check_persisted_wave
-    assert wave_service.simulate_persisted_wave is simulate_persisted_wave
 
 
 def test_wave_preparation_commands_export_public_surface() -> None:

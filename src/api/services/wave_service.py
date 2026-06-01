@@ -10,10 +10,7 @@ from src.api.services.wave_lifecycle_commands import (
     handoff_persisted_wave,
     stage_persisted_wave,
 )
-from src.api.services.wave_preparation_commands import (
-    simulate_persisted_wave,
-    source_check_persisted_wave,
-)
+from src.api.services import wave_preparation_commands
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_read_model_queries import (
     wave_detail_for_id,
@@ -102,7 +99,7 @@ def source_check_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return source_check_persisted_wave(
+    return wave_preparation_commands.source_check_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         correlation_id=correlation_id,
@@ -123,7 +120,7 @@ def simulate_wave(
     wave_repository: DpmWaveRepository,
     risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
-    return simulate_persisted_wave(
+    return wave_preparation_commands.simulate_persisted_wave(
         wave_id=wave_id,
         actor_id=actor_id,
         correlation_id=correlation_id,
