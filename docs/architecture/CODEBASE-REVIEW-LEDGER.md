@@ -10380,3 +10380,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   identity has a consistent helper across single-source and treasury multi-source mappers.
 - Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-426: Wave lifecycle command extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_lifecycle_commands.py`,
+  `tests/unit/dpm/waves/test_wave_lifecycle_commands.py`, selected wave lifecycle/API regressions,
+  and this ledger.
+- Finding: wave approval, staging, handoff, and cancellation repeated transition preparation,
+  idempotent replay handling, transition builder invocation, and optimistic persistence directly in
+  `wave_service.py`, even after shared transition execution helpers existed.
+- Action: extracted persisted wave lifecycle command helpers for approval, staging, handoff, and
+  cancellation, kept the public service API as a facade, preserved service compatibility aliases,
+  and added direct tests for command persistence, expected-version handling, replay, export surface,
+  and service delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_lifecycle_commands.py`; direct wave lifecycle command
+  tests and selected wave lifecycle/API regressions passed with 162 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing source-check, simulation, and selection command boundaries for
+  similarly narrow command extraction opportunities without obscuring domain-specific dependencies.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

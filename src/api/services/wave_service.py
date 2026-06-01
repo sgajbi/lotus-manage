@@ -2,8 +2,8 @@ from src.api.request_models import RebalanceRequest
 from src.api.services.wave_aggregate_metrics import (
     simulation_result_state,
 )
-from src.api.services.wave_approval_transition import build_approved_wave as _build_approved_wave
-from src.api.services.wave_cancel_transition import build_cancelled_wave as _build_cancelled_wave
+from src.api.services.wave_approval_transition import build_approved_wave
+from src.api.services.wave_cancel_transition import build_cancelled_wave
 from src.api.services.wave_construction_selection import (
     select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
@@ -19,12 +19,16 @@ from src.api.services.wave_errors import (
 )
 from src.api.services.wave_event_append import append_same_state_event
 from src.api.services.wave_event_evidence import build_wave_event
-from src.api.services.wave_handoff_transition import (
-    build_handoff_ready_wave as _build_handoff_ready_wave,
-)
+from src.api.services.wave_handoff_transition import build_handoff_ready_wave
 from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.api.services.wave_item_selection_transition import (
     build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
+)
+from src.api.services.wave_lifecycle_commands import (
+    approve_persisted_wave,
+    cancel_persisted_wave,
+    handoff_persisted_wave,
+    stage_persisted_wave,
 )
 from src.api.services.wave_lookup import get_wave_or_raise
 from src.api.services.wave_persistence import save_wave_or_raise, update_wave_or_raise
@@ -47,7 +51,7 @@ from src.api.services.wave_state_guard import (
     require_wave_state,
     wave_state_is_idempotent,
 )
-from src.api.services.wave_stage_transition import build_staged_wave as _build_staged_wave
+from src.api.services.wave_stage_transition import build_staged_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
@@ -86,6 +90,10 @@ _require_wave_state = require_wave_state
 _save_wave_or_raise = save_wave_or_raise
 _update_wave_or_raise = update_wave_or_raise
 _validate_trigger = validate_trigger_or_raise
+_build_approved_wave = build_approved_wave
+_build_cancelled_wave = build_cancelled_wave
+_build_handoff_ready_wave = build_handoff_ready_wave
+_build_staged_wave = build_staged_wave
 _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
 _handoff_event_metadata = handoff_event_metadata
@@ -289,30 +297,14 @@ def approve_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return approve_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
-        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"},
-        error_code="DPM_WAVE_APPROVAL_INVALID_STATE",
-        action_phrase="be approved",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    approved = _build_approved_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=approved,
     )
-    return approved, False
 
 
 def stage_wave(
@@ -324,30 +316,14 @@ def stage_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return stage_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"STAGED", "HANDOFF_READY"},
-        allowed_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
-        error_code="DPM_WAVE_STAGE_INVALID_STATE",
-        action_phrase="be staged",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    staged = _build_staged_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=staged,
     )
-    return staged, False
 
 
 def handoff_wave(
@@ -359,30 +335,14 @@ def handoff_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return handoff_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"HANDOFF_READY"},
-        allowed_states={"STAGED"},
-        error_code="DPM_WAVE_HANDOFF_INVALID_STATE",
-        action_phrase="create handoff evidence",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    handoff_ready = _build_handoff_ready_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=handoff_ready,
     )
-    return handoff_ready, False
 
 
 def cancel_wave(
@@ -394,30 +354,14 @@ def cancel_wave(
     correlation_id: str,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    prepared = _prepare_wave_transition(
+    return cancel_persisted_wave(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states={"CANCELLED"},
-        allowed_states=None,
-        error_code="DPM_WAVE_CANCEL_INVALID_STATE",
-        action_phrase="be cancelled",
-    )
-    if prepared.replayed:
-        return prepared.wave, True
-
-    cancelled = _build_cancelled_wave(
-        wave=prepared.wave,
         actor_id=actor_id,
         reason_code=reason_code,
         comment=comment,
         correlation_id=correlation_id,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=cancelled,
     )
-    return cancelled, False
 
 
 def wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
