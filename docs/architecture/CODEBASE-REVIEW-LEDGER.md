@@ -6423,3 +6423,34 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-product authority-context assembly in small slices with direct helper coverage.
 - Wiki decision: no wiki source change required; this is internal source-evidence supportability
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-253: Construction method supportability extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_method_supportability.py`.
+- Finding: liquidity, cashflow projection, currency-overlay, and regime-stress supportability
+  decisions remained embedded in the large construction service after transaction-cost and ESG
+  extraction. These helpers encode private-banking method-readiness behavior and source-evidence
+  posture, but were still coupled to construction orchestration and authority-context assembly.
+- Action: extracted method supportability decisions into
+  `construction_method_supportability.py`, including liquidity status/reason codes, derived
+  manage liquidity policy context, currency-overlay missing-pair handling, derived FX overlay
+  context, and regime-stress threshold posture. The construction service now keeps thin
+  compatibility wrappers for existing private-helper coverage. Added direct helper tests for
+  derived liquidity policy, missing FX pair blocking, and regime-stress threshold breach review.
+- Status: hardened
+- Evidence: focused method supportability, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_method_supportability.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks,
+  focused mypy over method supportability and construction service, OpenAPI quality gate, API
+  vocabulary inventory validation, diff check, and service-layer HTTP leakage scan passed with no
+  API contract drift.
+- Follow-up: continue extracting construction authority-context source-product assembly and method
+  orchestration in small slices; keep source-owner non-claim boundaries explicit in tests and docs
+  when behavior changes.
+- Wiki decision: no wiki source change required; this is internal method-supportability
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
