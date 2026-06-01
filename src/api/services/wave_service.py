@@ -34,6 +34,7 @@ from src.api.services.wave_supportability_diagnostics import (
     operator_actions as _operator_actions,
     supportability_issue as _supportability_issue,
 )
+from src.api.services.wave_trigger_validation import trigger_validation_failure
 from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -68,18 +69,6 @@ from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 from src.core.waves.source_readiness import classify_wave_item_source_readiness
-
-
-SUPPORTED_CREATE_TRIGGER_TYPES = {
-    "EXPLICIT_PORTFOLIO_LIST",
-    "PM_BOOK_REVIEW",
-    "CIO_MODEL_CHANGE",
-    "TACTICAL_HOUSE_VIEW",
-    "RISK_EVENT",
-    "BULK_REVIEW_CAMPAIGN",
-}
-
-UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES: dict[str, str] = {}
 
 
 class DpmWaveValidationError(ValueError):
@@ -1094,19 +1083,7 @@ def _proposed_changes_from_alternative_set(
 
 
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:
-    if trigger_type not in SUPPORTED_CREATE_TRIGGER_TYPES:
-        source_owner_reason = UNSUPPORTED_SOURCE_OWNER_TRIGGER_TYPES.get(trigger_type)
-        if source_owner_reason is not None:
-            raise DpmWaveValidationError(
-                "NOT_SUPPORTED_TRIGGER",
-                f"Trigger type {trigger_type} is not supported. {source_owner_reason}",
-            )
-        raise DpmWaveValidationError(
-            "NOT_SUPPORTED_TRIGGER",
-            f"Trigger type {trigger_type} is not supported for RFC-0041 Slice 4.",
-        )
-    if not portfolios:
-        raise DpmWaveValidationError(
-            "AFFECTED_PORTFOLIO_SET_EMPTY",
-            f"Trigger type {trigger_type} requires at least one source-backed portfolio.",
-        )
+    failure = trigger_validation_failure(trigger_type, portfolios=portfolios)
+    if failure is not None:
+        code, message = failure
+        raise DpmWaveValidationError(code, message)
