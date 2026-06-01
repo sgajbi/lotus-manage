@@ -15,6 +15,10 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 DEFAULT_BASE_REF = "origin/main"
 DEFAULT_OUTPUT = REPO_ROOT / "quality" / "refactor_health_report.md"
+DEFAULT_BASELINE_OUTPUT = REPO_ROOT / "quality" / "baseline_report.md"
+DEFAULT_SCORECARD_OUTPUT = REPO_ROOT / "quality" / "quality_scorecard.md"
+DEFAULT_ARCHITECTURE_RULES_OUTPUT = REPO_ROOT / "quality" / "architecture_rules.md"
+DEFAULT_API_GOVERNANCE_RULES_OUTPUT = REPO_ROOT / "quality" / "api_governance_rules.md"
 PYTHON_ROOTS = ("src", "tests", "scripts")
 SERVICE_LEAKAGE_PATTERNS = (
     "from src.api.routers",
@@ -51,6 +55,16 @@ class SnapshotMetrics:
     largest_functions: list[FunctionMetric]
     service_boundary_violations: list[str]
     router_infra_imports: list[str]
+
+
+@dataclass(frozen=True)
+class HealthReportContext:
+    generated_at: str
+    base_ref: str
+    current_ref: str
+    base: SnapshotMetrics
+    current: SnapshotMetrics
+    openapi: dict[str, int]
 
 
 def _git(*args: str) -> str:
@@ -286,7 +300,7 @@ def _bounded_findings(title: str, findings: list[str]) -> str:
     return f"### {title}\n\n" + "\n".join(f"- `{item}`" for item in shown) + suffix + "\n"
 
 
-def build_report(base_ref: str = DEFAULT_BASE_REF) -> str:
+def _report_context(base_ref: str = DEFAULT_BASE_REF) -> HealthReportContext:
     base_paths = _python_paths_from_git(base_ref)
     current_paths = _python_paths_from_worktree()
     base = _snapshot_metrics(
@@ -299,13 +313,25 @@ def build_report(base_ref: str = DEFAULT_BASE_REF) -> str:
         paths=current_paths,
         reader=_text_from_worktree,
     )
-    openapi = _openapi_metrics()
-    generated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return HealthReportContext(
+        generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        base_ref=base_ref,
+        current_ref=_git("rev-parse", "--short", "HEAD").strip(),
+        base=base,
+        current=current,
+        openapi=_openapi_metrics(),
+    )
+
+
+def build_refactor_report(context: HealthReportContext) -> str:
+    base = context.base
+    current = context.current
+    openapi = context.openapi
     sections = [
         "# lotus-manage Refactor Health Report",
-        f"- Generated at: `{generated_at}`",
-        f"- Baseline ref: `{base_ref}`",
-        f"- Current ref: `{_git('rev-parse', '--short', 'HEAD').strip()}`",
+        f"- Generated at: `{context.generated_at}`",
+        f"- Baseline ref: `{context.base_ref}`",
+        f"- Current ref: `{context.current_ref}`",
         "- Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.",
         "## Scorecard",
         _metric_summary(base, current),
@@ -347,11 +373,258 @@ def build_report(base_ref: str = DEFAULT_BASE_REF) -> str:
     return "\n\n".join(sections) + "\n"
 
 
+def build_report(base_ref: str = DEFAULT_BASE_REF) -> str:
+    return build_refactor_report(_report_context(base_ref))
+
+
+def build_baseline_report(context: HealthReportContext) -> str:
+    current = context.current
+    sections = [
+        "# lotus-manage Baseline Quality Report",
+        f"- Generated at: `{context.generated_at}`",
+        f"- Baseline commit: `{context.current_ref}`",
+        "- Mode: report-only baseline. This records current posture; it does not enforce "
+        "thresholds by itself.",
+        "## Current Code Size",
+        _table(
+            ["Metric", "Value"],
+            [
+                ["Python files", str(current.python_file_count)],
+                ["Total Python LOC", str(current.total_loc)],
+                ["Test functions", str(current.test_count)],
+                ["Service boundary findings", str(len(current.service_boundary_violations))],
+                ["Router infrastructure imports", str(len(current.router_infra_imports))],
+            ],
+        ),
+        "## Current OpenAPI Completeness",
+        _table(
+            ["Metric", "Value"],
+            [
+                ["Operations", str(context.openapi["operations"])],
+                ["Missing summary", str(context.openapi["missing_summary"])],
+                ["Missing description", str(context.openapi["missing_description"])],
+                ["Missing tags", str(context.openapi["missing_tags"])],
+                ["Missing 4xx/5xx response", str(context.openapi["missing_error_response"])],
+                ["Missing examples marker", str(context.openapi["missing_examples"])],
+            ],
+        ),
+        "## Report-Only Coverage Map",
+        _table(
+            ["Quality area", "Current evidence", "Gate phase"],
+            [
+                ["Code size", "`scripts/engineering_health_report.py`", "1 - baseline"],
+                ["Largest files/functions", "`quality/refactor_health_report.md`", "1 - baseline"],
+                [
+                    "OpenAPI completeness",
+                    "`scripts/openapi_quality_gate.py` plus this report",
+                    "2 - active/new-regression",
+                ],
+                [
+                    "Service boundary leakage",
+                    "service leakage scan plus this report",
+                    "2 - active/new-regression",
+                ],
+                [
+                    "Router infrastructure imports",
+                    "reported as known baseline debt",
+                    "1 - baseline",
+                ],
+                ["Complexity/maintainability", "not instrumented yet", "planned"],
+                ["Dead code", "not instrumented yet", "planned"],
+                [
+                    "Dependency hygiene",
+                    "`pip check`/security audit in repo gates; richer deptry planned",
+                    "2 - active/new-regression",
+                ],
+                [
+                    "Security",
+                    "`make security-audit`; richer bandit/pip-audit scorecard planned",
+                    "2 - active/new-regression",
+                ],
+                ["Documentation gaps", "current docs tests plus planned docs scorecard", "planned"],
+                [
+                    "Observability gaps",
+                    "`scripts/validate_observability_contracts.py`; richer runtime gap report planned",
+                    "2 - active/new-regression",
+                ],
+            ],
+        ),
+        "## Notes",
+        "- Future slices should add optional-tool measurements without converting unstable baselines "
+        "into blocking gates prematurely.",
+    ]
+    return "\n\n".join(sections) + "\n"
+
+
+def build_quality_scorecard(context: HealthReportContext) -> str:
+    rows = [
+        ["Lint and formatting", "Active gate", "`make check` runs Ruff check and format check."],
+        ["Type checking", "Active gate", "`make check` runs mypy over source files."],
+        ["Unit tests", "Active gate", "`make check` runs `tests/unit`."],
+        ["OpenAPI governance", "Active gate", "`scripts/openapi_quality_gate.py`."],
+        ["API vocabulary", "Active gate", "`scripts/api_vocabulary_inventory.py --validate-only`."],
+        [
+            "Service boundary leakage",
+            "Report plus focused scans",
+            "Current service boundary findings: 0.",
+        ],
+        [
+            "Router infrastructure imports",
+            "Baseline debt",
+            f"Current router infra imports: {len(context.current.router_infra_imports)}.",
+        ],
+        [
+            "OpenAPI 4xx/5xx response markers",
+            "Baseline debt",
+            f"Current missing markers: {context.openapi['missing_error_response']}.",
+        ],
+        [
+            "Complexity",
+            "Not yet instrumented",
+            "Add radon/xenon report-only baseline before thresholds.",
+        ],
+        [
+            "Dead code",
+            "Not yet instrumented",
+            "Add vulture report-only baseline before thresholds.",
+        ],
+        [
+            "Dependency architecture",
+            "Not yet instrumented",
+            "Add import-linter/deptry report-only baseline before thresholds.",
+        ],
+        [
+            "Security depth",
+            "Partially active",
+            "Security audit is active; add bandit/pip-audit detail scorecard.",
+        ],
+        [
+            "Documentation coverage",
+            "Partially active",
+            "Docs current-state tests exist; add docs-gap scoring later.",
+        ],
+        [
+            "Observability",
+            "Partially active",
+            "Observability contract validator exists; add runtime posture scoring later.",
+        ],
+    ]
+    sections = [
+        "# lotus-manage Quality Scorecard",
+        f"- Generated at: `{context.generated_at}`",
+        f"- Current ref: `{context.current_ref}`",
+        "- Purpose: make enterprise-readiness progress measurable without pretending report-only "
+        "baselines are mature enforcement gates.",
+        _table(["Area", "Status", "Evidence / next gate"], rows),
+        "## Progressive Gate Policy",
+        _table(
+            ["Phase", "Meaning", "Current posture"],
+            [
+                [
+                    "1 - baseline/report-only",
+                    "Measure current posture without failing builds.",
+                    "Active for refactor health and baseline report.",
+                ],
+                [
+                    "2 - fail new regressions",
+                    "Block newly introduced violations once the detector is stable.",
+                    "Active for existing repo-native gates; planned for richer quality tools.",
+                ],
+                [
+                    "3 - enforce thresholds",
+                    "Require agreed numeric thresholds.",
+                    "Not active for new quality tools yet.",
+                ],
+                [
+                    "4 - enterprise-readiness gates",
+                    "Block release on full readiness posture.",
+                    "Target state, not yet complete.",
+                ],
+            ],
+        ),
+    ]
+    return "\n\n".join(sections) + "\n"
+
+
+def build_architecture_rules() -> str:
+    return """# lotus-manage Architecture Rules
+
+These rules define the report-only architecture baseline for the enterprise-readiness refactor.
+They are explicit so later validators can enforce them without changing their meaning.
+
+## Layering
+
+1. Routers call application services or use-case functions only.
+2. Routers must not call repositories, database clients, HTTP clients, Kafka, Redis, or downstream adapters directly.
+3. Middleware stays thin, cross-cutting, and business-logic-free.
+4. Domain and application code must not depend on FastAPI, framework objects, infrastructure clients, or persistence models.
+5. Infrastructure sits behind explicit ports/adapters.
+6. DTOs and persistence models must not leak into domain logic.
+
+## Reliability And Auditability
+
+1. Downstream failures map to consistent platform errors.
+2. Every request must support and propagate a correlation identifier.
+3. Relevant mutations must be auditable.
+4. Idempotent operations must define replay/conflict behavior.
+5. Logs must be structured and must not leak sensitive data.
+
+## Current Gate Phase
+
+These rules are in phase 1/report-only except for checks already covered by repo-native gates.
+"""
+
+
+def build_api_governance_rules() -> str:
+    return """# lotus-manage API Governance Rules
+
+These rules define the report-only API-governance baseline for the enterprise-readiness refactor.
+
+## OpenAPI Contract
+
+1. Every endpoint should have a summary, description, tags, stable operation ID, request/response model, examples, and standard errors.
+2. Error responses should use consistent platform problem-details semantics where applicable.
+3. Public and internal endpoints should remain clearly separated.
+4. Health, readiness, liveness, metrics, internal, and public endpoints should be documented as distinct operational surfaces.
+
+## API Behavior
+
+1. Pagination, filtering, sorting, versioning, and deprecation should be consistent across list/read APIs.
+2. Correlation IDs should be accepted or generated and propagated to downstream calls.
+3. Idempotent mutations should document idempotency key behavior, replay behavior, and conflict behavior.
+4. Downstream unavailable/degraded states should be exposed as bounded supportability posture rather than hidden behind generic success.
+
+## Current Gate Phase
+
+OpenAPI and API vocabulary checks are active repo-native gates. The broader rule set is phase
+1/report-only until each detector has a stable baseline and agreed thresholds.
+"""
+
+
+def write_reports(context: HealthReportContext) -> None:
+    outputs = {
+        DEFAULT_OUTPUT: build_refactor_report(context),
+        DEFAULT_BASELINE_OUTPUT: build_baseline_report(context),
+        DEFAULT_SCORECARD_OUTPUT: build_quality_scorecard(context),
+        DEFAULT_ARCHITECTURE_RULES_OUTPUT: build_architecture_rules(),
+        DEFAULT_API_GOVERNANCE_RULES_OUTPUT: build_api_governance_rules(),
+    }
+    for path, content in outputs.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+
 def main() -> None:
-    report = build_report()
-    DEFAULT_OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    DEFAULT_OUTPUT.write_text(report, encoding="utf-8")
-    print(f"Wrote {DEFAULT_OUTPUT.relative_to(REPO_ROOT).as_posix()}")
+    context = _report_context()
+    write_reports(context)
+    for path in (
+        DEFAULT_OUTPUT,
+        DEFAULT_BASELINE_OUTPUT,
+        DEFAULT_SCORECARD_OUTPUT,
+        DEFAULT_ARCHITECTURE_RULES_OUTPUT,
+        DEFAULT_API_GOVERNANCE_RULES_OUTPUT,
+    ):
+        print(f"Wrote {path.relative_to(REPO_ROOT).as_posix()}")
 
 
 if __name__ == "__main__":

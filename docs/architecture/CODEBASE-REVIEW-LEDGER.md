@@ -11378,3 +11378,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   observability checks.
 - Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
   and does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-468: Report-only quality governance baseline artifacts
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/baseline_report.md`,
+  `quality/quality_scorecard.md`, `quality/architecture_rules.md`,
+  `quality/api_governance_rules.md`, `quality/refactor_health_report.md`,
+  `tests/unit/test_engineering_health_report.py`, and this ledger.
+- Finding: the branch had a useful refactor health report, but the enterprise-readiness objective
+  also needs durable baseline, scorecard, architecture-rule, and API-governance artifacts before
+  richer tools can be introduced as progressive gates.
+- Action: extended the dependency-free health report generator to write the baseline report,
+  quality scorecard, architecture rules, and API governance rules alongside the existing refactor
+  report; added renderer tests proving the artifacts remain report-only and distinguish active
+  gates from planned instrumentation.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py docs/architecture/CODEBASE-REVIEW-LEDGER.md`,
+  `python -m ruff format --check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m mypy --config-file mypy.ini
+  scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, service
+  leakage scan, and generated-artifact sanity scan passed.
+- Follow-up: optimize baseline loading before CI integration, then add report-only optional-tool
+  collectors for complexity, dead code, dependency architecture, security depth, documentation gaps,
+  and observability gaps before enforcing thresholds.
+- Wiki decision: no wiki source change required yet; this is internal quality-governance evidence
+  and does not change route behavior, product feature truth, or operator procedure.
