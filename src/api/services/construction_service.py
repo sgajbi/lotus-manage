@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 from typing import Optional
 
 from src.api.services.construction_alternative_set_assembly import (
@@ -14,6 +13,7 @@ from src.api.services.construction_method_execution import (
     run_construction_method,
 )
 from src.api.services.construction_method_authority import authority_context_for_request_method
+from src.api.services.construction_selection import build_construction_selection
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
 )
@@ -33,7 +33,6 @@ from src.core.construction.models import (
     ConstructionAuthorityContext,
 )
 from src.core.construction.repository import (
-    ConstructionAlternativeNotFoundError,
     ConstructionAlternativeSetNotFoundError,
     ConstructionRepository,
 )
@@ -137,13 +136,8 @@ def select_construction_alternative(
         repository=repository,
         alternative_set_id=alternative_set_id,
     )
-    if alternative_id not in {
-        alternative.alternative_id for alternative in alternative_set.alternatives
-    }:
-        raise ConstructionAlternativeNotFoundError("CONSTRUCTION_ALTERNATIVE_NOT_FOUND")
-    selection = ConstructionAlternativeSelection(
-        selection_id=f"casel_{uuid.uuid4().hex[:12]}",
-        alternative_set_id=alternative_set_id,
+    selection = build_construction_selection(
+        alternative_set=alternative_set,
         alternative_id=alternative_id,
         actor_id=actor_id,
         reason_code=reason_code,
