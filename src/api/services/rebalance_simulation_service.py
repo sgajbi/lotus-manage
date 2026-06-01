@@ -1,5 +1,4 @@
 import logging
-import uuid
 from typing import Any, Optional
 
 from src.api.request_models import (
@@ -30,6 +29,10 @@ from src.api.services.rebalance_simulation_errors import (
 )
 from src.api.services.rebalance_policy_pack_service import (
     load_dpm_policy_pack_catalog,
+)
+from src.api.services.rebalance_operation_identity import (
+    create_batch_analysis_id,
+    resolve_rebalance_correlation_id,
 )
 from src.api.services.rebalance_policy_pack_execution import (
     resolve_execution_policy_pack_context,
@@ -153,7 +156,7 @@ def simulate_rebalance(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> RebalanceResult:
     current_logger = _resolved_logger()
-    resolved_correlation_id = correlation_id or f"corr_{uuid.uuid4().hex[:12]}"
+    resolved_correlation_id = resolve_rebalance_correlation_id(correlation_id)
     current_logger.info("Simulating rebalance request")
     default_replay_enabled = env_flag("DPM_IDEMPOTENCY_REPLAY_ENABLED", True)
     request_payload = request.model_dump(mode="json")
@@ -204,7 +207,7 @@ def execute_batch_analysis(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> BatchRebalanceResult:
     current_logger = _resolved_logger()
-    batch_id = f"batch_{uuid.uuid4().hex[:8]}"
+    batch_id = create_batch_analysis_id()
     current_logger.info("Analyzing scenario batch")
 
     policy_context = resolve_execution_policy_pack_context(

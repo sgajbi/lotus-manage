@@ -9564,3 +9564,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   move only after preserving router-owned validation-error imports cleanly.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-393: Rebalance operation identity extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_operation_identity.py`,
+  `tests/unit/api/test_rebalance_operation_identity.py`, selected runtime/service edge regressions,
+  and this ledger.
+- Finding: rebalance simulation orchestration directly formatted generated correlation ids and
+  batch analysis ids with inline UUID slicing, leaving identifier conventions untested outside
+  broad endpoint flows.
+- Action: extracted generated operation identity helpers for rebalance correlation ids and batch
+  analysis ids, preserved caller-supplied correlation ids, removed the direct UUID dependency from
+  the orchestration service, and added direct deterministic tests for each identifier convention.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and `rebalance_operation_identity.py`; direct
+  identity tests and selected runtime/service edge regressions passed with 33 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing rebalance or wave service hotspots where extraction removes
+  duplicated orchestration support or directly testable boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
