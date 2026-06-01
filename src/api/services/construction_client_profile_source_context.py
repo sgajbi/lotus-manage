@@ -1,3 +1,5 @@
+from typing import Any, TypeAlias
+
 from src.core.common.canonical import hash_canonical_payload
 from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.core.construction.models import (
@@ -11,12 +13,33 @@ from src.core.dpm_source_context import (
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
 
+_JsonPayload: TypeAlias = dict[str, Any]
+_ClientProfileSourceResponse: TypeAlias = (
+    DpmCoreClientRestrictionProfileResponse | DpmCoreSustainabilityPreferenceProfileResponse
+)
+
+
+def _source_payload(response: _ClientProfileSourceResponse) -> _JsonPayload:
+    return response.model_dump(mode="json", exclude_none=True)
+
+
+def _source_hash(payload: _JsonPayload) -> str:
+    return hash_canonical_payload(payload)
+
+
+def _response_source_id(response: _ClientProfileSourceResponse, fallback_hash: str) -> str:
+    return (
+        response.source_batch_fingerprint
+        or response.lineage.get("source_batch_fingerprint")
+        or fallback_hash
+    )
+
 
 def client_restriction_profile_context(
     restriction_profile: DpmCoreClientRestrictionProfileResponse,
 ) -> AuthoritativeClientRestrictionContext:
-    payload = restriction_profile.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
+    payload = _source_payload(restriction_profile)
+    source_hash = _source_hash(payload)
     return AuthoritativeClientRestrictionContext(
         supportability_status=source_status_to_method_status(
             restriction_profile.supportability.state
@@ -24,9 +47,7 @@ def client_restriction_profile_context(
         source_system="lotus-core",
         source_product_name=restriction_profile.product_name,
         source_product_version=restriction_profile.product_version,
-        source_id=restriction_profile.source_batch_fingerprint
-        or restriction_profile.lineage.get("source_batch_fingerprint")
-        or source_hash,
+        source_id=_response_source_id(restriction_profile, source_hash),
         content_hash=source_hash,
         portfolio_id=restriction_profile.portfolio_id,
         client_id=restriction_profile.client_id,
@@ -45,8 +66,8 @@ def client_restriction_profile_context(
 def sustainability_preference_profile_context(
     sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
 ) -> AuthoritativeSustainabilityPreferenceContext:
-    payload = sustainability_profile.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
+    payload = _source_payload(sustainability_profile)
+    source_hash = _source_hash(payload)
     return AuthoritativeSustainabilityPreferenceContext(
         supportability_status=source_status_to_method_status(
             sustainability_profile.supportability.state
@@ -54,9 +75,7 @@ def sustainability_preference_profile_context(
         source_system="lotus-core",
         source_product_name=sustainability_profile.product_name,
         source_product_version=sustainability_profile.product_version,
-        source_id=sustainability_profile.source_batch_fingerprint
-        or sustainability_profile.lineage.get("source_batch_fingerprint")
-        or source_hash,
+        source_id=_response_source_id(sustainability_profile, source_hash),
         content_hash=source_hash,
         portfolio_id=sustainability_profile.portfolio_id,
         client_id=sustainability_profile.client_id,

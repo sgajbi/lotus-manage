@@ -7687,3 +7687,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   policy fields.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-308: Client-profile source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_client_profile_source_context.py`, client-profile
+  source-context tests, and this ledger.
+- Finding: client restriction and sustainability preference mappers repeated canonical payload
+  hashing and source-batch, lineage, and content-hash source-id fallback selection.
+- Action: added internal client-profile source payload, hash, and source-id helpers and reused them
+  across restriction and sustainability preference profile mapping.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py`; focused client-profile source-context
+  regressions passed with 2 tests.
+- Follow-up: use the same explicit source-id fallback helper pattern for remaining source-context
+  helpers where repetition appears.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
