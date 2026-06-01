@@ -26,6 +26,7 @@ from src.api.services.wave_item_transitions import (
 from src.api.services.wave_item_builder import build_wave_item as _build_item
 from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
+from src.api.services.wave_report_context import portfolio_memory_context_for_report
 from src.api.services.wave_selection_item import (
     with_selection_and_proof_pack as _with_selection_and_proof_pack,
 )
@@ -62,11 +63,7 @@ from src.core.waves import (
     apply_wave_transition,
     build_wave_report_input,
 )
-from src.api.services.portfolio_memory_context_service import (
-    build_report_portfolio_memory_context,
-)
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
@@ -755,7 +752,7 @@ def get_report_input(
             wave=wave,
             supportability=supportability,
             proof_pack_posture=proof_pack_posture_payload,
-            portfolio_memory_context=_portfolio_memory_context_for_report(
+            portfolio_memory_context=portfolio_memory_context_for_report(
                 wave=wave,
                 proof_pack_repository=proof_pack_repository,
                 wave_repository=wave_repository,
@@ -765,26 +762,6 @@ def get_report_input(
         )
     except DpmWaveReportInputBoundaryError as exc:
         raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
-
-
-def _portfolio_memory_context_for_report(
-    *,
-    wave: DpmRebalanceWave,
-    proof_pack_repository: DpmProofPackRepository | None,
-    wave_repository: DpmWaveRepository,
-    outcome_review_repository: DpmOutcomeReviewRepository | None,
-    mandate_repository: DpmMandateRepository | None,
-) -> DpmPortfolioMemoryReportContext | None:
-    if proof_pack_repository is None or outcome_review_repository is None or not wave.items:
-        return None
-    portfolio_id = wave.items[0].portfolio_id
-    return build_report_portfolio_memory_context(
-        portfolio_id=portfolio_id,
-        proof_pack_repository=proof_pack_repository,
-        wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
-        mandate_repository=mandate_repository,
-    )
 
 
 def _get_wave_or_raise(

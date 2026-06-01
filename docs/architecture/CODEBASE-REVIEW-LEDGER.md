@@ -8725,3 +8725,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   doing so does not obscure boundary-error translation.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-357: Wave report context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_report_context.py`,
+  `tests/unit/dpm/waves/test_wave_report_context.py`, selected wave report-input API regressions,
+  and this ledger.
+- Finding: `wave_service.py` still resolved bounded portfolio-memory context for report input
+  directly, even though the logic is a read-only supportability projection around repository
+  availability and first-item portfolio identity.
+- Action: extracted portfolio-memory report-context resolution into a focused helper module and made
+  report-input assembly delegate to it while preserving service-local boundary-error translation;
+  added direct tests for no-context cases, first-item portfolio routing, and the module export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_report_context.py`; direct report-context tests and selected
+  report-input API regressions passed with 14 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: keep report-input boundary exception translation in `wave_service.py`; continue
+  reviewing remaining lookup and event-append helpers for clean extraction opportunities.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
