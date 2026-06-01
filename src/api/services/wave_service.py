@@ -33,6 +33,9 @@ from src.api.services.wave_portfolio_sources import (
     trigger_source_refs as _trigger_source_refs,
 )
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
+from src.api.services.wave_source_readiness import (
+    classify_item_source_readiness as _classify_item_source_readiness,
+)
 from src.api.services.wave_supportability_diagnostics import (
     operator_actions as _operator_actions,
     supportability_issue as _supportability_issue,
@@ -41,7 +44,6 @@ from src.api.services.wave_trigger_validation import trigger_validation_failure
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
-from src.core.mandates import DpmMandateDigitalTwin
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
@@ -71,7 +73,6 @@ from src.api.services.portfolio_memory_context_service import (
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
-from src.core.waves.source_readiness import classify_wave_item_source_readiness
 
 
 class DpmWaveValidationError(ValueError):
@@ -1041,38 +1042,6 @@ def _append_event(
         update={"version": wave.version + 1, "events": [*wave.events, event]},
         deep=True,
     )
-
-
-def _classify_item_source_readiness(
-    *,
-    item: DpmRebalanceWaveItem,
-    wave_as_of_date: str,
-    mandate_repository: DpmMandateRepository,
-) -> DpmRebalanceWaveItem:
-    twin = _resolve_mandate_twin(item=item, mandate_repository=mandate_repository)
-    health = (
-        mandate_repository.get_latest_health_snapshot(mandate_id=twin.mandate_id)
-        if twin is not None
-        else None
-    )
-    return classify_wave_item_source_readiness(
-        item=item,
-        wave_as_of_date=wave_as_of_date,
-        mandate_twin=twin,
-        mandate_health=health,
-    )
-
-
-def _resolve_mandate_twin(
-    *,
-    item: DpmRebalanceWaveItem,
-    mandate_repository: DpmMandateRepository,
-) -> DpmMandateDigitalTwin | None:
-    if item.mandate_id:
-        twin = mandate_repository.get_latest_mandate(mandate_id=item.mandate_id)
-        if twin is not None and twin.portfolio_id == item.portfolio_id:
-            return twin
-    return mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=item.portfolio_id)
 
 
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:

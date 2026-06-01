@@ -8564,3 +8564,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helpers where dependency boundaries remain clean.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-350: Wave source-readiness lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_source_readiness.py`,
+  `tests/unit/dpm/waves/test_wave_source_readiness.py`, selected wave source-check/source-readiness
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned mandate twin resolution and mandate health lookup before
+  invoking the core source-readiness classifier, mixing repository lookup details into the wave
+  orchestration module.
+- Action: extracted source-readiness lookup into a focused helper module that resolves mandate twins,
+  loads mandate health, and delegates classification to the core wave source-readiness policy; added
+  direct tests for mandate-id lookup, portfolio fallback, ready classification, missing-twin blocking,
+  and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_source_readiness.py`; full direct source-readiness helper
+  tests passed with 5 tests; selected source-check/source-readiness API regressions passed with 43
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue evaluating the remaining construction/proof-pack item update path, but keep
+  external service calls in `wave_service.py` unless a clean dependency boundary emerges.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
