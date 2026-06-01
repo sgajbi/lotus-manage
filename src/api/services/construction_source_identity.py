@@ -48,6 +48,7 @@ def source_product_identity(
     response: BaseModel,
     *,
     source_system: str = "lotus-core",
+    fallback_source_id: str | None = None,
 ) -> SourceProductIdentity:
     payload = source_payload(response)
     content_hash = source_hash(payload)
@@ -55,7 +56,7 @@ def source_product_identity(
         source_product_name=_required_str_attr(response, "product_name"),
         source_product_version=_required_str_attr(response, "product_version"),
         source_system=source_system,
-        source_id=response_source_id(response, content_hash),
+        source_id=response_source_id(response, fallback_source_id or content_hash),
         content_hash=content_hash,
     )
 

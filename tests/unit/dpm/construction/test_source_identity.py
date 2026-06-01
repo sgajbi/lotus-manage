@@ -61,3 +61,13 @@ def test_source_product_identity_bundles_product_and_lineage_fields() -> None:
         source_id="income-lineage",
         content_hash=expected_hash,
     )
+
+
+def test_source_product_identity_uses_explicit_fallback_when_lineage_is_absent() -> None:
+    response = client_income_needs_schedule_response().model_copy(
+        update={"source_batch_fingerprint": None, "lineage": {}}
+    )
+
+    identity = source_product_identity(response, fallback_source_id="page-fingerprint")
+
+    assert identity.source_id == "page-fingerprint"

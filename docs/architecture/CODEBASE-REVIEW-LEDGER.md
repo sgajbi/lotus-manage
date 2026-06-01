@@ -10330,3 +10330,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   clarity.
 - Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-424: Construction execution source identity normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_execution_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, selected construction transaction-cost and
+  execution source-context regressions, and this ledger.
+- Finding: transaction-cost and external execution acknowledgement mappers still assembled
+  source-product identity fields locally after the shared identity helper existed; transaction-cost
+  also needed its governed page fingerprint fallback preserved explicitly.
+- Action: extended `source_product_identity` with an explicit fallback source-id parameter, routed
+  transaction-cost and execution acknowledgement mappers through the shared helper, and added direct
+  tests proving explicit fallback lineage remains available when source lineage is absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`,
+  `construction_transaction_cost_source_context.py`, and
+  `construction_execution_source_context.py`; direct construction source identity tests and
+  selected transaction-cost/execution source-context/API regressions passed with 41 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review treasury currency-overlay source identity helpers separately because its
+  multi-source aggregate hash and optional child-source fields require a narrower treatment than
+  single-source mappers.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
