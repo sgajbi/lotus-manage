@@ -8094,3 +8094,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   covered, and explicit.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-330: Construction alternative set lineage helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `src/api/services/construction_alternative_set_lineage.py`,
+  `tests/unit/dpm/construction/test_alternative_set_lineage.py`, construction API regressions, and
+  this ledger.
+- Finding: `construction_service.py` still assembled alternative-set request hash, input mode, and
+  source-supportability lineage inline inside the generation orchestration path.
+- Action: extracted alternative-set lineage field assembly into a focused helper that reuses the
+  existing rebalance source-lineage input-mode convention, with direct stateless and stateful
+  coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_service.py` and `construction_alternative_set_lineage.py`; direct
+  alternative-set lineage tests passed with 2 tests; selected construction API regressions for
+  first-wave replay and stateful source behavior passed with 2 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: keep pure metadata/source-boundary assembly out of `construction_service.py` while
+  preserving method orchestration there.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

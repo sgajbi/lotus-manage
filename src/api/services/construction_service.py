@@ -8,6 +8,7 @@ from src.api.services.construction_idempotency import (
     construction_request_hash,
     resolve_existing_construction_alternative_set,
 )
+from src.api.services.construction_alternative_set_lineage import alternative_set_lineage_fields
 from src.api.services.construction_method_execution import (
     run_construction_method,
 )
@@ -104,13 +105,10 @@ def generate_construction_alternative_set(
         as_of=datetime.now(timezone.utc).date().isoformat(),
         alternatives=alternatives,
     ).model_copy(
-        update={
-            "request_hash": request_hash,
-            "input_mode": "stateful" if source_context is not None else "stateless",
-            "source_supportability_state": (
-                source_context.context.supportability.state if source_context is not None else None
-            ),
-        }
+        update=alternative_set_lineage_fields(
+            request_hash=request_hash,
+            source_context=source_context,
+        )
     )
     repository.save_alternative_set(
         alternative_set=alternative_set,
