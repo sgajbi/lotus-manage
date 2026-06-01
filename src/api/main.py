@@ -55,13 +55,7 @@ from src.api.services.rebalance_simulation_service import (
     run_simulation,
 )
 from src.api.services.rebalance_simulation_service import (
-    async_manual_execution_enabled as _async_manual_execution_enabled,
-)
-from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
-)
-from src.api.services.rebalance_simulation_service import (
-    resolve_async_execution_mode as _resolve_async_execution_mode,
 )
 from src.api.services.rebalance_simulation_service import (
     run_analyze_async_operation as _run_analyze_async_operation,
@@ -275,9 +269,7 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 
 __all__ = [
     "HealthStatusResponse",
-    "_async_manual_execution_enabled",
     "_execute_batch_analysis",
-    "_resolve_async_execution_mode",
     "_run_analyze_async_operation",
     "analyze_scenarios",
     "analyze_scenarios_async",

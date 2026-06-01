@@ -477,6 +477,12 @@ def test_rebalance_async_config_exports_async_configuration_surface() -> None:
     ]
 
 
+def test_rebalance_simulation_service_does_not_export_async_configuration_helpers() -> None:
+    assert "async_manual_execution_enabled" not in service.__all__
+    assert "async_operations_enabled" not in service.__all__
+    assert "resolve_async_execution_mode" not in service.__all__
+
+
 def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:
     batch_payload = valid_api_payload()
     batch_payload.pop("options")

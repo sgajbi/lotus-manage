@@ -32,11 +32,7 @@ from src.api.services.rebalance_request_envelope_resolution import (
     resolve_batch_request_envelope as resolve_batch_request_envelope_from_source,
     resolve_rebalance_request_envelope as resolve_rebalance_request_envelope_from_source,
 )
-from src.api.services.rebalance_async_config import (
-    async_manual_execution_enabled,
-    async_operations_enabled,
-    resolve_async_execution_mode,
-)
+from src.api.services import rebalance_async_config
 from src.api.services.rebalance_async_operation_runner import (
     run_analyze_async_operation_from_store,
 )
@@ -253,7 +249,7 @@ def submit_and_optionally_execute_async_analysis(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> DpmAsyncAcceptedResponse:
     current_logger = _resolved_logger()
-    if not async_operations_enabled():
+    if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
     submission_context = build_async_submission_context(
         request=request,
@@ -290,9 +286,9 @@ def submit_and_optionally_execute_async_analysis(
 def execute_dpm_async_operation(
     *, operation_id: str, service: DpmRunSupportService
 ) -> DpmAsyncOperationStatusResponse:
-    if not async_operations_enabled():
+    if not rebalance_async_config.async_operations_enabled():
         raise DpmRebalanceAsyncOperationsDisabledError("DPM_ASYNC_OPERATIONS_DISABLED")
-    if not async_manual_execution_enabled():
+    if not rebalance_async_config.async_manual_execution_enabled():
         raise DpmRebalanceAsyncManualExecutionDisabledError("DPM_ASYNC_MANUAL_EXECUTION_DISABLED")
     return execute_analyze_async_operation_now(
         operation_id=operation_id,
@@ -320,11 +316,8 @@ __all__ = [
     "DpmRebalanceSimulationError",
     "DpmRebalanceStatefulInputDisabledError",
     "DpmRebalanceSupportabilityStoreUnavailableError",
-    "async_manual_execution_enabled",
-    "async_operations_enabled",
     "execute_batch_analysis",
     "execute_dpm_async_operation",
-    "resolve_async_execution_mode",
     "run_analyze_async_operation",
     "run_simulation",
     "simulate_rebalance",

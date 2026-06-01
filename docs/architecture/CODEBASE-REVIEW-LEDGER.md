@@ -10945,3 +10945,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   keep low-level configuration helpers in their owning modules.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-450: Rebalance async configuration ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`, `src/api/main.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, selected rebalance runtime/API
+  regressions, and this ledger.
+- Finding: `rebalance_simulation_service.py` still imported async configuration helpers as facade
+  attributes and exposed them in `__all__`, while `main.py` also re-exported unused async
+  configuration compatibility names.
+- Action: changed the simulation service to call `rebalance_async_config` through the owning module,
+  removed async configuration helper names from the simulation facade export list, removed the
+  unused `main.py` compatibility exports, and added a direct regression asserting the simulation
+  service no longer publishes async configuration helpers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`, `rebalance_simulation_service.py`, and
+  `rebalance_async_config.py`; rebalance runtime, simulation execution-context, and API regression
+  tests passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only
+  gate passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in
+  service modules; targeted scans found no direct async-config helper import, no `_async_*`
+  compatibility exports in `main.py`, and no async configuration helper names in
+  `rebalance_simulation_service.py` `__all__`.
+- Follow-up: continue reviewing `rebalance_simulation_service.py` for public exports that are
+  runtime orchestration dependencies rather than durable service API.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
