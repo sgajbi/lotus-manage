@@ -7808,3 +7808,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   absent.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-315: Source status fail-closed coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_status.py`, source-product status
+  mapping, and this ledger.
+- Finding: source status tests proved known non-ready states were blocked but did not explicitly
+  cover unknown upstream status values.
+- Action: converted the mapper test to a parameterized matrix and added an unknown upstream state
+  case that must fail closed to `BLOCKED`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused source-product
+  status regressions passed with 5 tests.
+- Follow-up: keep source-supportability translation intentionally conservative as upstream source
+  products evolve.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
