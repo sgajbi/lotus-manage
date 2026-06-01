@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from typing import Optional
 
@@ -49,6 +48,10 @@ from src.api.services.mandate_optional_sources import (
 from src.api.services.mandate_pm_book import (
     mandate_ids_from_pm_book_membership as mandate_ids_from_pm_book_membership,
 )
+from src.api.services.mandate_refresh import (
+    DpmMandateRefreshResult as DpmMandateRefreshResult,
+    build_mandate_refresh_result_from_core,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmCommandCenterSummary,
@@ -57,14 +60,8 @@ from src.core.mandates import (
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
     DpmMonitoringRun,
-    build_health_input_from_core_sources,
-    compile_mandate_digital_twin_from_core,
 )
-from src.infrastructure.core_sourcing import (
-    DpmCoreResolverClient,
-    DpmCoreResolverError,
-    DpmCoreResolverUnavailableError,
-)
+from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
 _severity_rank = severity_rank
 _attention_buckets = attention_buckets
@@ -84,13 +81,7 @@ _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
 _calculate_monitoring_run_mandate_result = calculate_monitoring_run_mandate_result
 _build_monitoring_run = build_monitoring_run
-
-
-@dataclass(frozen=True)
-class DpmMandateRefreshResult:
-    twin: DpmMandateDigitalTwin
-    health_snapshot: DpmMandateHealthSnapshot
-    monitoring_exceptions: list[DpmMonitoringException]
+_build_mandate_refresh_result_from_core = build_mandate_refresh_result_from_core
 
 
 def refresh_mandate_from_core(
@@ -107,81 +98,25 @@ def refresh_mandate_from_core(
     include_market_data_coverage: bool,
     correlation_id: Optional[str],
 ) -> DpmMandateRefreshResult:
-    try:
-        mandate = core_resolver.resolve_mandate_binding(
-            portfolio_id=portfolio_id,
-            as_of_date=as_of_date,
-            tenant_id=tenant_id,
-            mandate_id=mandate_id,
-            booking_center_code=booking_center_code,
-            include_policy_pack=True,
-            correlation_id=correlation_id,
-        )
-        resolved_model_portfolio_id = model_portfolio_id or mandate.model_portfolio_id
-        model_targets = core_resolver.resolve_model_portfolio_targets(
-            model_portfolio_id=resolved_model_portfolio_id,
-            as_of_date=as_of_date,
-            tenant_id=tenant_id,
-            correlation_id=correlation_id,
-        )
-        market_data_coverage = None
-        if include_market_data_coverage:
-            market_data_coverage = core_resolver.resolve_market_data_coverage(
-                instrument_ids=[target.instrument_id for target in model_targets.targets],
-                currency_pairs=[],
-                as_of_date=as_of_date,
-                valuation_currency=model_targets.base_currency,
-                tenant_id=tenant_id,
-                correlation_id=correlation_id,
-            )
-    except DpmCoreResolverUnavailableError as exc:
-        raise DpmMandateSourceUnavailableError("DPM_MANDATE_SOURCE_UNAVAILABLE") from exc
-    except DpmCoreResolverError as exc:
-        raise DpmMandateSourceIncompleteError("DPM_MANDATE_SOURCE_INCOMPLETE") from exc
-    optional_sources = _resolve_mandate_optional_sources(
-        resolver=core_resolver,
+    refresh_result = _build_mandate_refresh_result_from_core(
+        core_resolver=core_resolver,
         portfolio_id=portfolio_id,
         mandate_id=mandate_id,
         as_of_date=as_of_date,
         tenant_id=tenant_id,
+        booking_center_code=booking_center_code,
+        model_portfolio_id=model_portfolio_id,
         reference_currency=reference_currency,
+        include_market_data_coverage=include_market_data_coverage,
         correlation_id=correlation_id,
     )
 
-    twin = compile_mandate_digital_twin_from_core(
-        mandate=mandate,
-        model_targets=model_targets,
-        as_of_date=as_of_date,
-        reference_currency=reference_currency,
-        client_restriction_profile=optional_sources.client_restriction_profile,
-        sustainability_preference_profile=optional_sources.sustainability_preference_profile,
-        portfolio_cashflow_projection=optional_sources.portfolio_cashflow_projection,
-        client_income_needs_schedule=optional_sources.client_income_needs_schedule,
-        liquidity_reserve_requirement=optional_sources.liquidity_reserve_requirement,
-        planned_withdrawal_schedule=optional_sources.planned_withdrawal_schedule,
-        benchmark_assignment=optional_sources.benchmark_assignment,
-    )
-    health_input = build_health_input_from_core_sources(
-        twin=twin,
-        model_targets=model_targets,
-        market_data_coverage=market_data_coverage,
-        client_restriction_profile=optional_sources.client_restriction_profile,
-        sustainability_preference_profile=optional_sources.sustainability_preference_profile,
-        portfolio_cashflow_projection=optional_sources.portfolio_cashflow_projection,
-        unavailable_source_families=optional_sources.unavailable_source_families,
-    )
-    health_result = _calculate_mandate_health_result(health_input)
-
-    repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(health_result.snapshot)
-    for exception in health_result.monitoring_exceptions:
+    repository.save_mandate_snapshot(refresh_result.twin)
+    repository.save_health_snapshot(refresh_result.health_snapshot)
+    for exception in refresh_result.monitoring_exceptions:
         repository.save_monitoring_exception(exception)
 
-    return DpmMandateRefreshResult(
-        twin=twin,
-        health_snapshot=health_result.snapshot,
-        monitoring_exceptions=health_result.monitoring_exceptions,
-    )
+    return refresh_result
 
 
 def get_latest_mandate_by_portfolio(

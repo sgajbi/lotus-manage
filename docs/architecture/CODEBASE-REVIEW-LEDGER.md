@@ -9763,3 +9763,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   command-center orchestration can be separated without hiding repository ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-401: Mandate refresh assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_refresh.py`,
+  `tests/unit/dpm/mandates/test_mandate_refresh.py`, selected mandate refresh/API regressions, and
+  this ledger.
+- Finding: `refresh_mandate_from_core` still mixed core source resolution, model-target fallback,
+  optional source assembly, market-data coverage resolution, twin compilation, health input
+  assembly, source error mapping, health calculation, and repository persistence in a single
+  service function.
+- Action: extracted source-backed refresh result assembly into a focused helper that resolves core
+  inputs, maps core source errors to bounded mandate service errors, builds the digital twin and
+  health result, and returns a refresh result for the service to persist.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_refresh.py`; direct mandate-refresh tests and
+  selected mandate API regressions passed with 32 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing mandate service persistence/orchestration seams where helper
+  extraction produces directly testable private-banking source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
