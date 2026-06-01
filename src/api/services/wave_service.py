@@ -1,9 +1,11 @@
 import uuid
 
 from src.api.request_models import RebalanceRequest
-from src.api.services import construction_service
 from src.api.services.wave_aggregate_metrics import (
     simulation_result_state,
+)
+from src.api.services.wave_construction_selection import (
+    select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
 from src.api.services.wave_creation import (
     create_wave_request_hash as _create_wave_request_hash,
@@ -257,18 +259,15 @@ def select_wave_item_alternative(
     )
     selected_item = _selectable_wave_item(wave=wave, wave_item_id=wave_item_id)
     assert selected_item.alternative_set_id is not None
-    try:
-        construction_service.select_construction_alternative(
-            repository=construction_repository,
-            alternative_set_id=selected_item.alternative_set_id,
-            alternative_id=alternative_id,
-            actor_id=actor_id,
-            reason_code=reason_code,
-            comment=comment,
-            correlation_id=correlation_id,
-        )
-    except Exception as exc:
-        raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc
+    _select_construction_alternative_for_wave(
+        repository=construction_repository,
+        alternative_set_id=selected_item.alternative_set_id,
+        alternative_id=alternative_id,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
+    )
 
     updated_item = _with_selection_and_proof_pack(
         item=selected_item,

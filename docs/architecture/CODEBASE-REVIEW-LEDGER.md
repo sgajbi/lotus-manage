@@ -9351,3 +9351,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or construction-selection orchestration helpers where the service can remain workflow-oriented.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-384: Wave construction-selection adapter extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_construction_selection.py`,
+  `tests/unit/dpm/waves/test_wave_construction_selection.py`, selected wave API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still imported `construction_service` directly to select a construction
+  alternative and translate construction lookup failures into bounded wave errors.
+- Action: extracted the construction selection call and wave-specific error mapping into a focused
+  adapter module, removed the direct construction-service import from `wave_service.py`, preserved a
+  private service alias for compatibility, and added direct tests for delegation arguments, bounded
+  lookup-error mapping, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_construction_selection.py`; direct wave construction
+  selection tests and selected wave API regressions passed with 136 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or moving to the next largest service hotspot once wave orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
