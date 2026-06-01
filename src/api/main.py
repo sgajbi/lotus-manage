@@ -57,9 +57,6 @@ from src.api.services.rebalance_simulation_service import (
 from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
-from src.api.services.rebalance_simulation_service import (
-    run_analyze_async_operation as _run_analyze_async_operation,
-)
 
 
 class HealthStatusResponse(BaseModel):
@@ -270,7 +267,6 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
 __all__ = [
     "HealthStatusResponse",
     "_execute_batch_analysis",
-    "_run_analyze_async_operation",
     "analyze_scenarios",
     "analyze_scenarios_async",
     "app",

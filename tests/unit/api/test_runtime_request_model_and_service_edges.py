@@ -25,6 +25,7 @@ import src.api.services.rebalance_sync_execution as sync_execution
 import src.api.services.rebalance_supportability_write as supportability_write
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
+import src.api.main as api_main
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -106,6 +107,11 @@ def test_rebalance_runtime_overrides_fall_back_for_missing_main_exports() -> Non
         is _default_callable
     )
     assert runtime_overrides.resolve_main_override("__missing_lotus_manage_override__") is None
+
+
+def test_main_does_not_export_unused_async_runner_override() -> None:
+    assert not hasattr(api_main, "_run_analyze_async_operation")
+    assert "_run_analyze_async_operation" not in api_main.__all__
 
 
 def test_rebalance_run_support_provider_raises_application_error(monkeypatch) -> None:

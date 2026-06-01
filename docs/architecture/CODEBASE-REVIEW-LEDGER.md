@@ -10998,3 +10998,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   override hooks, keeping only explicit orchestration seams needed by API behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-452: Main async-runner override cleanup
+
+- Date: 2026-06-02
+- Scope: `src/api/main.py`, `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  selected rebalance runtime/API regressions, and this ledger.
+- Finding: `main.py` still imported and exported `_run_analyze_async_operation` as a compatibility
+  override even though no API route, service, or test used that main-module hook; active runtime
+  override coverage remains on `_execute_batch_analysis` and `run_simulation`.
+- Action: removed the unused `_run_analyze_async_operation` import/export from `main.py` and added a
+  regression proving the stale override hook is no longer published.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `main.py`; rebalance runtime and API regression tests passed with 139
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules; targeted
+  scan found no `_run_analyze_async_operation` export remaining in `main.py`.
+- Follow-up: preserve active `main.py` runtime override hooks only where tests or runtime override
+  helpers still prove they are intentional.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
