@@ -8217,3 +8217,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source-context mappers to the same helper where their source-id fallback semantics match.
 - Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-335: Source identity reuse for cost and execution evidence
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_execution_source_context.py`,
+  `src/api/services/construction_source_identity.py`, transaction-cost/execution source-context
+  tests, and this ledger.
+- Finding: transaction-cost and external execution acknowledgement source-context mappers still
+  duplicated canonical payload hashing and source-batch fingerprint fallback logic after the shared
+  source identity helper was introduced.
+- Action: rewired transaction-cost and external execution acknowledgement mappers to reuse the
+  shared source identity helper while preserving transaction-cost page-fingerprint fallback and
+  execution acknowledgement content-hash fallback semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`,
+  `construction_transaction_cost_source_context.py`, and
+  `construction_execution_source_context.py`; direct transaction-cost source-context, execution
+  source-context, and source-identity regressions passed with 8 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: migrate treasury source-context identity helpers only if aggregate hash and per-source
+  fallback behavior can be preserved without weakening source-boundary proof.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
