@@ -7651,3 +7651,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   canonical fallback rule.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-306: Liquidity source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, liquidity source-context
+  tests, and this ledger.
+- Finding: liquidity source-family mappers repeated canonical payload hashing and the same
+  source-batch, lineage, and content-hash source-id fallback rule.
+- Action: added internal liquidity source payload, hash, and source-id helpers and reused them
+  across cashflow, income-needs, reserve requirement, and planned withdrawal context mapping.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity source-context
+  regressions passed with 6 tests.
+- Follow-up: continue consolidating repeated source-product mechanics in mapper helpers without
+  changing source-family domain fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
