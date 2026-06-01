@@ -7267,3 +7267,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   them to one source family.
 - Wiki decision: no wiki source change required; this is internal dependency factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-286: Treasury source-context branch coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_treasury_source_context.py`, and this ledger.
+- Finding: the dedicated treasury source-context helper had direct coverage for hedge-readiness-only
+  fail-closed mapping, but not for fallback source selection or aggregation across all external
+  treasury source families.
+- Action: added direct tests for currency-exposure fallback behavior and combined external treasury
+  evidence aggregation across hedge readiness, currency exposure, hedge policy, eligible hedge
+  instruments, and FX forward curves. Assertions cover source ids, row preservation, reason-code
+  propagation, and sorted missing-data/blocked-capability evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused source-product/enrichment
+  regressions passed with 43 tests.
+- Follow-up: use the new branch tests as guardrails before changing fail-closed treasury behavior or
+  adding source-family-specific treasury normalization.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
