@@ -28,6 +28,10 @@ from src.api.services.mandate_diff import (
     iter_changed_fields,
     materiality_for_field,
 )
+from src.api.services.mandate_health_result import (
+    DpmMandateHealthCalculationResult as DpmMandateHealthCalculationResult,
+    calculate_mandate_health_result,
+)
 from src.api.services.mandate_monitoring_run import (
     build_monitoring_run,
     exceptions_for_monitoring_run,
@@ -74,6 +78,7 @@ _try_resolve_optional_source = try_resolve_optional_source
 _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
 _resolve_mandate_optional_sources = resolve_mandate_optional_sources
+_calculate_mandate_health_result = calculate_mandate_health_result
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
@@ -164,21 +169,17 @@ def refresh_mandate_from_core(
         portfolio_cashflow_projection=optional_sources.portfolio_cashflow_projection,
         unavailable_source_families=optional_sources.unavailable_source_families,
     )
-    health_snapshot = calculate_mandate_health(health_input)
-    monitoring_exceptions = monitoring_exceptions_from_health(
-        health_snapshot,
-        source_lineage=twin.source_lineage,
-    )
+    health_result = _calculate_mandate_health_result(health_input)
 
     repository.save_mandate_snapshot(twin)
-    repository.save_health_snapshot(health_snapshot)
-    for exception in monitoring_exceptions:
+    repository.save_health_snapshot(health_result.snapshot)
+    for exception in health_result.monitoring_exceptions:
         repository.save_monitoring_exception(exception)
 
     return DpmMandateRefreshResult(
         twin=twin,
-        health_snapshot=health_snapshot,
-        monitoring_exceptions=monitoring_exceptions,
+        health_snapshot=health_result.snapshot,
+        monitoring_exceptions=health_result.monitoring_exceptions,
     )
 
 
@@ -234,16 +235,12 @@ def recalculate_mandate_health(
 ) -> DpmMandateHealthSnapshot:
     if health_input.twin.mandate_id != mandate_id:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_HEALTH_INPUT_MISMATCH")
-    snapshot = calculate_mandate_health(health_input)
-    exceptions = monitoring_exceptions_from_health(
-        snapshot,
-        source_lineage=health_input.twin.source_lineage,
-    )
+    health_result = _calculate_mandate_health_result(health_input)
     repository.save_mandate_snapshot(health_input.twin)
-    repository.save_health_snapshot(snapshot)
-    for exception in exceptions:
+    repository.save_health_snapshot(health_result.snapshot)
+    for exception in health_result.monitoring_exceptions:
         repository.save_monitoring_exception(exception)
-    return snapshot
+    return health_result.snapshot
 
 
 def run_mandate_monitoring_once(

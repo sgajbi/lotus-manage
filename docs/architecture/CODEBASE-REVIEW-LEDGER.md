@@ -9212,3 +9212,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   they can be made directly testable without hiding orchestration.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-378: Mandate health-result helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_health_result.py`,
+  `tests/unit/dpm/mandates/test_mandate_health_result.py`, selected mandate API regressions, and
+  this ledger.
+- Finding: mandate refresh and recalculation paths both performed the same health snapshot
+  calculation followed by monitoring-exception derivation from the mandate twin source lineage.
+- Action: extracted the repeated health-calculation result assembly into a focused helper returning
+  a typed `DpmMandateHealthCalculationResult`, kept persistence and mismatch validation in
+  `mandate_service.py`, preserved the service compatibility alias, and added direct tests for
+  snapshot/exception projection, service import compatibility, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_health_result.py`; direct health-result helper tests
+  and selected mandate API regressions passed with 26 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting small repository lookup wrappers or move to another service hotspot
+  once the remaining `mandate_service.py` orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
