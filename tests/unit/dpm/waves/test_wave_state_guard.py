@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.services import wave_service, wave_state_guard
+from src.api.services import wave_state_guard
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_state_guard import require_wave_state, wave_state_is_idempotent
 from src.core.waves import DpmRebalanceWave
@@ -43,11 +43,6 @@ def test_require_wave_state_raises_governed_validation_error() -> None:
 
     assert exc_info.value.code == "DPM_WAVE_SIMULATION_INVALID_STATE"
     assert exc_info.value.message == "Wave dwv_state_guard cannot be simulated from state CREATED."
-
-
-def test_wave_service_preserves_state_guard_private_aliases() -> None:
-    assert wave_service._wave_state_is_idempotent is wave_state_is_idempotent
-    assert wave_service._require_wave_state is require_wave_state
 
 
 def test_wave_state_guard_exports_public_surface() -> None:

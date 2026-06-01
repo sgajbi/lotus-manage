@@ -10547,3 +10547,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and selection helper aliases without changing public wave route behavior.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-433: Wave state trigger alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_state_guard.py`,
+  `tests/unit/dpm/waves/test_wave_trigger_validation.py`, selected wave API regressions, and this
+  ledger.
+- Finding: `wave_service.py` still retained private state guard and trigger validation aliases even
+  though wave command helpers own guard invocation and direct helper tests prove the validation
+  behavior.
+- Action: removed state guard and trigger validation imports and aliases from the service facade,
+  and retired facade-alias assertions while preserving helper behavior and export-surface coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave state guard and trigger validation tests plus selected
+  wave API regressions passed with 143 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring transition execution and selection helper aliases now that remaining
+  service imports are concentrated around command facade delegation and public read/write entry
+  points.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
