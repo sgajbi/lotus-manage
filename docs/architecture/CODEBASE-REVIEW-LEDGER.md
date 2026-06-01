@@ -7967,3 +7967,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep preference-status handling explicit as sustainability preference schemas expand.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-324: Liquidity supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_liquidity_supportability.py`, construction method supportability
+  tests, and this ledger.
+- Finding: construction method supportability combined liquidity policy, currency overlay, and
+  regime-stress supportability in one helper module.
+- Action: extracted liquidity status, reason-code, cashflow projection, cash-weight, and derived
+  liquidity policy helpers into a focused module while preserving the existing method-supportability
+  facade imports.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and liquidity supportability source modules; focused method supportability
+  regressions passed with 3 tests.
+- Follow-up: split currency overlay and regime-stress supportability into focused modules if the
+  method-supportability facade continues to carry mixed domain logic.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
