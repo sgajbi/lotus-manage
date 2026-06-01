@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
@@ -7,11 +8,18 @@ from src.api.services.construction_supportability_application import (
 from src.core.construction import build_rebalance_result_alternative
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
+    AuthoritativeLiquidityContext,
     AuthoritativeTransactionCostContext,
     AuthoritativeTransactionCostPoint,
     ConstructionAuthorityContext,
 )
-from src.core.construction.vocabulary import ConstructionMethod, ConstructionMethodStatus
+from src.core.construction.vocabulary import (
+    ConstructionMethod,
+    ConstructionMethodStatus,
+    ConstructionTraceTerm,
+)
 from src.core.models import EngineOptions, RebalanceResult
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import (
@@ -28,7 +36,15 @@ from tests.shared.factories import (
 
 
 def _request() -> RebalanceRequest:
-    return RebalanceRequest.model_validate(valid_api_payload())
+    request = RebalanceRequest.model_validate(valid_api_payload())
+    return request.model_copy(
+        update={
+            "shelf_entries": [
+                *request.shelf_entries,
+                shelf_entry("EQ_B", status="APPROVED", asset_class="EQUITY"),
+            ]
+        }
+    )
 
 
 def _trade_result() -> RebalanceResult:
@@ -65,9 +81,9 @@ def _transaction_cost_context() -> AuthoritativeTransactionCostContext:
     return AuthoritativeTransactionCostContext(
         supportability_status=ConstructionMethodStatus.READY,
         source_system="lotus-core",
-        as_of_date="2026-06-01",
-        window_start_date="2026-05-01",
-        window_end_date="2026-06-01",
+        as_of_date=date(2026, 6, 1),
+        window_start_date=date(2026, 5, 1),
+        window_end_date=date(2026, 6, 1),
         returned_curve_point_count=2,
         curve_points=[
             AuthoritativeTransactionCostPoint(
@@ -80,8 +96,8 @@ def _transaction_cost_context() -> AuthoritativeTransactionCostContext:
                 average_cost_bps=Decimal("10"),
                 min_cost_bps=Decimal("8"),
                 max_cost_bps=Decimal("12"),
-                first_observed_date="2026-05-01",
-                last_observed_date="2026-06-01",
+                first_observed_date=date(2026, 5, 1),
+                last_observed_date=date(2026, 6, 1),
             ),
             AuthoritativeTransactionCostPoint(
                 security_id="EQ_B",
@@ -93,11 +109,48 @@ def _transaction_cost_context() -> AuthoritativeTransactionCostContext:
                 average_cost_bps=Decimal("10"),
                 min_cost_bps=Decimal("8"),
                 max_cost_bps=Decimal("12"),
-                first_observed_date="2026-05-01",
-                last_observed_date="2026-06-01",
+                first_observed_date=date(2026, 5, 1),
+                last_observed_date=date(2026, 6, 1),
             ),
         ],
         reason_codes=["TRANSACTION_COST_CURVE_READY"],
+    )
+
+
+def _client_restriction_context() -> AuthoritativeClientRestrictionContext:
+    return AuthoritativeClientRestrictionContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_supportability_application_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        restriction_count=1,
+        restrictions=[
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="instrument",
+                restriction_code="NO_BUY_EQ_B",
+                restriction_status="ACTIVE",
+                restriction_source="CLIENT_PROFILE",
+                applies_to_buy=True,
+                applies_to_sell=False,
+                instrument_ids=["EQ_B"],
+                effective_from=date(2026, 1, 1),
+                restriction_version=1,
+            )
+        ],
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+    )
+
+
+def _liquidity_context() -> AuthoritativeLiquidityContext:
+    return AuthoritativeLiquidityContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-manage-settlement-engine",
+        policy_id="liquidity-policy.v1",
+        minimum_cash_weight=Decimal("0.99"),
+        allowed_liquidity_tiers=["L1"],
+        reason_codes=["LIQUIDITY_READY"],
     )
 
 
@@ -126,4 +179,56 @@ def test_supportability_application_attaches_cost_evidence_and_diagnostics() -> 
     assert (
         enriched.diagnostics["authority_context"]["transaction_cost_context"]["source_system"]
         == "lotus-core"
+    )
+
+
+def test_supportability_application_applies_esg_restriction_constraints() -> None:
+    result = _trade_result()
+    enriched = apply_construction_supportability(
+        request=_request(),
+        method=ConstructionMethod.ESG_AWARE,
+        alternative=build_rebalance_result_alternative(
+            result=result,
+            method=ConstructionMethod.ESG_AWARE,
+            alternative_id="alt_esg_aware",
+        ),
+        result=result,
+        plan=resolve_method_plan(ConstructionMethod.ESG_AWARE, solver_available=True),
+        authority_context=ConstructionAuthorityContext(
+            client_restriction_context=_client_restriction_context()
+        ),
+    )
+
+    assert enriched.method_status == ConstructionMethodStatus.BLOCKED
+    assert any(
+        trace.constraint == ConstructionTraceTerm.CLIENT_RESTRICTION
+        and trace.status == ConstructionMethodStatus.BLOCKED
+        for trace in enriched.constraint_trace
+    )
+    reason_codes = enriched.diagnostics["enrichment_summary"]["reason_codes"]
+    assert "CLIENT_RESTRICTION_VIOLATION_NO_BUY_EQ_B" in reason_codes
+
+
+def test_supportability_application_applies_liquidity_status_overlay() -> None:
+    result = _trade_result()
+    enriched = apply_construction_supportability(
+        request=_request(),
+        method=ConstructionMethod.LIQUIDITY_AWARE,
+        alternative=build_rebalance_result_alternative(
+            result=result,
+            method=ConstructionMethod.LIQUIDITY_AWARE,
+            alternative_id="alt_liquidity_aware",
+        ),
+        result=result,
+        plan=resolve_method_plan(ConstructionMethod.LIQUIDITY_AWARE, solver_available=True),
+        authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
+    )
+
+    assert enriched.method_status == ConstructionMethodStatus.PENDING_REVIEW
+    reason_codes = enriched.diagnostics["enrichment_summary"]["reason_codes"]
+    assert "SETTLEMENT_AWARENESS_ENABLED" in reason_codes
+    assert "LIQUIDITY_READY" in reason_codes
+    assert (
+        enriched.diagnostics["authority_context"]["liquidity_context"]["policy_id"]
+        == "liquidity-policy.v1"
     )

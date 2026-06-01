@@ -7111,3 +7111,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   overlays before changing those branches.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-279: Supportability application ESG and liquidity coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: the extracted supportability application helper had direct coverage for COST_AWARE
+  transaction-cost evidence, but ESG_AWARE restriction constraints and LIQUIDITY_AWARE status
+  overlays were still only covered indirectly through broader construction service/API tests.
+- Action: added direct supportability-application tests for ESG client-restriction blocking and
+  liquidity policy pending-review overlay. The tests verify method status roll-up, constraint
+  trace evidence, enrichment reason-code propagation, and authority-context diagnostic provenance.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_supportability_application.py`,
+  focused supportability-application/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_supportability_application.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue adding direct branch-level coverage before modifying status roll-up or
+  diagnostic assembly internals.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
