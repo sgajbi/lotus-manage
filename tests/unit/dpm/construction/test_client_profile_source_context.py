@@ -4,6 +4,7 @@ from src.api.services.construction_client_profile_source_context import (
     client_restriction_profile_context,
     sustainability_preference_profile_context,
 )
+from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     client_restriction_profile_response,
@@ -28,6 +29,20 @@ def test_client_restriction_profile_context_preserves_rules_and_lineage() -> Non
     assert context.restrictions[0].source_record_id == "restriction-record-1"
 
 
+def test_client_restriction_profile_context_falls_back_to_content_hash_source_id() -> None:
+    response = client_restriction_profile_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = client_restriction_profile_context(response)
+
+    assert context.source_id == expected_hash
+
+
 def test_sustainability_preference_context_preserves_preferences_and_status() -> None:
     context = sustainability_preference_profile_context(
         sustainability_preference_profile_response()
@@ -44,3 +59,17 @@ def test_sustainability_preference_context_preserves_preferences_and_status() ->
     assert context.preferences[0].preference_code == "MIN_ARTICLE_8"
     assert context.preferences[0].minimum_allocation == Decimal("0.40")
     assert context.preferences[0].positive_tilt_codes == ["LOW_CARBON"]
+
+
+def test_sustainability_preference_context_falls_back_to_content_hash_source_id() -> None:
+    response = sustainability_preference_profile_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = sustainability_preference_profile_context(response)
+
+    assert context.source_id == expected_hash

@@ -7774,3 +7774,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep source-boundary identity fallback coverage close to each source-family mapper.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-313: Client-profile source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_profile_source_context.py`, client-profile
+  source-family mapping, and this ledger.
+- Finding: client-profile source-family tests covered lineage source IDs but did not prove
+  content-hash fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added direct fallback regressions for client restriction and sustainability preference
+  source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused client-profile
+  source-context regressions passed with 4 tests.
+- Follow-up: keep source-boundary fallback coverage aligned with shared source-id helper behavior.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
