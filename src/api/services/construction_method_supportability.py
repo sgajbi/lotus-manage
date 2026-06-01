@@ -10,18 +10,7 @@ from src.api.services.construction_liquidity_supportability import (
     liquidity_status,
     post_trade_cash_weight,
 )
-from src.core.construction.models import AuthoritativeRegimeStressContext
-from src.core.construction.vocabulary import ConstructionMethodStatus
-
-
-def regime_stress_status(
-    context: AuthoritativeRegimeStressContext | None,
-) -> ConstructionMethodStatus:
-    if context is None:
-        return ConstructionMethodStatus.DEGRADED
-    if context.worst_case_loss_pct > context.maximum_allowed_loss_pct:
-        return ConstructionMethodStatus.PENDING_REVIEW
-    return context.supportability_status
+from src.api.services.construction_regime_stress_supportability import regime_stress_status
 
 
 __all__ = [

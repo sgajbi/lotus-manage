@@ -8050,3 +8050,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   regime-stress supportability is extracted into its own helper.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-328: Regime stress supportability module split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_supportability.py`,
+  `src/api/services/construction_regime_stress_supportability.py`, construction method
+  supportability tests, and this ledger.
+- Finding: after liquidity and currency-overlay extraction, the method-supportability facade still
+  owned the regime-stress threshold evaluation directly.
+- Action: extracted regime-stress supportability status handling into a focused helper module while
+  preserving the existing method-supportability facade export for callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the method and regime-stress supportability source modules; focused method
+  supportability regression passed with 1 test; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: move direct regime-stress tests into a dedicated test module and leave
+  `construction_method_supportability.py` as a compatibility facade only.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
