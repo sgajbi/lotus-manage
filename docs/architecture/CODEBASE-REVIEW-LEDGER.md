@@ -7896,3 +7896,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   separately reusable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-320: Direct client restriction supportability tests
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`, client-restriction supportability, and
+  this ledger.
+- Finding: after extracting client-restriction supportability into its own helper module, the
+  focused behavioral tests still lived in the broader ESG supportability test file.
+- Action: moved direct client-restriction supportability and matching tests into a dedicated test
+  module and left the ESG supportability test focused on sustainability preference behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for the client-restriction and sustainability supportability source modules; focused
+  client-restriction and ESG/sustainability regressions passed with 3 tests.
+- Follow-up: add a dedicated sustainability supportability test module if additional edge cases
+  make the current ESG test filename misleading.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
