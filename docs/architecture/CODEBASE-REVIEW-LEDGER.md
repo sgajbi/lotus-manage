@@ -7597,3 +7597,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   mechanics that do not encode separate treasury business rules.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-303: Treasury aggregate supportability rollups
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: the treasury mapper still carried temporary per-source missing-data and
+  blocked-capability variables solely to build sorted aggregate supportability rollups.
+- Action: introduced internal aggregate helpers for merged missing-data families and blocked
+  capabilities, then used them directly in the currency-overlay context construction.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: continue improving treasury source mapping readability without hiding product-specific
+  source lineage and count fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
