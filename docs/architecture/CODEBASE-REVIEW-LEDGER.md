@@ -10616,3 +10616,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   opportunities that do not obscure router-facing orchestration.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-436: Construction source-product context update builders
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`, direct source-product context
+  tests, selected construction enrichment/API regressions, and this ledger.
+- Finding: the source-product authority-context aggregator still mixed transaction-cost,
+  liquidity, treasury, execution acknowledgement, client restriction, and sustainability update
+  assembly in one inline function after the individual family mappers had been extracted.
+- Action: split the aggregator into focused family-specific update builders and kept
+  `source_product_authority_context_updates` as a small composition point that preserves the public
+  helper contract and no-overwrite semantics.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_context.py`; direct source-product context tests plus
+  selected construction enrichment/API regressions passed with 54 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue checking construction enrichment helpers for similar local complexity now
+  that source-product family mapping and aggregation have clearer ownership.
+- Wiki decision: no wiki source change required; this is internal mapper modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
