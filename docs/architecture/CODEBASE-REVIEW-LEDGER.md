@@ -10821,3 +10821,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   service orchestration.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-445: Mandate monitoring-run alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_run.py`, selected mandate monitoring/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still routed monitoring-run orchestration through private helper
+  aliases and imported helper functions used only to preserve that private facade surface.
+- Action: replaced private monitoring-run aliases with direct calls to the owning helper module,
+  removed unused monitoring helper imports, and retired alias-pinning assertions while retaining
+  public monitoring model re-exports required by callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate monitoring-run and health-persistence tests plus
+  selected mandate API regressions passed with 34 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; search found no monitoring-run private aliases
+  remaining in `mandate_service.py`.
+- Follow-up: run a final mandate-service alias scan before the PR checkpoint to confirm only
+  intentional public re-exports remain.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

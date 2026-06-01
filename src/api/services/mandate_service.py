@@ -30,8 +30,6 @@ from src.api.services.mandate_monitoring_run import (
     DpmMonitoringRunMandateResult as DpmMonitoringRunMandateResult,
     build_monitoring_run,
     calculate_monitoring_run_mandate_result,
-    exceptions_for_monitoring_run,
-    increment_distribution,
     monitoring_run_id_for,
 )
 from src.api.services.mandate_pm_book import (
@@ -51,13 +49,6 @@ from src.core.mandates import (
     DpmMonitoringRun,
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverClient
-
-_monitoring_run_accumulator = DpmMonitoringRunAccumulator
-_monitoring_run_id_for = monitoring_run_id_for
-_increment_distribution = increment_distribution
-_exceptions_for_monitoring_run = exceptions_for_monitoring_run
-_calculate_monitoring_run_mandate_result = calculate_monitoring_run_mandate_result
-_build_monitoring_run = build_monitoring_run
 
 
 def refresh_mandate_from_core(
@@ -167,12 +158,12 @@ def run_mandate_monitoring_once(
     filters: dict[str, str],
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
-    monitoring_run_id = _monitoring_run_id_for(requested_at)
-    accumulator = _monitoring_run_accumulator.empty()
+    monitoring_run_id = monitoring_run_id_for(requested_at)
+    accumulator = DpmMonitoringRunAccumulator.empty()
 
     for mandate_id in mandate_ids:
         twin = get_latest_mandate(repository=repository, mandate_id=mandate_id)
-        mandate_result = _calculate_monitoring_run_mandate_result(
+        mandate_result = calculate_monitoring_run_mandate_result(
             twin=twin,
             as_of_date=as_of_date,
             monitoring_run_id=monitoring_run_id,
@@ -185,7 +176,7 @@ def run_mandate_monitoring_once(
         )
         accumulator.record(mandate_result)
 
-    run = _build_monitoring_run(
+    run = build_monitoring_run(
         monitoring_run_id=monitoring_run_id,
         as_of_date=as_of_date,
         requested_at=requested_at,
