@@ -8192,3 +8192,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and high-level orchestration while method execution/build policy lives in focused helpers.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-334: Shared construction source identity helpers
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_identity.py`,
+  `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`, liquidity/client profile source-context
+  tests, and this ledger.
+- Finding: liquidity and client-profile source-context mappers duplicated canonical payload
+  extraction, source content hashing, and top-level/lineage source-batch fingerprint fallback logic.
+- Action: extracted shared source identity helpers for canonical source payloads, content hashes,
+  and source-id fallback ordering, then rewired liquidity and client-profile source mappers to use
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_identity.py`, `construction_liquidity_source_context.py`, and
+  `construction_client_profile_source_context.py`; direct source identity, liquidity source-context,
+  and client-profile source-context regressions passed with 17 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: consider migrating treasury, execution acknowledgement, and transaction-cost
+  source-context mappers to the same helper where their source-id fallback semantics match.
+- Wiki decision: no wiki source change required; this is internal source-boundary modularity cleanup
+  with no route, payload, supported-feature, or operator-contract change.
