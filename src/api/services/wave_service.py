@@ -25,6 +25,7 @@ from src.api.services.wave_item_transitions import (
     stage_item as _stage_item,
 )
 from src.api.services.wave_item_builder import build_wave_item as _build_item
+from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_report_context import portfolio_memory_context_for_report
@@ -749,17 +750,6 @@ def get_report_input(
         )
     except DpmWaveReportInputBoundaryError as exc:
         raise DpmWaveValidationError("DPM_WAVE_EXTERNAL_EXECUTION_BOUNDARY", str(exc)) from exc
-
-
-def _get_wave_or_raise(
-    *,
-    wave_id: str,
-    wave_repository: DpmWaveRepository,
-) -> DpmRebalanceWave:
-    wave = wave_repository.get_wave(wave_id=wave_id)
-    if wave is None:
-        raise DpmWaveLookupError("DPM_WAVE_NOT_FOUND", f"Wave {wave_id} was not found.")
-    return wave
 
 
 def _append_event(

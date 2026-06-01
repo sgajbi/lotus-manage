@@ -8770,3 +8770,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   opportunities now that shared wave service error types are independently owned.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-359: Wave lookup helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_lookup.py`,
+  `tests/unit/dpm/waves/test_wave_lookup.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still owned the repeated repository lookup plus governed
+  not-found-error boundary used by both read and workflow commands.
+- Action: extracted wave lookup-to-governed-error translation into a focused helper module,
+  preserved the existing private service alias for compatibility inside orchestration code, and
+  added direct tests for loaded-wave return, missing-wave error details, alias preservation, and the
+  module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_lookup.py`; direct wave lookup tests and selected wave API
+  regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing non-transition helper boundaries, especially same-state event
+  append validation, for extraction without weakening orchestration clarity.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
