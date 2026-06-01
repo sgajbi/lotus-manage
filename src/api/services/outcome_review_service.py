@@ -17,7 +17,7 @@ from src.api.services.outcome_review_creation import (
     build_created_outcome_review,
     build_review_content_hash,
 )
-from src.api.services.outcome_review_refresh import build_source_refreshed_event
+from src.api.services.outcome_review_refresh import build_source_refresh_result
 from src.api.services.outcome_review_dimensions import (
     DpmOutcomeDimensionConfig as DpmOutcomeDimensionConfig,
     DpmOutcomeReviewValidationError as DpmOutcomeReviewValidationError,
@@ -170,16 +170,10 @@ def refresh_outcome_review_sources(
     repository: DpmOutcomeReviewRepository,
 ) -> tuple[DpmOutcomeEvent, DpmOutcomeReviewComparison]:
     review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
-    comparison = preview_outcome_review(
-        expected_snapshot=review.expected_snapshot,
+    event, comparison = build_source_refresh_result(
+        review=review,
         realized_snapshot=realized_snapshot,
         dimension_configs=dimension_configs,
-    )
-    event = build_source_refreshed_event(
-        outcome_review_id=outcome_review_id,
-        expected_snapshot=review.expected_snapshot,
-        realized_snapshot=realized_snapshot,
-        comparison=comparison,
         actor_id=actor_id,
         refreshed_at=datetime.now(timezone.utc),
         event_id_suffix=uuid4().hex[:8],

@@ -10056,3 +10056,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembly that can move out of orchestration services with direct tests.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-413: Outcome review refresh assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_refresh.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_refresh.py`, selected outcome-review regressions,
+  and this ledger.
+- Finding: outcome review source-refresh orchestration still performed dimension comparison and
+  refreshed-event assembly inline, mixing repository lookup/append control flow with pure refresh
+  payload assembly.
+- Action: extracted source-refresh comparison and event assembly into the refresh helper, kept
+  review lookup, clock/suffix generation, and append persistence in the service, and added direct
+  tests that prove snapshot comparison output drives refreshed-event state, reason codes, and
+  source lineage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_refresh.py`; direct outcome review
+  refresh tests and selected outcome/API regressions passed with 42 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation and rebalance orchestration for pure
+  builder-input assembly that can move behind direct helper tests.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
