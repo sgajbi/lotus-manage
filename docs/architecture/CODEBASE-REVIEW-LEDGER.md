@@ -7062,3 +7062,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   supportability application.
 - Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-277: Construction supportability application extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `src/api/services/construction_service.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: `construction_service.py` still owned the full method supportability application block,
+  including enrichment posture assembly, cost/ESG constraint application, method reason-code
+  attachment, method status roll-up, and diagnostic payload construction. That block is a coherent
+  supportability application boundary rather than alternative-set orchestration.
+- Action: extracted `apply_construction_supportability` into
+  `construction_supportability_application.py` and updated construction alternative orchestration
+  to delegate to it. Removed now-unused supportability, readiness, enrichment, source-analytics,
+  and status imports from `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction supportability application and
+  service modules, focused construction enrichment/API regressions
+  (`tests/unit/dpm/construction/test_enrichment.py` and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 50 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: add direct supportability-application tests before making further changes inside the
+  extracted method-status roll-up behavior.
+- Wiki decision: no wiki source change required; this is internal construction-service modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
