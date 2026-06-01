@@ -7329,3 +7329,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   semantics.
 - Wiki decision: no wiki source change required; this is internal service factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-289: Source-context test import boundary
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_enrichment.py`,
+  `src/api/services/construction_source_product_context.py`, and this ledger.
+- Finding: enrichment tests still imported treasury source mapping and source-product status mapping
+  through the broad source-product facade after those helpers had been split into focused modules.
+  That kept direct tests coupled to a compatibility facade instead of the modules they prove.
+- Action: moved enrichment test imports for treasury source mapping and source-product status mapping
+  to their focused modules, leaving the facade import only for authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test/source files; focused mypy
+  passed for `construction_source_product_context.py`,
+  `construction_source_product_status.py`, and `construction_treasury_source_context.py`; focused
+  enrichment/source-product regressions passed with 43 tests.
+- Follow-up: avoid adding new tests for split mapper modules through the source-product facade unless
+  the facade composition behavior itself is under test.
+- Wiki decision: no wiki source change required; this is internal test-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
