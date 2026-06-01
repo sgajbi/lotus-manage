@@ -6565,3 +6565,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   inputs.
 - Wiki decision: no wiki source change required; this is internal source-posture modularity cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-258: Construction method authority-context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_method_authority.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`, and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: per-method authority-context resolution still lived inside the construction service,
+  including risk concentration fetches, fail-closed risk-unavailable behavior, derived liquidity
+  and currency-overlay contexts, and regime scenario fetches using the governed construction
+  as-of date. That kept source-boundary behavior embedded in orchestration.
+- Action: extracted method authority-context resolution into
+  `construction_method_authority.py`. The construction service now delegates with the resolved
+  construction as-of date. Added direct tests for risk-authority context fetch, fail-closed risk
+  unavailability, and governed as-of-date propagation to regime scenario context. Updated
+  enrichment tests to import the risk-authority exception from the infrastructure boundary rather
+  than via the construction service.
+- Status: hardened
+- Evidence: focused method authority, construction enrichment, and construction API regressions
+  (`tests/unit/dpm/construction/test_method_authority.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over method authority and construction service passed.
+- Follow-up: continue extracting source-product authority-context assembly for lotus-core external
+  treasury and order-execution acknowledgement contexts.
+- Wiki decision: no wiki source change required; this is internal authority-context modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.

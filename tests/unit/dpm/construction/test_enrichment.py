@@ -43,6 +43,7 @@ from src.core.dpm_source_context import (
 )
 from src.core.models import EngineOptions, Money, RebalanceResult
 from src.core.rebalance.engine import run_simulation
+from src.infrastructure.risk_authority import LotusRiskAuthorityUnavailableError
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import (
     cash,
@@ -1294,10 +1295,10 @@ def test_construction_service_uses_method_specific_run_correlation_ids() -> None
 
 class _UnavailableRiskClient:
     def concentration_context(self, *, result, correlation_id):
-        raise construction_service.LotusRiskAuthorityUnavailableError("risk down")
+        raise LotusRiskAuthorityUnavailableError("risk down")
 
     def regime_scenario_context(self, *, result, portfolio_id, as_of_date, correlation_id):
-        raise construction_service.LotusRiskAuthorityUnavailableError("regime down")
+        raise LotusRiskAuthorityUnavailableError("regime down")
 
 
 def test_enrichment_summary_marks_turnover_pending_review_when_budget_drops_intents() -> None:
