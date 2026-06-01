@@ -7087,3 +7087,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   extracted method-status roll-up behavior.
 - Wiki decision: no wiki source change required; this is internal construction-service modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-278: Supportability application direct coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: the extracted `construction_supportability_application.py` helper was covered through
+  construction service and API regressions, but it did not yet have direct helper-level coverage
+  proving diagnostic assembly and COST_AWARE transaction-cost evidence attachment.
+- Action: added a focused unit test that applies COST_AWARE supportability directly, asserts the
+  method status remains READY when authoritative cost evidence is complete, verifies observed
+  transaction-cost evidence is attached to comparison metrics, and checks the diagnostics payload
+  includes method plan, enrichment reason codes, and authority context source provenance.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_supportability_application.py`,
+  focused supportability-application/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_supportability_application.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 51 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: add direct supportability-application tests for ESG and liquidity-aware status
+  overlays before changing those branches.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
