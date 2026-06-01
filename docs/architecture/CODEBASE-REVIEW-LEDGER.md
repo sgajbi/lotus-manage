@@ -7915,3 +7915,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   make the current ESG test filename misleading.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-321: Sustainability supportability test rename
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_sustainability_supportability.py`, removed
+  `tests/unit/dpm/construction/test_esg_supportability.py`, sustainability supportability tests,
+  and this ledger.
+- Finding: after direct client-restriction tests were split out, the remaining ESG supportability
+  test module only covered sustainability preference supportability behavior.
+- Action: renamed the test module to match the extracted sustainability supportability helper
+  boundary.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_sustainability_supportability.py`; focused sustainability
+  supportability regression passed with 1 test.
+- Follow-up: keep the ESG facade covered by higher-level construction supportability tests and
+  direct helper modules for domain-specific behavior.
+- Wiki decision: no wiki source change required; this is internal test navigation cleanup with no
+  route, payload, supported-feature, or operator-contract change.
