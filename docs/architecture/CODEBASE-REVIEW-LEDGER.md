@@ -7202,3 +7202,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   before changing their fail-closed source-boundary behavior.
 - Wiki decision: no wiki source change required; this is internal module factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-283: Execution acknowledgement source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_execution_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: external order execution acknowledgement mapping was fail-closed source-boundary
+  evidence assembly, but it still lived in the mixed construction source-product facade.
+- Action: moved external order execution acknowledgement mapping into a dedicated execution
+  source-context helper. The facade continues importing and re-exporting the helper for
+  authority-context composition stability, and direct tests now import the narrower module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_execution_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: isolate the remaining external treasury currency-overlay source mapper as its own
+  fail-closed source-boundary helper.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.

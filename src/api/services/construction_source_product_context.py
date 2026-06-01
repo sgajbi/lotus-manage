@@ -5,6 +5,9 @@ from src.api.services.construction_client_profile_source_context import (
     client_restriction_profile_context,
     sustainability_preference_profile_context,
 )
+from src.api.services.construction_execution_source_context import (
+    external_order_execution_acknowledgement_context,
+)
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
@@ -18,7 +21,6 @@ from src.api.services.construction_transaction_cost_source_context import (
 )
 from src.core.construction.models import (
     AuthoritativeCurrencyOverlayContext,
-    AuthoritativeExecutionAcknowledgementContext,
     ConstructionAuthorityContext,
 )
 from src.core.dpm_source_context import (
@@ -27,7 +29,6 @@ from src.core.dpm_source_context import (
     DpmCoreExternalFXForwardCurveResponse,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
-    DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExecutionContext,
     DpmResolvedSourceContext,
 )
@@ -299,35 +300,6 @@ def external_treasury_currency_overlay_context(
             fx_forward_curve.curve_points if fx_forward_curve is not None else []
         ),
         reason_codes=reason_codes,
-    )
-
-
-def external_order_execution_acknowledgement_context(
-    acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
-) -> AuthoritativeExecutionAcknowledgementContext | None:
-    if acknowledgement is None:
-        return None
-    payload = acknowledgement.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
-    return AuthoritativeExecutionAcknowledgementContext(
-        supportability_status=source_status_to_method_status(acknowledgement.supportability.state),
-        source_system="lotus-core",
-        source_product_name=acknowledgement.product_name,
-        source_product_version=acknowledgement.product_version,
-        source_id=(
-            acknowledgement.source_batch_fingerprint
-            or acknowledgement.lineage.get("source_batch_fingerprint")
-            or source_hash
-        ),
-        content_hash=source_hash,
-        acknowledgement_count=acknowledgement.supportability.acknowledgement_count,
-        missing_data_families=acknowledgement.supportability.missing_data_families,
-        blocked_capabilities=acknowledgement.supportability.blocked_capabilities,
-        acknowledgements=acknowledgement.acknowledgements,
-        reason_codes=[
-            acknowledgement.supportability.reason,
-            "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
-        ],
     )
 
 

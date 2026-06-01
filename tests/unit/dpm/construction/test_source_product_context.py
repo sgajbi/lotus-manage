@@ -5,6 +5,9 @@ from src.api.services.construction_client_profile_source_context import (
     client_restriction_profile_context,
     sustainability_preference_profile_context,
 )
+from src.api.services.construction_execution_source_context import (
+    external_order_execution_acknowledgement_context,
+)
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
@@ -14,7 +17,6 @@ from src.api.services.construction_liquidity_source_context import (
     source_status_to_method_status,
 )
 from src.api.services.construction_source_product_context import (
-    external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
     source_product_authority_context_updates,
 )
