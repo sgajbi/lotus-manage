@@ -29,7 +29,7 @@ from src.api.services.wave_item_selection_transition import (
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_persistence import (
     save_wave_or_raise as _save_wave_or_raise,
-    update_wave_or_raise as _update_wave_or_raise,
+    update_wave_or_raise,
 )
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
@@ -42,7 +42,7 @@ from src.api.services.wave_simulation_item import (
 )
 from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_state_guard import (
-    require_wave_state as _require_wave_state,
+    require_wave_state,
     wave_state_is_idempotent,
 )
 from src.api.services.wave_stage_transition import build_staged_wave as _build_staged_wave
@@ -76,6 +76,8 @@ from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 _simulation_result_state = simulation_result_state
 _wave_state_is_idempotent = wave_state_is_idempotent
+_require_wave_state = require_wave_state
+_update_wave_or_raise = update_wave_or_raise
 _validate_trigger = validate_trigger_or_raise
 _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
@@ -253,14 +255,15 @@ def select_wave_item_alternative(
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
-    wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    _require_wave_state(
-        wave,
+    prepared = _prepare_wave_transition(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+        replay_states=set(),
         allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
         error_code="DPM_WAVE_SELECTION_INVALID_STATE",
         action_phrase="record alternative selection",
     )
-    selected_item = _selectable_wave_item(wave=wave, wave_item_id=wave_item_id)
+    selected_item = _selectable_wave_item(wave=prepared.wave, wave_item_id=wave_item_id)
     assert selected_item.alternative_set_id is not None
     _select_construction_alternative_for_wave(
         repository=construction_repository,
@@ -273,7 +276,7 @@ def select_wave_item_alternative(
     )
 
     updated = _build_wave_with_selected_item_alternative(
-        wave=wave,
+        wave=prepared.wave,
         selected_item=selected_item,
         alternative_id=alternative_id,
         actor_id=actor_id,
@@ -286,10 +289,10 @@ def select_wave_item_alternative(
         mandate_repository=mandate_repository,
         run_service=run_service,
     )
-    _update_wave_or_raise(
+    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        wave=updated,
-        expected_version=wave.version,
+        source_wave=prepared.wave,
+        transitioned_wave=updated,
     )
     return updated
 

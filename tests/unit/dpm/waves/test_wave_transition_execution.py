@@ -64,6 +64,37 @@ def test_prepare_wave_transition_requires_allowed_state_for_new_transition() -> 
     assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
 
 
+def test_prepare_wave_transition_supports_non_replayable_allowed_transition() -> None:
+    wave = _wave(state="SIMULATED")
+
+    prepared = prepare_wave_transition(
+        wave_id=wave.wave_id,
+        wave_repository=_WaveRepository(wave),  # type: ignore[arg-type]
+        replay_states=set(),
+        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
+        error_code="DPM_WAVE_SELECTION_INVALID_STATE",
+        action_phrase="record alternative selection",
+    )
+
+    assert prepared == PreparedWaveTransition(wave=wave, replayed=False)
+
+
+def test_prepare_wave_transition_with_empty_replay_states_requires_allowed_state() -> None:
+    wave = _wave(state="APPROVED")
+
+    with pytest.raises(DpmWaveValidationError) as exc_info:
+        prepare_wave_transition(
+            wave_id=wave.wave_id,
+            wave_repository=_WaveRepository(wave),  # type: ignore[arg-type]
+            replay_states=set(),
+            allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
+            error_code="DPM_WAVE_SELECTION_INVALID_STATE",
+            action_phrase="record alternative selection",
+        )
+
+    assert exc_info.value.code == "DPM_WAVE_SELECTION_INVALID_STATE"
+
+
 def test_prepare_wave_transition_supports_explicitly_unguarded_transition() -> None:
     wave = _wave(state="CREATED")
 

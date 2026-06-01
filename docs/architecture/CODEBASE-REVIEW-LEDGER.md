@@ -10228,3 +10228,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   share transition persistence without obscuring selection-specific source validation.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-420: Wave selection transition execution normalization
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_transition_execution.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave selection/API
+  regressions, and this ledger.
+- Finding: wave alternative selection still performed lookup, state guard, and optimistic update
+  directly in the orchestration service after the common transition helper existed, while the
+  selection flow has no idempotent replay state and should model that explicitly.
+- Action: routed selection through the transition helper with `replay_states=set()`, kept
+  selection-specific source validation and proof-pack builder logic in the service, and added direct
+  helper tests proving empty replay-state transitions still enforce the allowed source state.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_transition_execution.py`; direct wave transition
+  execution tests and selected wave selection/API regressions passed with 149 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing wave selection source-validation and proof-pack generation
+  boundaries for smaller directly tested helper seams.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
