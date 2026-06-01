@@ -45,6 +45,10 @@ from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
 from src.api.services.wave_source_check import build_source_checked_wave
+from src.api.services.wave_state_guard import (
+    require_wave_state as _require_wave_state,
+    wave_state_is_idempotent as _wave_state_is_idempotent,
+)
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
@@ -154,13 +158,14 @@ def source_check_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "SOURCE_CHECKED":
+    if _wave_state_is_idempotent(wave, replay_states={"SOURCE_CHECKED"}):
         return wave, True
-    if wave.state != "CREATED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
-            f"Wave {wave_id} cannot be source-checked from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"CREATED"},
+        error_code="DPM_WAVE_SOURCE_CHECK_INVALID_STATE",
+        action_phrase="be source-checked",
+    )
 
     checked = build_source_checked_wave(
         wave=wave,
@@ -189,13 +194,17 @@ def simulate_wave(
     risk_authority_client: LotusRiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"}:
+    if _wave_state_is_idempotent(
+        wave,
+        replay_states={"SIMULATED", "PARTIALLY_SIMULATED", "SIMULATION_FAILED"},
+    ):
         return wave, True
-    if wave.state != "SOURCE_CHECKED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SIMULATION_INVALID_STATE",
-            f"Wave {wave_id} cannot be simulated from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"SOURCE_CHECKED"},
+        error_code="DPM_WAVE_SIMULATION_INVALID_STATE",
+        action_phrase="be simulated",
+    )
 
     completed = build_simulated_wave(
         wave=wave,
@@ -232,11 +241,12 @@ def select_wave_item_alternative(
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_SELECTION_INVALID_STATE",
-            f"Wave {wave_id} cannot record alternative selection from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
+        error_code="DPM_WAVE_SELECTION_INVALID_STATE",
+        action_phrase="record alternative selection",
+    )
     selected_item = next((item for item in wave.items if item.wave_item_id == wave_item_id), None)
     if selected_item is None:
         raise DpmWaveLookupError("DPM_WAVE_ITEM_NOT_FOUND", f"Wave item {wave_item_id} not found.")
@@ -311,13 +321,17 @@ def approve_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
+    if _wave_state_is_idempotent(
+        wave,
+        replay_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
+    ):
         return wave, True
-    if wave.state not in {"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_APPROVAL_INVALID_STATE",
-            f"Wave {wave_id} cannot be approved from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED", "REVIEW_REQUIRED"},
+        error_code="DPM_WAVE_APPROVAL_INVALID_STATE",
+        action_phrase="be approved",
+    )
 
     approved_items = [_approve_item(item, actor_id, reason_code, comment) for item in wave.items]
     approved_count = sum(1 for item in approved_items if item.state == "APPROVED")
@@ -367,13 +381,14 @@ def stage_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state in {"STAGED", "HANDOFF_READY"}:
+    if _wave_state_is_idempotent(wave, replay_states={"STAGED", "HANDOFF_READY"}):
         return wave, True
-    if wave.state not in {"APPROVED", "APPROVED_WITH_EXCEPTIONS"}:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_STAGE_INVALID_STATE",
-            f"Wave {wave_id} cannot be staged from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"APPROVED", "APPROVED_WITH_EXCEPTIONS"},
+        error_code="DPM_WAVE_STAGE_INVALID_STATE",
+        action_phrase="be staged",
+    )
 
     staged_items = [_stage_item(item, actor_id, reason_code, comment) for item in wave.items]
     staged_count = sum(1 for item in staged_items if item.state == "STAGED")
@@ -419,13 +434,14 @@ def handoff_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "HANDOFF_READY":
+    if _wave_state_is_idempotent(wave, replay_states={"HANDOFF_READY"}):
         return wave, True
-    if wave.state != "STAGED":
-        raise DpmWaveValidationError(
-            "DPM_WAVE_HANDOFF_INVALID_STATE",
-            f"Wave {wave_id} cannot create handoff evidence from state {wave.state}.",
-        )
+    _require_wave_state(
+        wave,
+        allowed_states={"STAGED"},
+        error_code="DPM_WAVE_HANDOFF_INVALID_STATE",
+        action_phrase="create handoff evidence",
+    )
 
     handoff_items = [_handoff_item(item, actor_id, reason_code, comment) for item in wave.items]
     handoff_item_ids = [
@@ -487,7 +503,7 @@ def cancel_wave(
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
     wave = _get_wave_or_raise(wave_id=wave_id, wave_repository=wave_repository)
-    if wave.state == "CANCELLED":
+    if _wave_state_is_idempotent(wave, replay_states={"CANCELLED"}):
         return wave, True
 
     cancelled_items = [_cancel_item(item, actor_id, reason_code, comment) for item in wave.items]

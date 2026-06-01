@@ -9258,3 +9258,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   checks or workflow persistence patterns where behavior can be directly tested.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-380: Wave state guard extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_state_guard.py`,
+  `tests/unit/dpm/waves/test_wave_state_guard.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` repeated idempotent replay checks and invalid-state validation error
+  construction across source-check, simulation, selection, approval, staging, handoff, and
+  cancellation workflows.
+- Action: extracted wave state replay and allowed-state guard helpers into a focused module,
+  replaced inline workflow guard checks in `wave_service.py`, preserved private service aliases, and
+  added direct tests for replay-state matching, allowed-state acceptance, governed error code/message
+  construction, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_state_guard.py`; direct wave state guard tests and selected
+  wave API regressions passed with 137 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update helpers
+  or selection workflow support where behavior can be directly covered.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
