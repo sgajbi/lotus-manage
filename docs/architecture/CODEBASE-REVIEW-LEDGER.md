@@ -9613,3 +9613,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembly using the same directly tested pattern.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-395: Wave stage-transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_stage_transition.py`,
+  `tests/unit/dpm/waves/test_wave_stage_transition.py`, selected wave workflow/API regressions, and
+  this ledger.
+- Finding: `stage_wave` still embedded item staging, no-external-execution diagnostics, eligible
+  item validation, aggregate refresh, and stage event assembly inside the public workflow
+  orchestration function.
+- Action: extracted stage transition assembly into a focused helper that returns the staged wave or
+  raises the existing bounded validation error, preserved the private workflow metadata alias
+  expected by existing tests, and added direct tests for staging approved items, preserving
+  unapproved exception items, no eligible items, stage metadata, aggregate refresh, and export
+  surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_stage_transition.py`; direct stage-transition tests and
+  selected wave workflow/API regressions passed with 122 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting handoff or cancel transition
+  assembly using the same directly tested pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

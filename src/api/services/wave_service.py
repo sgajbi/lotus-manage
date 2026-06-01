@@ -24,7 +24,6 @@ from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff
 from src.api.services.wave_item_transitions import (
     cancel_item as _cancel_item,
     handoff_item as _handoff_item,
-    stage_item as _stage_item,
 )
 from src.api.services.wave_item_collection import (
     wave_with_items_and_aggregate as _wave_with_items_and_aggregate,
@@ -51,6 +50,7 @@ from src.api.services.wave_state_guard import (
     require_wave_state as _require_wave_state,
     wave_state_is_idempotent as _wave_state_is_idempotent,
 )
+from src.api.services.wave_stage_transition import build_staged_wave as _build_staged_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
@@ -60,7 +60,7 @@ from src.api.services.wave_workflow_metadata import (
     cancel_event_metadata as _cancel_event_metadata,
     handoff_event_metadata as _handoff_event_metadata,
     selection_event_metadata as _selection_event_metadata,
-    stage_event_metadata as _stage_event_metadata,
+    stage_event_metadata,
 )
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -82,6 +82,7 @@ from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 _simulation_result_state = simulation_result_state
 _validate_trigger = validate_trigger_or_raise
 _approval_event_metadata = approval_event_metadata
+_stage_event_metadata = stage_event_metadata
 
 
 def preview_wave(
@@ -367,31 +368,12 @@ def stage_wave(
         action_phrase="be staged",
     )
 
-    staged_items = [_stage_item(item, actor_id, reason_code, comment) for item in wave.items]
-    staged_count = sum(1 for item in staged_items if item.state == "STAGED")
-    if staged_count == 0:
-        raise DpmWaveValidationError(
-            "DPM_WAVE_STAGE_NO_ELIGIBLE_ITEMS",
-            f"Wave {wave_id} has no approved items to stage.",
-        )
-
-    candidate = _wave_with_items_and_aggregate(wave=wave, items=staged_items)
-    staged = apply_wave_transition(
-        wave=candidate,
-        to_state="STAGED",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state="STAGED",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_STAGED",
-            metadata=_stage_event_metadata(
-                staged_item_count=staged_count,
-                reason_code=reason_code,
-                comment=comment,
-            ),
-        ),
+    staged = _build_staged_wave(
+        wave=wave,
+        actor_id=actor_id,
+        reason_code=reason_code,
+        comment=comment,
+        correlation_id=correlation_id,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
