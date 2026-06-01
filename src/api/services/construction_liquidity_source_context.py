@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from src.core.common.canonical import hash_canonical_payload
+from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.core.construction.models import (
     AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeLiquidityCashflowProjection,
@@ -185,14 +186,6 @@ def source_liquidity_context(
         planned_withdrawal_schedule=withdrawal_context,
         reason_codes=source_reason_codes,
     )
-
-
-def source_status_to_method_status(status: str) -> ConstructionMethodStatus:
-    if status == "READY":
-        return ConstructionMethodStatus.READY
-    if status == "DEGRADED":
-        return ConstructionMethodStatus.DEGRADED
-    return ConstructionMethodStatus.BLOCKED
 
 
 __all__ = [

@@ -7246,3 +7246,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   with direct branch coverage for each external source family.
 - Wiki decision: no wiki source change required; this is internal module factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-285: Neutral source-product status mapper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_status.py`,
+  source-product mapper helpers, `tests/unit/dpm/construction/test_source_product_context.py`, and
+  this ledger.
+- Finding: after splitting source-product mapping families, non-liquidity mappers still imported the
+  source supportability status translator from the liquidity helper, creating an avoidable
+  cross-family dependency.
+- Action: moved `source_status_to_method_status` into a neutral source-product status helper and
+  updated liquidity, client-profile, transaction-cost, execution, treasury, facade, and direct test
+  imports to use the shared boundary module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for all touched source/test files; focused mypy
+  passed for seven touched source files; focused source-product/enrichment regressions passed with
+  41 tests.
+- Follow-up: keep cross-family source-boundary utilities in neutral helpers rather than anchoring
+  them to one source family.
+- Wiki decision: no wiki source change required; this is internal dependency factoring with no route,
+  payload, supported-feature, or operator-contract change.

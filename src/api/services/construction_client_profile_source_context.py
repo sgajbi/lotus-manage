@@ -1,5 +1,5 @@
 from src.core.common.canonical import hash_canonical_payload
-from src.api.services.construction_liquidity_source_context import source_status_to_method_status
+from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,

@@ -14,8 +14,8 @@ from src.api.services.construction_liquidity_source_context import (
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
     source_liquidity_context,
-    source_status_to_method_status,
 )
+from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_product_context import (
     source_product_authority_context_updates,
 )
