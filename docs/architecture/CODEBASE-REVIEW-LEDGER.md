@@ -10870,3 +10870,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   orchestration and have direct helper-module coverage.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-447: Outcome review dimension alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/outcome_review_service.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_dimensions.py`, selected outcome review/API
+  regressions, and this ledger.
+- Finding: `outcome_review_service.py` still exposed a private `_dimension_inputs` alias even though
+  preview orchestration already calls the owning `outcome_review_dimensions` helper directly and
+  the helper has direct behavior plus export-surface tests.
+- Action: removed the stale private alias from the service facade and retired the alias-pinning test
+  assertion while preserving the public dimension model and validation-error import surface used by
+  callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `outcome_review_service.py`; direct outcome dimension tests plus selected
+  outcome creation/API regressions passed with 14 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules; targeted scan found no `_dimension_inputs`
+  service alias remaining.
+- Follow-up: continue scanning outcome/proof-pack service facades for private aliases that are not
+  required by orchestration and can be covered directly in helper modules.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

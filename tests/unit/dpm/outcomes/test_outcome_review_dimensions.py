@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.api.services import outcome_review_dimensions, outcome_review_service
+from src.api.services import outcome_review_dimensions
 from src.api.services.outcome_review_dimensions import (
     DpmOutcomeDimensionConfig,
     DpmOutcomeReviewValidationError,
@@ -116,6 +116,7 @@ def test_outcome_review_dimensions_exports_dimension_helper_surface() -> None:
 
 
 def test_service_preserves_dimension_import_surface() -> None:
+    from src.api.services import outcome_review_service
+
     assert outcome_review_service.DpmOutcomeDimensionConfig is DpmOutcomeDimensionConfig
     assert outcome_review_service.DpmOutcomeReviewValidationError is DpmOutcomeReviewValidationError
-    assert outcome_review_service._dimension_inputs is dimension_inputs_for_review

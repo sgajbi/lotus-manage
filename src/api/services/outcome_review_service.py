@@ -42,9 +42,6 @@ class DpmOutcomeReviewNotFoundError(Exception):
     pass
 
 
-_dimension_inputs = dimension_inputs_for_review
-
-
 def preview_outcome_review(
     *,
     expected_snapshot: DpmExpectedOutcomeSnapshot,
