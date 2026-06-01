@@ -35,6 +35,10 @@ from src.api.services.construction_solver_supportability import (
     with_method_reason_codes,
 )
 from src.api.services.construction_source_analytics_posture import source_analytics_posture
+from src.api.services.construction_source_product_context import (
+    external_order_execution_acknowledgement_context,
+    source_status_to_method_status,
+)
 from src.api.services.construction_esg_supportability import (
     client_restriction_reason_codes,
     client_restriction_status,
@@ -738,30 +742,7 @@ def _external_treasury_currency_overlay_context(
 def _external_order_execution_acknowledgement_context(
     acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
 ) -> AuthoritativeExecutionAcknowledgementContext | None:
-    if acknowledgement is None:
-        return None
-    payload = acknowledgement.model_dump(mode="json", exclude_none=True)
-    source_hash = hash_canonical_payload(payload)
-    return AuthoritativeExecutionAcknowledgementContext(
-        supportability_status=_source_status_to_method_status(acknowledgement.supportability.state),
-        source_system="lotus-core",
-        source_product_name=acknowledgement.product_name,
-        source_product_version=acknowledgement.product_version,
-        source_id=(
-            acknowledgement.source_batch_fingerprint
-            or acknowledgement.lineage.get("source_batch_fingerprint")
-            or source_hash
-        ),
-        content_hash=source_hash,
-        acknowledgement_count=acknowledgement.supportability.acknowledgement_count,
-        missing_data_families=acknowledgement.supportability.missing_data_families,
-        blocked_capabilities=acknowledgement.supportability.blocked_capabilities,
-        acknowledgements=acknowledgement.acknowledgements,
-        reason_codes=[
-            acknowledgement.supportability.reason,
-            "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
-        ],
-    )
+    return external_order_execution_acknowledgement_context(acknowledgement)
 
 
 def _authority_context_with_source_products(
@@ -1060,11 +1041,7 @@ def _authority_context_with_source_products(
 
 
 def _source_status_to_method_status(status: str) -> ConstructionMethodStatus:
-    if status == "READY":
-        return ConstructionMethodStatus.READY
-    if status == "DEGRADED":
-        return ConstructionMethodStatus.DEGRADED
-    return ConstructionMethodStatus.BLOCKED
+    return source_status_to_method_status(status)
 
 
 def _with_observed_transaction_cost_estimate(

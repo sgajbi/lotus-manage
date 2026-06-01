@@ -6594,3 +6594,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   treasury and order-execution acknowledgement contexts.
 - Wiki decision: no wiki source change required; this is internal authority-context modularity
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-259: External execution acknowledgement context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: external OMS order-execution acknowledgement context construction remained embedded in
+  the construction service together with general source-status mapping. This fail-closed boundary
+  is an enterprise control: Manage may preserve source acknowledgement evidence but must not claim
+  order, fill, settlement, or OMS truth locally.
+- Action: extracted external order-execution acknowledgement context construction and source
+  supportability status mapping into `construction_source_product_context.py`. Added direct tests
+  for absent source response, fail-closed unavailable acknowledgement posture, source lineage
+  preservation, blocked execution/fill/settlement capabilities, and non-ready source status mapping
+  to blocked method posture.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: continue extracting external treasury currency-overlay context and the remaining
+  source-product authority-context assembly by source family.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
