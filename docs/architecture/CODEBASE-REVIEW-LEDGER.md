@@ -7525,3 +7525,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   modules.
 - Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-299: Shared client-profile source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  client-profile and source-product context tests, and this ledger.
+- Finding: client restriction and sustainability preference source response builders were duplicated
+  between focused client-profile mapper tests and the source-product composition tests.
+- Action: moved the client restriction profile and sustainability preference profile response
+  builders into shared source-product fixtures and updated both test modules to reuse them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related client-profile/source-product source modules; focused client-profile/source-product
+  context regressions passed with 4 tests.
+- Follow-up: extract treasury source response builders from duplicated test modules next.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
