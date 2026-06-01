@@ -15,7 +15,6 @@ from src.api.services.construction_liquidity_source_context import (
     planned_withdrawal_schedule_context,
     source_liquidity_context,
 )
-from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_product_context import (
     source_product_authority_context_updates,
 )
@@ -802,10 +801,3 @@ def test_external_order_acknowledgement_context_is_fail_closed_source_evidence()
 
 def test_external_order_acknowledgement_context_absent_without_source_response() -> None:
     assert external_order_execution_acknowledgement_context(None) is None
-
-
-def test_source_status_to_method_status_maps_non_ready_fail_closed() -> None:
-    assert source_status_to_method_status("READY") == ConstructionMethodStatus.READY
-    assert source_status_to_method_status("DEGRADED") == ConstructionMethodStatus.DEGRADED
-    assert source_status_to_method_status("UNAVAILABLE") == ConstructionMethodStatus.BLOCKED
-    assert source_status_to_method_status("INCOMPLETE") == ConstructionMethodStatus.BLOCKED

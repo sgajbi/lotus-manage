@@ -7369,3 +7369,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or code that exercises those mapping contracts.
 - Wiki decision: no wiki source change required; this is internal API-surface narrowing for services
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-291: Source-product status test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_status.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_source_product_status.py`, and this ledger.
+- Finding: the neutral source-product status mapper test still lived in the broader source-product
+  context test module after the mapper moved to its own helper.
+- Action: moved the fail-closed status mapping test into a focused status test module and removed
+  the now-unneeded status import from the source-product context tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_status.py`; focused source-product status/context
+  regressions passed with 18 tests.
+- Follow-up: continue splitting source-product test coverage by source family as the next mapper
+  areas are touched.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
