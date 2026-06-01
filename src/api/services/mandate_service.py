@@ -34,12 +34,6 @@ from src.api.services.mandate_monitoring_run import (
     increment_distribution,
     monitoring_run_id_for,
 )
-from src.api.services.mandate_optional_sources import (
-    ready_benchmark_assignment_source,
-    ready_optional_source,
-    resolve_mandate_optional_sources,
-    try_resolve_optional_source,
-)
 from src.api.services.mandate_pm_book import (
     mandate_ids_from_pm_book_membership as mandate_ids_from_pm_book_membership,
 )
@@ -58,10 +52,6 @@ from src.core.mandates import (
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
-_try_resolve_optional_source = try_resolve_optional_source
-_ready_optional_source = ready_optional_source
-_ready_benchmark_assignment_source = ready_benchmark_assignment_source
-_resolve_mandate_optional_sources = resolve_mandate_optional_sources
 _monitoring_run_accumulator = DpmMonitoringRunAccumulator
 _monitoring_run_id_for = monitoring_run_id_for
 _increment_distribution = increment_distribution

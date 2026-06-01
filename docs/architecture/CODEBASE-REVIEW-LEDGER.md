@@ -10797,3 +10797,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   they have broader service orchestration call surfaces.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-444: Mandate optional-source alias retirement
+
+- Date: 2026-06-02
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, selected mandate refresh/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private optional-source resolution
+  aliases after mandate refresh extraction made `mandate_refresh` the owner of optional-source
+  dependency flow.
+- Action: removed stale optional-source imports and private aliases from the service facade, and
+  retired alias-pinning assertions while preserving direct optional-source helper behavior and
+  export-surface tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate optional-source and refresh tests plus selected
+  mandate API regressions passed with 39 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no optional-source private aliases remaining
+  in `mandate_service.py`.
+- Follow-up: review the remaining monitoring-run aliases separately because they are still used by
+  service orchestration.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
