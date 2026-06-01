@@ -23,10 +23,10 @@ from src.api.services.wave_item_transitions import (
     handoff_item as _handoff_item,
     stage_item as _stage_item,
 )
+from src.api.services.wave_item_builder import build_wave_item as _build_item
 from src.api.services.wave_portfolio_sources import (
-    diagnostics_from_portfolio as _diagnostics_from_portfolio,
-    optional_str as _optional_str,
-    source_refs_from_portfolio as _source_refs_from_portfolio,
+    optional_str as _optional_str,  # noqa: F401
+    source_refs_from_portfolio as _source_refs_from_portfolio,  # noqa: F401
     trigger_source_refs as _trigger_source_refs,
 )
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
@@ -51,11 +51,9 @@ from src.core.waves import (
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    DpmWaveSourceRef,
     DpmWaveVersionConflictError,
     DpmWaveTrigger,
     WaveTriggerType,
-    WaveItemState,
     WaveState,
     apply_wave_transition,
     build_wave_report_input,
@@ -1050,54 +1048,6 @@ def _append_event(
     return wave.model_copy(
         update={"version": wave.version + 1, "events": [*wave.events, event]},
         deep=True,
-    )
-
-
-def _build_item(
-    *,
-    index: int,
-    portfolio: dict[str, object],
-    mandate_repository: DpmMandateRepository,
-) -> DpmRebalanceWaveItem:
-    portfolio_id = str(portfolio["portfolio_id"]).strip()
-    mandate_id = _optional_str(portfolio.get("mandate_id"))
-    source_refs = _source_refs_from_portfolio(portfolio)
-    latest_mandate = mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=portfolio_id)
-    if latest_mandate is not None:
-        mandate_id = latest_mandate.mandate_id
-        source_refs.append(
-            DpmWaveSourceRef(
-                source_system="lotus-manage",
-                source_type="MANDATE_DIGITAL_TWIN",
-                source_id=latest_mandate.mandate_id,
-                source_version=latest_mandate.mandate_version,
-                supportability_state="READY",
-            )
-        )
-
-    if source_refs:
-        state: WaveItemState = "CANDIDATE"
-        reason_codes = ["AFFECTED_PORTFOLIO_SOURCE_READY"]
-        diagnostics = {
-            "source_posture": "candidate_evidence_available",
-            **_diagnostics_from_portfolio(portfolio),
-        }
-    else:
-        state = "SOURCE_BLOCKED"
-        reason_codes = ["MISSING_AFFECTED_PORTFOLIO_SOURCE"]
-        diagnostics = {
-            "source_owner": "caller_or_lotus-core",
-            "required_action": "SUPPLY_SOURCE_REF",
-        }
-
-    return DpmRebalanceWaveItem(
-        wave_item_id=f"dwi_{index:03d}_{uuid.uuid4().hex[:8]}",
-        portfolio_id=portfolio_id,
-        mandate_id=mandate_id,
-        state=state,
-        reason_codes=reason_codes,
-        source_refs=source_refs,
-        diagnostics=diagnostics,
     )
 
 

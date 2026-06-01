@@ -8494,3 +8494,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   wave item construction and trigger-validation logic.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-347: Wave item builder extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_builder.py`,
+  `tests/unit/dpm/waves/test_wave_item_builder.py`, selected wave preview/create/source API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still assembled affected-portfolio wave items directly, including
+  portfolio source evidence, mandate digital-twin source refs, candidate diagnostics, and
+  source-blocked diagnostics.
+- Action: extracted affected-portfolio item construction into a focused helper module, preserved
+  service-private compatibility aliases for existing source helper tests, and added direct tests for
+  source-ready item construction, mandate twin enrichment, source-blocked construction, and the
+  module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_builder.py`; full direct wave item builder tests
+  passed with 4 tests; selected wave preview/create/source API regressions passed with 84 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting trigger validation and construction/proof-pack item selection
+  helpers while keeping repository orchestration and version-conflict handling in `wave_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
