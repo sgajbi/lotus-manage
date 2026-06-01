@@ -11,8 +11,6 @@ from src.core.outcomes import (
     DpmOutcomeReportInput,
     DpmPostTradeOutcomeReview,
     DpmRealizedOutcomeSnapshot,
-    build_ai_evidence_input,
-    build_report_input,
     compare_outcome_dimensions,
 )
 from src.api.services.outcome_review_creation import (
@@ -25,15 +23,16 @@ from src.api.services.outcome_review_dimensions import (
     DpmOutcomeReviewValidationError as DpmOutcomeReviewValidationError,
     dimension_inputs_for_review,
 )
-from src.api.services.portfolio_memory_context_service import (
-    build_report_portfolio_memory_context,
+from src.api.services.outcome_review_report_inputs import (
+    build_outcome_ai_evidence_input,
+    build_outcome_report_input,
+    portfolio_memory_context_for_report,
 )
 from src.api.services.outcome_review_search import (
     normalize_outcome_review_search_filter as _normalize_outcome_review_search_filter,
     search_outcome_review_page,
 )
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.repository import DpmWaveRepository
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError, DpmOutcomeReviewRepository
@@ -46,6 +45,7 @@ class DpmOutcomeReviewNotFoundError(Exception):
 
 
 _dimension_inputs = dimension_inputs_for_review
+_portfolio_memory_context_for_report = portfolio_memory_context_for_report
 
 
 def preview_outcome_review(
@@ -231,15 +231,12 @@ def get_report_input(
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmOutcomeReportInput:
     review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
-    return build_report_input(
-        review,
-        portfolio_memory_context=_portfolio_memory_context_for_report(
-            review=review,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=repository,
-            mandate_repository=mandate_repository,
-        ),
+    return build_outcome_report_input(
+        review=review,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=repository,
+        mandate_repository=mandate_repository,
     )
 
 
@@ -252,32 +249,10 @@ def get_ai_evidence_input(
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmOutcomeAiEvidenceInput:
     review = get_outcome_review(outcome_review_id=outcome_review_id, repository=repository)
-    return build_ai_evidence_input(
-        review,
-        portfolio_memory_context=_portfolio_memory_context_for_report(
-            review=review,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=repository,
-            mandate_repository=mandate_repository,
-        ),
-    )
-
-
-def _portfolio_memory_context_for_report(
-    *,
-    review: DpmPostTradeOutcomeReview,
-    proof_pack_repository: DpmProofPackRepository | None,
-    wave_repository: DpmWaveRepository | None,
-    outcome_review_repository: DpmOutcomeReviewRepository,
-    mandate_repository: DpmMandateRepository | None,
-) -> DpmPortfolioMemoryReportContext | None:
-    if proof_pack_repository is None or wave_repository is None:
-        return None
-    return build_report_portfolio_memory_context(
-        portfolio_id=review.portfolio_id,
+    return build_outcome_ai_evidence_input(
+        review=review,
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
-        outcome_review_repository=outcome_review_repository,
+        outcome_review_repository=repository,
         mandate_repository=mandate_repository,
     )

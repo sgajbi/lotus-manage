@@ -9911,3 +9911,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   support where it produces directly testable source-boundary behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-407: Outcome review report-input context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_report_inputs.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_report_inputs.py`, selected outcome/proof-pack
+  regressions, and this ledger.
+- Finding: outcome review report-input and AI-evidence input accessors duplicated
+  portfolio-memory context assembly inside the service, keeping downstream handoff context
+  construction embedded in lookup orchestration.
+- Action: extracted outcome report/AI evidence input builders and portfolio-memory context
+  assembly into a focused helper module, preserving service ownership of review lookup while adding
+  direct tests for missing repository gating, portfolio id propagation, report input context
+  passing, AI evidence context passing, export surface, and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_report_inputs.py`; direct outcome
+  report-input tests and selected outcome/proof-pack regressions passed with 113 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack report/AI input helpers for the same handoff-context
+  duplication pattern.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
