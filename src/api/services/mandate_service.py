@@ -68,7 +68,6 @@ _increment_distribution = increment_distribution
 _exceptions_for_monitoring_run = exceptions_for_monitoring_run
 _calculate_monitoring_run_mandate_result = calculate_monitoring_run_mandate_result
 _build_monitoring_run = build_monitoring_run
-_build_mandate_refresh_result_from_core = build_mandate_refresh_result_from_core
 
 
 def refresh_mandate_from_core(
@@ -85,7 +84,7 @@ def refresh_mandate_from_core(
     include_market_data_coverage: bool,
     correlation_id: Optional[str],
 ) -> DpmMandateRefreshResult:
-    refresh_result = _build_mandate_refresh_result_from_core(
+    refresh_result = build_mandate_refresh_result_from_core(
         core_resolver=core_resolver,
         portfolio_id=portfolio_id,
         mandate_id=mandate_id,

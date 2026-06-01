@@ -10774,3 +10774,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper tests and service call-site evidence.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-443: Mandate refresh alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `tests/unit/dpm/mandates/test_mandate_refresh.py`,
+  selected mandate refresh/API regressions, and this ledger.
+- Finding: `mandate_service.py` still exposed a private mandate-refresh builder alias even though
+  the owning refresh helper has direct source-resolution, health-calculation, error-mapping, and
+  export-surface tests.
+- Action: removed the private refresh builder alias, routed refresh orchestration directly through
+  `build_mandate_refresh_result_from_core`, and kept the public refresh-result model re-export for
+  existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate refresh and health-persistence tests plus selected
+  mandate API regressions passed with 32 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules; search found no refresh private alias remaining in
+  `mandate_service.py`.
+- Follow-up: continue reviewing optional-source and monitoring-run alias groups separately because
+  they have broader service orchestration call surfaces.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
