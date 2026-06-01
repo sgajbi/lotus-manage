@@ -11312,3 +11312,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `make check` does not depend on stale helper exports.
 - Wiki decision: no wiki source change required; this is test-maintenance for internal service
   ownership and does not change route, payload, supported-feature, or operator-contract truth.
+
+## BACKEND-REVIEW-20260602-465: Construction source-product public surface guard
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py` and this ledger.
+- Finding: after the source-product context orchestrator stopped importing individual mapping
+  helpers directly, the direct tests still lacked a small assertion pinning its intended public
+  export surface to orchestration functions only.
+- Action: added a direct `__all__` regression proving
+  `construction_source_product_context.py` exports only `authority_context_with_source_products` and
+  `source_product_authority_context_updates`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger; direct
+  source-product context regressions passed with 6 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed with only line-ending
+  warnings; service leakage scan found no router/HTTP imports in service modules; targeted scan
+  confirmed the new `construction_source_product_context.__all__` guard and existing orchestrator
+  function coverage.
+- Follow-up: keep helper modules carrying their own export-surface tests where they own pure
+  source-product mapping behavior.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.

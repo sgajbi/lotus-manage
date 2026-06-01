@@ -8,6 +8,7 @@ from src.api.services.construction_client_profile_source_context import (
 from src.api.services.construction_execution_source_context import (
     external_order_execution_acknowledgement_context,
 )
+from src.api.services import construction_source_product_context
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
     source_product_authority_context_updates,
@@ -189,3 +190,10 @@ def test_source_product_authority_context_updates_preserves_all_existing_source_
 
     assert updates == {}
     assert resolved_context is authority_context
+
+
+def test_construction_source_product_context_exports_only_orchestration_surface() -> None:
+    assert construction_source_product_context.__all__ == [
+        "authority_context_with_source_products",
+        "source_product_authority_context_updates",
+    ]
