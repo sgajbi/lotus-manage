@@ -48,13 +48,6 @@ from src.api.services.wave_transition_execution import (
     prepare_wave_transition,
 )
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
-from src.api.services.wave_workflow_metadata import (
-    approval_event_metadata,
-    cancel_event_metadata,
-    handoff_event_metadata,
-    selection_event_metadata,
-    stage_event_metadata,
-)
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -77,11 +70,6 @@ _validate_trigger = validate_trigger_or_raise
 _select_construction_alternative_for_wave = select_construction_alternative_for_wave
 _build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
 _selectable_wave_item = selectable_wave_item
-_approval_event_metadata = approval_event_metadata
-_stage_event_metadata = stage_event_metadata
-_handoff_event_metadata = handoff_event_metadata
-_cancel_event_metadata = cancel_event_metadata
-_selection_event_metadata = selection_event_metadata
 _append_event = append_same_state_event
 _wave_with_items_and_aggregate = wave_with_items_and_aggregate
 _prepare_wave_transition = prepare_wave_transition

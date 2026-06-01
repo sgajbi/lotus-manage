@@ -1,4 +1,4 @@
-from src.api.services import wave_service, wave_workflow_metadata
+from src.api.services import wave_workflow_metadata
 from src.api.services.wave_workflow_metadata import (
     approval_event_metadata,
     cancel_event_metadata,
@@ -89,14 +89,6 @@ def test_cancel_event_metadata_preserves_no_external_execution_claim() -> None:
         "cancelled_item_count": 3,
         "external_execution_claimed": False,
     }
-
-
-def test_wave_service_preserves_workflow_metadata_private_aliases() -> None:
-    assert wave_service._approval_event_metadata is approval_event_metadata
-    assert wave_service._selection_event_metadata is selection_event_metadata
-    assert wave_service._stage_event_metadata is stage_event_metadata
-    assert wave_service._handoff_event_metadata is handoff_event_metadata
-    assert wave_service._cancel_event_metadata is cancel_event_metadata
 
 
 def test_wave_workflow_metadata_exports_public_surface() -> None:

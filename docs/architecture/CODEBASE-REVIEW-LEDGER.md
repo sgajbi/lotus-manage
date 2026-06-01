@@ -10478,3 +10478,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   moved to the owning helper module and no service facade contract depends on them.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-430: Wave workflow metadata alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave workflow metadata/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still retained private aliases for workflow metadata helpers even
+  though the owning `wave_workflow_metadata` module has direct behavior and export-surface tests.
+- Action: removed workflow metadata helper imports and private aliases from the service facade, and
+  retired the service-alias assertion so tests verify the owning helper module instead of preserving
+  stale facade surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct workflow metadata tests and selected wave command/API
+  regressions passed with 146 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring remaining service compatibility aliases in small batches when direct
+  helper tests already prove ownership and no route or service API depends on the alias.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
