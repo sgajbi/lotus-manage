@@ -7408,3 +7408,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   composition suite.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-293: Transaction-cost source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_transaction_cost_source_context.py`, and this ledger.
+- Finding: direct transaction-cost curve mapper coverage still lived in the broad source-product
+  context test module after transaction-cost mapping had been extracted.
+- Action: moved transaction-cost source mapper tests into a focused transaction-cost source-context
+  test module, keeping the broad source-product context tests focused on authority-context
+  composition behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py`; focused transaction-cost/context
+  regressions passed with 15 tests.
+- Follow-up: continue splitting direct source-family mapper tests by liquidity, client profile, and
+  treasury families.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

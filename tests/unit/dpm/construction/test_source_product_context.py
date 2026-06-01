@@ -655,26 +655,6 @@ def test_sustainability_preference_context_preserves_preferences_and_status() ->
     assert context.preferences[0].positive_tilt_codes == ["LOW_CARBON"]
 
 
-def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:
-    context = transaction_cost_context_from_curve(_transaction_cost_curve())
-
-    assert context.supportability_status == ConstructionMethodStatus.DEGRADED
-    assert context.source_system == "lotus-core"
-    assert context.source_product_name == "TransactionCostCurve"
-    assert context.source_id == "curve-lineage"
-    assert context.returned_curve_point_count == 1
-    assert context.missing_security_ids == ["EQ_B"]
-    assert context.reason_codes == ["TRANSACTION_COST_CURVE_PARTIAL"]
-    assert len(context.curve_points) == 1
-    assert context.curve_points[0].sample_transaction_ids == [
-        "tx1",
-        "tx2",
-        "tx3",
-        "tx4",
-        "tx5",
-    ]
-
-
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:
     context = external_treasury_currency_overlay_context(
         hedge_readiness=_hedge_readiness_response(),
