@@ -10704,3 +10704,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   evidence before pruning them.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-440: Mandate diff alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `tests/unit/dpm/mandates/test_mandate_diff.py`,
+  selected mandate diff/API regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private mandate-diff helper aliases even
+  though the owning `mandate_diff` module has direct behavior and export-surface tests; the service
+  only needs the version-comparison builder for its public diff endpoint.
+- Action: removed unused mandate-diff helper imports and private aliases from the service facade,
+  routed the public diff endpoint directly through `build_mandate_diff_for_versions`, and kept only
+  the public diff model re-exports required by existing callers.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate diff tests plus selected mandate API regressions
+  passed with 33 tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate
+  passed; `git diff --check` passed; service leakage scan found no router/HTTP imports in service
+  modules; search found no mandate-diff private aliases remaining in `mandate_service.py`.
+- Follow-up: continue retiring remaining mandate service compatibility aliases only when service
+  orchestration can call owning helpers directly and direct helper tests cover behavior.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.

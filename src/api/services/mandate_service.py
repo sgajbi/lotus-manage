@@ -18,11 +18,7 @@ from src.api.services.mandate_errors import (
 from src.api.services.mandate_diff import (
     DpmMandateDiff as DpmMandateDiff,
     DpmMandateFieldChange as DpmMandateFieldChange,
-    build_mandate_diff,
     build_mandate_diff_for_versions,
-    diff_payloads,
-    iter_changed_fields,
-    materiality_for_field,
 )
 from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult as DpmMandateHealthCalculationResult,
@@ -62,11 +58,6 @@ from src.core.mandates import (
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
-_build_mandate_diff = build_mandate_diff
-_diff_payloads = diff_payloads
-_iter_changed_fields = iter_changed_fields
-_materiality_for_field = materiality_for_field
-_build_mandate_diff_for_versions = build_mandate_diff_for_versions
 _try_resolve_optional_source = try_resolve_optional_source
 _ready_optional_source = ready_optional_source
 _ready_benchmark_assignment_source = ready_benchmark_assignment_source
@@ -329,7 +320,7 @@ def diff_mandate_versions(
     if not versions:
         raise DpmMandateNotFoundError("DPM_MANDATE_NOT_FOUND")
 
-    return _build_mandate_diff_for_versions(
+    return build_mandate_diff_for_versions(
         mandate_id=mandate_id,
         versions=versions,
         from_version=from_version,
