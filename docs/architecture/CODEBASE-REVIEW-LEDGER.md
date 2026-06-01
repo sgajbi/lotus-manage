@@ -9396,3 +9396,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or move to the next largest service hotspot once wave orchestration is sufficiently lean.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-386: Proof pack handoff-ref helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_handoff_refs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_handoff_refs.py`, selected proof-pack service
+  regressions, and this ledger.
+- Finding: `proof_pack_service.py` still embedded append-only handoff reference lookup, hydration,
+  and idempotent append mechanics inside the public proof-pack orchestration service.
+- Action: extracted handoff reference support into a focused helper module, kept public proof-pack
+  not-generated error translation in `proof_pack_service.py`, and added direct tests for latest
+  append-only reference selection, immutable hydration overlay, idempotent handoff reference
+  generation, and stored-ref to evidence-ref identity preservation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_handoff_refs.py`; direct handoff-ref tests and
+  selected proof-pack service regressions passed with 16 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `proof_pack_service.py` by extracting selected-alternative source
+  resolution or mandate-evidence resolution where the service can remain orchestration-focused.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

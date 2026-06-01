@@ -21,10 +21,15 @@ from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofP
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
 )
+from src.api.services.proof_pack_handoff_refs import (
+    ensure_handoff_refs as _ensure_handoff_refs,
+    find_stored_ref,
+    hydrate_handoff_refs,
+    stored_ref_to_evidence_ref,
+)
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackEvidenceRef,
-    DpmProofPackStoredRef,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
@@ -187,7 +192,7 @@ def get_proof_pack(
     proof_pack = proof_pack_repository.get_proof_pack(proof_pack_id=proof_pack_id)
     if proof_pack is None:
         raise DpmRunNotFoundError("DPM_PROOF_PACK_NOT_FOUND")
-    return _hydrate_handoff_refs(
+    return hydrate_handoff_refs(
         proof_pack=proof_pack,
         proof_pack_repository=proof_pack_repository,
     )
@@ -203,7 +208,7 @@ def get_report_input_ref(
         proof_pack_repository=proof_pack_repository,
     )
     if proof_pack.report_input_ref is None:
-        stored_ref = _find_stored_ref(
+        stored_ref = find_stored_ref(
             proof_pack_id=proof_pack_id,
             ref_type=REPORT_INPUT_REF_TYPE,
             proof_pack_repository=proof_pack_repository,
@@ -212,7 +217,7 @@ def get_report_input_ref(
             raise DpmProofPackReportInputNotGeneratedError(
                 "DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED"
             )
-        return _stored_ref_to_evidence_ref(stored_ref)
+        return stored_ref_to_evidence_ref(stored_ref)
     return proof_pack.report_input_ref
 
 
@@ -226,7 +231,7 @@ def get_ai_evidence_ref(
         proof_pack_repository=proof_pack_repository,
     )
     if proof_pack.ai_evidence_ref is None:
-        stored_ref = _find_stored_ref(
+        stored_ref = find_stored_ref(
             proof_pack_id=proof_pack_id,
             ref_type=AI_EVIDENCE_REF_TYPE,
             proof_pack_repository=proof_pack_repository,
@@ -235,7 +240,7 @@ def get_ai_evidence_ref(
             raise DpmProofPackAiEvidenceInputNotGeneratedError(
                 "DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED"
             )
-        return _stored_ref_to_evidence_ref(stored_ref)
+        return stored_ref_to_evidence_ref(stored_ref)
     return proof_pack.ai_evidence_ref
 
 
@@ -313,23 +318,11 @@ def ensure_handoff_refs(
     include_report_input: bool,
     include_ai_evidence_input: bool,
 ) -> DpmPreTradeProofPack:
-    if include_report_input:
-        report_input = build_report_input(proof_pack)
-        _append_handoff_ref(
-            ref=report_input.evidence_ref,
-            proof_pack=proof_pack,
-            proof_pack_repository=proof_pack_repository,
-        )
-    if include_ai_evidence_input:
-        ai_evidence_input = build_ai_evidence_input(proof_pack)
-        _append_handoff_ref(
-            ref=ai_evidence_input.evidence_ref,
-            proof_pack=proof_pack,
-            proof_pack_repository=proof_pack_repository,
-        )
-    return _hydrate_handoff_refs(
+    return _ensure_handoff_refs(
         proof_pack=proof_pack,
         proof_pack_repository=proof_pack_repository,
+        include_report_input=include_report_input,
+        include_ai_evidence_input=include_ai_evidence_input,
     )
 
 
@@ -360,84 +353,3 @@ def _resolve_mandate_evidence(
     if twin.portfolio_id != portfolio_id:
         return None, None, ["DPM_MANDATE_TWIN_PORTFOLIO_MISMATCH"]
     return twin, mandate_repository.get_latest_health_snapshot(mandate_id=mandate_id), []
-
-
-def _append_handoff_ref(
-    *,
-    ref: DpmProofPackEvidenceRef,
-    proof_pack: DpmPreTradeProofPack,
-    proof_pack_repository: DpmProofPackRepository,
-) -> None:
-    existing = _find_stored_ref(
-        proof_pack_id=proof_pack.proof_pack_id,
-        ref_type=ref.ref_type,
-        proof_pack_repository=proof_pack_repository,
-    )
-    if existing is not None and existing.content_hash == ref.content_hash:
-        return
-    proof_pack_repository.append_ref(
-        ref=DpmProofPackStoredRef(
-            proof_pack_id=proof_pack.proof_pack_id,
-            ref_type=ref.ref_type,
-            ref_id=ref.ref_id,
-            source_system=ref.source_system,
-            content_hash=ref.content_hash,
-            created_at=datetime.now(timezone.utc).isoformat(),
-        )
-    )
-
-
-def _hydrate_handoff_refs(
-    *,
-    proof_pack: DpmPreTradeProofPack,
-    proof_pack_repository: DpmProofPackRepository,
-) -> DpmPreTradeProofPack:
-    report_ref = proof_pack.report_input_ref
-    ai_ref = proof_pack.ai_evidence_ref
-    stored_report_ref = _find_stored_ref(
-        proof_pack_id=proof_pack.proof_pack_id,
-        ref_type=REPORT_INPUT_REF_TYPE,
-        proof_pack_repository=proof_pack_repository,
-    )
-    stored_ai_ref = _find_stored_ref(
-        proof_pack_id=proof_pack.proof_pack_id,
-        ref_type=AI_EVIDENCE_REF_TYPE,
-        proof_pack_repository=proof_pack_repository,
-    )
-    if stored_report_ref is not None:
-        report_ref = _stored_ref_to_evidence_ref(stored_report_ref)
-    if stored_ai_ref is not None:
-        ai_ref = _stored_ref_to_evidence_ref(stored_ai_ref)
-    if report_ref == proof_pack.report_input_ref and ai_ref == proof_pack.ai_evidence_ref:
-        return proof_pack
-    return proof_pack.model_copy(
-        update={
-            "report_input_ref": report_ref,
-            "ai_evidence_ref": ai_ref,
-        }
-    )
-
-
-def _find_stored_ref(
-    *,
-    proof_pack_id: str,
-    ref_type: str,
-    proof_pack_repository: DpmProofPackRepository,
-) -> DpmProofPackStoredRef | None:
-    return next(
-        (
-            ref
-            for ref in reversed(proof_pack_repository.list_refs(proof_pack_id=proof_pack_id))
-            if ref.ref_type == ref_type
-        ),
-        None,
-    )
-
-
-def _stored_ref_to_evidence_ref(ref: DpmProofPackStoredRef) -> DpmProofPackEvidenceRef:
-    return DpmProofPackEvidenceRef(
-        ref_type=ref.ref_type,
-        ref_id=ref.ref_id,
-        source_system=ref.source_system,
-        content_hash=ref.content_hash,
-    )
