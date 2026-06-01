@@ -7790,3 +7790,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep source-boundary fallback coverage aligned with shared source-id helper behavior.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-314: Treasury source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_treasury_source_context.py`, external treasury
+  source-family mapping, and this ledger.
+- Finding: treasury source-family tests covered lineage source IDs but did not prove content-hash
+  fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added a direct fallback regression covering the aggregate hedge-readiness source ID and
+  each optional treasury source-family source ID.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused treasury
+  source-context regressions passed with 5 tests.
+- Follow-up: keep the aggregate treasury hash fallback explicit because the primary context source
+  ID intentionally represents the combined source-family payload when hedge-readiness lineage is
+  absent.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
