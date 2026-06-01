@@ -1,4 +1,4 @@
-from src.api.services import wave_item_collection, wave_service
+from src.api.services import wave_item_collection
 from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.core.waves import DpmRebalanceWave, DpmRebalanceWaveItem
 
@@ -49,10 +49,6 @@ def test_wave_with_items_and_aggregate_preserves_extra_updates() -> None:
 
     assert updated.handoff_refs == ["handoff:dwv_collection"]
     assert updated.aggregate_metrics.state_counts == {"HANDOFF_READY": 1}
-
-
-def test_wave_service_preserves_item_collection_helper_alias() -> None:
-    assert wave_service._wave_with_items_and_aggregate is wave_with_items_and_aggregate
 
 
 def test_wave_item_collection_exports_public_surface() -> None:

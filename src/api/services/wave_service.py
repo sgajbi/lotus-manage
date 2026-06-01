@@ -5,8 +5,6 @@ from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
-from src.api.services.wave_event_append import append_same_state_event
-from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.api.services.wave_item_selection_transition import (
     build_wave_with_selected_item_alternative,
 )
@@ -70,8 +68,6 @@ _validate_trigger = validate_trigger_or_raise
 _select_construction_alternative_for_wave = select_construction_alternative_for_wave
 _build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
 _selectable_wave_item = selectable_wave_item
-_append_event = append_same_state_event
-_wave_with_items_and_aggregate = wave_with_items_and_aggregate
 _prepare_wave_transition = prepare_wave_transition
 _persist_transitioned_wave = persist_transitioned_wave
 

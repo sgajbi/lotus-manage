@@ -10500,3 +10500,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   helper tests already prove ownership and no route or service API depends on the alias.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-431: Wave event collection alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_event_append.py`,
+  `tests/unit/dpm/waves/test_wave_item_collection.py`, selected wave event/item API regressions,
+  and this ledger.
+- Finding: `wave_service.py` still imported and exposed private compatibility aliases for wave event
+  append and item collection helpers even though the owning helper modules already carry direct
+  behavior and export-surface tests.
+- Action: removed the stale event append and item collection imports and aliases from the service
+  facade, and retired tests that pinned obsolete private facade surface while keeping direct helper
+  behavior coverage.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave event append and item collection tests plus selected
+  wave API regressions passed with 139 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue retiring lookup, persistence, state-guard, transition, and selection
+  compatibility aliases in similarly narrow slices when their owning helper tests provide direct
+  coverage.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
