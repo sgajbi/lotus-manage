@@ -27,12 +27,7 @@ from src.api.services.rebalance_simulation_errors import (
     DpmRebalanceSupportabilityStoreUnavailableError,
     DpmRebalanceStatefulInputDisabledError,
 )
-from src.api.services.rebalance_policy_pack_service import (
-    load_dpm_policy_pack_catalog,
-)
-from src.api.services.rebalance_operation_identity import (
-    create_batch_analysis_id,
-)
+from src.api.services.rebalance_policy_pack_service import load_dpm_policy_pack_catalog
 from src.api.services.rebalance_policy_pack_execution import (
     resolve_execution_policy_pack_context,
 )
@@ -53,6 +48,10 @@ from src.api.services.rebalance_async_submission_payload import build_analyze_as
 from src.api.services.rebalance_async_submission import submit_analyze_async_request
 from src.api.services.rebalance_async_manual_execution import (
     execute_analyze_async_operation_now,
+)
+from src.api.services.rebalance_batch_execution_context import (
+    DpmBatchExecutionContext as DpmBatchExecutionContext,
+    build_batch_execution_context,
 )
 from src.api.services.rebalance_batch_execution import execute_batch_scenarios
 from src.api.services.rebalance_sync_execution import execute_simulation_request
@@ -200,22 +199,24 @@ def execute_batch_analysis(
     source_context: Optional[DpmResolvedSourceContext] = None,
 ) -> BatchRebalanceResult:
     current_logger = _resolved_logger()
-    batch_id = create_batch_analysis_id()
     current_logger.info("Analyzing scenario batch")
-
-    policy_context = resolve_execution_policy_pack_context(
+    execution_context = build_batch_execution_context(
         request_policy_pack_id=request_policy_pack_id,
         tenant_default_policy_pack_id=tenant_default_policy_pack_id,
         tenant_id=tenant_id,
-        surface="analyze",
-        catalog_loader=load_dpm_policy_pack_catalog,
+    )
+    current_logger.debug(
+        "Resolved lotus-manage policy pack for analyze. enabled=%s source=%s policy_pack_id=%s",
+        execution_context.policy_resolution_enabled,
+        execution_context.policy_resolution_source,
+        execution_context.selected_policy_pack_id,
     )
 
     return execute_batch_scenarios(
         request=request,
-        batch_id=batch_id,
+        batch_id=execution_context.batch_id,
         correlation_id=correlation_id,
-        policy_definition=policy_context.definition,
+        policy_definition=execution_context.policy_pack_definition,
         source_context=source_context,
         run_simulation_fn=resolve_callable_override("run_simulation", run_simulation),
         record_for_support=resolve_callable_override(

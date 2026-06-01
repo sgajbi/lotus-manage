@@ -9837,3 +9837,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   where extracted helpers improve auditability without hiding runtime gates.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-404: Rebalance batch execution-context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `src/api/services/rebalance_batch_execution_context.py`,
+  `tests/unit/api/test_rebalance_batch_execution_context.py`, selected rebalance API/runtime
+  regressions, and this ledger.
+- Finding: `execute_batch_analysis` still assembled generated batch id, analyze policy-pack
+  context, and policy-resolution observability fields inline before delegating to batch scenario
+  execution.
+- Action: extracted batch execution-context assembly into a focused helper that returns the batch
+  id, selected policy definition, and policy resolution metadata, keeping batch analysis focused on
+  logging and execution delegation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `rebalance_simulation_service.py` and `rebalance_batch_execution_context.py`; direct
+  batch execution-context tests and selected rebalance API/runtime regressions passed with 140
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing rebalance async submission and manual execution paths for
+  similarly testable context assembly or supportability-boundary extraction.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
