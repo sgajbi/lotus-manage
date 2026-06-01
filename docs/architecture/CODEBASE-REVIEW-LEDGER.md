@@ -6815,3 +6815,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   that can move to domain-specific helper modules without weakening method-level readability.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-267: Construction supportability wrapper pruning
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction orchestration retained thin pass-through wrappers for method-specific
+  status, enrichment reason-code attachment, source analytics posture, and an unused construction
+  options wrapper. These wrappers added private indirection without preserving domain ownership or
+  isolating behavior.
+- Action: removed the unused options wrapper and replaced private pass-through calls with direct
+  calls to the established domain helper modules. Kept the remaining wrappers where existing
+  tests still document supportability behavior through the current service boundary.
+- Status: hardened
+- Evidence: focused construction enrichment and construction API regressions
+  (`tests/unit/dpm/construction/test_enrichment.py` and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 50 tests. Focused Ruff checks,
+  focused mypy over construction service, OpenAPI quality, API vocabulary validation, service
+  leakage scan, and `git diff --check` passed.
+- Follow-up: continue moving supportability tests toward their owning helper modules so additional
+  pass-through wrappers can be removed without reducing behavioral coverage.
+- Wiki decision: no wiki source change required; this is internal orchestration cleanup with no
+  route, payload, supported-feature, or operator-contract change.
