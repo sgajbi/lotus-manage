@@ -8953,3 +8953,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   commands only when it reduces duplication without hiding command-state policy.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-367: Wave simulation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_simulation.py`,
+  `tests/unit/dpm/waves/test_wave_simulation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled simulation-start transition evidence, per-item
+  simulation results, aggregate rollup, and completion transition evidence directly inside the
+  command function, blending deterministic assembly with state-policy and persistence orchestration.
+- Action: extracted simulation transition assembly into a focused helper, kept idempotent state guard
+  and repository update in `wave_service.py`, removed the now-unused simulation result import from
+  the service, and added direct tests for missing-input degradation, simulation event sequence,
+  aggregate rollup metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_simulation.py`; direct wave simulation tests and selected
+  wave API regressions passed with 134 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: pause additional feature-branch growth at the 50-commit checkpoint and run the full
+  PR pre-merge gate before opening the PR.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

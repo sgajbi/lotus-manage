@@ -2,10 +2,7 @@ import uuid
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
-from src.api.services.wave_aggregate_metrics import (
-    aggregate_wave_items as _aggregate,
-    simulation_result_state as _simulation_result_state,
-)
+from src.api.services.wave_aggregate_metrics import aggregate_wave_items as _aggregate
 from src.api.services.wave_creation import (
     create_wave_request_hash as _create_wave_request_hash,
     promote_preview_to_created_wave as _promote_preview_to_created_wave,
@@ -35,9 +32,9 @@ from src.api.services.wave_selection_item import (
     with_selection_and_proof_pack as _with_selection_and_proof_pack,
 )
 from src.api.services.wave_search import search_wave_summaries
+from src.api.services.wave_simulation import build_simulated_wave
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput,
-    simulate_item as _simulate_item,
 )
 from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_supportability_payload import (
@@ -188,55 +185,15 @@ def simulate_wave(
             f"Wave {wave_id} cannot be simulated from state {wave.state}.",
         )
 
-    simulating = apply_wave_transition(
+    completed = build_simulated_wave(
         wave=wave,
-        to_state="SIMULATING",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="SOURCE_CHECKED",
-            to_state="SIMULATING",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_SIMULATION_STARTED",
-            metadata={"ready_item_count": wave.aggregate_metrics.ready_item_count},
-        ),
-    )
-    simulated_items = [
-        _simulate_item(
-            item=item,
-            correlation_id=correlation_id,
-            item_inputs=item_inputs,
-            methods=methods,
-            construction_repository=construction_repository,
-            run_service=run_service,
-            risk_authority_client=risk_authority_client,
-        )
-        for item in simulating.items
-    ]
-    candidate = simulating.model_copy(
-        update={
-            "items": simulated_items,
-            "aggregate_metrics": _aggregate(simulated_items),
-        },
-        deep=True,
-    )
-    to_state = _simulation_result_state(simulated_items)
-    completed = apply_wave_transition(
-        wave=candidate,
-        to_state=to_state,
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="SIMULATING",
-            to_state=to_state,
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_SIMULATION_COMPLETED",
-            metadata={
-                "state_counts": candidate.aggregate_metrics.state_counts,
-                "ready_item_count": candidate.aggregate_metrics.ready_item_count,
-                "blocked_item_count": candidate.aggregate_metrics.blocked_item_count,
-            },
-        ),
+        actor_id=actor_id,
+        correlation_id=correlation_id,
+        item_inputs=item_inputs,
+        methods=methods,
+        construction_repository=construction_repository,
+        run_service=run_service,
+        risk_authority_client=risk_authority_client,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
