@@ -7506,3 +7506,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   builders into shared fixtures as those test modules are touched.
 - Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-298: Shared liquidity source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  liquidity and source-product context tests, and this ledger.
+- Finding: liquidity source response builders were duplicated between focused liquidity mapper tests
+  and the source-product composition tests.
+- Action: moved cashflow projection, client income-needs, liquidity reserve, and planned withdrawal
+  source response builders into shared source-product fixtures and updated both test modules to use
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related liquidity/source-product source modules; focused liquidity/source-product context
+  regressions passed with 8 tests.
+- Follow-up: continue extracting client-profile and treasury response builders from duplicated test
+  modules.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
