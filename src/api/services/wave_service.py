@@ -1,5 +1,3 @@
-import uuid
-
 from src.api.request_models import RebalanceRequest
 from src.api.services.wave_aggregate_metrics import (
     simulation_result_state,
@@ -8,6 +6,7 @@ from src.api.services.wave_construction_selection import (
     select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
 )
 from src.api.services.wave_creation import (
+    create_created_wave_id as _create_created_wave_id,
     create_wave_request_hash as _create_wave_request_hash,
     promote_preview_to_created_wave as _promote_preview_to_created_wave,
 )
@@ -145,7 +144,7 @@ def create_wave(
     )
     wave = _promote_preview_to_created_wave(
         preview=preview,
-        wave_id=f"dwv_{uuid.uuid4().hex[:12]}",
+        wave_id=_create_created_wave_id(),
         actor_id=actor_id,
         correlation_id=correlation_id,
         idempotency_key=idempotency_key,

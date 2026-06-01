@@ -9374,3 +9374,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or moving to the next largest service hotspot once wave orchestration is sufficiently lean.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-385: Wave created-id helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_creation.py`,
+  `tests/unit/dpm/waves/test_wave_creation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still generated durable wave identifiers directly with `uuid`, while
+  the rest of the create-wave request hashing and preview-promotion mechanics already lived in
+  `wave_creation.py`.
+- Action: moved created-wave id generation into `create_created_wave_id`, removed the direct `uuid`
+  dependency from `wave_service.py`, and added a deterministic direct test for the governed
+  `dwv_` identifier prefix and 12-character entropy slice.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_creation.py`; direct wave creation tests and selected wave
+  API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or move to the next largest service hotspot once wave orchestration is sufficiently lean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -1,4 +1,5 @@
 from src.api.services.wave_creation import (
+    create_created_wave_id,
     create_wave_request_hash,
     promote_preview_to_created_wave,
 )
@@ -72,6 +73,17 @@ def test_create_wave_request_hash_uses_canonical_create_fields() -> None:
     )
 
 
+def test_create_created_wave_id_uses_governed_wave_prefix(monkeypatch) -> None:
+    class _Uuid:
+        hex = "abcdef1234567890"
+
+    from src.api.services import wave_creation
+
+    monkeypatch.setattr(wave_creation.uuid, "uuid4", lambda: _Uuid())
+
+    assert create_created_wave_id() == "dwv_abcdef123456"
+
+
 def test_promote_preview_to_created_wave_rekeys_events_and_records_idempotency_hash() -> None:
     created = promote_preview_to_created_wave(
         preview=_preview_wave(),
@@ -96,6 +108,7 @@ def test_wave_creation_exports_only_creation_helpers() -> None:
     from src.api.services import wave_creation
 
     assert wave_creation.__all__ == [
+        "create_created_wave_id",
         "create_wave_request_hash",
         "promote_preview_to_created_wave",
     ]
