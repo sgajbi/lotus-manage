@@ -8885,3 +8885,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   centralized, but request hashing and preview-to-create promotion remain orchestration concerns.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-364: Wave creation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_creation.py`,
+  `tests/unit/dpm/waves/test_wave_creation.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still mixed create-request hash assembly and preview-to-created wave
+  promotion into the create orchestration path, making idempotency evidence and event re-keying
+  harder to test directly.
+- Action: extracted canonical create request hashing and preview-to-created promotion into a focused
+  creation helper, kept idempotency replay and persistence orchestration in `wave_service.py`, and
+  added direct tests for hash field coverage, preview event re-keying, created transition evidence,
+  idempotency hash metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_creation.py`; direct wave creation tests and selected wave
+  API regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue keeping workflow orchestration explicit while moving deterministic assembly
+  helpers into directly tested modules.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

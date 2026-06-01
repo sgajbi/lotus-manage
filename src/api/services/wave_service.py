@@ -10,10 +10,12 @@ from src.api.services.wave_aggregate_metrics import (
     aggregate_wave_items as _aggregate,
     simulation_result_state as _simulation_result_state,
 )
+from src.api.services.wave_creation import (
+    create_wave_request_hash as _create_wave_request_hash,
+    promote_preview_to_created_wave as _promote_preview_to_created_wave,
+)
 from src.api.services.wave_event_evidence import (
     build_wave_event as _event,
-    idempotency_key_hash as _idempotency_key_hash,
-    request_hash as _request_hash,
 )
 from src.api.services.wave_event_append import append_same_state_event as _append_event
 from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
@@ -135,15 +137,13 @@ def create_wave(
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
 ) -> tuple[DpmRebalanceWave, bool]:
-    request_hash = _request_hash(
-        {
-            "trigger_type": trigger_type,
-            "trigger_id": trigger_id,
-            "rationale": rationale,
-            "as_of_date": as_of_date,
-            "actor_id": actor_id,
-            "portfolios": portfolios,
-        }
+    request_hash = _create_wave_request_hash(
+        trigger_type=trigger_type,
+        trigger_id=trigger_id,
+        rationale=rationale,
+        as_of_date=as_of_date,
+        actor_id=actor_id,
+        portfolios=portfolios,
     )
     existing = wave_repository.get_wave_by_idempotency(idempotency_key=idempotency_key)
     if existing is not None:
@@ -159,28 +159,12 @@ def create_wave(
         portfolios=portfolios,
         mandate_repository=mandate_repository,
     )
-    wave = preview.model_copy(update={"wave_id": f"dwv_{uuid.uuid4().hex[:12]}"}, deep=True)
-    wave = wave.model_copy(
-        update={
-            "events": [
-                event.model_copy(update={"wave_id": wave.wave_id}, deep=True)
-                for event in wave.events
-            ]
-        },
-        deep=True,
-    )
-    wave = apply_wave_transition(
-        wave=wave,
-        to_state="CREATED",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="PREVIEWED",
-            to_state="CREATED",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_CREATED",
-            metadata={"idempotency_key_hash": _idempotency_key_hash(idempotency_key)},
-        ),
+    wave = _promote_preview_to_created_wave(
+        preview=preview,
+        wave_id=f"dwv_{uuid.uuid4().hex[:12]}",
+        actor_id=actor_id,
+        correlation_id=correlation_id,
+        idempotency_key=idempotency_key,
     )
     _save_wave_or_raise(
         wave_repository=wave_repository,
