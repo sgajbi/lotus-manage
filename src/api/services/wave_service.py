@@ -12,20 +12,19 @@ from src.api.services.wave_creation import (
     create_wave_request_hash as _create_wave_request_hash,
     promote_preview_to_created_wave as _promote_preview_to_created_wave,
 )
-from src.api.services.wave_event_evidence import (
-    build_wave_event as _event,
-)
-from src.api.services.wave_event_append import append_same_state_event as _append_event
 from src.api.services.wave_errors import (
     DpmWaveLookupError as DpmWaveLookupError,
     DpmWaveValidationError as DpmWaveValidationError,
 )
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
+from src.api.services.wave_event_append import append_same_state_event
+from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_handoff_transition import (
     build_handoff_ready_wave as _build_handoff_ready_wave,
 )
-from src.api.services.wave_item_collection import (
-    wave_with_items_and_aggregate as _wave_with_items_and_aggregate,
+from src.api.services.wave_item_collection import wave_with_items_and_aggregate
+from src.api.services.wave_item_selection_transition import (
+    build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
 )
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
 from src.api.services.wave_persistence import (
@@ -35,9 +34,6 @@ from src.api.services.wave_persistence import (
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_report_context import portfolio_memory_context_for_report
-from src.api.services.wave_selection_item import (
-    with_selection_and_proof_pack as _with_selection_and_proof_pack,
-)
 from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation import build_simulated_wave
@@ -58,7 +54,7 @@ from src.api.services.wave_workflow_metadata import (
     approval_event_metadata,
     cancel_event_metadata,
     handoff_event_metadata,
-    selection_event_metadata as _selection_event_metadata,
+    selection_event_metadata,
     stage_event_metadata,
 )
 from src.core.construction.repository import ConstructionRepository
@@ -82,6 +78,10 @@ _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
 _handoff_event_metadata = handoff_event_metadata
 _cancel_event_metadata = cancel_event_metadata
+_selection_event_metadata = selection_event_metadata
+_event = build_wave_event
+_append_event = append_same_state_event
+_wave_with_items_and_aggregate = wave_with_items_and_aggregate
 
 
 def preview_wave(
@@ -268,8 +268,9 @@ def select_wave_item_alternative(
         correlation_id=correlation_id,
     )
 
-    updated_item = _with_selection_and_proof_pack(
-        item=selected_item,
+    updated = _build_wave_with_selected_item_alternative(
+        wave=wave,
+        selected_item=selected_item,
         alternative_id=alternative_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -280,28 +281,6 @@ def select_wave_item_alternative(
         proof_pack_repository=proof_pack_repository,
         mandate_repository=mandate_repository,
         run_service=run_service,
-    )
-    updated_items = [
-        updated_item if item.wave_item_id == wave_item_id else item for item in wave.items
-    ]
-    updated = _append_event(
-        wave=_wave_with_items_and_aggregate(wave=wave, items=updated_items),
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state=wave.state,
-            to_state=wave.state,
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_ITEM_ALTERNATIVE_SELECTED",
-            event_type="ITEM_SELECTION",
-            metadata=_selection_event_metadata(
-                wave_item_id=wave_item_id,
-                alternative_set_id=selected_item.alternative_set_id,
-                selected_alternative_id=alternative_id,
-                proof_pack_id=updated_item.proof_pack_id,
-                proof_pack_state=updated_item.diagnostics.get("proof_pack_state"),
-            ),
-        ),
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,

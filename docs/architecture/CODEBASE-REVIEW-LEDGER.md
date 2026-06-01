@@ -9688,3 +9688,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the next service hotspot once workflow transition assembly is sufficiently lean.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-398: Wave item-selection transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_item_selection_transition.py`,
+  `tests/unit/dpm/waves/test_wave_item_selection_transition.py`, selected wave workflow/API
+  regressions, and this ledger.
+- Finding: `select_wave_item_alternative` still embedded selected-item mutation, proof-pack state
+  projection, aggregate refresh, and item-selection audit event assembly inside the public workflow
+  orchestration function after performing lookup, state guarding, construction selection, and
+  persistence.
+- Action: extracted item-selection transition assembly into a focused helper while keeping lookup,
+  state guards, construction repository selection, and persistence in the service; preserved the
+  private workflow metadata alias expected by existing tests; and added direct tests for selected
+  item replacement, retained-item preservation, aggregate refresh, degraded proof-pack metadata,
+  generated proof-pack metadata, selection event evidence, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_selection_transition.py`; direct item-selection
+  transition tests and selected wave workflow/API regressions passed with 147 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` only where remaining orchestration support has a
+  directly testable boundary; otherwise move to the next service hotspot.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
