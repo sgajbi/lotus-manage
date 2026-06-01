@@ -6,14 +6,8 @@ from src.api.services.wave_errors import (
 )
 from src.api.services import wave_lifecycle_commands
 from src.api.services import wave_preparation_commands
+from src.api.services import wave_read_model_queries
 from src.api.services.wave_preview import build_preview_wave
-from src.api.services.wave_read_model_queries import (
-    wave_detail_for_id,
-    wave_items_for_id,
-    wave_proof_pack_posture_for_id,
-    wave_report_input_for_id,
-    wave_supportability_for_id,
-)
 from src.api.services.wave_selection_command import select_persisted_wave_item_alternative
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
@@ -246,7 +240,10 @@ def wave_supportability(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    return wave_supportability_for_id(wave_id=wave_id, wave_repository=wave_repository)
+    return wave_read_model_queries.wave_supportability_for_id(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 def search_waves(
@@ -275,7 +272,10 @@ def retrieve_wave_detail(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    return wave_detail_for_id(wave_id=wave_id, wave_repository=wave_repository)
+    return wave_read_model_queries.wave_detail_for_id(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 def list_wave_items(
@@ -283,7 +283,10 @@ def list_wave_items(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    return wave_items_for_id(wave_id=wave_id, wave_repository=wave_repository)
+    return wave_read_model_queries.wave_items_for_id(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 def proof_pack_posture(
@@ -291,7 +294,10 @@ def proof_pack_posture(
     wave_id: str,
     wave_repository: DpmWaveRepository,
 ) -> dict[str, object]:
-    return wave_proof_pack_posture_for_id(wave_id=wave_id, wave_repository=wave_repository)
+    return wave_read_model_queries.wave_proof_pack_posture_for_id(
+        wave_id=wave_id,
+        wave_repository=wave_repository,
+    )
 
 
 def get_report_input(
@@ -302,7 +308,7 @@ def get_report_input(
     outcome_review_repository: DpmOutcomeReviewRepository | None = None,
     mandate_repository: DpmMandateRepository | None = None,
 ) -> DpmWaveReportInput:
-    return wave_report_input_for_id(
+    return wave_read_model_queries.wave_report_input_for_id(
         wave_id=wave_id,
         wave_repository=wave_repository,
         proof_pack_repository=proof_pack_repository,

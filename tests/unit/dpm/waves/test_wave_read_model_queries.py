@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from src.api.services import wave_read_model_queries, wave_service
+from src.api.services import wave_read_model_queries
 from src.api.services.wave_aggregate_metrics import aggregate_wave_items
 from src.api.services.wave_read_model_queries import (
     wave_detail_for_id,
@@ -101,14 +101,6 @@ def test_wave_report_input_query_loads_wave_before_report_assembly() -> None:
     assert report_input.wave_id == wave.wave_id
     assert report_input.wave_state == "HANDOFF_READY"
     assert report_input.proof_pack_posture["ready_proof_pack_count"] == 1
-
-
-def test_wave_service_delegates_read_model_queries() -> None:
-    assert wave_service.wave_supportability_for_id is wave_supportability_for_id
-    assert wave_service.wave_detail_for_id is wave_detail_for_id
-    assert wave_service.wave_items_for_id is wave_items_for_id
-    assert wave_service.wave_proof_pack_posture_for_id is wave_proof_pack_posture_for_id
-    assert wave_service.wave_report_input_for_id is wave_report_input_for_id
 
 
 def test_wave_read_model_queries_export_public_surface() -> None:

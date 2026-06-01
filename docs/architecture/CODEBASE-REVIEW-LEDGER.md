@@ -11146,3 +11146,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage already proves behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-458: Wave read-model query helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_read_model_queries.py`, selected wave read-model/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` imported and exposed read-model query helpers as facade attributes even
+  though the read-model query module has direct behavior and export-surface tests, and the service
+  only needs those helpers behind public wave query orchestration functions.
+- Action: changed `wave_service` to call `wave_read_model_queries` through the owning module and
+  removed read-model alias-pinning assertions from the helper tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave read-model, detail, proof-pack posture,
+  report-input, and selected wave API regressions passed with 144 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed with only
+  line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan found only direct read-model helper tests and qualified `wave_read_model_queries`
+  owner-module calls from `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
