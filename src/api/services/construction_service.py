@@ -38,6 +38,7 @@ from src.api.services.construction_source_analytics_posture import source_analyt
 from src.api.services.construction_source_product_context import (
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
+    liquidity_cashflow_projection_context,
     source_status_to_method_status,
     transaction_cost_context_from_curve,
 )
@@ -75,7 +76,6 @@ from src.core.construction.models import (
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
-    AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativeLiquidityReserveRequirement,
     AuthoritativePlannedWithdrawalSchedule,
@@ -521,31 +521,7 @@ def _authority_context_with_source_products(
         ):
             source_reason_codes.append("CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT")
         if cashflow_projection is not None:
-            payload = cashflow_projection.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(payload)
-            status = (
-                cashflow_projection.data_quality_status
-                if cashflow_projection.data_quality_status in {"READY", "DEGRADED", "INCOMPLETE"}
-                else "READY"
-            )
-            cashflow_context = AuthoritativeLiquidityCashflowProjection(
-                source_product_name=cashflow_projection.product_name,
-                source_product_version=cashflow_projection.product_version,
-                source_system="lotus-core",
-                total_net_cashflow=Money(
-                    amount=cashflow_projection.total_net_cashflow,
-                    currency=cashflow_projection.portfolio_currency,
-                ),
-                projection_start=cashflow_projection.range_start_date,
-                projection_end=cashflow_projection.range_end_date,
-                include_projected=cashflow_projection.include_projected,
-                latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
-                source_batch_fingerprint=cashflow_projection.source_batch_fingerprint
-                or cashflow_projection.lineage.get("source_batch_fingerprint")
-                or source_hash,
-                data_quality_status=_source_status_to_method_status(status),
-                reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
-            )
+            cashflow_context = liquidity_cashflow_projection_context(cashflow_projection)
         if income_needs is not None:
             payload = income_needs.model_dump(mode="json", exclude_none=True)
             source_hash = hash_canonical_payload(payload)

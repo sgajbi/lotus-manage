@@ -4,6 +4,7 @@ from decimal import Decimal
 from src.api.services.construction_source_product_context import (
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
+    liquidity_cashflow_projection_context,
     source_status_to_method_status,
     transaction_cost_context_from_curve,
 )
@@ -14,6 +15,7 @@ from src.core.dpm_source_context import (
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgeExecutionReadinessSupportability,
     DpmCoreIntegrationWindow,
+    DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreTransactionCostCurvePageMetadata,
     DpmCoreTransactionCostCurvePoint,
     DpmCoreTransactionCostCurveResponse,
@@ -104,6 +106,38 @@ def _transaction_cost_curve() -> DpmCoreTransactionCostCurveResponse:
         ),
         lineage={"source_batch_fingerprint": "curve-lineage"},
     )
+
+
+def _cashflow_projection() -> DpmCorePortfolioCashflowProjectionResponse:
+    return DpmCorePortfolioCashflowProjectionResponse(
+        product_name="PortfolioCashflowProjection",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 6, 1),
+        range_start_date=date(2026, 6, 1),
+        range_end_date=date(2026, 6, 30),
+        include_projected=True,
+        portfolio_currency="USD",
+        points=[],
+        total_net_cashflow=Decimal("1250.50"),
+        projection_days=30,
+        data_quality_status="DEGRADED",
+        source_batch_fingerprint=None,
+        lineage={"source_batch_fingerprint": "cashflow-lineage"},
+    )
+
+
+def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_status() -> None:
+    context = liquidity_cashflow_projection_context(_cashflow_projection())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "PortfolioCashflowProjection"
+    assert context.source_batch_fingerprint == "cashflow-lineage"
+    assert context.total_net_cashflow.amount == Decimal("1250.50")
+    assert context.total_net_cashflow.currency == "USD"
+    assert context.include_projected is True
+    assert context.data_quality_status == ConstructionMethodStatus.DEGRADED
+    assert context.reason_codes == ["CORE_CASHFLOW_PROJECTION_READY"]
 
 
 def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:
