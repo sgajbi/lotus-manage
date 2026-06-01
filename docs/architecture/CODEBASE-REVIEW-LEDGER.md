@@ -11355,3 +11355,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   persisted command implementations owned by their dedicated modules.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-467: Refactor health report checkpoint refresh
+
+- Date: 2026-06-02
+- Scope: `quality/refactor_health_report.md` and this ledger.
+- Finding: after the wave-service and construction source-product hardening slices, the branch-level
+  health report still pointed at an earlier commit and no longer reflected the current checkpoint
+  evidence for a roughly 50-commit PR batch.
+- Action: regenerated the dependency-free refactor health report against `origin/main` so the PR
+  carries current report-only evidence for code size, test count, boundary findings, router
+  infrastructure import findings, largest files/functions, and OpenAPI completeness.
+- Status: hardened
+- Evidence: report generation completed and wrote `quality/refactor_health_report.md`; refreshed
+  report points at current ref `8dc39c9`, shows 768 current-branch Python files versus 754 on
+  `origin/main`, 145874 current Python LOC versus 144347 on `origin/main`, 1855 current test
+  functions versus 1834 on `origin/main`, zero service boundary findings in both snapshots, 135
+  current OpenAPI operations, and three operations missing a 4xx/5xx response marker; `git diff
+  --check` passed with only line-ending warnings.
+- Follow-up: optimize baseline loading before making this report a CI gate, then extend report-only
+  baselines toward complexity, dead-code, dependency, security, coverage, architecture, docs, and
+  observability checks.
+- Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
+  and does not change route behavior, product feature truth, or operator procedure.
