@@ -8424,3 +8424,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   diagnostics assembly while keeping state-machine orchestration in the service layer.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-344: Wave portfolio source extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_portfolio_sources.py`,
+  `tests/unit/dpm/waves/test_wave_portfolio_sources.py`, selected wave create/search/source helper
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned source-ref flattening, portfolio diagnostics normalization,
+  and optional string normalization for affected portfolio payloads, increasing the service module's
+  non-orchestration surface.
+- Action: extracted portfolio source helpers into a focused module, preserved existing private
+  aliases in `wave_service.py`, and added direct tests for source-ref validation, trigger-level
+  flattening, diagnostics filtering, optional string normalization, and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_portfolio_sources.py`; full direct portfolio-source tests
+  passed with 7 tests; selected wave create/search/source helper API regressions passed with 19
+  tests; OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave aggregate and event assembly from `wave_service.py`
+  while leaving state transitions and repository conflict handling in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

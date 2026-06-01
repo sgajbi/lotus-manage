@@ -17,6 +17,12 @@ from src.api.services.wave_item_transitions import (
     handoff_item as _handoff_item,
     stage_item as _stage_item,
 )
+from src.api.services.wave_portfolio_sources import (
+    diagnostics_from_portfolio as _diagnostics_from_portfolio,
+    optional_str as _optional_str,
+    source_refs_from_portfolio as _source_refs_from_portfolio,
+    trigger_source_refs as _trigger_source_refs,
+)
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_supportability_diagnostics import (
     operator_actions as _operator_actions,
@@ -1163,31 +1169,6 @@ def _proposed_changes_from_alternative_set(
     return []
 
 
-def _trigger_source_refs(portfolios: list[dict[str, object]]) -> list[DpmWaveSourceRef]:
-    refs: list[DpmWaveSourceRef] = []
-    for portfolio in portfolios:
-        refs.extend(_source_refs_from_portfolio(portfolio))
-    return refs
-
-
-def _source_refs_from_portfolio(portfolio: dict[str, object]) -> list[DpmWaveSourceRef]:
-    source_refs = portfolio.get("source_refs", [])
-    if not isinstance(source_refs, list):
-        return []
-    return [
-        DpmWaveSourceRef.model_validate(source_ref)
-        for source_ref in source_refs
-        if isinstance(source_ref, dict)
-    ]
-
-
-def _diagnostics_from_portfolio(portfolio: dict[str, object]) -> dict[str, object]:
-    diagnostics = portfolio.get("diagnostics", {})
-    if not isinstance(diagnostics, dict):
-        return {}
-    return {str(key): value for key, value in diagnostics.items() if isinstance(key, str)}
-
-
 def _event(
     *,
     wave_id: str,
@@ -1234,10 +1215,3 @@ def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]])
 def _request_hash(payload: dict[str, object]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return f"sha256:{hashlib.sha256(canonical.encode()).hexdigest()}"
-
-
-def _optional_str(value: object) -> str | None:
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
