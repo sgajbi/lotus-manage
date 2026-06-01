@@ -8976,3 +8976,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   PR pre-merge gate before opening the PR.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-368: Wave service compatibility re-export fix
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, selected wave router mypy checks, and this ledger.
+- Finding: after extracting wave error and simulation input helpers, runtime compatibility remained
+  intact but full-repo mypy required `wave_service` compatibility imports to be explicit re-exports
+  for routers that still type-check against the existing service surface.
+- Action: marked `DpmWaveValidationError`, `DpmWaveLookupError`, and `DpmWaveSimulationInput` as
+  explicit same-name imports in `wave_service.py` so existing router references remain both runtime
+  and type-check compatible while helper modules own the implementations.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for `wave_service.py`; targeted mypy passed for
+  `wave_service.py`, `wave_simulation_http.py`, and `wave_http_errors.py`.
+- Follow-up: rerun full `make check` before PR creation to verify the full router surface.
+- Wiki decision: no wiki source change required; this is an internal typing compatibility fix with
+  no route, payload, supported-feature, or operator-contract change.
