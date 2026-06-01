@@ -1,6 +1,6 @@
 import pytest
 
-from src.api.services import wave_service, wave_transition_execution
+from src.api.services import wave_transition_execution
 from src.api.services.wave_errors import DpmWaveValidationError
 from src.api.services.wave_transition_execution import (
     PreparedWaveTransition,
@@ -139,11 +139,6 @@ def test_persist_transitioned_wave_uses_source_wave_version_for_optimistic_updat
 
     assert repository.updated_wave is transitioned_wave
     assert repository.expected_version == 7
-
-
-def test_wave_service_preserves_transition_execution_private_aliases() -> None:
-    assert wave_service._prepare_wave_transition is prepare_wave_transition
-    assert wave_service._persist_transitioned_wave is persist_transitioned_wave
 
 
 def test_wave_transition_execution_exports_public_surface() -> None:

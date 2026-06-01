@@ -35,10 +35,6 @@ from src.api.services.wave_simulation_item import (
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
-from src.api.services.wave_transition_execution import (
-    persist_transitioned_wave,
-    prepare_wave_transition,
-)
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -55,8 +51,6 @@ from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 _select_construction_alternative_for_wave = select_construction_alternative_for_wave
 _build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
 _selectable_wave_item = selectable_wave_item
-_prepare_wave_transition = prepare_wave_transition
-_persist_transitioned_wave = persist_transitioned_wave
 
 
 def preview_wave(

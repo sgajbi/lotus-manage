@@ -10570,3 +10570,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   points.
 - Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-434: Wave transition execution alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_transition_execution.py`, selected wave transition/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still retained private transition execution aliases after persisted
+  lifecycle, preparation, and selection command helpers became the owners of transition preparation
+  and optimistic persistence.
+- Action: removed transition execution imports and aliases from the service facade, and retired the
+  facade-alias assertion while preserving direct helper behavior and export-surface tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py`; direct wave transition execution tests plus selected wave API
+  regressions passed with 140 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: review the remaining selection helper aliases as the last private helper imports in
+  `wave_service.py` that are not public facade entry points or response read models.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
