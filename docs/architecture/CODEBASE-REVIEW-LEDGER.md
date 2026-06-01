@@ -8447,3 +8447,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   while leaving state transitions and repository conflict handling in the service layer.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-345: Wave aggregate metrics extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_aggregate_metrics.py`,
+  `tests/unit/dpm/waves/test_wave_aggregate_metrics.py`, selected wave simulation/create aggregate
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still calculated aggregate metrics and simulation result state directly,
+  keeping deterministic state-counting logic inside the orchestration module.
+- Action: extracted aggregate metric and simulation result classifiers into a focused helper module,
+  preserved the existing private aliases in `wave_service.py`, and added direct tests for ready,
+  blocked, review, degraded, full simulation, partial simulation, failed simulation, and export
+  surfaces.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_aggregate_metrics.py`; direct wave aggregate metric tests
+  and selected simulation/create API regressions passed with 19 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure event and validation helpers from `wave_service.py` while
+  preserving repository orchestration and state-machine boundaries.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

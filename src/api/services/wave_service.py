@@ -3,13 +3,16 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from collections import Counter
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
+from src.api.services.wave_aggregate_metrics import (
+    aggregate_wave_items as _aggregate,
+    simulation_result_state as _simulation_result_state,
+)
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
 from src.api.services.wave_item_transitions import (
     approve_item as _approve_item,
@@ -39,7 +42,6 @@ from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
     DpmRebalanceWaveItem,
-    DpmWaveAggregateMetrics,
     DpmWaveAlreadyExistsError,
     DpmWaveIdempotencyConflictError,
     DpmWaveInvalidTransitionError,
@@ -56,7 +58,6 @@ from src.core.waves import (
     build_wave_report_input,
 )
 from src.core.waves.source_analytics import (
-    aggregate_wave_source_analytics,
     build_source_analytics_from_alternative_set,
 )
 from src.api.services.portfolio_memory_context_service import (
@@ -1034,15 +1035,6 @@ def _with_selection_and_proof_pack(
     )
 
 
-def _simulation_result_state(items: list[DpmRebalanceWaveItem]) -> WaveState:
-    simulated = sum(1 for item in items if item.state == "SIMULATED")
-    if simulated and simulated < len(items):
-        return "PARTIALLY_SIMULATED"
-    if simulated:
-        return "SIMULATED"
-    return "SIMULATION_FAILED"
-
-
 def _append_event(
     *,
     wave: DpmRebalanceWave,
@@ -1136,27 +1128,6 @@ def _resolve_mandate_twin(
         if twin is not None and twin.portfolio_id == item.portfolio_id:
             return twin
     return mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=item.portfolio_id)
-
-
-def _aggregate(items: list[DpmRebalanceWaveItem]) -> DpmWaveAggregateMetrics:
-    state_counts = Counter(item.state for item in items)
-    state_count_map = {str(state): count for state, count in state_counts.items()}
-    return DpmWaveAggregateMetrics(
-        item_count=len(items),
-        state_counts=state_count_map,
-        ready_item_count=state_counts.get("SOURCE_READY", 0)
-        + state_counts.get("SIMULATED", 0)
-        + state_counts.get("SELECTED", 0)
-        + state_counts.get("PROOF_PACK_READY", 0)
-        + state_counts.get("APPROVED", 0)
-        + state_counts.get("STAGED", 0)
-        + state_counts.get("HANDOFF_READY", 0),
-        blocked_item_count=state_counts.get("SOURCE_BLOCKED", 0)
-        + state_counts.get("SIMULATION_BLOCKED", 0),
-        review_required_item_count=state_counts.get("REVIEW_REQUIRED", 0),
-        source_degraded_item_count=state_counts.get("SOURCE_DEGRADED", 0),
-        source_analytics=aggregate_wave_source_analytics(items),
-    )
 
 
 def _proposed_changes_from_alternative_set(
