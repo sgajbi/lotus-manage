@@ -54,6 +54,12 @@ from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
 from src.api.services.wave_trigger_validation import validate_trigger_or_raise
+from src.api.services.wave_workflow_metadata import (
+    approval_event_metadata as _approval_event_metadata,
+    cancel_event_metadata as _cancel_event_metadata,
+    handoff_event_metadata as _handoff_event_metadata,
+    stage_event_metadata as _stage_event_metadata,
+)
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -350,12 +356,12 @@ def approve_wave(
             actor_id=actor_id,
             correlation_id=correlation_id,
             reason_code="WAVE_APPROVED",
-            metadata={
-                "approved_item_count": approved_count,
-                "exception_item_count": len(approved_items) - approved_count,
-                "approval_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
+            metadata=_approval_event_metadata(
+                approved_item_count=approved_count,
+                total_item_count=len(approved_items),
+                reason_code=reason_code,
+                comment=comment,
+            ),
         ),
     )
     _update_wave_or_raise(
@@ -404,11 +410,11 @@ def stage_wave(
             actor_id=actor_id,
             correlation_id=correlation_id,
             reason_code="WAVE_STAGED",
-            metadata={
-                "staged_item_count": staged_count,
-                "stage_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
+            metadata=_stage_event_metadata(
+                staged_item_count=staged_count,
+                reason_code=reason_code,
+                comment=comment,
+            ),
         ),
     )
     _update_wave_or_raise(
@@ -471,13 +477,12 @@ def handoff_wave(
             actor_id=actor_id,
             correlation_id=correlation_id,
             reason_code="WAVE_HANDOFF_READY",
-            metadata={
-                "handoff_ref_id": handoff_ref.handoff_ref_id,
-                "handoff_item_count": len(handoff_item_ids),
-                "external_execution_claimed": False,
-                "handoff_reason_code": reason_code,
-                **({"comment": comment} if comment else {}),
-            },
+            metadata=_handoff_event_metadata(
+                handoff_ref=handoff_ref,
+                handoff_item_count=len(handoff_item_ids),
+                reason_code=reason_code,
+                comment=comment,
+            ),
         ),
     )
     _update_wave_or_raise(
@@ -514,12 +519,11 @@ def cancel_wave(
                 actor_id=actor_id,
                 correlation_id=correlation_id,
                 reason_code="WAVE_CANCELLED",
-                metadata={
-                    "cancel_reason_code": reason_code,
-                    "cancelled_item_count": len(cancelled_items),
-                    "external_execution_claimed": False,
-                    **({"comment": comment} if comment else {}),
-                },
+                metadata=_cancel_event_metadata(
+                    cancelled_item_count=len(cancelled_items),
+                    reason_code=reason_code,
+                    comment=comment,
+                ),
             ),
         )
     except DpmWaveInvalidTransitionError as exc:

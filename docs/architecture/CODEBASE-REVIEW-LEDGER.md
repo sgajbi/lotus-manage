@@ -9305,3 +9305,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   persisted transition update support where it improves readability without hiding domain behavior.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-382: Wave workflow metadata extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_workflow_metadata.py`,
+  `tests/unit/dpm/waves/test_wave_workflow_metadata.py`, selected wave API regressions, and this
+  ledger.
+- Finding: approval, staging, handoff, and cancellation workflows still built audit/event metadata
+  inline, duplicating optional-comment handling and no-external-execution boundary fields.
+- Action: extracted workflow event metadata builders into a focused helper module, replaced inline
+  metadata dictionaries in `wave_service.py`, preserved private service aliases, and added direct
+  tests for approval exception counts, stage comments, handoff no-external-execution evidence,
+  cancellation no-external-execution evidence, alias preservation, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_workflow_metadata.py`; direct workflow metadata tests and
+  selected wave API regressions passed with 138 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue reducing `wave_service.py` by extracting persisted transition update support
+  or construction-selection orchestration helpers where they stay domain-specific and testable.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
