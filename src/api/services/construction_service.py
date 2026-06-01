@@ -36,8 +36,10 @@ from src.api.services.construction_solver_supportability import (
 )
 from src.api.services.construction_source_analytics_posture import source_analytics_posture
 from src.api.services.construction_source_product_context import (
+    client_income_needs_schedule_context,
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
+    liquidity_cashflow_projection_context,
     source_status_to_method_status,
     transaction_cost_context_from_curve,
 )
@@ -70,12 +72,10 @@ from src.core.construction.alternative_engine import (
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
-    AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeClientRestrictionContext,
     AuthoritativeClientRestrictionRule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
-    AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativeLiquidityReserveRequirement,
     AuthoritativePlannedWithdrawalSchedule,
@@ -521,54 +521,9 @@ def _authority_context_with_source_products(
         ):
             source_reason_codes.append("CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT")
         if cashflow_projection is not None:
-            payload = cashflow_projection.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(payload)
-            status = (
-                cashflow_projection.data_quality_status
-                if cashflow_projection.data_quality_status in {"READY", "DEGRADED", "INCOMPLETE"}
-                else "READY"
-            )
-            cashflow_context = AuthoritativeLiquidityCashflowProjection(
-                source_product_name=cashflow_projection.product_name,
-                source_product_version=cashflow_projection.product_version,
-                source_system="lotus-core",
-                total_net_cashflow=Money(
-                    amount=cashflow_projection.total_net_cashflow,
-                    currency=cashflow_projection.portfolio_currency,
-                ),
-                projection_start=cashflow_projection.range_start_date,
-                projection_end=cashflow_projection.range_end_date,
-                include_projected=cashflow_projection.include_projected,
-                latest_evidence_timestamp=cashflow_projection.latest_evidence_timestamp,
-                source_batch_fingerprint=cashflow_projection.source_batch_fingerprint
-                or cashflow_projection.lineage.get("source_batch_fingerprint")
-                or source_hash,
-                data_quality_status=_source_status_to_method_status(status),
-                reason_codes=["CORE_CASHFLOW_PROJECTION_READY"],
-            )
+            cashflow_context = liquidity_cashflow_projection_context(cashflow_projection)
         if income_needs is not None:
-            payload = income_needs.model_dump(mode="json", exclude_none=True)
-            source_hash = hash_canonical_payload(payload)
-            income_context = AuthoritativeClientIncomeNeedsSchedule(
-                source_product_name=income_needs.product_name,
-                source_product_version=income_needs.product_version,
-                source_system="lotus-core",
-                source_id=income_needs.source_batch_fingerprint
-                or income_needs.lineage.get("source_batch_fingerprint")
-                or source_hash,
-                content_hash=source_hash,
-                schedule_count=income_needs.supportability.schedule_count,
-                currencies=sorted({entry.currency for entry in income_needs.schedules}),
-                highest_priority=(
-                    min(entry.priority for entry in income_needs.schedules)
-                    if income_needs.schedules
-                    else None
-                ),
-                supportability_status=_source_status_to_method_status(
-                    income_needs.supportability.state
-                ),
-                reason_codes=[income_needs.supportability.reason, "CORE_INCOME_NEEDS_PRESENT"],
-            )
+            income_context = client_income_needs_schedule_context(income_needs)
             source_reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
         if reserve_requirement is not None:
             payload = reserve_requirement.model_dump(mode="json", exclude_none=True)

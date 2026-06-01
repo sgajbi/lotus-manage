@@ -6677,3 +6677,55 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   restriction, and sustainability source products.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-262: Liquidity cashflow source context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: lotus-core `PortfolioCashflowProjection:v1` mapping into Manage's liquidity context
+  still lived inside construction orchestration. The mapping preserves source lineage, projection
+  window, projected-cashflow inclusion, currency, amount, and data-quality posture for
+  liquidity-aware construction alternatives.
+- Action: extracted cashflow projection mapping into
+  `liquidity_cashflow_projection_context`. Added direct tests that preserve source lineage,
+  degraded data-quality posture, money currency/amount, projected inclusion, and reason-code
+  evidence.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 57 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining liquidity source products for client income needs, reserve
+  requirements, and planned withdrawals.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-263: Client income-needs source context extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: lotus-core `ClientIncomeNeedsSchedule:v1` mapping into Manage's liquidity context
+  still lived inside construction orchestration. The mapping preserves client income-needs lineage,
+  schedule count, represented currencies, priority posture, and supportability state for
+  liquidity-aware construction without turning Manage into a financial-planning source owner.
+- Action: extracted client income-needs mapping into
+  `client_income_needs_schedule_context`. Added direct tests that preserve source lineage,
+  currency aggregation, highest-priority selection, incomplete-source fail-closed posture, and
+  reason-code evidence.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 58 tests, focused Ruff checks, and
+  focused mypy over source-product context and construction service passed.
+- Follow-up: extract remaining liquidity source products for reserve requirements and planned
+  withdrawals.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.

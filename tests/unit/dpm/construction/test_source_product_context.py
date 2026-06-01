@@ -2,18 +2,24 @@ from datetime import date
 from decimal import Decimal
 
 from src.api.services.construction_source_product_context import (
+    client_income_needs_schedule_context,
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
+    liquidity_cashflow_projection_context,
     source_status_to_method_status,
     transaction_cost_context_from_curve,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
+    DpmCoreClientIncomeNeedsScheduleEntry,
+    DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreClientIncomeNeedsScheduleSupportability,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExternalOrderExecutionAcknowledgementSupportability,
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgeExecutionReadinessSupportability,
     DpmCoreIntegrationWindow,
+    DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreTransactionCostCurvePageMetadata,
     DpmCoreTransactionCostCurvePoint,
     DpmCoreTransactionCostCurveResponse,
@@ -104,6 +110,94 @@ def _transaction_cost_curve() -> DpmCoreTransactionCostCurveResponse:
         ),
         lineage={"source_batch_fingerprint": "curve-lineage"},
     )
+
+
+def _cashflow_projection() -> DpmCorePortfolioCashflowProjectionResponse:
+    return DpmCorePortfolioCashflowProjectionResponse(
+        product_name="PortfolioCashflowProjection",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 6, 1),
+        range_start_date=date(2026, 6, 1),
+        range_end_date=date(2026, 6, 30),
+        include_projected=True,
+        portfolio_currency="USD",
+        points=[],
+        total_net_cashflow=Decimal("1250.50"),
+        projection_days=30,
+        data_quality_status="DEGRADED",
+        source_batch_fingerprint=None,
+        lineage={"source_batch_fingerprint": "cashflow-lineage"},
+    )
+
+
+def _income_needs_schedule() -> DpmCoreClientIncomeNeedsScheduleResponse:
+    return DpmCoreClientIncomeNeedsScheduleResponse(
+        product_name="ClientIncomeNeedsSchedule",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        schedules=[
+            DpmCoreClientIncomeNeedsScheduleEntry(
+                schedule_id="income-1",
+                need_type="RETIREMENT_INCOME",
+                need_status="ACTIVE",
+                amount=Decimal("5000"),
+                currency="SGD",
+                frequency="MONTHLY",
+                start_date=date(2026, 6, 1),
+                priority=2,
+            ),
+            DpmCoreClientIncomeNeedsScheduleEntry(
+                schedule_id="income-2",
+                need_type="SCHOOL_FEES",
+                need_status="ACTIVE",
+                amount=Decimal("12000"),
+                currency="USD",
+                frequency="QUARTERLY",
+                start_date=date(2026, 7, 1),
+                priority=1,
+            ),
+        ],
+        supportability=DpmCoreClientIncomeNeedsScheduleSupportability(
+            state="INCOMPLETE",
+            reason="CLIENT_INCOME_NEEDS_PARTIAL",
+            schedule_count=2,
+            missing_data_families=["income_needs_review"],
+        ),
+        lineage={"source_batch_fingerprint": "income-lineage"},
+    )
+
+
+def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:
+    context = client_income_needs_schedule_context(_income_needs_schedule())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "ClientIncomeNeedsSchedule"
+    assert context.source_id == "income-lineage"
+    assert context.schedule_count == 2
+    assert context.currencies == ["SGD", "USD"]
+    assert context.highest_priority == 1
+    assert context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert context.reason_codes == [
+        "CLIENT_INCOME_NEEDS_PARTIAL",
+        "CORE_INCOME_NEEDS_PRESENT",
+    ]
+
+
+def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_status() -> None:
+    context = liquidity_cashflow_projection_context(_cashflow_projection())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "PortfolioCashflowProjection"
+    assert context.source_batch_fingerprint == "cashflow-lineage"
+    assert context.total_net_cashflow.amount == Decimal("1250.50")
+    assert context.total_net_cashflow.currency == "USD"
+    assert context.include_projected is True
+    assert context.data_quality_status == ConstructionMethodStatus.DEGRADED
+    assert context.reason_codes == ["CORE_CASHFLOW_PROJECTION_READY"]
 
 
 def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:
