@@ -1,60 +1,22 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
-from decimal import Decimal
-import re
+from datetime import datetime, timezone
 from typing import Optional
 
 from src.api.services.construction_idempotency import (
     construction_request_hash,
     resolve_existing_construction_alternative_set,
 )
-from src.api.services.construction_method_supportability import (
-    cashflow_projection_reason_codes,
-    currency_overlay_status,
-    derive_currency_overlay_context,
-    derive_liquidity_context,
-    liquidity_reason_codes,
-    liquidity_status,
-    missing_currency_overlay_pairs,
-    post_trade_cash_weight,
-    regime_stress_status,
-)
 from src.api.services.construction_method_execution import (
     run_construction_method,
 )
-from src.api.services.construction_method_authority import authority_context_for_method
-from src.api.services.construction_method_readiness import (
-    method_specific_reason_codes,
-    method_specific_status,
-)
-from src.api.services.construction_solver_supportability import (
-    solver_method_status,
-    with_method_reason_codes,
-)
-from src.api.services.construction_source_analytics_posture import source_analytics_posture
+from src.api.services.construction_method_authority import authority_context_for_request_method
 from src.api.services.construction_source_product_context import (
-    source_product_authority_context_updates,
+    authority_context_with_source_products,
 )
-from src.api.services.construction_esg_supportability import (
-    client_restriction_reason_codes,
-    client_restriction_status,
-    esg_restriction_reason_codes,
-    esg_restriction_status,
-    restriction_matches_intent,
-    sustainability_allocation_breaches,
-    sustainability_classification_review_required,
-    sustainability_preference_reason_codes,
-    sustainability_preference_status,
-    violated_client_restrictions,
-    with_esg_restriction_constraints,
-)
-from src.api.services.construction_transaction_cost_supportability import (
-    observed_transaction_cost_estimate,
-    transaction_cost_reason_codes,
-    transaction_cost_status,
-    with_observed_transaction_cost_estimate,
+from src.api.services.construction_supportability_application import (
+    apply_construction_supportability,
 )
 from src.core.common.capabilities import has_solver_dependencies
 from src.core.construction.alternative_engine import (
@@ -62,23 +24,12 @@ from src.core.construction.alternative_engine import (
     build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
-from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
-    AuthoritativeClientRestrictionContext,
-    AuthoritativeClientRestrictionRule,
-    AuthoritativeCurrencyOverlayContext,
-    AuthoritativeLiquidityContext,
-    AuthoritativeRegimeStressContext,
-    AuthoritativeSustainabilityPreference,
-    AuthoritativeSustainabilityPreferenceContext,
-    AuthoritativeTransactionCostContext,
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
     ConstructionAuthorityContext,
-    ConstructionEnrichmentSummary,
-    ConstructionMethodPlan,
 )
 from src.core.construction.repository import (
     ConstructionAlternativeNotFoundError,
@@ -87,21 +38,17 @@ from src.core.construction.repository import (
 )
 from src.core.construction.vocabulary import (
     ConstructionMethod,
-    ConstructionMethodStatus,
     FIRST_WAVE_CONSTRUCTION_METHODS,
 )
 from src.core.dpm_source_context import (
     DpmResolvedSourceContext,
 )
 from src.core.models import RebalanceResult
-from src.core.models import Money, SecurityTradeIntent, ShelfEntry
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
 from src.infrastructure.risk_authority import (
     LotusRiskAuthorityClient,
 )
-
-_DATE_PATTERN = re.compile(r"(\d{4})[-_](\d{2})[-_](\d{2})")
 
 
 def generate_construction_alternative_set(
@@ -130,14 +77,14 @@ def generate_construction_alternative_set(
     if existing is not None:
         return existing
 
-    base_result = _run_method(
+    base_result = run_construction_method(
         request=request,
         method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
         correlation_id=correlation_id,
         request_hash=f"{request_hash}:{ConstructionMethod.HEURISTIC_EXPLAINABLE.value}",
         run_service=run_service,
     )
-    resolved_authority_context = _authority_context_with_source_products(
+    resolved_authority_context = authority_context_with_source_products(
         authority_context=authority_context or ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -234,7 +181,7 @@ def _build_alternatives(
         plan = resolve_method_plan(method=method, solver_available=solver_available)
         result = base_result
         if plan.effective_method != ConstructionMethod.HEURISTIC_EXPLAINABLE:
-            result = _run_method(
+            result = run_construction_method(
                 request=request,
                 method=plan.effective_method,
                 correlation_id=correlation_id,
@@ -247,13 +194,13 @@ def _build_alternatives(
             alternative_id=f"alt_{method.value.lower()}",
         )
         alternatives.append(
-            _apply_supportability(
+            apply_construction_supportability(
                 request=request,
                 method=method,
                 alternative=alternative,
                 result=result,
                 plan=plan,
-                authority_context=_authority_context_for_method(
+                authority_context=authority_context_for_request_method(
                     request=request,
                     method=method,
                     result=result,
@@ -264,408 +211,3 @@ def _build_alternatives(
             )
         )
     return alternatives
-
-
-def _run_method(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    correlation_id: Optional[str],
-    request_hash: str,
-    run_service: DpmRunSupportService | None,
-) -> RebalanceResult:
-    return run_construction_method(
-        request=request,
-        method=method,
-        correlation_id=correlation_id,
-        request_hash=request_hash,
-        run_service=run_service,
-    )
-
-
-def _apply_supportability(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    alternative: ConstructionAlternative,
-    result: RebalanceResult,
-    plan: ConstructionMethodPlan,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionAlternative:
-    enrichment = summarize_enrichment_posture(
-        result=result,
-        tax_required=method == ConstructionMethod.TAX_AWARE,
-        risk_required=method == ConstructionMethod.RISK_AWARE,
-        risk_context=authority_context.risk_context,
-        performance_context=authority_context.performance_context,
-        performance_required=False,
-        transaction_cost_context=authority_context.transaction_cost_context,
-        liquidity_context=(
-            authority_context.liquidity_context
-            if method == ConstructionMethod.LIQUIDITY_AWARE
-            else None
-        ),
-    )
-    if method == ConstructionMethod.COST_AWARE:
-        alternative = _with_observed_transaction_cost_estimate(
-            alternative=alternative,
-            result=result,
-            context=authority_context.transaction_cost_context,
-        )
-    if method == ConstructionMethod.ESG_AWARE:
-        alternative = _with_esg_restriction_constraints(
-            request=request,
-            alternative=alternative,
-            result=result,
-            authority_context=authority_context,
-        )
-    method_reason_codes = _method_specific_reason_codes(
-        request=request,
-        method=method,
-        result=result,
-        enrichment=enrichment,
-        authority_context=authority_context,
-    )
-    status = _lowest_status(
-        [
-            alternative.method_status,
-            plan.method_status,
-            method_specific_status(
-                request=request,
-                method=method,
-                result=result,
-                enrichment=enrichment,
-                authority_context=authority_context,
-            ),
-        ]
-    )
-    if method == ConstructionMethod.TAX_AWARE:
-        status = _lowest_status([status, enrichment.tax_status])
-    if method == ConstructionMethod.MIN_TURNOVER:
-        status = _lowest_status([status, enrichment.turnover_status])
-    if method == ConstructionMethod.COST_AWARE:
-        status = _lowest_status([status, enrichment.cost_status])
-    if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        status = _lowest_status([status, _solver_method_status(result=result)])
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        status = _lowest_status([status, enrichment.liquidity_status])
-    if method == ConstructionMethod.CURRENCY_OVERLAY:
-        status = _lowest_status([status, enrichment.fx_status])
-    if method == ConstructionMethod.RISK_AWARE:
-        status = _lowest_status([status, enrichment.risk_status])
-    if method == ConstructionMethod.LIQUIDITY_AWARE and authority_context.liquidity_context:
-        status = _lowest_status([status, authority_context.liquidity_context.supportability_status])
-    if method == ConstructionMethod.CURRENCY_OVERLAY and authority_context.currency_overlay_context:
-        status = _lowest_status(
-            [status, authority_context.currency_overlay_context.supportability_status]
-        )
-    if method == ConstructionMethod.REGIME_STRESS_AWARE and authority_context.regime_stress_context:
-        status = _lowest_status(
-            [status, authority_context.regime_stress_context.supportability_status]
-        )
-    return alternative.model_copy(
-        update={
-            "method_status": status,
-            "diagnostics": {
-                **alternative.diagnostics,
-                "method_plan": plan.model_dump(mode="json"),
-                "enrichment_summary": with_method_reason_codes(
-                    enrichment=enrichment,
-                    reason_codes=method_reason_codes,
-                ).model_dump(mode="json"),
-                "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
-                "source_analytics_posture": source_analytics_posture(
-                    method=method,
-                    authority_context=authority_context,
-                ),
-            },
-        }
-    )
-
-
-def _method_specific_reason_codes(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    result: RebalanceResult,
-    enrichment: ConstructionEnrichmentSummary,
-    authority_context: ConstructionAuthorityContext,
-) -> list[str]:
-    return method_specific_reason_codes(
-        request=request,
-        method=method,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _authority_context_for_method(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-    risk_authority_client: LotusRiskAuthorityClient | None,
-    correlation_id: str | None,
-) -> ConstructionAuthorityContext:
-    return authority_context_for_method(
-        request=request,
-        method=method,
-        result=result,
-        authority_context=authority_context,
-        risk_authority_client=risk_authority_client,
-        correlation_id=correlation_id,
-        as_of_date=_construction_as_of_date(request=request),
-    )
-
-
-def _authority_context_with_source_products(
-    *,
-    authority_context: ConstructionAuthorityContext,
-    source_context: DpmResolvedSourceContext | None,
-) -> ConstructionAuthorityContext:
-    if source_context is None:
-        return authority_context
-    context_updates = source_product_authority_context_updates(
-        source_context=source_context.context,
-        authority_context=authority_context,
-    )
-    if not context_updates:
-        return authority_context
-    return authority_context.model_copy(update=context_updates)
-
-
-def _with_observed_transaction_cost_estimate(
-    *,
-    alternative: ConstructionAlternative,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> ConstructionAlternative:
-    return with_observed_transaction_cost_estimate(
-        alternative=alternative,
-        result=result,
-        context=context,
-    )
-
-
-def _observed_transaction_cost_estimate(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> Money | None:
-    return observed_transaction_cost_estimate(result=result, context=context)
-
-
-def _transaction_cost_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> ConstructionMethodStatus:
-    return transaction_cost_status(result=result, context=context)
-
-
-def _transaction_cost_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeTransactionCostContext | None,
-) -> list[str]:
-    return transaction_cost_reason_codes(result=result, context=context)
-
-
-def _with_esg_restriction_constraints(
-    *,
-    request: RebalanceRequest,
-    alternative: ConstructionAlternative,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionAlternative:
-    return with_esg_restriction_constraints(
-        request=request,
-        alternative=alternative,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _esg_restriction_status(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionMethodStatus:
-    return esg_restriction_status(
-        request=request,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _esg_restriction_reason_codes(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    authority_context: ConstructionAuthorityContext,
-) -> list[str]:
-    return esg_restriction_reason_codes(
-        request=request,
-        result=result,
-        authority_context=authority_context,
-    )
-
-
-def _client_restriction_status(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext | None,
-) -> ConstructionMethodStatus:
-    return client_restriction_status(request=request, result=result, context=context)
-
-
-def _client_restriction_reason_codes(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext | None,
-) -> list[str]:
-    return client_restriction_reason_codes(request=request, result=result, context=context)
-
-
-def _violated_client_restrictions(
-    *,
-    request: RebalanceRequest,
-    result: RebalanceResult,
-    context: AuthoritativeClientRestrictionContext,
-) -> list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]]:
-    return violated_client_restrictions(request=request, result=result, context=context)
-
-
-def _restriction_matches_intent(
-    *,
-    intent: SecurityTradeIntent,
-    shelf: ShelfEntry | None,
-    restriction: AuthoritativeClientRestrictionRule,
-) -> bool:
-    return restriction_matches_intent(intent=intent, shelf=shelf, restriction=restriction)
-
-
-def _sustainability_preference_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> ConstructionMethodStatus:
-    return sustainability_preference_status(result=result, context=context)
-
-
-def _sustainability_preference_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext | None,
-) -> list[str]:
-    return sustainability_preference_reason_codes(result=result, context=context)
-
-
-def _sustainability_allocation_breaches(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> list[AuthoritativeSustainabilityPreference]:
-    return sustainability_allocation_breaches(result=result, context=context)
-
-
-def _sustainability_classification_review_required(
-    *,
-    context: AuthoritativeSustainabilityPreferenceContext,
-) -> bool:
-    return sustainability_classification_review_required(context=context)
-
-
-def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
-    return solver_method_status(result=result)
-
-
-def _liquidity_status(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext | None,
-) -> ConstructionMethodStatus:
-    return liquidity_status(result=result, context=context)
-
-
-def _liquidity_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext | None,
-) -> list[str]:
-    return liquidity_reason_codes(result=result, context=context)
-
-
-def _cashflow_projection_reason_codes(
-    *,
-    result: RebalanceResult,
-    context: AuthoritativeLiquidityContext,
-) -> list[str]:
-    return cashflow_projection_reason_codes(result=result, context=context)
-
-
-def _post_trade_cash_weight(*, result: RebalanceResult) -> Decimal | None:
-    return post_trade_cash_weight(result=result)
-
-
-def _derive_liquidity_context(*, result: RebalanceResult) -> AuthoritativeLiquidityContext:
-    return derive_liquidity_context(result=result)
-
-
-def _derive_currency_overlay_context(
-    *,
-    result: RebalanceResult,
-) -> AuthoritativeCurrencyOverlayContext:
-    return derive_currency_overlay_context(result=result)
-
-
-def _construction_as_of_date(*, request: RebalanceRequest) -> date:
-    snapshot_id = getattr(request.market_data_snapshot, "snapshot_id", "")
-    for candidate in (
-        snapshot_id or "",
-        getattr(request.portfolio_snapshot, "snapshot_id", "") or "",
-    ):
-        match = _DATE_PATTERN.search(candidate)
-        if match is not None:
-            return date(
-                year=int(match.group(1)),
-                month=int(match.group(2)),
-                day=int(match.group(3)),
-            )
-        try:
-            return date.fromisoformat(candidate[:10])
-        except ValueError:
-            continue
-    return datetime.now(timezone.utc).date()
-
-
-def _currency_overlay_status(
-    *,
-    request: RebalanceRequest,
-    context: AuthoritativeCurrencyOverlayContext | None,
-) -> ConstructionMethodStatus:
-    return currency_overlay_status(request=request, context=context)
-
-
-def _regime_stress_status(
-    context: AuthoritativeRegimeStressContext | None,
-) -> ConstructionMethodStatus:
-    return regime_stress_status(context)
-
-
-def _missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:
-    return missing_currency_overlay_pairs(request=request)
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])

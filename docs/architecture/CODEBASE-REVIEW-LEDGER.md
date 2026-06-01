@@ -6838,3 +6838,1023 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   pass-through wrappers can be removed without reducing behavioral coverage.
 - Wiki decision: no wiki source change required; this is internal orchestration cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-268: Supportability wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service private wrappers still exposed liquidity, currency-overlay, and
+  solver supportability helpers even though the behavior is owned by
+  `construction_method_supportability.py` and `construction_solver_supportability.py`. The tests
+  were reaching through the orchestration service for helper-owned behavior, which preserved
+  unnecessary service indirection.
+- Action: moved the affected tests to call the owning supportability helpers directly and removed
+  the service pass-through wrappers plus their now-unused imports. `construction_service.py` now
+  calls `solver_method_status` directly where solver-constrained orchestration needs it.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, and focused
+  construction supportability regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`, and
+  `tests/unit/dpm/construction/test_solver_supportability.py`) passed with 31 tests.
+- Follow-up: continue migrating transaction-cost and ESG supportability wrapper tests to their
+  owning helper modules before pruning the next set of private pass-through wrappers.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-269: Transaction-cost wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: transaction-cost supportability tests still reached through construction-service
+  private wrappers for observed cost estimate, transaction-cost status, and reason-code assembly,
+  even though those behaviors are owned by `construction_transaction_cost_supportability.py`.
+  The service also used a private pass-through wrapper to attach observed transaction-cost
+  estimates to COST_AWARE alternatives.
+- Action: moved the transaction-cost tests to call the owning helper module directly, removed the
+  service pass-through wrappers and unused imports, and had construction orchestration call
+  `with_observed_transaction_cost_estimate` directly when COST_AWARE supportability is applied.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused
+  construction transaction-cost and API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue migrating ESG supportability wrapper tests to their owning helper module
+  before pruning the next private pass-through group.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-270: ESG wrapper ownership cleanup
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: ESG, client-restriction, and sustainability supportability tests still depended on
+  construction-service private wrappers, while the actual behavior is owned by
+  `construction_esg_supportability.py`. The service also retained a pass-through wrapper for
+  applying ESG restriction constraints to ESG_AWARE alternatives.
+- Action: moved the affected tests to call the ESG supportability helper module directly, removed
+  the service pass-through wrappers and unused domain-type imports, and had construction
+  orchestration call `with_esg_restriction_constraints` directly where ESG_AWARE supportability is
+  applied.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused ESG and API
+  regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue reviewing remaining construction-service private wrappers for real
+  orchestration value before pruning or moving tests to owner modules.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-271: Shared construction status ordering
+
+- Date: 2026-06-01
+- Scope: `src/core/construction/status.py`, construction core helpers, construction supportability
+  services, `tests/unit/dpm/construction/test_status.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction method status ordering was duplicated across orchestration, supportability,
+  solver, enrichment, transaction-cost, ESG, and alternative-set aggregation helpers. Each copy
+  encoded the same conservative ordering from BLOCKED through READY, creating drift risk for
+  future supportability changes.
+- Action: added `lowest_construction_status` and `construction_status_rank` in core construction
+  status helpers, exported them from `src.core.construction`, and replaced local duplicated
+  `_lowest_status` implementations and status-order maps across the affected modules. Added direct
+  status helper tests for conservative ordering and empty-input default behavior.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over touched source files, and focused construction
+  regressions (`tests/unit/dpm/construction/test_status.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_supportability.py`,
+  `tests/unit/dpm/construction/test_esg_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_alternative_engine.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 67 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue reducing construction-service orchestration size without introducing new
+  helper-level duplication.
+- Wiki decision: no wiki source change required; this is internal supportability primitive cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-272: Construction request date extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_request_dates.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still owned request snapshot date parsing for
+  authority-context as-of dates. The logic is pure request metadata interpretation rather than
+  alternative construction orchestration.
+- Action: extracted `construction_as_of_date` into `construction_request_dates.py`, updated
+  authority-context orchestration to call the helper, and pointed the existing snapshot-id date
+  regression test at the extracted helper.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction request-date and service modules,
+  focused construction authority/API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue keeping `construction_service.py` focused on orchestration and move pure
+  request/diagnostic assembly into direct helper modules when the boundary is clear.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-273: Method reason-code wrapper pruning
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still had a private wrapper for method-specific
+  reason-code assembly. The wrapper only forwarded to `construction_method_readiness.py` and kept
+  an unused enrichment parameter, adding indirection without isolating behavior.
+- Action: updated construction orchestration and the remaining regression test to call
+  `method_specific_reason_codes` directly, then removed the private wrapper and its unused type
+  import from `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction service and method-readiness
+  modules, focused construction readiness/API regressions
+  (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: keep the remaining private service helpers only where they express orchestration
+  boundaries, not pass-through behavior.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-274: Source-product authority attachment extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: after source-product authority update assembly was extracted, construction-service
+  orchestration still owned the final null-source guard and authority-context model-copy
+  application. Several tests continued to reach through the service private wrapper for
+  source-boundary behavior.
+- Action: added `authority_context_with_source_products` to the source-product context helper,
+  updated construction orchestration to call it directly, moved remaining tests to the owning
+  helper module, and removed the service private wrapper.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction source-product context and service
+  modules, focused source-product/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 66 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue shrinking construction orchestration only where the extracted boundary has a
+  clear owning module and direct tests.
+- Wiki decision: no wiki source change required; this is internal source-boundary ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-275: Method execution wrapper pruning
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_service.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still kept a private `_run_method` wrapper that only
+  forwarded to `run_construction_method`. It added no domain boundary beyond the existing
+  construction method execution module and obscured the two actual orchestration call sites.
+- Action: removed the pass-through wrapper and called `run_construction_method` directly for the
+  heuristic base run and non-heuristic effective method runs.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_service.py`, focused method
+  execution/enrichment/API regressions (`tests/unit/dpm/construction/test_enrichment.py`,
+  `tests/unit/dpm/construction/test_method_execution.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 52 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: keep remaining private helpers for true construction orchestration only.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with
+  no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-276: Request-aware method authority adapter extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_method_authority.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: construction-service orchestration still owned a private request-aware adapter around
+  method authority context enrichment. The adapter only supplied the governed request as-of date
+  before delegating to `construction_method_authority.py`, so tests reached through service
+  internals for method-authority behavior.
+- Action: added `authority_context_for_request_method` to the method authority module, updated
+  construction orchestration and tests to call it directly, and removed the service private
+  adapter.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction method-authority and service
+  modules, focused method-authority/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_method_authority.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: leave `construction_service.py` focused on alternative-set orchestration and
+  supportability application.
+- Wiki decision: no wiki source change required; this is internal service/helper ownership cleanup
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-277: Construction supportability application extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `src/api/services/construction_service.py`, and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: `construction_service.py` still owned the full method supportability application block,
+  including enrichment posture assembly, cost/ESG constraint application, method reason-code
+  attachment, method status roll-up, and diagnostic payload construction. That block is a coherent
+  supportability application boundary rather than alternative-set orchestration.
+- Action: extracted `apply_construction_supportability` into
+  `construction_supportability_application.py` and updated construction alternative orchestration
+  to delegate to it. Removed now-unused supportability, readiness, enrichment, source-analytics,
+  and status imports from `construction_service.py`.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over construction supportability application and
+  service modules, focused construction enrichment/API regressions
+  (`tests/unit/dpm/construction/test_enrichment.py` and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 50 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: add direct supportability-application tests before making further changes inside the
+  extracted method-status roll-up behavior.
+- Wiki decision: no wiki source change required; this is internal construction-service modularity
+  cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-278: Supportability application direct coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: the extracted `construction_supportability_application.py` helper was covered through
+  construction service and API regressions, but it did not yet have direct helper-level coverage
+  proving diagnostic assembly and COST_AWARE transaction-cost evidence attachment.
+- Action: added a focused unit test that applies COST_AWARE supportability directly, asserts the
+  method status remains READY when authoritative cost evidence is complete, verifies observed
+  transaction-cost evidence is attached to comparison metrics, and checks the diagnostics payload
+  includes method plan, enrichment reason codes, and authority context source provenance.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_supportability_application.py`,
+  focused supportability-application/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_supportability_application.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 51 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: add direct supportability-application tests for ESG and liquidity-aware status
+  overlays before changing those branches.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-279: Supportability application ESG and liquidity coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py` and
+  `docs/architecture/CODEBASE-REVIEW-LEDGER.md`.
+- Finding: the extracted supportability application helper had direct coverage for COST_AWARE
+  transaction-cost evidence, but ESG_AWARE restriction constraints and LIQUIDITY_AWARE status
+  overlays were still only covered indirectly through broader construction service/API tests.
+- Action: added direct supportability-application tests for ESG client-restriction blocking and
+  liquidity policy pending-review overlay. The tests verify method status roll-up, constraint
+  trace evidence, enrichment reason-code propagation, and authority-context diagnostic provenance.
+- Status: hardened
+- Evidence: focused Ruff checks, focused mypy over `construction_supportability_application.py`,
+  focused supportability-application/enrichment/API regressions
+  (`tests/unit/dpm/construction/test_supportability_application.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 53 tests. OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue adding direct branch-level coverage before modifying status roll-up or
+  diagnostic assembly internals.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-280: Liquidity source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: liquidity-family source-product mapping had been correctly extracted from construction
+  orchestration but remained embedded in the broader source-product context helper alongside
+  transaction-cost, external treasury, client restriction, sustainability, and execution evidence.
+- Action: moved the liquidity cashflow, income-needs, reserve-requirement, planned-withdrawal, and
+  source-status mapping helpers into a dedicated liquidity source-context module. The broader helper
+  now imports and re-exports those functions while retaining authority-context composition, keeping
+  existing callers stable and making the pure liquidity mapping boundary easier to review directly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: continue splitting non-liquidity source-product families when the next slice touches
+  their mapping logic, while preserving the authority-context facade for call-site stability.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-281: Client profile source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_client_profile_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: client restriction and sustainability preference source-product mapping was pure
+  source-boundary assembly, but it still lived in the broad construction source-product facade after
+  the liquidity family was separated.
+- Action: moved client restriction profile and sustainability preference profile mapping into a
+  dedicated client-profile source-context helper. The construction source-product facade imports and
+  re-exports the functions so existing authority-context composition remains stable while direct
+  tests target the narrower source-family module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: continue decomposing the remaining transaction-cost, external treasury, and execution
+  acknowledgement mapping families as independent slices.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-282: Transaction-cost source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: transaction-cost curve source-product mapping was direct source-boundary evidence
+  assembly, but it remained in the mixed construction source-product facade after the liquidity and
+  client-profile families were separated.
+- Action: moved transaction-cost curve mapping into a dedicated transaction-cost source-context
+  helper. The facade continues importing and re-exporting the function for authority-context
+  composition stability, while direct tests now import the narrower source-family helper.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: split external treasury and execution acknowledgement mapping into their own helpers
+  before changing their fail-closed source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-283: Execution acknowledgement source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_execution_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: external order execution acknowledgement mapping was fail-closed source-boundary
+  evidence assembly, but it still lived in the mixed construction source-product facade.
+- Action: moved external order execution acknowledgement mapping into a dedicated execution
+  source-context helper. The facade continues importing and re-exporting the helper for
+  authority-context composition stability, and direct tests now import the narrower module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_execution_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: isolate the remaining external treasury currency-overlay source mapper as its own
+  fail-closed source-boundary helper.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-284: Treasury currency-overlay source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: the external treasury currency-overlay source mapper was the last large pure
+  source-product assembly block in the construction source-product facade, mixing fail-closed
+  treasury evidence handling with authority-context composition.
+- Action: moved the external hedge readiness, exposure, hedge policy, eligible instrument, and FX
+  forward-curve mapping into a dedicated treasury source-context helper. The source-product facade
+  now imports and re-exports the helper while retaining only authority-context composition and
+  call-site compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: keep subsequent changes to treasury fail-closed behavior inside the dedicated helper
+  with direct branch coverage for each external source family.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-285: Neutral source-product status mapper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_status.py`,
+  source-product mapper helpers, `tests/unit/dpm/construction/test_source_product_context.py`, and
+  this ledger.
+- Finding: after splitting source-product mapping families, non-liquidity mappers still imported the
+  source supportability status translator from the liquidity helper, creating an avoidable
+  cross-family dependency.
+- Action: moved `source_status_to_method_status` into a neutral source-product status helper and
+  updated liquidity, client-profile, transaction-cost, execution, treasury, facade, and direct test
+  imports to use the shared boundary module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for all touched source/test files; focused mypy
+  passed for seven touched source files; focused source-product/enrichment regressions passed with
+  41 tests.
+- Follow-up: keep cross-family source-boundary utilities in neutral helpers rather than anchoring
+  them to one source family.
+- Wiki decision: no wiki source change required; this is internal dependency factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-286: Treasury source-context branch coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_treasury_source_context.py`, and this ledger.
+- Finding: the dedicated treasury source-context helper had direct coverage for hedge-readiness-only
+  fail-closed mapping, but not for fallback source selection or aggregation across all external
+  treasury source families.
+- Action: added direct tests for currency-exposure fallback behavior and combined external treasury
+  evidence aggregation across hedge readiness, currency exposure, hedge policy, eligible hedge
+  instruments, and FX forward curves. Assertions cover source ids, row preservation, reason-code
+  propagation, and sorted missing-data/blocked-capability evidence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused source-product/enrichment
+  regressions passed with 43 tests.
+- Follow-up: use the new branch tests as guardrails before changing fail-closed treasury behavior or
+  adding source-family-specific treasury normalization.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-287: Supportability application currency and regime coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_supportability_application.py`,
+  `src/api/services/construction_supportability_application.py`, and this ledger.
+- Finding: the extracted supportability application helper had direct branch tests for transaction
+  costs, ESG restrictions, and liquidity, but currency-overlay and regime-stress context status
+  overlays still relied on broader enrichment/API coverage.
+- Action: added direct supportability-application tests for blocked currency-overlay authority
+  context and blocked regime-stress authority context. The tests assert method status roll-up,
+  source reason-code propagation, and authority-context diagnostic provenance.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_supportability_application.py`; focused supportability/enrichment/API
+  regressions passed with 55 tests.
+- Follow-up: use direct branch tests before refactoring remaining supportability status-rollup or
+  diagnostic assembly internals.
+- Wiki decision: no wiki source change required; this is internal test hardening with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-288: Supportability status roll-up helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`, and this ledger.
+- Finding: after extracting supportability application orchestration, method status roll-up still
+  lived inline as a sequence of method-specific conditional overlays, making the main helper harder
+  to scan and riskier to change.
+- Action: moved status roll-up into private helpers for base method status, method enrichment
+  statuses, and authority-context status overlays. The public application helper now reads as
+  enrichment, method-specific evidence attachment, reason-code collection, status roll-up, and
+  diagnostic assembly.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_supportability_application.py`; focused supportability/enrichment/API
+  regressions passed with 55 tests.
+- Follow-up: keep additional supportability branches behind direct tests before changing roll-up
+  semantics.
+- Wiki decision: no wiki source change required; this is internal service factoring with no route,
+  payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-289: Source-context test import boundary
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_enrichment.py`,
+  `src/api/services/construction_source_product_context.py`, and this ledger.
+- Finding: enrichment tests still imported treasury source mapping and source-product status mapping
+  through the broad source-product facade after those helpers had been split into focused modules.
+  That kept direct tests coupled to a compatibility facade instead of the modules they prove.
+- Action: moved enrichment test imports for treasury source mapping and source-product status mapping
+  to their focused modules, leaving the facade import only for authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test/source files; focused mypy
+  passed for `construction_source_product_context.py`,
+  `construction_source_product_status.py`, and `construction_treasury_source_context.py`; focused
+  enrichment/source-product regressions passed with 43 tests.
+- Follow-up: avoid adding new tests for split mapper modules through the source-product facade unless
+  the facade composition behavior itself is under test.
+- Wiki decision: no wiki source change required; this is internal test-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-290: Source-product facade export narrowing
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_source_product_context.py`,
+  source-product/enrichment tests, and this ledger.
+- Finding: after mapper-family extraction and test import realignment, the source-product facade
+  still re-exported individual mapper helpers. That kept the broad module's surface larger than its
+  remaining responsibility: authority-context composition from source products.
+- Action: narrowed the facade exports to `authority_context_with_source_products` and
+  `source_product_authority_context_updates`, and removed unused re-export-only imports. Split
+  mapper helpers remain available from their family-specific modules.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_context.py`; focused source-product/enrichment
+  regressions passed with 43 tests.
+- Follow-up: keep the facade limited to composition; import source-family mappers directly in tests
+  or code that exercises those mapping contracts.
+- Wiki decision: no wiki source change required; this is internal API-surface narrowing for services
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-291: Source-product status test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_status.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_source_product_status.py`, and this ledger.
+- Finding: the neutral source-product status mapper test still lived in the broader source-product
+  context test module after the mapper moved to its own helper.
+- Action: moved the fail-closed status mapping test into a focused status test module and removed
+  the now-unneeded status import from the source-product context tests.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_source_product_status.py`; focused source-product status/context
+  regressions passed with 18 tests.
+- Follow-up: continue splitting source-product test coverage by source family as the next mapper
+  areas are touched.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-292: Execution source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_execution_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_execution_source_context.py`, and this ledger.
+- Finding: direct external order execution acknowledgement mapper coverage still lived in the broad
+  source-product context test module after the execution mapper had been extracted.
+- Action: moved direct execution acknowledgement fail-closed tests into a focused execution
+  source-context test module, leaving the broad source-product context tests to cover
+  authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_execution_source_context.py`; focused execution/context regressions
+  passed with 17 tests.
+- Follow-up: continue splitting direct source-family mapper tests away from the source-product
+  composition suite.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-293: Transaction-cost source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_transaction_cost_source_context.py`, and this ledger.
+- Finding: direct transaction-cost curve mapper coverage still lived in the broad source-product
+  context test module after transaction-cost mapping had been extracted.
+- Action: moved transaction-cost source mapper tests into a focused transaction-cost source-context
+  test module, keeping the broad source-product context tests focused on authority-context
+  composition behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py`; focused transaction-cost/context
+  regressions passed with 15 tests.
+- Follow-up: continue splitting direct source-family mapper tests by liquidity, client profile, and
+  treasury families.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-294: Client-profile source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_client_profile_source_context.py`, and this ledger.
+- Finding: direct client restriction and sustainability preference mapper coverage still lived in
+  the broad source-product context test module after client-profile mapping had been extracted.
+- Action: moved client-profile source mapper tests into a focused client-profile source-context test
+  module and removed now-stale imports from the composition test.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py`; focused client-profile/context
+  regressions passed with 14 tests.
+- Follow-up: continue splitting liquidity and treasury direct source-family tests out of the
+  composition suite.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-295: Liquidity source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_liquidity_source_context.py`, and this ledger.
+- Finding: direct liquidity-family mapper coverage still lived in the broad source-product context
+  test module after liquidity mapping had been extracted.
+- Action: moved cashflow projection, client income-needs, liquidity reserve, planned withdrawal, and
+  source liquidity policy tests into a focused liquidity source-context test module, leaving the
+  broad source-product context tests focused on authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity/context regressions
+  passed with 12 tests.
+- Follow-up: split treasury direct source-family tests out of the composition suite next.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-296: Treasury source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_treasury_source_context.py`, and this ledger.
+- Finding: direct external treasury mapper coverage still lived in the broad source-product context
+  test module after treasury mapping had been extracted.
+- Action: moved hedge-readiness, exposure fallback, combined treasury source evidence, and absent
+  source tests into a focused treasury source-context test module. The source-product context suite
+  now covers facade composition only.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury/context regressions passed
+  with 6 tests.
+- Follow-up: use the smaller source-product context suite as the guardrail for composition-only
+  changes and keep source-family contract tests in their focused modules.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-297: Shared execution and transaction source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  execution, transaction-cost, and source-product context tests, and this ledger.
+- Finding: after splitting source-family tests, the execution acknowledgement and transaction-cost
+  source response builders were duplicated between focused mapper tests and the facade composition
+  tests.
+- Action: extracted shared source-product fixture builders for external order acknowledgement and
+  transaction-cost curve responses, then updated the focused tests and composition tests to reuse
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related source modules; focused execution/transaction/source-product context regressions
+  passed with 5 tests.
+- Follow-up: continue moving remaining liquidity, client-profile, and treasury source response
+  builders into shared fixtures as those test modules are touched.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-298: Shared liquidity source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  liquidity and source-product context tests, and this ledger.
+- Finding: liquidity source response builders were duplicated between focused liquidity mapper tests
+  and the source-product composition tests.
+- Action: moved cashflow projection, client income-needs, liquidity reserve, and planned withdrawal
+  source response builders into shared source-product fixtures and updated both test modules to use
+  them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related liquidity/source-product source modules; focused liquidity/source-product context
+  regressions passed with 8 tests.
+- Follow-up: continue extracting client-profile and treasury response builders from duplicated test
+  modules.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-299: Shared client-profile source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  client-profile and source-product context tests, and this ledger.
+- Finding: client restriction and sustainability preference source response builders were duplicated
+  between focused client-profile mapper tests and the source-product composition tests.
+- Action: moved the client restriction profile and sustainability preference profile response
+  builders into shared source-product fixtures and updated both test modules to reuse them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related client-profile/source-product source modules; focused client-profile/source-product
+  context regressions passed with 4 tests.
+- Follow-up: extract treasury source response builders from duplicated test modules next.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-300: Shared treasury source fixtures
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/source_product_context_fixtures.py`,
+  treasury and source-product context tests, and this ledger.
+- Finding: external treasury source response builders were duplicated between the focused treasury
+  mapper tests and the source-product composition tests.
+- Action: moved hedge-readiness, currency exposure, hedge policy, eligible hedge instrument, and FX
+  forward-curve source response builders into shared source-product fixtures and updated both test
+  modules to reuse them.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; focused mypy passed
+  for the related treasury/source-product source modules; focused treasury/source-product context
+  regressions passed with 6 tests.
+- Follow-up: continue shrinking construction test support by keeping shared fixtures in the fixture
+  module and source-family assertions in focused mapper suites.
+- Wiki decision: no wiki source change required; this is internal test duplication cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-301: Treasury source payload hashing helpers
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: treasury source mapping repeated optional `model_dump` and source-hash handling for each
+  external treasury source family, making the mapper longer without adding domain meaning.
+- Action: introduced small internal helpers for optional source payload extraction and content-hash
+  derivation, then reused them across the treasury mapper.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: continue reducing treasury mapper repetition around supportability evidence while
+  preserving explicit source-family fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-302: Treasury supportability evidence helpers
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: treasury source mapping repeated optional missing-data and blocked-capability extraction
+  for each external treasury source family.
+- Action: added small internal helpers for optional supportability evidence access and reused them
+  in the aggregate missing-data and blocked-capability rollups.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep explicit source-family field mapping in place while extracting only repeated
+  mechanics that do not encode separate treasury business rules.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-303: Treasury aggregate supportability rollups
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: the treasury mapper still carried temporary per-source missing-data and
+  blocked-capability variables solely to build sorted aggregate supportability rollups.
+- Action: introduced internal aggregate helpers for merged missing-data families and blocked
+  capabilities, then used them directly in the currency-overlay context construction.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: continue improving treasury source mapping readability without hiding product-specific
+  source lineage and count fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-304: Treasury fail-closed reason assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: fail-closed reason-code assembly in the treasury mapper repeated one presence check per
+  external treasury source family.
+- Action: extracted ordered fail-closed reason-code assembly into a small internal helper while
+  preserving the existing primary reason and source-family reason order.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep source-family fail-closed reasons explicit and ordered because they are observable
+  supportability evidence.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-305: Treasury source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: treasury source-id selection repeated the same source-batch, lineage, and content-hash
+  fallback chain across multiple source-family fields.
+- Action: extracted source-id fallback selection into a shared internal helper and reused it for the
+  primary hedge-readiness source and optional treasury family source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep product-specific source-id output fields explicit while sharing the common
+  canonical fallback rule.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-306: Liquidity source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, liquidity source-context
+  tests, and this ledger.
+- Finding: liquidity source-family mappers repeated canonical payload hashing and the same
+  source-batch, lineage, and content-hash source-id fallback rule.
+- Action: added internal liquidity source payload, hash, and source-id helpers and reused them
+  across cashflow, income-needs, reserve requirement, and planned withdrawal context mapping.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity source-context
+  regressions passed with 6 tests.
+- Follow-up: continue consolidating repeated source-product mechanics in mapper helpers without
+  changing source-family domain fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-307: Liquidity parent reason-code assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, liquidity source-context
+  tests, and this ledger.
+- Finding: parent liquidity context construction mixed child-context orchestration with reason-code
+  list assembly for optional source families.
+- Action: extracted parent liquidity reason-code assembly into a small internal helper keyed by
+  income-needs, reserve-requirement, and planned-withdrawal presence.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity source-context
+  regressions passed with 6 tests.
+- Follow-up: keep the parent liquidity mapper focused on child context construction and governed
+  policy fields.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-308: Client-profile source id fallback helper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_client_profile_source_context.py`, client-profile
+  source-context tests, and this ledger.
+- Finding: client restriction and sustainability preference mappers repeated canonical payload
+  hashing and source-batch, lineage, and content-hash source-id fallback selection.
+- Action: added internal client-profile source payload, hash, and source-id helpers and reused them
+  across restriction and sustainability preference profile mapping.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_client_profile_source_context.py`; focused client-profile source-context
+  regressions passed with 2 tests.
+- Follow-up: use the same explicit source-id fallback helper pattern for remaining source-context
+  helpers where repetition appears.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-309: Transaction-cost point mapper
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  transaction-cost source-context tests, and this ledger.
+- Finding: transaction-cost context mapping embedded per-point row shaping inside the parent context
+  constructor, mixing source metadata assembly with bounded curve-point transformation.
+- Action: extracted transaction-cost point mapping into a private helper while preserving the
+  existing limits of 10 curve points and 5 sample transaction IDs per point.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py`; focused transaction-cost
+  source-context regression passed with 1 test.
+- Follow-up: keep bounded row shaping close to source-context helpers and covered by direct mapper
+  tests.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-310: Transaction-cost source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  transaction-cost source-context mapping, and this ledger.
+- Finding: transaction-cost source context tests covered lineage source IDs but did not prove the
+  page request-scope fingerprint fallback used when source-batch and lineage fingerprints are
+  absent.
+- Action: added a direct transaction-cost mapper regression asserting fallback to
+  `request_scope_fingerprint` as the source ID.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  transaction-cost source-context regressions passed with 2 tests.
+- Follow-up: add similarly focused fallback tests where source-boundary identity has non-lineage
+  fallback behavior.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-311: Execution acknowledgement source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_execution_source_context.py`, execution acknowledgement
+  source-context mapping, and this ledger.
+- Finding: external order acknowledgement tests covered lineage source IDs but did not prove the
+  content-hash fallback used when source-batch and lineage fingerprints are absent.
+- Action: added a direct mapper regression asserting source ID fallback to the acknowledgement
+  context content hash.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused execution
+  source-context regressions passed with 3 tests.
+- Follow-up: keep fallback coverage aligned with source-boundary proof for every external source
+  family mapper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-312: Liquidity source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_source_context.py`, liquidity source-family
+  mapping, and this ledger.
+- Finding: liquidity source-family tests covered lineage source IDs but did not prove content-hash
+  fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added direct fallback regressions for income needs, reserve requirements, planned
+  withdrawals, and cashflow projection source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused liquidity
+  source-context regressions passed with 10 tests.
+- Follow-up: keep source-boundary identity fallback coverage close to each source-family mapper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-313: Client-profile source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_client_profile_source_context.py`, client-profile
+  source-family mapping, and this ledger.
+- Finding: client-profile source-family tests covered lineage source IDs but did not prove
+  content-hash fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added direct fallback regressions for client restriction and sustainability preference
+  source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused client-profile
+  source-context regressions passed with 4 tests.
+- Follow-up: keep source-boundary fallback coverage aligned with shared source-id helper behavior.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-314: Treasury source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_treasury_source_context.py`, external treasury
+  source-family mapping, and this ledger.
+- Finding: treasury source-family tests covered lineage source IDs but did not prove content-hash
+  fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added a direct fallback regression covering the aggregate hedge-readiness source ID and
+  each optional treasury source-family source ID.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused treasury
+  source-context regressions passed with 5 tests.
+- Follow-up: keep the aggregate treasury hash fallback explicit because the primary context source
+  ID intentionally represents the combined source-family payload when hedge-readiness lineage is
+  absent.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-315: Source status fail-closed coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_status.py`, source-product status
+  mapping, and this ledger.
+- Finding: source status tests proved known non-ready states were blocked but did not explicitly
+  cover unknown upstream status values.
+- Action: converted the mapper test to a parameterized matrix and added an unknown upstream state
+  case that must fail closed to `BLOCKED`.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused source-product
+  status regressions passed with 5 tests.
+- Follow-up: keep source-supportability translation intentionally conservative as upstream source
+  products evolve.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-316: Source-product facade stateless pass-through coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, source-product authority
+  context facade behavior, and this ledger.
+- Finding: source-product composition tests covered source-family updates but did not directly guard
+  the stateless path where no resolved source context is supplied.
+- Action: added a direct facade regression asserting the existing authority context is returned
+  unchanged when source context is absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  source-product facade regressions passed with 3 tests.
+- Follow-up: keep facade tests focused on orchestration behavior while source-family tests own
+  mapper detail.
+- Wiki decision: no wiki source change required; this is internal source-composition test hardening
+  with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-317: Source-product facade empty-source coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_source_product_context.py`, source-product authority
+  context facade behavior, and this ledger.
+- Finding: source-product composition tests did not directly guard the empty source-products path
+  where a source context object is present but carries no source-family products.
+- Action: added a direct facade regression asserting no authority-context updates are produced when
+  all source-family products are absent.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused
+  source-product facade regressions passed with 4 tests.
+- Follow-up: keep facade composition tests focused on update/no-update orchestration boundaries.
+- Wiki decision: no wiki source change required; this is internal source-composition test hardening
+  with no route, payload, supported-feature, or operator-contract change.

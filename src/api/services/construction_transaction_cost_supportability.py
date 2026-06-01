@@ -6,6 +6,7 @@ from src.core.construction.models import (
     ConstructionConstraintTrace,
     ConstructionObjectiveTerm,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import (
     ConstructionMethodStatus,
     ConstructionSourceFamily,
@@ -101,9 +102,9 @@ def transaction_cost_status(
     }
     covered_security_ids = {point.security_id for point in context.curve_points}
     if traded_security_ids and not traded_security_ids <= covered_security_ids:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
+        status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
     if observed_transaction_cost_estimate(result=result, context=context) is None:
-        status = _lowest_status([status, ConstructionMethodStatus.DEGRADED])
+        status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
     return status
 
 
@@ -127,16 +128,6 @@ def transaction_cost_reason_codes(
     else:
         reason_codes.append("TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS")
     return sorted(set(reason_codes))
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])
 
 
 __all__ = [

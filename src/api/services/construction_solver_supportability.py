@@ -1,5 +1,6 @@
 from src.core.construction.method_registry import classify_solver_failure
 from src.core.construction.models import ConstructionEnrichmentSummary
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
 
@@ -22,17 +23,9 @@ def solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus
     ]
     if not solver_warnings:
         return ConstructionMethodStatus.READY
-    return _lowest_status([classify_solver_failure(warning) for warning in solver_warnings])
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])
+    return lowest_construction_status(
+        classify_solver_failure(warning) for warning in solver_warnings
+    )
 
 
 __all__ = [

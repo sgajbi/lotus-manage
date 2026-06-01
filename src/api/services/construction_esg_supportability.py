@@ -10,6 +10,7 @@ from src.core.construction.models import (
     ConstructionAuthorityContext,
     ConstructionConstraintTrace,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import (
     ConstructionMethodStatus,
     ConstructionSourceFamily,
@@ -75,7 +76,7 @@ def esg_restriction_status(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
-    return _lowest_status(
+    return lowest_construction_status(
         [
             client_restriction_status(
                 request=request,
@@ -209,9 +210,9 @@ def sustainability_preference_status(
         return ConstructionMethodStatus.DEGRADED
     status = context.supportability_status
     if sustainability_allocation_breaches(result=result, context=context):
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
     if sustainability_classification_review_required(context=context):
-        status = _lowest_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
     return status
 
 
@@ -272,16 +273,6 @@ def sustainability_classification_review_required(
         and (preference.exclusion_codes or preference.positive_tilt_codes)
         for preference in context.preferences
     )
-
-
-def _lowest_status(statuses: list[ConstructionMethodStatus]) -> ConstructionMethodStatus:
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    return min(statuses, key=lambda item: status_order[item])
 
 
 __all__ = [

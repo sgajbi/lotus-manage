@@ -6,9 +6,33 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.routers.construction_http import construction_http_exception
 import src.api.services.construction_service as construction_service
+from src.api.services.construction_esg_supportability import (
+    client_restriction_reason_codes,
+    client_restriction_status,
+    restriction_matches_intent,
+    sustainability_preference_reason_codes,
+    sustainability_preference_status,
+)
+from src.api.services.construction_method_authority import authority_context_for_request_method
+from src.api.services.construction_method_supportability import (
+    currency_overlay_status,
+    liquidity_reason_codes,
+    liquidity_status,
+)
+from src.api.services.construction_method_readiness import method_specific_reason_codes
+from src.api.services.construction_request_dates import construction_as_of_date
+from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
+    authority_context_with_source_products,
+)
+from src.api.services.construction_source_product_status import source_status_to_method_status
+from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
-    source_status_to_method_status,
+)
+from src.api.services.construction_transaction_cost_supportability import (
+    observed_transaction_cost_estimate,
+    transaction_cost_reason_codes,
+    transaction_cost_status,
 )
 from src.core.construction import (
     AuthoritativeClientRestrictionContext,
@@ -165,7 +189,7 @@ def test_construction_error_mapping_and_missing_set() -> None:
 def test_construction_service_supportability_helper_edges() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     result = _trade_result(max_turnover_pct=Decimal("0.01"))
-    no_context = construction_service._authority_context_for_method(
+    no_context = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.LIQUIDITY_AWARE,
         result=result,
@@ -173,7 +197,7 @@ def test_construction_service_supportability_helper_edges() -> None:
         risk_authority_client=None,
         correlation_id="corr-helper",
     )
-    risk_unavailable = construction_service._authority_context_for_method(
+    risk_unavailable = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.RISK_AWARE,
         result=result,
@@ -192,18 +216,13 @@ def test_construction_service_supportability_helper_edges() -> None:
 
     assert no_context.liquidity_context is not None
     assert risk_unavailable.risk_context is None
+    assert solver_method_status(result=result) == ConstructionMethodStatus.READY
+    assert liquidity_status(result=result, context=None) == ConstructionMethodStatus.DEGRADED
     assert (
-        construction_service._solver_method_status(result=result) == ConstructionMethodStatus.READY
-    )
-    assert (
-        construction_service._liquidity_status(result=result, context=None)
-        == ConstructionMethodStatus.DEGRADED
-    )
-    assert (
-        construction_service._liquidity_status(result=result, context=liquidity_context)
+        liquidity_status(result=result, context=liquidity_context)
         == ConstructionMethodStatus.PENDING_REVIEW
     )
-    assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in construction_service._liquidity_reason_codes(
+    assert "LIQUIDITY_POLICY_CONTEXT_DERIVED" in liquidity_reason_codes(
         result=result,
         context=None,
     )
@@ -213,9 +232,7 @@ def test_construction_as_of_date_uses_snapshot_identifier_date() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     request.market_data_snapshot.snapshot_id = "md_2026_05_06"
 
-    assert (
-        construction_service._construction_as_of_date(request=request).isoformat() == "2026-05-06"
-    )
+    assert construction_as_of_date(request=request).isoformat() == "2026-05-06"
 
 
 def test_cashflow_projection_context_marks_future_cash_pressure_pending() -> None:
@@ -240,8 +257,8 @@ def test_cashflow_projection_context_marks_future_cash_pressure_pending() -> Non
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
-    status = construction_service._liquidity_status(result=result, context=context)
-    reason_codes = construction_service._liquidity_reason_codes(
+    status = liquidity_status(result=result, context=context)
+    reason_codes = liquidity_reason_codes(
         result=result,
         context=context,
     )
@@ -273,8 +290,8 @@ def test_cashflow_projection_context_rejects_unusable_projection_posture() -> No
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
-    status = construction_service._liquidity_status(result=result, context=context)
-    reason_codes = construction_service._liquidity_reason_codes(
+    status = liquidity_status(result=result, context=context)
+    reason_codes = liquidity_reason_codes(
         result=result,
         context=context,
     )
@@ -312,15 +329,11 @@ def test_transaction_cost_context_marks_missing_observed_evidence_degraded() -> 
         reason_codes=["TRANSACTION_COST_CURVE_READY"],
     )
 
+    assert observed_transaction_cost_estimate(result=result, context=context) is None
     assert (
-        construction_service._observed_transaction_cost_estimate(result=result, context=context)
-        is None
+        transaction_cost_status(result=result, context=context) == ConstructionMethodStatus.DEGRADED
     )
-    assert (
-        construction_service._transaction_cost_status(result=result, context=context)
-        == ConstructionMethodStatus.DEGRADED
-    )
-    reason_codes = construction_service._transaction_cost_reason_codes(
+    reason_codes = transaction_cost_reason_codes(
         result=result,
         context=context,
     )
@@ -363,10 +376,7 @@ def test_transaction_cost_context_ignores_intents_without_base_notional() -> Non
         reason_codes=["TRANSACTION_COST_CURVE_READY"],
     )
 
-    assert (
-        construction_service._observed_transaction_cost_estimate(result=result, context=context)
-        is None
-    )
+    assert observed_transaction_cost_estimate(result=result, context=context) is None
 
 
 def test_client_restriction_context_applies_source_owned_restriction_scopes() -> None:
@@ -420,14 +430,14 @@ def test_client_restriction_context_applies_source_owned_restriction_scopes() ->
     )
 
     assert (
-        construction_service._client_restriction_status(
+        client_restriction_status(
             request=request,
             result=result,
             context=context,
         )
         == ConstructionMethodStatus.BLOCKED
     )
-    reason_codes = construction_service._client_restriction_reason_codes(
+    reason_codes = client_restriction_reason_codes(
         request=request,
         result=result,
         context=context,
@@ -461,12 +471,12 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
         "restriction_version": 1,
     }
 
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(**base_rule),
     )
-    assert not construction_service._restriction_matches_intent(
+    assert not restriction_matches_intent(
         intent=intent,
         shelf=None,
         restriction=AuthoritativeClientRestrictionRule(
@@ -474,7 +484,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             asset_classes=["EQUITY"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -482,7 +492,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             asset_classes=["EQUITY"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -490,7 +500,7 @@ def test_restriction_scope_matching_handles_default_asset_issuer_and_country_rul
             issuer_ids=["ISSUER_TECH"],
         ),
     )
-    assert construction_service._restriction_matches_intent(
+    assert restriction_matches_intent(
         intent=intent,
         shelf=shelf,
         restriction=AuthoritativeClientRestrictionRule(
@@ -546,13 +556,13 @@ def test_sustainability_context_flags_allocation_and_classification_review() -> 
     )
 
     assert (
-        construction_service._sustainability_preference_status(
+        sustainability_preference_status(
             result=result,
             context=context,
         )
         == ConstructionMethodStatus.DEGRADED
     )
-    reason_codes = construction_service._sustainability_preference_reason_codes(
+    reason_codes = sustainability_preference_reason_codes(
         result=result,
         context=context,
     )
@@ -636,7 +646,7 @@ def test_source_context_lifts_client_restriction_and_sustainability_profiles() -
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -761,7 +771,7 @@ def test_source_context_lifts_income_reserve_and_withdrawal_sources() -> None:
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -936,7 +946,7 @@ def test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_c
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -1070,7 +1080,7 @@ def test_source_context_lifts_fx_forward_curve_when_it_is_the_only_currency_sour
         ),
     )
 
-    context = construction_service._authority_context_with_source_products(
+    context = authority_context_with_source_products(
         authority_context=ConstructionAuthorityContext(),
         source_context=source_context,
     )
@@ -1100,13 +1110,11 @@ def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:
     payload["market_data_snapshot"]["fx_rates"] = []
     request = RebalanceRequest.model_validate(payload)
     result = _trade_result()
-    enrichment = summarize_enrichment_posture(result=result, tax_required=False)
 
-    reason_codes = construction_service._method_specific_reason_codes(
+    reason_codes = method_specific_reason_codes(
         request=request,
         method=ConstructionMethod.CURRENCY_OVERLAY,
         result=result,
-        enrichment=enrichment,
         authority_context=ConstructionAuthorityContext(),
     )
 
@@ -1117,7 +1125,7 @@ def test_regime_context_unavailable_is_kept_source_safe() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     result = _trade_result()
 
-    context = construction_service._authority_context_for_method(
+    context = authority_context_for_request_method(
         request=request,
         method=ConstructionMethod.REGIME_STRESS_AWARE,
         result=result,
@@ -1178,15 +1186,12 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
         reason_codes=["LIQUIDITY_POLICY_READY"],
     )
 
+    assert solver_method_status(result=warning_result) == ConstructionMethodStatus.BLOCKED
     assert (
-        construction_service._solver_method_status(result=warning_result)
+        liquidity_status(result=blocked_result, context=liquidity_context)
         == ConstructionMethodStatus.BLOCKED
     )
-    assert (
-        construction_service._liquidity_status(result=blocked_result, context=liquidity_context)
-        == ConstructionMethodStatus.BLOCKED
-    )
-    blocked_reason_codes = construction_service._liquidity_reason_codes(
+    blocked_reason_codes = liquidity_reason_codes(
         result=blocked_result,
         context=liquidity_context,
     )
@@ -1198,14 +1203,14 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
     )
     zero_value_result = result.model_copy(update={"after_simulated": zero_value_state})
     assert (
-        construction_service._liquidity_status(
+        liquidity_status(
             result=zero_value_result,
             context=liquidity_context,
         )
         == ConstructionMethodStatus.DEGRADED
     )
     assert "CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE" in (
-        construction_service._liquidity_reason_codes(
+        liquidity_reason_codes(
             result=zero_value_result,
             context=liquidity_context,
         )
@@ -1221,7 +1226,7 @@ def test_solver_and_liquidity_edges_surface_operational_evidence() -> None:
         }
     )
     no_cash_result = result.model_copy(update={"after_simulated": no_cash_state})
-    assert "CASHFLOW_PROJECTION_READY" not in construction_service._liquidity_reason_codes(
+    assert "CASHFLOW_PROJECTION_READY" not in liquidity_reason_codes(
         result=no_cash_result,
         context=liquidity_context,
     )
@@ -1244,7 +1249,7 @@ def test_construction_service_currency_overlay_helper_edges() -> None:
     )
 
     assert (
-        construction_service._currency_overlay_status(request=request, context=context)
+        currency_overlay_status(request=request, context=context)
         == ConstructionMethodStatus.BLOCKED
     )
     payload["market_data_snapshot"]["fx_rates"] = [
@@ -1253,11 +1258,10 @@ def test_construction_service_currency_overlay_helper_edges() -> None:
     request = RebalanceRequest.model_validate(payload)
 
     assert (
-        construction_service._currency_overlay_status(request=request, context=None)
-        == ConstructionMethodStatus.DEGRADED
+        currency_overlay_status(request=request, context=None) == ConstructionMethodStatus.DEGRADED
     )
     assert (
-        construction_service._currency_overlay_status(request=request, context=context)
+        currency_overlay_status(request=request, context=context)
         == ConstructionMethodStatus.PENDING_REVIEW
     )
 

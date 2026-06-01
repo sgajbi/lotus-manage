@@ -41,6 +41,10 @@ from src.core.construction.method_registry import (
     get_method_definition,
     resolve_method_plan,
 )
+from src.core.construction.status import (
+    construction_status_rank,
+    lowest_construction_status,
+)
 from src.core.construction.vocabulary import (
     ConstructionMethod,
     ConstructionMethodStatus,
@@ -85,9 +89,11 @@ __all__ = [
     "build_do_nothing_baseline",
     "build_rebalance_result_alternative",
     "classify_solver_failure",
+    "construction_status_rank",
     "estimate_transaction_cost",
     "first_wave_method_definitions",
     "get_method_definition",
+    "lowest_construction_status",
     "resolve_method_plan",
     "summarize_enrichment_posture",
 ]

@@ -1,0 +1,99 @@
+from typing import Any, TypeAlias
+
+from src.core.common.canonical import hash_canonical_payload
+from src.api.services.construction_source_product_status import source_status_to_method_status
+from src.core.construction.models import (
+    AuthoritativeClientRestrictionContext,
+    AuthoritativeClientRestrictionRule,
+    AuthoritativeSustainabilityPreference,
+    AuthoritativeSustainabilityPreferenceContext,
+)
+from src.core.dpm_source_context import (
+    DpmCoreClientRestrictionProfileResponse,
+    DpmCoreSustainabilityPreferenceProfileResponse,
+)
+
+_JsonPayload: TypeAlias = dict[str, Any]
+_ClientProfileSourceResponse: TypeAlias = (
+    DpmCoreClientRestrictionProfileResponse | DpmCoreSustainabilityPreferenceProfileResponse
+)
+
+
+def _source_payload(response: _ClientProfileSourceResponse) -> _JsonPayload:
+    return response.model_dump(mode="json", exclude_none=True)
+
+
+def _source_hash(payload: _JsonPayload) -> str:
+    return hash_canonical_payload(payload)
+
+
+def _response_source_id(response: _ClientProfileSourceResponse, fallback_hash: str) -> str:
+    return (
+        response.source_batch_fingerprint
+        or response.lineage.get("source_batch_fingerprint")
+        or fallback_hash
+    )
+
+
+def client_restriction_profile_context(
+    restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> AuthoritativeClientRestrictionContext:
+    payload = _source_payload(restriction_profile)
+    source_hash = _source_hash(payload)
+    return AuthoritativeClientRestrictionContext(
+        supportability_status=source_status_to_method_status(
+            restriction_profile.supportability.state
+        ),
+        source_system="lotus-core",
+        source_product_name=restriction_profile.product_name,
+        source_product_version=restriction_profile.product_version,
+        source_id=_response_source_id(restriction_profile, source_hash),
+        content_hash=source_hash,
+        portfolio_id=restriction_profile.portfolio_id,
+        client_id=restriction_profile.client_id,
+        mandate_id=restriction_profile.mandate_id,
+        as_of_date=restriction_profile.as_of_date,
+        restriction_count=restriction_profile.supportability.restriction_count,
+        missing_data_families=restriction_profile.supportability.missing_data_families,
+        restrictions=[
+            AuthoritativeClientRestrictionRule.model_validate(rule.model_dump(mode="python"))
+            for rule in restriction_profile.restrictions
+        ],
+        reason_codes=[restriction_profile.supportability.reason],
+    )
+
+
+def sustainability_preference_profile_context(
+    sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
+) -> AuthoritativeSustainabilityPreferenceContext:
+    payload = _source_payload(sustainability_profile)
+    source_hash = _source_hash(payload)
+    return AuthoritativeSustainabilityPreferenceContext(
+        supportability_status=source_status_to_method_status(
+            sustainability_profile.supportability.state
+        ),
+        source_system="lotus-core",
+        source_product_name=sustainability_profile.product_name,
+        source_product_version=sustainability_profile.product_version,
+        source_id=_response_source_id(sustainability_profile, source_hash),
+        content_hash=source_hash,
+        portfolio_id=sustainability_profile.portfolio_id,
+        client_id=sustainability_profile.client_id,
+        mandate_id=sustainability_profile.mandate_id,
+        as_of_date=sustainability_profile.as_of_date,
+        preference_count=sustainability_profile.supportability.preference_count,
+        missing_data_families=sustainability_profile.supportability.missing_data_families,
+        preferences=[
+            AuthoritativeSustainabilityPreference.model_validate(
+                preference.model_dump(mode="python")
+            )
+            for preference in sustainability_profile.preferences
+        ],
+        reason_codes=[sustainability_profile.supportability.reason],
+    )
+
+
+__all__ = [
+    "client_restriction_profile_context",
+    "sustainability_preference_profile_context",
+]

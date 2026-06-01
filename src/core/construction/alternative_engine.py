@@ -10,6 +10,7 @@ from src.core.construction.models import (
     ConstructionConstraintTrace,
     ConstructionObjectiveTerm,
 )
+from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import (
     ConstructionMethod,
     ConstructionMethodStatus,
@@ -75,15 +76,8 @@ def build_alternative_set(
 ) -> ConstructionAlternativeSet:
     """Create an aggregate alternative set with conservative status roll-up."""
 
-    status_order = {
-        ConstructionMethodStatus.BLOCKED: 0,
-        ConstructionMethodStatus.DEGRADED: 1,
-        ConstructionMethodStatus.PENDING_REVIEW: 2,
-        ConstructionMethodStatus.READY: 3,
-    }
-    aggregate_status = min(
+    aggregate_status = lowest_construction_status(
         (alternative.method_status for alternative in alternatives),
-        key=lambda status: status_order[status],
         default=ConstructionMethodStatus.BLOCKED,
     )
     return ConstructionAlternativeSet(
