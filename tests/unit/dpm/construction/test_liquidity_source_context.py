@@ -7,6 +7,7 @@ from src.api.services.construction_liquidity_source_context import (
     planned_withdrawal_schedule_context,
     source_liquidity_context,
 )
+from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     cashflow_projection_response,
@@ -75,6 +76,62 @@ def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_stat
     assert context.include_projected is True
     assert context.data_quality_status == ConstructionMethodStatus.DEGRADED
     assert context.reason_codes == ["CORE_CASHFLOW_PROJECTION_READY"]
+
+
+def test_client_income_needs_context_falls_back_to_content_hash_source_id() -> None:
+    response = client_income_needs_schedule_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = client_income_needs_schedule_context(response)
+
+    assert context.source_id == expected_hash
+
+
+def test_liquidity_reserve_context_falls_back_to_content_hash_source_id() -> None:
+    response = liquidity_reserve_requirement_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = liquidity_reserve_requirement_context(response)
+
+    assert context.source_id == expected_hash
+
+
+def test_planned_withdrawal_context_falls_back_to_content_hash_source_id() -> None:
+    response = planned_withdrawal_schedule_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = planned_withdrawal_schedule_context(response)
+
+    assert context.source_id == expected_hash
+
+
+def test_liquidity_cashflow_context_falls_back_to_content_hash_source_id() -> None:
+    response = cashflow_projection_response().model_copy(
+        update={
+            "source_batch_fingerprint": None,
+            "lineage": {},
+        }
+    )
+    expected_hash = hash_canonical_payload(response.model_dump(mode="json", exclude_none=True))
+
+    context = liquidity_cashflow_projection_context(response)
+
+    assert context.source_batch_fingerprint == expected_hash
 
 
 def test_source_liquidity_context_preserves_source_family_policy_and_children() -> None:

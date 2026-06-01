@@ -7758,3 +7758,19 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   family mapper.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-312: Liquidity source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_source_context.py`, liquidity source-family
+  mapping, and this ledger.
+- Finding: liquidity source-family tests covered lineage source IDs but did not prove content-hash
+  fallback behavior when source-batch and lineage fingerprints are absent.
+- Action: added direct fallback regressions for income needs, reserve requirements, planned
+  withdrawals, and cashflow projection source IDs.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused liquidity
+  source-context regressions passed with 10 tests.
+- Follow-up: keep source-boundary identity fallback coverage close to each source-family mapper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
