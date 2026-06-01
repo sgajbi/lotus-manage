@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 from src.api.services.mandate_command_center import (
     attention_buckets as _attention_buckets,
@@ -27,6 +27,11 @@ from src.api.services.mandate_diff import (
     iter_changed_fields,
     materiality_for_field,
 )
+from src.api.services.mandate_optional_sources import (
+    ready_benchmark_assignment_source,
+    ready_optional_source,
+    try_resolve_optional_source,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmCommandCenterSummary,
@@ -48,7 +53,6 @@ from src.infrastructure.core_sourcing import (
     DpmCoreResolverUnavailableError,
 )
 from src.core.dpm_source_context import (
-    DpmCoreBenchmarkAssignmentResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
 )
 
@@ -56,6 +60,9 @@ _severity_rank = severity_rank
 _diff_payloads = diff_payloads
 _iter_changed_fields = iter_changed_fields
 _materiality_for_field = materiality_for_field
+_try_resolve_optional_source = try_resolve_optional_source
+_ready_optional_source = ready_optional_source
+_ready_benchmark_assignment_source = ready_benchmark_assignment_source
 
 
 @dataclass(frozen=True)
@@ -282,55 +289,6 @@ def refresh_mandate_from_core(
         health_snapshot=health_snapshot,
         monitoring_exceptions=monitoring_exceptions,
     )
-
-
-def _try_resolve_optional_source(
-    *,
-    resolver: DpmCoreResolverClient,
-    method_name: str,
-    family_name: str,
-    **kwargs: Any,
-) -> tuple[Any | None, str | None]:
-    method = getattr(resolver, method_name, None)
-    if method is None:
-        return None, None
-    try:
-        return method(**kwargs), None
-    except DpmCoreResolverError:
-        return None, family_name
-
-
-def _ready_optional_source(
-    *,
-    source: Any | None,
-    unavailable_family: str | None,
-    family_name: str,
-) -> tuple[Any | None, str | None]:
-    if source is None:
-        return None, unavailable_family
-    supportability = getattr(source, "supportability", None)
-    if supportability is not None and getattr(supportability, "state", None) != "READY":
-        return None, family_name
-    data_quality_status = getattr(source, "data_quality_status", None)
-    if data_quality_status is not None and str(data_quality_status).upper() not in {
-        "READY",
-        "COMPLETE",
-        "ACCEPTED",
-    }:
-        return None, family_name
-    return source, unavailable_family
-
-
-def _ready_benchmark_assignment_source(
-    *,
-    source: DpmCoreBenchmarkAssignmentResponse | None,
-    unavailable_family: str | None,
-) -> tuple[DpmCoreBenchmarkAssignmentResponse | None, str | None]:
-    if source is None:
-        return None, unavailable_family
-    if source.assignment_status.upper() != "ACTIVE":
-        return None, "BENCHMARK_ASSIGNMENT"
-    return source, unavailable_family
 
 
 def get_latest_mandate_by_portfolio(
