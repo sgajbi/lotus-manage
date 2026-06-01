@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.api.services.construction_source_product_context import (
+    client_income_needs_schedule_context,
     external_order_execution_acknowledgement_context,
     external_treasury_currency_overlay_context,
     liquidity_cashflow_projection_context,
@@ -10,6 +11,9 @@ from src.api.services.construction_source_product_context import (
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
+    DpmCoreClientIncomeNeedsScheduleEntry,
+    DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreClientIncomeNeedsScheduleSupportability,
     DpmCoreExternalOrderExecutionAcknowledgementResponse,
     DpmCoreExternalOrderExecutionAcknowledgementSupportability,
     DpmCoreExternalHedgeExecutionReadinessResponse,
@@ -125,6 +129,62 @@ def _cashflow_projection() -> DpmCorePortfolioCashflowProjectionResponse:
         source_batch_fingerprint=None,
         lineage={"source_batch_fingerprint": "cashflow-lineage"},
     )
+
+
+def _income_needs_schedule() -> DpmCoreClientIncomeNeedsScheduleResponse:
+    return DpmCoreClientIncomeNeedsScheduleResponse(
+        product_name="ClientIncomeNeedsSchedule",
+        product_version="v1",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date=date(2026, 6, 1),
+        schedules=[
+            DpmCoreClientIncomeNeedsScheduleEntry(
+                schedule_id="income-1",
+                need_type="RETIREMENT_INCOME",
+                need_status="ACTIVE",
+                amount=Decimal("5000"),
+                currency="SGD",
+                frequency="MONTHLY",
+                start_date=date(2026, 6, 1),
+                priority=2,
+            ),
+            DpmCoreClientIncomeNeedsScheduleEntry(
+                schedule_id="income-2",
+                need_type="SCHOOL_FEES",
+                need_status="ACTIVE",
+                amount=Decimal("12000"),
+                currency="USD",
+                frequency="QUARTERLY",
+                start_date=date(2026, 7, 1),
+                priority=1,
+            ),
+        ],
+        supportability=DpmCoreClientIncomeNeedsScheduleSupportability(
+            state="INCOMPLETE",
+            reason="CLIENT_INCOME_NEEDS_PARTIAL",
+            schedule_count=2,
+            missing_data_families=["income_needs_review"],
+        ),
+        lineage={"source_batch_fingerprint": "income-lineage"},
+    )
+
+
+def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:
+    context = client_income_needs_schedule_context(_income_needs_schedule())
+
+    assert context.source_system == "lotus-core"
+    assert context.source_product_name == "ClientIncomeNeedsSchedule"
+    assert context.source_id == "income-lineage"
+    assert context.schedule_count == 2
+    assert context.currencies == ["SGD", "USD"]
+    assert context.highest_priority == 1
+    assert context.supportability_status == ConstructionMethodStatus.BLOCKED
+    assert context.reason_codes == [
+        "CLIENT_INCOME_NEEDS_PARTIAL",
+        "CORE_INCOME_NEEDS_PRESENT",
+    ]
 
 
 def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_status() -> None:

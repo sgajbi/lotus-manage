@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import (
+    AuthoritativeClientIncomeNeedsSchedule,
     AuthoritativeCurrencyOverlayContext,
     AuthoritativeExecutionAcknowledgementContext,
     AuthoritativeLiquidityCashflowProjection,
@@ -10,6 +11,7 @@ from src.core.construction.models import (
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.dpm_source_context import (
+    DpmCoreClientIncomeNeedsScheduleResponse,
     DpmCoreExternalCurrencyExposureResponse,
     DpmCoreExternalEligibleHedgeInstrumentResponse,
     DpmCoreExternalFXForwardCurveResponse,
@@ -20,6 +22,31 @@ from src.core.dpm_source_context import (
     DpmCoreTransactionCostCurveResponse,
 )
 from src.core.models import Money
+
+
+def client_income_needs_schedule_context(
+    income_needs: DpmCoreClientIncomeNeedsScheduleResponse,
+) -> AuthoritativeClientIncomeNeedsSchedule:
+    payload = income_needs.model_dump(mode="json", exclude_none=True)
+    source_hash = hash_canonical_payload(payload)
+    return AuthoritativeClientIncomeNeedsSchedule(
+        source_product_name=income_needs.product_name,
+        source_product_version=income_needs.product_version,
+        source_system="lotus-core",
+        source_id=income_needs.source_batch_fingerprint
+        or income_needs.lineage.get("source_batch_fingerprint")
+        or source_hash,
+        content_hash=source_hash,
+        schedule_count=income_needs.supportability.schedule_count,
+        currencies=sorted({entry.currency for entry in income_needs.schedules}),
+        highest_priority=(
+            min(entry.priority for entry in income_needs.schedules)
+            if income_needs.schedules
+            else None
+        ),
+        supportability_status=source_status_to_method_status(income_needs.supportability.state),
+        reason_codes=[income_needs.supportability.reason, "CORE_INCOME_NEEDS_PRESENT"],
+    )
 
 
 def liquidity_cashflow_projection_context(
@@ -404,6 +431,7 @@ def source_status_to_method_status(status: str) -> ConstructionMethodStatus:
 __all__ = [
     "external_order_execution_acknowledgement_context",
     "external_treasury_currency_overlay_context",
+    "client_income_needs_schedule_context",
     "liquidity_cashflow_projection_context",
     "source_status_to_method_status",
     "transaction_cost_context_from_curve",
