@@ -7447,3 +7447,22 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   composition suite.
 - Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-295: Liquidity source-context test split
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`,
+  `src/api/services/construction_liquidity_source_context.py`, and this ledger.
+- Finding: direct liquidity-family mapper coverage still lived in the broad source-product context
+  test module after liquidity mapping had been extracted.
+- Action: moved cashflow projection, client income-needs, liquidity reserve, planned withdrawal, and
+  source liquidity policy tests into a focused liquidity source-context test module, leaving the
+  broad source-product context tests focused on authority-context composition.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; focused liquidity/context regressions
+  passed with 12 tests.
+- Follow-up: split treasury direct source-family tests out of the composition suite next.
+- Wiki decision: no wiki source change required; this is internal test modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
