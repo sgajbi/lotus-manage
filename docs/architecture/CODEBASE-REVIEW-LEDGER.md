@@ -7615,3 +7615,21 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   source lineage and count fields.
 - Wiki decision: no wiki source change required; this is internal service helper cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-304: Treasury fail-closed reason assembly
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_treasury_source_context.py`, treasury source-context tests,
+  and this ledger.
+- Finding: fail-closed reason-code assembly in the treasury mapper repeated one presence check per
+  external treasury source family.
+- Action: extracted ordered fail-closed reason-code assembly into a small internal helper while
+  preserving the existing primary reason and source-family reason order.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_treasury_source_context.py`; focused treasury source-context regressions
+  passed with 4 tests.
+- Follow-up: keep source-family fail-closed reasons explicit and ordered because they are observable
+  supportability evidence.
+- Wiki decision: no wiki source change required; this is internal service helper cleanup with no
+  route, payload, supported-feature, or operator-contract change.

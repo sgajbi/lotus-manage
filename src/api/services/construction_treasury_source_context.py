@@ -52,6 +52,31 @@ def _merged_blocked_capabilities(
     )
 
 
+def _fail_closed_reason_codes(
+    *,
+    primary_reason: str,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> list[str]:
+    reason_codes = [primary_reason]
+    for response, reason_code in (
+        (hedge_readiness, "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED"),
+        (currency_exposure, "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED"),
+        (hedge_policy, "EXTERNAL_HEDGE_POLICY_FAIL_CLOSED"),
+        (
+            eligible_hedge_instruments,
+            "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED",
+        ),
+        (fx_forward_curve, "EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED"),
+    ):
+        if response is not None:
+            reason_codes.append(reason_code)
+    return reason_codes
+
+
 def external_treasury_currency_overlay_context(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -109,17 +134,14 @@ def external_treasury_currency_overlay_context(
     hedge_policy_source_hash = _source_hash(hedge_policy_payload)
     eligible_hedge_instruments_source_hash = _source_hash(eligible_hedge_instruments_payload)
     fx_forward_curve_source_hash = _source_hash(fx_forward_curve_payload)
-    reason_codes: list[str] = [supportability_reason]
-    if hedge_readiness is not None:
-        reason_codes.append("EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED")
-    if currency_exposure is not None:
-        reason_codes.append("EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED")
-    if hedge_policy is not None:
-        reason_codes.append("EXTERNAL_HEDGE_POLICY_FAIL_CLOSED")
-    if eligible_hedge_instruments is not None:
-        reason_codes.append("EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED")
-    if fx_forward_curve is not None:
-        reason_codes.append("EXTERNAL_FX_FORWARD_CURVE_FAIL_CLOSED")
+    reason_codes = _fail_closed_reason_codes(
+        primary_reason=supportability_reason,
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=fx_forward_curve,
+    )
 
     return AuthoritativeCurrencyOverlayContext(
         supportability_status=source_status_to_method_status(supportability_state),
