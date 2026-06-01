@@ -149,7 +149,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreResolverUnavailableError("down")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _UnavailableResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _UnavailableResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreResolverUnavailableError) as unavailable:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert rebalance_envelope_http_exception(unavailable.value).status_code == 503
@@ -158,7 +160,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreResolverError("bad")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _IncompleteResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _IncompleteResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
@@ -168,7 +172,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             raise DpmCoreContextIncompleteError("MARKET_DATA_STALE")
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _DerivedIncompleteResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as derived_incomplete:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert derived_incomplete.value.detail == "DPM_CORE_CONTEXT_INCOMPLETE"
@@ -178,7 +184,9 @@ def test_stateful_source_context_maps_validation_and_resolver_errors(monkeypatch
         def resolve_execution_context(self, **_kwargs):
             DpmStatefulInput.model_validate({})
 
-    monkeypatch.setattr(service, "build_core_resolver_client", lambda: _InvalidResolver())
+    monkeypatch.setattr(
+        core_resolver_service, "build_core_resolver_client", lambda: _InvalidResolver()
+    )
     with pytest.raises(service.DpmRebalanceCoreContextIncompleteError) as invalid:
         service._resolve_stateful_source_context(envelope=envelope, correlation_id="corr")
     assert rebalance_envelope_http_exception(invalid.value).status_code == 424
@@ -481,6 +489,11 @@ def test_rebalance_simulation_service_does_not_export_async_configuration_helper
     assert "async_manual_execution_enabled" not in service.__all__
     assert "async_operations_enabled" not in service.__all__
     assert "resolve_async_execution_mode" not in service.__all__
+
+
+def test_rebalance_simulation_service_does_not_export_core_resolver_helpers() -> None:
+    assert not hasattr(service, "build_core_resolver_client")
+    assert not hasattr(service, "stateful_core_sourcing_enabled")
 
 
 def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() -> None:

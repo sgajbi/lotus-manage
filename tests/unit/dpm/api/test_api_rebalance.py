@@ -15,7 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import src.api.routers.rebalance_runs as dpm_runs_router
-import src.api.services.rebalance_simulation_service as rebalance_service
+import src.api.services.core_resolver_service as core_resolver_service
 from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import (
     get_dpm_run_support_service,
@@ -154,7 +154,7 @@ def _install_fake_core_resolver(monkeypatch) -> _FakeCoreResolver:
     fake_resolver = _FakeCoreResolver()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: fake_resolver,
     )

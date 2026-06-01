@@ -10972,3 +10972,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   runtime orchestration dependencies rather than durable service API.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-451: Rebalance core-resolver helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/rebalance_simulation_service.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, selected rebalance runtime/API regressions, and this
+  ledger.
+- Finding: `rebalance_simulation_service.py` still exposed core-resolver construction and stateful
+  sourcing flag aliases purely as test patch points even though `core_resolver_service` owns those
+  helpers and already has direct export-surface coverage.
+- Action: changed stateful source-context orchestration to call `core_resolver_service` directly,
+  moved runtime-edge tests to patch the owning module, and added a regression proving the simulation
+  service no longer exposes core-resolver helper aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `rebalance_simulation_service.py` and `core_resolver_service.py`;
+  rebalance runtime, simulation execution-context, and API regression tests passed with 141 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules; targeted
+  scan found no core-resolver helper alias assignments or stale `rebalance_service` test patching
+  remaining in the touched service/test files.
+- Follow-up: continue reviewing `rebalance_simulation_service.py` public exports and runtime
+  override hooks, keeping only explicit orchestration seams needed by API behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

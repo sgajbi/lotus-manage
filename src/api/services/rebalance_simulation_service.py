@@ -85,9 +85,6 @@ from src.core.models import (
 
 logger = logging.getLogger(__name__)
 
-build_core_resolver_client = core_resolver_service.build_core_resolver_client
-stateful_core_sourcing_enabled = core_resolver_service.stateful_core_sourcing_enabled
-
 
 def _resolved_logger() -> logging.Logger | Any:
     return resolve_logger(logger)
@@ -100,12 +97,12 @@ def _resolve_stateful_source_context(
 ) -> DpmResolvedSourceContext:
     resolver_factory = resolve_callable_override(
         "build_core_resolver_client",
-        build_core_resolver_client,
+        core_resolver_service.build_core_resolver_client,
     )
     return resolve_stateful_source_context(
         envelope=envelope,
         correlation_id=correlation_id,
-        stateful_enabled=stateful_core_sourcing_enabled(),
+        stateful_enabled=core_resolver_service.stateful_core_sourcing_enabled(),
         resolver_factory=resolver_factory,
     )
 
