@@ -4,9 +4,7 @@ from src.api.services.wave_aggregate_metrics import (
 )
 from src.api.services.wave_approval_transition import build_approved_wave
 from src.api.services.wave_cancel_transition import build_cancelled_wave
-from src.api.services.wave_construction_selection import (
-    select_construction_alternative_for_wave as _select_construction_alternative_for_wave,
-)
+from src.api.services.wave_construction_selection import select_construction_alternative_for_wave
 from src.api.services.wave_creation import (
     create_created_wave_id,
     create_wave_request_hash,
@@ -22,7 +20,7 @@ from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_handoff_transition import build_handoff_ready_wave
 from src.api.services.wave_item_collection import wave_with_items_and_aggregate
 from src.api.services.wave_item_selection_transition import (
-    build_wave_with_selected_item_alternative as _build_wave_with_selected_item_alternative,
+    build_wave_with_selected_item_alternative,
 )
 from src.api.services.wave_lifecycle_commands import (
     approve_persisted_wave,
@@ -44,7 +42,8 @@ from src.api.services.wave_read_model_queries import (
     wave_report_input_for_id,
     wave_supportability_for_id,
 )
-from src.api.services.wave_selection_guard import selectable_wave_item as _selectable_wave_item
+from src.api.services.wave_selection_command import select_persisted_wave_item_alternative
+from src.api.services.wave_selection_guard import selectable_wave_item
 from src.api.services.wave_search import search_wave_summaries
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
@@ -96,6 +95,9 @@ _build_approved_wave = build_approved_wave
 _build_cancelled_wave = build_cancelled_wave
 _build_handoff_ready_wave = build_handoff_ready_wave
 _build_staged_wave = build_staged_wave
+_select_construction_alternative_for_wave = select_construction_alternative_for_wave
+_build_wave_with_selected_item_alternative = build_wave_with_selected_item_alternative
+_selectable_wave_item = selectable_wave_item
 _approval_event_metadata = approval_event_metadata
 _stage_event_metadata = stage_event_metadata
 _handoff_event_metadata = handoff_event_metadata
@@ -216,29 +218,9 @@ def select_wave_item_alternative(
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
 ) -> DpmRebalanceWave:
-    prepared = _prepare_wave_transition(
+    return select_persisted_wave_item_alternative(
         wave_id=wave_id,
-        wave_repository=wave_repository,
-        replay_states=set(),
-        allowed_states={"SIMULATED", "PARTIALLY_SIMULATED"},
-        error_code="DPM_WAVE_SELECTION_INVALID_STATE",
-        action_phrase="record alternative selection",
-    )
-    selected_item = _selectable_wave_item(wave=prepared.wave, wave_item_id=wave_item_id)
-    assert selected_item.alternative_set_id is not None
-    _select_construction_alternative_for_wave(
-        repository=construction_repository,
-        alternative_set_id=selected_item.alternative_set_id,
-        alternative_id=alternative_id,
-        actor_id=actor_id,
-        reason_code=reason_code,
-        comment=comment,
-        correlation_id=correlation_id,
-    )
-
-    updated = _build_wave_with_selected_item_alternative(
-        wave=prepared.wave,
-        selected_item=selected_item,
+        wave_item_id=wave_item_id,
         alternative_id=alternative_id,
         actor_id=actor_id,
         reason_code=reason_code,
@@ -249,13 +231,8 @@ def select_wave_item_alternative(
         proof_pack_repository=proof_pack_repository,
         mandate_repository=mandate_repository,
         run_service=run_service,
-    )
-    _persist_transitioned_wave(
         wave_repository=wave_repository,
-        source_wave=prepared.wave,
-        transitioned_wave=updated,
     )
-    return updated
 
 
 def approve_wave(
