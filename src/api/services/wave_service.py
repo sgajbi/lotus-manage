@@ -27,6 +27,7 @@ from src.api.services.wave_item_transitions import (
 )
 from src.api.services.wave_item_builder import build_wave_item as _build_item
 from src.api.services.wave_lookup import get_wave_or_raise as _get_wave_or_raise
+from src.api.services.wave_persistence import update_wave_or_raise as _update_wave_or_raise
 from src.api.services.wave_portfolio_sources import trigger_source_refs as _trigger_source_refs
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_report_context import portfolio_memory_context_for_report
@@ -58,7 +59,6 @@ from src.core.waves import (
     DpmWaveRepository,
     DpmWaveReportInputBoundaryError,
     DpmWaveReportInput,
-    DpmWaveVersionConflictError,
     DpmWaveTrigger,
     WaveTriggerType,
     WaveState,
@@ -247,10 +247,11 @@ def source_check_wave(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=checked, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=checked,
+        expected_version=wave.version,
+    )
     return checked, False
 
 
@@ -325,10 +326,11 @@ def simulate_wave(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=completed, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=completed,
+        expected_version=wave.version,
+    )
     return completed, False
 
 
@@ -416,10 +418,11 @@ def select_wave_item_alternative(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=updated, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=updated,
+        expected_version=wave.version,
+    )
     return updated
 
 
@@ -477,10 +480,11 @@ def approve_wave(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=approved, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=approved,
+        expected_version=wave.version,
+    )
     return approved, False
 
 
@@ -534,10 +538,11 @@ def stage_wave(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=staged, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=staged,
+        expected_version=wave.version,
+    )
     return staged, False
 
 
@@ -604,10 +609,11 @@ def handoff_wave(
             },
         ),
     )
-    try:
-        wave_repository.update_wave(wave=handoff_ready, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=handoff_ready,
+        expected_version=wave.version,
+    )
     return handoff_ready, False
 
 
@@ -656,10 +662,11 @@ def cancel_wave(
             "DPM_WAVE_CANCEL_INVALID_STATE",
             f"Wave {wave_id} cannot be cancelled from state {wave.state}.",
         ) from exc
-    try:
-        wave_repository.update_wave(wave=cancelled, expected_version=wave.version)
-    except DpmWaveVersionConflictError as exc:
-        raise DpmWaveValidationError("DPM_WAVE_VERSION_CONFLICT", str(exc)) from exc
+    _update_wave_or_raise(
+        wave_repository=wave_repository,
+        wave=cancelled,
+        expected_version=wave.version,
+    )
     return cancelled, False
 
 

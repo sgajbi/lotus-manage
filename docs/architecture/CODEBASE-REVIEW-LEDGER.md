@@ -8838,3 +8838,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   support helpers only when direct tests can pin the service contract.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-362: Wave update persistence conflict extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_persistence.py`,
+  `tests/unit/dpm/waves/test_wave_persistence.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` repeated the same optimistic-concurrency update call and
+  `DPM_WAVE_VERSION_CONFLICT` translation across source-check, simulation, selection, approval,
+  stage, handoff, and cancellation commands.
+- Action: extracted update persistence and version-conflict translation into a focused service
+  helper, replaced repeated try/except blocks in wave orchestration with the shared helper, removed
+  the now-unused conflict import from `wave_service.py`, and added direct tests for successful
+  update forwarding, governed conflict translation, service alias use, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_persistence.py`; direct wave persistence tests and selected
+  wave API regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: review create-wave save/idempotency conflict translation separately so the create path
+  remains explicit and idempotency behavior stays directly tested.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
