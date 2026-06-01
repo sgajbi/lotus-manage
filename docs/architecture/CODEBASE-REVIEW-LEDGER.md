@@ -10081,3 +10081,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   builder-input assembly that can move behind direct helper tests.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-414: Proof-pack generation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_generation.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_generation.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack generation orchestration still mapped resolved run, selected-alternative,
+  mandate-evidence, workflow-decision, and regime-stress inputs directly into core proof-pack
+  builders, mixing source lookup/replay/persistence control flow with pure builder-input assembly.
+- Action: extracted run and selected-alternative proof-pack assembly into a focused helper, kept
+  replay, source lookup, mandate evidence lookup, and persistence in the service, and added direct
+  tests for resolved source/evidence propagation into the core builders.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_generation.py`; direct proof-pack generation
+  tests and selected proof-pack service/builder regressions passed with 43 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed;
+  service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing generation services for remaining source lookup and persistence
+  seams that can be clarified without hiding ownership or idempotency behavior.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

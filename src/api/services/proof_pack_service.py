@@ -5,8 +5,6 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import (
     AI_EVIDENCE_REF_TYPE,
     REPORT_INPUT_REF_TYPE,
-    build_proof_pack_from_run,
-    build_proof_pack_from_selected_alternative,
     proof_pack_id_for_rebalance_run,
     proof_pack_id_for_selected_alternative,
 )
@@ -21,6 +19,10 @@ from src.api.services.proof_pack_handoff_refs import (
     ensure_handoff_refs as _ensure_handoff_refs,
     hydrate_handoff_refs,
     require_handoff_ref,
+)
+from src.api.services.proof_pack_generation import (
+    build_run_proof_pack,
+    build_selected_alternative_proof_pack,
 )
 from src.api.services.proof_pack_mandate_evidence import resolve_mandate_evidence
 from src.api.services.proof_pack_persistence import persist_proof_pack
@@ -73,18 +75,16 @@ def generate_proof_pack_from_run(
         portfolio_id=run.portfolio_id,
         mandate_repository=mandate_repository,
     )
-    proof_pack = build_proof_pack_from_run(
+    proof_pack = build_run_proof_pack(
         run=run,
-        created_by=actor_id,
-        reason=reason,
-        correlation_id=correlation_id,
-        mandate_id=mandate_id,
-        mandate_twin=mandate_evidence.twin,
-        mandate_health=mandate_evidence.health,
-        mandate_evidence_gap_codes=mandate_evidence.gap_codes,
         workflow_decisions=run_service.list_workflow_decision_records(
             rebalance_run_id=rebalance_run_id
         ),
+        actor_id=actor_id,
+        reason=reason,
+        correlation_id=correlation_id,
+        mandate_id=mandate_id,
+        mandate_evidence=mandate_evidence,
         direct_regime_stress_context=direct_regime_stress_context,
     )
     persist_proof_pack(
@@ -131,19 +131,14 @@ def generate_proof_pack_from_selected_alternative(
         portfolio_id=selected_source.alternative_set.portfolio_id,
         mandate_repository=mandate_repository,
     )
-    proof_pack = build_proof_pack_from_selected_alternative(
-        alternative_set=selected_source.alternative_set,
+    proof_pack = build_selected_alternative_proof_pack(
+        selected_source=selected_source,
         selected_alternative_id=selected_alternative_id,
-        run=selected_source.run,
-        selection=selected_source.selection,
-        created_by=actor_id,
+        actor_id=actor_id,
         reason=reason,
         correlation_id=correlation_id,
         mandate_id=mandate_id,
-        mandate_twin=mandate_evidence.twin,
-        mandate_health=mandate_evidence.health,
-        mandate_evidence_gap_codes=mandate_evidence.gap_codes,
-        workflow_decisions=selected_source.workflow_decisions,
+        mandate_evidence=mandate_evidence,
         direct_regime_stress_context=direct_regime_stress_context,
     )
     persist_proof_pack(
