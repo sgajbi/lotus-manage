@@ -8930,3 +8930,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   state transitions and repository interactions readable.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-366: Wave source-check assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_source_check.py`,
+  `tests/unit/dpm/waves/test_wave_source_check.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still assembled source-check item classification, aggregate metrics,
+  and transition evidence directly inside the command function, even though the repository/state
+  guard and persistence update are the orchestration concerns.
+- Action: extracted source-check transition assembly into a focused helper, kept idempotent state
+  guard and repository update in `wave_service.py`, removed the now-unused source-readiness import
+  from the service, and added direct tests for item classification, aggregate rollup evidence,
+  transition metadata, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_source_check.py`; direct wave source-check tests and
+  selected wave API regressions passed with 134 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue extracting deterministic transition assembly from simulation or later workflow
+  commands only when it reduces duplication without hiding command-state policy.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

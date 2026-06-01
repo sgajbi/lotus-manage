@@ -39,9 +39,7 @@ from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput,
     simulate_item as _simulate_item,
 )
-from src.api.services.wave_source_readiness import (
-    classify_item_source_readiness as _classify_item_source_readiness,
-)
+from src.api.services.wave_source_check import build_source_checked_wave
 from src.api.services.wave_supportability_payload import (
     wave_supportability_payload as _wave_supportability_payload,
 )
@@ -155,43 +153,11 @@ def source_check_wave(
             f"Wave {wave_id} cannot be source-checked from state {wave.state}.",
         )
 
-    classified_items = [
-        _classify_item_source_readiness(
-            item=item,
-            wave_as_of_date=wave.as_of_date,
-            mandate_repository=mandate_repository,
-        )
-        for item in wave.items
-    ]
-    candidate = wave.model_copy(
-        update={
-            "items": classified_items,
-            "aggregate_metrics": _aggregate(classified_items),
-        },
-        deep=True,
-    )
-    checked = apply_wave_transition(
-        wave=candidate,
-        to_state="SOURCE_CHECKED",
-        event=_event(
-            wave_id=wave.wave_id,
-            from_state="CREATED",
-            to_state="SOURCE_CHECKED",
-            actor_id=actor_id,
-            correlation_id=correlation_id,
-            reason_code="WAVE_SOURCE_CHECKED",
-            metadata={
-                "state_counts": candidate.aggregate_metrics.state_counts,
-                "ready_item_count": candidate.aggregate_metrics.ready_item_count,
-                "blocked_item_count": candidate.aggregate_metrics.blocked_item_count,
-                "review_required_item_count": (
-                    candidate.aggregate_metrics.review_required_item_count
-                ),
-                "source_degraded_item_count": (
-                    candidate.aggregate_metrics.source_degraded_item_count
-                ),
-            },
-        ),
+    checked = build_source_checked_wave(
+        wave=wave,
+        actor_id=actor_id,
+        correlation_id=correlation_id,
+        mandate_repository=mandate_repository,
     )
     _update_wave_or_raise(
         wave_repository=wave_repository,
