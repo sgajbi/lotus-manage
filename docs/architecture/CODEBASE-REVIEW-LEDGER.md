@@ -9187,3 +9187,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   where repository orchestration can remain in `mandate_service.py`.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-377: Mandate command-center summary extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected monitoring API regressions,
+  and this ledger.
+- Finding: `get_command_center_summary` still mixed repository reads with DTO projection,
+  health-state filtering, partial-readiness reason assembly, supportability classification, and
+  attention/recommended-action aggregation.
+- Action: moved command-center summary projection into `build_command_center_summary` in the
+  existing command-center helper module, kept repository reads and monitoring-run selection in
+  `mandate_service.py`, preserved private compatibility aliases, and added direct tests for
+  populated and empty summary projection, selected health-state filtering, source-run provenance,
+  partial reasons, limit handling, supportability, aliases, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_command_center.py`; direct command-center helper
+  tests and selected monitoring API regressions passed with 18 tests; OpenAPI quality gate passed;
+  API vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage
+  scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting health recalculation support and repository lookup wrappers where
+  they can be made directly testable without hiding orchestration.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

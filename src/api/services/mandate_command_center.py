@@ -1,12 +1,15 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from src.core.mandates import (
     DpmCommandCenterAttentionBucket,
     DpmCommandCenterRecommendedAction,
+    DpmCommandCenterSummary,
+    DpmCommandCenterSupportability,
     DpmMonitoringException,
     DpmMonitoringRun,
     MandateHealthDimension,
+    MandateHealthState,
     MandateRecommendedAction,
     MonitoringSeverity,
 )
@@ -48,6 +51,68 @@ def run_matches_command_center_filters(
     }
     return all(
         value is None or run.filters.get(key) == value for key, value in expected_filters.items()
+    )
+
+
+def build_command_center_summary(
+    *,
+    tenant_id: str | None,
+    portfolio_manager_id: str | None,
+    book_id: str | None,
+    as_of_date: date | None,
+    health_state: str | None,
+    latest_run: DpmMonitoringRun | None,
+    active_exceptions: list[DpmMonitoringException],
+    limit: int,
+    generated_at: datetime,
+) -> DpmCommandCenterSummary:
+    health_distribution = dict(latest_run.health_distribution) if latest_run else {}
+    if health_state is not None:
+        health_distribution = {health_state: health_distribution.get(health_state, 0)}
+
+    partial_reasons: list[str] = []
+    if latest_run is None:
+        partial_reasons.append("NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
+    if portfolio_manager_id is None and book_id is None:
+        partial_reasons.append("PM_BOOK_DISCOVERY_NOT_YET_SOURCED")
+    if len(active_exceptions) >= limit:
+        partial_reasons.append("ATTENTION_QUEUE_LIMIT_REACHED")
+
+    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"] = "COMPLETE"
+    if latest_run is None:
+        completeness = "EMPTY"
+    elif partial_reasons:
+        completeness = "PARTIAL"
+    supportability_state, supportability_reason = command_center_supportability_state(
+        latest_run=latest_run,
+        completeness=completeness,
+        partial_reasons=partial_reasons,
+    )
+
+    return DpmCommandCenterSummary(
+        tenant_id=tenant_id,
+        portfolio_manager_id=portfolio_manager_id,
+        book_id=book_id,
+        as_of_date=as_of_date or (latest_run.as_of_date if latest_run else None),
+        selected_health_state=MandateHealthState(health_state)
+        if health_state is not None
+        else None,
+        evaluated_mandates=latest_run.total_mandates if latest_run else 0,
+        monitored_mandate_ids=list(latest_run.mandate_ids) if latest_run else [],
+        health_distribution=health_distribution,
+        source_readiness_summary=dict(latest_run.source_readiness_summary) if latest_run else {},
+        active_exception_count=len(active_exceptions),
+        attention_buckets=attention_buckets(active_exceptions),
+        recommended_actions=recommended_actions(active_exceptions),
+        latest_monitoring_run=latest_run,
+        supportability=DpmCommandCenterSupportability(
+            state=supportability_state,
+            data_completeness_state=completeness,
+            reason=supportability_reason,
+            generated_at=generated_at,
+            source_run_id=latest_run.monitoring_run_id if latest_run else None,
+            partial_readiness_reasons=partial_reasons,
+        ),
     )
 
 
@@ -126,6 +191,7 @@ def severity_rank(severity: str) -> int:
 
 __all__ = [
     "attention_buckets",
+    "build_command_center_summary",
     "command_center_supportability_state",
     "recommended_actions",
     "run_matches_command_center_filters",

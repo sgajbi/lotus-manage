@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
-from typing import Literal, Optional
+from typing import Optional
 
 from src.api.services.mandate_command_center import (
-    attention_buckets as _attention_buckets,
-    command_center_supportability_state as _command_center_supportability_state,
-    recommended_actions as _recommended_actions,
+    attention_buckets,
+    build_command_center_summary,
+    command_center_supportability_state,
+    recommended_actions,
     run_matches_command_center_filters as _run_matches_command_center_filters,
     severity_rank,
 )
@@ -45,13 +46,11 @@ from src.api.services.mandate_pm_book import (
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import (
     DpmCommandCenterSummary,
-    DpmCommandCenterSupportability,
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
     DpmMandateHealthSnapshot,
     DpmMonitoringException,
     DpmMonitoringRun,
-    MandateHealthState,
     build_health_input_from_core_sources,
     calculate_mandate_health,
     compile_mandate_digital_twin_from_core,
@@ -64,6 +63,10 @@ from src.infrastructure.core_sourcing import (
 )
 
 _severity_rank = severity_rank
+_attention_buckets = attention_buckets
+_build_command_center_summary = build_command_center_summary
+_command_center_supportability_state = command_center_supportability_state
+_recommended_actions = recommended_actions
 _diff_payloads = diff_payloads
 _iter_changed_fields = iter_changed_fields
 _materiality_for_field = materiality_for_field
@@ -379,53 +382,16 @@ def get_command_center_summary(
         cursor=None,
     )
 
-    health_distribution = dict(latest_run.health_distribution) if latest_run else {}
-    if health_state is not None:
-        health_distribution = {health_state: health_distribution.get(health_state, 0)}
-
-    partial_reasons: list[str] = []
-    if latest_run is None:
-        partial_reasons.append("NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
-    if portfolio_manager_id is None and book_id is None:
-        partial_reasons.append("PM_BOOK_DISCOVERY_NOT_YET_SOURCED")
-    if len(active_exceptions) >= limit:
-        partial_reasons.append("ATTENTION_QUEUE_LIMIT_REACHED")
-
-    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"] = "COMPLETE"
-    if latest_run is None:
-        completeness = "EMPTY"
-    elif partial_reasons:
-        completeness = "PARTIAL"
-    supportability_state, supportability_reason = _command_center_supportability_state(
-        latest_run=latest_run,
-        completeness=completeness,
-        partial_reasons=partial_reasons,
-    )
-
-    return DpmCommandCenterSummary(
+    return _build_command_center_summary(
         tenant_id=tenant_id,
         portfolio_manager_id=portfolio_manager_id,
         book_id=book_id,
-        as_of_date=as_of_date or (latest_run.as_of_date if latest_run else None),
-        selected_health_state=MandateHealthState(health_state)
-        if health_state is not None
-        else None,
-        evaluated_mandates=latest_run.total_mandates if latest_run else 0,
-        monitored_mandate_ids=list(latest_run.mandate_ids) if latest_run else [],
-        health_distribution=health_distribution,
-        source_readiness_summary=dict(latest_run.source_readiness_summary) if latest_run else {},
-        active_exception_count=len(active_exceptions),
-        attention_buckets=_attention_buckets(active_exceptions),
-        recommended_actions=_recommended_actions(active_exceptions),
-        latest_monitoring_run=latest_run,
-        supportability=DpmCommandCenterSupportability(
-            state=supportability_state,
-            data_completeness_state=completeness,
-            reason=supportability_reason,
-            generated_at=datetime.now(timezone.utc),
-            source_run_id=latest_run.monitoring_run_id if latest_run else None,
-            partial_readiness_reasons=partial_reasons,
-        ),
+        as_of_date=as_of_date,
+        health_state=health_state,
+        latest_run=latest_run,
+        active_exceptions=active_exceptions,
+        limit=limit,
+        generated_at=datetime.now(timezone.utc),
     )
 
 
