@@ -11,6 +11,9 @@ from src.api.services.wave_aggregate_metrics import (
     aggregate_wave_items as _aggregate,
     simulation_result_state as _simulation_result_state,
 )
+from src.api.services.wave_construction_diagnostics import (
+    proposed_changes_from_alternative_set as _proposed_changes_from_alternative_set,
+)
 from src.api.services.wave_event_evidence import (
     build_wave_event as _event,
     idempotency_key_hash as _idempotency_key_hash,
@@ -35,7 +38,7 @@ from src.api.services.wave_supportability_diagnostics import (
     supportability_issue as _supportability_issue,
 )
 from src.api.services.wave_trigger_validation import trigger_validation_failure
-from src.core.construction.models import ConstructionAlternativeSet, ConstructionAuthorityContext
+from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandates import DpmMandateDigitalTwin
@@ -1070,16 +1073,6 @@ def _resolve_mandate_twin(
         if twin is not None and twin.portfolio_id == item.portfolio_id:
             return twin
     return mandate_repository.get_latest_mandate_by_portfolio(portfolio_id=item.portfolio_id)
-
-
-def _proposed_changes_from_alternative_set(
-    alternative_set: ConstructionAlternativeSet,
-) -> list[dict[str, object]]:
-    for alternative in alternative_set.alternatives:
-        changes = alternative.diagnostics.get("proposed_changes")
-        if isinstance(changes, list) and changes:
-            return [change for change in changes if isinstance(change, dict)]
-    return []
 
 
 def _validate_trigger(trigger_type: str, *, portfolios: list[dict[str, object]]) -> None:

@@ -8541,3 +8541,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   workflow orchestration and repository error handling in `wave_service.py`.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-349: Wave construction diagnostics extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`,
+  `src/api/services/wave_construction_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_construction_diagnostics.py`, selected wave simulation API
+  regressions, and this ledger.
+- Finding: `wave_service.py` still parsed proposed changes from construction alternative diagnostics
+  directly, keeping pure construction-diagnostic normalization inside the wave orchestration module.
+- Action: extracted proposed-change normalization into a focused helper module and added direct tests
+  for first-populated alternative selection, non-dict filtering, missing/non-list diagnostics, and
+  the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_construction_diagnostics.py`; full direct construction
+  diagnostics tests passed with 3 tests; selected wave simulation regressions passed with 8 tests;
+  OpenAPI quality gate passed; API vocabulary inventory validate-only gate passed; `git diff
+  --check` passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue extracting source-readiness lookup and selection/proof-pack item update
+  helpers where dependency boundaries remain clean.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
