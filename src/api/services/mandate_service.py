@@ -4,13 +4,8 @@ from datetime import date, datetime, timezone
 from typing import Optional
 
 from src.api.services.mandate_command_center import (
-    attention_buckets,
     build_command_center_summary,
-    command_center_supportability_state,
     latest_command_center_run,
-    recommended_actions,
-    run_matches_command_center_filters,
-    severity_rank,
 )
 from src.api.services.mandate_errors import (
     DpmMandateDiffUnavailableError as DpmMandateDiffUnavailableError,
@@ -67,13 +62,6 @@ from src.core.mandates import (
 )
 from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
-_severity_rank = severity_rank
-_attention_buckets = attention_buckets
-_build_command_center_summary = build_command_center_summary
-_latest_command_center_run = latest_command_center_run
-_command_center_supportability_state = command_center_supportability_state
-_run_matches_command_center_filters = run_matches_command_center_filters
-_recommended_actions = recommended_actions
 _build_mandate_diff = build_mandate_diff
 _diff_payloads = diff_payloads
 _iter_changed_fields = iter_changed_fields
@@ -301,7 +289,7 @@ def get_command_center_summary(
     limit: int,
 ) -> DpmCommandCenterSummary:
     runs, _ = repository.list_monitoring_runs(status=None, limit=200, cursor=None)
-    latest_run = _latest_command_center_run(
+    latest_run = latest_command_center_run(
         runs,
         tenant_id=tenant_id,
         portfolio_manager_id=portfolio_manager_id,
@@ -317,7 +305,7 @@ def get_command_center_summary(
         cursor=None,
     )
 
-    return _build_command_center_summary(
+    return build_command_center_summary(
         tenant_id=tenant_id,
         portfolio_manager_id=portfolio_manager_id,
         book_id=book_id,

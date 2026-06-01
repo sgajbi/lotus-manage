@@ -1,6 +1,5 @@
 from datetime import date, datetime, timezone
 
-from src.api.services import mandate_service
 from src.api.services.mandate_command_center import (
     attention_buckets,
     build_command_center_summary,
@@ -282,26 +281,6 @@ def test_build_command_center_summary_projects_empty_state_without_run() -> None
     assert summary.health_distribution == {}
     assert summary.supportability.state == "EMPTY"
     assert summary.supportability.reason == "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
-
-
-def test_mandate_service_preserves_command_center_private_aliases() -> None:
-    from src.api.services import mandate_command_center
-
-    assert mandate_service._build_command_center_summary is (
-        mandate_command_center.build_command_center_summary
-    )
-    assert mandate_service._latest_command_center_run is (
-        mandate_command_center.latest_command_center_run
-    )
-    assert mandate_service._command_center_supportability_state is (
-        mandate_command_center.command_center_supportability_state
-    )
-    assert mandate_service._run_matches_command_center_filters is (
-        mandate_command_center.run_matches_command_center_filters
-    )
-    assert mandate_service._attention_buckets is mandate_command_center.attention_buckets
-    assert mandate_service._recommended_actions is mandate_command_center.recommended_actions
-    assert mandate_service._severity_rank is mandate_command_center.severity_rank
 
 
 def test_mandate_command_center_exports_only_projection_helpers() -> None:

@@ -10680,3 +10680,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   should be named once near the owning mapper.
 - Wiki decision: no wiki source change required; this is internal mapper maintainability cleanup
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-439: Mandate command-center alias retirement
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`, selected mandate command-center/API
+  regressions, and this ledger.
+- Finding: `mandate_service.py` still imported and exposed private command-center projection
+  aliases even though command-center behavior and export surface are directly covered in the owning
+  helper module.
+- Action: removed unused command-center helper imports and private aliases from the service facade,
+  routed the service through the two helper calls it actually needs, and retired alias-pinning test
+  assertions.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py`; direct mandate command-center tests plus selected mandate API
+  regressions passed with 31 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules; search found no command-center private aliases remaining in
+  `mandate_service.py`.
+- Follow-up: continue reviewing remaining mandate service compatibility aliases with search
+  evidence before pruning them.
+- Wiki decision: no wiki source change required; this is internal dead-code cleanup with no route,
+  payload, supported-feature, or operator-contract change.
