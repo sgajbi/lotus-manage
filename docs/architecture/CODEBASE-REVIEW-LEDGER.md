@@ -11217,3 +11217,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage already proves behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-461: Wave supportability-payload helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`, selected wave supportability/API
+  regressions, and this ledger.
+- Finding: `wave_service.py` imported the supportability payload builder as a private function alias,
+  which kept pure payload assembly wired through the service module rather than the owning helper
+  module.
+- Action: preserved the public `wave_service.wave_supportability_payload` wrapper but changed it to
+  delegate through the owning `wave_supportability_payload` module alias, keeping the helper's direct
+  behavior and export-surface tests as the ownership proof.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave supportability-payload, read-model,
+  detail, report-input, and selected wave API regressions passed with 145 tests; OpenAPI quality
+  gate passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed with
+  only line-ending warnings; service leakage scan found no router/HTTP imports in service modules;
+  targeted scan confirmed the old private `_wave_supportability_payload` function alias is gone and
+  the service delegates through the `wave_supportability_payload` owner-module alias.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -9,12 +9,10 @@ from src.api.services import wave_preparation_commands
 from src.api.services import wave_read_model_queries
 from src.api.services import wave_selection_command
 from src.api.services import wave_search
+from src.api.services import wave_supportability_payload as wave_supportability_payload_module
 from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
-)
-from src.api.services.wave_supportability_payload import (
-    wave_supportability_payload as _wave_supportability_payload,
 )
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
@@ -232,7 +230,7 @@ def cancel_wave(
 
 
 def wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
-    return _wave_supportability_payload(wave)
+    return wave_supportability_payload_module.wave_supportability_payload(wave)
 
 
 def wave_supportability(
