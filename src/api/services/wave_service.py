@@ -11,6 +11,12 @@ from typing import cast
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service, proof_pack_service
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
+from src.api.services.wave_item_transitions import (
+    approve_item as _approve_item,
+    cancel_item as _cancel_item,
+    handoff_item as _handoff_item,
+    stage_item as _stage_item,
+)
 from src.api.services.wave_proof_pack_posture import proof_pack_posture_for_wave
 from src.api.services.wave_supportability_diagnostics import (
     operator_actions as _operator_actions,
@@ -1017,109 +1023,6 @@ def _with_selection_and_proof_pack(
                 **diagnostics,
                 "proof_pack_state": proof_pack.status,
             },
-        },
-        deep=True,
-    )
-
-
-def _approve_item(
-    item: DpmRebalanceWaveItem,
-    actor_id: str,
-    reason_code: str,
-    comment: str | None,
-) -> DpmRebalanceWaveItem:
-    if item.state not in {"SELECTED", "PROOF_PACK_READY"}:
-        return item
-    diagnostics = {
-        **item.diagnostics,
-        "approval_actor_id": actor_id,
-        "approval_reason_code": reason_code,
-    }
-    if comment:
-        diagnostics["approval_comment"] = comment
-    return item.model_copy(
-        update={
-            "state": "APPROVED",
-            "reason_codes": [*item.reason_codes, "WAVE_ITEM_APPROVED"],
-            "diagnostics": diagnostics,
-        },
-        deep=True,
-    )
-
-
-def _stage_item(
-    item: DpmRebalanceWaveItem,
-    actor_id: str,
-    reason_code: str,
-    comment: str | None,
-) -> DpmRebalanceWaveItem:
-    if item.state != "APPROVED":
-        return item
-    diagnostics = {
-        **item.diagnostics,
-        "stage_actor_id": actor_id,
-        "stage_reason_code": reason_code,
-        "external_execution_claimed": False,
-    }
-    if comment:
-        diagnostics["stage_comment"] = comment
-    return item.model_copy(
-        update={
-            "state": "STAGED",
-            "reason_codes": [*item.reason_codes, "WAVE_ITEM_STAGED"],
-            "diagnostics": diagnostics,
-        },
-        deep=True,
-    )
-
-
-def _handoff_item(
-    item: DpmRebalanceWaveItem,
-    actor_id: str,
-    reason_code: str,
-    comment: str | None,
-) -> DpmRebalanceWaveItem:
-    if item.state != "STAGED":
-        return item
-    diagnostics = {
-        **item.diagnostics,
-        "handoff_actor_id": actor_id,
-        "handoff_reason_code": reason_code,
-        "external_execution_claimed": False,
-    }
-    if comment:
-        diagnostics["handoff_comment"] = comment
-    return item.model_copy(
-        update={
-            "state": "HANDOFF_READY",
-            "reason_codes": [*item.reason_codes, "WAVE_ITEM_HANDOFF_READY"],
-            "diagnostics": diagnostics,
-        },
-        deep=True,
-    )
-
-
-def _cancel_item(
-    item: DpmRebalanceWaveItem,
-    actor_id: str,
-    reason_code: str,
-    comment: str | None,
-) -> DpmRebalanceWaveItem:
-    if item.state == "HANDOFF_READY":
-        return item
-    diagnostics = {
-        **item.diagnostics,
-        "cancel_actor_id": actor_id,
-        "cancel_reason_code": reason_code,
-        "external_execution_claimed": False,
-    }
-    if comment:
-        diagnostics["cancel_comment"] = comment
-    return item.model_copy(
-        update={
-            "state": "EXCLUDED",
-            "reason_codes": [*item.reason_codes, "WAVE_ITEM_CANCELLED"],
-            "diagnostics": diagnostics,
         },
         deep=True,
     )

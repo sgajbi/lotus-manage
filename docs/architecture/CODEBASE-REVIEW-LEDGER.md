@@ -8400,3 +8400,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   service layer.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-343: Wave item transition extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_item_transitions.py`,
+  `tests/unit/dpm/waves/test_wave_item_transitions.py`, selected wave approve/stage/handoff/cancel
+  API regressions, and this ledger.
+- Finding: `wave_service.py` still owned item-level approve, stage, handoff, and cancel model-copy
+  assembly even though those transformations are deterministic item transitions rather than
+  repository orchestration.
+- Action: extracted item transition builders into a focused helper module, preserved existing
+  private aliases in the wave service orchestration, and added direct tests for transition
+  diagnostics, no-external-execution markers, no-op states, handoff-ready cancellation preservation,
+  and the module export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_item_transitions.py`; direct wave item transition tests and
+  selected approve/stage/handoff/cancel API regressions passed with 9 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue shrinking `wave_service.py` by extracting pure wave trigger, source-ref, and
+  diagnostics assembly while keeping state-machine orchestration in the service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
