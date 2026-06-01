@@ -8749,3 +8749,24 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   reviewing remaining lookup and event-append helpers for clean extraction opportunities.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-358: Wave service error extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_errors.py`,
+  `tests/unit/dpm/waves/test_wave_errors.py`, selected wave API regressions, and this ledger.
+- Finding: `wave_service.py` still defined reusable wave service exception carrier classes directly,
+  keeping shared error vocabulary embedded in the orchestration module.
+- Action: extracted wave validation and lookup error classes into a focused service error module,
+  preserved the existing `wave_service` import surface for routers and tests, and added direct tests
+  for code/message preservation, string representation, export surface, and compatibility aliases.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_errors.py`; direct wave error tests and selected wave API
+  regressions passed with 136 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: continue reviewing remaining wave lookup and event-append helpers for clean extraction
+  opportunities now that shared wave service error types are independently owned.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

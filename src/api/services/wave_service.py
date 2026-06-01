@@ -15,6 +15,7 @@ from src.api.services.wave_event_evidence import (
     idempotency_key_hash as _idempotency_key_hash,
     request_hash as _request_hash,
 )
+from src.api.services.wave_errors import DpmWaveLookupError, DpmWaveValidationError
 from src.api.services.wave_detail_projection import wave_detail_payload, wave_items_payload
 from src.api.services.wave_handoff_evidence import build_handoff_ref as _handoff_ref
 from src.api.services.wave_item_transitions import (
@@ -65,20 +66,6 @@ from src.core.waves import (
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
-
-
-class DpmWaveValidationError(ValueError):
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
-
-
-class DpmWaveLookupError(LookupError):
-    def __init__(self, code: str, message: str) -> None:
-        super().__init__(message)
-        self.code = code
-        self.message = message
 
 
 def preview_wave(
