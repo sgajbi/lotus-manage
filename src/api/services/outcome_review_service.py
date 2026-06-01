@@ -25,6 +25,7 @@ from src.api.services.outcome_review_creation import (
     build_created_outcome_event,
     build_review_content_hash,
 )
+from src.api.services.outcome_review_refresh import build_source_refreshed_event
 from src.api.services.portfolio_memory_context_service import (
     build_report_portfolio_memory_context,
 )
@@ -206,15 +207,14 @@ def refresh_outcome_review_sources(
         realized_snapshot=realized_snapshot,
         dimension_configs=dimension_configs,
     )
-    event = DpmOutcomeEvent(
-        event_id=f"{outcome_review_id}_source_refreshed_{uuid4().hex[:8]}",
-        event_type="OUTCOME_REVIEW_SOURCE_REFRESHED",
-        event_time=datetime.now(timezone.utc).isoformat(),
-        actor=actor_id,
+    event = build_source_refreshed_event(
         outcome_review_id=outcome_review_id,
-        state=comparison.state,
-        reason_codes=comparison.supportability.reason_codes,
-        source_refs=[*review.expected_snapshot.source_lineage, *realized_snapshot.source_lineage],
+        expected_snapshot=review.expected_snapshot,
+        realized_snapshot=realized_snapshot,
+        comparison=comparison,
+        actor_id=actor_id,
+        refreshed_at=datetime.now(timezone.utc),
+        event_id_suffix=uuid4().hex[:8],
     )
     repository.append_event(event=event)
     return event, comparison

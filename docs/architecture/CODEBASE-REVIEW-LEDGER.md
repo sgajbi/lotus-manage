@@ -9540,3 +9540,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   refresh-event support where tests can pin validation and event semantics directly.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-392: Outcome review refresh-event extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_refresh.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_refresh.py`, selected outcome-review API
+  regressions, and this ledger.
+- Finding: source-refresh event identity, bounded event type, state/reason projection, and
+  expected-plus-realized source lineage assembly were embedded in the refresh orchestration path.
+- Action: extracted source-refresh event assembly into a focused helper while preserving lookup,
+  comparison, persistence append, and return orchestration in `outcome_review_service.py`; added a
+  direct deterministic test for event identity, timestamp, actor, state, reason codes, and source
+  lineage projection.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_refresh.py`; direct refresh-event tests
+  and selected outcome-review API regressions passed with 6 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue reducing service hotspots; evaluate whether dimension-input validation should
+  move only after preserving router-owned validation-error imports cleanly.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
