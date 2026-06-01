@@ -7,17 +7,17 @@ from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs import (
     AI_EVIDENCE_REF_TYPE,
     REPORT_INPUT_REF_TYPE,
-    build_ai_evidence_input,
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
-    build_report_input,
     proof_pack_id_for_rebalance_run,
     proof_pack_id_for_selected_alternative,
 )
 from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.proof_packs.handoffs import DpmProofPackAiEvidenceInput, DpmProofPackReportInput
-from src.api.services.portfolio_memory_context_service import (
-    build_report_portfolio_memory_context,
+from src.api.services.proof_pack_report_inputs import (
+    build_proof_pack_ai_evidence_input,
+    build_proof_pack_report_input,
+    portfolio_memory_context_for_report,
 )
 from src.api.services.proof_pack_handoff_refs import (
     ensure_handoff_refs as _ensure_handoff_refs,
@@ -34,7 +34,6 @@ from src.core.proof_packs.models import (
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.waves.repository import DpmWaveRepository
 
@@ -47,6 +46,9 @@ class DpmProofPackReportInputNotGeneratedError(Exception):
 
 class DpmProofPackAiEvidenceInputNotGeneratedError(Exception):
     pass
+
+
+_portfolio_memory_context_for_report = portfolio_memory_context_for_report
 
 
 def generate_proof_pack_from_run(
@@ -228,15 +230,12 @@ def get_report_input(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
     )
-    return build_report_input(
-        proof_pack,
-        portfolio_memory_context=_portfolio_memory_context_for_report(
-            portfolio_id=proof_pack.portfolio_id,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=outcome_review_repository,
-            mandate_repository=mandate_repository,
-        ),
+    return build_proof_pack_report_input(
+        proof_pack=proof_pack,
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
     )
 
 
@@ -252,30 +251,8 @@ def get_ai_evidence_input(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
     )
-    return build_ai_evidence_input(
-        proof_pack,
-        portfolio_memory_context=_portfolio_memory_context_for_report(
-            portfolio_id=proof_pack.portfolio_id,
-            proof_pack_repository=proof_pack_repository,
-            wave_repository=wave_repository,
-            outcome_review_repository=outcome_review_repository,
-            mandate_repository=mandate_repository,
-        ),
-    )
-
-
-def _portfolio_memory_context_for_report(
-    *,
-    portfolio_id: str,
-    proof_pack_repository: DpmProofPackRepository,
-    wave_repository: DpmWaveRepository | None,
-    outcome_review_repository: DpmOutcomeReviewRepository | None,
-    mandate_repository: DpmMandateRepository | None,
-) -> DpmPortfolioMemoryReportContext | None:
-    if wave_repository is None or outcome_review_repository is None:
-        return None
-    return build_report_portfolio_memory_context(
-        portfolio_id=portfolio_id,
+    return build_proof_pack_ai_evidence_input(
+        proof_pack=proof_pack,
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
         outcome_review_repository=outcome_review_repository,

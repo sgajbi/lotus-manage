@@ -9936,3 +9936,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   duplication pattern.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-408: Proof-pack report-input context extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_report_inputs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_report_inputs.py`, selected proof-pack/API
+  regressions, and this ledger.
+- Finding: proof-pack report-input and AI-evidence input accessors duplicated portfolio-memory
+  context assembly inside the service, mirroring the outcome-review handoff-context duplication and
+  leaving downstream handoff context construction embedded in lookup orchestration.
+- Action: extracted proof-pack report/AI evidence input builders and portfolio-memory context
+  assembly into a focused helper module, preserving service ownership of proof-pack lookup while
+  adding direct tests for missing repository gating, portfolio id propagation, report input context
+  passing, AI evidence context passing, export surface, and service alias compatibility.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_report_inputs.py`; direct proof-pack
+  report-input tests and selected proof-pack/outcome regressions passed with 119 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flows for source/replay assembly that can be
+  directly tested without hiding persistence ownership.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
