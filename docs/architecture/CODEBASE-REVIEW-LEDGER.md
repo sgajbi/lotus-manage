@@ -11290,3 +11290,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `construction_source_product_context.py` for authority-context orchestration only.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-464: Construction API core-resolver test hook ownership
+
+- Date: 2026-06-02
+- Scope: `tests/unit/dpm/api/test_construction_api.py` and this ledger.
+- Finding: selected construction API regressions still monkeypatched
+  `rebalance_simulation_service.build_core_resolver_client`, a stale facade hook removed earlier in
+  this hardening branch after core-resolver ownership moved to `core_resolver_service`.
+- Action: changed the construction API tests to monkeypatch
+  `core_resolver_service.build_core_resolver_client`, the hook currently used by rebalance
+  simulation stateful sourcing.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file and ledger;
+  construction API regressions passed with 25 tests, including the previously failing stateful
+  source-product cases; OpenAPI quality gate passed; API vocabulary inventory validate-only gate
+  passed; scoped `git diff --check` passed with only a ledger line-ending warning; service leakage
+  scan found no router/HTTP imports in service modules; targeted scan found no stale
+  `rebalance_service` monkeypatch hook references in `test_construction_api.py`.
+- Follow-up: keep tests patching owner modules instead of retired service facade attributes so full
+  `make check` does not depend on stale helper exports.
+- Wiki decision: no wiki source change required; this is test-maintenance for internal service
+  ownership and does not change route, payload, supported-feature, or operator-contract truth.

@@ -7,7 +7,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 import src.api.services.construction_service as construction_service
-import src.api.services.rebalance_simulation_service as rebalance_service
+import src.api.services.core_resolver_service as core_resolver_service
 from src.core.dpm_source_context import DpmCoreExecutionContext
 from src.infrastructure.construction import InMemoryConstructionRepository
 from tests.shared.factories import valid_api_payload
@@ -1310,7 +1310,7 @@ def test_generate_construction_alternative_set_preserves_degraded_stateful_sourc
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _FakeCoreResolver(),
     )
@@ -1337,7 +1337,7 @@ def test_stateful_construction_attaches_core_transaction_cost_curve(monkeypatch)
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _TransactionCostCoreResolver(),
     )
@@ -1375,7 +1375,7 @@ def test_stateful_construction_attaches_core_cashflow_projection(monkeypatch) ->
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _TransactionCostCoreResolver(),
     )
@@ -1416,7 +1416,7 @@ def test_stateful_currency_overlay_preserves_external_hedge_readiness_fail_close
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _ExternalHedgeReadinessCoreResolver(),
     )
@@ -1497,7 +1497,7 @@ def test_stateful_construction_preserves_external_order_execution_acknowledgemen
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _ExternalOrderExecutionAcknowledgementCoreResolver(),
     )
@@ -1552,7 +1552,7 @@ def test_stateful_construction_marks_degraded_core_cashflow_projection(monkeypat
     repository = InMemoryConstructionRepository()
     monkeypatch.setenv("DPM_STATEFUL_CORE_SOURCING_ENABLED", "true")
     monkeypatch.setattr(
-        rebalance_service,
+        core_resolver_service,
         "build_core_resolver_client",
         lambda: _DegradedCashflowCoreResolver(),
     )
