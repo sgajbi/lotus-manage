@@ -7180,3 +7180,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   acknowledgement mapping families as independent slices.
 - Wiki decision: no wiki source change required; this is internal module factoring with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-282: Transaction-cost source-product mapper split
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_transaction_cost_source_context.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and this ledger.
+- Finding: transaction-cost curve source-product mapping was direct source-boundary evidence
+  assembly, but it remained in the mixed construction source-product facade after the liquidity and
+  client-profile families were separated.
+- Action: moved transaction-cost curve mapping into a dedicated transaction-cost source-context
+  helper. The facade continues importing and re-exporting the function for authority-context
+  composition stability, while direct tests now import the narrower source-family helper.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_transaction_cost_source_context.py` and
+  `construction_source_product_context.py`; focused source-product/enrichment regressions passed
+  with 41 tests.
+- Follow-up: split external treasury and execution acknowledgement mapping into their own helpers
+  before changing their fail-closed source-boundary behavior.
+- Wiki decision: no wiki source change required; this is internal module factoring with no route,
+  payload, supported-feature, or operator-contract change.
