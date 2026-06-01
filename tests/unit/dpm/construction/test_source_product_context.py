@@ -9,6 +9,7 @@ from src.api.services.construction_source_product_context import (
     liquidity_cashflow_projection_context,
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
+    source_liquidity_context,
     source_status_to_method_status,
     sustainability_preference_profile_context,
     transaction_cost_context_from_curve,
@@ -393,6 +394,49 @@ def test_liquidity_cashflow_projection_context_preserves_source_lineage_and_stat
     assert context.include_projected is True
     assert context.data_quality_status == ConstructionMethodStatus.DEGRADED
     assert context.reason_codes == ["CORE_CASHFLOW_PROJECTION_READY"]
+
+
+def test_source_liquidity_context_preserves_source_family_policy_and_children() -> None:
+    context = source_liquidity_context(
+        cashflow_projection=_cashflow_projection(),
+        income_needs=_income_needs_schedule(),
+        reserve_requirement=_liquidity_reserve_requirement(),
+        planned_withdrawals=_planned_withdrawal_schedule(),
+    )
+
+    assert context is not None
+    assert context.supportability_status == ConstructionMethodStatus.READY
+    assert context.source_system == "lotus-manage-settlement-engine"
+    assert context.policy_id == "manage-liquidity-policy.v1"
+    assert context.minimum_cash_weight == Decimal("0.02")
+    assert context.allowed_liquidity_tiers == ["L1", "L2", "L3"]
+    assert context.cashflow_projection is not None
+    assert context.cashflow_projection.source_batch_fingerprint == "cashflow-lineage"
+    assert context.client_income_needs_schedule is not None
+    assert context.client_income_needs_schedule.source_id == "income-lineage"
+    assert context.liquidity_reserve_requirement is not None
+    assert context.liquidity_reserve_requirement.source_id == "reserve-lineage"
+    assert context.planned_withdrawal_schedule is not None
+    assert context.planned_withdrawal_schedule.source_id == "withdrawal-lineage"
+    assert context.reason_codes == [
+        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
+        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+        "CLIENT_INCOME_NEEDS_SOURCE_PRESENT",
+        "LIQUIDITY_RESERVE_SOURCE_PRESENT",
+        "PLANNED_WITHDRAWAL_SOURCE_PRESENT",
+    ]
+
+
+def test_source_liquidity_context_absent_without_source_family() -> None:
+    assert (
+        source_liquidity_context(
+            cashflow_projection=None,
+            income_needs=None,
+            reserve_requirement=None,
+            planned_withdrawals=None,
+        )
+        is None
+    )
 
 
 def test_client_restriction_profile_context_preserves_rules_and_lineage() -> None:

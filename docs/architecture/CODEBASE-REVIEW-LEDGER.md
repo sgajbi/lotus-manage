@@ -6758,3 +6758,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   attachment orchestration only when it can be done without hiding method-specific behavior.
 - Wiki decision: no wiki source change required; this is internal source-product context
   modularity cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-265: Liquidity source-family context assembly extraction
+
+- Date: 2026-06-01
+- Scope:
+  `src/api/services/construction_source_product_context.py`,
+  `src/api/services/construction_service.py`,
+  `tests/unit/dpm/construction/test_source_product_context.py`, and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: after individual liquidity source-product mappings were extracted, the construction
+  service still assembled the composite liquidity authority context and policy reason codes
+  inline. The service also kept thin pass-through wrappers for external treasury and execution
+  acknowledgement source-context helpers. This left pure source-boundary assembly mixed with
+  construction orchestration.
+- Action: added `source_liquidity_context` to assemble the liquidity source family from
+  cashflow projection, client income-needs, liquidity reserve, and planned-withdrawal source
+  products. Updated construction orchestration to attach the returned liquidity context when
+  present and removed thin pass-through wrapper functions. Added direct helper tests for complete
+  liquidity source-family assembly and absent-source behavior.
+- Status: hardened
+- Evidence: focused source-product context, construction enrichment, and construction API
+  regressions (`tests/unit/dpm/construction/test_source_product_context.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`) passed with 64 tests. Focused Ruff checks,
+  focused mypy over source-product context and construction service, OpenAPI quality, API
+  vocabulary validation, service leakage scan, and `git diff --check` passed.
+- Follow-up: continue shrinking `construction_service.py` by extracting the remaining
+  source-family attachment decisions only where the extracted boundary remains directly testable.
+- Wiki decision: no wiki source change required; this is internal source-product context
+  modularity cleanup with no route, payload, supported-feature, or operator-contract change.
