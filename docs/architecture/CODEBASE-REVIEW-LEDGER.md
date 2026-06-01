@@ -10032,3 +10032,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   can be tested directly without moving repository idempotency ownership.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-412: Outcome review creation assembly extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/outcome_review_service.py`,
+  `src/api/services/outcome_review_creation.py`,
+  `tests/unit/dpm/outcomes/test_outcome_review_creation.py`, selected outcome-review regressions,
+  and this ledger.
+- Finding: outcome review creation orchestration still assembled the full persisted review object
+  directly after idempotency validation, mixing repository control flow with pure review/event
+  payload assembly already partially owned by `outcome_review_creation.py`.
+- Action: extracted persisted outcome-review assembly into the creation helper, kept idempotency,
+  clock/id generation, and persistence in the service, and added direct tests for source lineage,
+  identity, event, hash, actor, correlation, and idempotency propagation.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `outcome_review_service.py` and `outcome_review_creation.py`; direct outcome review
+  creation tests and selected outcome/API regressions passed with 41 tests; OpenAPI quality gate
+  passed; API vocabulary inventory validate-only gate passed; `git diff --check` passed; service
+  leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing outcome refresh and proof-pack generation for pure event/input
+  assembly that can move out of orchestration services with direct tests.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

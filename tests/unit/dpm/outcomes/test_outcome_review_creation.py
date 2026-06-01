@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from src.api.services.outcome_review_creation import (
     build_created_outcome_event,
+    build_created_outcome_review,
     build_review_content_hash,
     created_event_type,
 )
@@ -74,3 +75,41 @@ def test_build_review_content_hash_is_stable_and_changes_with_source_snapshot() 
         comparison=_comparison(),
     )
     assert changed_hash != ready_hash
+
+
+def test_build_created_outcome_review_preserves_source_lineage_and_identity() -> None:
+    source_review = _review()
+    comparison = _comparison()
+
+    review = build_created_outcome_review(
+        outcome_review_id="dor_created_001",
+        comparison=comparison,
+        expected_snapshot=source_review.expected_snapshot,
+        realized_snapshot=source_review.realized_snapshot,
+        actor_id="pm_creation",
+        correlation_id="corr_created_001",
+        idempotency_key="idem_created_001",
+        content_hash="sha256:created-review",
+        created_at=CREATED_AT,
+    )
+
+    assert review.outcome_review_id == "dor_created_001"
+    assert review.state == comparison.state
+    assert review.portfolio_id == source_review.expected_snapshot.portfolio_id
+    assert review.review_window == source_review.realized_snapshot.review_window
+    assert review.source_hashes == {"expected": "sha256:expected", "realized": "sha256:realized"}
+    assert [ref.source_id for ref in review.source_lineage] == ["expected", "realized"]
+    assert review.events == [
+        build_created_outcome_event(
+            outcome_review_id="dor_created_001",
+            comparison=comparison,
+            expected_snapshot=source_review.expected_snapshot,
+            realized_snapshot=source_review.realized_snapshot,
+            actor_id="pm_creation",
+            created_at=CREATED_AT,
+        )
+    ]
+    assert review.content_hash == "sha256:created-review"
+    assert review.created_by == "pm_creation"
+    assert review.correlation_id == "corr_created_001"
+    assert review.idempotency_key == "idem_created_001"

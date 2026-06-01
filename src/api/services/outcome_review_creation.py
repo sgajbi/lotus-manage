@@ -8,6 +8,7 @@ from src.core.outcomes import (
     DpmExpectedOutcomeSnapshot,
     DpmOutcomeEvent,
     DpmOutcomeReviewComparison,
+    DpmPostTradeOutcomeReview,
     DpmRealizedOutcomeSnapshot,
     OutcomeEventType,
 )
@@ -48,6 +49,57 @@ def build_created_outcome_event(
         state=comparison.state,
         reason_codes=comparison.supportability.reason_codes,
         source_refs=[*expected_snapshot.source_lineage, *realized_snapshot.source_lineage],
+    )
+
+
+def build_created_outcome_review(
+    *,
+    outcome_review_id: str,
+    comparison: DpmOutcomeReviewComparison,
+    expected_snapshot: DpmExpectedOutcomeSnapshot,
+    realized_snapshot: DpmRealizedOutcomeSnapshot,
+    actor_id: str,
+    correlation_id: str,
+    idempotency_key: str,
+    content_hash: str,
+    created_at: datetime,
+) -> DpmPostTradeOutcomeReview:
+    event = build_created_outcome_event(
+        outcome_review_id=outcome_review_id,
+        comparison=comparison,
+        expected_snapshot=expected_snapshot,
+        realized_snapshot=realized_snapshot,
+        actor_id=actor_id,
+        created_at=created_at,
+    )
+    return DpmPostTradeOutcomeReview(
+        outcome_review_id=outcome_review_id,
+        state=comparison.state,
+        portfolio_id=expected_snapshot.portfolio_id,
+        mandate_id=expected_snapshot.mandate_id,
+        rebalance_run_id=expected_snapshot.rebalance_run_id,
+        alternative_set_id=expected_snapshot.alternative_set_id,
+        selected_alternative_id=expected_snapshot.selected_alternative_id,
+        proof_pack_id=expected_snapshot.proof_pack_id,
+        wave_id=expected_snapshot.wave_id,
+        wave_item_id=expected_snapshot.wave_item_id,
+        operations_handoff_ref_id=expected_snapshot.operations_handoff_ref_id,
+        review_window=realized_snapshot.review_window,
+        expected_snapshot=expected_snapshot,
+        realized_snapshot=realized_snapshot,
+        dimension_results=comparison.dimension_results,
+        overall_outcome=comparison.overall_outcome,
+        variance_summary=comparison.variance_summary,
+        supportability=comparison.supportability,
+        source_lineage=[*expected_snapshot.source_lineage, *realized_snapshot.source_lineage],
+        source_hashes={**expected_snapshot.source_hashes, **realized_snapshot.source_hashes},
+        section_hashes=expected_snapshot.section_hashes,
+        events=[event],
+        content_hash=content_hash,
+        created_at=created_at,
+        created_by=actor_id,
+        correlation_id=correlation_id,
+        idempotency_key=idempotency_key,
     )
 
 
