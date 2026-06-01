@@ -10660,3 +10660,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `ConstructionAuthorityContext`.
 - Wiki decision: no wiki source change required; this is internal test hardening with no route,
   payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-438: Liquidity source policy constants
+
+- Date: 2026-06-01
+- Scope: `src/api/services/construction_liquidity_source_context.py`, selected liquidity
+  source-context/API regressions, and this ledger.
+- Finding: the liquidity source-context mapper repeated manage-owned settlement policy identity,
+  minimum cash-weight, liquidity tiers, and source-family reason codes directly inside assembly.
+- Action: moved manage-owned liquidity policy literals into module-local constants while preserving
+  the public mapper contract, source-product lineage fields, and reason-code output.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `construction_liquidity_source_context.py`; direct liquidity source-context tests plus
+  selected construction source-product/enrichment/API regressions passed with 66 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: review other source-family mappers for similar manage-owned policy literals that
+  should be named once near the owning mapper.
+- Wiki decision: no wiki source change required; this is internal mapper maintainability cleanup
+  with no route, payload, supported-feature, or operator-contract change.

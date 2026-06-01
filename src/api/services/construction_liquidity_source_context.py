@@ -23,6 +23,13 @@ from src.core.dpm_source_context import (
 )
 from src.core.models import Money
 
+_MANAGE_LIQUIDITY_SOURCE_SYSTEM = "lotus-manage-settlement-engine"
+_MANAGE_LIQUIDITY_POLICY_ID = "manage-liquidity-policy.v1"
+_MANAGE_MINIMUM_CASH_WEIGHT = Decimal("0.02")
+_MANAGE_ALLOWED_LIQUIDITY_TIERS = ["L1", "L2", "L3"]
+_MANAGE_LIQUIDITY_POLICY_REASON = "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"
+_CORE_LIQUIDITY_SOURCE_REASON = "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT"
+
 
 def _liquidity_reason_codes(
     *,
@@ -31,8 +38,8 @@ def _liquidity_reason_codes(
     has_planned_withdrawals: bool,
 ) -> list[str]:
     reason_codes = [
-        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
-        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+        _MANAGE_LIQUIDITY_POLICY_REASON,
+        _CORE_LIQUIDITY_SOURCE_REASON,
     ]
     if has_income_needs:
         reason_codes.append("CLIENT_INCOME_NEEDS_SOURCE_PRESENT")
@@ -179,10 +186,10 @@ def source_liquidity_context(
 
     return AuthoritativeLiquidityContext(
         supportability_status=ConstructionMethodStatus.READY,
-        source_system="lotus-manage-settlement-engine",
-        policy_id="manage-liquidity-policy.v1",
-        minimum_cash_weight=Decimal("0.02"),
-        allowed_liquidity_tiers=["L1", "L2", "L3"],
+        source_system=_MANAGE_LIQUIDITY_SOURCE_SYSTEM,
+        policy_id=_MANAGE_LIQUIDITY_POLICY_ID,
+        minimum_cash_weight=_MANAGE_MINIMUM_CASH_WEIGHT,
+        allowed_liquidity_tiers=_MANAGE_ALLOWED_LIQUIDITY_TIERS,
         cashflow_projection=cashflow_context,
         client_income_needs_schedule=income_context,
         liquidity_reserve_requirement=reserve_context,
