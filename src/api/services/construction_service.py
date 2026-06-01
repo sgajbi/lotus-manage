@@ -22,7 +22,6 @@ from src.api.services.construction_method_supportability import (
     regime_stress_status,
 )
 from src.api.services.construction_method_execution import (
-    options_for_construction_method,
     run_construction_method,
 )
 from src.api.services.construction_method_authority import authority_context_for_method
@@ -94,7 +93,7 @@ from src.core.construction.vocabulary import (
 from src.core.dpm_source_context import (
     DpmResolvedSourceContext,
 )
-from src.core.models import EngineOptions, RebalanceResult
+from src.core.models import RebalanceResult
 from src.core.models import Money, SecurityTradeIntent, ShelfEntry
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
@@ -284,14 +283,6 @@ def _run_method(
     )
 
 
-def _options_for_method(
-    *,
-    options: EngineOptions,
-    method: ConstructionMethod,
-) -> EngineOptions:
-    return options_for_construction_method(options=options, method=method)
-
-
 def _apply_supportability(
     *,
     request: RebalanceRequest,
@@ -339,7 +330,7 @@ def _apply_supportability(
         [
             alternative.method_status,
             plan.method_status,
-            _method_specific_status(
+            method_specific_status(
                 request=request,
                 method=method,
                 result=result,
@@ -378,34 +369,17 @@ def _apply_supportability(
             "diagnostics": {
                 **alternative.diagnostics,
                 "method_plan": plan.model_dump(mode="json"),
-                "enrichment_summary": _with_method_reason_codes(
+                "enrichment_summary": with_method_reason_codes(
                     enrichment=enrichment,
                     reason_codes=method_reason_codes,
                 ).model_dump(mode="json"),
                 "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
-                "source_analytics_posture": _source_analytics_posture(
+                "source_analytics_posture": source_analytics_posture(
                     method=method,
                     authority_context=authority_context,
                 ),
             },
         }
-    )
-
-
-def _method_specific_status(
-    *,
-    request: RebalanceRequest,
-    method: ConstructionMethod,
-    result: RebalanceResult,
-    enrichment: ConstructionEnrichmentSummary,
-    authority_context: ConstructionAuthorityContext,
-) -> ConstructionMethodStatus:
-    return method_specific_status(
-        request=request,
-        method=method,
-        result=result,
-        enrichment=enrichment,
-        authority_context=authority_context,
     )
 
 
@@ -423,14 +397,6 @@ def _method_specific_reason_codes(
         result=result,
         authority_context=authority_context,
     )
-
-
-def _source_analytics_posture(
-    *,
-    method: ConstructionMethod,
-    authority_context: ConstructionAuthorityContext,
-) -> dict[str, object]:
-    return source_analytics_posture(method=method, authority_context=authority_context)
 
 
 def _authority_context_for_method(
@@ -612,14 +578,6 @@ def _sustainability_classification_review_required(
     context: AuthoritativeSustainabilityPreferenceContext,
 ) -> bool:
     return sustainability_classification_review_required(context=context)
-
-
-def _with_method_reason_codes(
-    *,
-    enrichment: ConstructionEnrichmentSummary,
-    reason_codes: list[str],
-) -> ConstructionEnrichmentSummary:
-    return with_method_reason_codes(enrichment=enrichment, reason_codes=reason_codes)
 
 
 def _solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
