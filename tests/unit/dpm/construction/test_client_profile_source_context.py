@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from src.api.services import construction_client_profile_source_context
 from src.api.services.construction_client_profile_source_context import (
     client_restriction_profile_context,
     sustainability_preference_profile_context,
@@ -10,6 +11,13 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
     client_restriction_profile_response,
     sustainability_preference_profile_response,
 )
+
+
+def test_client_profile_source_context_exports_only_client_profile_mappers() -> None:
+    assert construction_client_profile_source_context.__all__ == [
+        "client_restriction_profile_context",
+        "sustainability_preference_profile_context",
+    ]
 
 
 def test_client_restriction_profile_context_preserves_rules_and_lineage() -> None:

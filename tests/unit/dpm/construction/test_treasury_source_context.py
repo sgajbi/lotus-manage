@@ -1,5 +1,6 @@
 from typing import Any
 
+from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
 )
@@ -12,6 +13,12 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
     hedge_policy_response,
     hedge_readiness_response,
 )
+
+
+def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
+    assert construction_treasury_source_context.__all__ == [
+        "external_treasury_currency_overlay_context"
+    ]
 
 
 def _without_source_lineage(response: Any) -> Any:

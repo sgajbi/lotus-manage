@@ -1,3 +1,4 @@
+from src.api.services import construction_execution_source_context
 from src.api.services.construction_execution_source_context import (
     external_order_execution_acknowledgement_context,
 )
@@ -5,6 +6,12 @@ from src.core.construction.vocabulary import ConstructionMethodStatus
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     external_order_acknowledgement_response,
 )
+
+
+def test_execution_source_context_exports_only_acknowledgement_mapper() -> None:
+    assert construction_execution_source_context.__all__ == [
+        "external_order_execution_acknowledgement_context"
+    ]
 
 
 def test_external_order_acknowledgement_context_is_fail_closed_source_evidence() -> None:

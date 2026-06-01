@@ -8285,3 +8285,23 @@ This ledger records cleanup and structural review evidence for RFC-0036.
 - Follow-up: keep source mapper `__all__` surfaces narrow as helper modules are consolidated.
 - Wiki decision: no wiki source change required; this is internal source-boundary module-surface
   cleanup with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-338: Source-context export surface coverage
+
+- Date: 2026-06-01
+- Scope: client-profile, transaction-cost, execution acknowledgement, and treasury source-context
+  unit tests plus this ledger.
+- Finding: after source-identity helper consolidation, most source-context mappers had explicit
+  `__all__` surfaces but only liquidity source context had direct module-surface coverage.
+- Action: added focused export-surface regressions for client-profile, transaction-cost, execution
+  acknowledgement, and treasury source-context modules so their public mapper boundaries remain
+  intentional.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test files; source-context
+  regression set passed with 18 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed; service leakage scan found no router/HTTP
+  imports in service modules.
+- Follow-up: add module-surface coverage alongside future source-context mapper extractions when
+  helper consolidation changes public imports.
+- Wiki decision: no wiki source change required; this is internal test hardening for mapper module
+  boundaries with no route, payload, supported-feature, or operator-contract change.
