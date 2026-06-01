@@ -8376,3 +8376,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `wave_service.py` while leaving repository orchestration in the service layer.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-342: Wave handoff evidence extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/wave_service.py`, `src/api/services/wave_handoff_evidence.py`,
+  `tests/unit/dpm/waves/test_wave_handoff_evidence.py`, selected wave handoff API regressions, and
+  this ledger.
+- Finding: `wave_service.py` still owned internal operations handoff reference assembly and hashing,
+  even though the logic is pure evidence construction rather than workflow orchestration.
+- Action: extracted handoff reference and content-hash builders into a focused helper module,
+  preserved the existing wave service private alias for orchestration, and added direct tests for
+  internal handoff boundary metadata, optional comments, stable hash canonicalization, and the module
+  export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `wave_service.py` and `wave_handoff_evidence.py`; direct wave handoff evidence tests
+  and selected handoff API regressions passed with 7 tests; OpenAPI quality gate passed; API
+  vocabulary inventory validate-only gate passed; `git diff --check` passed; service leakage scan
+  found no router/HTTP imports in service modules.
+- Follow-up: continue extracting pure wave item-transition assembly from `wave_service.py` while
+  keeping repository writes, version conflict handling, and route-facing lookup behavior in the
+  service layer.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
