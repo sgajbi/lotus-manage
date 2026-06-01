@@ -11242,3 +11242,25 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   coverage already proves behavior.
 - Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260602-462: Wave preview helper ownership
+
+- Date: 2026-06-02
+- Scope: `src/api/services/wave_service.py`, `tests/unit/dpm/waves/test_wave_preview.py`, selected
+  wave preview/API regressions, and this ledger.
+- Finding: `wave_service.py` imported and exposed `build_preview_wave` as a facade attribute even
+  though the wave-preview module has direct behavior and export-surface tests, and the service only
+  needs the helper behind the public `preview_wave` workflow function.
+- Action: changed `wave_service.preview_wave` to call `wave_preview.build_preview_wave` through the
+  owning module.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files and ledger;
+  focused mypy passed for `wave_service.py`; direct wave preview tests and selected wave API
+  regressions passed with 135 tests; OpenAPI quality gate passed; API vocabulary inventory
+  validate-only gate passed; `git diff --check` passed with only line-ending warnings; service
+  leakage scan found no router/HTTP imports in service modules; targeted scan found only direct
+  preview helper tests and the qualified `wave_preview` owner-module call from `wave_service.py`.
+- Follow-up: continue retiring wave-service helper aliases in small groups where direct helper
+  coverage already proves behavior.
+- Wiki decision: no wiki source change required; this is internal service-boundary cleanup with no
+  route, payload, supported-feature, or operator-contract change.

@@ -6,11 +6,11 @@ from src.api.services.wave_errors import (
 )
 from src.api.services import wave_lifecycle_commands
 from src.api.services import wave_preparation_commands
+from src.api.services import wave_preview
 from src.api.services import wave_read_model_queries
 from src.api.services import wave_selection_command
 from src.api.services import wave_search
 from src.api.services import wave_supportability_payload as wave_supportability_payload_module
-from src.api.services.wave_preview import build_preview_wave
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
@@ -39,7 +39,7 @@ def preview_wave(
     portfolios: list[dict[str, object]],
     mandate_repository: DpmMandateRepository,
 ) -> DpmRebalanceWave:
-    return build_preview_wave(
+    return wave_preview.build_preview_wave(
         trigger_type=trigger_type,
         trigger_id=trigger_id,
         rationale=rationale,
