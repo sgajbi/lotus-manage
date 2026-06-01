@@ -9163,3 +9163,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   support logic.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-376: Mandate PM-book membership helper extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_pm_book.py`,
+  `tests/unit/dpm/mandates/test_mandate_pm_book.py`, selected monitoring API regressions, and this
+  ledger.
+- Finding: `mandate_service.py` still owned portfolio-manager book membership mandate-id resolution
+  even though the logic is reusable support code for resolving source-owned PM book membership
+  products into locally persisted mandate snapshots.
+- Action: extracted PM-book membership mandate-id resolution into a focused service helper module,
+  preserved the existing `mandate_service.mandate_ids_from_pm_book_membership` router import
+  surface, and added direct tests for successful member resolution, missing mandate snapshots,
+  empty membership payloads, service import compatibility, and export surface.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `mandate_service.py` and `mandate_pm_book.py`; direct PM-book helper tests and selected
+  monitoring API regressions passed with 15 tests; OpenAPI quality gate passed; API vocabulary
+  inventory validate-only gate passed; `git diff --check` passed; service leakage scan found no
+  router/HTTP imports in service modules.
+- Follow-up: continue extracting command-center summary assembly and health recalculation support
+  where repository orchestration can remain in `mandate_service.py`.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.
