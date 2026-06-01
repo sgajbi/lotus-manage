@@ -7741,3 +7741,20 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   fallback behavior.
 - Wiki decision: no wiki source change required; this is internal source-boundary test hardening
   with no route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-311: Execution acknowledgement source-id fallback coverage
+
+- Date: 2026-06-01
+- Scope: `tests/unit/dpm/construction/test_execution_source_context.py`, execution acknowledgement
+  source-context mapping, and this ledger.
+- Finding: external order acknowledgement tests covered lineage source IDs but did not prove the
+  content-hash fallback used when source-batch and lineage fingerprints are absent.
+- Action: added a direct mapper regression asserting source ID fallback to the acknowledgement
+  context content hash.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched test file; focused execution
+  source-context regressions passed with 3 tests.
+- Follow-up: keep fallback coverage aligned with source-boundary proof for every external source
+  family mapper.
+- Wiki decision: no wiki source change required; this is internal source-boundary test hardening
+  with no route, payload, supported-feature, or operator-contract change.
