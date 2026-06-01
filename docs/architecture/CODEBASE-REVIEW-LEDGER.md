@@ -9985,3 +9985,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   assembly that can be separated without moving repository lookup ownership out of the service.
 - Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
   route, payload, supported-feature, or operator-contract change.
+
+## BACKEND-REVIEW-20260601-410: Proof-pack handoff-ref lookup extraction
+
+- Date: 2026-06-01
+- Scope: `src/api/services/proof_pack_service.py`,
+  `src/api/services/proof_pack_handoff_refs.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_handoff_refs.py`, selected proof-pack regressions,
+  and this ledger.
+- Finding: proof-pack report-input and AI-evidence ref accessors repeated the hydrated-ref,
+  append-only stored-ref, and missing-generated-ref decision path inside the service, making the
+  supportability fallback harder to test directly.
+- Action: extracted the common handoff-ref resolution decision into the handoff-ref helper,
+  preserving service-specific generated-ref exceptions while adding direct tests for hydrated-ref
+  preference, latest stored-ref fallback, and missing-ref return behavior.
+- Status: hardened
+- Evidence: focused Ruff and format checks passed for the touched source/test files; focused mypy
+  passed for `proof_pack_service.py` and `proof_pack_handoff_refs.py`; direct proof-pack
+  handoff-ref tests and selected proof-pack service regressions passed with 19 tests; OpenAPI
+  quality gate passed; API vocabulary inventory validate-only gate passed; `git diff --check`
+  passed; service leakage scan found no router/HTTP imports in service modules.
+- Follow-up: continue reviewing proof-pack generation flow for builder-input assembly that can be
+  separated without moving source lookup or exception ownership out of the service.
+- Wiki decision: no wiki source change required; this is internal service modularity cleanup with no
+  route, payload, supported-feature, or operator-contract change.

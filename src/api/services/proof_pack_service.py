@@ -19,9 +19,8 @@ from src.api.services.proof_pack_report_inputs import (
 )
 from src.api.services.proof_pack_handoff_refs import (
     ensure_handoff_refs as _ensure_handoff_refs,
-    find_stored_ref,
     hydrate_handoff_refs,
-    stored_ref_to_evidence_ref,
+    require_handoff_ref,
 )
 from src.api.services.proof_pack_mandate_evidence import resolve_mandate_evidence
 from src.api.services.proof_pack_persistence import persist_proof_pack
@@ -178,18 +177,15 @@ def get_report_input_ref(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
     )
-    if proof_pack.report_input_ref is None:
-        stored_ref = find_stored_ref(
-            proof_pack_id=proof_pack_id,
-            ref_type=REPORT_INPUT_REF_TYPE,
-            proof_pack_repository=proof_pack_repository,
-        )
-        if stored_ref is None:
-            raise DpmProofPackReportInputNotGeneratedError(
-                "DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED"
-            )
-        return stored_ref_to_evidence_ref(stored_ref)
-    return proof_pack.report_input_ref
+    ref = require_handoff_ref(
+        proof_pack_id=proof_pack_id,
+        hydrated_ref=proof_pack.report_input_ref,
+        ref_type=REPORT_INPUT_REF_TYPE,
+        proof_pack_repository=proof_pack_repository,
+    )
+    if ref is None:
+        raise DpmProofPackReportInputNotGeneratedError("DPM_PROOF_PACK_REPORT_INPUT_NOT_GENERATED")
+    return ref
 
 
 def get_ai_evidence_ref(
@@ -201,18 +197,17 @@ def get_ai_evidence_ref(
         proof_pack_id=proof_pack_id,
         proof_pack_repository=proof_pack_repository,
     )
-    if proof_pack.ai_evidence_ref is None:
-        stored_ref = find_stored_ref(
-            proof_pack_id=proof_pack_id,
-            ref_type=AI_EVIDENCE_REF_TYPE,
-            proof_pack_repository=proof_pack_repository,
+    ref = require_handoff_ref(
+        proof_pack_id=proof_pack_id,
+        hydrated_ref=proof_pack.ai_evidence_ref,
+        ref_type=AI_EVIDENCE_REF_TYPE,
+        proof_pack_repository=proof_pack_repository,
+    )
+    if ref is None:
+        raise DpmProofPackAiEvidenceInputNotGeneratedError(
+            "DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED"
         )
-        if stored_ref is None:
-            raise DpmProofPackAiEvidenceInputNotGeneratedError(
-                "DPM_PROOF_PACK_AI_EVIDENCE_INPUT_NOT_GENERATED"
-            )
-        return stored_ref_to_evidence_ref(stored_ref)
-    return proof_pack.ai_evidence_ref
+    return ref
 
 
 def get_report_input(

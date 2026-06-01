@@ -115,6 +115,25 @@ def find_stored_ref(
     )
 
 
+def require_handoff_ref(
+    *,
+    proof_pack_id: str,
+    hydrated_ref: DpmProofPackEvidenceRef | None,
+    ref_type: str,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmProofPackEvidenceRef | None:
+    if hydrated_ref is not None:
+        return hydrated_ref
+    stored_ref = find_stored_ref(
+        proof_pack_id=proof_pack_id,
+        ref_type=ref_type,
+        proof_pack_repository=proof_pack_repository,
+    )
+    if stored_ref is None:
+        return None
+    return stored_ref_to_evidence_ref(stored_ref)
+
+
 def stored_ref_to_evidence_ref(ref: DpmProofPackStoredRef) -> DpmProofPackEvidenceRef:
     return DpmProofPackEvidenceRef(
         ref_type=ref.ref_type,

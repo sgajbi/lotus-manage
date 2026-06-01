@@ -4,6 +4,7 @@ from src.api.services.proof_pack_handoff_refs import (
     ensure_handoff_refs,
     find_stored_ref,
     hydrate_handoff_refs,
+    require_handoff_ref,
     stored_ref_to_evidence_ref,
 )
 from src.core.proof_packs import AI_EVIDENCE_REF_TYPE, REPORT_INPUT_REF_TYPE
@@ -151,3 +152,74 @@ def test_stored_ref_to_evidence_ref_preserves_handoff_identity() -> None:
     assert evidence_ref.ref_id == stored_ref.ref_id
     assert evidence_ref.source_system == stored_ref.source_system
     assert evidence_ref.content_hash == stored_ref.content_hash
+
+
+def test_require_handoff_ref_prefers_hydrated_ref_without_repository_lookup() -> None:
+    proof_pack = _proof_pack()
+    hydrated_ref = stored_ref_to_evidence_ref(
+        _stored_ref(
+            ref_type=REPORT_INPUT_REF_TYPE,
+            ref_id="dpri_hydrated",
+            content_hash="sha256:hydrated",
+        )
+    )
+
+    class _FailingRepository:
+        def list_refs(self, *, proof_pack_id: str):
+            raise AssertionError("repository lookup should not run for hydrated refs")
+
+    ref = require_handoff_ref(
+        proof_pack_id=proof_pack.proof_pack_id,
+        hydrated_ref=hydrated_ref,
+        ref_type=REPORT_INPUT_REF_TYPE,
+        proof_pack_repository=_FailingRepository(),  # type: ignore[arg-type]
+    )
+
+    assert ref is hydrated_ref
+
+
+def test_require_handoff_ref_falls_back_to_latest_stored_ref() -> None:
+    proof_pack = _proof_pack()
+    repository = InMemoryDpmProofPackRepository()
+    repository.save_proof_pack(
+        proof_pack=proof_pack,
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+    repository.append_ref(
+        ref=_stored_ref(
+            ref_type=REPORT_INPUT_REF_TYPE,
+            ref_id="dpri_required",
+            content_hash="sha256:required",
+        )
+    )
+
+    ref = require_handoff_ref(
+        proof_pack_id=proof_pack.proof_pack_id,
+        hydrated_ref=None,
+        ref_type=REPORT_INPUT_REF_TYPE,
+        proof_pack_repository=repository,
+    )
+
+    assert ref is not None
+    assert ref.ref_id == "dpri_required"
+    assert ref.content_hash == "sha256:required"
+
+
+def test_require_handoff_ref_returns_none_when_no_generated_ref_exists() -> None:
+    proof_pack = _proof_pack()
+    repository = InMemoryDpmProofPackRepository()
+    repository.save_proof_pack(
+        proof_pack=proof_pack,
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+
+    ref = require_handoff_ref(
+        proof_pack_id=proof_pack.proof_pack_id,
+        hydrated_ref=None,
+        ref_type=REPORT_INPUT_REF_TYPE,
+        proof_pack_repository=repository,
+    )
+
+    assert ref is None
