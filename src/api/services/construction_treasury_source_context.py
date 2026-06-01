@@ -1,7 +1,8 @@
 from decimal import Decimal
+from typing import Any, TypeAlias
 
-from src.core.common.canonical import hash_canonical_payload
 from src.api.services.construction_source_product_status import source_status_to_method_status
+from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.models import AuthoritativeCurrencyOverlayContext
 from src.core.dpm_source_context import (
     DpmCoreExternalCurrencyExposureResponse,
@@ -10,6 +11,23 @@ from src.core.dpm_source_context import (
     DpmCoreExternalHedgeExecutionReadinessResponse,
     DpmCoreExternalHedgePolicyResponse,
 )
+
+_JsonPayload: TypeAlias = dict[str, Any]
+_TreasurySourceResponse: TypeAlias = (
+    DpmCoreExternalHedgeExecutionReadinessResponse
+    | DpmCoreExternalCurrencyExposureResponse
+    | DpmCoreExternalHedgePolicyResponse
+    | DpmCoreExternalEligibleHedgeInstrumentResponse
+    | DpmCoreExternalFXForwardCurveResponse
+)
+
+
+def _source_payload(response: _TreasurySourceResponse | None) -> _JsonPayload | None:
+    return response.model_dump(mode="json", exclude_none=True) if response is not None else None
+
+
+def _source_hash(payload: _JsonPayload | None) -> str | None:
+    return hash_canonical_payload(payload) if payload is not None else None
 
 
 def external_treasury_currency_overlay_context(
@@ -29,31 +47,11 @@ def external_treasury_currency_overlay_context(
     ):
         return None
 
-    readiness_payload = (
-        hedge_readiness.model_dump(mode="json", exclude_none=True)
-        if hedge_readiness is not None
-        else None
-    )
-    exposure_payload = (
-        currency_exposure.model_dump(mode="json", exclude_none=True)
-        if currency_exposure is not None
-        else None
-    )
-    hedge_policy_payload = (
-        hedge_policy.model_dump(mode="json", exclude_none=True)
-        if hedge_policy is not None
-        else None
-    )
-    eligible_hedge_instruments_payload = (
-        eligible_hedge_instruments.model_dump(mode="json", exclude_none=True)
-        if eligible_hedge_instruments is not None
-        else None
-    )
-    fx_forward_curve_payload = (
-        fx_forward_curve.model_dump(mode="json", exclude_none=True)
-        if fx_forward_curve is not None
-        else None
-    )
+    readiness_payload = _source_payload(hedge_readiness)
+    exposure_payload = _source_payload(currency_exposure)
+    hedge_policy_payload = _source_payload(hedge_policy)
+    eligible_hedge_instruments_payload = _source_payload(eligible_hedge_instruments)
+    fx_forward_curve_payload = _source_payload(fx_forward_curve)
     source_hash = hash_canonical_payload(
         {
             "external_hedge_execution_readiness": readiness_payload,
@@ -85,22 +83,10 @@ def external_treasury_currency_overlay_context(
         supportability_reason = fx_forward_curve.supportability.reason
         exposure_currencies = fx_forward_curve.exposure_currencies
 
-    exposure_source_hash = (
-        hash_canonical_payload(exposure_payload) if exposure_payload is not None else None
-    )
-    hedge_policy_source_hash = (
-        hash_canonical_payload(hedge_policy_payload) if hedge_policy_payload is not None else None
-    )
-    eligible_hedge_instruments_source_hash = (
-        hash_canonical_payload(eligible_hedge_instruments_payload)
-        if eligible_hedge_instruments_payload is not None
-        else None
-    )
-    fx_forward_curve_source_hash = (
-        hash_canonical_payload(fx_forward_curve_payload)
-        if fx_forward_curve_payload is not None
-        else None
-    )
+    exposure_source_hash = _source_hash(exposure_payload)
+    hedge_policy_source_hash = _source_hash(hedge_policy_payload)
+    eligible_hedge_instruments_source_hash = _source_hash(eligible_hedge_instruments_payload)
+    fx_forward_curve_source_hash = _source_hash(fx_forward_curve_payload)
     readiness_missing = (
         hedge_readiness.supportability.missing_data_families if hedge_readiness is not None else []
     )
