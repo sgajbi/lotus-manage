@@ -275,6 +275,69 @@ def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None
     assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
 
 
+def test_proof_pack_governance_section_payload_orders_workflow_decisions() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
+    later = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_later",
+        run_id=result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="LATER",
+        actor_id="pm_002",
+        decided_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        correlation_id="corr-later",
+    )
+    earlier = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_earlier",
+        run_id=result.rebalance_run_id,
+        action="REQUEST_CHANGES",
+        reason_code="EARLIER",
+        actor_id="pm_001",
+        decided_at=datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        correlation_id="corr-earlier",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._proof_pack_governance_section_payload(
+            section_type="approval_requirements",
+            result=result,
+            run=_run_record(result=result),
+            selection=None,
+            source_ref_count=3,
+            workflow_decisions=[later, earlier],
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Approval posture captured from run status and gate decision."
+    assert [decision["decision_id"] for decision in facts["workflow_decisions"]] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+    assert metrics == {"workflow_decision_count": 2}
+    assert reason_codes == []
+
+
+def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._proof_pack_governance_section_payload(
+            section_type="lineage",
+            result=result,
+            run=_run_record(result=result),
+            selection=None,
+            source_ref_count=7,
+            workflow_decisions=[],
+        )
+    )
+
+    assert state == "READY"
+    assert summary == "Lineage identifiers captured from source run and source artifacts."
+    assert facts["source_system"] == result.lineage.source_system
+    assert metrics == {"source_ref_count": 7}
+    assert reason_codes == []
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

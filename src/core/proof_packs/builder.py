@@ -557,6 +557,68 @@ def _run_policy_section_payload(
     return None
 
 
+def _proof_pack_governance_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    selection: ConstructionAlternativeSelection | None,
+    source_ref_count: int,
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
+    if section_type == "approval_requirements":
+        gate = result.gate_decision
+        workflow_facts = [
+            decision.model_dump(mode="json")
+            for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
+        ]
+        approval_state: ProofPackSectionState = "READY"
+        if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
+            approval_state = "PENDING_REVIEW"
+        if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
+            approval_state = "BLOCKED"
+        return (
+            approval_state,
+            "Approval posture captured from run status and gate decision.",
+            {
+                "gate_decision": gate.model_dump(mode="json") if gate else None,
+                "workflow_decisions": workflow_facts,
+            },
+            {"workflow_decision_count": len(workflow_facts)},
+            [reason.reason_code for reason in gate.reasons] if gate else [],
+        )
+    if section_type == "operations_handoff":
+        return (
+            "READY" if result.status == "READY" else "PENDING_REVIEW",
+            "Operations handoff reflects current pre-trade readiness.",
+            {"run_status": result.status},
+            {},
+            [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
+        )
+    if section_type == "decision_timeline":
+        return (
+            "READY",
+            "Timeline generated from source run, selection, and proof-pack generation events.",
+            {
+                "run_created_at": run.created_at.isoformat() if run else None,
+                "selection_id": selection.selection_id if selection else None,
+            },
+            {},
+            [],
+        )
+    if section_type == "lineage":
+        return (
+            "READY" if run is not None else "BLOCKED",
+            "Lineage identifiers captured from source run and source artifacts.",
+            result.lineage.model_dump(mode="json") if result else {},
+            {"source_ref_count": source_ref_count},
+            [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
+        )
+    if section_type == "supportability":
+        return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
+    return None
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -824,56 +886,16 @@ def _section_payload(
             {"excluded_count": len(excluded)},
             ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
         )
-    if section_type == "approval_requirements":
-        gate = result.gate_decision
-        workflow_facts = [
-            decision.model_dump(mode="json")
-            for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
-        ]
-        approval_state: ProofPackSectionState = "READY"
-        if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
-            approval_state = "PENDING_REVIEW"
-        if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
-            approval_state = "BLOCKED"
-        return (
-            approval_state,
-            "Approval posture captured from run status and gate decision.",
-            {
-                "gate_decision": gate.model_dump(mode="json") if gate else None,
-                "workflow_decisions": workflow_facts,
-            },
-            {"workflow_decision_count": len(workflow_facts)},
-            [reason.reason_code for reason in gate.reasons] if gate else [],
-        )
-    if section_type == "operations_handoff":
-        return (
-            "READY" if result.status == "READY" else "PENDING_REVIEW",
-            "Operations handoff reflects current pre-trade readiness.",
-            {"run_status": result.status},
-            {},
-            [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
-        )
-    if section_type == "decision_timeline":
-        return (
-            "READY",
-            "Timeline generated from source run, selection, and proof-pack generation events.",
-            {
-                "run_created_at": run.created_at.isoformat() if run else None,
-                "selection_id": selection.selection_id if selection else None,
-            },
-            {},
-            [],
-        )
-    if section_type == "lineage":
-        return (
-            "READY" if run is not None else "BLOCKED",
-            "Lineage identifiers captured from source run and source artifacts.",
-            result.lineage.model_dump(mode="json") if result else {},
-            {"source_ref_count": source_ref_count},
-            [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
-        )
-    if section_type == "supportability":
-        return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
+    governance_payload = _proof_pack_governance_section_payload(
+        section_type=section_type,
+        result=result,
+        run=run,
+        selection=selection,
+        source_ref_count=source_ref_count,
+        workflow_decisions=workflow_decisions,
+    )
+    if governance_payload is not None:
+        return governance_payload
     raise AssertionError(f"Unhandled proof-pack section type: {section_type}")
 
 

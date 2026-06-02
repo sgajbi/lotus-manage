@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-02T00:19:18+00:00`
+- Generated at: `2026-06-02T00:22:27+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `6d19e17`
+- Current ref: `45afeb5`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 768 | 769 | +1 |
-| Total Python LOC | 145874 | 146651 | +777 |
-| Test functions | 1855 | 1870 | +15 |
+| Total Python LOC | 145874 | 146736 | +862 |
+| Test functions | 1855 | 1872 | +17 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 18 | 18 | +0 |
 
@@ -89,8 +89,8 @@
 | 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
-| 8 | _section_payload | src/core/proof_packs/builder.py | 318 |
-| 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
+| 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
+| 9 | _section_payload | src/core/proof_packs/builder.py | 278 |
 | 10 | generate_intents | src/core/rebalance/intents.py | 236 |
 
 ## Most Complex Functions

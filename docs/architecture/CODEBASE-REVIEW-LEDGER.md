@@ -11617,3 +11617,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   section families, then consider a table-driven dispatcher.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability and quality evidence.
+
+## BACKEND-REVIEW-20260602-477: Proof-pack governance section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried proof-pack governance sections for approval
+  requirements, operations handoff, decision timeline, lineage, and supportability.
+- Action: extracted `_proof_pack_governance_section_payload` for the cohesive governance section
+  family. Added direct tests for deterministic workflow-decision ordering and lineage source-ref
+  metrics.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 64 / 318 lines to complexity 45 / 278
+  lines, moving `generate_intents` to the top source hotspot.
+- Follow-up: continue source-complexity reduction from the refreshed ranking, starting with
+  `src/core/rebalance/intents.py::generate_intents` or the remaining proof-pack dispatcher branches.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
