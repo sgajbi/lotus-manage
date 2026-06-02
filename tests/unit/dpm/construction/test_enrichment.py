@@ -52,6 +52,7 @@ from src.core.construction import (
     summarize_enrichment_posture,
 )
 from src.core.construction.enrichment import _fx_enrichment_status, _tax_enrichment_status
+from src.core.construction.enrichment import _cost_enrichment_status
 from src.core.construction.repository import (
     ConstructionAlternativeSetNotFoundError,
     ConstructionIdempotencyConflictError,
@@ -153,6 +154,39 @@ def test_fx_enrichment_status_blocks_only_when_pairs_are_missing() -> None:
     assert _fx_enrichment_status(missing_fx_pairs=[]) == (
         ConstructionMethodStatus.READY,
         [],
+    )
+
+
+def test_cost_enrichment_status_distinguishes_missing_local_and_source_context() -> None:
+    assert _cost_enrichment_status(
+        authoritative_cost_available=False,
+        transaction_cost_context=None,
+    ) == (
+        ConstructionMethodStatus.DEGRADED,
+        ["AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"],
+    )
+    assert _cost_enrichment_status(
+        authoritative_cost_available=True,
+        transaction_cost_context=None,
+    ) == (ConstructionMethodStatus.READY, [])
+
+    context = AuthoritativeTransactionCostContext(
+        supportability_status=ConstructionMethodStatus.PENDING_REVIEW,
+        source_system="lotus-core",
+        as_of_date="2026-05-03",
+        window_start_date="2026-05-01",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=0,
+        missing_security_ids=["EQ_MISSING"],
+        reason_codes=["TRANSACTION_COST_CURVE_MISSING_SECURITIES"],
+    )
+
+    assert _cost_enrichment_status(
+        authoritative_cost_available=False,
+        transaction_cost_context=context,
+    ) == (
+        ConstructionMethodStatus.PENDING_REVIEW,
+        ["TRANSACTION_COST_CURVE_MISSING_SECURITIES"],
     )
 
 

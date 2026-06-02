@@ -12578,3 +12578,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   further solver constraint-construction extraction.
 - Wiki decision: no wiki source change required; this preserves target-solver behavior and improves
   internal solver resilience maintainability only.
+
+## BACKEND-REVIEW-20260602-511: Construction cost enrichment status helper
+
+- Date: 2026-06-02
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, generated quality reports, and this ledger.
+- Finding: `summarize_enrichment_posture` mixed transaction-cost source posture with tax, FX,
+  liquidity, turnover, risk, and performance enrichment aggregation.
+- Action: extracted `_cost_enrichment_status` so local authoritative-cost availability and
+  source-owned transaction-cost context status are directly testable before summary aggregation.
+  Added direct tests for missing authoritative cost, local available cost posture, and source-owned
+  transaction-cost context reason-code propagation.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/construction/enrichment.py
+  tests/unit/dpm/construction/test_enrichment.py`, `python -m ruff format
+  src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`, `python -m pytest
+  tests/unit/dpm/construction/test_enrichment.py
+  tests/unit/dpm/construction/test_method_readiness.py
+  tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `summarize_enrichment_posture` out of
+  the top-ten current source functions after it previously ranked first at complexity 17 / 87
+  lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_example_from_schema`,
+  `validate_search_item_metadata`, `compile_mandate_digital_twin_from_core`, or
+  `resolve_core_dpm_portfolio_universe_candidates`.
+- Wiki decision: no wiki source change required; this preserves construction enrichment behavior
+  and improves internal transaction-cost source posture maintainability only.

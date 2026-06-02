@@ -59,6 +59,20 @@ def _fx_enrichment_status(
     return ConstructionMethodStatus.READY, []
 
 
+def _cost_enrichment_status(
+    *,
+    authoritative_cost_available: bool,
+    transaction_cost_context: AuthoritativeTransactionCostContext | None,
+) -> tuple[ConstructionMethodStatus, list[str]]:
+    if transaction_cost_context is not None:
+        return transaction_cost_context.supportability_status, list(
+            transaction_cost_context.reason_codes
+        )
+    if not authoritative_cost_available:
+        return ConstructionMethodStatus.DEGRADED, ["AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"]
+    return ConstructionMethodStatus.READY, []
+
+
 def summarize_enrichment_posture(
     *,
     result: RebalanceResult,
@@ -102,15 +116,11 @@ def summarize_enrichment_posture(
             ]
         )
 
-    cost_context_status = (
-        transaction_cost_context.supportability_status if transaction_cost_context else None
+    cost_status, cost_reason_codes = _cost_enrichment_status(
+        authoritative_cost_available=authoritative_cost_available,
+        transaction_cost_context=transaction_cost_context,
     )
-    cost_status = cost_context_status or ConstructionMethodStatus.READY
-    if not authoritative_cost_available and transaction_cost_context is None:
-        cost_status = ConstructionMethodStatus.DEGRADED
-        reason_codes.append("AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE")
-    elif transaction_cost_context is not None:
-        reason_codes.extend(transaction_cost_context.reason_codes)
+    reason_codes.extend(cost_reason_codes)
 
     turnover_status = ConstructionMethodStatus.READY
     if result.diagnostics.dropped_intents:
