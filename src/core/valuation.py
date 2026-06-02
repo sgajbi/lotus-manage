@@ -7,6 +7,7 @@ from typing import Dict, List, Optional
 
 from src.core.models import (
     AllocationMetric,
+    CashBalance,
     EngineOptions,
     MarketDataSnapshot,
     Money,
@@ -94,6 +95,25 @@ class ValuationService:
         )
 
 
+def _cash_value_in_base(
+    *,
+    cash: CashBalance,
+    market_data: MarketDataSnapshot,
+    base_ccy: str,
+    dq_log: Dict[str, List[str]] | None = None,
+) -> Decimal:
+    if cash.currency == base_ccy:
+        return cash.amount
+
+    rate = get_fx_rate(market_data, cash.currency, base_ccy)
+    if rate:
+        return cash.amount * rate
+
+    if dq_log is not None:
+        dq_log.setdefault("fx_missing", []).append(f"{cash.currency}/{base_ccy}")
+    return Decimal("0")
+
+
 def build_simulated_state(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -130,14 +150,12 @@ def build_simulated_state(
         total_val += summary.value_in_base_ccy.amount
 
     for cash in portfolio.cash_balances:
-        if cash.currency == base_ccy:
-            total_val += cash.amount
-        else:
-            rate = get_fx_rate(market_data, cash.currency, base_ccy)
-            if rate:
-                total_val += cash.amount * rate
-            else:
-                dq_log.setdefault("fx_missing", []).append(f"{cash.currency}/{base_ccy}")
+        total_val += _cash_value_in_base(
+            cash=cash,
+            market_data=market_data,
+            base_ccy=base_ccy,
+            dq_log=dq_log,
+        )
 
     if total_val == 0:
         total_val_safe = Decimal("1")
@@ -174,14 +192,11 @@ def build_simulated_state(
 
     total_cash_val = Decimal("0")
     for cash in portfolio.cash_balances:
-        val = cash.amount
-        if cash.currency != base_ccy:
-            rate = get_fx_rate(market_data, cash.currency, base_ccy)
-            if rate:
-                val = cash.amount * rate
-            else:
-                val = Decimal("0")
-        total_cash_val += val
+        total_cash_val += _cash_value_in_base(
+            cash=cash,
+            market_data=market_data,
+            base_ccy=base_ccy,
+        )
 
     alloc_class_map["CASH"] = alloc_class_map.get("CASH", Decimal("0")) + total_cash_val
 

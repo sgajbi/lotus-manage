@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:22:22+00:00`
+- Generated at: `2026-06-02T04:27:25+00:00`
 
-- Current ref: `cb2441e`
+- Current ref: `c4167c4`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -33,15 +33,15 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | generate_fx_and_simulate | src/core/rebalance/execution.py | 19 | 137 |
-| 2 | build_simulated_state | src/core/valuation.py | 19 | 123 |
-| 3 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
-| 4 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
-| 5 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
-| 6 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
-| 7 | evaluate | src/core/compliance.py | 17 | 199 |
-| 8 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 9 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 10 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 2 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
+| 3 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
+| 4 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
+| 5 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
+| 6 | evaluate | src/core/compliance.py | 17 | 199 |
+| 7 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 8 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 9 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 10 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
 
 ### Most Complex Current Test Functions
 

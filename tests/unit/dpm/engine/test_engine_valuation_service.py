@@ -13,7 +13,56 @@ from src.core.models import (
     Price,
     ShelfEntry,
 )
-from src.core.valuation import build_simulated_state
+from src.core.valuation import _cash_value_in_base, build_simulated_state
+from tests.shared.factories import fx, market_data_snapshot
+
+
+def test_cash_value_in_base_returns_base_cash_without_fx() -> None:
+    dq_log: dict[str, list[str]] = {}
+
+    value = _cash_value_in_base(
+        cash=CashBalance(currency="USD", amount=Decimal("100")),
+        market_data=market_data_snapshot(),
+        base_ccy="USD",
+        dq_log=dq_log,
+    )
+
+    assert value == Decimal("100")
+    assert dq_log == {}
+
+
+def test_cash_value_in_base_converts_foreign_cash_with_fx() -> None:
+    value = _cash_value_in_base(
+        cash=CashBalance(currency="EUR", amount=Decimal("100")),
+        market_data=market_data_snapshot(fx_rates=[fx("EUR/USD", "1.2")]),
+        base_ccy="USD",
+    )
+
+    assert value == Decimal("120.0")
+
+
+def test_cash_value_in_base_records_missing_cash_fx_when_log_provided() -> None:
+    dq_log: dict[str, list[str]] = {}
+
+    value = _cash_value_in_base(
+        cash=CashBalance(currency="EUR", amount=Decimal("100")),
+        market_data=market_data_snapshot(),
+        base_ccy="USD",
+        dq_log=dq_log,
+    )
+
+    assert value == Decimal("0")
+    assert dq_log == {"fx_missing": ["EUR/USD"]}
+
+
+def test_cash_value_in_base_suppresses_missing_cash_fx_log_without_log() -> None:
+    value = _cash_value_in_base(
+        cash=CashBalance(currency="EUR", amount=Decimal("100")),
+        market_data=market_data_snapshot(),
+        base_ccy="USD",
+    )
+
+    assert value == Decimal("0")
 
 
 def test_valuation_service_aggregates_attributes():

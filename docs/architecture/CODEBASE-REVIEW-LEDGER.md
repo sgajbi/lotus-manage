@@ -12314,3 +12314,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_targets_heuristic`.
 - Wiki decision: no wiki source change required; this preserves target-generation behavior and
   improves shared target allocation maintainability only.
+
+## BACKEND-REVIEW-20260602-502: Valuation cash base-value helper
+
+- Date: 2026-06-02
+- Scope: `src/core/valuation.py`, `tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  generated quality reports, and this ledger.
+- Finding: `build_simulated_state` duplicated base-currency and foreign-currency cash valuation
+  across total-value and cash allocation paths, making missing-FX diagnostic behavior harder to
+  keep consistent.
+- Action: extracted `_cash_value_in_base` and routed both total-value cash valuation and asset-class
+  cash allocation through it. Added direct helper tests for base cash, FX conversion, missing-FX
+  logging, and the allocation path where no missing-FX log is requested.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/valuation.py
+  tests/unit/dpm/engine/test_engine_valuation_service.py`, `python -m ruff format
+  src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/valuation.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_valuation_service.py
+  tests/unit/dpm/engine/test_engine_simulation_shared.py
+  tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `build_simulated_state` out of the
+  top-ten current source functions after it previously ranked second at complexity 19 / 123 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `validate_search_page_metadata`, `generate_targets_heuristic`, or
+  `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves valuation behavior and improves
+  internal maintainability only.
