@@ -2,10 +2,12 @@ from decimal import Decimal
 
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.rebalance.intents import (
+    _TaxBudgetAccumulator,
     _clamped_sell_quantity,
     _hifo_sorted_lots,
     _record_tax_budget_limit_reached,
     _security_intent_constraints,
+    _tax_budget_limited_sell_quantity,
     _trade_notional_threshold,
     generate_intents,
 )
@@ -235,6 +237,69 @@ def test_security_intent_constraints_include_sell_safety_and_tax_budget_labels()
         sell_quantity_before_tax=Decimal("8"),
         tax_awareness_enabled=True,
     ) == ["MIN_NOTIONAL", "AVAILABLE_HOLDING", "TAX_BUDGET"]
+
+
+def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None:
+    lot_position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("10"),
+        lots=[
+            TaxLot(
+                lot_id="LOT_GAIN",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("90"), currency="SGD"),
+                purchase_date="2024-01-01",
+            )
+        ],
+    )
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("50"),
+    )
+
+    allowed_quantity = _tax_budget_limited_sell_quantity(
+        options=EngineOptions(enable_tax_awareness=True),
+        position=lot_position,
+        requested_qty=Decimal("10"),
+        sell_price=Decimal("100"),
+        price_ccy="SGD",
+        base_rate=Decimal("1"),
+        market_data=market_data_snapshot(),
+        dq_log={"fx_missing": []},
+        tax_budget=tax_budget,
+    )
+
+    assert allowed_quantity == Decimal("5")
+    assert tax_budget.total_realized_gain_base == Decimal("50")
+    assert tax_budget.total_realized_loss_base == Decimal("0")
+    assert tax_budget.tax_budget_used_base == Decimal("50")
+
+
+def test_tax_budget_limited_sell_quantity_bypasses_when_tax_awareness_disabled() -> None:
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("0"),
+    )
+
+    allowed_quantity = _tax_budget_limited_sell_quantity(
+        options=EngineOptions(enable_tax_awareness=False),
+        position=None,
+        requested_qty=Decimal("10"),
+        sell_price=Decimal("100"),
+        price_ccy="SGD",
+        base_rate=Decimal("1"),
+        market_data=market_data_snapshot(),
+        dq_log={"fx_missing": []},
+        tax_budget=tax_budget,
+    )
+
+    assert allowed_quantity == Decimal("10")
+    assert tax_budget.total_realized_gain_base == Decimal("0")
+    assert tax_budget.tax_budget_used_base == Decimal("0")
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):

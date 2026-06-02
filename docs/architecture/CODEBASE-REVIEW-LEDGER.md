@@ -11885,3 +11885,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or another narrow treasury overlay helper extraction if it stays behavior-preserving.
 - Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-487: Rebalance intent tax-budget sell limit helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` remained the top source hotspot after earlier refactors because it
+  still carried a nested tax-aware sell limiter with `nonlocal` realized-gain/loss and budget-used
+  state.
+- Action: extracted `_TaxBudgetAccumulator` and `_tax_budget_limited_sell_quantity`, then routed
+  `generate_intents` through the explicit accumulator. Added direct helper tests for realized-gain
+  budget capping and disabled tax-awareness passthrough behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 38 / 207 lines to complexity 24 / 149 lines.
+- Follow-up: continue with the refreshed top source hotspots:
+  `external_treasury_currency_overlay_context`, `validate_definition`, and `build_search_row`.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.

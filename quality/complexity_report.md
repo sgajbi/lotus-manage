@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:47:32+00:00`
+- Generated at: `2026-06-02T00:51:17+00:00`
 
-- Current ref: `3ef0c62`
+- Current ref: `3b665fa`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,12 +32,12 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_intents | src/core/rebalance/intents.py | 38 | 207 |
-| 2 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 30 | 164 |
-| 3 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
-| 4 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
-| 5 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
-| 6 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
+| 1 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 30 | 164 |
+| 2 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
+| 3 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
+| 4 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
+| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
+| 6 | generate_intents | src/core/rebalance/intents.py | 24 | 149 |
 | 7 | _section_payload | src/core/proof_packs/builder.py | 22 | 130 |
 | 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 22 | 74 |
 | 9 | _infer_example | src/api/openapi_enrichment.py | 22 | 48 |

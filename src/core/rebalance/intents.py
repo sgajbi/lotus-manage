@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -128,6 +129,84 @@ def _security_intent_constraints(
     return applied_constraints
 
 
+@dataclass
+class _TaxBudgetAccumulator:
+    total_realized_gain_base: Decimal
+    total_realized_loss_base: Decimal
+    tax_budget_used_base: Decimal
+    tax_budget_limit_base: Decimal | None
+
+
+def _tax_budget_limited_sell_quantity(
+    *,
+    options: EngineOptions,
+    position: Position | None,
+    requested_qty: Decimal,
+    sell_price: Decimal,
+    price_ccy: str,
+    base_rate: Decimal,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+    tax_budget: _TaxBudgetAccumulator,
+) -> Decimal:
+    if not options.enable_tax_awareness:
+        return requested_qty
+
+    sorted_lots = _hifo_sorted_lots(
+        position=position,
+        instrument_ccy=price_ccy,
+        market_data=market_data,
+        dq_log=dq_log,
+    )
+    if not sorted_lots:
+        return requested_qty
+
+    remaining = requested_qty
+    allowed_qty = Decimal("0")
+    for lot, lot_unit_cost in sorted_lots:
+        if remaining <= Decimal("0"):
+            break
+        if lot.quantity <= Decimal("0"):
+            continue
+
+        lot_sell_qty = min(remaining, lot.quantity)
+        per_unit_gain_base = (sell_price - lot_unit_cost) * base_rate
+        allowed_from_lot = lot_sell_qty
+
+        if (
+            tax_budget.tax_budget_limit_base is not None
+            and per_unit_gain_base > Decimal("0")
+            and tax_budget.tax_budget_used_base < tax_budget.tax_budget_limit_base
+        ):
+            remaining_headroom = tax_budget.tax_budget_limit_base - tax_budget.tax_budget_used_base
+            max_qty_headroom = remaining_headroom / per_unit_gain_base
+            allowed_from_lot = min(lot_sell_qty, max_qty_headroom)
+        elif (
+            tax_budget.tax_budget_limit_base is not None
+            and per_unit_gain_base > Decimal("0")
+            and tax_budget.tax_budget_used_base >= tax_budget.tax_budget_limit_base
+        ):
+            allowed_from_lot = Decimal("0")
+
+        if allowed_from_lot <= Decimal("0"):
+            break
+
+        lot_realized_base = per_unit_gain_base * allowed_from_lot
+        if lot_realized_base >= Decimal("0"):
+            tax_budget.total_realized_gain_base += lot_realized_base
+            tax_budget.tax_budget_used_base += lot_realized_base
+        else:
+            tax_budget.total_realized_loss_base += abs(lot_realized_base)
+
+        allowed_qty += allowed_from_lot
+        remaining -= allowed_from_lot
+
+        if allowed_from_lot < lot_sell_qty:
+            break
+
+    return allowed_qty
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -140,76 +219,12 @@ def generate_intents(
     suppressed: list[SuppressedIntent],
 ) -> tuple[list[SecurityTradeIntent], TaxImpact | None]:
     intents: list[SecurityTradeIntent] = []
-    total_realized_gain_base = Decimal("0")
-    total_realized_loss_base = Decimal("0")
-    tax_budget_used_base = Decimal("0")
-    tax_budget_limit_base = options.max_realized_capital_gains
-
-    def apply_tax_budget_sell_limit(
-        position: Position | None,
-        requested_qty: Decimal,
-        sell_price: Decimal,
-        price_ccy: str,
-        base_rate: Decimal,
-    ) -> Decimal:
-        nonlocal total_realized_gain_base, total_realized_loss_base, tax_budget_used_base
-
-        if not options.enable_tax_awareness:
-            return requested_qty
-
-        sorted_lots = _hifo_sorted_lots(
-            position=position,
-            instrument_ccy=price_ccy,
-            market_data=market_data,
-            dq_log=dq_log,
-        )
-        if not sorted_lots:
-            return requested_qty
-
-        remaining = requested_qty
-        allowed_qty = Decimal("0")
-        for lot, lot_unit_cost in sorted_lots:
-            if remaining <= Decimal("0"):
-                break
-            if lot.quantity <= Decimal("0"):
-                continue
-
-            lot_sell_qty = min(remaining, lot.quantity)
-            per_unit_gain_base = (sell_price - lot_unit_cost) * base_rate
-            allowed_from_lot = lot_sell_qty
-
-            if (
-                tax_budget_limit_base is not None
-                and per_unit_gain_base > Decimal("0")
-                and tax_budget_used_base < tax_budget_limit_base
-            ):
-                remaining_headroom = tax_budget_limit_base - tax_budget_used_base
-                max_qty_headroom = remaining_headroom / per_unit_gain_base
-                allowed_from_lot = min(lot_sell_qty, max_qty_headroom)
-            elif (
-                tax_budget_limit_base is not None
-                and per_unit_gain_base > Decimal("0")
-                and tax_budget_used_base >= tax_budget_limit_base
-            ):
-                allowed_from_lot = Decimal("0")
-
-            if allowed_from_lot <= Decimal("0"):
-                break
-
-            lot_realized_base = per_unit_gain_base * allowed_from_lot
-            if lot_realized_base >= Decimal("0"):
-                total_realized_gain_base += lot_realized_base
-                tax_budget_used_base += lot_realized_base
-            else:
-                total_realized_loss_base += abs(lot_realized_base)
-
-            allowed_qty += allowed_from_lot
-            remaining -= allowed_from_lot
-
-            if allowed_from_lot < lot_sell_qty:
-                break
-
-        return allowed_qty
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=options.max_realized_capital_gains,
+    )
 
     target_dict = {t.instrument_id: t.final_weight for t in targets}
     for i_id, target_w in target_dict.items():
@@ -248,12 +263,16 @@ def generate_intents(
                 diagnostics=diagnostics,
             )
             sell_quantity_before_tax = quantity
-            quantity = apply_tax_budget_sell_limit(
+            quantity = _tax_budget_limited_sell_quantity(
+                options=options,
                 position=curr,
                 requested_qty=sell_quantity_before_tax,
                 sell_price=unit_value,
                 price_ccy=price_ent.currency,
                 base_rate=rate,
+                market_data=market_data,
+                dq_log=dq_log,
+                tax_budget=tax_budget,
             )
             if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
                 _record_tax_budget_limit_reached(
@@ -304,30 +323,32 @@ def generate_intents(
 
     tax_impact = None
     if options.enable_tax_awareness:
-        normalized_budget_used = tax_budget_used_base
-        if tax_budget_limit_base is not None:
-            if abs(tax_budget_limit_base - normalized_budget_used) <= Decimal("0.0000000001"):
-                normalized_budget_used = tax_budget_limit_base
+        normalized_budget_used = tax_budget.tax_budget_used_base
+        if tax_budget.tax_budget_limit_base is not None:
+            if abs(tax_budget.tax_budget_limit_base - normalized_budget_used) <= Decimal(
+                "0.0000000001"
+            ):
+                normalized_budget_used = tax_budget.tax_budget_limit_base
         budget_limit = (
-            Money(amount=tax_budget_limit_base, currency=portfolio.base_currency)
-            if tax_budget_limit_base is not None
+            Money(amount=tax_budget.tax_budget_limit_base, currency=portfolio.base_currency)
+            if tax_budget.tax_budget_limit_base is not None
             else None
         )
         budget_used = (
             Money(
-                amount=min(normalized_budget_used, tax_budget_limit_base),
+                amount=min(normalized_budget_used, tax_budget.tax_budget_limit_base),
                 currency=portfolio.base_currency,
             )
-            if tax_budget_limit_base is not None
+            if tax_budget.tax_budget_limit_base is not None
             else None
         )
         tax_impact = TaxImpact(
             total_realized_gain=Money(
-                amount=total_realized_gain_base,
+                amount=tax_budget.total_realized_gain_base,
                 currency=portfolio.base_currency,
             ),
             total_realized_loss=Money(
-                amount=total_realized_loss_base,
+                amount=tax_budget.total_realized_loss_base,
                 currency=portfolio.base_currency,
             ),
             budget_limit=budget_limit,
