@@ -11748,3 +11748,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   eligibility/restriction payloads, with direct tests.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-482: Proof-pack selected alternative payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still assembled selected construction alternative facts, comparison
+  metrics, and not-ready reason codes inline, keeping the dispatcher responsible for section-specific
+  supportability projection.
+- Action: extracted `_selected_alternative_section_payload` and delegated the
+  `selected_alternative` branch through it. Added direct helper tests for the missing-selection
+  degraded state and the ready selected-alternative method trace projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 41 / 224 lines to complexity 36 / 192
+  lines.
+- Follow-up: continue extracting remaining proof-pack sections, especially source-readiness,
+  turnover/cost, and eligibility/restriction payloads, before returning to the
+  `external_treasury_currency_overlay_context` source hotspot.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.

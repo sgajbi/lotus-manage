@@ -375,6 +375,58 @@ def test_mandate_context_section_payload_projects_health_evidence() -> None:
     assert reason_codes == [reason.reason_code for reason in mandate_health.top_reasons]
 
 
+def test_selected_alternative_section_payload_degrades_without_selection() -> None:
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._selected_alternative_section_payload(
+            alternative_set=None,
+            selected_alternative=None,
+            selection=None,
+        )
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Direct-run proof pack has no selected construction alternative."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"]
+
+
+def test_selected_alternative_section_payload_projects_method_trace() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_selected_section",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_selected_section",
+        alternative_set_id=alternative_set.alternative_set_id,
+        alternative_id=alternative.alternative_id,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._selected_alternative_section_payload(
+            alternative_set=alternative_set,
+            selected_alternative=alternative,
+            selection=selection,
+        )
+    )
+
+    assert state == "READY"
+    assert summary == "Selected construction alternative captured with method and trace evidence."
+    assert facts["alternative_set_id"] == "cas_selected_section"
+    assert facts["selected_alternative_id"] == alternative.alternative_id
+    assert facts["selection_id"] == "sel_selected_section"
+    assert facts["objective_trace"]
+    assert facts["constraint_trace"]
+    assert metrics == alternative.comparison_metrics.model_dump(mode="json")
+    assert reason_codes == []
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

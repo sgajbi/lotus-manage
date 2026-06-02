@@ -688,6 +688,47 @@ def _mandate_context_section_payload(
     )
 
 
+def _selected_alternative_section_payload(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if selected_alternative is None:
+        return (
+            "DEGRADED",
+            "Direct-run proof pack has no selected construction alternative.",
+            {},
+            {},
+            ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
+        )
+    selected_state = (
+        "READY"
+        if selected_alternative.method_status == "READY"
+        else cast(ProofPackSectionState, str(selected_alternative.method_status))
+    )
+    return (
+        selected_state,
+        "Selected construction alternative captured with method and trace evidence.",
+        {
+            "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
+            "selected_alternative_id": selected_alternative.alternative_id,
+            "selection_id": selection.selection_id if selection else None,
+            "method": selected_alternative.method,
+            "method_status": selected_alternative.method_status,
+            "summary": selected_alternative.summary,
+            "objective_trace": [
+                item.model_dump(mode="json") for item in selected_alternative.objective_trace
+            ],
+            "constraint_trace": [
+                item.model_dump(mode="json") for item in selected_alternative.constraint_trace
+            ],
+        },
+        selected_alternative.comparison_metrics.model_dump(mode="json"),
+        [] if selected_alternative.method_status == "READY" else ["DPM_SELECTED_METHOD_NOT_READY"],
+    )
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -749,42 +790,10 @@ def _section_payload(
             reason_codes,
         )
     if section_type == "selected_alternative":
-        if selected_alternative is None:
-            return (
-                "DEGRADED",
-                "Direct-run proof pack has no selected construction alternative.",
-                {},
-                {},
-                ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
-            )
-        selected_state = (
-            "READY"
-            if selected_alternative.method_status == "READY"
-            else cast(ProofPackSectionState, str(selected_alternative.method_status))
-        )
-        return (
-            selected_state,
-            "Selected construction alternative captured with method and trace evidence.",
-            {
-                "alternative_set_id": alternative_set.alternative_set_id
-                if alternative_set
-                else None,
-                "selected_alternative_id": selected_alternative.alternative_id,
-                "selection_id": selection.selection_id if selection else None,
-                "method": selected_alternative.method,
-                "method_status": selected_alternative.method_status,
-                "summary": selected_alternative.summary,
-                "objective_trace": [
-                    item.model_dump(mode="json") for item in selected_alternative.objective_trace
-                ],
-                "constraint_trace": [
-                    item.model_dump(mode="json") for item in selected_alternative.constraint_trace
-                ],
-            },
-            selected_alternative.comparison_metrics.model_dump(mode="json"),
-            []
-            if selected_alternative.method_status == "READY"
-            else ["DPM_SELECTED_METHOD_NOT_READY"],
+        return _selected_alternative_section_payload(
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
         )
     if section_type == "risk_impact":
         return _source_analytics_section_payload(
