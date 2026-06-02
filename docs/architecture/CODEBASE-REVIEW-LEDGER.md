@@ -11670,3 +11670,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   construction, with direct tests around tax budget and constraint labels.
 - Wiki decision: no wiki source change required; this preserves engine behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-479: Rebalance intent sell clamp and tax-budget event helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: after HIFO helper extraction, `generate_intents` still handled sell quantity clamping and
+  tax-budget event recording inline in the main target loop.
+- Action: extracted `_clamped_sell_quantity` and `_record_tax_budget_limit_reached`; added direct
+  tests proving sell-clamp warning de-duplication and tax-budget event payloads without duplicate
+  warnings.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 52 / 217 lines to complexity 48 / 210 lines.
+- Follow-up: continue with trade construction and threshold/suppression helper extraction from
+  `generate_intents`, preserving tax-aware behavior.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.

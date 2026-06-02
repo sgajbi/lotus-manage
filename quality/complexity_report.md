@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:25:15+00:00`
+- Generated at: `2026-06-02T00:27:34+00:00`
 
-- Current ref: `e500690`
+- Current ref: `4e3fecd`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,7 +32,7 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_intents | src/core/rebalance/intents.py | 52 | 217 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 48 | 210 |
 | 2 | _section_payload | src/core/proof_packs/builder.py | 45 | 278 |
 | 3 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 39 | 189 |
 | 4 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |

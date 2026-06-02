@@ -61,6 +61,39 @@ def _hifo_sorted_lots(
     )
 
 
+def _clamped_sell_quantity(
+    *,
+    requested_qty: Decimal,
+    position: Position | None,
+    diagnostics: DiagnosticsData,
+) -> Decimal:
+    available_qty = position.quantity if position is not None else Decimal("0")
+    if requested_qty <= available_qty:
+        return requested_qty
+    if "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" not in diagnostics.warnings:
+        diagnostics.warnings.append("SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING")
+    return max(available_qty, Decimal("0"))
+
+
+def _record_tax_budget_limit_reached(
+    *,
+    instrument_id: str,
+    requested_quantity: Decimal,
+    allowed_quantity: Decimal,
+    diagnostics: DiagnosticsData,
+) -> None:
+    if "TAX_BUDGET_LIMIT_REACHED" not in diagnostics.warnings:
+        diagnostics.warnings.append("TAX_BUDGET_LIMIT_REACHED")
+    diagnostics.tax_budget_constraint_events.append(
+        TaxBudgetConstraintEvent(
+            instrument_id=instrument_id,
+            requested_quantity=requested_quantity,
+            allowed_quantity=allowed_quantity,
+            reason_code="TAX_BUDGET_LIMIT_REACHED",
+        )
+    )
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -175,13 +208,11 @@ def generate_intents(
         sell_quantity_before_tax: Decimal | None = None
         if side == "SELL" and qty > 0:
             requested_qty = Decimal(qty)
-            available_qty = curr.quantity if curr is not None else Decimal("0")
-            if requested_qty > available_qty:
-                quantity = max(available_qty, Decimal("0"))
-                if "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" not in diagnostics.warnings:
-                    diagnostics.warnings.append("SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING")
-            else:
-                quantity = requested_qty
+            quantity = _clamped_sell_quantity(
+                requested_qty=requested_qty,
+                position=curr,
+                diagnostics=diagnostics,
+            )
             sell_quantity_before_tax = quantity
             quantity = apply_tax_budget_sell_limit(
                 position=curr,
@@ -191,16 +222,11 @@ def generate_intents(
                 base_rate=rate,
             )
             if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
-                constraints = [c for c in diagnostics.warnings if c == "TAX_BUDGET_LIMIT_REACHED"]
-                if not constraints:
-                    diagnostics.warnings.append("TAX_BUDGET_LIMIT_REACHED")
-                diagnostics.tax_budget_constraint_events.append(
-                    TaxBudgetConstraintEvent(
-                        instrument_id=i_id,
-                        requested_quantity=sell_quantity_before_tax,
-                        allowed_quantity=quantity,
-                        reason_code="TAX_BUDGET_LIMIT_REACHED",
-                    )
+                _record_tax_budget_limit_reached(
+                    instrument_id=i_id,
+                    requested_quantity=sell_quantity_before_tax,
+                    allowed_quantity=quantity,
+                    diagnostics=diagnostics,
                 )
 
         notional = quantity * unit_value

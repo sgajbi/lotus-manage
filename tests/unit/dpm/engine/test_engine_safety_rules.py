@@ -1,7 +1,12 @@
 from decimal import Decimal
 
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
-from src.core.rebalance.intents import _hifo_sorted_lots, generate_intents
+from src.core.rebalance.intents import (
+    _clamped_sell_quantity,
+    _hifo_sorted_lots,
+    _record_tax_budget_limit_reached,
+    generate_intents,
+)
 from src.core.models import (
     EngineOptions,
     Money,
@@ -151,6 +156,52 @@ def test_hifo_sorted_lots_returns_empty_when_lot_fx_is_missing() -> None:
         == []
     )
     assert dq_log["fx_missing"] == ["EUR/SGD"]
+
+
+def test_clamped_sell_quantity_records_warning_once() -> None:
+    diagnostics = empty_diagnostics()
+    sell_position = Position(instrument_id="EQ_1", quantity=Decimal("10"))
+
+    first = _clamped_sell_quantity(
+        requested_qty=Decimal("20"),
+        position=sell_position,
+        diagnostics=diagnostics,
+    )
+    second = _clamped_sell_quantity(
+        requested_qty=Decimal("15"),
+        position=sell_position,
+        diagnostics=diagnostics,
+    )
+
+    assert first == Decimal("10")
+    assert second == Decimal("10")
+    assert diagnostics.warnings == ["SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING"]
+
+
+def test_record_tax_budget_limit_reached_appends_event_without_duplicate_warning() -> None:
+    diagnostics = empty_diagnostics()
+
+    _record_tax_budget_limit_reached(
+        instrument_id="EQ_1",
+        requested_quantity=Decimal("20"),
+        allowed_quantity=Decimal("7"),
+        diagnostics=diagnostics,
+    )
+    _record_tax_budget_limit_reached(
+        instrument_id="EQ_2",
+        requested_quantity=Decimal("15"),
+        allowed_quantity=Decimal("0"),
+        diagnostics=diagnostics,
+    )
+
+    assert diagnostics.warnings == ["TAX_BUDGET_LIMIT_REACHED"]
+    assert [
+        (event.instrument_id, event.requested_quantity, event.allowed_quantity)
+        for event in diagnostics.tax_budget_constraint_events
+    ] == [
+        ("EQ_1", Decimal("20"), Decimal("7")),
+        ("EQ_2", Decimal("15"), Decimal("0")),
+    ]
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):
