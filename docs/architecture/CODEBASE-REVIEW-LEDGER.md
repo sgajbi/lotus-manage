@@ -11912,3 +11912,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `external_treasury_currency_overlay_context`, `validate_definition`, and `build_search_row`.
 - Wiki decision: no wiki source change required; this preserves engine behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-488: Treasury overlay source identity projection helper
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_treasury_source_context.py`, generated quality reports, and
+  this ledger.
+- Finding: after the first treasury overlay extraction, `external_treasury_currency_overlay_context`
+  still repeated the same source-product identity projection fields for each external treasury
+  source family.
+- Action: extracted `_source_identity_fields` and used it for external currency exposure, hedge
+  policy, eligible hedge instruments, and FX forward curve source identity projection. Added direct
+  helper tests for populated and absent source identities.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m ruff format
+  src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m mypy --config-file
+  mypy.ini src/api/services/construction_treasury_source_context.py`, `python -m pytest
+  tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `external_treasury_currency_overlay_context` out of the top-ten current source functions after it
+  previously ranked at complexity 30 / 164 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `validate_definition`, `build_search_row`, or another narrow source-boundary mapper if it remains
+  behavior-preserving.
+- Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
+  improves internal maintainability only.
