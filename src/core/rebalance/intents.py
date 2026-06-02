@@ -130,6 +130,29 @@ def _security_intent_constraints(
     return applied_constraints
 
 
+def _suppress_dust_trade(
+    *,
+    instrument_id: str,
+    notional: Decimal,
+    notional_currency: str,
+    threshold: Money | None,
+    options: EngineOptions,
+    suppressed: list[SuppressedIntent],
+) -> bool:
+    if not options.suppress_dust_trades or threshold is None or notional >= threshold.amount:
+        return False
+
+    suppressed.append(
+        SuppressedIntent(
+            instrument_id=instrument_id,
+            reason="BELOW_MIN_NOTIONAL",
+            intended_notional=Money(amount=notional, currency=notional_currency),
+            threshold=threshold,
+        )
+    )
+    return True
+
+
 @dataclass
 class _TaxBudgetAccumulator:
     total_realized_gain_base: Decimal
@@ -325,15 +348,14 @@ def generate_intents(
         shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)
         threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
 
-        if options.suppress_dust_trades and threshold and notional < threshold.amount:
-            suppressed.append(
-                SuppressedIntent(
-                    instrument_id=i_id,
-                    reason="BELOW_MIN_NOTIONAL",
-                    intended_notional=Money(amount=notional, currency=price_ent.currency),
-                    threshold=threshold,
-                )
-            )
+        if _suppress_dust_trade(
+            instrument_id=i_id,
+            notional=notional,
+            notional_currency=price_ent.currency,
+            threshold=threshold,
+            options=options,
+            suppressed=suppressed,
+        ):
             continue
 
         if quantity > 0:

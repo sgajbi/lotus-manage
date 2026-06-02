@@ -9,6 +9,7 @@ from src.core.rebalance.intents import (
     _intent_market_context,
     _record_tax_budget_limit_reached,
     _security_intent_constraints,
+    _suppress_dust_trade,
     _tax_budget_limited_sell_quantity,
     _trade_notional_threshold,
     generate_intents,
@@ -239,6 +240,43 @@ def test_security_intent_constraints_include_sell_safety_and_tax_budget_labels()
         sell_quantity_before_tax=Decimal("8"),
         tax_awareness_enabled=True,
     ) == ["MIN_NOTIONAL", "AVAILABLE_HOLDING", "TAX_BUDGET"]
+
+
+def test_suppress_dust_trade_records_below_min_notional_intent() -> None:
+    suppressed = []
+    threshold = Money(amount=Decimal("100"), currency="SGD")
+
+    suppressed_trade = _suppress_dust_trade(
+        instrument_id="EQ_1",
+        notional=Decimal("75"),
+        notional_currency="SGD",
+        threshold=threshold,
+        options=EngineOptions(suppress_dust_trades=True),
+        suppressed=suppressed,
+    )
+
+    assert suppressed_trade is True
+    assert len(suppressed) == 1
+    assert suppressed[0].instrument_id == "EQ_1"
+    assert suppressed[0].reason == "BELOW_MIN_NOTIONAL"
+    assert suppressed[0].intended_notional == Money(amount=Decimal("75"), currency="SGD")
+    assert suppressed[0].threshold == threshold
+
+
+def test_suppress_dust_trade_keeps_supported_notional_unsuppressed() -> None:
+    suppressed = []
+
+    suppressed_trade = _suppress_dust_trade(
+        instrument_id="EQ_1",
+        notional=Decimal("125"),
+        notional_currency="SGD",
+        threshold=Money(amount=Decimal("100"), currency="SGD"),
+        options=EngineOptions(suppress_dust_trades=True),
+        suppressed=suppressed,
+    )
+
+    assert suppressed_trade is False
+    assert suppressed == []
 
 
 def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None:

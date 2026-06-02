@@ -12517,3 +12517,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_targets_solver`, `summarize_enrichment_posture`, or `_example_from_schema`.
 - Wiki decision: no wiki source change required; this preserves compliance-rule behavior and
   improves internal rule-engine maintainability only.
+
+## BACKEND-REVIEW-20260602-509: Rebalance dust-trade suppression helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` mixed market context resolution, sell clamping, tax-budget limiting,
+  minimum-notional dust suppression, security intent construction, and tax-impact summarization in
+  one path.
+- Action: extracted `_suppress_dust_trade` so below-minimum-notional suppression and
+  `SuppressedIntent` construction are directly testable while `generate_intents` keeps trade-loop
+  orchestration. Added tests for suppressed below-threshold trades and supported notionals that
+  remain unsuppressed.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_core_flows.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_intents` out of the top-ten
+  current source functions after it previously ranked first at complexity 17 / 145 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_solver`, `summarize_enrichment_posture`, `_example_from_schema`, or
+  `validate_search_item_metadata`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal trade-suppression maintainability only.
