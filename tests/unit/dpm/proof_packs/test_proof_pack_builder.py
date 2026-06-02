@@ -18,7 +18,7 @@ from src.core.construction import (
     build_alternative_set,
     build_rebalance_result_alternative,
 )
-from src.core.models import EngineOptions, Money, RebalanceResult, TaxImpact
+from src.core.models import EngineOptions, ExcludedInstrument, Money, RebalanceResult, TaxImpact
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
@@ -537,6 +537,107 @@ def test_turnover_and_cost_section_payload_merges_source_cost_context() -> None:
     assert metrics["represented_observation_count"] == 3
     assert metrics["estimated_transaction_cost"] is None
     assert reason_codes == ["TRANSACTION_COST_CURVE_READY"]
+
+
+def test_eligibility_and_restrictions_section_payload_reports_universe_exclusions() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "universe": result.universe.model_copy(
+                update={
+                    "excluded": [
+                        ExcludedInstrument(
+                            instrument_id="PRIVATE_CREDIT_FUND",
+                            reason_code="SHELF_NOT_APPROVED",
+                            details="Instrument is outside the approved shelf.",
+                        )
+                    ]
+                }
+            )
+        }
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics={},
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Eligibility and restriction evidence captured from source run universe."
+    assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
+    assert metrics == {"excluded_count": 1}
+    assert reason_codes == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
+
+
+def test_eligibility_and_restrictions_section_payload_merges_restriction_context() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "universe": result.universe.model_copy(
+                update={
+                    "excluded": [
+                        ExcludedInstrument(
+                            instrument_id="PRIVATE_CREDIT_FUND",
+                            reason_code="CLIENT_RESTRICTION",
+                        )
+                    ]
+                }
+            )
+        }
+    )
+    restriction_context = AuthoritativeClientRestrictionContext(
+        supportability_status="READY",
+        source_system="lotus-core",
+        source_id="sha256:client-restrictions",
+        content_hash="sha256:client-restrictions",
+        portfolio_id="pf_proof_pack_1",
+        client_id="client_001",
+        mandate_id="mandate_001",
+        as_of_date="2026-05-03",
+        restriction_count=1,
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+        restrictions=[
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="instrument",
+                restriction_code="NO_PRIVATE_CREDIT_BUY",
+                restriction_status="active",
+                restriction_source="client_mandate",
+                applies_to_buy=True,
+                applies_to_sell=False,
+                instrument_ids=["PRIVATE_CREDIT_FUND"],
+                effective_from="2026-01-01",
+                restriction_version=1,
+            )
+        ],
+    )
+    restriction = source_analytics_for_context(
+        source_context=restriction_context.model_dump(mode="json", exclude_none=True),
+        family="client_restriction",
+    )
+
+    assert restriction is not None
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics={"client_restriction": restriction},
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert (
+        summary == "Eligibility evidence and source-owned client restriction profile are attached."
+    )
+    assert facts["source_product_name"] == "ClientRestrictionProfile"
+    assert facts["restrictions"][0]["restriction_code"] == "NO_PRIVATE_CREDIT_BUY"
+    assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
+    assert metrics == {"restriction_count": 1, "excluded_count": 1}
+    assert reason_codes == [
+        "CLIENT_RESTRICTION_PROFILE_READY",
+        "DPM_UNIVERSE_EXCLUSIONS_PRESENT",
+    ]
 
 
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:

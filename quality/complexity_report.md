@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:41:48+00:00`
+- Generated at: `2026-06-02T00:44:53+00:00`
 
-- Current ref: `002ca59`
+- Current ref: `ca69123`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -36,9 +36,9 @@
 | 2 | generate_intents | src/core/rebalance/intents.py | 38 | 207 |
 | 3 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
 | 4 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
-| 5 | _section_payload | src/core/proof_packs/builder.py | 27 | 154 |
-| 6 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
-| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
+| 5 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
+| 6 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
+| 7 | _section_payload | src/core/proof_packs/builder.py | 22 | 130 |
 | 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 22 | 74 |
 | 9 | _infer_example | src/api/openapi_enrichment.py | 22 | 48 |
 | 10 | summarize_enrichment_posture | src/core/construction/enrichment.py | 21 | 89 |

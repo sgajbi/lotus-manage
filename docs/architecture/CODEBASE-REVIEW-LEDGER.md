@@ -11828,3 +11828,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   hotspots: `external_treasury_currency_overlay_context` and `generate_intents`.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-485: Proof-pack eligibility and restriction payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still assembled eligibility and client-restriction proof-pack payloads
+  inline, including universe-exclusion fallback state, source-owned restriction facts, and combined
+  reason-code projection.
+- Action: extracted `_eligibility_and_restrictions_section_payload` and delegated the
+  `eligibility_and_restrictions` branch through it. Added direct helper tests for universe-exclusion
+  fallback and source-owned `ClientRestrictionProfile` evidence merged with exclusions.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 27 / 154 lines to complexity 22 / 130
+  lines.
+- Follow-up: `_section_payload` is no longer a top-five source hotspot; continue with
+  `external_treasury_currency_overlay_context` or `generate_intents` based on the refreshed
+  complexity ranking.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
