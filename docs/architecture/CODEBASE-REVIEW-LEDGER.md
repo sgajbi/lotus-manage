@@ -11722,3 +11722,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   extraction in `generate_intents`.
 - Wiki decision: no wiki source change required; this preserves engine behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-481: Proof-pack mandate context payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried the mandate-context supportability ladder inline,
+  including missing mandate identity, missing twin evidence, missing health evidence, and complete
+  health-backed projection.
+- Action: extracted `_mandate_context_section_payload` and delegated the `mandate_context` branch
+  through it. Added direct helper tests for missing identity and full mandate-health projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 45 / 278 lines to complexity 41 / 224
+  lines.
+- Follow-up: continue extracting remaining proof-pack sections, especially selected-alternative and
+  eligibility/restriction payloads, with direct tests.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.

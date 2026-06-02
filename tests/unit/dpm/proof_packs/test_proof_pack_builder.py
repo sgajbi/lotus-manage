@@ -338,6 +338,43 @@ def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
     assert reason_codes == []
 
 
+def test_mandate_context_section_payload_blocks_missing_identity() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "Mandate identity is required before proof-pack promotion."
+    assert facts == {"mandate_id": None}
+    assert metrics == {}
+    assert reason_codes == ["DPM_PROOF_PACK_MANDATE_ID_MISSING"]
+
+
+def test_mandate_context_section_payload_projects_health_evidence() -> None:
+    mandate_twin = _mandate_twin()
+    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin))
+
+    state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
+        mandate_id=mandate_twin.mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=[],
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == (
+        "Mandate digital-twin and health evidence are attached from persisted RFC-0038 truth."
+    )
+    assert facts["mandate_id"] == mandate_twin.mandate_id
+    assert facts["health_snapshot_id"] == mandate_health.health_snapshot_id
+    assert metrics["dimension_count"] == len(mandate_health.dimension_scores)
+    assert metrics["source_lineage_count"] == len(mandate_twin.source_lineage)
+    assert reason_codes == [reason.reason_code for reason in mandate_health.top_reasons]
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(
