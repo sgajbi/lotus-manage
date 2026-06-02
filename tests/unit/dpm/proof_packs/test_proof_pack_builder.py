@@ -183,6 +183,19 @@ def test_source_analytics_section_payload_preserves_context_and_can_sort_reason_
     assert reason_codes == ["A_REASON", "Z_REASON"]
 
 
+def test_adapter_section_payload_returns_ready_contract_reference() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._adapter_section_payload(
+        summary="Report input adapter is available.",
+        adapter_contract="DpmProofPackReportInput",
+    )
+
+    assert state == "READY"
+    assert summary == "Report input adapter is available."
+    assert facts == {"adapter_contract": "DpmProofPackReportInput"}
+    assert metrics == {}
+    assert reason_codes == []
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

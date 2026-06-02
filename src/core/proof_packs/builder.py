@@ -400,6 +400,20 @@ def _source_analytics_section_payload(
     )
 
 
+def _adapter_section_payload(
+    *,
+    summary: str,
+    adapter_contract: str,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    return (
+        "READY",
+        summary,
+        {"adapter_contract": adapter_contract},
+        {},
+        [],
+    )
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -574,20 +588,14 @@ def _section_payload(
             missing_reason_code="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING",
         )
     if section_type == "reporting_refs":
-        return (
-            "READY",
-            "Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
-            {"adapter_contract": "DpmProofPackReportInput"},
-            {},
-            [],
+        return _adapter_section_payload(
+            summary="Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
+            adapter_contract="DpmProofPackReportInput",
         )
     if section_type == "ai_refs":
-        return (
-            "READY",
-            "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
-            {"adapter_contract": "DpmProofPackAiEvidenceInput"},
-            {},
-            [],
+        return _adapter_section_payload(
+            summary="AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
+            adapter_contract="DpmProofPackAiEvidenceInput",
         )
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])

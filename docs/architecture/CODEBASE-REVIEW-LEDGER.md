@@ -11510,3 +11510,27 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior tests until source complexity is no longer concentrated in the dispatcher.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-473: Proof-pack adapter section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still contained repeated adapter-reference section payload assembly
+  for reporting and AI evidence refs after the source-analytics extraction.
+- Action: extracted `_adapter_section_payload` and routed `reporting_refs` and `ai_refs` through it;
+  added a direct helper test proving the ready-state adapter contract tuple shape.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` line count reduced from 426 to 420 while complexity remains 81.
+- Follow-up: prioritize branch-reducing extractions next; this slice improved reuse/readability but
+  did not lower the branch-count score.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
