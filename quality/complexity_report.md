@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:39:11+00:00`
+- Generated at: `2026-06-02T00:41:48+00:00`
 
-- Current ref: `5131008`
+- Current ref: `002ca59`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -34,9 +34,9 @@
 | --- | --- | --- | --- | --- |
 | 1 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 39 | 189 |
 | 2 | generate_intents | src/core/rebalance/intents.py | 38 | 207 |
-| 3 | _section_payload | src/core/proof_packs/builder.py | 32 | 178 |
-| 4 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
-| 5 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
+| 3 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
+| 4 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
+| 5 | _section_payload | src/core/proof_packs/builder.py | 27 | 154 |
 | 6 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
 | 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
 | 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 22 | 74 |

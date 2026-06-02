@@ -468,6 +468,77 @@ def test_source_readiness_section_payload_degrades_on_lineage_state() -> None:
     assert reason_codes == ["DPM_SOURCE_READINESS_DEGRADED"]
 
 
+def test_turnover_and_cost_section_payload_degrades_without_selected_metrics() -> None:
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._turnover_and_cost_section_payload(
+            selected_alternative=None,
+            source_analytics={},
+        )
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Turnover and cost evidence captured when construction metrics are available."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_TURNOVER_COST_METRICS_MISSING"]
+
+
+def test_turnover_and_cost_section_payload_merges_source_cost_context() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    cost_context = AuthoritativeTransactionCostContext(
+        supportability_status="READY",
+        source_system="lotus-core",
+        source_id="transaction-cost-scope-001",
+        content_hash="sha256:transaction-cost-curve-proof",
+        as_of_date="2026-05-03",
+        window_start_date="2026-02-02",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=1,
+        reason_codes=["TRANSACTION_COST_CURVE_READY"],
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id="EQ_B",
+                transaction_type="BUY",
+                currency="USD",
+                observation_count=3,
+                total_notional=Decimal("30000"),
+                total_cost=Decimal("15"),
+                average_cost_bps=Decimal("5.0000"),
+                min_cost_bps=Decimal("4.5000"),
+                max_cost_bps=Decimal("5.5000"),
+                first_observed_date="2026-04-01",
+                last_observed_date="2026-05-03",
+            )
+        ],
+    )
+    transaction_cost = source_analytics_for_context(
+        source_context=cost_context.model_dump(mode="json", exclude_none=True),
+        family="transaction_cost",
+    )
+
+    assert transaction_cost is not None
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._turnover_and_cost_section_payload(
+            selected_alternative=alternative,
+            source_analytics={"transaction_cost": transaction_cost},
+        )
+    )
+
+    assert state == "READY"
+    assert (
+        summary
+        == "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+    )
+    assert facts["source_system"] == "lotus-core"
+    assert facts["curve_points"][0]["average_cost_bps"] == "5.0000"
+    assert metrics["returned_curve_point_count"] == 1
+    assert metrics["represented_observation_count"] == 3
+    assert metrics["estimated_transaction_cost"] is None
+    assert reason_codes == ["TRANSACTION_COST_CURVE_READY"]
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

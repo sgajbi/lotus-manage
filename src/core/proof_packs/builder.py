@@ -753,6 +753,43 @@ def _source_readiness_section_payload(
     )
 
 
+def _turnover_and_cost_section_payload(
+    *,
+    selected_alternative: ConstructionAlternative | None,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    transaction_cost_context = source_analytics.get("transaction_cost")
+    metrics = (
+        selected_alternative.comparison_metrics.model_dump(mode="json")
+        if selected_alternative
+        else {}
+    )
+    facts: dict[str, Any] = {}
+    reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
+    state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
+    summary = "Turnover and cost evidence captured when construction metrics are available."
+
+    if transaction_cost_context is not None:
+        facts = transaction_cost_context.facts
+        metrics = {**metrics, **transaction_cost_context.metrics}
+        reason_codes.extend(transaction_cost_context.reason_codes)
+        state = _lowest_section_state([state, transaction_cost_context.state])
+        summary = (
+            "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+        )
+    elif metrics:
+        reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
+        state = "DEGRADED"
+
+    return (
+        state,
+        summary,
+        facts,
+        metrics,
+        sorted(set(reason_codes)),
+    )
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -849,33 +886,9 @@ def _section_payload(
     if run_policy_payload is not None:
         return run_policy_payload
     if section_type == "turnover_and_cost":
-        transaction_cost_context = source_analytics.get("transaction_cost")
-        metrics = (
-            selected_alternative.comparison_metrics.model_dump(mode="json")
-            if selected_alternative
-            else {}
-        )
-        facts: dict[str, Any] = {}
-        reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
-        state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
-        summary = "Turnover and cost evidence captured when construction metrics are available."
-        if transaction_cost_context is not None:
-            facts = transaction_cost_context.facts
-            metrics = {**metrics, **transaction_cost_context.metrics}
-            reason_codes.extend(transaction_cost_context.reason_codes)
-            state = _lowest_section_state([state, transaction_cost_context.state])
-            summary = (
-                "Turnover metrics and source-owned observed transaction-cost evidence are attached."
-            )
-        elif metrics:
-            reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
-            state = "DEGRADED"
-        return (
-            state,
-            summary,
-            facts,
-            metrics,
-            sorted(set(reason_codes)),
+        return _turnover_and_cost_section_payload(
+            selected_alternative=selected_alternative,
+            source_analytics=source_analytics,
         )
     run_diagnostics_payload = _run_diagnostics_section_payload(
         section_type=section_type,
