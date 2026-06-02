@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:49:11+00:00`
+- Generated at: `2026-06-02T04:52:14+00:00`
 
-- Current ref: `3a56e2c`
+- Current ref: `f608a30`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,12 +32,12 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 2 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
-| 3 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
-| 4 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
-| 5 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
-| 6 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
+| 1 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 2 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
+| 3 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 4 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 5 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
+| 6 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
 | 7 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
 | 8 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
 | 9 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |

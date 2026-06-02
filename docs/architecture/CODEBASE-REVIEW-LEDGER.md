@@ -12547,3 +12547,34 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `validate_search_item_metadata`.
 - Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
   improves internal trade-suppression maintainability only.
+
+## BACKEND-REVIEW-20260602-510: Target solver dependency loader helper
+
+- Date: 2026-06-02
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`, generated quality reports, and this
+  ledger.
+- Finding: `generate_targets_solver` mixed solver dependency detection and import failure handling
+  with sell-only redistribution, constraint construction, fallback solving, infeasibility hints, and
+  target trace construction.
+- Action: extracted `_load_solver_modules` so solver dependency/import readiness is directly
+  testable and the solver path can keep optimization orchestration separate from environment
+  readiness handling. Added direct tests for missing solver dependencies and import failure
+  warning behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/target_generation.py
+  tests/unit/core/test_target_generation_solver_fallbacks.py`, `python -m ruff format
+  src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`, `python -m pytest
+  tests/unit/core/test_target_generation_solver_fallbacks.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py
+  tests/unit/dpm/engine/test_engine_target_generation.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report reduces `generate_targets_solver` from
+  complexity 17 / 109 lines to complexity 16 / 102 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `summarize_enrichment_posture`, `_example_from_schema`, `validate_search_item_metadata`, or a
+  further solver constraint-construction extraction.
+- Wiki decision: no wiki source change required; this preserves target-solver behavior and improves
+  internal solver resilience maintainability only.

@@ -127,6 +127,19 @@ def _collect_infeasibility_hints(
     return hints
 
 
+def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None:
+    if not has_solver_dependencies():
+        diagnostics.warnings.append("SOLVER_ERROR")
+        return None
+    try:
+        import cvxpy as cp
+        import numpy as np
+    except Exception:
+        diagnostics.warnings.append("SOLVER_ERROR")
+        return None
+    return cp, np
+
+
 def build_target_trace(
     model: Any,
     eligible_targets: dict[str, Decimal],
@@ -182,17 +195,10 @@ def generate_targets_solver(
     base_ccy: str,
     diagnostics: DiagnosticsData,
 ) -> tuple[list[TargetInstrument], str]:
-    if not has_solver_dependencies():
-        diagnostics.warnings.append("SOLVER_ERROR")
+    solver_modules = _load_solver_modules(diagnostics)
+    if solver_modules is None:
         return [], "BLOCKED"
-    try:
-        import cvxpy as _cp
-        import numpy as _np
-    except Exception:
-        diagnostics.warnings.append("SOLVER_ERROR")
-        return [], "BLOCKED"
-    cp: Any = _cp
-    np: Any = _np
+    cp, np = solver_modules
 
     status = redistribute_sell_only_excess(
         eligible_targets=eligible_targets,
