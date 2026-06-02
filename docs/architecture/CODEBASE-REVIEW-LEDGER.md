@@ -12405,3 +12405,34 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `evaluate`.
 - Wiki decision: no wiki source change required; this preserves portfolio-memory search API
   behavior and improves internal validation maintainability only.
+
+## BACKEND-REVIEW-20260602-505: Heuristic target total-weight cap helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_heuristic` mixed sell-only redistribution, group constraints,
+  total-weight capping, single-position caps, cash-buffer scaling, and trace construction in one
+  target allocation path.
+- Action: extracted `_cap_tradeable_targets_to_available_weight` so the total-weight cap for
+  tradeable buy targets is directly testable and separate from the rest of heuristic target
+  orchestration. Added helper tests for balanced no-op targets, proportional tradeable scaling, and
+  locked exposure above 100% forcing pending-review posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/targets.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_targets_heuristic` out of
+  the top-ten current source functions after it previously ranked first at complexity 19 / 71
+  lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_example_from_schema`,
+  `_ensure_request_and_response_examples`, `evaluate`, or `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves heuristic target-generation
+  behavior and improves internal allocation maintainability only.

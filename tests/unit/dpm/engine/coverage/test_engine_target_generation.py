@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.core.common.target_redistribution import redistribute_sell_only_excess
+from src.core.rebalance.targets import _cap_tradeable_targets_to_available_weight
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
 from tests.shared.assertions import assert_status
@@ -54,6 +55,47 @@ class TestTargetGeneration:
 
         assert status == "PENDING_REVIEW"
         assert eligible_targets == {"BUY_A": Decimal("0.0"), "LOCKED": Decimal("0.20")}
+
+    def test_cap_tradeable_targets_to_available_weight_skips_balanced_targets(self):
+        eligible_targets = {"BUY_A": Decimal("0.40"), "LOCKED": Decimal("0.30")}
+
+        status = _cap_tradeable_targets_to_available_weight(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A"},
+        )
+
+        assert status == "READY"
+        assert eligible_targets == {"BUY_A": Decimal("0.40"), "LOCKED": Decimal("0.30")}
+
+    def test_cap_tradeable_targets_to_available_weight_scales_buy_targets(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.60"),
+            "BUY_B": Decimal("0.30"),
+            "LOCKED": Decimal("0.30"),
+        }
+
+        status = _cap_tradeable_targets_to_available_weight(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+        )
+
+        assert status == "PENDING_REVIEW"
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.4666666666666666666666666667"),
+            "BUY_B": Decimal("0.2333333333333333333333333333"),
+            "LOCKED": Decimal("0.30"),
+        }
+
+    def test_cap_tradeable_targets_to_available_weight_marks_locked_overage_pending(self):
+        eligible_targets = {"BUY_A": Decimal("0.20"), "LOCKED": Decimal("1.10")}
+
+        status = _cap_tradeable_targets_to_available_weight(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A"},
+        )
+
+        assert status == "PENDING_REVIEW"
+        assert eligible_targets == {"BUY_A": Decimal("0.00"), "LOCKED": Decimal("1.10")}
 
     def test_target_locked_over_100(self, base_inputs):
         pf, mkt, model, shelf = base_inputs
