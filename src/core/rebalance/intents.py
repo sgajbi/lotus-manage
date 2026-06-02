@@ -232,6 +232,22 @@ def _intent_market_context(
     return price, rate, position
 
 
+def _current_instrument_value_and_unit_value(
+    *,
+    position: Position | None,
+    price: Price,
+) -> tuple[Decimal, Decimal]:
+    if position is None:
+        return Decimal("0"), price.price
+    if position.market_value is None:
+        return position.quantity * price.price, price.price
+
+    current_value = position.market_value.amount
+    if position.quantity > Decimal("0"):
+        return current_value, current_value / position.quantity
+    return current_value, price.price
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -263,14 +279,10 @@ def generate_intents(
             continue
         price_ent, rate, curr = market_context
 
-        curr_instr_val = (
-            curr.market_value.amount
-            if curr and curr.market_value
-            else (curr.quantity * price_ent.price if curr else Decimal("0"))
+        curr_instr_val, unit_value = _current_instrument_value_and_unit_value(
+            position=curr,
+            price=price_ent,
         )
-        unit_value = price_ent.price
-        if curr and curr.market_value and curr.quantity > Decimal("0"):
-            unit_value = curr.market_value.amount / curr.quantity
 
         target_instr_val = (total_val * target_w) / rate
 

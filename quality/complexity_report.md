@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:01:00+00:00`
+- Generated at: `2026-06-02T04:04:36+00:00`
 
-- Current ref: `f35ae8e`
+- Current ref: `790358a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_intents | src/core/rebalance/intents.py | 23 | 149 |
-| 2 | _section_payload | src/core/proof_packs/builder.py | 22 | 130 |
-| 3 | _infer_example | src/api/openapi_enrichment.py | 22 | 48 |
-| 4 | summarize_enrichment_posture | src/core/construction/enrichment.py | 21 | 89 |
-| 5 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 21 | 60 |
-| 6 | generate_targets_solver | src/core/target_generation.py | 20 | 113 |
-| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 19 | 137 |
-| 8 | build_simulated_state | src/core/valuation.py | 19 | 123 |
-| 9 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
-| 10 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
+| 1 | _section_payload | src/core/proof_packs/builder.py | 22 | 130 |
+| 2 | _infer_example | src/api/openapi_enrichment.py | 22 | 48 |
+| 3 | summarize_enrichment_posture | src/core/construction/enrichment.py | 21 | 89 |
+| 4 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 21 | 60 |
+| 5 | generate_targets_solver | src/core/target_generation.py | 20 | 113 |
+| 6 | generate_fx_and_simulate | src/core/rebalance/execution.py | 19 | 137 |
+| 7 | build_simulated_state | src/core/valuation.py | 19 | 123 |
+| 8 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
+| 9 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
+| 10 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
 
 ### Most Complex Current Test Functions
 

@@ -4,6 +4,7 @@ from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.rebalance.intents import (
     _TaxBudgetAccumulator,
     _clamped_sell_quantity,
+    _current_instrument_value_and_unit_value,
     _hifo_sorted_lots,
     _intent_market_context,
     _record_tax_budget_limit_reached,
@@ -365,6 +366,54 @@ def test_intent_market_context_records_missing_price_and_fx() -> None:
         is None
     )
     assert dq_log["fx_missing"] == ["USD/SGD"]
+
+
+def test_current_instrument_value_and_unit_value_uses_price_without_position() -> None:
+    current_value, unit_value = _current_instrument_value_and_unit_value(
+        position=None,
+        price=price("EQ_1", "10", "SGD"),
+    )
+
+    assert current_value == Decimal("0")
+    assert unit_value == Decimal("10")
+
+
+def test_current_instrument_value_and_unit_value_uses_quantity_and_price_without_snapshot_value():
+    current_value, unit_value = _current_instrument_value_and_unit_value(
+        position=Position(instrument_id="EQ_1", quantity=Decimal("7")),
+        price=price("EQ_1", "10", "SGD"),
+    )
+
+    assert current_value == Decimal("70")
+    assert unit_value == Decimal("10")
+
+
+def test_current_instrument_value_and_unit_value_uses_trusted_market_value() -> None:
+    current_value, unit_value = _current_instrument_value_and_unit_value(
+        position=Position(
+            instrument_id="EQ_1",
+            quantity=Decimal("5"),
+            market_value=Money(amount=Decimal("125"), currency="SGD"),
+        ),
+        price=price("EQ_1", "10", "SGD"),
+    )
+
+    assert current_value == Decimal("125")
+    assert unit_value == Decimal("25")
+
+
+def test_current_instrument_value_and_unit_value_keeps_price_unit_for_zero_quantity_snapshot():
+    current_value, unit_value = _current_instrument_value_and_unit_value(
+        position=Position(
+            instrument_id="EQ_1",
+            quantity=Decimal("0"),
+            market_value=Money(amount=Decimal("125"), currency="SGD"),
+        ),
+        price=price("EQ_1", "10", "SGD"),
+    )
+
+    assert current_value == Decimal("125")
+    assert unit_value == Decimal("10")
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):

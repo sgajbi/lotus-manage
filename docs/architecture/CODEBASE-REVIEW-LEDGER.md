@@ -12138,3 +12138,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_section_payload`, `_infer_example`, or `summarize_enrichment_posture`.
 - Wiki decision: no wiki source change required; this preserves heuristic target-generation
   behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-496: Rebalance intent valuation helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still computed current instrument value and per-unit sizing inputs
+  inline, mixing trusted market-value handling with target-loop orchestration and sell/buy sizing.
+- Action: extracted `_current_instrument_value_and_unit_value` and routed intent generation through
+  it. Added direct tests for no-position pricing, calculated position value, trusted market value,
+  and trusted zero-quantity fallback behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_intents` out of the top-ten
+  current source functions after it previously ranked first at complexity 23 / 149 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_section_payload`,
+  `_infer_example`, `summarize_enrichment_posture`, or `_proof_pack_governance_section_payload`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal maintainability only.
