@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:16:05+00:00`
+- Generated at: `2026-06-02T00:19:18+00:00`
 
-- Current ref: `f80fd82`
+- Current ref: `6d19e17`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -26,13 +26,22 @@
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
 | 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
-| 10 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
+| 10 | test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_posture | tests/unit/dpm/api/test_waves_api.py | 66 | 220 |
 
 ### Most Complex Current Source Functions
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
+| 1 | _section_payload | src/core/proof_packs/builder.py | 64 | 318 |
+| 2 | generate_intents | src/core/rebalance/intents.py | 58 | 236 |
+| 3 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 39 | 189 |
+| 4 | validate_definition | src/core/waves/campaign_definitions.py | 30 | 69 |
+| 5 | build_search_row | src/core/portfolio_memory/search_page.py | 28 | 86 |
+| 6 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 26 | 182 |
+| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 26 | 167 |
+| 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 22 | 74 |
+| 9 | _infer_example | src/api/openapi_enrichment.py | 22 | 48 |
+| 10 | summarize_enrichment_posture | src/core/construction/enrichment.py | 21 | 89 |
 
 ### Most Complex Current Test Functions
 
@@ -47,6 +56,7 @@
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
 | 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
+| 10 | test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_posture | tests/unit/dpm/api/test_waves_api.py | 66 | 220 |
 
 ## Gate Posture
 

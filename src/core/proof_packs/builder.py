@@ -506,6 +506,57 @@ def _run_diagnostics_section_payload(
     return None
 
 
+def _run_policy_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    selected_alternative: ConstructionAlternative | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
+    if section_type == "drift_impact":
+        if selected_alternative is not None:
+            metrics = selected_alternative.comparison_metrics.model_dump(mode="json")
+            return (
+                "READY",
+                "Drift impact captured from construction comparison metrics.",
+                {},
+                metrics,
+                [],
+            )
+        return (
+            "DEGRADED",
+            "Direct-run proof has no construction comparison drift trace.",
+            {},
+            {},
+            ["DPM_DRIFT_COMPARISON_UNAVAILABLE"],
+        )
+    if section_type == "tax_impact":
+        if result.tax_impact is None:
+            return (
+                "DEGRADED",
+                "Tax impact is not available for this run.",
+                {},
+                {},
+                ["DPM_TAX_IMPACT_MISSING"],
+            )
+        return (
+            "READY",
+            "Tax impact captured from manage tax-aware simulation.",
+            result.tax_impact.model_dump(mode="json"),
+            {},
+            [],
+        )
+    if section_type == "rule_results":
+        failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
+        return (
+            "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
+            "Rule results captured from manage policy engine.",
+            {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
+            {"fail_count": len(failed)},
+            [rule.reason_code for rule in failed],
+        )
+    return None
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -694,39 +745,13 @@ def _section_payload(
     run_state_payload = _run_state_section_payload(section_type=section_type, result=result)
     if run_state_payload is not None:
         return run_state_payload
-    if section_type == "drift_impact":
-        if selected_alternative is not None:
-            metrics = selected_alternative.comparison_metrics.model_dump(mode="json")
-            return (
-                "READY",
-                "Drift impact captured from construction comparison metrics.",
-                {},
-                metrics,
-                [],
-            )
-        return (
-            "DEGRADED",
-            "Direct-run proof has no construction comparison drift trace.",
-            {},
-            {},
-            ["DPM_DRIFT_COMPARISON_UNAVAILABLE"],
-        )
-    if section_type == "tax_impact":
-        if result.tax_impact is None:
-            return (
-                "DEGRADED",
-                "Tax impact is not available for this run.",
-                {},
-                {},
-                ["DPM_TAX_IMPACT_MISSING"],
-            )
-        return (
-            "READY",
-            "Tax impact captured from manage tax-aware simulation.",
-            result.tax_impact.model_dump(mode="json"),
-            {},
-            [],
-        )
+    run_policy_payload = _run_policy_section_payload(
+        section_type=section_type,
+        result=result,
+        selected_alternative=selected_alternative,
+    )
+    if run_policy_payload is not None:
+        return run_policy_payload
     if section_type == "turnover_and_cost":
         transaction_cost_context = source_analytics.get("transaction_cost")
         metrics = (
@@ -798,15 +823,6 @@ def _section_payload(
             {"excluded": [item.model_dump(mode="json") for item in excluded]},
             {"excluded_count": len(excluded)},
             ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
-        )
-    if section_type == "rule_results":
-        failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
-        return (
-            "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
-            "Rule results captured from manage policy engine.",
-            {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
-            {"fail_count": len(failed)},
-            [rule.reason_code for rule in failed],
         )
     if section_type == "approval_requirements":
         gate = result.gate_decision

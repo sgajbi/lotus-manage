@@ -65,6 +65,8 @@ class SnapshotMetrics:
     largest_files: list[FileMetric]
     largest_functions: list[FunctionMetric]
     most_complex_functions: list[ComplexityMetric]
+    most_complex_source_functions: list[ComplexityMetric]
+    most_complex_test_functions: list[ComplexityMetric]
     service_boundary_violations: list[str]
     router_infra_imports: list[str]
 
@@ -228,6 +230,11 @@ def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetr
             )
         if path.startswith("src/api/routers/"):
             router_infra_imports.extend(_matching_lines(path, text, ROUTER_INFRA_PATTERNS))
+    sorted_complexity = sorted(
+        complexity_functions,
+        key=lambda item: (item.complexity, item.lines),
+        reverse=True,
+    )
     return SnapshotMetrics(
         label=label,
         python_file_count=len(paths),
@@ -235,11 +242,13 @@ def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetr
         test_count=test_count,
         largest_files=sorted(files, key=lambda item: item.lines, reverse=True)[:10],
         largest_functions=sorted(functions, key=lambda item: item.lines, reverse=True)[:10],
-        most_complex_functions=sorted(
-            complexity_functions,
-            key=lambda item: (item.complexity, item.lines),
-            reverse=True,
-        )[:10],
+        most_complex_functions=sorted_complexity[:10],
+        most_complex_source_functions=[
+            item for item in sorted_complexity if item.path.startswith("src/")
+        ][:10],
+        most_complex_test_functions=[
+            item for item in sorted_complexity if item.path.startswith("tests/")
+        ][:10],
         service_boundary_violations=service_boundary_violations,
         router_infra_imports=router_infra_imports,
     )
@@ -329,13 +338,6 @@ def _top_complexity_table(title: str, functions: list[ComplexityMetric]) -> str:
             for index, item in enumerate(functions, start=1)
         ],
     )
-
-
-def _complexity_by_path_prefix(
-    functions: list[ComplexityMetric],
-    prefix: str,
-) -> list[ComplexityMetric]:
-    return [item for item in functions if item.path.startswith(prefix)]
 
 
 def _openapi_metrics() -> dict[str, int]:
@@ -683,11 +685,11 @@ def build_complexity_report(context: HealthReportContext) -> str:
         ),
         _top_complexity_table(
             "Most Complex Current Source Functions",
-            _complexity_by_path_prefix(current.most_complex_functions, "src/"),
+            current.most_complex_source_functions,
         ),
         _top_complexity_table(
             "Most Complex Current Test Functions",
-            _complexity_by_path_prefix(current.most_complex_functions, "tests/"),
+            current.most_complex_test_functions,
         ),
         "## Gate Posture",
         "- This report is phase 1/report-only. It intentionally does not fail builds until the "

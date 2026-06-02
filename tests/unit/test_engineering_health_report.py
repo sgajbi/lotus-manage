@@ -42,6 +42,14 @@ def _snapshot(*, label: str, router_imports: list[str] | None = None) -> Snapsho
             ),
             ComplexityMetric(path="src/api/main.py", name="create_app", complexity=3, lines=12),
         ],
+        most_complex_source_functions=[
+            ComplexityMetric(path="src/api/main.py", name="create_app", complexity=3, lines=12)
+        ],
+        most_complex_test_functions=[
+            ComplexityMetric(
+                path="tests/unit/test_main.py", name="test_create_app", complexity=4, lines=16
+            )
+        ],
         service_boundary_violations=[],
         router_infra_imports=router_imports or [],
     )

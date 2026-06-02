@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-02T00:16:05+00:00`
+- Generated at: `2026-06-02T00:19:18+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `f80fd82`
+- Current ref: `6d19e17`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 768 | 769 | +1 |
-| Total Python LOC | 145874 | 146597 | +723 |
-| Test functions | 1855 | 1868 | +13 |
+| Total Python LOC | 145874 | 146651 | +777 |
+| Test functions | 1855 | 1870 | +15 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 18 | 18 | +0 |
 
@@ -87,9 +87,9 @@
 | 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 382 |
 | 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 376 |
 | 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
-| 6 | _section_payload | src/core/proof_packs/builder.py | 353 |
-| 7 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
-| 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
+| 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
+| 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
+| 8 | _section_payload | src/core/proof_packs/builder.py | 318 |
 | 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
 | 10 | generate_intents | src/core/rebalance/intents.py | 236 |
 
@@ -123,7 +123,7 @@
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
 | 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
 | 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
-| 10 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
+| 10 | test_wave_read_apis_return_durable_search_detail_items_and_proof_pack_posture | tests/unit/dpm/api/test_waves_api.py | 66 | 220 |
 
 ## Boundary Findings
 

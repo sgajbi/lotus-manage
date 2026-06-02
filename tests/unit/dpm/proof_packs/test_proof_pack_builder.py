@@ -247,6 +247,34 @@ def test_run_diagnostics_section_payload_returns_currency_overlay_fallback() -> 
     assert reason_codes == ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"]
 
 
+def test_run_policy_section_payload_returns_direct_run_drift_fallback() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_policy_section_payload(
+        section_type="drift_impact",
+        result=_ready_rebalance_result(),
+        selected_alternative=None,
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Direct-run proof has no construction comparison drift trace."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_DRIFT_COMPARISON_UNAVAILABLE"]
+
+
+def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_policy_section_payload(
+        section_type="tax_impact",
+        result=_ready_rebalance_result(),
+        selected_alternative=None,
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Tax impact is not available for this run."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

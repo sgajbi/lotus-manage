@@ -11586,3 +11586,34 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   tax/drift/rule sections, with direct helper tests.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-476: Proof-pack policy section payload helper and source complexity ranking fix
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`, `scripts/engineering_health_report.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `tests/unit/test_engineering_health_report.py`, generated quality reports, and this ledger.
+- Finding: `_section_payload` still carried drift, tax, and rule-result policy branches, and the
+  complexity report's source/test split was derived only from the combined top-ten list. Once source
+  complexity dropped below the combined top ten, the source ranking went empty and stopped being
+  useful evidence.
+- Action: extracted `_run_policy_section_payload` for drift, tax, and rule-result sections; added
+  direct helper tests for direct-run drift fallback and missing tax posture; changed the quality
+  report snapshot to compute source and test complexity rankings independently from all functions.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py
+  scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py tests/unit/test_engineering_health_report.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `_section_payload` at complexity 64 /
+  318 lines and preserves an independent populated source-complexity top-ten table.
+- Follow-up: continue extracting remaining proof-pack approval, timeline, lineage, and supportability
+  section families, then consider a table-driven dispatcher.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability and quality evidence.
