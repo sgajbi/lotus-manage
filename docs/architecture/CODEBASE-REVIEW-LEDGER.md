@@ -11395,15 +11395,40 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   gates from planned instrumentation.
 - Status: hardened
 - Evidence: `python -m ruff check scripts/engineering_health_report.py
-  tests/unit/test_engineering_health_report.py docs/architecture/CODEBASE-REVIEW-LEDGER.md`,
+  tests/unit/test_engineering_health_report.py`,
   `python -m ruff format --check scripts/engineering_health_report.py
   tests/unit/test_engineering_health_report.py`, `python -m mypy --config-file mypy.ini
   scripts/engineering_health_report.py`, `python -m pytest
   tests/unit/test_engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
-  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, service
-  leakage scan, and generated-artifact sanity scan passed.
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, ledger diff
+  review, service leakage scan, and generated-artifact sanity scan passed.
 - Follow-up: optimize baseline loading before CI integration, then add report-only optional-tool
   collectors for complexity, dead code, dependency architecture, security depth, documentation gaps,
   and observability gaps before enforcing thresholds.
 - Wiki decision: no wiki source change required yet; this is internal quality-governance evidence
   and does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-469: Batch baseline loading for engineering health reports
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  generated quality reports, and this ledger.
+- Finding: the new quality report generator loaded baseline file contents with one `git show`
+  invocation per Python file, which made report-only evidence unnecessarily slow and unsuitable for
+  later CI integration.
+- Action: replaced per-file baseline reads with one `git archive` stream over `src`, `tests`, and
+  `scripts`; added a focused unit test that proves only Python files are read from the archive
+  payload and non-Python files are ignored.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `Measure-Command { python
+  scripts/engineering_health_report.py }` reported 12.87 seconds, `python
+  scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, service leakage scan, and targeted archive-reader sanity scan passed.
+- Follow-up: if the report still needs CI integration, profile OpenAPI schema generation separately
+  and keep the generator report-only until runtime is consistently acceptable.
+- Wiki decision: no wiki source change required; this is internal quality-tool performance and
+  maintainability work.

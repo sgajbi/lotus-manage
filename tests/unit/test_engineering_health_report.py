@@ -1,3 +1,8 @@
+import io
+import tarfile
+from types import SimpleNamespace
+
+from scripts import engineering_health_report as ehr
 from scripts.engineering_health_report import (
     FileMetric,
     FunctionMetric,
@@ -8,6 +13,17 @@ from scripts.engineering_health_report import (
     build_baseline_report,
     build_quality_scorecard,
 )
+
+
+def _tar_bytes(files: dict[str, str]) -> bytes:
+    buffer = io.BytesIO()
+    with tarfile.open(fileobj=buffer, mode="w") as archive:
+        for path, text in files.items():
+            payload = text.encode("utf-8")
+            info = tarfile.TarInfo(path)
+            info.size = len(payload)
+            archive.addfile(info, io.BytesIO(payload))
+    return buffer.getvalue()
 
 
 def _snapshot(*, label: str, router_imports: list[str] | None = None) -> SnapshotMetrics:
@@ -21,6 +37,33 @@ def _snapshot(*, label: str, router_imports: list[str] | None = None) -> Snapsho
         service_boundary_violations=[],
         router_infra_imports=router_imports or [],
     )
+
+
+def test_python_texts_from_git_reads_python_files_from_one_archive(monkeypatch) -> None:
+    calls: list[list[str]] = []
+    archive_payload = _tar_bytes(
+        {
+            "src/api/main.py": "def create_app():\n    pass\n",
+            "src/api/ignored.txt": "not python\n",
+            "tests/unit/test_example.py": "def test_example():\n    pass\n",
+        }
+    )
+
+    def fake_run(command: list[str], **kwargs):
+        calls.append(command)
+        return SimpleNamespace(stdout=archive_payload)
+
+    monkeypatch.setattr(ehr.subprocess, "run", fake_run)
+
+    texts = ehr._python_texts_from_git("origin/main")
+
+    assert calls == [
+        ["git", "archive", "--format=tar", "origin/main", "--", "src", "tests", "scripts"]
+    ]
+    assert texts == {
+        "src/api/main.py": "def create_app():\n    pass\n",
+        "tests/unit/test_example.py": "def test_example():\n    pass\n",
+    }
 
 
 def _context() -> HealthReportContext:

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import ast
+import io
 import subprocess
 import sys
+import tarfile
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -79,15 +81,6 @@ def _git(*args: str) -> str:
     return completed.stdout
 
 
-def _python_paths_from_git(ref: str) -> list[str]:
-    paths = _git("ls-tree", "-r", "--name-only", ref).splitlines()
-    return [
-        path
-        for path in paths
-        if path.endswith(".py") and path.startswith(tuple(f"{root}/" for root in PYTHON_ROOTS))
-    ]
-
-
 def _python_paths_from_worktree() -> list[str]:
     paths: list[str] = []
     for root in PYTHON_ROOTS:
@@ -98,8 +91,27 @@ def _python_paths_from_worktree() -> list[str]:
     return sorted(paths)
 
 
-def _text_from_git(ref: str, path: str) -> str:
-    return _git("show", f"{ref}:{path}")
+def _python_texts_from_git(ref: str) -> dict[str, str]:
+    completed = subprocess.run(
+        ["git", "archive", "--format=tar", ref, "--", *PYTHON_ROOTS],
+        cwd=REPO_ROOT,
+        check=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    texts: dict[str, str] = {}
+    with tarfile.open(fileobj=io.BytesIO(completed.stdout), mode="r:") as archive:
+        for member in archive.getmembers():
+            path = member.name.replace("\\", "/")
+            if not member.isfile() or not path.endswith(".py"):
+                continue
+            if not path.startswith(tuple(f"{root}/" for root in PYTHON_ROOTS)):
+                continue
+            extracted = archive.extractfile(member)
+            if extracted is None:
+                continue
+            texts[path] = extracted.read().decode("utf-8")
+    return dict(sorted(texts.items()))
 
 
 def _text_from_worktree(path: str) -> str:
@@ -172,6 +184,14 @@ def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetr
         largest_functions=sorted(functions, key=lambda item: item.lines, reverse=True)[:10],
         service_boundary_violations=service_boundary_violations,
         router_infra_imports=router_infra_imports,
+    )
+
+
+def _snapshot_metrics_from_texts(label: str, texts: dict[str, str]) -> SnapshotMetrics:
+    return _snapshot_metrics(
+        label=label,
+        paths=list(texts),
+        reader=texts.__getitem__,
     )
 
 
@@ -301,13 +321,9 @@ def _bounded_findings(title: str, findings: list[str]) -> str:
 
 
 def _report_context(base_ref: str = DEFAULT_BASE_REF) -> HealthReportContext:
-    base_paths = _python_paths_from_git(base_ref)
+    base_texts = _python_texts_from_git(base_ref)
     current_paths = _python_paths_from_worktree()
-    base = _snapshot_metrics(
-        label=base_ref,
-        paths=base_paths,
-        reader=lambda path: _text_from_git(base_ref, path),
-    )
+    base = _snapshot_metrics_from_texts(label=base_ref, texts=base_texts)
     current = _snapshot_metrics(
         label="current branch",
         paths=current_paths,
