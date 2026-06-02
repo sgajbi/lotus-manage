@@ -377,6 +377,29 @@ def _build_section(
     return DpmProofPackSection.model_validate(payload)
 
 
+def _source_analytics_section_payload(
+    *,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    family: ProofPackAnalyticsFamily,
+    missing_summary: str,
+    missing_reason_code: str,
+    sort_reason_codes: bool = False,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    analytics = source_analytics.get(family)
+    if analytics is None:
+        return ("DEGRADED", missing_summary, {}, {}, [missing_reason_code])
+    reason_codes = list(analytics.reason_codes)
+    if sort_reason_codes:
+        reason_codes = sorted(set(reason_codes))
+    return (
+        analytics.state,
+        analytics.summary,
+        analytics.facts,
+        analytics.metrics,
+        reason_codes,
+    )
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -530,55 +553,25 @@ def _section_payload(
             else ["DPM_SELECTED_METHOD_NOT_READY"],
         )
     if section_type == "risk_impact":
-        risk_context = source_analytics.get("risk")
-        if risk_context is not None:
-            return (
-                risk_context.state,
-                risk_context.summary,
-                risk_context.facts,
-                risk_context.metrics,
-                risk_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "No risk-authoritative enrichment is attached to this first-wave proof pack.",
-            {},
-            {},
-            ["DPM_RISK_AUTHORITY_CONTEXT_MISSING"],
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="risk",
+            missing_summary="No risk-authoritative enrichment is attached to this first-wave proof pack.",
+            missing_reason_code="DPM_RISK_AUTHORITY_CONTEXT_MISSING",
         )
     if section_type == "performance_context":
-        performance_context = source_analytics.get("performance")
-        if performance_context is not None:
-            return (
-                performance_context.state,
-                performance_context.summary,
-                performance_context.facts,
-                performance_context.metrics,
-                performance_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "No performance-authoritative benchmark context is attached.",
-            {},
-            {},
-            ["DPM_PERFORMANCE_CONTEXT_MISSING"],
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="performance",
+            missing_summary="No performance-authoritative benchmark context is attached.",
+            missing_reason_code="DPM_PERFORMANCE_CONTEXT_MISSING",
         )
     if section_type == "sustainability_controls":
-        sustainability_context = source_analytics.get("sustainability_preference")
-        if sustainability_context is not None:
-            return (
-                sustainability_context.state,
-                sustainability_context.summary,
-                sustainability_context.facts,
-                sustainability_context.metrics,
-                sustainability_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "Sustainability preference authority context is not attached.",
-            {},
-            {},
-            ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING"],
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="sustainability_preference",
+            missing_summary="Sustainability preference authority context is not attached.",
+            missing_reason_code="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING",
         )
     if section_type == "reporting_refs":
         return (
@@ -737,21 +730,12 @@ def _section_payload(
             ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"],
         )
     if section_type == "scenario_and_regime_evidence":
-        regime_context = source_analytics.get("regime_stress")
-        if regime_context is not None:
-            return (
-                regime_context.state,
-                regime_context.summary,
-                regime_context.facts,
-                regime_context.metrics,
-                sorted(set(regime_context.reason_codes)),
-            )
-        return (
-            "DEGRADED",
-            "Scenario/regime authority context is not attached.",
-            {},
-            {},
-            ["DPM_SCENARIO_CONTEXT_MISSING"],
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="regime_stress",
+            missing_summary="Scenario/regime authority context is not attached.",
+            missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
+            sort_reason_codes=True,
         )
     if section_type == "eligibility_and_restrictions":
         restriction_context = source_analytics.get("client_restriction")

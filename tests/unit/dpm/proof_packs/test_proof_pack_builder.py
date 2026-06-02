@@ -31,8 +31,10 @@ from src.core.proof_packs import (
     build_proof_pack_from_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
+from src.core.proof_packs.models import DpmProofPackSourceRef
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
+    ProofPackSourceAnalytics,
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
@@ -126,6 +128,59 @@ def _mandate_twin() -> DpmMandateDigitalTwin:
 
 def _section(pack, section_type: str):
     return next(section for section in pack.sections if section.section_type == section_type)
+
+
+def _source_ref() -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-risk",
+        source_type="RiskMetricsReport",
+        source_id="risk-report:pf_proof_pack_1:2026-05-03",
+        supportability_state="READY",
+        content_hash="sha256:risk-report-proof",
+    )
+
+
+def test_source_analytics_section_payload_returns_degraded_missing_context() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._source_analytics_section_payload(
+        source_analytics={},
+        family="risk",
+        missing_summary="No risk-authoritative enrichment is attached.",
+        missing_reason_code="DPM_RISK_AUTHORITY_CONTEXT_MISSING",
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "No risk-authoritative enrichment is attached."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_RISK_AUTHORITY_CONTEXT_MISSING"]
+
+
+def test_source_analytics_section_payload_preserves_context_and_can_sort_reason_codes() -> None:
+    analytics = ProofPackSourceAnalytics(
+        family="regime_stress",
+        state="PENDING_REVIEW",
+        summary="Scenario evidence is attached.",
+        facts={"scenario_pack_id": "CIO_REGIME_2026_Q2"},
+        metrics={"worst_case_loss_pct": "0.1800"},
+        reason_codes=["Z_REASON", "A_REASON", "Z_REASON"],
+        source_ref=_source_ref(),
+        source_hash_key="regime_stress_context",
+        content_hash="sha256:regime-stress-context",
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._source_analytics_section_payload(
+        source_analytics={"regime_stress": analytics},
+        family="regime_stress",
+        missing_summary="Scenario/regime authority context is not attached.",
+        missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
+        sort_reason_codes=True,
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Scenario evidence is attached."
+    assert facts == {"scenario_pack_id": "CIO_REGIME_2026_Q2"}
+    assert metrics == {"worst_case_loss_pct": "0.1800"}
+    assert reason_codes == ["A_REASON", "Z_REASON"]
 
 
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:

@@ -11482,3 +11482,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   signal that oversized tests also need maintenance work.
 - Wiki decision: no wiki source change required; this is internal quality-governance evidence and
   does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-472: Proof-pack source analytics section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `quality/complexity_report.md` identified `_section_payload` as the top source-code
+  complexity hotspot; four source-analytics sections repeated the same context-present/fallback
+  branch pattern.
+- Action: extracted `_source_analytics_section_payload` and routed risk, performance,
+  sustainability, and scenario/regime sections through it while preserving the scenario reason-code
+  sorting behavior. Added direct helper tests for missing-context fallback and sorted reason-code
+  projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 85 / 465 lines to complexity 81 / 426
+  lines.
+- Follow-up: continue extracting cohesive section families from `_section_payload` with direct
+  behavior tests until source complexity is no longer concentrated in the dispatcher.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
