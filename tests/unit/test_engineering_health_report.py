@@ -37,7 +37,10 @@ def _snapshot(*, label: str, router_imports: list[str] | None = None) -> Snapsho
         largest_files=[FileMetric(path="src/api/main.py", lines=42)],
         largest_functions=[FunctionMetric(path="src/api/main.py", name="create_app", lines=12)],
         most_complex_functions=[
-            ComplexityMetric(path="src/api/main.py", name="create_app", complexity=3, lines=12)
+            ComplexityMetric(
+                path="tests/unit/test_main.py", name="test_create_app", complexity=4, lines=16
+            ),
+            ComplexityMetric(path="src/api/main.py", name="create_app", complexity=3, lines=12),
         ],
         service_boundary_violations=[],
         router_infra_imports=router_imports or [],
@@ -143,7 +146,9 @@ def test_complexity_report_is_report_only() -> None:
     report = build_complexity_report(_context())
 
     assert "# lotus-manage Complexity Report" in report
-    assert "| Highest complexity | 3 | 3 | +0 |" in report
+    assert "| Highest complexity | 4 | 4 | +0 |" in report
+    assert "### Most Complex Current Source Functions" in report
+    assert "### Most Complex Current Test Functions" in report
     assert "phase 1/report-only" in report
 
 

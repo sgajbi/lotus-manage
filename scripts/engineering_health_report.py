@@ -331,6 +331,13 @@ def _top_complexity_table(title: str, functions: list[ComplexityMetric]) -> str:
     )
 
 
+def _complexity_by_path_prefix(
+    functions: list[ComplexityMetric],
+    prefix: str,
+) -> list[ComplexityMetric]:
+    return [item for item in functions if item.path.startswith(prefix)]
+
+
 def _openapi_metrics() -> dict[str, int]:
     try:
         from src.api.main import app
@@ -673,6 +680,14 @@ def build_complexity_report(context: HealthReportContext) -> str:
         _top_complexity_table(
             "Most Complex Current Functions",
             current.most_complex_functions,
+        ),
+        _top_complexity_table(
+            "Most Complex Current Source Functions",
+            _complexity_by_path_prefix(current.most_complex_functions, "src/"),
+        ),
+        _top_complexity_table(
+            "Most Complex Current Test Functions",
+            _complexity_by_path_prefix(current.most_complex_functions, "tests/"),
         ),
         "## Gate Posture",
         "- This report is phase 1/report-only. It intentionally does not fail builds until the "

@@ -11459,3 +11459,26 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   the detector report-only until the expected baseline is agreed.
 - Wiki decision: no wiki source change required; this is internal quality-governance evidence and
   does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-471: Source/test split for complexity rankings
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/complexity_report.md`,
+  `tests/unit/test_engineering_health_report.py`, and this ledger.
+- Finding: the initial complexity report was useful but combined source and test functions in one
+  ranking, so very large contract tests could obscure source-code refactor targets.
+- Action: added source and test filtered complexity rankings while keeping the combined top list;
+  updated renderer tests to prove both sections remain present in the report-only artifact.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, service leakage scan, and source/test complexity artifact
+  sanity scan passed.
+- Follow-up: use the separated source ranking to choose small source refactors without losing the
+  signal that oversized tests also need maintenance work.
+- Wiki decision: no wiki source change required; this is internal quality-governance evidence and
+  does not change route behavior, product feature truth, or operator procedure.
