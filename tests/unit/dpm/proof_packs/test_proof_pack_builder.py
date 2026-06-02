@@ -427,6 +427,47 @@ def test_selected_alternative_section_payload_projects_method_trace() -> None:
     assert reason_codes == []
 
 
+def test_source_readiness_section_payload_blocks_missing_run() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._source_readiness_section_payload(
+        result=None
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "No source run is available."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_SOURCE_RUN_MISSING"]
+
+
+def test_source_readiness_section_payload_degrades_on_lineage_state() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "lineage": result.lineage.model_copy(
+                update={
+                    "input_mode": "stateful",
+                    "source_system": "lotus-core",
+                    "source_supportability_state": "DEGRADED",
+                }
+            )
+        }
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._source_readiness_section_payload(
+        result=result
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Source readiness captured from run lineage."
+    assert facts == {
+        "input_mode": "stateful",
+        "source_system": "lotus-core",
+        "source_supportability_state": "DEGRADED",
+    }
+    assert metrics == {}
+    assert reason_codes == ["DPM_SOURCE_READINESS_DEGRADED"]
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

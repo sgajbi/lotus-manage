@@ -11776,3 +11776,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `external_treasury_currency_overlay_context` source hotspot.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-483: Proof-pack source readiness payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried source-run readiness projection inline, mixing the
+  dispatcher with lineage supportability state handling and missing-run failure behavior.
+- Action: extracted `_source_readiness_section_payload` and delegated the `source_readiness` branch
+  through it. Added direct helper tests for missing source runs and degraded lineage supportability.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 36 / 192 lines to complexity 32 / 178
+  lines.
+- Follow-up: continue extracting the remaining proof-pack section payloads, especially
+  turnover/cost and eligibility/restriction, then return to top-ranked source hotspots.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.

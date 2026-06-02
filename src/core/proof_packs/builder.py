@@ -729,6 +729,30 @@ def _selected_alternative_section_payload(
     )
 
 
+def _source_readiness_section_payload(
+    *,
+    result: RebalanceResult | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if result is None:
+        return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+
+    source_state = result.lineage.source_supportability_state
+    reason_codes = (
+        [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
+    )
+    return (
+        "READY" if not reason_codes else "DEGRADED",
+        "Source readiness captured from run lineage.",
+        {
+            "input_mode": result.lineage.input_mode,
+            "source_system": result.lineage.source_system,
+            "source_supportability_state": source_state,
+        },
+        {},
+        reason_codes,
+    )
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -772,22 +796,8 @@ def _section_payload(
             mandate_evidence_gap_codes=mandate_evidence_gap_codes,
         )
     if section_type == "source_readiness":
-        source_state = result.lineage.source_supportability_state if result is not None else None
-        if result is None:
-            return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
-        reason_codes = (
-            [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
-        )
-        return (
-            "READY" if not reason_codes else "DEGRADED",
-            "Source readiness captured from run lineage.",
-            {
-                "input_mode": result.lineage.input_mode,
-                "source_system": result.lineage.source_system,
-                "source_supportability_state": source_state,
-            },
-            {},
-            reason_codes,
+        return _source_readiness_section_payload(
+            result=result,
         )
     if section_type == "selected_alternative":
         return _selected_alternative_section_payload(
