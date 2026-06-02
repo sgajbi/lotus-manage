@@ -570,25 +570,9 @@ def _proof_pack_governance_section_payload(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "approval_requirements":
-        gate = result.gate_decision
-        workflow_facts = [
-            decision.model_dump(mode="json")
-            for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
-        ]
-        approval_state: ProofPackSectionState = "READY"
-        if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
-            approval_state = "PENDING_REVIEW"
-        if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
-            approval_state = "BLOCKED"
-        return (
-            approval_state,
-            "Approval posture captured from run status and gate decision.",
-            {
-                "gate_decision": gate.model_dump(mode="json") if gate else None,
-                "workflow_decisions": workflow_facts,
-            },
-            {"workflow_decision_count": len(workflow_facts)},
-            [reason.reason_code for reason in gate.reasons] if gate else [],
+        return _approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=workflow_decisions,
         )
     if section_type == "operations_handoff":
         return (
@@ -620,6 +604,33 @@ def _proof_pack_governance_section_payload(
     if section_type == "supportability":
         return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
     return None
+
+
+def _approval_requirements_section_payload(
+    *,
+    result: RebalanceResult,
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> _SectionPayload:
+    gate = result.gate_decision
+    workflow_facts = [
+        decision.model_dump(mode="json")
+        for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
+    ]
+    approval_state: ProofPackSectionState = "READY"
+    if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
+        approval_state = "PENDING_REVIEW"
+    if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
+        approval_state = "BLOCKED"
+    return (
+        approval_state,
+        "Approval posture captured from run status and gate decision.",
+        {
+            "gate_decision": gate.model_dump(mode="json") if gate else None,
+            "workflow_decisions": workflow_facts,
+        },
+        {"workflow_decision_count": len(workflow_facts)},
+        [reason.reason_code for reason in gate.reasons] if gate else [],
+    )
 
 
 def _mandate_context_section_payload(

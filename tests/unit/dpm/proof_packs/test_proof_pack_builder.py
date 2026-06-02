@@ -325,6 +325,60 @@ def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None
     assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
 
 
+def test_approval_requirements_section_payload_orders_workflow_decisions() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
+    later = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_later",
+        run_id=result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="LATER",
+        actor_id="pm_002",
+        decided_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        correlation_id="corr-later",
+    )
+    earlier = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_earlier",
+        run_id=result.rebalance_run_id,
+        action="REQUEST_CHANGES",
+        reason_code="EARLIER",
+        actor_id="pm_001",
+        decided_at=datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        correlation_id="corr-earlier",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=[later, earlier],
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Approval posture captured from run status and gate decision."
+    assert [decision["decision_id"] for decision in facts["workflow_decisions"]] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+    assert metrics == {"workflow_decision_count": 2}
+    assert reason_codes == []
+
+
+def test_approval_requirements_section_payload_blocks_for_blocked_run() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "BLOCKED"})
+
+    state, _summary, facts, metrics, reason_codes = (
+        builder_module._approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=[],
+        )
+    )
+
+    assert state == "BLOCKED"
+    assert facts["workflow_decisions"] == []
+    assert metrics == {"workflow_decision_count": 0}
+    assert reason_codes == []
+
+
 def test_proof_pack_governance_section_payload_orders_workflow_decisions() -> None:
     result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
     later = DpmRunWorkflowDecisionRecord(

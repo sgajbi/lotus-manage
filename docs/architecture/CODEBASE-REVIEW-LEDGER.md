@@ -12251,3 +12251,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   or `build_simulated_state`.
 - Wiki decision: no wiki source change required; this preserves construction enrichment behavior
   and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-500: Proof-pack approval requirements helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_proof_pack_governance_section_payload` mixed approval-state derivation and workflow
+  decision ordering with operations handoff, timeline, lineage, and supportability section routing.
+- Action: extracted `_approval_requirements_section_payload` and routed approval requirements
+  through it. Added direct tests for workflow decision ordering, pending-review posture, blocked-run
+  posture, workflow decision metrics, and empty workflow-decision facts.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_markdown.py
+  tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `_proof_pack_governance_section_payload` out of the top-ten current source functions after it
+  previously ranked first at complexity 21 / 60 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_solver`, `generate_fx_and_simulate`, `build_simulated_state`, or
+  `validate_search_page_metadata`.
+- Wiki decision: no wiki source change required; this preserves proof-pack approval evidence
+  behavior and improves internal maintainability only.
