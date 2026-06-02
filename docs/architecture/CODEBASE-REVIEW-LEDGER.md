@@ -12223,3 +12223,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_targets_solver`, or `_example_from_schema`.
 - Wiki decision: no wiki source change required; this preserves API-enrichment behavior while
   improving generated example semantics and maintainability only.
+
+## BACKEND-REVIEW-20260602-499: Construction enrichment tax and FX posture helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, generated quality reports, and this ledger.
+- Finding: `summarize_enrichment_posture` mixed tax-readiness and FX-source posture decisions with
+  liquidity, cost, turnover, risk, and performance enrichment aggregation.
+- Action: extracted `_tax_enrichment_status` and `_fx_enrichment_status`, then routed enrichment
+  summary aggregation through them. Added direct tests for required tax blocking, optional tax
+  degradation, available tax readiness, missing FX blocking, and ready FX posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/construction/enrichment.py
+  tests/unit/dpm/construction/test_enrichment.py`, `python -m ruff format
+  src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`, `python -m pytest
+  tests/unit/dpm/construction/test_enrichment.py
+  tests/unit/dpm/construction/test_method_readiness.py
+  tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `summarize_enrichment_posture` out of
+  the top-ten current source functions after it previously ranked first at complexity 21 / 89 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_proof_pack_governance_section_payload`, `generate_targets_solver`, `generate_fx_and_simulate`,
+  or `build_simulated_state`.
+- Wiki decision: no wiki source change required; this preserves construction enrichment behavior
+  and improves internal maintainability only.

@@ -39,6 +39,26 @@ def estimate_transaction_cost(
     return Money(amount=cost, currency=result.before.total_value.currency)
 
 
+def _tax_enrichment_status(
+    *,
+    tax_required: bool,
+    tax_impact_available: bool,
+) -> tuple[ConstructionMethodStatus, list[str]]:
+    if tax_impact_available:
+        return ConstructionMethodStatus.READY, []
+    if tax_required:
+        return ConstructionMethodStatus.BLOCKED, ["TAX_LOTS_REQUIRED_BUT_NO_TAX_IMPACT"]
+    return ConstructionMethodStatus.DEGRADED, ["TAX_ENRICHMENT_NOT_REQUESTED_OR_UNAVAILABLE"]
+
+
+def _fx_enrichment_status(
+    *, missing_fx_pairs: object
+) -> tuple[ConstructionMethodStatus, list[str]]:
+    if missing_fx_pairs:
+        return ConstructionMethodStatus.BLOCKED, ["FX_SOURCE_MISSING"]
+    return ConstructionMethodStatus.READY, []
+
+
 def summarize_enrichment_posture(
     *,
     result: RebalanceResult,
@@ -54,18 +74,16 @@ def summarize_enrichment_posture(
     """Summarize source-aware enrichment readiness without hiding degraded inputs."""
 
     reason_codes: list[str] = []
-    tax_status = ConstructionMethodStatus.READY
-    if tax_required and result.tax_impact is None:
-        tax_status = ConstructionMethodStatus.BLOCKED
-        reason_codes.append("TAX_LOTS_REQUIRED_BUT_NO_TAX_IMPACT")
-    elif result.tax_impact is None:
-        tax_status = ConstructionMethodStatus.DEGRADED
-        reason_codes.append("TAX_ENRICHMENT_NOT_REQUESTED_OR_UNAVAILABLE")
+    tax_status, tax_reason_codes = _tax_enrichment_status(
+        tax_required=tax_required,
+        tax_impact_available=result.tax_impact is not None,
+    )
+    reason_codes.extend(tax_reason_codes)
 
-    fx_status = ConstructionMethodStatus.READY
-    if result.diagnostics.missing_fx_pairs:
-        fx_status = ConstructionMethodStatus.BLOCKED
-        reason_codes.append("FX_SOURCE_MISSING")
+    fx_status, fx_reason_codes = _fx_enrichment_status(
+        missing_fx_pairs=result.diagnostics.missing_fx_pairs
+    )
+    reason_codes.extend(fx_reason_codes)
 
     liquidity_status = ConstructionMethodStatus.READY
     if _cash_weight(result.after_simulated) is None:
