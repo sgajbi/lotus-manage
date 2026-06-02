@@ -480,67 +480,76 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
     )
     content_hash: str = Field(default="")
 
+    def _validate_active_lifecycle(self) -> None:
+        lifecycle_fields = [
+            self.retired_at,
+            self.retired_by,
+            self.retirement_reason,
+            self.retirement_correlation_id,
+            self.superseded_at,
+            self.superseded_by,
+            self.supersession_reason,
+            self.supersession_correlation_id,
+            self.superseded_by_campaign_id,
+            self.superseded_by_campaign_version,
+            self.superseded_by_content_hash,
+        ]
+        if any(value is not None for value in lifecycle_fields):
+            raise ValueError("BULK_REVIEW_CAMPAIGN_ACTIVE_LIFECYCLE_FIELDS_FORBIDDEN")
+
+    def _validate_retired_lifecycle(self) -> None:
+        if self.retired_at is None:
+            raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_TIMESTAMP_REQUIRED")
+        if not (self.retired_by or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_ACTOR_REQUIRED")
+        if not (self.retirement_reason or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_REASON_REQUIRED")
+        if not (self.retirement_correlation_id or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_CORRELATION_REQUIRED")
+        supersession_fields = [
+            self.superseded_at,
+            self.superseded_by,
+            self.supersession_reason,
+            self.supersession_correlation_id,
+            self.superseded_by_campaign_id,
+            self.superseded_by_campaign_version,
+            self.superseded_by_content_hash,
+        ]
+        if any(value is not None for value in supersession_fields):
+            raise ValueError("BULK_REVIEW_CAMPAIGN_RETIRED_SUPERSESSION_FIELDS_FORBIDDEN")
+
+    def _validate_superseded_lifecycle(self) -> None:
+        if self.superseded_at is None:
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_TIMESTAMP_REQUIRED")
+        if not (self.superseded_by or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_ACTOR_REQUIRED")
+        if not (self.supersession_reason or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_REASON_REQUIRED")
+        if not (self.supersession_correlation_id or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CORRELATION_REQUIRED")
+        if not (self.superseded_by_campaign_id or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CAMPAIGN_ID_REQUIRED")
+        if not (self.superseded_by_campaign_version or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CAMPAIGN_VERSION_REQUIRED")
+        if not (self.superseded_by_content_hash or "").strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CONTENT_HASH_REQUIRED")
+        retirement_fields = [
+            self.retired_at,
+            self.retired_by,
+            self.retirement_reason,
+            self.retirement_correlation_id,
+        ]
+        if any(value is not None for value in retirement_fields):
+            raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSEDED_RETIREMENT_FIELDS_FORBIDDEN")
+
     @model_validator(mode="after")
     def validate_definition(self) -> "DpmBulkReviewCampaignDefinition":
         if self.status == "ACTIVE":
-            lifecycle_fields = [
-                self.retired_at,
-                self.retired_by,
-                self.retirement_reason,
-                self.retirement_correlation_id,
-                self.superseded_at,
-                self.superseded_by,
-                self.supersession_reason,
-                self.supersession_correlation_id,
-                self.superseded_by_campaign_id,
-                self.superseded_by_campaign_version,
-                self.superseded_by_content_hash,
-            ]
-            if any(value is not None for value in lifecycle_fields):
-                raise ValueError("BULK_REVIEW_CAMPAIGN_ACTIVE_LIFECYCLE_FIELDS_FORBIDDEN")
+            self._validate_active_lifecycle()
         elif self.status == "RETIRED":
-            if self.retired_at is None:
-                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_TIMESTAMP_REQUIRED")
-            if not (self.retired_by or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_ACTOR_REQUIRED")
-            if not (self.retirement_reason or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_REASON_REQUIRED")
-            if not (self.retirement_correlation_id or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIREMENT_CORRELATION_REQUIRED")
-            supersession_fields = [
-                self.superseded_at,
-                self.superseded_by,
-                self.supersession_reason,
-                self.supersession_correlation_id,
-                self.superseded_by_campaign_id,
-                self.superseded_by_campaign_version,
-                self.superseded_by_content_hash,
-            ]
-            if any(value is not None for value in supersession_fields):
-                raise ValueError("BULK_REVIEW_CAMPAIGN_RETIRED_SUPERSESSION_FIELDS_FORBIDDEN")
+            self._validate_retired_lifecycle()
         else:
-            if self.superseded_at is None:
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_TIMESTAMP_REQUIRED")
-            if not (self.superseded_by or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_ACTOR_REQUIRED")
-            if not (self.supersession_reason or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_REASON_REQUIRED")
-            if not (self.supersession_correlation_id or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CORRELATION_REQUIRED")
-            if not (self.superseded_by_campaign_id or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CAMPAIGN_ID_REQUIRED")
-            if not (self.superseded_by_campaign_version or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CAMPAIGN_VERSION_REQUIRED")
-            if not (self.superseded_by_content_hash or "").strip():
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSESSION_CONTENT_HASH_REQUIRED")
-            retirement_fields = [
-                self.retired_at,
-                self.retired_by,
-                self.retirement_reason,
-                self.retirement_correlation_id,
-            ]
-            if any(value is not None for value in retirement_fields):
-                raise ValueError("BULK_REVIEW_CAMPAIGN_SUPERSEDED_RETIREMENT_FIELDS_FORBIDDEN")
+            self._validate_superseded_lifecycle()
         if not [value for value in self.eligible_portfolio_types if value.strip()]:
             raise ValueError("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
         if not self.candidates:

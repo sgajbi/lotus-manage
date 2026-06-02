@@ -11942,3 +11942,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   behavior-preserving.
 - Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-489: Campaign definition lifecycle validation helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, generated quality reports, and
+  this ledger.
+- Finding: `DpmBulkReviewCampaignDefinition.validate_definition` was the top source hotspot after
+  prior reductions because it mixed active, retired, and superseded lifecycle validation branches
+  with structural checks and content-hash assignment.
+- Action: extracted `_validate_active_lifecycle`, `_validate_retired_lifecycle`, and
+  `_validate_superseded_lifecycle`, then routed the Pydantic validator through the status-specific
+  helpers. Added direct helper tests proving the preserved lifecycle reason codes.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/waves/campaign_definitions.py
+  tests/unit/dpm/waves/test_campaign_definition_repository.py`, `python -m ruff format
+  src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definitions.py`, `python -m pytest
+  tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `validate_definition` out of the
+  top-ten current source functions after it previously ranked at complexity 30 / 69 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `build_search_row`, `compile_mandate_digital_twin_from_core`, or `generate_fx_and_simulate`.
+- Wiki decision: no wiki source change required; this preserves campaign-definition lifecycle
+  behavior and improves internal maintainability only.
