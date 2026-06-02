@@ -14,7 +14,7 @@ from src.core.common.simulation_shared import (
     sort_execution_intents,
 )
 from src.core.common.workflow_gates import evaluate_gate_decision
-from src.core.compliance import RuleEngine
+from src.core.compliance import RuleEngine, _cash_band_rule_result
 from src.core.models import (
     AllocationMetric,
     BatchRebalanceRequest,
@@ -366,3 +366,61 @@ def test_rule_engine_flags_single_position_limit_breaches() -> None:
         and result.reason_code == "LIMIT_BREACH"
         for result in results
     )
+
+
+def test_cash_band_rule_result_passes_when_cash_is_inside_policy_band() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[],
+        allocation_by_asset_class=[
+            AllocationMetric(
+                key="CASH",
+                weight=Decimal("0.05"),
+                value=Money(amount=Decimal("5"), currency="USD"),
+            )
+        ],
+        allocation_by_instrument=[],
+    )
+
+    result = _cash_band_rule_result(
+        state=state,
+        options=EngineOptions(
+            cash_band_min_weight=Decimal("0.02"),
+            cash_band_max_weight=Decimal("0.10"),
+        ),
+    )
+
+    assert result.rule_id == "CASH_BAND"
+    assert result.status == "PASS"
+    assert result.reason_code == "OK"
+    assert result.measured == Decimal("0.05")
+
+
+def test_cash_band_rule_result_fails_when_cash_breaches_policy_band() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[],
+        allocation_by_asset_class=[
+            AllocationMetric(
+                key="CASH",
+                weight=Decimal("0.20"),
+                value=Money(amount=Decimal("20"), currency="USD"),
+            )
+        ],
+        allocation_by_instrument=[],
+    )
+
+    result = _cash_band_rule_result(
+        state=state,
+        options=EngineOptions(
+            cash_band_min_weight=Decimal("0.02"),
+            cash_band_max_weight=Decimal("0.10"),
+        ),
+    )
+
+    assert result.rule_id == "CASH_BAND"
+    assert result.status == "FAIL"
+    assert result.reason_code == "THRESHOLD_BREACH"
+    assert result.remediation_hint == "Portfolio cash is outside policy bands."

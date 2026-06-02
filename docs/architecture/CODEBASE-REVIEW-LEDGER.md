@@ -12491,3 +12491,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_intents`, `generate_targets_solver`, or `summarize_enrichment_posture`.
 - Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
   and improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-508: Compliance cash-band rule helper
+
+- Date: 2026-06-02
+- Scope: `src/core/compliance.py`, `tests/unit/core/test_common_edge_coverage.py`, generated
+  quality reports, and this ledger.
+- Finding: `RuleEngine.evaluate` mixed cash-band policy evaluation with concentration, data
+  quality, minimum-trade, no-shorting, and insufficient-cash rules in one method.
+- Action: extracted `_cash_band_rule_result` so portfolio cash-band policy evidence is directly
+  testable and the rule engine can keep sequencing independent rule families. Added direct tests
+  for cash inside the policy band and cash breaching the configured maximum band.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/compliance.py
+  tests/unit/core/test_common_edge_coverage.py`, `python -m ruff format src/core/compliance.py
+  tests/unit/core/test_common_edge_coverage.py`, `python -m mypy --config-file mypy.ini
+  src/core/compliance.py`, `python -m pytest tests/unit/core/test_common_edge_coverage.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `evaluate` out of the top-ten current
+  source functions after it previously ranked first at complexity 17 / 199 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `generate_targets_solver`, `summarize_enrichment_posture`, or `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves compliance-rule behavior and
+  improves internal rule-engine maintainability only.

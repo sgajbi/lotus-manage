@@ -9,6 +9,38 @@ from typing import List
 from src.core.models import DiagnosticsData, EngineOptions, RuleResult, SimulatedState
 
 
+def _cash_band_rule_result(
+    *,
+    state: SimulatedState,
+    options: EngineOptions,
+) -> RuleResult:
+    cash_weight = next(
+        (a.weight for a in state.allocation_by_asset_class if a.key == "CASH"), Decimal("0")
+    )
+    min_w = options.cash_band_min_weight
+    max_w = options.cash_band_max_weight
+
+    if cash_weight < min_w or cash_weight > max_w:
+        return RuleResult(
+            rule_id="CASH_BAND",
+            severity="SOFT",
+            status="FAIL",
+            measured=cash_weight,
+            threshold={"min": min_w, "max": max_w},
+            reason_code="THRESHOLD_BREACH",
+            remediation_hint="Portfolio cash is outside policy bands.",
+        )
+
+    return RuleResult(
+        rule_id="CASH_BAND",
+        severity="SOFT",
+        status="PASS",
+        measured=cash_weight,
+        threshold={"min": min_w, "max": max_w},
+        reason_code="OK",
+    )
+
+
 class RuleEngine:
     """
     Evaluates business rules against the simulated after-state.
@@ -22,35 +54,7 @@ class RuleEngine:
     ) -> List[RuleResult]:
         results = []
 
-        cash_weight = next(
-            (a.weight for a in state.allocation_by_asset_class if a.key == "CASH"), Decimal("0")
-        )
-        min_w = options.cash_band_min_weight
-        max_w = options.cash_band_max_weight
-
-        if cash_weight < min_w or cash_weight > max_w:
-            results.append(
-                RuleResult(
-                    rule_id="CASH_BAND",
-                    severity="SOFT",
-                    status="FAIL",
-                    measured=cash_weight,
-                    threshold={"min": min_w, "max": max_w},
-                    reason_code="THRESHOLD_BREACH",
-                    remediation_hint="Portfolio cash is outside policy bands.",
-                )
-            )
-        else:
-            results.append(
-                RuleResult(
-                    rule_id="CASH_BAND",
-                    severity="SOFT",
-                    status="PASS",
-                    measured=cash_weight,
-                    threshold={"min": min_w, "max": max_w},
-                    reason_code="OK",
-                )
-            )
+        results.append(_cash_band_rule_result(state=state, options=options))
 
         limit_w = options.single_position_max_weight
         if limit_w is not None:

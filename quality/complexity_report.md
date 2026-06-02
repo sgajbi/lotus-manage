@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:43:29+00:00`
+- Generated at: `2026-06-02T04:46:13+00:00`
 
-- Current ref: `a010107`
+- Current ref: `5e7e52b`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | evaluate | src/core/compliance.py | 17 | 199 |
-| 2 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 3 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 4 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
-| 5 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
-| 6 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
-| 7 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
-| 8 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
-| 9 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
-| 10 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 2 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 3 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 4 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
+| 5 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 6 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 7 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
+| 8 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
+| 9 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
+| 10 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
 
 ### Most Complex Current Test Functions
 
