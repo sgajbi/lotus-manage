@@ -196,6 +196,31 @@ def test_adapter_section_payload_returns_ready_contract_reference() -> None:
     assert reason_codes == []
 
 
+def test_run_state_section_payload_blocks_missing_trade_intents() -> None:
+    result = _ready_rebalance_result().model_copy(update={"intents": []})
+
+    state, summary, facts, metrics, reason_codes = builder_module._run_state_section_payload(
+        section_type="trade_intents",
+        result=result,
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "No trade intents are available for pre-trade proof."
+    assert facts == {"intent_ids": []}
+    assert metrics == {"trade_count": 0}
+    assert reason_codes == ["DPM_TRADE_INTENTS_MISSING"]
+
+
+def test_run_state_section_payload_ignores_unrelated_sections() -> None:
+    assert (
+        builder_module._run_state_section_payload(
+            section_type="tax_impact",
+            result=_ready_rebalance_result(),
+        )
+        is None
+    )
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

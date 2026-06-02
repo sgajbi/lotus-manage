@@ -414,6 +414,54 @@ def _adapter_section_payload(
     )
 
 
+def _run_state_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
+    if section_type == "before_state":
+        return (
+            "READY",
+            "Before-state summary captured from source run artifact.",
+            {"before_summary": result.before.model_dump(mode="json")},
+            {"position_count": len(result.before.positions)},
+            [],
+        )
+    if section_type == "target_state":
+        return (
+            "READY",
+            "Target state captured from source run target trace.",
+            {"target_id": result.target.target_id},
+            {"target_count": len(result.target.targets)},
+            [],
+        )
+    if section_type == "trade_intents":
+        if not result.intents:
+            return (
+                "BLOCKED",
+                "No trade intents are available for pre-trade proof.",
+                {"intent_ids": []},
+                {"trade_count": 0},
+                ["DPM_TRADE_INTENTS_MISSING"],
+            )
+        return (
+            "READY",
+            "Trade intents captured from source run.",
+            {"intent_ids": [intent.intent_id for intent in result.intents]},
+            {"trade_count": len(result.intents)},
+            [],
+        )
+    if section_type == "after_state":
+        return (
+            "READY" if result.status != "BLOCKED" else "BLOCKED",
+            "After-state simulation summary captured from source run.",
+            {"after_summary": result.after_simulated.model_dump(mode="json")},
+            {"position_count": len(result.after_simulated.positions)},
+            [] if result.status != "BLOCKED" else ["DPM_AFTER_STATE_BLOCKED"],
+        )
+    return None
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -599,46 +647,9 @@ def _section_payload(
         )
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
-    if section_type == "before_state":
-        return (
-            "READY",
-            "Before-state summary captured from source run artifact.",
-            {"before_summary": result.before.model_dump(mode="json")},
-            {"position_count": len(result.before.positions)},
-            [],
-        )
-    if section_type == "target_state":
-        return (
-            "READY",
-            "Target state captured from source run target trace.",
-            {"target_id": result.target.target_id},
-            {"target_count": len(result.target.targets)},
-            [],
-        )
-    if section_type == "trade_intents":
-        if not result.intents:
-            return (
-                "BLOCKED",
-                "No trade intents are available for pre-trade proof.",
-                {"intent_ids": []},
-                {"trade_count": 0},
-                ["DPM_TRADE_INTENTS_MISSING"],
-            )
-        return (
-            "READY",
-            "Trade intents captured from source run.",
-            {"intent_ids": [intent.intent_id for intent in result.intents]},
-            {"trade_count": len(result.intents)},
-            [],
-        )
-    if section_type == "after_state":
-        return (
-            "READY" if result.status != "BLOCKED" else "BLOCKED",
-            "After-state simulation summary captured from source run.",
-            {"after_summary": result.after_simulated.model_dump(mode="json")},
-            {"position_count": len(result.after_simulated.positions)},
-            [] if result.status != "BLOCKED" else ["DPM_AFTER_STATE_BLOCKED"],
-        )
+    run_state_payload = _run_state_section_payload(section_type=section_type, result=result)
+    if run_state_payload is not None:
+        return run_state_payload
     if section_type == "drift_impact":
         if selected_alternative is not None:
             metrics = selected_alternative.comparison_metrics.model_dump(mode="json")

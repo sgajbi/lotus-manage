@@ -11534,3 +11534,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   did not lower the branch-count score.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-474: Proof-pack run-state section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried several simple run-state section branches for before,
+  target, trade-intent, and after-state payloads, keeping the dispatcher as the top source
+  complexity hotspot.
+- Action: extracted `_run_state_section_payload` for the cohesive run-state section family and left
+  `_section_payload` responsible for orchestration/dispatch. Added direct tests for blocked
+  trade-intent evidence and unrelated-section passthrough.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 81 / 420 lines to complexity 75 / 383
+  lines.
+- Follow-up: continue with branch-reducing section-family helpers, then revisit whether the
+  dispatcher should become table-driven once helper boundaries are stable.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
