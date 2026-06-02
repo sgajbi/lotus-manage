@@ -12079,3 +12079,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_intents`.
 - Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-494: Rebalance FX intent and dependency helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` still mixed FX funding/sweep intent construction and
+  dependency-linking defaults with simulation orchestration, keeping direction-specific cash math
+  and dependency policy harder to test directly.
+- Action: extracted `_fx_intent_for_projected_cash_balance` and `_link_execution_dependencies`,
+  then routed FX generation through them. Added direct tests for funding intent construction, sweep
+  intent construction, zero-balance suppression, default same-currency sell dependency linking, and
+  explicit same-currency sell opt-out.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_fx_and_simulate` reduced
+  from complexity 22 / 160 lines to complexity 19 / 137 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `_section_payload`, `generate_targets_heuristic`, or `_infer_example`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.

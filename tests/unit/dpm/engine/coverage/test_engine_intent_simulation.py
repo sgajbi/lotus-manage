@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from src.core.rebalance.execution import (
+    _fx_intent_for_projected_cash_balance,
+    _link_execution_dependencies,
     _project_cash_after_security_trades,
     build_settlement_ladder,
 )
@@ -25,6 +27,109 @@ from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics, usd_cash_p
 
 
 class TestIntentDependenciesAndSimulation:
+    def test_fx_intent_for_projected_cash_balance_builds_funding_intent(self):
+        intent = _fx_intent_for_projected_cash_balance(
+            currency="EUR",
+            balance=Decimal("-100"),
+            base_currency="USD",
+            rate_to_base=Decimal("1.2"),
+            intent_id="oi_fx_1",
+            fx_buffer_pct=Decimal("0.05"),
+        )
+
+        assert intent is not None
+        assert intent.intent_id == "oi_fx_1"
+        assert intent.pair == "EUR/USD"
+        assert intent.buy_currency == "EUR"
+        assert intent.buy_amount == Decimal("105.00")
+        assert intent.sell_currency == "USD"
+        assert intent.sell_amount_estimated == Decimal("126.000")
+        assert intent.rationale.code == "FUNDING"
+
+    def test_fx_intent_for_projected_cash_balance_builds_sweep_intent(self):
+        intent = _fx_intent_for_projected_cash_balance(
+            currency="EUR",
+            balance=Decimal("100"),
+            base_currency="USD",
+            rate_to_base=Decimal("1.2"),
+            intent_id="oi_fx_2",
+            fx_buffer_pct=Decimal("0.05"),
+        )
+
+        assert intent is not None
+        assert intent.intent_id == "oi_fx_2"
+        assert intent.pair == "EUR/USD"
+        assert intent.buy_currency == "USD"
+        assert intent.buy_amount == Decimal("120.0")
+        assert intent.sell_currency == "EUR"
+        assert intent.sell_amount_estimated == Decimal("100")
+        assert intent.rationale.code == "SWEEP"
+
+    def test_fx_intent_for_projected_cash_balance_skips_zero_balance(self):
+        assert (
+            _fx_intent_for_projected_cash_balance(
+                currency="EUR",
+                balance=Decimal("0"),
+                base_currency="USD",
+                rate_to_base=Decimal("1.2"),
+                intent_id="oi_fx_3",
+                fx_buffer_pct=Decimal("0.05"),
+            )
+            is None
+        )
+
+    def test_link_execution_dependencies_defaults_to_same_currency_sell_dependency(self):
+        sell = SecurityTradeIntent(
+            intent_id="oi_sell_eur",
+            instrument_id="EQ_EU_SELL",
+            side="SELL",
+            quantity=Decimal("1"),
+            notional={"amount": Decimal("100"), "currency": "EUR"},
+            notional_base={"amount": Decimal("120"), "currency": "USD"},
+        )
+        buy = SecurityTradeIntent(
+            intent_id="oi_buy_eur",
+            instrument_id="EQ_EU_BUY",
+            side="BUY",
+            quantity=Decimal("1"),
+            notional={"amount": Decimal("100"), "currency": "EUR"},
+            notional_base={"amount": Decimal("120"), "currency": "USD"},
+        )
+
+        _link_execution_dependencies(
+            intents=[sell, buy],
+            fx_intent_id_by_currency={"EUR": "oi_fx_eur"},
+            include_same_currency_sell_dependency=None,
+        )
+
+        assert buy.dependencies == ["oi_fx_eur", "oi_sell_eur"]
+
+    def test_link_execution_dependencies_respects_same_currency_sell_opt_out(self):
+        sell = SecurityTradeIntent(
+            intent_id="oi_sell_eur",
+            instrument_id="EQ_EU_SELL",
+            side="SELL",
+            quantity=Decimal("1"),
+            notional={"amount": Decimal("100"), "currency": "EUR"},
+            notional_base={"amount": Decimal("120"), "currency": "USD"},
+        )
+        buy = SecurityTradeIntent(
+            intent_id="oi_buy_eur",
+            instrument_id="EQ_EU_BUY",
+            side="BUY",
+            quantity=Decimal("1"),
+            notional={"amount": Decimal("100"), "currency": "EUR"},
+            notional_base={"amount": Decimal("120"), "currency": "USD"},
+        )
+
+        _link_execution_dependencies(
+            intents=[sell, buy],
+            fx_intent_id_by_currency={"EUR": "oi_fx_eur"},
+            include_same_currency_sell_dependency=False,
+        )
+
+        assert buy.dependencies == ["oi_fx_eur"]
+
     def test_project_cash_after_security_trades_applies_buy_sell_and_skips_missing_notional(self):
         portfolio = portfolio_snapshot(
             portfolio_id="pf_project_cash",

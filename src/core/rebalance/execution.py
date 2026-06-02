@@ -129,6 +129,59 @@ def _project_cash_after_security_trades(
     return projected_cash
 
 
+def _fx_intent_for_projected_cash_balance(
+    *,
+    currency: str,
+    balance: Decimal,
+    base_currency: str,
+    rate_to_base: Decimal,
+    intent_id: str,
+    fx_buffer_pct: Decimal,
+) -> FxSpotIntent | None:
+    if balance < 0:
+        buy_amount = abs(balance) * (Decimal("1.0") + fx_buffer_pct)
+        return FxSpotIntent(
+            intent_id=intent_id,
+            pair=f"{currency}/{base_currency}",
+            buy_currency=currency,
+            buy_amount=buy_amount,
+            sell_currency=base_currency,
+            sell_amount_estimated=buy_amount * rate_to_base,
+            rationale=IntentRationale(code="FUNDING", message="Fund"),
+        )
+    if balance > 0:
+        return FxSpotIntent(
+            intent_id=intent_id,
+            pair=f"{currency}/{base_currency}",
+            buy_currency=base_currency,
+            buy_amount=balance * rate_to_base,
+            sell_currency=currency,
+            sell_amount_estimated=balance,
+            rationale=IntentRationale(code="SWEEP", message="Sweep"),
+        )
+    return None
+
+
+def _link_execution_dependencies(
+    *,
+    intents: list[OrderIntent],
+    fx_intent_id_by_currency: dict[str, str],
+    include_same_currency_sell_dependency: bool | None,
+) -> None:
+    resolved_include_same_currency_sell_dependency = include_same_currency_sell_dependency
+    if resolved_include_same_currency_sell_dependency is None:
+        resolved_include_same_currency_sell_dependency = True
+
+    dependency_intents = [
+        intent for intent in intents if isinstance(intent, (SecurityTradeIntent, FxSpotIntent))
+    ]
+    link_buy_intent_dependencies(
+        dependency_intents,
+        fx_intent_id_by_currency=fx_intent_id_by_currency,
+        include_same_currency_sell_dependency=resolved_include_same_currency_sell_dependency,
+    )
+
+
 def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -162,48 +215,25 @@ def generate_fx_and_simulate(
                 return intents, deepcopy(portfolio), [], "BLOCKED", None
             continue
 
+        fx_id = f"oi_fx_{len(intents) + 1}"
+        fx_intent = _fx_intent_for_projected_cash_balance(
+            currency=ccy,
+            balance=bal,
+            base_currency=portfolio.base_currency,
+            rate_to_base=rate,
+            intent_id=fx_id,
+            fx_buffer_pct=options.fx_buffer_pct,
+        )
+        if fx_intent is None:
+            continue
+        intents.append(fx_intent)
         if bal < 0:
-            buy_amt = abs(bal) * (Decimal("1.0") + options.fx_buffer_pct)
-            sell_amt = buy_amt * rate
-            fx_id = f"oi_fx_{len(intents) + 1}"
             fx_map[ccy] = fx_id
-            intents.append(
-                FxSpotIntent(
-                    intent_id=fx_id,
-                    pair=f"{ccy}/{portfolio.base_currency}",
-                    buy_currency=ccy,
-                    buy_amount=buy_amt,
-                    sell_currency=portfolio.base_currency,
-                    sell_amount_estimated=sell_amt,
-                    rationale=IntentRationale(code="FUNDING", message="Fund"),
-                )
-            )
-        elif bal > 0:
-            buy_amt = bal * rate
-            fx_id = f"oi_fx_{len(intents) + 1}"
-            intents.append(
-                FxSpotIntent(
-                    intent_id=fx_id,
-                    pair=f"{ccy}/{portfolio.base_currency}",
-                    buy_currency=portfolio.base_currency,
-                    buy_amount=buy_amt,
-                    sell_currency=ccy,
-                    sell_amount_estimated=bal,
-                    rationale=IntentRationale(code="SWEEP", message="Sweep"),
-                )
-            )
 
-    include_sell_dependency = options.link_buy_to_same_currency_sell_dependency
-    if include_sell_dependency is None:
-        include_sell_dependency = True
-    dependency_intents: list[SecurityTradeIntent | FxSpotIntent] = []
-    for intent in intents:
-        if isinstance(intent, (SecurityTradeIntent, FxSpotIntent)):
-            dependency_intents.append(intent)
-    link_buy_intent_dependencies(
-        dependency_intents,
+    _link_execution_dependencies(
+        intents=intents,
         fx_intent_id_by_currency=fx_map,
-        include_same_currency_sell_dependency=include_sell_dependency,
+        include_same_currency_sell_dependency=options.link_buy_to_same_currency_sell_dependency,
     )
 
     intents = sort_execution_intents(intents)
