@@ -221,6 +221,32 @@ def test_run_state_section_payload_ignores_unrelated_sections() -> None:
     )
 
 
+def test_run_diagnostics_section_payload_returns_ready_liquidity_posture() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_diagnostics_section_payload(
+        section_type="liquidity_and_cash",
+        result=_ready_rebalance_result(),
+    )
+
+    assert state == "READY"
+    assert summary == "Liquidity and cash posture captured from run diagnostics."
+    assert facts["cash_ladder_breaches"] == []
+    assert metrics == {"breach_count": 0}
+    assert reason_codes == []
+
+
+def test_run_diagnostics_section_payload_returns_currency_overlay_fallback() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_diagnostics_section_payload(
+        section_type="currency_overlay_evidence",
+        result=_ready_rebalance_result(),
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Currency-overlay authority context is not attached."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"]
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(

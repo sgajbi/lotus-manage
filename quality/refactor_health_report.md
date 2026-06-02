@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-02T00:14:09+00:00`
+- Generated at: `2026-06-02T00:16:05+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `bb02b2b`
+- Current ref: `f80fd82`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 768 | 769 | +1 |
-| Total Python LOC | 145874 | 146557 | +683 |
-| Test functions | 1855 | 1866 | +11 |
+| Total Python LOC | 145874 | 146597 | +723 |
+| Test functions | 1855 | 1868 | +13 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 18 | 18 | +0 |
 
@@ -84,10 +84,10 @@
 | --- | --- | --- | --- |
 | 1 | test_rfc0042_gold_standard_tightening_preserves_source_boundaries | tests/unit/test_documentation_current_state.py | 1546 |
 | 2 | test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 754 |
-| 3 | _section_payload | src/core/proof_packs/builder.py | 383 |
-| 4 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 382 |
-| 5 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 376 |
-| 6 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
+| 3 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 382 |
+| 4 | test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events | tests/unit/dpm/api/test_portfolio_memory_api.py | 376 |
+| 5 | _core_execution_context | tests/unit/dpm/api/test_construction_api.py | 354 |
+| 6 | _section_payload | src/core/proof_packs/builder.py | 353 |
 | 7 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 8 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
 | 9 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
@@ -121,9 +121,9 @@
 | 5 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 95 | 382 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 87 | 148 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
-| 8 | _section_payload | src/core/proof_packs/builder.py | 75 | 383 |
-| 9 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
-| 10 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
+| 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
+| 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
+| 10 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
 
 ## Boundary Findings
 

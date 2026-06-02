@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T00:14:09+00:00`
+- Generated at: `2026-06-02T00:16:05+00:00`
 
-- Current ref: `bb02b2b`
+- Current ref: `f80fd82`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -24,15 +24,15 @@
 | 5 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 95 | 382 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 87 | 148 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
-| 8 | _section_payload | src/core/proof_packs/builder.py | 75 | 383 |
-| 9 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
-| 10 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
+| 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
+| 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
+| 10 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
 
 ### Most Complex Current Source Functions
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _section_payload | src/core/proof_packs/builder.py | 75 | 383 |
+| 1 | _section_payload | src/core/proof_packs/builder.py | 69 | 353 |
 
 ### Most Complex Current Test Functions
 

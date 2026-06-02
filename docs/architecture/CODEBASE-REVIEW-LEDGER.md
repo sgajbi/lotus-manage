@@ -11561,3 +11561,28 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   dispatcher should become table-driven once helper boundaries are stable.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-475: Proof-pack run diagnostics section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still owned diagnostic section branches for liquidity, FX funding, and
+  currency overlay, keeping proof-pack evidence assembly concentrated in one dispatcher.
+- Action: extracted `_run_diagnostics_section_payload` for the cohesive diagnostics section family
+  and added direct helper tests for ready liquidity posture and currency-overlay fallback posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 75 / 383 lines to complexity 69 / 353
+  lines.
+- Follow-up: continue extracting remaining source section families, especially approval/lineage and
+  tax/drift/rule sections, with direct helper tests.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
