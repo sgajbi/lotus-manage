@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-02T04:30:46+00:00`
+- Generated at: `2026-06-02T04:33:58+00:00`
 
-- Current ref: `be6f7b0`
+- Current ref: `ded5058`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 

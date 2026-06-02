@@ -762,24 +762,14 @@ class DpmPortfolioMemorySearchPage(BaseModel):
 
     @model_validator(mode="after")
     def validate_search_page_metadata(self) -> "DpmPortfolioMemorySearchPage":
-        if self.returned_count != len(self.items):
-            raise ValueError("returned_count must equal the number of items.")
-
-        if self.returned_count > self.total_count:
-            raise ValueError("returned_count must not exceed total_count.")
-
-        expected_has_more = self.offset + self.returned_count < self.total_count
-        if self.has_more != expected_has_more:
-            raise ValueError("has_more must match pagination posture.")
-
-        if self.has_more:
-            expected_next_offset = self.offset + self.returned_count
-            if self.next_offset != expected_next_offset:
-                raise ValueError("next_offset must equal offset plus returned_count.")
-            if self.next_offset <= self.offset:
-                raise ValueError("next_offset must advance when has_more is true.")
-        elif self.next_offset is not None:
-            raise ValueError("next_offset must be null when has_more is false.")
+        _validate_search_page_pagination(
+            returned_count=self.returned_count,
+            item_count=len(self.items),
+            total_count=self.total_count,
+            offset=self.offset,
+            has_more=self.has_more,
+            next_offset=self.next_offset,
+        )
 
         _validate_non_negative_counts(
             label="supportability_state_counts", counts=self.supportability_state_counts
@@ -840,6 +830,35 @@ class DpmPortfolioMemorySearchPage(BaseModel):
                 )
 
         return self
+
+
+def _validate_search_page_pagination(
+    *,
+    returned_count: int,
+    item_count: int,
+    total_count: int,
+    offset: int,
+    has_more: bool,
+    next_offset: int | None,
+) -> None:
+    if returned_count != item_count:
+        raise ValueError("returned_count must equal the number of items.")
+
+    if returned_count > total_count:
+        raise ValueError("returned_count must not exceed total_count.")
+
+    expected_has_more = offset + returned_count < total_count
+    if has_more != expected_has_more:
+        raise ValueError("has_more must match pagination posture.")
+
+    if has_more:
+        expected_next_offset = offset + returned_count
+        if next_offset is None or next_offset != expected_next_offset:
+            raise ValueError("next_offset must equal offset plus returned_count.")
+        if next_offset <= offset:
+            raise ValueError("next_offset must advance when has_more is true.")
+    elif next_offset is not None:
+        raise ValueError("next_offset must be null when has_more is false.")
 
 
 def _counts(values: Iterable[str]) -> dict[str, int]:

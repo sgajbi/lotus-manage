@@ -1,3 +1,5 @@
+import pytest
+
 from src.core.portfolio_memory.envelopes import finalize_portfolio_memory
 from src.core.portfolio_memory.governance import (
     client_communication_boundary_evidence,
@@ -8,6 +10,7 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    _validate_search_page_pagination,
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
@@ -133,6 +136,53 @@ def test_filters_require_matching_events_tracks_event_level_filters() -> None:
             source_type="PortfolioManagerBookMembership",
         )
     )
+
+
+def test_validate_search_page_pagination_accepts_advancing_page() -> None:
+    _validate_search_page_pagination(
+        returned_count=2,
+        item_count=2,
+        total_count=5,
+        offset=0,
+        has_more=True,
+        next_offset=2,
+    )
+
+
+def test_validate_search_page_pagination_rejects_item_count_mismatch() -> None:
+    with pytest.raises(ValueError, match="returned_count must equal"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=1,
+            total_count=5,
+            offset=0,
+            has_more=True,
+            next_offset=2,
+        )
+
+
+def test_validate_search_page_pagination_rejects_wrong_has_more_posture() -> None:
+    with pytest.raises(ValueError, match="has_more must match"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=2,
+            total_count=5,
+            offset=0,
+            has_more=False,
+            next_offset=None,
+        )
+
+
+def test_validate_search_page_pagination_rejects_terminal_next_offset() -> None:
+    with pytest.raises(ValueError, match="next_offset must be null"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=2,
+            total_count=2,
+            offset=0,
+            has_more=False,
+            next_offset=2,
+        )
 
 
 def test_portfolio_memory_search_item_projects_latest_matching_event() -> None:

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:30:46+00:00`
+- Generated at: `2026-06-02T04:33:58+00:00`
 
-- Current ref: `be6f7b0`
+- Current ref: `ded5058`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
-| 2 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
-| 3 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
-| 4 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
-| 5 | evaluate | src/core/compliance.py | 17 | 199 |
-| 6 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 7 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 8 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
-| 9 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
-| 10 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 1 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
+| 2 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
+| 3 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
+| 4 | evaluate | src/core/compliance.py | 17 | 199 |
+| 5 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 6 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 7 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 8 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 9 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 10 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
 
 ### Most Complex Current Test Functions
 

@@ -12375,3 +12375,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_ensure_request_and_response_examples`.
 - Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-504: Portfolio-memory search pagination validator
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this
+  ledger.
+- Finding: `validate_search_page_metadata` mixed pagination posture validation with aggregate
+  supportability, source-system, and matching-event count validation, making the bounded search API
+  pagination contract harder to test directly.
+- Action: extracted `_validate_search_page_pagination` and routed search-page model validation
+  through it. Added direct tests for valid advancing pages, returned-count mismatches, incorrect
+  `has_more` posture, and invalid terminal-page `next_offset`.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/models.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py
+  tests/unit/dpm/api/test_portfolio_memory_api.py -k "search_page or search_indexes or
+  search_counts or search_facets"`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report moves `validate_search_page_metadata` out of the top-ten current source functions after it
+  previously ranked first at complexity 19 / 79 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_heuristic`, `_example_from_schema`, `_ensure_request_and_response_examples`, or
+  `evaluate`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search API
+  behavior and improves internal validation maintainability only.
