@@ -2,6 +2,7 @@ from copy import deepcopy
 from decimal import Decimal
 from typing import Any, Literal, cast
 
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.common.diagnostics import make_diagnostics_data
 from src.core.models import (
     DiagnosticsData,
@@ -215,27 +216,6 @@ def compare_target_generation_methods(
     }
 
 
-def _redistribute_sell_only_excess(
-    *,
-    eligible_targets: dict[str, Decimal],
-    buy_set: set[str],
-    sell_only_excess: Decimal,
-) -> Literal["READY", "PENDING_REVIEW"]:
-    if sell_only_excess <= Decimal("0.0"):
-        return "READY"
-
-    recipients = {k: v for k, v in eligible_targets.items() if k in buy_set}
-    total_recipient_weight = sum(recipients.values())
-    if total_recipient_weight <= Decimal("0.0"):
-        return "PENDING_REVIEW"
-
-    for instrument_id, weight in recipients.items():
-        eligible_targets[instrument_id] = weight + (
-            sell_only_excess * (weight / total_recipient_weight)
-        )
-    return "READY"
-
-
 def generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -250,7 +230,7 @@ def generate_targets_heuristic(
     status = "READY"
     buy_set = set(buy_list)
 
-    status = _redistribute_sell_only_excess(
+    status = redistribute_sell_only_excess(
         eligible_targets=eligible_targets,
         buy_set=buy_set,
         sell_only_excess=sell_only_excess,

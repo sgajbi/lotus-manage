@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 from src.core.common.capabilities import has_solver_dependencies
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.models import DiagnosticsData, EngineOptions, Money, ShelfEntry, TargetInstrument
 
 _SOLVER_STATUS_OPTIMAL = {"optimal", "optimal_inaccurate"}
@@ -193,15 +194,11 @@ def generate_targets_solver(
     cp: Any = _cp
     np: Any = _np
 
-    status = "READY"
-    if sell_only_excess > Decimal("0.0"):
-        recs = {k: v for k, v in eligible_targets.items() if k in buy_list}
-        total_rec = sum(recs.values())
-        if total_rec > Decimal("0.0"):
-            for i_id, rec_weight in recs.items():
-                eligible_targets[i_id] = rec_weight + (sell_only_excess * (rec_weight / total_rec))
-        else:
-            status = "PENDING_REVIEW"
+    status = redistribute_sell_only_excess(
+        eligible_targets=eligible_targets,
+        buy_set=set(buy_list),
+        sell_only_excess=sell_only_excess,
+    )
 
     tradeable_ids = [i_id for i_id in eligible_targets if i_id in buy_list]
     locked_ids = [i_id for i_id in eligible_targets if i_id not in buy_list]

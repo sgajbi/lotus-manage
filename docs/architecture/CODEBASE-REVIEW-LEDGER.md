@@ -12281,3 +12281,36 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `validate_search_page_metadata`.
 - Wiki decision: no wiki source change required; this preserves proof-pack approval evidence
   behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-501: Shared target redistribution helper
+
+- Date: 2026-06-02
+- Scope: `src/core/common/target_redistribution.py`, `src/core/rebalance/targets.py`,
+  `src/core/target_generation.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_solver` duplicated sell-only excess redistribution logic already
+  extracted for heuristic target generation, leaving solver and heuristic target paths with
+  parallel behavior that could drift.
+- Action: introduced shared `redistribute_sell_only_excess`, routed both heuristic and solver target
+  generation through it, and updated direct redistribution tests to exercise the common helper.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/common/target_redistribution.py
+  src/core/rebalance/targets.py src/core/target_generation.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/common/target_redistribution.py src/core/rebalance/targets.py
+  src/core/target_generation.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/target_redistribution.py
+  src/core/rebalance/targets.py src/core/target_generation.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `generate_targets_solver` reduced from complexity 20 / 113 lines to complexity 17 /
+  109 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `build_simulated_state`, `validate_search_page_metadata`, or
+  `generate_targets_heuristic`.
+- Wiki decision: no wiki source change required; this preserves target-generation behavior and
+  improves shared target allocation maintainability only.

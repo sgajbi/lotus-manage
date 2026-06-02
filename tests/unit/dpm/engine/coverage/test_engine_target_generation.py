@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from src.core.rebalance.targets import _redistribute_sell_only_excess
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
 from tests.shared.assertions import assert_status
@@ -18,7 +18,7 @@ class TestTargetGeneration:
             "LOCKED": Decimal("0.20"),
         }
 
-        status = _redistribute_sell_only_excess(
+        status = redistribute_sell_only_excess(
             eligible_targets=eligible_targets,
             buy_set={"BUY_A", "BUY_B"},
             sell_only_excess=Decimal("0.20"),
@@ -34,7 +34,7 @@ class TestTargetGeneration:
     def test_redistribute_sell_only_excess_skips_when_no_excess(self):
         eligible_targets = {"BUY_A": Decimal("0.30")}
 
-        status = _redistribute_sell_only_excess(
+        status = redistribute_sell_only_excess(
             eligible_targets=eligible_targets,
             buy_set={"BUY_A"},
             sell_only_excess=Decimal("0.0"),
@@ -46,7 +46,7 @@ class TestTargetGeneration:
     def test_redistribute_sell_only_excess_marks_pending_without_recipient_weight(self):
         eligible_targets = {"BUY_A": Decimal("0.0"), "LOCKED": Decimal("0.20")}
 
-        status = _redistribute_sell_only_excess(
+        status = redistribute_sell_only_excess(
             eligible_targets=eligible_targets,
             buy_set={"BUY_A"},
             sell_only_excess=Decimal("0.20"),
