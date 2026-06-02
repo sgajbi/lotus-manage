@@ -30,6 +30,45 @@ def _without_source_lineage(response: Any) -> Any:
     )
 
 
+def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
+    hedge_readiness = hedge_readiness_response()
+    currency_exposure = currency_exposure_response()
+
+    payloads = construction_treasury_source_context._treasury_source_payloads(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+
+    assert payloads["external_hedge_execution_readiness"] == hedge_readiness.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert payloads["external_currency_exposure"] == currency_exposure.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert payloads["external_hedge_policy"] is None
+    assert hash_canonical_payload(payloads)
+
+
+def test_primary_treasury_supportability_uses_first_available_source_family() -> None:
+    primary = construction_treasury_source_context._primary_treasury_supportability(
+        hedge_readiness=None,
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=hedge_policy_response(),
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+
+    assert primary is not None
+    assert primary.state == "UNAVAILABLE"
+    assert primary.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
+    assert primary.exposure_currencies == ["EUR", "JPY"]
+
+
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:
     context = external_treasury_currency_overlay_context(
         hedge_readiness=hedge_readiness_response(),

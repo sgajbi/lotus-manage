@@ -11856,3 +11856,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   complexity ranking.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-486: Treasury overlay payload and supportability helpers
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_treasury_source_context.py`, generated quality reports, and
+  this ledger.
+- Finding: `external_treasury_currency_overlay_context` was the top source hotspot and still
+  assembled aggregate source payloads and primary source-family fallback selection inline before
+  building the authoritative currency-overlay context.
+- Action: extracted `_treasury_source_payloads` and `_primary_treasury_supportability`, then routed
+  the public currency-overlay mapper through them. Added direct helper tests proving aggregate hash
+  inputs and first-available source-family supportability selection.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m ruff format
+  src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m mypy --config-file
+  mypy.ini src/api/services/construction_treasury_source_context.py`, `python -m pytest
+  tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows
+  `external_treasury_currency_overlay_context` reduced from complexity 39 / 189 lines to complexity
+  30 / 164 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with `generate_intents`
+  or another narrow treasury overlay helper extraction if it stays behavior-preserving.
+- Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
+  improves internal maintainability only.
