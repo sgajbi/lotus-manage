@@ -196,6 +196,56 @@ def test_adapter_section_payload_returns_ready_contract_reference() -> None:
     assert reason_codes == []
 
 
+def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_section_payload(
+        section_type="decision_summary",
+        result=result,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=None,
+        reason=None,
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+        created_by="pm_001",
+        source_analytics={},
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Decision evidence assembled from manage run and actor rationale."
+    assert facts == {
+        "actor": "pm_001",
+        "reason": None,
+        "source_run_status": result.status,
+        "selected_alternative_id": None,
+    }
+    assert metrics == {}
+    assert reason_codes == ["DPM_PROOF_PACK_REASON_MISSING"]
+
+
+def test_pre_run_section_payload_ignores_run_required_sections() -> None:
+    assert (
+        builder_module._pre_run_section_payload(
+            section_type="trade_intents",
+            result=_ready_rebalance_result(),
+            alternative_set=None,
+            selected_alternative=None,
+            selection=None,
+            reason="Review rebalance.",
+            mandate_id=None,
+            mandate_twin=None,
+            mandate_health=None,
+            mandate_evidence_gap_codes=[],
+            created_by="pm_001",
+            source_analytics={},
+        )
+        is None
+    )
+
+
 def test_run_state_section_payload_blocks_missing_trade_intents() -> None:
     result = _ready_rebalance_result().model_copy(update={"intents": []})
 

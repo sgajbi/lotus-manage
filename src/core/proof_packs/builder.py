@@ -85,6 +85,9 @@ class ProofPackSourceValidationError(ValueError):
     pass
 
 
+_SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
+
+
 def build_proof_pack_from_run(
     *,
     run: DpmRunRecord,
@@ -826,12 +829,10 @@ def _eligibility_and_restrictions_section_payload(
     )
 
 
-def _section_payload(
+def _pre_run_section_payload(
     *,
     section_type: ProofPackSectionType,
     result: RebalanceResult | None,
-    run: DpmRunRecord | None,
-    run_artifact_hash: str | None,
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
     selection: ConstructionAlternativeSelection | None,
@@ -841,10 +842,8 @@ def _section_payload(
     mandate_health: DpmMandateHealthSnapshot | None,
     mandate_evidence_gap_codes: list[str],
     created_by: str,
-    source_ref_count: int,
     source_analytics: dict[str, ProofPackSourceAnalytics],
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+) -> _SectionPayload | None:
     if section_type == "decision_summary":
         reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
         return (
@@ -909,6 +908,44 @@ def _section_payload(
             summary="AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
             adapter_contract="DpmProofPackAiEvidenceInput",
         )
+    return None
+
+
+def _section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult | None,
+    run: DpmRunRecord | None,
+    run_artifact_hash: str | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    reason: str | None,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+    created_by: str,
+    source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    pre_run_payload = _pre_run_section_payload(
+        section_type=section_type,
+        result=result,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        reason=reason,
+        mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        created_by=created_by,
+        source_analytics=source_analytics,
+    )
+    if pre_run_payload is not None:
+        return pre_run_payload
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
     run_state_payload = _run_state_section_payload(section_type=section_type, result=result)

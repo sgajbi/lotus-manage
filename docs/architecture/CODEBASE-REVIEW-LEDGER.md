@@ -12165,3 +12165,33 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_infer_example`, `summarize_enrichment_posture`, or `_proof_pack_governance_section_payload`.
 - Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-497: Proof-pack pre-run section dispatcher helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` mixed pre-run section routing for decision summaries, source
+  readiness, selected alternatives, source analytics, and adapter references with run-required
+  proof-pack sections and missing-run handling.
+- Action: extracted `_pre_run_section_payload` and routed `_section_payload` through it. Added
+  direct tests for degraded decision-summary evidence when actor rationale is missing and for
+  ignoring run-required sections so they remain handled by the run-backed dispatcher path.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_markdown.py
+  tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `_section_payload` out of the top-ten
+  current source functions after it previously ranked first at complexity 22 / 130 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_infer_example`,
+  `summarize_enrichment_posture`, `_proof_pack_governance_section_payload`, or
+  `generate_targets_solver`.
+- Wiki decision: no wiki source change required; this preserves proof-pack section evidence
+  behavior and improves internal maintainability only.
