@@ -11,6 +11,9 @@ from src.core.portfolio_memory.models import (
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
+    _filters_require_matching_events,
+    _memory_passes_search_summary_filters,
+    _portfolio_memory_search_item,
     build_search_page,
     build_search_row,
 )
@@ -75,6 +78,80 @@ def test_build_search_row_keeps_only_explicit_empty_portfolios() -> None:
         )
         is None
     )
+
+
+def test_memory_passes_search_summary_filters_rejects_unmatched_summary_fields() -> None:
+    memory = _memory(
+        portfolio_id="PB_SEARCH_001",
+        events=[
+            _event(
+                event_id="memory:search:handoff",
+                event_type="WAVE_HANDOFF_READY",
+                event_time="2026-05-31T10:00:00+00:00",
+                source_id="handoff-001",
+                content_hash="sha256:handoff",
+            )
+        ],
+    )
+
+    assert not _memory_passes_search_summary_filters(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type="OUTCOME_REVIEW_CREATED",
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        ),
+        explicit_candidate_ids=set(),
+    )
+    assert not _memory_passes_search_summary_filters(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system="lotus-risk",
+            source_type=None,
+        ),
+        explicit_candidate_ids=set(),
+    )
+
+
+def test_filters_require_matching_events_tracks_event_level_filters() -> None:
+    assert not _filters_require_matching_events(
+        PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        )
+    )
+    assert _filters_require_matching_events(
+        PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system=None,
+            source_type="PortfolioManagerBookMembership",
+        )
+    )
+
+
+def test_portfolio_memory_search_item_projects_latest_matching_event() -> None:
+    event = _event(
+        event_id="memory:search:handoff",
+        event_type="WAVE_HANDOFF_READY",
+        event_time="2026-05-31T10:00:00+00:00",
+        source_id="handoff-001",
+        content_hash="sha256:handoff",
+    )
+    memory = _memory(portfolio_id="PB_SEARCH_001", events=[event])
+
+    item = _portfolio_memory_search_item(memory=memory, matching_events=[event])
+
+    assert item.portfolio_id == "PB_SEARCH_001"
+    assert item.matching_event_count == 1
+    assert item.latest_matching_event_id == "memory:search:handoff"
+    assert item.latest_matching_event_source_type == "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
+    assert item.latest_matching_event_content_hash == "sha256:handoff"
 
 
 def test_build_search_page_counts_matching_event_facets_and_paginates() -> None:

@@ -11969,3 +11969,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `build_search_row`, `compile_mandate_digital_twin_from_core`, or `generate_fx_and_simulate`.
 - Wiki decision: no wiki source change required; this preserves campaign-definition lifecycle
   behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-490: Portfolio-memory search row helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/search_page.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this ledger.
+- Finding: `build_search_row` was the top source hotspot after prior reductions because it mixed
+  summary-level filtering, event-level filter matching, and search-item projection in one function.
+- Action: extracted `_memory_passes_search_summary_filters`, `_filters_require_matching_events`,
+  and `_portfolio_memory_search_item`, then routed `build_search_row` through them. Added direct
+  helper tests for summary filter rejection, event-level filter detection, and latest matching-event
+  projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/search_page.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_page.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py
+  tests/unit/dpm/portfolio_memory/test_search_filters.py
+  tests/unit/dpm/portfolio_memory/test_search_facets.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `build_search_row` out of the top-ten
+  current source functions after it previously ranked at complexity 28 / 86 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `compile_mandate_digital_twin_from_core`, `generate_fx_and_simulate`, or `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search behavior
+  and improves internal maintainability only.
