@@ -12109,3 +12109,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_section_payload`, `generate_targets_heuristic`, or `_infer_example`.
 - Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-495: Heuristic target sell-only excess helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_heuristic` still mixed sell-only excess redistribution with group
+  constraints, total-weight normalization, single-position caps, cash-buffer scaling, and trace
+  assembly.
+- Action: extracted `_redistribute_sell_only_excess` and routed heuristic target generation through
+  it. Added direct tests for proportional redistribution to buyable recipients, no-excess no-op
+  behavior, and pending-review status when no recipient weight is available.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/targets.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `generate_targets_heuristic` reduced from complexity 22 / 74 lines to complexity 19 /
+  71 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `_section_payload`, `_infer_example`, or `summarize_enrichment_posture`.
+- Wiki decision: no wiki source change required; this preserves heuristic target-generation
+  behavior and improves internal maintainability only.

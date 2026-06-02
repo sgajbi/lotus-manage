@@ -215,6 +215,27 @@ def compare_target_generation_methods(
     }
 
 
+def _redistribute_sell_only_excess(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    sell_only_excess: Decimal,
+) -> Literal["READY", "PENDING_REVIEW"]:
+    if sell_only_excess <= Decimal("0.0"):
+        return "READY"
+
+    recipients = {k: v for k, v in eligible_targets.items() if k in buy_set}
+    total_recipient_weight = sum(recipients.values())
+    if total_recipient_weight <= Decimal("0.0"):
+        return "PENDING_REVIEW"
+
+    for instrument_id, weight in recipients.items():
+        eligible_targets[instrument_id] = weight + (
+            sell_only_excess * (weight / total_recipient_weight)
+        )
+    return "READY"
+
+
 def generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -229,14 +250,11 @@ def generate_targets_heuristic(
     status = "READY"
     buy_set = set(buy_list)
 
-    if sell_only_excess > Decimal("0.0"):
-        recs = {k: v for k, v in eligible_targets.items() if k in buy_set}
-        total_rec = sum(recs.values())
-        if total_rec > Decimal("0.0"):
-            for i_id, w in recs.items():
-                eligible_targets[i_id] = w + (sell_only_excess * (w / total_rec))
-        else:
-            status = "PENDING_REVIEW"
+    status = _redistribute_sell_only_excess(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        sell_only_excess=sell_only_excess,
+    )
 
     group_status = apply_group_constraints(eligible_targets, buy_list, shelf, options, diagnostics)
     if group_status == "BLOCKED":

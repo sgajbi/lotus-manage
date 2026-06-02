@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+from src.core.rebalance.targets import _redistribute_sell_only_excess
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
 from tests.shared.assertions import assert_status
@@ -10,6 +11,50 @@ from tests.shared.factories import model_portfolio, position, target
 
 
 class TestTargetGeneration:
+    def test_redistribute_sell_only_excess_allocates_to_buy_targets_proportionally(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.30"),
+            "BUY_B": Decimal("0.10"),
+            "LOCKED": Decimal("0.20"),
+        }
+
+        status = _redistribute_sell_only_excess(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            sell_only_excess=Decimal("0.20"),
+        )
+
+        assert status == "READY"
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.45"),
+            "BUY_B": Decimal("0.15"),
+            "LOCKED": Decimal("0.20"),
+        }
+
+    def test_redistribute_sell_only_excess_skips_when_no_excess(self):
+        eligible_targets = {"BUY_A": Decimal("0.30")}
+
+        status = _redistribute_sell_only_excess(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A"},
+            sell_only_excess=Decimal("0.0"),
+        )
+
+        assert status == "READY"
+        assert eligible_targets == {"BUY_A": Decimal("0.30")}
+
+    def test_redistribute_sell_only_excess_marks_pending_without_recipient_weight(self):
+        eligible_targets = {"BUY_A": Decimal("0.0"), "LOCKED": Decimal("0.20")}
+
+        status = _redistribute_sell_only_excess(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A"},
+            sell_only_excess=Decimal("0.20"),
+        )
+
+        assert status == "PENDING_REVIEW"
+        assert eligible_targets == {"BUY_A": Decimal("0.0"), "LOCKED": Decimal("0.20")}
+
     def test_target_locked_over_100(self, base_inputs):
         pf, mkt, model, shelf = base_inputs
         pf.positions = [position("LOCKED_ASSET", "1000")]
