@@ -8,6 +8,7 @@ from src.core.models import (
     MarketDataSnapshot,
     Money,
     PortfolioSnapshot,
+    Position,
     SecurityTradeIntent,
     ShelfEntry,
     SuppressedIntent,
@@ -15,6 +16,49 @@ from src.core.models import (
     TaxImpact,
 )
 from src.core.valuation import get_fx_rate
+
+
+def _lot_cost_in_instrument_ccy(
+    *,
+    unit_cost: Money,
+    instrument_ccy: str,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+) -> Decimal | None:
+    if unit_cost.currency == instrument_ccy:
+        return unit_cost.amount
+    fx = get_fx_rate(market_data, unit_cost.currency, instrument_ccy)
+    if fx is None:
+        dq_log["fx_missing"].append(f"{unit_cost.currency}/{instrument_ccy}")
+        return None
+    return unit_cost.amount * fx
+
+
+def _hifo_sorted_lots(
+    *,
+    position: Position | None,
+    instrument_ccy: str,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+) -> list[tuple[Any, Decimal]]:
+    if not position or not position.lots:
+        return []
+    lots_with_cost = []
+    for lot in position.lots:
+        cost = _lot_cost_in_instrument_ccy(
+            unit_cost=lot.unit_cost,
+            instrument_ccy=instrument_ccy,
+            market_data=market_data,
+            dq_log=dq_log,
+        )
+        if cost is None:
+            return []
+        lots_with_cost.append((lot, cost))
+    return sorted(
+        lots_with_cost,
+        key=lambda item: (item[1], item[0].purchase_date, item[0].lot_id),
+        reverse=True,
+    )
 
 
 def generate_intents(
@@ -34,32 +78,8 @@ def generate_intents(
     tax_budget_used_base = Decimal("0")
     tax_budget_limit_base = options.max_realized_capital_gains
 
-    def lot_cost_in_instrument_ccy(unit_cost: Money, instrument_ccy: str) -> Decimal | None:
-        if unit_cost.currency == instrument_ccy:
-            return unit_cost.amount
-        fx = get_fx_rate(market_data, unit_cost.currency, instrument_ccy)
-        if fx is None:
-            dq_log["fx_missing"].append(f"{unit_cost.currency}/{instrument_ccy}")
-            return None
-        return unit_cost.amount * fx
-
-    def hifo_sorted_lots(position: Any, instrument_ccy: str) -> list[tuple[Any, Decimal]]:
-        if not position or not position.lots:
-            return []
-        lots_with_cost = []
-        for lot in position.lots:
-            cost = lot_cost_in_instrument_ccy(lot.unit_cost, instrument_ccy)
-            if cost is None:
-                return []
-            lots_with_cost.append((lot, cost))
-        return sorted(
-            lots_with_cost,
-            key=lambda item: (item[1], item[0].purchase_date, item[0].lot_id),
-            reverse=True,
-        )
-
     def apply_tax_budget_sell_limit(
-        position: Any,
+        position: Position | None,
         requested_qty: Decimal,
         sell_price: Decimal,
         price_ccy: str,
@@ -70,7 +90,12 @@ def generate_intents(
         if not options.enable_tax_awareness:
             return requested_qty
 
-        sorted_lots = hifo_sorted_lots(position, price_ccy)
+        sorted_lots = _hifo_sorted_lots(
+            position=position,
+            instrument_ccy=price_ccy,
+            market_data=market_data,
+            dq_log=dq_log,
+        )
         if not sorted_lots:
             return requested_qty
 

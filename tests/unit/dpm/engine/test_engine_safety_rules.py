@@ -1,11 +1,13 @@
 from decimal import Decimal
 
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
-from src.core.rebalance.intents import generate_intents
+from src.core.rebalance.intents import _hifo_sorted_lots, generate_intents
 from src.core.models import (
     EngineOptions,
     Money,
+    Position,
     SecurityTradeIntent,
+    TaxLot,
 )
 from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics
 from tests.shared.factories import (
@@ -82,6 +84,73 @@ def test_sell_intent_generation_defensively_clamps_impossible_target():
     assert intents[0].notional.amount == Decimal("10000.0")
     assert "AVAILABLE_HOLDING" in intents[0].constraints_applied
     assert "SELL_QUANTITY_CLAMPED_TO_AVAILABLE_HOLDING" in diagnostics.warnings
+
+
+def test_hifo_sorted_lots_orders_highest_cost_then_latest_purchase() -> None:
+    lot_position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("30"),
+        lots=[
+            TaxLot(
+                lot_id="LOT_LOW",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("80"), currency="SGD"),
+                purchase_date="2024-01-01",
+            ),
+            TaxLot(
+                lot_id="LOT_HIGH_OLD",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("100"), currency="SGD"),
+                purchase_date="2024-02-01",
+            ),
+            TaxLot(
+                lot_id="LOT_HIGH_NEW",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("100"), currency="SGD"),
+                purchase_date="2024-03-01",
+            ),
+        ],
+    )
+
+    sorted_lots = _hifo_sorted_lots(
+        position=lot_position,
+        instrument_ccy="SGD",
+        market_data=market_data_snapshot(),
+        dq_log={"fx_missing": []},
+    )
+
+    assert [lot.lot_id for lot, _cost in sorted_lots] == [
+        "LOT_HIGH_NEW",
+        "LOT_HIGH_OLD",
+        "LOT_LOW",
+    ]
+
+
+def test_hifo_sorted_lots_returns_empty_when_lot_fx_is_missing() -> None:
+    lot_position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("10"),
+        lots=[
+            TaxLot(
+                lot_id="LOT_EUR",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("80"), currency="EUR"),
+                purchase_date="2024-01-01",
+            )
+        ],
+    )
+    dq_log = {"fx_missing": []}
+
+    assert (
+        _hifo_sorted_lots(
+            position=lot_position,
+            instrument_ccy="SGD",
+            market_data=market_data_snapshot(),
+            dq_log=dq_log,
+        )
+        == []
+    )
+    assert dq_log["fx_missing"] == ["EUR/SGD"]
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):

@@ -11643,3 +11643,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `src/core/rebalance/intents.py::generate_intents` or the remaining proof-pack dispatcher branches.
 - Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-478: Rebalance intent tax-lot HIFO helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: the refreshed complexity report moved `generate_intents` to the top source hotspot after
+  proof-pack dispatcher reductions. The function still contained nested tax-lot currency conversion
+  and HIFO lot sorting helpers that inflated parent complexity.
+- Action: extracted `_lot_cost_in_instrument_ccy` and `_hifo_sorted_lots` as private helpers and
+  routed tax-aware sell limiting through them. Added direct tests proving HIFO ordering and
+  missing-FX fallback logging.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 58 / 236 lines to complexity 52 / 217 lines.
+- Follow-up: continue decomposing `generate_intents`, especially sell quantity limiting and trade
+  construction, with direct tests around tax budget and constraint labels.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.
