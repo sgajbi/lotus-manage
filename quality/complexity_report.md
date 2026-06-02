@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:40:35+00:00`
+- Generated at: `2026-06-02T04:43:29+00:00`
 
-- Current ref: `18e2477`
+- Current ref: `a010107`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
-| 2 | evaluate | src/core/compliance.py | 17 | 199 |
-| 3 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 4 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 5 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
-| 6 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
-| 7 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
-| 8 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
-| 9 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
-| 10 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
+| 1 | evaluate | src/core/compliance.py | 17 | 199 |
+| 2 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 3 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 4 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 5 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
+| 6 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 7 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 8 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
+| 9 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
+| 10 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
 
 ### Most Complex Current Test Functions
 

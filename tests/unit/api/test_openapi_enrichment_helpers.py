@@ -1,5 +1,6 @@
 from src.api.openapi_enrichment import (
     _example_from_schema,
+    _ensure_operation_examples,
     _infer_description,
     _infer_example,
     _number_example_for_key,
@@ -118,6 +119,44 @@ def test_openapi_enrichment_builds_examples_from_refs_composites_and_maps() -> N
     ) == ["sample_any_of_item"]
     assert _example_from_schema("explicit_examples", {"examples": ["from-list"]}, schemas) == (
         "from-list"
+    )
+
+
+def test_openapi_enrichment_adds_operation_level_examples_and_errors() -> None:
+    operation = {
+        "requestBody": {
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Payload"}}}
+        },
+        "responses": {
+            "200": {"content": {"application/json": {"schema": {"type": "string"}}}},
+            "409": {"description": "Conflict detected."},
+        },
+    }
+
+    _ensure_operation_examples(
+        method="post",
+        path="/api/v1/example",
+        operation=operation,
+        schemas={
+            "Payload": {
+                "type": "object",
+                "properties": {"portfolio_id": {"type": "string"}},
+            }
+        },
+    )
+
+    assert operation["requestBody"]["content"]["application/json"]["examples"]["default"][
+        "value"
+    ] == {"portfolio_id": "DEMO_DPM_EUR_001"}
+    assert (
+        operation["responses"]["200"]["content"]["application/json"]["examples"]["default"]["value"]
+        == "sample_post_/api/v1/example_200_response"
+    )
+    assert (
+        operation["responses"]["409"]["content"]["application/json"]["examples"]["default"][
+            "value"
+        ]["status"]
+        == 409
     )
 
 

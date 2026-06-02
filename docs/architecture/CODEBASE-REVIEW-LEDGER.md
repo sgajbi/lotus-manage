@@ -12463,3 +12463,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   receive a further traversal-focused extraction later.
 - Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
   and improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-507: OpenAPI operation example enrichment helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_ensure_request_and_response_examples` mixed path traversal, metrics response handling,
+  request-body example generation, response example generation, and standard error response
+  enrichment in one OpenAPI governance pass.
+- Action: extracted `_ensure_operation_examples` so normal HTTP operation request, response, and
+  error example enrichment is directly testable while the top-level function keeps route traversal
+  and metrics special-case handling. Added direct tests for request payload examples, successful
+  JSON response examples, and RFC-style conflict error example content.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `_ensure_request_and_response_examples` out of the top-ten current source functions after it
+  previously ranked first at complexity 18 / 75 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `evaluate`,
+  `generate_intents`, `generate_targets_solver`, or `summarize_enrichment_posture`.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
+  and improves internal API-governance maintainability only.
