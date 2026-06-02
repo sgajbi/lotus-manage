@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-01T23:59:43+00:00`
+- Generated at: `2026-06-02T00:05:18+00:00`
 
-- Current ref: `380eab9`
+- Current ref: `bc3b74c`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -16,7 +16,7 @@
 | Service boundary leakage | Report plus focused scans | Current service boundary findings: 0. |
 | Router infrastructure imports | Baseline debt | Current router infra imports: 18. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 3. |
-| Complexity | Not yet instrumented | Add radon/xenon report-only baseline before thresholds. |
+| Complexity | Report-only baseline | `quality/complexity_report.md`; add thresholds after baseline review. |
 | Dead code | Not yet instrumented | Add vulture report-only baseline before thresholds. |
 | Dependency architecture | Not yet instrumented | Add import-linter/deptry report-only baseline before thresholds. |
 | Security depth | Partially active | Security audit is active; add bandit/pip-audit detail scorecard. |

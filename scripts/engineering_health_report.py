@@ -21,6 +21,7 @@ DEFAULT_BASELINE_OUTPUT = REPO_ROOT / "quality" / "baseline_report.md"
 DEFAULT_SCORECARD_OUTPUT = REPO_ROOT / "quality" / "quality_scorecard.md"
 DEFAULT_ARCHITECTURE_RULES_OUTPUT = REPO_ROOT / "quality" / "architecture_rules.md"
 DEFAULT_API_GOVERNANCE_RULES_OUTPUT = REPO_ROOT / "quality" / "api_governance_rules.md"
+DEFAULT_COMPLEXITY_OUTPUT = REPO_ROOT / "quality" / "complexity_report.md"
 PYTHON_ROOTS = ("src", "tests", "scripts")
 SERVICE_LEAKAGE_PATTERNS = (
     "from src.api.routers",
@@ -48,6 +49,14 @@ class FunctionMetric:
 
 
 @dataclass(frozen=True)
+class ComplexityMetric:
+    path: str
+    name: str
+    complexity: int
+    lines: int
+
+
+@dataclass(frozen=True)
 class SnapshotMetrics:
     label: str
     python_file_count: int
@@ -55,6 +64,7 @@ class SnapshotMetrics:
     test_count: int
     largest_files: list[FileMetric]
     largest_functions: list[FunctionMetric]
+    most_complex_functions: list[ComplexityMetric]
     service_boundary_violations: list[str]
     router_infra_imports: list[str]
 
@@ -133,6 +143,47 @@ def _function_metrics(path: str, text: str) -> list[FunctionMetric]:
     return metrics
 
 
+def _complexity_score(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
+    score = 1
+    for child in ast.walk(node):
+        if isinstance(
+            child,
+            ast.If
+            | ast.For
+            | ast.AsyncFor
+            | ast.While
+            | ast.IfExp
+            | ast.ExceptHandler
+            | ast.Assert,
+        ):
+            score += 1
+        elif isinstance(child, ast.BoolOp):
+            score += max(0, len(child.values) - 1)
+        elif isinstance(child, ast.Match):
+            score += len(child.cases)
+    return score
+
+
+def _complexity_metrics(path: str, text: str) -> list[ComplexityMetric]:
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
+    metrics: list[ComplexityMetric] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            end_lineno = getattr(node, "end_lineno", node.lineno)
+            metrics.append(
+                ComplexityMetric(
+                    path=path,
+                    name=node.name,
+                    complexity=_complexity_score(node),
+                    lines=end_lineno - node.lineno + 1,
+                )
+            )
+    return metrics
+
+
 def _test_count(text: str) -> int:
     try:
         tree = ast.parse(text)
@@ -157,6 +208,7 @@ def _matching_lines(path: str, text: str, patterns: Iterable[str]) -> list[str]:
 def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetrics:
     files: list[FileMetric] = []
     functions: list[FunctionMetric] = []
+    complexity_functions: list[ComplexityMetric] = []
     service_boundary_violations: list[str] = []
     router_infra_imports: list[str] = []
     total_loc = 0
@@ -167,6 +219,7 @@ def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetr
         total_loc += lines
         files.append(FileMetric(path=path, lines=lines))
         functions.extend(_function_metrics(path, text))
+        complexity_functions.extend(_complexity_metrics(path, text))
         if path.startswith("tests/"):
             test_count += _test_count(text)
         if path.startswith("src/api/services/"):
@@ -182,6 +235,11 @@ def _snapshot_metrics(label: str, paths: list[str], reader: Any) -> SnapshotMetr
         test_count=test_count,
         largest_files=sorted(files, key=lambda item: item.lines, reverse=True)[:10],
         largest_functions=sorted(functions, key=lambda item: item.lines, reverse=True)[:10],
+        most_complex_functions=sorted(
+            complexity_functions,
+            key=lambda item: (item.complexity, item.lines),
+            reverse=True,
+        )[:10],
         service_boundary_violations=service_boundary_violations,
         router_infra_imports=router_infra_imports,
     )
@@ -258,6 +316,16 @@ def _top_function_table(title: str, functions: list[FunctionMetric]) -> str:
         ["Rank", "Function", "File", "Lines"],
         [
             [str(index), item.name, item.path, str(item.lines)]
+            for index, item in enumerate(functions, start=1)
+        ],
+    )
+
+
+def _top_complexity_table(title: str, functions: list[ComplexityMetric]) -> str:
+    return f"### {title}\n\n" + _table(
+        ["Rank", "Function", "File", "Complexity", "Lines"],
+        [
+            [str(index), item.name, item.path, str(item.complexity), str(item.lines)]
             for index, item in enumerate(functions, start=1)
         ],
     )
@@ -369,6 +437,9 @@ def build_refactor_report(context: HealthReportContext) -> str:
         "## Largest Functions",
         _top_function_table(f"{base.label}", base.largest_functions),
         _top_function_table(f"{current.label}", current.largest_functions),
+        "## Most Complex Functions",
+        _top_complexity_table(f"{base.label}", base.most_complex_functions),
+        _top_complexity_table(f"{current.label}", current.most_complex_functions),
         "## Boundary Findings",
         _bounded_findings(
             f"Service boundary findings ({base.label})", base.service_boundary_violations
@@ -445,7 +516,11 @@ def build_baseline_report(context: HealthReportContext) -> str:
                     "reported as known baseline debt",
                     "1 - baseline",
                 ],
-                ["Complexity/maintainability", "not instrumented yet", "planned"],
+                [
+                    "Complexity/maintainability",
+                    "`quality/complexity_report.md`",
+                    "1 - baseline",
+                ],
                 ["Dead code", "not instrumented yet", "planned"],
                 [
                     "Dependency hygiene",
@@ -496,8 +571,8 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Complexity",
-            "Not yet instrumented",
-            "Add radon/xenon report-only baseline before thresholds.",
+            "Report-only baseline",
+            "`quality/complexity_report.md`; add thresholds after baseline review.",
         ],
         [
             "Dead code",
@@ -562,6 +637,50 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
     return "\n\n".join(sections) + "\n"
 
 
+def build_complexity_report(context: HealthReportContext) -> str:
+    base = context.base
+    current = context.current
+    base_highest = base.most_complex_functions[0].complexity if base.most_complex_functions else 0
+    current_highest = (
+        current.most_complex_functions[0].complexity if current.most_complex_functions else 0
+    )
+    sections = [
+        "# lotus-manage Complexity Report",
+        f"- Generated at: `{context.generated_at}`",
+        f"- Current ref: `{context.current_ref}`",
+        "- Mode: report-only maintainability baseline using dependency-free AST branch counting.",
+        "## Summary",
+        _table(
+            ["Metric", context.base_ref, "current branch", "Delta"],
+            [
+                [
+                    "Reported top functions",
+                    str(len(base.most_complex_functions)),
+                    str(len(current.most_complex_functions)),
+                    _delta(
+                        len(current.most_complex_functions),
+                        len(base.most_complex_functions),
+                    ),
+                ],
+                [
+                    "Highest complexity",
+                    str(base_highest),
+                    str(current_highest),
+                    _delta(current_highest, base_highest),
+                ],
+            ],
+        ),
+        _top_complexity_table(
+            "Most Complex Current Functions",
+            current.most_complex_functions,
+        ),
+        "## Gate Posture",
+        "- This report is phase 1/report-only. It intentionally does not fail builds until the "
+        "baseline is reviewed and thresholds are agreed.",
+    ]
+    return "\n\n".join(sections) + "\n"
+
+
 def build_architecture_rules() -> str:
     return """# lotus-manage Architecture Rules
 
@@ -622,6 +741,7 @@ def write_reports(context: HealthReportContext) -> None:
         DEFAULT_OUTPUT: build_refactor_report(context),
         DEFAULT_BASELINE_OUTPUT: build_baseline_report(context),
         DEFAULT_SCORECARD_OUTPUT: build_quality_scorecard(context),
+        DEFAULT_COMPLEXITY_OUTPUT: build_complexity_report(context),
         DEFAULT_ARCHITECTURE_RULES_OUTPUT: build_architecture_rules(),
         DEFAULT_API_GOVERNANCE_RULES_OUTPUT: build_api_governance_rules(),
     }
@@ -637,6 +757,7 @@ def main() -> None:
         DEFAULT_OUTPUT,
         DEFAULT_BASELINE_OUTPUT,
         DEFAULT_SCORECARD_OUTPUT,
+        DEFAULT_COMPLEXITY_OUTPUT,
         DEFAULT_ARCHITECTURE_RULES_OUTPUT,
         DEFAULT_API_GOVERNANCE_RULES_OUTPUT,
     ):

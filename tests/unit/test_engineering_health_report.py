@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from scripts import engineering_health_report as ehr
 from scripts.engineering_health_report import (
+    ComplexityMetric,
     FileMetric,
     FunctionMetric,
     HealthReportContext,
@@ -11,6 +12,7 @@ from scripts.engineering_health_report import (
     build_api_governance_rules,
     build_architecture_rules,
     build_baseline_report,
+    build_complexity_report,
     build_quality_scorecard,
 )
 
@@ -34,6 +36,9 @@ def _snapshot(*, label: str, router_imports: list[str] | None = None) -> Snapsho
         test_count=4,
         largest_files=[FileMetric(path="src/api/main.py", lines=42)],
         largest_functions=[FunctionMetric(path="src/api/main.py", name="create_app", lines=12)],
+        most_complex_functions=[
+            ComplexityMetric(path="src/api/main.py", name="create_app", complexity=3, lines=12)
+        ],
         service_boundary_violations=[],
         router_infra_imports=router_imports or [],
     )
@@ -93,7 +98,9 @@ def test_baseline_report_declares_report_only_quality_coverage() -> None:
     assert "# lotus-manage Baseline Quality Report" in report
     assert "| Python files | 3 |" in report
     assert "| Router infrastructure imports | 1 |" in report
-    assert "| Complexity/maintainability | not instrumented yet | planned |" in report
+    assert (
+        "| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |" in report
+    )
     assert "does not enforce thresholds by itself" in report
 
 
@@ -102,10 +109,42 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
 
     assert "# lotus-manage Quality Scorecard" in scorecard
     assert "| OpenAPI governance | Active gate | `scripts/openapi_quality_gate.py`. |" in scorecard
-    assert "| Complexity | Not yet instrumented |" in scorecard
+    assert "| Complexity | Report-only baseline |" in scorecard
     assert (
         "| 4 - enterprise-readiness gates | Block release on full readiness posture." in scorecard
     )
+
+
+def test_complexity_metrics_count_branching_constructs() -> None:
+    metrics = ehr._complexity_metrics(
+        "src/api/example.py",
+        """
+def evaluate(flag, value):
+    if flag and value:
+        return 1
+    for item in range(2):
+        if item:
+            return item
+    return 0
+""",
+    )
+
+    assert metrics == [
+        ComplexityMetric(
+            path="src/api/example.py",
+            name="evaluate",
+            complexity=5,
+            lines=7,
+        )
+    ]
+
+
+def test_complexity_report_is_report_only() -> None:
+    report = build_complexity_report(_context())
+
+    assert "# lotus-manage Complexity Report" in report
+    assert "| Highest complexity | 3 | 3 | +0 |" in report
+    assert "phase 1/report-only" in report
 
 
 def test_quality_rule_documents_state_report_only_architecture_and_api_rules() -> None:

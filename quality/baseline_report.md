@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-01T23:59:43+00:00`
+- Generated at: `2026-06-02T00:05:18+00:00`
 
-- Baseline commit: `380eab9`
+- Baseline commit: `bc3b74c`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -11,8 +11,8 @@
 | Metric | Value |
 | --- | --- |
 | Python files | 769 |
-| Total Python LOC | 146281 |
-| Test functions | 1859 |
+| Total Python LOC | 146441 |
+| Test functions | 1861 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 18 |
 
@@ -36,7 +36,7 @@
 | OpenAPI completeness | `scripts/openapi_quality_gate.py` plus this report | 2 - active/new-regression |
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | reported as known baseline debt | 1 - baseline |
-| Complexity/maintainability | not instrumented yet | planned |
+| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |
 | Dead code | not instrumented yet | planned |
 | Dependency hygiene | `pip check`/security audit in repo gates; richer deptry planned | 2 - active/new-regression |
 | Security | `make security-audit`; richer bandit/pip-audit scorecard planned | 2 - active/new-regression |

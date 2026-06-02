@@ -11432,3 +11432,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   and keep the generator report-only until runtime is consistently acceptable.
 - Wiki decision: no wiki source change required; this is internal quality-tool performance and
   maintainability work.
+
+## BACKEND-REVIEW-20260602-470: Report-only AST complexity baseline
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/complexity_report.md`,
+  `quality/baseline_report.md`, `quality/quality_scorecard.md`,
+  `quality/refactor_health_report.md`, `tests/unit/test_engineering_health_report.py`, and this
+  ledger.
+- Finding: complexity and maintainability were still listed as planned rather than measured, which
+  made the quality baseline weaker than the stated enterprise-readiness objective.
+- Action: added dependency-free AST branch counting, surfaced the most complex functions in the
+  refactor report, generated a standalone report-only complexity baseline, and updated the baseline
+  report and scorecard to treat complexity as measured phase-1 evidence instead of an uninstrumented
+  gap.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, service leakage scan, and generated complexity-artifact
+  sanity scan passed.
+- Follow-up: review the largest test and source complexity findings before setting thresholds; keep
+  the detector report-only until the expected baseline is agreed.
+- Wiki decision: no wiki source change required; this is internal quality-governance evidence and
+  does not change route behavior, product feature truth, or operator procedure.
