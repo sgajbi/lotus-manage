@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:37:47+00:00`
+- Generated at: `2026-06-02T04:40:35+00:00`
 
-- Current ref: `9e5d22c`
+- Current ref: `18e2477`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,12 +32,12 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
-| 2 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
-| 3 | evaluate | src/core/compliance.py | 17 | 199 |
-| 4 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 5 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 6 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 1 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
+| 2 | evaluate | src/core/compliance.py | 17 | 199 |
+| 3 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 4 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 5 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 6 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
 | 7 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
 | 8 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
 | 9 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |

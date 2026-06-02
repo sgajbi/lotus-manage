@@ -12436,3 +12436,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_ensure_request_and_response_examples`, `evaluate`, or `generate_intents`.
 - Wiki decision: no wiki source change required; this preserves heuristic target-generation
   behavior and improves internal allocation maintainability only.
+
+## BACKEND-REVIEW-20260602-506: OpenAPI declared schema example helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_example_from_schema` mixed explicit schema example selection with reference
+  resolution, composite schemas, object properties, arrays, maps, and inferred fallback examples.
+- Action: extracted `_schema_declared_example` so `example` and `examples` precedence is directly
+  testable before broader schema traversal. Added direct tests for explicit object examples, first
+  list example selection, empty examples, and schemas without declared examples.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report reduces `_example_from_schema` from
+  complexity 19 / 66 lines to complexity 17 / 64 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_ensure_request_and_response_examples`, `evaluate`, `generate_intents`, or
+  `generate_targets_solver`. `_example_from_schema` remains a top-ten source hotspot and should
+  receive a further traversal-focused extraction later.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
+  and improves internal API-governance maintainability only.

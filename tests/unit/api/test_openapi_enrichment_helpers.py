@@ -3,6 +3,7 @@ from src.api.openapi_enrichment import (
     _infer_description,
     _infer_example,
     _number_example_for_key,
+    _schema_declared_example,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
@@ -62,6 +63,16 @@ def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -
     assert _semantic_string_example_for_key("workflow_status", "string") == "READY"
     assert _semantic_string_example_for_key("display_name", "string") == "sample_display_name"
     assert _semantic_string_example_for_key("unknown", None) is None
+
+
+def test_openapi_enrichment_prefers_declared_schema_examples() -> None:
+    assert _schema_declared_example({"example": {"status": "READY"}}) == (
+        True,
+        {"status": "READY"},
+    )
+    assert _schema_declared_example({"examples": ["first", "second"]}) == (True, "first")
+    assert _schema_declared_example({"examples": []}) == (False, None)
+    assert _schema_declared_example({"type": "string"}) == (False, None)
 
 
 def test_openapi_enrichment_builds_examples_from_refs_composites_and_maps() -> None:

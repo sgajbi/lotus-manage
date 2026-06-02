@@ -127,6 +127,15 @@ def _schema_ref_name(ref: str) -> str:
     return ref.rsplit("/", 1)[-1]
 
 
+def _schema_declared_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:
+    if "example" in prop_schema:
+        return True, prop_schema["example"]
+    examples = prop_schema.get("examples")
+    if isinstance(examples, list) and examples:
+        return True, examples[0]
+    return False, None
+
+
 def _example_from_schema(
     prop_name: str,
     prop_schema: dict[str, Any],
@@ -137,11 +146,9 @@ def _example_from_schema(
     if not isinstance(prop_schema, dict):
         return _infer_example(prop_name, {})
 
-    if "example" in prop_schema:
-        return prop_schema["example"]
-    examples = prop_schema.get("examples")
-    if isinstance(examples, list) and examples:
-        return examples[0]
+    has_declared_example, declared_example = _schema_declared_example(prop_schema)
+    if has_declared_example:
+        return declared_example
 
     schema_ref = prop_schema.get("$ref")
     if isinstance(schema_ref, str):
