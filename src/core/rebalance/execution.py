@@ -182,6 +182,46 @@ def _link_execution_dependencies(
     )
 
 
+def _append_projected_cash_fx_intents(
+    *,
+    projected_cash: dict[str, Decimal],
+    portfolio: PortfolioSnapshot,
+    market_data: MarketDataSnapshot,
+    intents: list[OrderIntent],
+    options: EngineOptions,
+    diagnostics: DiagnosticsData,
+) -> tuple[bool, dict[str, str]]:
+    fx_intent_id_by_currency: dict[str, str] = {}
+    for ccy, bal in projected_cash.items():
+        if ccy == portfolio.base_currency:
+            continue
+        rate = get_fx_rate(market_data, ccy, portfolio.base_currency)
+        if rate is None:
+            diagnostics.data_quality.setdefault("fx_missing", []).append(
+                f"{ccy}/{portfolio.base_currency}"
+            )
+            if options.block_on_missing_fx:
+                return True, fx_intent_id_by_currency
+            continue
+
+        fx_id = f"oi_fx_{len(intents) + 1}"
+        fx_intent = _fx_intent_for_projected_cash_balance(
+            currency=ccy,
+            balance=bal,
+            base_currency=portfolio.base_currency,
+            rate_to_base=rate,
+            intent_id=fx_id,
+            fx_buffer_pct=options.fx_buffer_pct,
+        )
+        if fx_intent is None:
+            continue
+        intents.append(fx_intent)
+        if bal < 0:
+            fx_intent_id_by_currency[ccy] = fx_id
+
+    return False, fx_intent_id_by_currency
+
+
 def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -202,33 +242,16 @@ def generate_fx_and_simulate(
     """
     proj = _project_cash_after_security_trades(portfolio=portfolio, intents=intents)
 
-    fx_map = {}
-    for ccy, bal in proj.items():
-        if ccy == portfolio.base_currency:
-            continue
-        rate = get_fx_rate(market_data, ccy, portfolio.base_currency)
-        if rate is None:
-            diagnostics.data_quality.setdefault("fx_missing", []).append(
-                f"{ccy}/{portfolio.base_currency}"
-            )
-            if options.block_on_missing_fx:
-                return intents, deepcopy(portfolio), [], "BLOCKED", None
-            continue
-
-        fx_id = f"oi_fx_{len(intents) + 1}"
-        fx_intent = _fx_intent_for_projected_cash_balance(
-            currency=ccy,
-            balance=bal,
-            base_currency=portfolio.base_currency,
-            rate_to_base=rate,
-            intent_id=fx_id,
-            fx_buffer_pct=options.fx_buffer_pct,
-        )
-        if fx_intent is None:
-            continue
-        intents.append(fx_intent)
-        if bal < 0:
-            fx_map[ccy] = fx_id
+    blocked_on_missing_fx, fx_map = _append_projected_cash_fx_intents(
+        projected_cash=proj,
+        portfolio=portfolio,
+        market_data=market_data,
+        intents=intents,
+        options=options,
+        diagnostics=diagnostics,
+    )
+    if blocked_on_missing_fx:
+        return intents, deepcopy(portfolio), [], "BLOCKED", None
 
     _link_execution_dependencies(
         intents=intents,

@@ -12343,3 +12343,35 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `_example_from_schema`.
 - Wiki decision: no wiki source change required; this preserves valuation behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-503: Rebalance projected-cash FX helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` mixed projected-cash FX intent assembly, missing-FX
+  diagnostics, dependency-map preparation, settlement checks, portfolio mutation, valuation, rule
+  evaluation, and reconciliation in one orchestration function.
+- Action: extracted `_append_projected_cash_fx_intents` so projected-cash FX generation and
+  missing-FX blocking are directly testable while `generate_fx_and_simulate` keeps the orchestration
+  sequence. Added helper tests for funding and sweep FX intent creation, funding dependency-map
+  capture, base-currency skip behavior, and block-on-missing-FX diagnostics.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m mypy --config-file
+  mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_simulation_shared.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_fx_and_simulate` out of the
+  top-ten current source functions after it previously ranked first at complexity 19 / 137 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `validate_search_page_metadata`, `generate_targets_heuristic`, `_example_from_schema`, or
+  `_ensure_request_and_response_examples`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.

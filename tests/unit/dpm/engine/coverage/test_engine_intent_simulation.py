@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from src.core.rebalance.execution import (
+    _append_projected_cash_fx_intents,
     _fx_intent_for_projected_cash_balance,
     _link_execution_dependencies,
     _project_cash_after_security_trades,
@@ -169,6 +170,53 @@ class TestIntentDependenciesAndSimulation:
         )
 
         assert projected == {"USD": Decimal("900"), "EUR": Decimal("75")}
+
+    def test_append_projected_cash_fx_intents_adds_funding_and_sweep_intents(self):
+        portfolio = portfolio_snapshot(portfolio_id="pf_fx_append", base_currency="USD")
+        diagnostics = empty_diagnostics()
+        intents = []
+
+        blocked, fx_map = _append_projected_cash_fx_intents(
+            projected_cash={"USD": Decimal("1000"), "EUR": Decimal("-100"), "GBP": Decimal("50")},
+            portfolio=portfolio,
+            market_data=market_data_snapshot(
+                fx_rates=[
+                    fx("EUR/USD", "1.2"),
+                    fx("GBP/USD", "1.3"),
+                ]
+            ),
+            intents=intents,
+            options=EngineOptions(fx_buffer_pct=Decimal("0.05")),
+            diagnostics=diagnostics,
+        )
+
+        assert blocked is False
+        assert fx_map == {"EUR": "oi_fx_1"}
+        assert [intent.intent_id for intent in intents] == ["oi_fx_1", "oi_fx_2"]
+        assert intents[0].buy_currency == "EUR"
+        assert intents[0].sell_currency == "USD"
+        assert intents[1].buy_currency == "USD"
+        assert intents[1].sell_currency == "GBP"
+        assert diagnostics.data_quality == {}
+
+    def test_append_projected_cash_fx_intents_blocks_on_missing_fx(self):
+        portfolio = portfolio_snapshot(portfolio_id="pf_fx_missing_append", base_currency="USD")
+        diagnostics = empty_diagnostics()
+        intents = []
+
+        blocked, fx_map = _append_projected_cash_fx_intents(
+            projected_cash={"EUR": Decimal("-100")},
+            portfolio=portfolio,
+            market_data=market_data_snapshot(),
+            intents=intents,
+            options=EngineOptions(block_on_missing_fx=True),
+            diagnostics=diagnostics,
+        )
+
+        assert blocked is True
+        assert fx_map == {}
+        assert intents == []
+        assert diagnostics.data_quality == {"fx_missing": ["EUR/USD"]}
 
     def test_dependency_linking_explicit(self):
         pf = usd_cash_portfolio("dep_test")

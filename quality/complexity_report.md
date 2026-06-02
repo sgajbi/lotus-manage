@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:27:25+00:00`
+- Generated at: `2026-06-02T04:30:46+00:00`
 
-- Current ref: `c4167c4`
+- Current ref: `be6f7b0`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_fx_and_simulate | src/core/rebalance/execution.py | 19 | 137 |
-| 2 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
-| 3 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
-| 4 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
-| 5 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
-| 6 | evaluate | src/core/compliance.py | 17 | 199 |
-| 7 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
-| 8 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
-| 9 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
-| 10 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 1 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 19 | 79 |
+| 2 | generate_targets_heuristic | src/core/rebalance/targets.py | 19 | 71 |
+| 3 | _example_from_schema | src/api/openapi_enrichment.py | 19 | 66 |
+| 4 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 18 | 75 |
+| 5 | evaluate | src/core/compliance.py | 17 | 199 |
+| 6 | generate_intents | src/core/rebalance/intents.py | 17 | 145 |
+| 7 | generate_targets_solver | src/core/target_generation.py | 17 | 109 |
+| 8 | summarize_enrichment_posture | src/core/construction/enrichment.py | 17 | 87 |
+| 9 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 10 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
 
 ### Most Complex Current Test Functions
 
