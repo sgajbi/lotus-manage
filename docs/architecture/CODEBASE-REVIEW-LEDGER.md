@@ -11997,3 +11997,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `compile_mandate_digital_twin_from_core`, `generate_fx_and_simulate`, or `generate_intents`.
 - Wiki decision: no wiki source change required; this preserves portfolio-memory search behavior
   and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-491: Mandate twin field-gap helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, generated quality
+  reports, and this ledger.
+- Finding: `compile_mandate_digital_twin_from_core` still mixed field-gap reason-code projection
+  with constraint, preference, lineage, and twin assembly, keeping source completeness decisions
+  embedded in the compiler body.
+- Action: extracted `_mandate_twin_field_gap_codes` and routed the compiler through it. Added direct
+  helper tests for fully missing core products and fully sourced core products.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m ruff format src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m mypy --config-file mypy.ini
+  src/core/mandates.py`, `python -m pytest tests/unit/dpm/core/test_mandate_health.py
+  tests/unit/dpm/mandates/test_mandate_health_result.py
+  tests/unit/dpm/mandates/test_mandate_refresh.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report moves `compile_mandate_digital_twin_from_core` out of the top-ten current source functions
+  after it previously ranked at complexity 26 / 182 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `generate_intents`, or `_section_payload`.
+- Wiki decision: no wiki source change required; this preserves mandate twin behavior and improves
+  internal maintainability only.
