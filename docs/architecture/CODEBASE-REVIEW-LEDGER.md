@@ -12195,3 +12195,31 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_targets_solver`.
 - Wiki decision: no wiki source change required; this preserves proof-pack section evidence
   behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-498: OpenAPI semantic example helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_infer_example` mixed schema-type dispatch with semantic number examples and semantic
+  string examples, including ambiguous date/timestamp key handling in generated OpenAPI examples.
+- Action: extracted `_number_example_for_key` and `_semantic_string_example_for_key`, then routed
+  example inference through them. Added direct tests for weight, price/rate, quantity, fallback
+  numeric examples, identifier, currency, date, time/timestamp, status, string fallback, and
+  unknown-schema fallback examples. The timestamp check now takes precedence over generic `date`
+  substrings so keys such as `updated_timestamp` receive date-time examples.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `_infer_example` out of the top-ten
+  current source functions after it previously ranked first at complexity 22 / 48 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `summarize_enrichment_posture`, `_proof_pack_governance_section_payload`,
+  `generate_targets_solver`, or `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves API-enrichment behavior while
+  improving generated example semantics and maintainability only.

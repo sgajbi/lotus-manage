@@ -2,6 +2,8 @@ from src.api.openapi_enrichment import (
     _example_from_schema,
     _infer_description,
     _infer_example,
+    _number_example_for_key,
+    _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
 
@@ -39,6 +41,27 @@ def test_openapi_enrichment_infers_domain_examples_and_descriptions() -> None:
     assert _infer_description("RunModel", "marketPrice", {"type": "number"}) == (
         "Rate/price value for market price."
     )
+
+
+def test_openapi_enrichment_number_examples_follow_domain_semantics() -> None:
+    assert _number_example_for_key("target_weight") == 0.125
+    assert _number_example_for_key("last_price") == 1.2345
+    assert _number_example_for_key("fx_rate") == 1.2345
+    assert _number_example_for_key("quantity") == 100.0
+    assert _number_example_for_key("other_number") == 10.5
+
+
+def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -> None:
+    assert _semantic_string_example_for_key("custom_id", "string") == "CUSTOM_001"
+    assert _semantic_string_example_for_key("base_currency", "string") == "USD"
+    assert _semantic_string_example_for_key("as_of_date", "string") == "2026-03-02"
+    assert _semantic_string_example_for_key("run_time", "string") == "2026-03-02T10:30:00Z"
+    assert _semantic_string_example_for_key("updated_timestamp", "string") == (
+        "2026-03-02T10:30:00Z"
+    )
+    assert _semantic_string_example_for_key("workflow_status", "string") == "READY"
+    assert _semantic_string_example_for_key("display_name", "string") == "sample_display_name"
+    assert _semantic_string_example_for_key("unknown", None) is None
 
 
 def test_openapi_enrichment_builds_examples_from_refs_composites_and_maps() -> None:

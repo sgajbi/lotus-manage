@@ -39,6 +39,33 @@ def _humanize(key: str) -> str:
     return _to_snake_case(key).replace("_", " ").strip()
 
 
+def _number_example_for_key(key: str) -> float:
+    if "weight" in key:
+        return 0.125
+    if "price" in key or "rate" in key:
+        return 1.2345
+    if "quantity" in key:
+        return 100.0
+    return 10.5
+
+
+def _semantic_string_example_for_key(key: str, schema_type: Any) -> str | None:
+    if key.endswith("_id"):
+        entity = key[: -len("_id")]
+        return f"{entity.upper()}_001"
+    if "currency" in key:
+        return "USD"
+    if "time" in key or "timestamp" in key:
+        return "2026-03-02T10:30:00Z"
+    if "date" in key:
+        return "2026-03-02"
+    if "status" in key:
+        return "READY"
+    if schema_type == "string":
+        return f"sample_{key}"
+    return None
+
+
 def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
     key = _to_snake_case(prop_name)
     if key in _EXAMPLE_BY_KEY:
@@ -60,32 +87,16 @@ def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
     if schema_type == "integer":
         return 10
     if schema_type == "number":
-        if "weight" in key:
-            return 0.125
-        if "price" in key or "rate" in key:
-            return 1.2345
-        if "quantity" in key:
-            return 100.0
-        return 10.5
+        return _number_example_for_key(key)
 
     if schema_format == "date":
         return "2026-03-02"
     if schema_format == "date-time":
         return "2026-03-02T10:30:00Z"
 
-    if key.endswith("_id"):
-        entity = key[: -len("_id")]
-        return f"{entity.upper()}_001"
-    if "currency" in key:
-        return "USD"
-    if "date" in key:
-        return "2026-03-02"
-    if "time" in key or "timestamp" in key:
-        return "2026-03-02T10:30:00Z"
-    if "status" in key:
-        return "READY"
-    if schema_type == "string":
-        return f"sample_{key}"
+    semantic_string = _semantic_string_example_for_key(key, schema_type)
+    if semantic_string is not None:
+        return semantic_string
     return f"{key}_example"
 
 
