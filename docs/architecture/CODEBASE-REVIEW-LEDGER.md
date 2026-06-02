@@ -11696,3 +11696,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_intents`, preserving tax-aware behavior.
 - Wiki decision: no wiki source change required; this preserves engine behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-480: Rebalance intent threshold and constraint helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still resolved option/shelf minimum-notional thresholds and assembled
+  applied constraint labels inline, adding branching to the target loop.
+- Action: extracted `_trade_notional_threshold` and `_security_intent_constraints`; added direct
+  tests for option-over-shelf threshold precedence and combined sell-safety/tax-budget labels.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 48 / 210 lines to complexity 38 / 207 lines.
+- Follow-up: `quality/complexity_report.md` now puts `_section_payload` back at the top source
+  hotspot; continue branch-reducing proof-pack dispatcher extraction or finish trade-construction
+  extraction in `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.

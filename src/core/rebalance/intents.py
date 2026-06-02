@@ -94,6 +94,40 @@ def _record_tax_budget_limit_reached(
     )
 
 
+def _trade_notional_threshold(
+    *,
+    options: EngineOptions,
+    shelf_entry: ShelfEntry | None,
+) -> Money | None:
+    if options.min_trade_notional:
+        return options.min_trade_notional
+    if shelf_entry and shelf_entry.min_notional:
+        return shelf_entry.min_notional
+    return None
+
+
+def _security_intent_constraints(
+    *,
+    threshold: Money | None,
+    side: Literal["BUY", "SELL"],
+    quantity: Decimal,
+    requested_quantity: Decimal,
+    sell_quantity_before_tax: Decimal | None,
+    tax_awareness_enabled: bool,
+) -> list[str]:
+    applied_constraints = ["MIN_NOTIONAL"] if threshold else []
+    if side == "SELL" and quantity < requested_quantity:
+        applied_constraints.append("AVAILABLE_HOLDING")
+    if (
+        side == "SELL"
+        and tax_awareness_enabled
+        and sell_quantity_before_tax is not None
+        and quantity < sell_quantity_before_tax
+    ):
+        applied_constraints.append("TAX_BUDGET")
+    return applied_constraints
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -233,12 +267,7 @@ def generate_intents(
         notional_base = notional * rate
 
         shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)
-
-        threshold = None
-        if options.min_trade_notional:
-            threshold = options.min_trade_notional
-        elif shelf_ent and shelf_ent.min_notional:
-            threshold = shelf_ent.min_notional
+        threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
 
         if options.suppress_dust_trades and threshold and notional < threshold.amount:
             suppressed.append(
@@ -252,12 +281,14 @@ def generate_intents(
             continue
 
         if quantity > 0:
-            applied_constraints = ["MIN_NOTIONAL"] if threshold else []
-            if side == "SELL" and quantity < Decimal(qty):
-                applied_constraints.append("AVAILABLE_HOLDING")
-            if side == "SELL" and options.enable_tax_awareness:
-                if sell_quantity_before_tax is not None and quantity < sell_quantity_before_tax:
-                    applied_constraints.append("TAX_BUDGET")
+            applied_constraints = _security_intent_constraints(
+                threshold=threshold,
+                side=side,
+                quantity=quantity,
+                requested_quantity=Decimal(qty),
+                sell_quantity_before_tax=sell_quantity_before_tax,
+                tax_awareness_enabled=options.enable_tax_awareness,
+            )
             intents.append(
                 SecurityTradeIntent(
                     intent_id=f"oi_{len(intents) + 1}",

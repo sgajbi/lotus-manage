@@ -5,6 +5,8 @@ from src.core.rebalance.intents import (
     _clamped_sell_quantity,
     _hifo_sorted_lots,
     _record_tax_budget_limit_reached,
+    _security_intent_constraints,
+    _trade_notional_threshold,
     generate_intents,
 )
 from src.core.models import (
@@ -202,6 +204,37 @@ def test_record_tax_budget_limit_reached_appends_event_without_duplicate_warning
         ("EQ_1", Decimal("20"), Decimal("7")),
         ("EQ_2", Decimal("15"), Decimal("0")),
     ]
+
+
+def test_trade_notional_threshold_prefers_option_before_shelf_value() -> None:
+    option_threshold = Money(amount=Decimal("100"), currency="SGD")
+    shelf_threshold = Money(amount=Decimal("50"), currency="SGD")
+
+    assert (
+        _trade_notional_threshold(
+            options=EngineOptions(min_trade_notional=option_threshold),
+            shelf_entry=shelf_entry("EQ_1").model_copy(update={"min_notional": shelf_threshold}),
+        )
+        == option_threshold
+    )
+    assert (
+        _trade_notional_threshold(
+            options=EngineOptions(),
+            shelf_entry=shelf_entry("EQ_1").model_copy(update={"min_notional": shelf_threshold}),
+        )
+        == shelf_threshold
+    )
+
+
+def test_security_intent_constraints_include_sell_safety_and_tax_budget_labels() -> None:
+    assert _security_intent_constraints(
+        threshold=Money(amount=Decimal("100"), currency="SGD"),
+        side="SELL",
+        quantity=Decimal("5"),
+        requested_quantity=Decimal("10"),
+        sell_quantity_before_tax=Decimal("8"),
+        tax_awareness_enabled=True,
+    ) == ["MIN_NOTIONAL", "AVAILABLE_HOLDING", "TAX_BUDGET"]
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):
