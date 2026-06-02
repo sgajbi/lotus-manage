@@ -12023,3 +12023,32 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_fx_and_simulate`, `generate_intents`, or `_section_payload`.
 - Wiki decision: no wiki source change required; this preserves mandate twin behavior and improves
   internal maintainability only.
+
+## BACKEND-REVIEW-20260602-492: Rebalance execution projected cash helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` was the top source hotspot after mandate compiler reduction
+  and still calculated projected cash balances from security trades inline before FX funding and
+  sweep intent generation.
+- Action: extracted `_project_cash_after_security_trades` and routed FX generation through the
+  helper. Added direct tests proving buy/sell cash projection and skipped incomplete security
+  intents without notional evidence.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_fx_and_simulate` reduced
+  from complexity 26 / 167 lines to complexity 22 / 160 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `generate_fx_and_simulate`, `_section_payload`, or `generate_targets_heuristic`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.

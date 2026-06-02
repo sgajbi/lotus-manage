@@ -1,6 +1,9 @@
 from decimal import Decimal
 
-from src.core.rebalance.execution import build_settlement_ladder
+from src.core.rebalance.execution import (
+    _project_cash_after_security_trades,
+    build_settlement_ladder,
+)
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.models import (
     EngineOptions,
@@ -22,6 +25,46 @@ from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics, usd_cash_p
 
 
 class TestIntentDependenciesAndSimulation:
+    def test_project_cash_after_security_trades_applies_buy_sell_and_skips_missing_notional(self):
+        portfolio = portfolio_snapshot(
+            portfolio_id="pf_project_cash",
+            base_currency="USD",
+            cash_balances=[cash("USD", "1000"), cash("EUR", "50")],
+        )
+        intents = [
+            SecurityTradeIntent(
+                intent_id="oi_buy",
+                instrument_id="EQ_US",
+                side="BUY",
+                quantity=Decimal("1"),
+                notional={"amount": Decimal("100"), "currency": "USD"},
+                notional_base={"amount": Decimal("100"), "currency": "USD"},
+            ),
+            SecurityTradeIntent(
+                intent_id="oi_sell",
+                instrument_id="EQ_EU",
+                side="SELL",
+                quantity=Decimal("1"),
+                notional={"amount": Decimal("25"), "currency": "EUR"},
+                notional_base={"amount": Decimal("30"), "currency": "USD"},
+            ),
+            SecurityTradeIntent(
+                intent_id="oi_missing_notional",
+                instrument_id="EQ_SKIP",
+                side="BUY",
+                quantity=Decimal("1"),
+                notional=None,
+                notional_base=None,
+            ),
+        ]
+
+        projected = _project_cash_after_security_trades(
+            portfolio=portfolio,
+            intents=intents,
+        )
+
+        assert projected == {"USD": Decimal("900"), "EUR": Decimal("75")}
+
     def test_dependency_linking_explicit(self):
         pf = usd_cash_portfolio("dep_test")
         mkt = market_data_snapshot(

@@ -113,6 +113,22 @@ def build_settlement_ladder(
         diagnostics.warnings.append("SETTLEMENT_OVERDRAFT_UTILIZED")
 
 
+def _project_cash_after_security_trades(
+    *,
+    portfolio: PortfolioSnapshot,
+    intents: list[OrderIntent],
+) -> dict[str, Decimal]:
+    projected_cash = {cash.currency: cash.amount for cash in portfolio.cash_balances}
+    for intent in intents:
+        if intent.intent_type != "SECURITY_TRADE" or intent.notional is None:
+            continue
+        projected_cash[intent.notional.currency] = projected_cash.get(
+            intent.notional.currency,
+            Decimal("0"),
+        ) + (intent.notional.amount if intent.side == "SELL" else -intent.notional.amount)
+    return projected_cash
+
+
 def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -131,14 +147,7 @@ def generate_fx_and_simulate(
     """
     Applies intents, generates FX, checks Safety Guards, and computes Reconciliation.
     """
-    proj = {c.currency: c.amount for c in portfolio.cash_balances}
-    for i in intents:
-        if i.intent_type == "SECURITY_TRADE":
-            if i.notional is None:
-                continue
-            proj[i.notional.currency] = proj.get(i.notional.currency, Decimal("0")) + (
-                i.notional.amount if i.side == "SELL" else -i.notional.amount
-            )
+    proj = _project_cash_after_security_trades(portfolio=portfolio, intents=intents)
 
     fx_map = {}
     for ccy, bal in proj.items():
