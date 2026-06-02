@@ -5,6 +5,7 @@ from src.core.rebalance.intents import (
     _TaxBudgetAccumulator,
     _clamped_sell_quantity,
     _hifo_sorted_lots,
+    _intent_market_context,
     _record_tax_budget_limit_reached,
     _security_intent_constraints,
     _tax_budget_limited_sell_quantity,
@@ -300,6 +301,70 @@ def test_tax_budget_limited_sell_quantity_bypasses_when_tax_awareness_disabled()
     assert allowed_quantity == Decimal("10")
     assert tax_budget.total_realized_gain_base == Decimal("0")
     assert tax_budget.tax_budget_used_base == Decimal("0")
+
+
+def test_intent_market_context_resolves_price_fx_and_position() -> None:
+    portfolio = portfolio_snapshot(
+        portfolio_id="pf_market_context",
+        base_currency="SGD",
+        positions=[position("EQ_US", "10")],
+        cash_balances=[cash("SGD", "1000")],
+    )
+    market_data = market_data_snapshot(
+        prices=[price("EQ_US", "100", "USD")],
+        fx_rates=[fx("USD/SGD", "1.35")],
+    )
+    dq_log = {"price_missing": [], "fx_missing": []}
+
+    context = _intent_market_context(
+        instrument_id="EQ_US",
+        portfolio=portfolio,
+        market_data=market_data,
+        dq_log=dq_log,
+    )
+
+    assert context is not None
+    resolved_price, rate, resolved_position = context
+    assert resolved_price.instrument_id == "EQ_US"
+    assert rate == Decimal("1.35")
+    assert resolved_position is not None
+    assert resolved_position.instrument_id == "EQ_US"
+    assert dq_log == {"price_missing": [], "fx_missing": []}
+
+
+def test_intent_market_context_records_missing_price_and_fx() -> None:
+    portfolio = portfolio_snapshot(
+        portfolio_id="pf_market_context_missing",
+        base_currency="SGD",
+        positions=[],
+        cash_balances=[cash("SGD", "1000")],
+    )
+    dq_log = {"price_missing": [], "fx_missing": []}
+
+    assert (
+        _intent_market_context(
+            instrument_id="EQ_MISSING",
+            portfolio=portfolio,
+            market_data=market_data_snapshot(prices=[], fx_rates=[]),
+            dq_log=dq_log,
+        )
+        is None
+    )
+    assert dq_log["price_missing"] == ["EQ_MISSING"]
+
+    assert (
+        _intent_market_context(
+            instrument_id="EQ_US",
+            portfolio=portfolio,
+            market_data=market_data_snapshot(
+                prices=[price("EQ_US", "100", "USD")],
+                fx_rates=[],
+            ),
+            dq_log=dq_log,
+        )
+        is None
+    )
+    assert dq_log["fx_missing"] == ["USD/SGD"]
 
 
 def test_trusted_market_value_drives_sell_sizing_and_after_state(base_options):

@@ -12052,3 +12052,30 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `generate_fx_and_simulate`, `_section_payload`, or `generate_targets_heuristic`.
 - Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
   improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-493: Rebalance intent market context helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still mixed target-loop orchestration with source-market lookup,
+  FX conversion, current-position lookup, and data-quality logging for missing price or FX evidence.
+- Action: extracted `_intent_market_context` and routed intent generation through the helper. Added
+  direct helper tests for successful price/FX/position resolution and missing price/FX logging.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 24 / 149 lines to complexity 23 / 149 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `_section_payload`, `generate_targets_heuristic`, or
+  `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal maintainability only.

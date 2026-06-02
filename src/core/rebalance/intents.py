@@ -10,6 +10,7 @@ from src.core.models import (
     Money,
     PortfolioSnapshot,
     Position,
+    Price,
     SecurityTradeIntent,
     ShelfEntry,
     SuppressedIntent,
@@ -207,6 +208,30 @@ def _tax_budget_limited_sell_quantity(
     return allowed_qty
 
 
+def _intent_market_context(
+    *,
+    instrument_id: str,
+    portfolio: PortfolioSnapshot,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+) -> tuple[Price, Decimal, Position | None] | None:
+    price = next((item for item in market_data.prices if item.instrument_id == instrument_id), None)
+    if price is None:
+        dq_log["price_missing"].append(instrument_id)
+        return None
+
+    rate = get_fx_rate(market_data, price.currency, portfolio.base_currency)
+    if not rate:
+        dq_log["fx_missing"].append(f"{price.currency}/{portfolio.base_currency}")
+        return None
+
+    position = next(
+        (item for item in portfolio.positions if item.instrument_id == instrument_id),
+        None,
+    )
+    return price, rate, position
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -228,16 +253,16 @@ def generate_intents(
 
     target_dict = {t.instrument_id: t.final_weight for t in targets}
     for i_id, target_w in target_dict.items():
-        price_ent = next((p for p in market_data.prices if p.instrument_id == i_id), None)
-        if not price_ent:
-            dq_log["price_missing"].append(i_id)
+        market_context = _intent_market_context(
+            instrument_id=i_id,
+            portfolio=portfolio,
+            market_data=market_data,
+            dq_log=dq_log,
+        )
+        if market_context is None:
             continue
-        rate = get_fx_rate(market_data, price_ent.currency, portfolio.base_currency)
-        if not rate:
-            dq_log["fx_missing"].append(f"{price_ent.currency}/{portfolio.base_currency}")
-            continue
+        price_ent, rate, curr = market_context
 
-        curr = next((p for p in portfolio.positions if p.instrument_id == i_id), None)
         curr_instr_val = (
             curr.market_value.amount
             if curr and curr.market_value

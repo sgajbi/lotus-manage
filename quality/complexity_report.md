@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T01:06:40+00:00`
+- Generated at: `2026-06-02T03:52:45+00:00`
 
-- Current ref: `5138bdd`
+- Current ref: `fa38cd7`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,7 +32,7 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_intents | src/core/rebalance/intents.py | 24 | 149 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 23 | 149 |
 | 2 | generate_fx_and_simulate | src/core/rebalance/execution.py | 22 | 160 |
 | 3 | _section_payload | src/core/proof_packs/builder.py | 22 | 130 |
 | 4 | generate_targets_heuristic | src/core/rebalance/targets.py | 22 | 74 |
