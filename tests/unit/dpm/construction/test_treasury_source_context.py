@@ -4,7 +4,9 @@ from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     TreasuryPrimarySupportability,
     external_treasury_currency_overlay_context,
+    treasury_blocked_capabilities,
     treasury_fail_closed_reason_codes,
+    treasury_missing_data_families,
     treasury_optional_source_identity,
     treasury_primary_supportability,
     treasury_source_identity_fields,
@@ -25,7 +27,9 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
         "TreasuryPrimarySupportability",
         "external_treasury_currency_overlay_context",
+        "treasury_blocked_capabilities",
         "treasury_fail_closed_reason_codes",
+        "treasury_missing_data_families",
         "treasury_optional_source_identity",
         "treasury_primary_supportability",
         "treasury_source_identity_fields",
@@ -122,6 +126,31 @@ def test_treasury_fail_closed_reason_codes_include_present_source_families() -> 
         "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED",
         "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED",
         "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED",
+    ]
+
+
+def test_treasury_source_diagnostics_merge_missing_data_and_blocked_capabilities() -> None:
+    assert treasury_missing_data_families(
+        hedge_readiness_response(),
+        currency_exposure_response(),
+        None,
+        fx_forward_curve_response(),
+    ) == [
+        "external_currency_exposure",
+        "external_fx_forward_curve",
+        "external_treasury_hedge_readiness",
+    ]
+    assert treasury_blocked_capabilities(
+        hedge_readiness_response(),
+        currency_exposure_response(),
+        None,
+        fx_forward_curve_response(),
+    ) == [
+        "execution",
+        "forward-pricing",
+        "fx",
+        "oms",
+        "treasury",
     ]
 
 

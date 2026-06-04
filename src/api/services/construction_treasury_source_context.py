@@ -82,13 +82,13 @@ def _blocked_capabilities(response: _TreasurySourceResponse | None) -> list[str]
     return response.supportability.blocked_capabilities if response is not None else []
 
 
-def _merged_missing_data_families(
+def treasury_missing_data_families(
     *responses: _TreasurySourceResponse | None,
 ) -> list[str]:
     return sorted({family for response in responses for family in _missing_data_families(response)})
 
 
-def _merged_blocked_capabilities(
+def treasury_blocked_capabilities(
     *responses: _TreasurySourceResponse | None,
 ) -> list[str]:
     return sorted(
@@ -210,14 +210,14 @@ def external_treasury_currency_overlay_context(
         ),
         source_id=readiness_identity.source_id if readiness_identity is not None else source_hash,
         content_hash=source_hash,
-        missing_data_families=_merged_missing_data_families(
+        missing_data_families=treasury_missing_data_families(
             hedge_readiness,
             currency_exposure,
             hedge_policy,
             eligible_hedge_instruments,
             fx_forward_curve,
         ),
-        blocked_capabilities=_merged_blocked_capabilities(
+        blocked_capabilities=treasury_blocked_capabilities(
             hedge_readiness,
             currency_exposure,
             hedge_policy,
@@ -274,7 +274,9 @@ def external_treasury_currency_overlay_context(
 __all__ = [
     "TreasuryPrimarySupportability",
     "external_treasury_currency_overlay_context",
+    "treasury_blocked_capabilities",
     "treasury_fail_closed_reason_codes",
+    "treasury_missing_data_families",
     "treasury_optional_source_identity",
     "treasury_primary_supportability",
     "treasury_source_identity_fields",
