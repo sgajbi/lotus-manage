@@ -12927,3 +12927,21 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
   and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal dependency-boundary/type-correctness hardening only.
+
+## BACKEND-REVIEW-20260604-526: Mandate optional-source mappings extracted behind readiness helper
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_optional_sources.py`, `tests/unit/dpm/mandates/test_mandate_optional_sources.py`.
+- Finding: optional source-family resolution and readiness handling for mandate optional sources was still inline and repetitive, increasing maintenance risk as source families expand.
+- Action: introduced a table-driven family spec pipeline in `resolve_mandate_optional_sources` for seven optional families (client restriction, sustainability preference, cashflow projection, income needs, liquidity reserve, planned withdrawal, benchmark assignment), centralized readiness dispatch through `_resolve_optional_source_family`, and added protocol-typed readiness callback support.
+  Added focused test coverage for inactive benchmark assignment to ensure it is excluded and surfaced as an unavailable family.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_optional_sources.py`,
+  `python -m ruff format --check src/api/services/mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_optional_sources.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_optional_sources.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_optional_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `make check`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is a service-layer refactor and test hardening.

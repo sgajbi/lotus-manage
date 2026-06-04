@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, Optional, cast
+from typing import Any, Optional, Protocol, cast
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
@@ -29,6 +29,16 @@ class DpmMandateOptionalSources:
     planned_withdrawal_schedule: DpmCorePlannedWithdrawalScheduleResponse | None
     benchmark_assignment: DpmCoreBenchmarkAssignmentResponse | None
     unavailable_source_families: list[str]
+
+
+class OptionalSourceReadyFn(Protocol):
+    def __call__(
+        self,
+        *,
+        source: Any | None,
+        unavailable_family: str | None,
+        family_name: str,
+    ) -> tuple[Any | None, str | None]: ...
 
 
 def try_resolve_optional_source(
@@ -68,6 +78,129 @@ def ready_optional_source(
     return source, unavailable_family
 
 
+def _resolve_optional_source_family(
+    *,
+    resolver: CoreResolverClient,
+    family_name: str,
+    method_name: str,
+    kwargs: dict[str, Any],
+    readiness_fn: OptionalSourceReadyFn,
+) -> tuple[Any | None, str | None]:
+    source, unavailable_family = try_resolve_optional_source(
+        resolver=resolver,
+        method_name=method_name,
+        family_name=family_name,
+        **kwargs,
+    )
+    return readiness_fn(
+        source=source,
+        unavailable_family=unavailable_family,
+        family_name=family_name,
+    )
+
+
+def _mandate_optional_source_specs(
+    *,
+    portfolio_id: str,
+    mandate_id: str,
+    as_of_date: date,
+    tenant_id: Optional[str],
+    reference_currency: Optional[str],
+    correlation_id: Optional[str],
+) -> tuple[tuple[str, str, dict[str, Any], OptionalSourceReadyFn], ...]:
+    return (
+        (
+            "CLIENT_RESTRICTION_PROFILE",
+            "resolve_client_restriction_profile",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "tenant_id": tenant_id,
+                "mandate_id": mandate_id,
+                "include_inactive_restrictions": False,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "SUSTAINABILITY_PREFERENCE_PROFILE",
+            "resolve_sustainability_preference_profile",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "tenant_id": tenant_id,
+                "mandate_id": mandate_id,
+                "include_inactive_preferences": False,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "PORTFOLIO_CASHFLOW_PROJECTION",
+            "resolve_portfolio_cashflow_projection",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "horizon_days": 90,
+                "include_projected": True,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "CLIENT_INCOME_NEEDS_SCHEDULE",
+            "resolve_client_income_needs_schedule",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "tenant_id": tenant_id,
+                "mandate_id": mandate_id,
+                "include_inactive_schedules": False,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "LIQUIDITY_RESERVE_REQUIREMENT",
+            "resolve_liquidity_reserve_requirement",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "tenant_id": tenant_id,
+                "mandate_id": mandate_id,
+                "include_inactive_requirements": False,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "PLANNED_WITHDRAWAL_SCHEDULE",
+            "resolve_planned_withdrawal_schedule",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "tenant_id": tenant_id,
+                "mandate_id": mandate_id,
+                "horizon_days": 365,
+                "include_inactive_withdrawals": False,
+                "correlation_id": correlation_id,
+            },
+            ready_optional_source,
+        ),
+        (
+            "BENCHMARK_ASSIGNMENT",
+            "resolve_benchmark_assignment",
+            {
+                "portfolio_id": portfolio_id,
+                "as_of_date": as_of_date,
+                "reporting_currency": reference_currency,
+                "correlation_id": correlation_id,
+            },
+            ready_benchmark_assignment_source,
+        ),
+    )
+
+
 def resolve_mandate_optional_sources(
     *,
     resolver: CoreResolverClient,
@@ -78,139 +211,43 @@ def resolve_mandate_optional_sources(
     reference_currency: Optional[str],
     correlation_id: Optional[str],
 ) -> DpmMandateOptionalSources:
-    client_restriction_profile, unavailable_client_restrictions = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_client_restriction_profile",
-        family_name="CLIENT_RESTRICTION_PROFILE",
+    resolved_sources: dict[str, Any | None] = {}
+    unavailable_source_families: list[str] = []
+
+    for (
+        family_name,
+        method_name,
+        family_kwargs,
+        readiness_fn,
+    ) in _mandate_optional_source_specs(
         portfolio_id=portfolio_id,
+        mandate_id=mandate_id,
         as_of_date=as_of_date,
         tenant_id=tenant_id,
-        mandate_id=mandate_id,
-        include_inactive_restrictions=False,
+        reference_currency=reference_currency,
         correlation_id=correlation_id,
-    )
-    client_restriction_profile, unavailable_client_restrictions = ready_optional_source(
-        source=client_restriction_profile,
-        unavailable_family=unavailable_client_restrictions,
-        family_name="CLIENT_RESTRICTION_PROFILE",
-    )
-    (
-        sustainability_preference_profile,
-        unavailable_sustainability_preferences,
-    ) = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_sustainability_preference_profile",
-        family_name="SUSTAINABILITY_PREFERENCE_PROFILE",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        tenant_id=tenant_id,
-        mandate_id=mandate_id,
-        include_inactive_preferences=False,
-        correlation_id=correlation_id,
-    )
-    (
-        sustainability_preference_profile,
-        unavailable_sustainability_preferences,
-    ) = ready_optional_source(
-        source=sustainability_preference_profile,
-        unavailable_family=unavailable_sustainability_preferences,
-        family_name="SUSTAINABILITY_PREFERENCE_PROFILE",
-    )
-    portfolio_cashflow_projection, unavailable_cashflow_projection = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_portfolio_cashflow_projection",
-        family_name="PORTFOLIO_CASHFLOW_PROJECTION",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        horizon_days=90,
-        include_projected=True,
-        correlation_id=correlation_id,
-    )
-    portfolio_cashflow_projection, unavailable_cashflow_projection = ready_optional_source(
-        source=portfolio_cashflow_projection,
-        unavailable_family=unavailable_cashflow_projection,
-        family_name="PORTFOLIO_CASHFLOW_PROJECTION",
-    )
-    client_income_needs_schedule, unavailable_income_needs = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_client_income_needs_schedule",
-        family_name="CLIENT_INCOME_NEEDS_SCHEDULE",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        tenant_id=tenant_id,
-        mandate_id=mandate_id,
-        include_inactive_schedules=False,
-        correlation_id=correlation_id,
-    )
-    client_income_needs_schedule, unavailable_income_needs = ready_optional_source(
-        source=client_income_needs_schedule,
-        unavailable_family=unavailable_income_needs,
-        family_name="CLIENT_INCOME_NEEDS_SCHEDULE",
-    )
-    liquidity_reserve_requirement, unavailable_liquidity_reserve = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_liquidity_reserve_requirement",
-        family_name="LIQUIDITY_RESERVE_REQUIREMENT",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        tenant_id=tenant_id,
-        mandate_id=mandate_id,
-        include_inactive_requirements=False,
-        correlation_id=correlation_id,
-    )
-    liquidity_reserve_requirement, unavailable_liquidity_reserve = ready_optional_source(
-        source=liquidity_reserve_requirement,
-        unavailable_family=unavailable_liquidity_reserve,
-        family_name="LIQUIDITY_RESERVE_REQUIREMENT",
-    )
-    planned_withdrawal_schedule, unavailable_planned_withdrawal = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_planned_withdrawal_schedule",
-        family_name="PLANNED_WITHDRAWAL_SCHEDULE",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        tenant_id=tenant_id,
-        mandate_id=mandate_id,
-        horizon_days=365,
-        include_inactive_withdrawals=False,
-        correlation_id=correlation_id,
-    )
-    planned_withdrawal_schedule, unavailable_planned_withdrawal = ready_optional_source(
-        source=planned_withdrawal_schedule,
-        unavailable_family=unavailable_planned_withdrawal,
-        family_name="PLANNED_WITHDRAWAL_SCHEDULE",
-    )
-    benchmark_assignment, unavailable_benchmark_assignment = try_resolve_optional_source(
-        resolver=resolver,
-        method_name="resolve_benchmark_assignment",
-        family_name="BENCHMARK_ASSIGNMENT",
-        portfolio_id=portfolio_id,
-        as_of_date=as_of_date,
-        reporting_currency=reference_currency,
-        correlation_id=correlation_id,
-    )
-    benchmark_assignment, unavailable_benchmark_assignment = ready_optional_source(
-        source=benchmark_assignment,
-        unavailable_family=unavailable_benchmark_assignment,
-        family_name="BENCHMARK_ASSIGNMENT",
-    )
-    benchmark_assignment, unavailable_benchmark_assignment = ready_benchmark_assignment_source(
-        source=cast(DpmCoreBenchmarkAssignmentResponse | None, benchmark_assignment),
-        unavailable_family=unavailable_benchmark_assignment,
-    )
-    unavailable_source_families = [
-        family
-        for family in (
-            unavailable_client_restrictions,
-            unavailable_sustainability_preferences,
-            unavailable_cashflow_projection,
-            unavailable_income_needs,
-            unavailable_liquidity_reserve,
-            unavailable_planned_withdrawal,
-            unavailable_benchmark_assignment,
+    ):
+        source, unavailable_family = _resolve_optional_source_family(
+            resolver=resolver,
+            family_name=family_name,
+            method_name=method_name,
+            kwargs=family_kwargs,
+            readiness_fn=readiness_fn,
         )
-        if family is not None
-    ]
+        resolved_sources[family_name] = source
+        if unavailable_family is not None:
+            unavailable_source_families.append(unavailable_family)
+
+    client_restriction_profile = resolved_sources["CLIENT_RESTRICTION_PROFILE"]
+    sustainability_preference_profile = resolved_sources["SUSTAINABILITY_PREFERENCE_PROFILE"]
+    portfolio_cashflow_projection = resolved_sources["PORTFOLIO_CASHFLOW_PROJECTION"]
+    client_income_needs_schedule = resolved_sources["CLIENT_INCOME_NEEDS_SCHEDULE"]
+    liquidity_reserve_requirement = resolved_sources["LIQUIDITY_RESERVE_REQUIREMENT"]
+    planned_withdrawal_schedule = resolved_sources["PLANNED_WITHDRAWAL_SCHEDULE"]
+    benchmark_assignment = cast(
+        DpmCoreBenchmarkAssignmentResponse | None,
+        resolved_sources["BENCHMARK_ASSIGNMENT"],
+    )
     return DpmMandateOptionalSources(
         client_restriction_profile=cast(
             DpmCoreClientRestrictionProfileResponse | None,
@@ -245,6 +282,7 @@ def ready_benchmark_assignment_source(
     *,
     source: DpmCoreBenchmarkAssignmentResponse | None,
     unavailable_family: str | None,
+    family_name: str,
 ) -> tuple[DpmCoreBenchmarkAssignmentResponse | None, str | None]:
     if source is None:
         return None, unavailable_family
