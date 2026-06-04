@@ -13625,3 +13625,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal source-product lineage mapper
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-558: Liquidity source identity mapper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`.
+- Finding: income-needs, liquidity-reserve, and planned-withdrawal source mappers duplicated
+  source-product identity and supportability status assembly, making future liquidity source
+  family additions more likely to drift in lineage handling.
+- Action: extracted `liquidity_source_identity_fields`, reused it from the three liquidity child
+  mappers, and added direct helper tests for income-needs, reserve-requirement, and
+  planned-withdrawal lineage/status fields.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity source-product mapper
+  refactoring with direct helper tests.

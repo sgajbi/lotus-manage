@@ -4,6 +4,7 @@ from src.api.services import construction_liquidity_source_context
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
+    liquidity_source_identity_fields,
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
     source_liquidity_context,
@@ -20,12 +21,52 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_liquidity_source_context_exports_only_liquidity_mappers() -> None:
     assert construction_liquidity_source_context.__all__ == [
+        "LiquiditySourceResponse",
         "client_income_needs_schedule_context",
         "liquidity_cashflow_projection_context",
+        "liquidity_source_identity_fields",
         "liquidity_reserve_requirement_context",
         "planned_withdrawal_schedule_context",
         "source_liquidity_context",
     ]
+
+
+def test_liquidity_source_identity_fields_preserve_income_needs_lineage() -> None:
+    response = client_income_needs_schedule_response()
+    fields = liquidity_source_identity_fields(response)
+
+    assert fields["source_system"] == "lotus-core"
+    assert fields["source_product_name"] == "ClientIncomeNeedsSchedule"
+    assert fields["source_product_version"] == "v1"
+    assert fields["source_id"] == "income-lineage"
+    assert fields["content_hash"] == hash_canonical_payload(
+        response.model_dump(mode="json", exclude_none=True)
+    )
+    assert fields["supportability_status"] == ConstructionMethodStatus.BLOCKED
+
+
+def test_liquidity_source_identity_fields_preserve_reserve_requirement_lineage() -> None:
+    response = liquidity_reserve_requirement_response()
+    fields = liquidity_source_identity_fields(response)
+
+    assert fields["source_product_name"] == "LiquidityReserveRequirement"
+    assert fields["source_id"] == "reserve-lineage"
+    assert fields["content_hash"] == hash_canonical_payload(
+        response.model_dump(mode="json", exclude_none=True)
+    )
+    assert fields["supportability_status"] == ConstructionMethodStatus.READY
+
+
+def test_liquidity_source_identity_fields_preserve_planned_withdrawal_lineage() -> None:
+    response = planned_withdrawal_schedule_response()
+    fields = liquidity_source_identity_fields(response)
+
+    assert fields["source_product_name"] == "PlannedWithdrawalSchedule"
+    assert fields["source_id"] == "withdrawal-lineage"
+    assert fields["content_hash"] == hash_canonical_payload(
+        response.model_dump(mode="json", exclude_none=True)
+    )
+    assert fields["supportability_status"] == ConstructionMethodStatus.BLOCKED
 
 
 def test_client_income_needs_context_preserves_priority_currency_and_status() -> None:

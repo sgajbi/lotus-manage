@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import TypeAlias
 
 from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_identity import (
@@ -22,6 +23,12 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
 )
 from src.core.models import Money
+
+LiquiditySourceResponse: TypeAlias = (
+    DpmCoreClientIncomeNeedsScheduleResponse
+    | DpmCoreLiquidityReserveRequirementResponse
+    | DpmCorePlannedWithdrawalScheduleResponse
+)
 
 _MANAGE_LIQUIDITY_SOURCE_SYSTEM = "lotus-manage-settlement-engine"
 _MANAGE_LIQUIDITY_POLICY_ID = "manage-liquidity-policy.v1"
@@ -50,25 +57,33 @@ def _liquidity_reason_codes(
     return reason_codes
 
 
+def liquidity_source_identity_fields(source: LiquiditySourceResponse) -> dict[str, object]:
+    identity = source_product_identity(source)
+    return {
+        "source_product_name": identity.source_product_name,
+        "source_product_version": identity.source_product_version,
+        "source_system": identity.source_system,
+        "source_id": identity.source_id,
+        "content_hash": identity.content_hash,
+        "supportability_status": source_status_to_method_status(source.supportability.state),
+    }
+
+
 def client_income_needs_schedule_context(
     income_needs: DpmCoreClientIncomeNeedsScheduleResponse,
 ) -> AuthoritativeClientIncomeNeedsSchedule:
-    identity = source_product_identity(income_needs)
-    return AuthoritativeClientIncomeNeedsSchedule(
-        source_product_name=identity.source_product_name,
-        source_product_version=identity.source_product_version,
-        source_system=identity.source_system,
-        source_id=identity.source_id,
-        content_hash=identity.content_hash,
-        schedule_count=income_needs.supportability.schedule_count,
-        currencies=sorted({entry.currency for entry in income_needs.schedules}),
-        highest_priority=(
-            min(entry.priority for entry in income_needs.schedules)
-            if income_needs.schedules
-            else None
-        ),
-        supportability_status=source_status_to_method_status(income_needs.supportability.state),
-        reason_codes=[income_needs.supportability.reason, "CORE_INCOME_NEEDS_PRESENT"],
+    return AuthoritativeClientIncomeNeedsSchedule.model_validate(
+        {
+            **liquidity_source_identity_fields(income_needs),
+            "schedule_count": income_needs.supportability.schedule_count,
+            "currencies": sorted({entry.currency for entry in income_needs.schedules}),
+            "highest_priority": (
+                min(entry.priority for entry in income_needs.schedules)
+                if income_needs.schedules
+                else None
+            ),
+            "reason_codes": [income_needs.supportability.reason, "CORE_INCOME_NEEDS_PRESENT"],
+        }
     )
 
 
@@ -103,50 +118,38 @@ def liquidity_cashflow_projection_context(
 def liquidity_reserve_requirement_context(
     reserve_requirement: DpmCoreLiquidityReserveRequirementResponse,
 ) -> AuthoritativeLiquidityReserveRequirement:
-    identity = source_product_identity(reserve_requirement)
-    return AuthoritativeLiquidityReserveRequirement(
-        source_product_name=identity.source_product_name,
-        source_product_version=identity.source_product_version,
-        source_system=identity.source_system,
-        source_id=identity.source_id,
-        content_hash=identity.content_hash,
-        requirement_count=reserve_requirement.supportability.requirement_count,
-        currencies=sorted({entry.currency for entry in reserve_requirement.requirements}),
-        maximum_horizon_days=(
-            max(entry.horizon_days for entry in reserve_requirement.requirements)
-            if reserve_requirement.requirements
-            else None
-        ),
-        supportability_status=source_status_to_method_status(
-            reserve_requirement.supportability.state
-        ),
-        reason_codes=[
-            reserve_requirement.supportability.reason,
-            "CORE_LIQUIDITY_RESERVE_PRESENT",
-        ],
+    return AuthoritativeLiquidityReserveRequirement.model_validate(
+        {
+            **liquidity_source_identity_fields(reserve_requirement),
+            "requirement_count": reserve_requirement.supportability.requirement_count,
+            "currencies": sorted({entry.currency for entry in reserve_requirement.requirements}),
+            "maximum_horizon_days": (
+                max(entry.horizon_days for entry in reserve_requirement.requirements)
+                if reserve_requirement.requirements
+                else None
+            ),
+            "reason_codes": [
+                reserve_requirement.supportability.reason,
+                "CORE_LIQUIDITY_RESERVE_PRESENT",
+            ],
+        }
     )
 
 
 def planned_withdrawal_schedule_context(
     planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse,
 ) -> AuthoritativePlannedWithdrawalSchedule:
-    identity = source_product_identity(planned_withdrawals)
-    return AuthoritativePlannedWithdrawalSchedule(
-        source_product_name=identity.source_product_name,
-        source_product_version=identity.source_product_version,
-        source_system=identity.source_system,
-        source_id=identity.source_id,
-        content_hash=identity.content_hash,
-        withdrawal_count=planned_withdrawals.supportability.withdrawal_count,
-        currencies=sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
-        horizon_days=planned_withdrawals.horizon_days,
-        supportability_status=source_status_to_method_status(
-            planned_withdrawals.supportability.state
-        ),
-        reason_codes=[
-            planned_withdrawals.supportability.reason,
-            "CORE_PLANNED_WITHDRAWALS_PRESENT",
-        ],
+    return AuthoritativePlannedWithdrawalSchedule.model_validate(
+        {
+            **liquidity_source_identity_fields(planned_withdrawals),
+            "withdrawal_count": planned_withdrawals.supportability.withdrawal_count,
+            "currencies": sorted({entry.currency for entry in planned_withdrawals.withdrawals}),
+            "horizon_days": planned_withdrawals.horizon_days,
+            "reason_codes": [
+                planned_withdrawals.supportability.reason,
+                "CORE_PLANNED_WITHDRAWALS_PRESENT",
+            ],
+        }
     )
 
 
@@ -203,8 +206,10 @@ def source_liquidity_context(
 
 
 __all__ = [
+    "LiquiditySourceResponse",
     "client_income_needs_schedule_context",
     "liquidity_cashflow_projection_context",
+    "liquidity_source_identity_fields",
     "liquidity_reserve_requirement_context",
     "planned_withdrawal_schedule_context",
     "source_liquidity_context",
