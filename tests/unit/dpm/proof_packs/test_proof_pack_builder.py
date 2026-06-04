@@ -196,6 +196,67 @@ def test_adapter_section_payload_returns_ready_contract_reference() -> None:
     assert reason_codes == []
 
 
+def test_decision_summary_section_payload_projects_reason_and_actor() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = builder_module._decision_summary_section_payload(
+        result=result,
+        selected_alternative=None,
+        reason="Review rebalance.",
+        created_by="pm_001",
+    )
+
+    assert state == "READY"
+    assert summary == "Decision evidence assembled from manage run and actor rationale."
+    assert facts == {
+        "actor": "pm_001",
+        "reason": "Review rebalance.",
+        "source_run_status": result.status,
+        "selected_alternative_id": None,
+    }
+    assert metrics == {}
+    assert reason_codes == []
+
+
+def test_pre_run_source_analytics_payload_dispatches_configured_family() -> None:
+    analytics = ProofPackSourceAnalytics(
+        family="risk",
+        state="READY",
+        summary="Risk evidence is attached.",
+        facts={"risk_report_id": "risk-report-001"},
+        metrics={"volatility": "0.1200"},
+        reason_codes=[],
+        source_ref=_source_ref(),
+        source_hash_key="risk_context",
+        content_hash="sha256:risk-context",
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_source_analytics_payload(
+        section_type="risk_impact",
+        source_analytics={"risk": analytics},
+    )
+
+    assert state == "READY"
+    assert summary == "Risk evidence is attached."
+    assert facts == {"risk_report_id": "risk-report-001"}
+    assert metrics == {"volatility": "0.1200"}
+    assert reason_codes == []
+
+
+def test_pre_run_adapter_payload_dispatches_configured_adapter_contract() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_adapter_payload(
+        section_type="ai_refs",
+    )
+
+    assert state == "READY"
+    assert summary == (
+        "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails."
+    )
+    assert facts == {"adapter_contract": "DpmProofPackAiEvidenceInput"}
+    assert metrics == {}
+    assert reason_codes == []
+
+
 def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> None:
     result = _ready_rebalance_result()
 
