@@ -15,7 +15,7 @@ def source_analytics_posture(
         "performance_context_supplied": authority_context.performance_context is not None,
         "risk_required_for_method": method == ConstructionMethod.RISK_AWARE,
         "performance_required_for_method": False,
-        "required_source_products": _required_source_products(method=method),
+        "required_source_products": required_source_products(method=method),
         "blocked_capabilities": [
             "LOCAL_TRACKING_ERROR_CALCULATION",
             "LOCAL_VOLATILITY_CALCULATION",
@@ -31,7 +31,7 @@ def source_analytics_posture(
     }
 
 
-def _required_source_products(method: ConstructionMethod) -> list[dict[str, object]]:
+def required_source_products(method: ConstructionMethod) -> list[dict[str, object]]:
     return [
         {
             "source_system": "lotus-risk",
@@ -78,4 +78,7 @@ def _required_source_products(method: ConstructionMethod) -> list[dict[str, obje
     ]
 
 
-__all__ = ["source_analytics_posture"]
+__all__ = [
+    "required_source_products",
+    "source_analytics_posture",
+]

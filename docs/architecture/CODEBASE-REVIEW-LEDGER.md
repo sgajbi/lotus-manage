@@ -13909,3 +13909,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal treasury source-context identity
   resolution refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-570: Source analytics required-products helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_analytics_posture.py` and
+  `tests/unit/dpm/construction/test_source_analytics_posture.py`.
+- Finding: source analytics required-product diagnostics were assembled through a private helper,
+  leaving risk-aware and regime-aware source requirements less visible than other construction
+  supportability rules.
+- Action: exposed `required_source_products`, reused it from `source_analytics_posture`, and added
+  direct tests for required source products, export surface, and posture/helper consistency.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_analytics_posture.py tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `python -m ruff format --check src/api/services/construction_source_analytics_posture.py tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_analytics_posture.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_analytics_posture.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction diagnostics
+  helper refactoring with direct tests.
