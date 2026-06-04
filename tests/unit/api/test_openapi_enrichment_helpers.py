@@ -4,6 +4,7 @@ from src.api.openapi_enrichment import (
     _infer_description,
     _infer_example,
     _number_example_for_key,
+    _collection_example_from_schema,
     _schema_declared_example,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
@@ -74,6 +75,57 @@ def test_openapi_enrichment_prefers_declared_schema_examples() -> None:
     assert _schema_declared_example({"examples": ["first", "second"]}) == (True, "first")
     assert _schema_declared_example({"examples": []}) == (False, None)
     assert _schema_declared_example({"type": "string"}) == (False, None)
+
+
+def test_openapi_enrichment_collects_object_array_and_map_examples() -> None:
+    schemas = {
+        "Leaf": {
+            "type": "object",
+            "properties": {"currency": {"type": "string"}, "amount": {"type": "number"}},
+        }
+    }
+
+    assert _collection_example_from_schema(
+        prop_name="position",
+        prop_schema={
+            "properties": {"id": {"type": "string"}, "leaf": {"$ref": "#/components/schemas/Leaf"}}
+        },
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, {"id": "sample_id", "leaf": {"currency": "USD", "amount": 10.5}})
+    assert _collection_example_from_schema(
+        prop_name="items",
+        prop_schema={"type": "array", "items": {"type": "string"}},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, ["sample_items_item"])
+    assert _collection_example_from_schema(
+        prop_name="props",
+        prop_schema={"type": "array", "items": "bad"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, [])
+    assert _collection_example_from_schema(
+        prop_name="tags",
+        prop_schema={
+            "type": "object",
+            "additionalProperties": {"type": "boolean"},
+        },
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, {"sample_key": True})
+    assert _collection_example_from_schema(
+        prop_name="meta",
+        prop_schema={"type": "object"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, {"sample_key": "sample_value"})
+    assert _collection_example_from_schema(
+        prop_name="value",
+        prop_schema={"type": "string"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (False, None)
 
 
 def test_openapi_enrichment_builds_examples_from_refs_composites_and_maps() -> None:

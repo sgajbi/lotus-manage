@@ -136,6 +136,49 @@ def _schema_declared_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:
     return False, None
 
 
+def _collection_example_from_schema(
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    properties = prop_schema.get("properties")
+    if isinstance(properties, dict):
+        return True, {
+            child_name: _example_from_schema(
+                child_name,
+                child_schema,
+                schemas,
+                seen_refs,
+            )
+            for child_name, child_schema in properties.items()
+            if isinstance(child_schema, dict)
+        }
+
+    schema_type = prop_schema.get("type")
+    if schema_type == "array":
+        item_schema = prop_schema.get("items", {})
+        if isinstance(item_schema, dict):
+            return True, [
+                _example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)
+            ]
+        return True, []
+    if schema_type == "object":
+        additional_properties = prop_schema.get("additionalProperties")
+        if isinstance(additional_properties, dict):
+            return True, {
+                "sample_key": _example_from_schema(
+                    f"{prop_name}_value",
+                    additional_properties,
+                    schemas,
+                    seen_refs,
+                )
+            }
+        return True, {"sample_key": "sample_value"}
+
+    return False, None
+
+
 def _example_from_schema(
     prop_name: str,
     prop_schema: dict[str, Any],
@@ -172,32 +215,14 @@ def _example_from_schema(
             if isinstance(option, dict) and option.get("type") != "null":
                 return _example_from_schema(prop_name, option, schemas, seen_refs)
 
-    properties = prop_schema.get("properties")
-    if isinstance(properties, dict):
-        return {
-            child_name: _example_from_schema(child_name, child_schema, schemas, seen_refs)
-            for child_name, child_schema in properties.items()
-            if isinstance(child_schema, dict)
-        }
-
-    schema_type = prop_schema.get("type")
-    if schema_type == "array":
-        item_schema = prop_schema.get("items", {})
-        if isinstance(item_schema, dict):
-            return [_example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)]
-        return []
-    if schema_type == "object":
-        additional_properties = prop_schema.get("additionalProperties")
-        if isinstance(additional_properties, dict):
-            return {
-                "sample_key": _example_from_schema(
-                    f"{prop_name}_value",
-                    additional_properties,
-                    schemas,
-                    seen_refs,
-                )
-            }
-        return {"sample_key": "sample_value"}
+    has_collection_example, collection_example = _collection_example_from_schema(
+        prop_name=prop_name,
+        prop_schema=prop_schema,
+        schemas=schemas,
+        seen_refs=seen_refs,
+    )
+    if has_collection_example:
+        return collection_example
 
     return _infer_example(prop_name, prop_schema)
 

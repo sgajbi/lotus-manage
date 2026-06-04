@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-02T04:55:04+00:00`
+- Generated at: `2026-06-04T04:18:26+00:00`
 
-- Current ref: `c65fc5a`
+- Current ref: `860862d`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _example_from_schema | src/api/openapi_enrichment.py | 17 | 64 |
-| 2 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
-| 3 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
-| 4 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
-| 5 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
-| 6 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
-| 7 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
-| 8 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
-| 9 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
-| 10 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
+| 1 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 2 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
+| 3 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
+| 4 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
+| 5 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
+| 6 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
+| 7 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
+| 8 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
+| 9 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
+| 10 | evaluate | src/core/compliance.py | 15 | 171 |
 
 ### Most Complex Current Test Functions
 

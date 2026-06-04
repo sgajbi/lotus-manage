@@ -12607,4 +12607,29 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   `validate_search_item_metadata`, `compile_mandate_digital_twin_from_core`, or
   `resolve_core_dpm_portfolio_universe_candidates`.
 - Wiki decision: no wiki source change required; this preserves construction enrichment behavior
-  and improves internal transaction-cost source posture maintainability only.
+and improves internal transaction-cost source posture maintainability only.
+
+## BACKEND-REVIEW-20260602-512: OpenAPI collection schema example helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_example_from_schema` mixed explicit schema example selection, ref/composite resolution,
+  object-property recursion, array examples, map examples, and inference fallback in one place.
+- Action: extracted `_collection_example_from_schema` so property/object/array/map traversal is directly
+  testable and separated from reference/composite selection. Added direct tests for object properties,
+  arrays with typed and non-typed items, object maps, object defaults, and collection miss cases.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `_example_from_schema` from 17 / 64 lines and move it further down the top hotspot list.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_ensure_request_and_response_examples`, `validate_search_item_metadata`, or
+  `compile_mandate_digital_twin_from_core`.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI behavior and
+  improves internal API-governance maintainability only.
