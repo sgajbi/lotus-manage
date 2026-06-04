@@ -13141,3 +13141,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is an internal service-layer architecture hardening and test-isolation slice.
+
+## BACKEND-REVIEW-20260604-538: Direct construction source-profile update helper coverage
+
+- Date: 2026-06-04
+- Scope: `tests/unit/dpm/construction/test_source_product_profile_context.py`.
+- Finding: construction source-product profile mapping had direct mapper coverage and combined
+  authority-context update coverage, but the intermediate update helpers for liquidity reserve,
+  planned withdrawal, client restriction, and sustainability preference source products were not
+  independently pinned. That made future orchestration cleanup more likely to regress one source
+  family while still passing broad aggregate tests.
+- Action: added focused helper tests proving that liquidity reserve and planned withdrawal evidence
+  can lift into `liquidity_context` without cashflow or income-needs inputs, and that client
+  restriction and sustainability preference source products lift into their dedicated authority
+  contexts through the profile-update helper boundary.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_profile_context.py tests/unit/dpm/construction/test_liquidity_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is direct helper test hardening for internal
+  construction source-product assembly.
