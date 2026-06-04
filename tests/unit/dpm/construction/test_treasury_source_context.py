@@ -2,7 +2,18 @@ from typing import Any
 
 from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
+    TreasuryPrimarySupportability,
     external_treasury_currency_overlay_context,
+    treasury_blocked_capabilities,
+    treasury_fail_closed_reason_codes,
+    treasury_missing_data_families,
+    treasury_optional_source_identity,
+    treasury_primary_supportability,
+    treasury_response_blocked_capabilities,
+    treasury_response_missing_data_families,
+    treasury_source_identity_fields,
+    treasury_source_payload,
+    treasury_source_payloads,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -17,7 +28,18 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
-        "external_treasury_currency_overlay_context"
+        "TreasuryPrimarySupportability",
+        "external_treasury_currency_overlay_context",
+        "treasury_blocked_capabilities",
+        "treasury_fail_closed_reason_codes",
+        "treasury_missing_data_families",
+        "treasury_optional_source_identity",
+        "treasury_primary_supportability",
+        "treasury_response_blocked_capabilities",
+        "treasury_response_missing_data_families",
+        "treasury_source_identity_fields",
+        "treasury_source_payload",
+        "treasury_source_payloads",
     ]
 
 
@@ -30,11 +52,21 @@ def _without_source_lineage(response: Any) -> Any:
     )
 
 
+def test_treasury_source_payload_preserves_single_source_payload_or_absence() -> None:
+    hedge_readiness = hedge_readiness_response()
+
+    assert treasury_source_payload(hedge_readiness) == hedge_readiness.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert treasury_source_payload(None) is None
+
+
 def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
     hedge_readiness = hedge_readiness_response()
     currency_exposure = currency_exposure_response()
 
-    payloads = construction_treasury_source_context._treasury_source_payloads(
+    payloads = treasury_source_payloads(
         hedge_readiness=hedge_readiness,
         currency_exposure=currency_exposure,
         hedge_policy=None,
@@ -55,7 +87,7 @@ def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
 
 
 def test_primary_treasury_supportability_uses_first_available_source_family() -> None:
-    primary = construction_treasury_source_context._primary_treasury_supportability(
+    primary = treasury_primary_supportability(
         hedge_readiness=None,
         currency_exposure=currency_exposure_response(),
         hedge_policy=hedge_policy_response(),
@@ -64,18 +96,17 @@ def test_primary_treasury_supportability_uses_first_available_source_family() ->
     )
 
     assert primary is not None
+    assert isinstance(primary, TreasuryPrimarySupportability)
     assert primary.state == "UNAVAILABLE"
     assert primary.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
     assert primary.exposure_currencies == ["EUR", "JPY"]
 
 
 def test_source_identity_fields_project_prefixed_source_product_identity() -> None:
-    identity = construction_treasury_source_context._optional_source_identity(
-        currency_exposure_response()
-    )
+    identity = treasury_optional_source_identity(currency_exposure_response())
 
     assert identity is not None
-    assert construction_treasury_source_context._source_identity_fields(
+    assert treasury_source_identity_fields(
         prefix="external_currency_exposure",
         identity=identity,
     ) == {
@@ -87,7 +118,7 @@ def test_source_identity_fields_project_prefixed_source_product_identity() -> No
 
 
 def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
-    assert construction_treasury_source_context._source_identity_fields(
+    assert treasury_source_identity_fields(
         prefix="external_currency_exposure",
         identity=None,
     ) == {
@@ -96,6 +127,62 @@ def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
         "external_currency_exposure_source_id": None,
         "external_currency_exposure_content_hash": None,
     }
+
+
+def test_treasury_fail_closed_reason_codes_include_present_source_families() -> None:
+    assert treasury_fail_closed_reason_codes(
+        primary_reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+        hedge_readiness=hedge_readiness_response(),
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=None,
+        eligible_hedge_instruments=eligible_hedge_instruments_response(),
+        fx_forward_curve=None,
+    ) == [
+        "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+        "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED",
+        "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED",
+        "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED",
+    ]
+
+
+def test_treasury_response_diagnostics_return_single_source_supportability() -> None:
+    hedge_readiness = hedge_readiness_response()
+
+    assert treasury_response_missing_data_families(hedge_readiness) == [
+        "external_treasury_hedge_readiness"
+    ]
+    assert treasury_response_missing_data_families(None) == []
+    assert treasury_response_blocked_capabilities(hedge_readiness) == [
+        "treasury",
+        "oms",
+        "execution",
+    ]
+    assert treasury_response_blocked_capabilities(None) == []
+
+
+def test_treasury_source_diagnostics_merge_missing_data_and_blocked_capabilities() -> None:
+    assert treasury_missing_data_families(
+        hedge_readiness_response(),
+        currency_exposure_response(),
+        None,
+        fx_forward_curve_response(),
+    ) == [
+        "external_currency_exposure",
+        "external_fx_forward_curve",
+        "external_treasury_hedge_readiness",
+    ]
+    assert treasury_blocked_capabilities(
+        hedge_readiness_response(),
+        currency_exposure_response(),
+        None,
+        fx_forward_curve_response(),
+    ) == [
+        "execution",
+        "forward-pricing",
+        "fx",
+        "oms",
+        "treasury",
+    ]
 
 
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:

@@ -67,13 +67,7 @@ def method_specific_reason_codes(
 ) -> list[str]:
     reason_codes: list[str] = []
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        reason_codes.extend(
-            warning
-            for warning in result.diagnostics.warnings
-            if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
-        )
-        if result.explanation.get("target_method_comparison"):
-            reason_codes.append("TARGET_METHOD_COMPARISON_AVAILABLE")
+        reason_codes.extend(solver_reason_codes(result=result))
     if method == ConstructionMethod.LIQUIDITY_AWARE:
         reason_codes.append("SETTLEMENT_AWARENESS_ENABLED")
         reason_codes.extend(
@@ -100,11 +94,12 @@ def method_specific_reason_codes(
             )
         )
     if method == ConstructionMethod.CURRENCY_OVERLAY:
-        _append_currency_overlay_reason_codes(
-            reason_codes=reason_codes,
-            request=request,
-            result=result,
-            authority_context=authority_context,
+        reason_codes.extend(
+            currency_overlay_reason_codes(
+                request=request,
+                result=result,
+                authority_context=authority_context,
+            )
         )
     if method == ConstructionMethod.REGIME_STRESS_AWARE:
         if authority_context.regime_stress_context is None:
@@ -114,13 +109,24 @@ def method_specific_reason_codes(
     return sorted(set(reason_codes))
 
 
-def _append_currency_overlay_reason_codes(
+def solver_reason_codes(*, result: RebalanceResult) -> list[str]:
+    reason_codes = [
+        warning
+        for warning in result.diagnostics.warnings
+        if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
+    ]
+    if result.explanation.get("target_method_comparison"):
+        reason_codes.append("TARGET_METHOD_COMPARISON_AVAILABLE")
+    return reason_codes
+
+
+def currency_overlay_reason_codes(
     *,
-    reason_codes: list[str],
     request: RebalanceRequest,
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
-) -> None:
+) -> list[str]:
+    reason_codes: list[str] = []
     missing_pairs = missing_currency_overlay_pairs(request=request)
     overlay_status = currency_overlay_status(
         request=request,
@@ -138,9 +144,12 @@ def _append_currency_overlay_reason_codes(
         reason_codes.append("CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING")
     else:
         reason_codes.extend(authority_context.currency_overlay_context.reason_codes)
+    return reason_codes
 
 
 __all__ = [
+    "currency_overlay_reason_codes",
     "method_specific_reason_codes",
     "method_specific_status",
+    "solver_reason_codes",
 ]

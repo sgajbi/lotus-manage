@@ -1,7 +1,11 @@
+import pytest
 from pydantic import BaseModel
 
+from src.api.services import construction_source_identity
 from src.api.services.construction_source_identity import (
     SourceProductIdentity,
+    required_source_product_field,
+    response_lineage_source_id,
     response_source_id,
     source_hash,
     source_payload,
@@ -16,6 +20,26 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 class _MinimalSourceResponse(BaseModel):
     source_batch_fingerprint: str | None = None
     lineage: dict[str, str] = {}
+
+
+class _MinimalProductResponse(BaseModel):
+    product_name: object
+    product_version: object
+    source_batch_fingerprint: str | None = None
+    lineage: dict[str, str] = {}
+
+
+def test_source_identity_exports_shared_identity_helpers() -> None:
+    assert construction_source_identity.__all__ == [
+        "JsonPayload",
+        "SourceProductIdentity",
+        "required_source_product_field",
+        "response_lineage_source_id",
+        "response_source_id",
+        "source_hash",
+        "source_payload",
+        "source_product_identity",
+    ]
 
 
 def test_source_payload_and_hash_use_canonical_json_payload() -> None:
@@ -45,6 +69,42 @@ def test_response_source_id_falls_back_to_lineage_then_hash() -> None:
         == "lineage-fingerprint"
     )
     assert response_source_id(_MinimalSourceResponse(), "sha256:fallback") == "sha256:fallback"
+
+
+def test_response_lineage_source_id_returns_only_valid_lineage_fingerprint() -> None:
+    assert (
+        response_lineage_source_id(
+            _MinimalSourceResponse(lineage={"source_batch_fingerprint": "lineage-fingerprint"})
+        )
+        == "lineage-fingerprint"
+    )
+    assert response_lineage_source_id(_MinimalSourceResponse()) is None
+    assert (
+        response_lineage_source_id(
+            _MinimalSourceResponse.model_construct(lineage={"source_batch_fingerprint": ""})
+        )
+        is None
+    )
+
+
+def test_required_source_product_field_returns_only_string_fields() -> None:
+    response = _MinimalProductResponse(
+        product_name="ClientIncomeNeedsSchedule",
+        product_version="v1",
+    )
+
+    assert required_source_product_field(response, "product_name") == "ClientIncomeNeedsSchedule"
+    assert required_source_product_field(response, "product_version") == "v1"
+
+
+def test_required_source_product_field_rejects_non_string_fields() -> None:
+    response = _MinimalProductResponse(
+        product_name="ClientIncomeNeedsSchedule",
+        product_version=1,
+    )
+
+    with pytest.raises(TypeError, match="product_version must be a string source-product field"):
+        required_source_product_field(response, "product_version")
 
 
 def test_source_product_identity_bundles_product_and_lineage_fields() -> None:

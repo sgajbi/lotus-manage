@@ -2,8 +2,10 @@ from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_readiness import (
+    currency_overlay_reason_codes,
     method_specific_reason_codes,
     method_specific_status,
+    solver_reason_codes,
 )
 from src.core.construction.models import (
     ConstructionAuthorityContext,
@@ -89,6 +91,22 @@ def test_solver_reason_codes_include_solver_warnings_and_comparison_evidence() -
     assert reason_codes == [
         "SOLVER_NON_OPTIMAL_USER_LIMIT",
         "TARGET_METHOD_COMPARISON_AVAILABLE",
+    ]
+    assert solver_reason_codes(result=result) == reason_codes
+
+
+def test_currency_overlay_reason_codes_preserve_missing_policy_context() -> None:
+    result = _trade_result()
+
+    reason_codes = currency_overlay_reason_codes(
+        request=_request(),
+        result=result,
+        authority_context=ConstructionAuthorityContext(),
+    )
+
+    assert reason_codes == [
+        "CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE",
+        "CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING",
     ]
 
 

@@ -1,10 +1,18 @@
 from datetime import date
 from decimal import Decimal
+from typing import Any, cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     apply_construction_supportability,
+    authority_context_status,
+    enrichment_summary_diagnostics,
+    method_enrichment_statuses,
+    method_plan_diagnostics,
+    supportability_diagnostics,
+    supportability_status,
 )
+from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction import build_rebalance_result_alternative
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
@@ -207,6 +215,86 @@ def test_supportability_application_attaches_cost_evidence_and_diagnostics() -> 
     )
 
 
+def test_supportability_diagnostics_preserves_existing_context_and_source_posture() -> None:
+    result = _trade_result()
+    alternative = build_rebalance_result_alternative(
+        result=result,
+        method=ConstructionMethod.COST_AWARE,
+        alternative_id="alt_cost_aware",
+    ).model_copy(update={"diagnostics": {"existing": "kept"}})
+    authority_context = ConstructionAuthorityContext(
+        transaction_cost_context=_transaction_cost_context()
+    )
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=authority_context.transaction_cost_context,
+        liquidity_context=None,
+    )
+
+    diagnostics = supportability_diagnostics(
+        method=ConstructionMethod.COST_AWARE,
+        alternative=alternative,
+        plan=resolve_method_plan(ConstructionMethod.COST_AWARE, solver_available=True),
+        enrichment=enrichment,
+        method_reason_codes=["TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS"],
+        authority_context=authority_context,
+    )
+
+    assert diagnostics["existing"] == "kept"
+    method_plan = cast(dict[str, Any], diagnostics["method_plan"])
+    enrichment_summary = cast(dict[str, Any], diagnostics["enrichment_summary"])
+    authority_diagnostics = cast(dict[str, Any], diagnostics["authority_context"])
+    transaction_cost_diagnostics = cast(
+        dict[str, Any],
+        authority_diagnostics["transaction_cost_context"],
+    )
+    source_posture = cast(dict[str, Any], diagnostics["source_analytics_posture"])
+
+    assert method_plan["requested_method"] == "COST_AWARE"
+    assert (
+        "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS"
+        in enrichment_summary["reason_codes"]
+    )
+    assert transaction_cost_diagnostics["source_system"] == "lotus-core"
+    assert source_posture["product_family"] == ("CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT")
+    assert source_posture["risk_context_supplied"] is False
+
+
+def test_enrichment_summary_diagnostics_adds_method_reason_codes() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+
+    diagnostics = enrichment_summary_diagnostics(
+        enrichment=enrichment,
+        method_reason_codes=["METHOD_SPECIFIC_REASON"],
+    )
+
+    assert "METHOD_SPECIFIC_REASON" in diagnostics["reason_codes"]
+
+
+def test_method_plan_diagnostics_serializes_requested_method_and_status() -> None:
+    diagnostics = method_plan_diagnostics(
+        plan=resolve_method_plan(ConstructionMethod.COST_AWARE, solver_available=True)
+    )
+
+    assert diagnostics["requested_method"] == "COST_AWARE"
+    assert diagnostics["method_status"] == "READY"
+
+
 def test_supportability_application_applies_esg_restriction_constraints() -> None:
     result = _trade_result()
     enriched = apply_construction_supportability(
@@ -309,4 +397,134 @@ def test_supportability_application_applies_regime_context_status_overlay() -> N
     assert (
         enriched.diagnostics["authority_context"]["regime_stress_context"]["scenario_pack_id"]
         == "CIO_REGIME_2026_Q2"
+    )
+
+
+def test_authority_context_status_projects_method_specific_context_status() -> None:
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.LIQUIDITY_AWARE,
+            authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
+        )
+        == ConstructionMethodStatus.READY
+    )
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            authority_context=ConstructionAuthorityContext(
+                currency_overlay_context=_blocked_currency_context()
+            ),
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.REGIME_STRESS_AWARE,
+            authority_context=ConstructionAuthorityContext(
+                regime_stress_context=_blocked_regime_context()
+            ),
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+
+
+def test_authority_context_status_ignores_context_for_unrelated_method() -> None:
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.COST_AWARE,
+            authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
+        )
+        is None
+    )
+
+
+def test_method_enrichment_statuses_project_method_specific_enrichment() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=True,
+        risk_required=True,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=_liquidity_context(),
+    )
+
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.TAX_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.tax_status]
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.LIQUIDITY_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.liquidity_status]
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.RISK_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.risk_status]
+
+
+def test_method_enrichment_statuses_empty_for_method_without_overlay() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+
+    assert (
+        method_enrichment_statuses(
+            method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            result=result,
+            enrichment=enrichment,
+        )
+        == []
+    )
+
+
+def test_supportability_status_uses_lowest_method_and_authority_status() -> None:
+    request = _request()
+    result = _trade_result()
+    authority_context = ConstructionAuthorityContext(
+        currency_overlay_context=_blocked_currency_context()
+    )
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+    alternative = build_rebalance_result_alternative(
+        result=result,
+        method=ConstructionMethod.CURRENCY_OVERLAY,
+        alternative_id="alt_currency_overlay",
+    )
+
+    assert (
+        supportability_status(
+            request=request,
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            alternative=alternative,
+            result=result,
+            plan=resolve_method_plan(
+                ConstructionMethod.CURRENCY_OVERLAY,
+                solver_available=True,
+            ),
+            enrichment=enrichment,
+            authority_context=authority_context,
+        )
+        == ConstructionMethodStatus.BLOCKED
     )

@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from src.api.services.construction_sustainability_supportability import (
+    active_sustainability_preferences,
+    allocation_weight_by_asset_class,
     sustainability_preference_reason_codes,
     sustainability_preference_status,
 )
@@ -98,6 +100,15 @@ def test_sustainability_supportability_marks_allocation_and_classification_revie
     assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in reason_codes
 
 
+def test_allocation_weight_by_asset_class_projects_post_trade_weights() -> None:
+    result = _trade_result()
+
+    weight_by_asset_class = allocation_weight_by_asset_class(result=result)
+
+    assert set(weight_by_asset_class) == {"cash", "equity"}
+    assert weight_by_asset_class["equity"] > Decimal("0")
+
+
 def test_sustainability_supportability_degrades_without_source_profile() -> None:
     result = _trade_result()
 
@@ -145,3 +156,40 @@ def test_sustainability_supportability_ignores_inactive_preferences() -> None:
         "SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED",
         "SUSTAINABILITY_PROFILE_READY",
     ]
+
+
+def test_active_sustainability_preferences_filters_source_status() -> None:
+    context = AuthoritativeSustainabilityPreferenceContext(
+        supportability_status=ConstructionMethodStatus.READY,
+        source_system="lotus-core",
+        portfolio_id="pf_sustainability_1",
+        client_id="client-1",
+        mandate_id="mandate-1",
+        as_of_date="2026-06-01",
+        preference_count=2,
+        missing_data_families=[],
+        preferences=[
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="ACTIVE_PREF",
+                preference_status="ACTIVE",
+                preference_source="CLIENT_PROFILE",
+                effective_from="2026-01-01",
+                preference_version=1,
+            ),
+            AuthoritativeSustainabilityPreference(
+                preference_framework="BANK_SUSTAINABILITY",
+                preference_code="INACTIVE_PREF",
+                preference_status="INACTIVE",
+                preference_source="CLIENT_PROFILE",
+                effective_from="2026-01-01",
+                preference_version=1,
+            ),
+        ],
+        reason_codes=["SUSTAINABILITY_PROFILE_READY"],
+    )
+
+    assert [
+        preference.preference_code
+        for preference in active_sustainability_preferences(context=context)
+    ] == ["ACTIVE_PREF"]

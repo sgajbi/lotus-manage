@@ -20,10 +20,9 @@ def run_construction_method(
     run_service: DpmRunSupportService | None,
 ) -> RebalanceResult:
     options = options_for_construction_method(options=request.options, method=method)
-    run_correlation_id = (
-        f"{correlation_id}:{method.value.lower()}"
-        if correlation_id
-        else f"corr_construction_{method.value.lower()}_{uuid.uuid4().hex[:10]}"
+    run_correlation_id = construction_method_correlation_id(
+        method=method,
+        correlation_id=correlation_id,
     )
     result = run_simulation(
         portfolio=request.portfolio_snapshot,
@@ -42,6 +41,16 @@ def run_construction_method(
             idempotency_key=None,
         )
     return result
+
+
+def construction_method_correlation_id(
+    *,
+    method: ConstructionMethod,
+    correlation_id: str | None,
+) -> str:
+    if correlation_id:
+        return f"{correlation_id}:{method.value.lower()}"
+    return f"corr_construction_{method.value.lower()}_{uuid.uuid4().hex[:10]}"
 
 
 def options_for_construction_method(
@@ -84,6 +93,7 @@ def options_for_construction_method(
 
 
 __all__ = [
+    "construction_method_correlation_id",
     "options_for_construction_method",
     "run_construction_method",
 ]

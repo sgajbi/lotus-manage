@@ -165,6 +165,29 @@ def test_quality_rule_documents_state_report_only_architecture_and_api_rules() -
     api_rules = build_api_governance_rules()
 
     assert "Routers call application services or use-case functions only." in architecture_rules
+    assert "Service modules must not import FastAPI or Starlette transport packages." in (
+        architecture_rules
+    )
     assert "Current Gate Phase" in architecture_rules
     assert "Every endpoint should have a summary" in api_rules
     assert "OpenAPI and API vocabulary checks are active repo-native gates" in api_rules
+
+
+def test_service_boundary_findings_include_transport_framework_imports() -> None:
+    findings = ehr._matching_lines(
+        "src/api/services/example.py",
+        "\n".join(
+            [
+                "from fastapi import HTTPException",
+                "from starlette.requests import Request",
+                "from src.api.routers.example import router",
+            ]
+        ),
+        ehr.SERVICE_LEAKAGE_PATTERNS,
+    )
+
+    assert findings == [
+        "src/api/services/example.py:1: from fastapi import HTTPException",
+        "src/api/services/example.py:2: from starlette.requests import Request",
+        "src/api/services/example.py:3: from src.api.routers.example import router",
+    ]

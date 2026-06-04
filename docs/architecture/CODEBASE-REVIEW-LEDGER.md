@@ -13141,3 +13141,1135 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is an internal service-layer architecture hardening and test-isolation slice.
+
+## BACKEND-REVIEW-20260604-538: Direct construction source-profile update helper coverage
+
+- Date: 2026-06-04
+- Scope: `tests/unit/dpm/construction/test_source_product_profile_context.py`.
+- Finding: construction source-product profile mapping had direct mapper coverage and combined
+  authority-context update coverage, but the intermediate update helpers for liquidity reserve,
+  planned withdrawal, client restriction, and sustainability preference source products were not
+  independently pinned. That made future orchestration cleanup more likely to regress one source
+  family while still passing broad aggregate tests.
+- Action: added focused helper tests proving that liquidity reserve and planned withdrawal evidence
+  can lift into `liquidity_context` without cashflow or income-needs inputs, and that client
+  restriction and sustainability preference source products lift into their dedicated authority
+  contexts through the profile-update helper boundary.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_profile_context.py tests/unit/dpm/construction/test_liquidity_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is direct helper test hardening for internal
+  construction source-product assembly.
+
+## BACKEND-REVIEW-20260604-539: Construction one-method alternative builder extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_builder.py`,
+  `tests/unit/dpm/construction/test_alternative_builder.py`.
+- Finding: `build_construction_alternatives` still mixed collection orchestration with per-method
+  plan resolution, effective-method execution, alternative construction, and supportability
+  application. That made the method-specific behavior harder to test directly and increased the
+  cost of future construction method hardening.
+- Action: extracted `build_construction_alternative_for_method` as the single-method helper and
+  rewired the list builder to delegate to it while preserving method ordering and solver-availability
+  resolution. Added direct tests for the do-nothing baseline path and effective-method rerun path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_alternative_builder.py tests/unit/dpm/construction/test_alternative_builder.py`,
+  `python -m ruff format --check src/api/services/construction_alternative_builder.py tests/unit/dpm/construction/test_alternative_builder.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_alternative_builder.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction service-helper
+  refactoring with behavior-preserving tests.
+
+## BACKEND-REVIEW-20260604-540: Construction risk authority lookup helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_authority.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`.
+- Finding: construction method authority assembly still embedded `lotus-risk` concentration and
+  regime-scenario lookup branches inline with the final authority-context object assembly. That
+  obscured fail-closed lookup behavior and made source-authority preservation harder to test
+  independently from context reconstruction.
+- Action: extracted `risk_context_for_method` and `regime_context_for_method`, preserving existing
+  context precedence, governed as-of-date forwarding, and fail-closed handling for unavailable risk
+  authority responses. Added direct helper tests for ready, existing-context, and unavailable
+  postures.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_authority.py tests/unit/dpm/construction/test_method_authority.py`,
+  `python -m ruff format --check src/api/services/construction_method_authority.py tests/unit/dpm/construction/test_method_authority.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_authority.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_authority.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction authority-helper
+  refactoring with direct fail-closed tests.
+
+## BACKEND-REVIEW-20260604-541: Construction supportability diagnostics builder extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: supportability application assembled method status, enrichment posture, and the
+  serialized diagnostics payload in one path. The diagnostics payload is a durable supportability
+  evidence surface, so keeping its serialization inline made it harder to test independently from
+  method-status calculation.
+- Action: extracted `supportability_diagnostics` to build the diagnostic payload from the
+  alternative, method plan, enrichment summary, reason codes, authority context, and source analytics
+  posture. Added a direct test proving existing diagnostics are preserved and source-owned
+  transaction-cost evidence plus risk/performance methodology posture are serialized correctly.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  diagnostics refactoring with behavior-preserving tests.
+
+## BACKEND-REVIEW-20260604-542: Construction method readiness reason-code helpers made pure
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`.
+- Finding: method readiness reason-code assembly embedded solver warning filtering inline and used a
+  mutating helper for currency-overlay reason codes. That made two policy decisions harder to test
+  directly and kept unnecessary side effects in a service helper.
+- Action: extracted pure `solver_reason_codes` and `currency_overlay_reason_codes` helpers, removed
+  the mutating currency helper, and kept `method_specific_reason_codes` as the aggregate dispatcher.
+  Added direct tests for solver comparison evidence and currency-overlay missing-policy posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m ruff format --check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_readiness.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_readiness.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction readiness policy
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-543: Construction idempotency hash payload made inspectable
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_idempotency.py`,
+  `tests/unit/dpm/construction/test_construction_idempotency.py`.
+- Finding: construction alternative-set idempotency hash semantics were embedded directly in
+  `construction_request_hash`, making the canonical payload harder to inspect and test independently
+  from the hash function.
+- Action: extracted `construction_request_hash_payload` so request shape, ordered construction
+  methods, and stateful source-context hash participation are explicit. Added direct tests for the
+  payload while preserving the existing replay/conflict behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_idempotency.py tests/unit/dpm/construction/test_construction_idempotency.py`,
+  `python -m ruff format --check src/api/services/construction_idempotency.py tests/unit/dpm/construction/test_construction_idempotency.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_idempotency.py`,
+  `python -m pytest tests/unit/dpm/construction/test_construction_idempotency.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction idempotency semantics
+  hardening with direct tests.
+
+## BACKEND-REVIEW-20260604-544: Construction selection alternative-id lookup extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_selection.py`,
+  `tests/unit/dpm/construction/test_construction_selection.py`.
+- Finding: construction alternative selection validated the requested alternative id through an
+  inline set comprehension, leaving the selectable-id projection implicit and untested outside the
+  error path.
+- Action: extracted `construction_alternative_ids` and reused it in selection validation. Added a
+  direct helper test and simplified the test fixture import so selection validation remains easy to
+  inspect.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_selection.py tests/unit/dpm/construction/test_construction_selection.py`,
+  `python -m ruff format --check src/api/services/construction_selection.py tests/unit/dpm/construction/test_construction_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_selection.py`,
+  `python -m pytest tests/unit/dpm/construction/test_construction_selection.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction selection validation
+  refactoring with direct helper coverage.
+
+## BACKEND-REVIEW-20260604-545: Construction source lineage fingerprint helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_identity.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`.
+- Finding: source-product identity resolution combined top-level source fingerprint preference,
+  lineage fingerprint lookup, and fallback-hash behavior in one helper, making lineage-specific
+  source-id semantics less visible.
+- Action: extracted `response_lineage_source_id` and reused it from `response_source_id`. Added
+  direct tests for valid lineage fingerprints and invalid/empty lineage fallback behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m ruff format --check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_identity.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_identity.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction source-lineage
+  helper hardening with direct tests.
+
+## BACKEND-REVIEW-20260604-546: Construction alternative-set source state helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_set_lineage.py`,
+  `tests/unit/dpm/construction/test_alternative_set_lineage.py`.
+- Finding: alternative-set lineage field assembly read source supportability state inline, coupling
+  source-context posture extraction to the full persistence update payload.
+- Action: extracted `source_supportability_state` and reused it from
+  `alternative_set_lineage_fields`. Added direct tests for absent source context and stateful
+  supportability posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_alternative_set_lineage.py tests/unit/dpm/construction/test_alternative_set_lineage.py`,
+  `python -m ruff format --check src/api/services/construction_alternative_set_lineage.py tests/unit/dpm/construction/test_alternative_set_lineage.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_alternative_set_lineage.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_set_lineage.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction lineage assembly
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-547: Quality report generator preserves service transport boundary
+
+- Date: 2026-06-04
+- Scope: `scripts/engineering_health_report.py`, `quality/architecture_rules.md`,
+  `quality/baseline_report.md`, `quality/complexity_report.md`,
+  `quality/quality_scorecard.md`, `quality/refactor_health_report.md`,
+  `tests/unit/test_engineering_health_report.py`.
+- Finding: refreshing the enterprise quality artifacts showed that
+  `scripts/engineering_health_report.py` regenerated `quality/architecture_rules.md` without the
+  service-layer FastAPI/Starlette transport-boundary rule added by the architecture hardening slice,
+  and its service-boundary scan did not measure those transport imports.
+- Action: updated the generator to include FastAPI/Starlette service leakage patterns and to
+  regenerate the transport-boundary architecture rule, refreshed the quality artifacts for the
+  current branch, and added unit tests that pin both the rule text and detector coverage.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m ruff check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m ruff format --check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`,
+  `python -m pytest tests/unit/test_engineering_health_report.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal quality-measurement governance
+  hardening and scorecard refresh.
+
+## BACKEND-REVIEW-20260604-548: Liquidity cashflow projection status helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Finding: liquidity supportability status calculation embedded source-owned cashflow projection
+  status policy inside the broader liquidity policy status function, making projected-row,
+  currency, total-value, and adjusted-cash posture harder to test independently.
+- Action: extracted `cashflow_projection_status` and reused it from `liquidity_status`. Added a
+  direct source-shaped test proving excluded projected rows degrade the cashflow projection posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction liquidity
+  supportability refactoring with direct source-context tests.
+
+## BACKEND-REVIEW-20260604-549: Transaction-cost coverage projection helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`.
+- Finding: transaction-cost supportability repeated traded-security and covered-security set
+  projection in both status and reason-code paths, making observed-cost coverage semantics less
+  explicit.
+- Action: extracted `traded_transaction_cost_security_ids` and
+  `covered_transaction_cost_security_ids`, reused them in status and reason-code assembly, and
+  added direct tests for traded versus covered security sets.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction transaction-cost
+  supportability refactoring with direct coverage tests.
+
+## BACKEND-REVIEW-20260604-550: Currency-overlay source projection helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`.
+- Finding: currency-overlay supportability embedded required FX-pair, available FX-pair, and
+  non-base simulated position currency projection inline, making FX supportability inputs less
+  inspectable.
+- Action: extracted `available_fx_pairs`, `required_currency_overlay_pairs`, and
+  `non_base_position_currencies`, reused them from missing-pair and derived-context assembly, and
+  added direct tests for pair coverage and derived eligible currency posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_currency_overlay_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_currency_overlay_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction currency-overlay
+  supportability refactoring with direct source projection tests.
+
+## BACKEND-REVIEW-20260604-551: Regime-stress threshold policy helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_regime_stress_supportability.py`,
+  `tests/unit/dpm/construction/test_regime_stress_supportability.py`.
+- Finding: regime-stress supportability embedded source-provided worst-case-loss versus policy-threshold
+  comparison directly in the status function, leaving the policy check unaddressable as a direct
+  unit.
+- Action: extracted `regime_stress_threshold_breached`, reused it from `regime_stress_status`, and
+  added direct tests for breached and non-breached source threshold posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_regime_stress_supportability.py tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_regime_stress_supportability.py tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_regime_stress_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_regime_stress_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction regime-stress
+  supportability refactoring with direct source-threshold tests.
+
+## BACKEND-REVIEW-20260604-552: Client restriction applicability helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_restriction_supportability.py`,
+  `tests/unit/dpm/construction/test_client_restriction_supportability.py`.
+- Finding: client restriction violation detection embedded active-status and trade-side
+  applicability filtering in the nested violation loop, making source-owned restriction
+  applicability harder to test independently.
+- Action: extracted `active_applicable_restrictions`, reused it from
+  `violated_client_restrictions`, and added direct tests for active buy/sell applicability while
+  preserving existing violation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_restriction_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_restriction_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction client-restriction
+  supportability refactoring with direct applicability tests.
+
+## BACKEND-REVIEW-20260604-553: Sustainability active-preference helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_sustainability_supportability.py`,
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`.
+- Finding: sustainability allocation and classification-review logic each interpreted active
+  source-preference status inline, duplicating source-status filtering across supportability paths.
+- Action: extracted `active_sustainability_preferences`, reused it from allocation breach and
+  classification-review checks, and added direct tests for active versus inactive source
+  preference filtering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_sustainability_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_sustainability_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction sustainability
+  supportability refactoring with direct source-status tests.
+
+## BACKEND-REVIEW-20260604-554: Solver warning projection helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_solver_supportability.py`.
+- Finding: solver supportability status filtered solver-specific diagnostics inline, making the
+  supported warning-code projection unavailable for direct tests and future reuse.
+- Action: extracted `solver_warning_codes`, reused it from `solver_method_status`, and added a
+  direct test proving non-solver diagnostics are ignored while solver/infeasible/unbounded warnings
+  are preserved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_solver_supportability.py tests/unit/dpm/construction/test_solver_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_solver_supportability.py tests/unit/dpm/construction/test_solver_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_solver_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_solver_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction solver supportability
+  refactoring with direct diagnostics tests.
+
+## BACKEND-REVIEW-20260604-555: Construction method correlation helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_execution.py`,
+  `tests/unit/dpm/construction/test_method_execution.py`.
+- Finding: construction method execution assembled method-scoped correlation ids inline before
+  calling the rebalance engine, leaving correlation propagation behavior coupled to engine
+  invocation.
+- Action: extracted `construction_method_correlation_id`, reused it from
+  `run_construction_method`, and added direct tests for caller-provided and generated method-scoped
+  correlation ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m ruff format --check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_execution.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_execution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction method-execution
+  correlation refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-556: Construction as-of date parser helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_request_dates.py`,
+  `tests/unit/dpm/construction/test_request_dates.py`.
+- Finding: construction as-of date resolution parsed candidate snapshot ids inline and had no direct
+  unit coverage for embedded date, ISO date, or market-versus-portfolio fallback behavior.
+- Action: extracted `candidate_as_of_date`, reused it from `construction_as_of_date`, and added
+  direct tests for embedded hyphen/underscore dates, ISO timestamp prefixes, invalid candidates,
+  market snapshot precedence, and portfolio snapshot fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_request_dates.py tests/unit/dpm/construction/test_request_dates.py`,
+  `python -m ruff format --check src/api/services/construction_request_dates.py tests/unit/dpm/construction/test_request_dates.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_request_dates.py`,
+  `python -m pytest tests/unit/dpm/construction/test_request_dates.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction request-date
+  determinism hardening with direct parser tests.
+
+## BACKEND-REVIEW-20260604-557: Client profile source identity mapper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_client_profile_source_context.py`.
+- Finding: client restriction and sustainability preference source-product context mappers
+  duplicated the same source identity, supportability status, portfolio, client, mandate, and
+  as-of field assembly, increasing the chance of lineage drift between profile families.
+- Action: extracted `client_profile_source_fields`, reused it from both profile context mappers,
+  and added direct helper tests for restriction and sustainability profile lineage fields while
+  preserving existing mapper behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_profile_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_profile_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal source-product lineage mapper
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-558: Liquidity source identity mapper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_source_context.py`,
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`.
+- Finding: income-needs, liquidity-reserve, and planned-withdrawal source mappers duplicated
+  source-product identity and supportability status assembly, making future liquidity source
+  family additions more likely to drift in lineage handling.
+- Action: extracted `liquidity_source_identity_fields`, reused it from the three liquidity child
+  mappers, and added direct helper tests for income-needs, reserve-requirement, and
+  planned-withdrawal lineage/status fields.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity source-product mapper
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-559: Authority context update collector extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_authority_context_updates.py`,
+  `src/api/services/construction_source_product_financial_context.py`,
+  `src/api/services/construction_source_product_profile_context.py`,
+  `tests/unit/dpm/construction/test_authority_context_updates.py`,
+  `tests/unit/dpm/construction/test_source_product_financial_context.py`, and
+  `tests/unit/dpm/construction/test_source_product_profile_context.py`.
+- Finding: profile and financial source-product update modules duplicated the same
+  update-builder collection loop, leaving merge semantics implicit in two places.
+- Action: extracted `collect_authority_context_updates` with a typed builder protocol, reused it
+  from profile and financial update assembly, and added direct tests for skipping absent updates
+  and deterministic same-key overwrite semantics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m ruff format --check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal authority-context update
+  collection refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-560: Source-product update map merge helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_authority_context_updates.py`,
+  `src/api/services/construction_source_product_context.py`,
+  `tests/unit/dpm/construction/test_authority_context_updates.py`, and
+  `tests/unit/dpm/construction/test_source_product_context.py`.
+- Finding: top-level source-product authority context assembly hand-merged profile and financial
+  update maps, leaving same-key merge semantics implicit in orchestration code.
+- Action: extracted `merge_authority_context_update_maps`, reused it from
+  `source_product_authority_context_updates`, and added direct helper coverage for deterministic
+  later-map precedence while preserving existing source-product orchestration tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_context.py`,
+  `python -m ruff format --check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal source-product update merge
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-561: Transaction-cost evidence bounds helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_source_context.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_source_context.py`.
+- Finding: transaction-cost source mapping embedded sample-transaction and curve-point truncation
+  inline, making source-evidence payload bounds harder to inspect and test independently.
+- Action: extracted `transaction_cost_sample_transaction_ids` and
+  `transaction_cost_curve_points`, reused them from the context mapper, and added direct helper
+  tests for the five-sample and ten-curve-point bounds.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost source evidence
+  bounding refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-562: Refactor quality measurement refreshed
+
+- Date: 2026-06-04
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: quality measurement artifacts still pointed at `e2398635`, so the scorecard did not
+  reflect the latest construction-source helper extractions, test additions, and service-boundary
+  posture.
+- Action: reran `scripts/engineering_health_report.py` at `7d82a8c8`, refreshing current
+  Python-file, LOC, test-function, complexity, and architecture-boundary measurements while
+  preserving zero service-boundary findings.
+- Status: measurement refreshed.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m pytest tests/unit/test_engineering_health_report.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal quality measurement and review
+  ledger refresh, not a README/wiki/operator-truth change.
+
+## BACKEND-REVIEW-20260604-563: Execution acknowledgement fail-closed reasons extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_execution_source_context.py` and
+  `tests/unit/dpm/construction/test_execution_source_context.py`.
+- Finding: external order acknowledgement source mapping embedded fail-closed reason assembly
+  inline, making the source unavailability posture less visible as a standalone rule.
+- Action: extracted `external_order_acknowledgement_reason_codes`, reused it from the
+  acknowledgement context mapper, and added direct helper coverage for the source reason plus
+  fail-closed posture reason.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_execution_source_context.py tests/unit/dpm/construction/test_execution_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_execution_source_context.py tests/unit/dpm/construction/test_execution_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_execution_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_execution_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal execution source-context
+  fail-closed reason refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-564: Treasury fail-closed reasons helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: external treasury source-family fail-closed reason assembly was private and only
+  indirectly covered through the full currency-overlay context mapper.
+- Action: exposed `treasury_fail_closed_reason_codes`, reused it from the currency-overlay
+  context mapper, and added direct tests proving present source families append the expected
+  fail-closed posture reasons while absent families are skipped.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context
+  fail-closed reason refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-565: Liquidity aggregate reason helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_source_context.py` and
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`.
+- Finding: aggregate source-liquidity context reason assembly was private and only indirectly
+  covered through the full liquidity context mapper.
+- Action: exposed `source_liquidity_reason_codes`, reused it from `source_liquidity_context`,
+  and added direct helper coverage proving optional income-needs, reserve, and planned-withdrawal
+  reason inclusion.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity source-context reason
+  refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-566: Treasury aggregate payload helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury aggregate source-payload assembly was directly tested through a private
+  helper even though it defines the canonical hash input for the currency-overlay context.
+- Action: exposed `treasury_source_payloads`, reused it from
+  `external_treasury_currency_overlay_context`, and updated tests to assert aggregate hash inputs
+  through the public service helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context payload
+  assembly refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-567: Treasury source identity field helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury nested source-product identity projection was directly tested through a
+  private helper even though it defines the contract fields for external currency exposure,
+  hedge policy, eligible hedge instruments, and FX forward curve evidence.
+- Action: exposed `treasury_source_identity_fields`, reused it from the currency-overlay mapper,
+  and updated tests to assert present and absent nested identity projections through the public
+  helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context identity
+  projection refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-568: Treasury primary supportability helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury primary supportability selection was directly tested through a private helper
+  even though it defines the source-family precedence used to populate currency-overlay status,
+  reason, and eligible currencies.
+- Action: exposed `treasury_primary_supportability` and `TreasuryPrimarySupportability`, reused
+  the helper from the currency-overlay mapper, and updated tests to assert first-available source
+  family precedence through the public helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context
+  precedence refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-569: Treasury optional source identity helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury optional source identity resolution was directly tested through a private
+  helper even though it defines how absent and present nested treasury source products project
+  lineage into the currency-overlay context.
+- Action: exposed `treasury_optional_source_identity`, reused it from the currency-overlay mapper,
+  and updated tests to assert nested source identity projection through the public helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context identity
+  resolution refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-570: Source analytics required-products helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_analytics_posture.py` and
+  `tests/unit/dpm/construction/test_source_analytics_posture.py`.
+- Finding: source analytics required-product diagnostics were assembled through a private helper,
+  leaving risk-aware and regime-aware source requirements less visible than other construction
+  supportability rules.
+- Action: exposed `required_source_products`, reused it from `source_analytics_posture`, and added
+  direct tests for required source products, export surface, and posture/helper consistency.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_analytics_posture.py tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `python -m ruff format --check src/api/services/construction_source_analytics_posture.py tests/unit/dpm/construction/test_source_analytics_posture.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_analytics_posture.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_analytics_posture.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction diagnostics
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-571: Authority context status overlay helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: method-specific authority-context status overlays were hidden behind a private helper
+  and only indirectly covered through full construction supportability application tests.
+- Action: exposed `authority_context_status`, reused it from supportability status assembly, and
+  added direct tests for liquidity, currency-overlay, regime-stress, and unrelated-method status
+  behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  status-overlay refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-572: Method enrichment status helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: method-specific enrichment status overlays were hidden behind a private helper and
+  only indirectly covered through full construction supportability application tests.
+- Action: exposed `method_enrichment_statuses`, reused it from supportability status assembly,
+  and added direct tests for tax-aware, liquidity-aware, risk-aware, and no-overlay method
+  behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  enrichment-status refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-573: Supportability status aggregator exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: aggregate method supportability status calculation was hidden behind a private helper
+  and only indirectly covered through full construction alternative enrichment.
+- Action: exposed `supportability_status`, reused it from `apply_construction_supportability`,
+  and added direct coverage proving authority-context overlays participate in the lowest-status
+  rollup.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  status aggregation refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-574: Enrichment summary diagnostics helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: supportability diagnostics embedded enrichment-summary reason-code projection inline,
+  making diagnostic payload enrichment harder to test independently.
+- Action: extracted `enrichment_summary_diagnostics`, reused it from
+  `supportability_diagnostics`, and added direct coverage proving method-specific reason codes are
+  included in the serialized enrichment summary.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction diagnostics
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-575: Method plan diagnostics helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: supportability diagnostics serialized method-plan evidence inline, making the
+  diagnostic payload projection less visible and harder to test independently.
+- Action: extracted `method_plan_diagnostics`, reused it from `supportability_diagnostics`, and
+  added direct coverage for requested-method and method-status serialization.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction diagnostics
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-576: Treasury diagnostics merge helpers exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury missing-data-family and blocked-capability merging was private and only
+  indirectly covered through full currency-overlay context assembly.
+- Action: exposed `treasury_missing_data_families` and `treasury_blocked_capabilities`, reused
+  them from the currency-overlay mapper, and added direct tests for sorted merged diagnostics
+  across present and absent treasury source families.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context
+  diagnostics refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-577: Transaction-cost point mapper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_source_context.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_source_context.py`.
+- Finding: transaction-cost curve point mapping was private and only indirectly covered through
+  full transaction-cost context assembly, obscuring field-level payload preservation.
+- Action: exposed `transaction_cost_point`, reused it from the curve-context mapper, and added
+  direct coverage for source curve point payload fields plus bounded sample transaction ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost source-context
+  mapper refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-578: Source-product field validation helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_identity.py` and
+  `tests/unit/dpm/construction/test_source_identity.py`.
+- Finding: source-product identity required-field validation was private and only indirectly
+  exercised through full identity assembly, making fail-fast source contract behavior less visible.
+- Action: exposed `required_source_product_field`, reused it from `source_product_identity`, and
+  added direct tests for export governance, valid string extraction, and non-string field rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m ruff format --check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_identity.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_identity.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal source-product identity
+  validation refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-579: Financial source update builders exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_product_financial_context.py` and
+  `tests/unit/dpm/construction/test_source_product_financial_context.py`.
+- Finding: financial source-product update builders for transaction-cost, currency-overlay, and
+  execution-acknowledgement contexts were private and only indirectly covered through aggregate
+  update collection.
+- Action: exposed `transaction_cost_curve_context_update`, `currency_overlay_context_update`, and
+  `execution_acknowledgement_context_update`, kept aggregate orchestration unchanged, and added
+  direct tests for each builder's missing-context update behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_financial_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_financial_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_financial_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_financial_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal financial source-context
+  update-builder refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-580: Treasury leaf diagnostics helpers exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury optional source-payload and per-response supportability diagnostics remained
+  private leaf helpers, leaving single-source payload and diagnostic behavior less visible than the
+  aggregate currency-overlay mapper.
+- Action: exposed `treasury_source_payload`, `treasury_response_missing_data_families`, and
+  `treasury_response_blocked_capabilities`, reused them from aggregate treasury helpers, and added
+  direct tests for absent sources plus single-source diagnostic projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-581: Liquidity projected-cashflow weight helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Finding: projected cashflow weight calculation was duplicated across liquidity status and
+  reason-code paths, increasing the chance of future drift in cashflow supportability decisions.
+- Action: extracted `projected_cashflow_weight`, reused it from liquidity status and reason-code
+  assembly, and added direct tests for source-projected weight calculation plus absent projection
+  handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity supportability
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-582: Transaction-cost curve lookup helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_supportability.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`.
+- Finding: transaction-cost supportability built source curve point lookup inline inside observed
+  estimate assembly, hiding the matching contract between security id, transaction type, and
+  observed bps.
+- Action: extracted `transaction_cost_curve_points_by_key`, reused it from observed estimate
+  assembly, and added direct tests for key shape and source point preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost supportability
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-583: Currency-overlay market currency helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_currency_overlay_supportability.py` and
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`.
+- Finding: currency-overlay supportability projected non-base market price currencies inline,
+  making required FX-pair assembly and context eligibility checks easier to drift apart.
+- Action: extracted `non_base_market_price_currencies`, reused it from required-pair assembly and
+  status evaluation, and added direct test coverage through the currency-overlay pair helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_currency_overlay_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_currency_overlay_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal currency-overlay supportability
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-584: Sustainability allocation weight helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_sustainability_supportability.py` and
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`.
+- Finding: sustainability preference supportability built post-trade asset-class allocation weights
+  inline inside breach detection, hiding the input projection used by allocation policy checks.
+- Action: extracted `allocation_weight_by_asset_class`, reused it from allocation breach detection,
+  and added direct tests for post-trade asset-class weight projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_sustainability_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_sustainability_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal sustainability supportability
+  helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-585: Client-restriction shelf lookup helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_restriction_supportability.py` and
+  `tests/unit/dpm/construction/test_client_restriction_supportability.py`.
+- Finding: client-restriction supportability indexed request shelf entries inline inside violation
+  detection, hiding the request-side instrument lookup used by restriction matching.
+- Action: extracted `shelf_entries_by_instrument`, reused it from violation detection, and added
+  direct tests for issuer and country-of-risk lookup preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_restriction_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_restriction_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal client-restriction
+  supportability helper refactoring with direct tests.

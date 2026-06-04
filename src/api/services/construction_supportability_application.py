@@ -66,7 +66,7 @@ def apply_construction_supportability(
         result=result,
         authority_context=authority_context,
     )
-    status = _supportability_status(
+    status = supportability_status(
         request=request,
         method=method,
         alternative=alternative,
@@ -78,24 +78,58 @@ def apply_construction_supportability(
     return alternative.model_copy(
         update={
             "method_status": status,
-            "diagnostics": {
-                **alternative.diagnostics,
-                "method_plan": plan.model_dump(mode="json"),
-                "enrichment_summary": with_method_reason_codes(
-                    enrichment=enrichment,
-                    reason_codes=method_reason_codes,
-                ).model_dump(mode="json"),
-                "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
-                "source_analytics_posture": source_analytics_posture(
-                    method=method,
-                    authority_context=authority_context,
-                ),
-            },
+            "diagnostics": supportability_diagnostics(
+                method=method,
+                alternative=alternative,
+                plan=plan,
+                enrichment=enrichment,
+                method_reason_codes=method_reason_codes,
+                authority_context=authority_context,
+            ),
         }
     )
 
 
-def _supportability_status(
+def supportability_diagnostics(
+    *,
+    method: ConstructionMethod,
+    alternative: ConstructionAlternative,
+    plan: ConstructionMethodPlan,
+    enrichment: ConstructionEnrichmentSummary,
+    method_reason_codes: list[str],
+    authority_context: ConstructionAuthorityContext,
+) -> dict[str, object]:
+    return {
+        **alternative.diagnostics,
+        "method_plan": method_plan_diagnostics(plan=plan),
+        "enrichment_summary": enrichment_summary_diagnostics(
+            enrichment=enrichment,
+            method_reason_codes=method_reason_codes,
+        ),
+        "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
+        "source_analytics_posture": source_analytics_posture(
+            method=method,
+            authority_context=authority_context,
+        ),
+    }
+
+
+def method_plan_diagnostics(*, plan: ConstructionMethodPlan) -> dict[str, object]:
+    return plan.model_dump(mode="json")
+
+
+def enrichment_summary_diagnostics(
+    *,
+    enrichment: ConstructionEnrichmentSummary,
+    method_reason_codes: list[str],
+) -> dict[str, object]:
+    return with_method_reason_codes(
+        enrichment=enrichment,
+        reason_codes=method_reason_codes,
+    ).model_dump(mode="json")
+
+
+def supportability_status(
     *,
     request: RebalanceRequest,
     method: ConstructionMethod,
@@ -115,13 +149,13 @@ def _supportability_status(
             enrichment=enrichment,
             authority_context=authority_context,
         ),
-        *_method_enrichment_statuses(
+        *method_enrichment_statuses(
             method=method,
             result=result,
             enrichment=enrichment,
         ),
     ]
-    authority_status = _authority_context_status(
+    authority_status = authority_context_status(
         method=method,
         authority_context=authority_context,
     )
@@ -130,7 +164,7 @@ def _supportability_status(
     return lowest_construction_status(statuses)
 
 
-def _method_enrichment_statuses(
+def method_enrichment_statuses(
     *,
     method: ConstructionMethod,
     result: RebalanceResult,
@@ -153,7 +187,7 @@ def _method_enrichment_statuses(
     return []
 
 
-def _authority_context_status(
+def authority_context_status(
     *,
     method: ConstructionMethod,
     authority_context: ConstructionAuthorityContext,
@@ -167,4 +201,12 @@ def _authority_context_status(
     return None
 
 
-__all__ = ["apply_construction_supportability"]
+__all__ = [
+    "apply_construction_supportability",
+    "authority_context_status",
+    "enrichment_summary_diagnostics",
+    "method_plan_diagnostics",
+    "method_enrichment_statuses",
+    "supportability_diagnostics",
+    "supportability_status",
+]

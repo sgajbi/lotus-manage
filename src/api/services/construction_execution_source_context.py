@@ -3,6 +3,19 @@ from src.api.services.construction_source_identity import source_product_identit
 from src.core.construction.models import AuthoritativeExecutionAcknowledgementContext
 from src.core.dpm_source_context import DpmCoreExternalOrderExecutionAcknowledgementResponse
 
+_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED_REASON = (
+    "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED"
+)
+
+
+def external_order_acknowledgement_reason_codes(
+    acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse,
+) -> list[str]:
+    return [
+        acknowledgement.supportability.reason,
+        _EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED_REASON,
+    ]
+
 
 def external_order_execution_acknowledgement_context(
     acknowledgement: DpmCoreExternalOrderExecutionAcknowledgementResponse | None,
@@ -21,11 +34,11 @@ def external_order_execution_acknowledgement_context(
         missing_data_families=acknowledgement.supportability.missing_data_families,
         blocked_capabilities=acknowledgement.supportability.blocked_capabilities,
         acknowledgements=acknowledgement.acknowledgements,
-        reason_codes=[
-            acknowledgement.supportability.reason,
-            "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
-        ],
+        reason_codes=external_order_acknowledgement_reason_codes(acknowledgement),
     )
 
 
-__all__ = ["external_order_execution_acknowledgement_context"]
+__all__ = [
+    "external_order_acknowledgement_reason_codes",
+    "external_order_execution_acknowledgement_context",
+]
