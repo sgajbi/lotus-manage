@@ -14408,3 +14408,30 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal wave proof-pack error-translation
   hardening.
+
+## BACKEND-REVIEW-20260604-592: Wave simulation construction errors narrowed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/wave_simulation_item.py`,
+  `tests/unit/dpm/waves/test_wave_simulation_item.py`, and
+  `tests/unit/dpm/api/test_waves_api.py`.
+- Finding: wave simulation converted every construction-generation exception into a blocked wave
+  item, which could hide unexpected repository or runtime side effects behind a normal
+  construction-input review posture.
+- Action: narrowed blocked simulation handling to construction idempotency conflicts, async run
+  conflicts, and value-level construction/input failures, and added tests proving expected
+  construction conflicts block the item while unexpected runtime failures propagate. Updated the
+  wave selection API degradation test to use the proof-pack validation error now required by the
+  narrowed proof-pack degradation contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m ruff format --check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_simulation_item.py`,
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py::test_wave_selection_degrades_when_proof_pack_generation_fails tests/unit/dpm/waves/test_wave_selection_item.py tests/unit/dpm/waves/test_wave_simulation_item.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal wave simulation
+  error-translation hardening.

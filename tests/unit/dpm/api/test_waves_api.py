@@ -40,6 +40,7 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioManagerBookMembershipResponse,
 )
 from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.proof_packs import ProofPackSourceValidationError
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
@@ -4844,7 +4845,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
     wave_repository = InMemoryDpmWaveRepository()
 
     def fail_proof_pack(**_: object) -> None:
-        raise RuntimeError("proof pack unavailable")
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
 
     monkeypatch.setattr(
         proof_pack_service,
@@ -4897,7 +4898,7 @@ def test_wave_selection_degrades_when_proof_pack_generation_fails(
     assert item["proof_pack_id"] is None
     assert item["diagnostics"]["proof_pack_state"] == "DEGRADED"
     assert item["diagnostics"]["proof_pack_reason_code"] == "PROOF_PACK_GENERATION_FAILED"
-    assert item["diagnostics"]["proof_pack_error"] == "RuntimeError"
+    assert item["diagnostics"]["proof_pack_error"] == "ProofPackSourceValidationError"
 
 
 def test_wave_approval_staging_and_handoff_are_durable_and_idempotent() -> None:
