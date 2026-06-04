@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 
@@ -9,7 +9,7 @@ install:
 
 install-ci:
 	python -m pip install --upgrade pip
-	pip install -e ".[dev]"
+	pip install -e ".[dev,quality]"
 
 pre-commit:
 	pre-commit run --all-files
@@ -101,6 +101,19 @@ lint:
 	python -m ruff format --check .
 	$(MAKE) monetary-float-guard
 
+architecture-gate:
+	python -m importlinter.cli import-linter lint --config .importlinter
+complexity-gate:
+	python -m radon cc src -s -n C
+	python -m radon mi src -s
+
+dependency-hygiene-gate:
+	python -m deptry src tests
+
+dead-code-gate:
+	python -m vulture src tests --min-confidence 80
+
+
 monetary-float-guard:
 	python scripts/check_monetary_float_usage.py
 
@@ -144,3 +157,4 @@ docker-up:
 
 docker-down:
 	docker compose down
+

@@ -51,6 +51,18 @@ jobs:
         run: make openapi-gate
       - name: API Vocabulary Gate
         run: make api-vocabulary-gate
+      - name: Architecture Gate
+        run: make architecture-gate
+        continue-on-error: true
+      - name: Complexity Gate
+        run: make complexity-gate
+        continue-on-error: true
+      - name: Dependency Hygiene Gate
+        run: make dependency-hygiene-gate
+        continue-on-error: true
+      - name: Dead Code Gate
+        run: make dead-code-gate
+        continue-on-error: true
       - name: Security Audit
         run: make security-audit
 

@@ -36,9 +36,9 @@
 | OpenAPI completeness | `scripts/openapi_quality_gate.py` plus this report | 2 - active/new-regression |
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | reported as known baseline debt | 1 - baseline |
-| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |
-| Dead code | vulture baseline capture via `quality-baseline.yml` | 1 - report-only baseline |
-| Dependency hygiene | `deptry` + `pip check` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
+| Complexity/maintainability | `make complexity-gate` + `quality/complexity_report.md` | 1 - report-only |
+| Dead code | `make dead-code-gate` (`python -m vulture ...`) | 1 - report-only |
+| Dependency hygiene | `make dependency-hygiene-gate` + `make security-audit` (`pip_audit` remains report-only) | 1 - report-only |
 | Security | `bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
 | Documentation gaps | current docs tests plus planned docs scorecard | planned |
 | Observability gaps | `scripts/validate_observability_contracts.py`; richer runtime gap report planned | 2 - active/new-regression |
