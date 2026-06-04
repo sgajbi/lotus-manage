@@ -9,6 +9,21 @@ from src.core.dpm_source_context import (
     DpmCoreTransactionCostCurveResponse,
 )
 
+_MAX_TRANSACTION_COST_CURVE_POINTS = 10
+_MAX_TRANSACTION_COST_SAMPLE_IDS = 5
+
+
+def transaction_cost_sample_transaction_ids(
+    point: DpmCoreTransactionCostCurvePoint,
+) -> list[str]:
+    return point.sample_transaction_ids[:_MAX_TRANSACTION_COST_SAMPLE_IDS]
+
+
+def transaction_cost_curve_points(
+    curve: DpmCoreTransactionCostCurveResponse,
+) -> list[DpmCoreTransactionCostCurvePoint]:
+    return curve.curve_points[:_MAX_TRANSACTION_COST_CURVE_POINTS]
+
 
 def _transaction_cost_point(
     point: DpmCoreTransactionCostCurvePoint,
@@ -25,7 +40,7 @@ def _transaction_cost_point(
         max_cost_bps=point.max_cost_bps,
         first_observed_date=point.first_observed_date,
         last_observed_date=point.last_observed_date,
-        sample_transaction_ids=point.sample_transaction_ids[:5],
+        sample_transaction_ids=transaction_cost_sample_transaction_ids(point),
     )
 
 
@@ -48,9 +63,15 @@ def transaction_cost_context_from_curve(
         window_end_date=curve.window.end_date,
         returned_curve_point_count=curve.supportability.returned_curve_point_count,
         missing_security_ids=curve.supportability.missing_security_ids,
-        curve_points=[_transaction_cost_point(point) for point in curve.curve_points[:10]],
+        curve_points=[
+            _transaction_cost_point(point) for point in transaction_cost_curve_points(curve)
+        ],
         reason_codes=[curve.supportability.reason],
     )
 
 
-__all__ = ["transaction_cost_context_from_curve"]
+__all__ = [
+    "transaction_cost_context_from_curve",
+    "transaction_cost_curve_points",
+    "transaction_cost_sample_transaction_ids",
+]

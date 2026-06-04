@@ -13701,3 +13701,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal source-product update merge
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-561: Transaction-cost evidence bounds helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_source_context.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_source_context.py`.
+- Finding: transaction-cost source mapping embedded sample-transaction and curve-point truncation
+  inline, making source-evidence payload bounds harder to inspect and test independently.
+- Action: extracted `transaction_cost_sample_transaction_ids` and
+  `transaction_cost_curve_points`, reused them from the context mapper, and added direct helper
+  tests for the five-sample and ten-curve-point bounds.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost source evidence
+  bounding refactoring with direct helper tests.
