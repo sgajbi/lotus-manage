@@ -48,7 +48,7 @@ def treasury_source_payloads(
     }
 
 
-def _optional_source_identity(
+def treasury_optional_source_identity(
     response: _TreasurySourceResponse | None,
     fallback_source_id: str | None = None,
 ) -> SourceProductIdentity | None:
@@ -179,11 +179,13 @@ def external_treasury_currency_overlay_context(
         )
     )
 
-    readiness_identity = _optional_source_identity(hedge_readiness, source_hash)
-    exposure_identity = _optional_source_identity(currency_exposure)
-    hedge_policy_identity = _optional_source_identity(hedge_policy)
-    eligible_hedge_instruments_identity = _optional_source_identity(eligible_hedge_instruments)
-    fx_forward_curve_identity = _optional_source_identity(fx_forward_curve)
+    readiness_identity = treasury_optional_source_identity(hedge_readiness, source_hash)
+    exposure_identity = treasury_optional_source_identity(currency_exposure)
+    hedge_policy_identity = treasury_optional_source_identity(hedge_policy)
+    eligible_hedge_instruments_identity = treasury_optional_source_identity(
+        eligible_hedge_instruments
+    )
+    fx_forward_curve_identity = treasury_optional_source_identity(fx_forward_curve)
     reason_codes = treasury_fail_closed_reason_codes(
         primary_reason=primary_supportability.reason,
         hedge_readiness=hedge_readiness,
@@ -273,6 +275,7 @@ __all__ = [
     "TreasuryPrimarySupportability",
     "external_treasury_currency_overlay_context",
     "treasury_fail_closed_reason_codes",
+    "treasury_optional_source_identity",
     "treasury_primary_supportability",
     "treasury_source_identity_fields",
     "treasury_source_payloads",

@@ -5,6 +5,7 @@ from src.api.services.construction_treasury_source_context import (
     TreasuryPrimarySupportability,
     external_treasury_currency_overlay_context,
     treasury_fail_closed_reason_codes,
+    treasury_optional_source_identity,
     treasury_primary_supportability,
     treasury_source_identity_fields,
     treasury_source_payloads,
@@ -25,6 +26,7 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
         "TreasuryPrimarySupportability",
         "external_treasury_currency_overlay_context",
         "treasury_fail_closed_reason_codes",
+        "treasury_optional_source_identity",
         "treasury_primary_supportability",
         "treasury_source_identity_fields",
         "treasury_source_payloads",
@@ -81,9 +83,7 @@ def test_primary_treasury_supportability_uses_first_available_source_family() ->
 
 
 def test_source_identity_fields_project_prefixed_source_product_identity() -> None:
-    identity = construction_treasury_source_context._optional_source_identity(
-        currency_exposure_response()
-    )
+    identity = treasury_optional_source_identity(currency_exposure_response())
 
     assert identity is not None
     assert treasury_source_identity_fields(
