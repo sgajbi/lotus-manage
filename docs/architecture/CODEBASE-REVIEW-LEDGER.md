@@ -14562,3 +14562,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal policy-pack parser
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-598: Policy-pack engine option updates extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/rebalance/policy_packs.py` and
+  `tests/unit/dpm/engine/test_policy_pack_resolution.py`.
+- Finding: `apply_policy_pack_to_engine_options` mixed domain override selection with the
+  `EngineOptions` model-copy operation, making the policy-pack mutation surface harder to verify
+  directly.
+- Action: extracted `policy_pack_engine_option_updates` as a pure helper that returns only the
+  configured policy-pack engine-option overrides, and added direct tests for populated and empty
+  override maps while preserving the existing `EngineOptions` application behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m ruff format --check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/policy_packs.py`,
+  `python -m pytest tests/unit/dpm/engine/test_policy_pack_resolution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal policy-pack domain helper
+  maintainability refactoring.

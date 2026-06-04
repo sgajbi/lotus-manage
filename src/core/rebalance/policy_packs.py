@@ -362,6 +362,16 @@ def apply_policy_pack_to_engine_options(
 ) -> EngineOptions:
     if policy_pack is None:
         return options
+    updates = policy_pack_engine_option_updates(policy_pack=policy_pack)
+    if not updates:
+        return options
+    return options.model_copy(update=updates)
+
+
+def policy_pack_engine_option_updates(
+    *,
+    policy_pack: DpmPolicyPackDefinition,
+) -> dict[str, object]:
     updates: dict[str, object] = {}
     if policy_pack.turnover_policy.max_turnover_pct is not None:
         updates["max_turnover_pct"] = policy_pack.turnover_policy.max_turnover_pct
@@ -391,9 +401,7 @@ def apply_policy_pack_to_engine_options(
         updates["mandate_approval_already_obtained"] = (
             policy_pack.workflow_policy.mandate_approval_already_obtained
         )
-    if not updates:
-        return options
-    return options.model_copy(update=updates)
+    return updates
 
 
 def resolve_policy_pack_replay_enabled(
