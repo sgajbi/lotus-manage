@@ -14091,3 +14091,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal transaction-cost source-context
   mapper refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-578: Source-product field validation helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_identity.py` and
+  `tests/unit/dpm/construction/test_source_identity.py`.
+- Finding: source-product identity required-field validation was private and only indirectly
+  exercised through full identity assembly, making fail-fast source contract behavior less visible.
+- Action: exposed `required_source_product_field`, reused it from `source_product_identity`, and
+  added direct tests for export governance, valid string extraction, and non-string field rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m ruff format --check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_identity.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_identity.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal source-product identity
+  validation refactoring with direct helper tests.
