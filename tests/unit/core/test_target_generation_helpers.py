@@ -4,6 +4,7 @@ from src.core.models import EngineOptions, GroupConstraint, ShelfEntry
 from src.core.target_generation import (
     _build_solver_attempts,
     _collect_infeasibility_hints,
+    _solver_group_members,
     _solver_invested_bounds,
     _solver_failure_reason,
     _solver_target_universe,
@@ -56,6 +57,30 @@ def test_solver_invested_bounds_subtract_locked_weight_from_cash_band() -> None:
 
     assert bounds.minimum == Decimal("0.50")
     assert bounds.maximum == Decimal("0.60")
+
+
+def test_solver_group_members_splits_tradeable_members_from_locked_weight() -> None:
+    members = _solver_group_members(
+        attr_key="sector",
+        attr_val="TECH",
+        eligible_targets={
+            "TRADEABLE_1": Decimal("0.25"),
+            "LOCKED_1": Decimal("0.35"),
+            "TRADEABLE_2": Decimal("0.15"),
+            "NON_MATCH": Decimal("0.05"),
+            "MISSING_ATTRS": Decimal("0.20"),
+        },
+        shelf_attrs_by_id={
+            "TRADEABLE_1": {"sector": "TECH"},
+            "LOCKED_1": {"sector": "TECH"},
+            "TRADEABLE_2": {"sector": "TECH"},
+            "NON_MATCH": {"sector": "HEALTH"},
+        },
+        indexed_tradeable={"TRADEABLE_1": 0, "TRADEABLE_2": 1},
+    )
+
+    assert members.tradeable_ids == ["TRADEABLE_1", "TRADEABLE_2"]
+    assert members.locked_weight == Decimal("0.35")
 
 
 def test_collect_infeasibility_hints_reports_capacity_and_group_lock() -> None:

@@ -21,6 +21,11 @@ class SolverInvestedBounds(NamedTuple):
     maximum: Decimal
 
 
+class SolverGroupMembers(NamedTuple):
+    tradeable_ids: list[str]
+    locked_weight: Decimal
+
+
 def _build_solver_attempts(cp: Any) -> tuple[tuple[Any, tuple[dict[str, Any], ...]], ...]:
     """
     Ordered solver attempts with bounded runtime and compatibility fallbacks.
@@ -165,6 +170,30 @@ def _solver_invested_bounds(
     )
 
 
+def _solver_group_members(
+    *,
+    attr_key: str,
+    attr_val: str,
+    eligible_targets: dict[str, Decimal],
+    shelf_attrs_by_id: dict[str, dict[str, str]],
+    indexed_tradeable: dict[str, int],
+) -> SolverGroupMembers:
+    tradeable_ids: list[str] = []
+    locked_weight = Decimal("0")
+    for i_id in eligible_targets:
+        attrs = shelf_attrs_by_id.get(i_id)
+        if attrs is None or attrs.get(attr_key) != attr_val:
+            continue
+        if i_id in indexed_tradeable:
+            tradeable_ids.append(i_id)
+        else:
+            locked_weight += eligible_targets[i_id]
+    return SolverGroupMembers(
+        tradeable_ids=tradeable_ids,
+        locked_weight=locked_weight,
+    )
+
+
 def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None:
     if not has_solver_dependencies():
         diagnostics.warnings.append("SOLVER_ERROR")
@@ -289,23 +318,20 @@ def generate_targets_solver(
             diagnostics.warnings.append(f"UNKNOWN_CONSTRAINT_ATTRIBUTE_{attr_key}")
             continue
 
-        group_tradeable = []
-        group_locked_weight = Decimal("0")
-        for i_id in eligible_targets:
-            attrs = shelf_attrs_by_id.get(i_id)
-            if attrs is None or attrs.get(attr_key) != attr_val:
-                continue
-            if i_id in indexed_tradeable:
-                group_tradeable.append(i_id)
-            else:
-                group_locked_weight += eligible_targets[i_id]
+        group_members = _solver_group_members(
+            attr_key=attr_key,
+            attr_val=attr_val,
+            eligible_targets=eligible_targets,
+            shelf_attrs_by_id=shelf_attrs_by_id,
+            indexed_tradeable=indexed_tradeable,
+        )
 
-        if not group_tradeable and group_locked_weight == Decimal("0"):
+        if not group_members.tradeable_ids and group_members.locked_weight == Decimal("0"):
             continue
 
-        group_expr = cp.sum([w[indexed_tradeable[i_id]] for i_id in group_tradeable]) + float(
-            group_locked_weight
-        )
+        group_expr = cp.sum(
+            [w[indexed_tradeable[i_id]] for i_id in group_members.tradeable_ids]
+        ) + float(group_members.locked_weight)
         constraints.append(group_expr <= float(constraint.max_weight))
 
     prob = cp.Problem(objective, constraints)

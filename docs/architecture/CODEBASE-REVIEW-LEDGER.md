@@ -14804,3 +14804,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal solver target-generation
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-608: Solver group-member projection helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/target_generation.py` and
+  `tests/unit/core/test_target_generation_helpers.py`.
+- Finding: `generate_targets_solver` still assembled group-constraint tradeable members and locked
+  member weight inline while also building CVXPY expressions, which made pure membership semantics
+  harder to test independently from solver orchestration.
+- Action: introduced `SolverGroupMembers` and `_solver_group_members`, then routed solver
+  group-constraint construction through that helper. Added direct coverage for mixed tradeable,
+  locked, non-matching, and missing-attribute group members.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal solver target-generation
+  maintainability refactoring.
