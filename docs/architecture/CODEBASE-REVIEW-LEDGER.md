@@ -12658,3 +12658,28 @@ and improves internal transaction-cost source posture maintainability only.
   `validate_search_page_metadata`.
 - Wiki decision: no wiki source change required; this preserves portfolio-memory search contract behavior and
   improves internal model governance maintainability only.
+
+## BACKEND-REVIEW-20260602-514: Mandate twin source-lineage helper
+
+- Date: 2026-06-02
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, generated
+  quality reports, and this ledger.
+- Finding: `compile_mandate_digital_twin_from_core` combined core-product lineage construction,
+  mandate/model source evidence assembly, and twin model construction in one function.
+- Action: extracted `_build_digital_twin_source_lineage` so source lineage assembly for mandate twin
+  construction is directly testable, isolated, and reusable. Added direct tests for required-only and
+  fully-populated lineage inputs.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m ruff format
+  src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`, `python -m pytest
+  tests/unit/dpm/core/test_mandate_health.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `compile_mandate_digital_twin_from_core` from 16 / 173 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `resolve_core_dpm_portfolio_universe_candidates` or `compile_mandate_digital_twin_from_core` remaining
+  behavior branches.
+- Wiki decision: no wiki source change required; this preserves mandate twin construction behavior and
+  improves internal construction maintainability only.

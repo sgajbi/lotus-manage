@@ -29,6 +29,7 @@ from src.core.mandates import (
     MandateHealthDimension,
     MandateHealthState,
     MandateRecommendedAction,
+    _build_digital_twin_source_lineage,
     _mandate_twin_field_gap_codes,
     calculate_mandate_health,
     build_health_input_from_core_sources,
@@ -549,6 +550,51 @@ def test_mandate_twin_field_gap_codes_clear_when_core_products_are_sourced() -> 
         )
         == []
     )
+
+
+def test_build_digital_twin_source_lineage_includes_all_core_products() -> None:
+    benchmark = _benchmark_assignment()
+    lineage = _build_digital_twin_source_lineage(
+        mandate=_mandate_binding(),
+        model_targets=_model_targets(),
+        client_restriction_profile=_client_restriction_profile(),
+        sustainability_preference_profile=_sustainability_preference_profile(),
+        portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+        client_income_needs_schedule=_client_income_needs_schedule(),
+        liquidity_reserve_requirement=_liquidity_reserve_requirement(),
+        planned_withdrawal_schedule=_planned_withdrawal_schedule(),
+        benchmark_assignment=benchmark,
+    )
+
+    assert [entry.product_name for entry in lineage] == [
+        "DiscretionaryMandateBinding",
+        "DpmModelPortfolioTarget",
+        "ClientRestrictionProfile",
+        "SustainabilityPreferenceProfile",
+        "PortfolioCashflowProjection",
+        "ClientIncomeNeedsSchedule",
+        "LiquidityReserveRequirement",
+        "PlannedWithdrawalSchedule",
+        benchmark.product_name,
+    ]
+    assert lineage[-1].source_record_id == (
+        "PB_SG_GLOBAL_BAL_001:BMK_PB_GLOBAL_BALANCED_60_40:2026-01-01:1"
+    )
+
+
+def test_build_digital_twin_source_lineage_includes_only_required_products_when_optionals_missing() -> (
+    None
+):
+    lineage = _build_digital_twin_source_lineage(
+        mandate=_mandate_binding(),
+        model_targets=_model_targets(),
+    )
+
+    assert [entry.product_name for entry in lineage] == [
+        "DiscretionaryMandateBinding",
+        "DpmModelPortfolioTarget",
+    ]
+    assert all(entry.lineage.get("contract_version") for entry in lineage)
 
 
 def test_compile_mandate_twin_preserves_client_profile_cashflow_and_sustainability_lineage() -> (
