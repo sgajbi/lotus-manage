@@ -26,11 +26,11 @@ from src.api.services.mandate_health_result import (
 )
 from src.api.services.core_resolver_service import CoreResolverClient
 from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
+from src.api.services import mandate_monitoring_support
 from src.api.services.mandate_monitoring_run import (
     DpmMonitoringRunAccumulator as DpmMonitoringRunAccumulator,
     DpmMonitoringRunMandateResult as DpmMonitoringRunMandateResult,
     build_monitoring_run,
-    calculate_monitoring_run_mandate_result,
     monitoring_run_id_for,
 )
 from src.api.services.mandate_pm_book import (
@@ -159,22 +159,21 @@ def run_mandate_monitoring_once(
 ) -> DpmMonitoringRun:
     requested_at = datetime.now(timezone.utc)
     monitoring_run_id = monitoring_run_id_for(requested_at)
-    accumulator = DpmMonitoringRunAccumulator.empty()
-
-    for mandate_id in mandate_ids:
-        twin = get_latest_mandate(repository=repository, mandate_id=mandate_id)
-        mandate_result = calculate_monitoring_run_mandate_result(
-            twin=twin,
-            as_of_date=as_of_date,
-            monitoring_run_id=monitoring_run_id,
-        )
-        snapshot = mandate_result.health_snapshot
-        persist_mandate_health_evidence(
+    accumulator = mandate_monitoring_support.aggregate_monitoring_results(
+        mandate_ids=mandate_ids,
+        as_of_date=as_of_date,
+        monitoring_run_id=monitoring_run_id,
+        resolve_twin=lambda mandate_id: get_latest_mandate(
             repository=repository,
+            mandate_id=mandate_id,
+        ),
+        persist_result=lambda twin, snapshot, exceptions: persist_mandate_health_evidence(
+            repository=repository,
+            twin=twin,
             health_snapshot=snapshot,
-            monitoring_exceptions=mandate_result.monitoring_exceptions,
-        )
-        accumulator.record(mandate_result)
+            monitoring_exceptions=exceptions,
+        ),
+    )
 
     run = build_monitoring_run(
         monitoring_run_id=monitoring_run_id,

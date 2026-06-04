@@ -13041,3 +13041,103 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal shared-service utility refactor.
+
+## BACKEND-REVIEW-20260604-533: Baseline quality artifact refresh and transport-layer service boundary hardening
+
+- Date: 2026-06-04
+- Scope: `quality/baseline_report.md`, `quality/complexity_report.md`, `quality/quality_scorecard.md`,
+  `quality/refactor_health_report.md`, `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: quality baselines were stale against current `origin/main` and service-boundary enforcement only guarded
+  FastAPI symbols on a narrow list, leaving a transport-framework import class unguarded in services.
+- Action: regenerated the enterprise baseline/scoring artifacts against current `HEAD` for a real post-merge measurement
+  baseline and hardened the architecture boundary test to ban all FastAPI/Starlette transport imports in service modules.
+  This prevents silent framework leakage while preserving existing domain/service-layer ownership.
+- Status: hardened
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m ruff check src/api/services tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m mypy --config-file mypy.ini tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal governance and architecture-hardening slice.
+
+## BACKEND-REVIEW-20260604-534: Extend import architecture rules to ban FastAPI/Starlette in services
+
+- Date: 2026-06-04
+- Scope: `.importlinter`, `quality/architecture_rules.md`.
+- Finding: service-layer boundary enforcement included only direct import-linter contracts for infrastructure modules; transport package leakage could only be caught in tests and not unified under shared architecture rules.
+- Action: added an explicit import-linter contract that bans FastAPI and Starlette modules under `src.api.services` and updated the architecture rulebook to codify the same boundary.
+- Status: hardened
+- Evidence:
+  `python -m importlinter.cli import-linter lint --config .importlinter`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`),
+  and `rg -n "services_do_not_depend_on_fastapi_starlette"` if `.importlinter` contract health is needed.
+- Wiki decision: no wiki source change required; this is a backend architecture governance control update.
+
+## BACKEND-REVIEW-20260604-535: Extract monitoring-result aggregation helper from mandate service
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_monitoring_support.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_support.py`.
+- Finding: `run_mandate_monitoring_once` contained inline monitoring loop state updates and persistence calls that mixed
+  orchestration and helper concerns.
+- Action: extracted monitoring result aggregation into `mandate_monitoring_support.aggregate_monitoring_results`
+  and added direct tests for that helper path, leaving `mandate_service` as orchestration with injected lookup/persistence steps.
+- Status: hardened
+- Evidence:
+  `python -m ruff format src/api/services/mandate_service.py`,
+  `python -m ruff check src/api/services/mandate_service.py src/api/services/mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_run.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_service.py src/api/services/mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_support.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_run.py -q`,
+  and service-level regression check (`python -m pytest tests/unit/dpm/mandates/test_mandate_errors.py tests/unit/dpm/mandates/test_mandate_diff.py -q`).
+- Wiki decision: no wiki source change required; this is a service-layer architecture refactoring slice.
+
+## BACKEND-REVIEW-20260604-536: Move integration capability builder logic into service module
+
+- Date: 2026-06-04
+- Scope: `src/api/routers/integration_capabilities.py`,
+  `src/api/services/integration_capabilities_service.py`,
+  `tests/unit/dpm/test_integration_capabilities_service.py`.
+- Finding: capability assembly in `integration_capabilities.py` mixed response-shape and environment-resolution logic in the router,
+  leaving thinness and reusability goals partially unfulfilled despite existing API contract coverage.
+- Action: removed router-local builder helpers and extracted all capability/env resolution behavior into
+  `integration_capabilities_service`; `src/api/routers/integration_capabilities.py` now delegates to the service;
+  added direct service-focused tests validating input mode ordering, stateful publication gating, defaults, and env overrides.
+- Status: hardened.
+- Evidence: `python -m pytest tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py -q`,
+  `python -m ruff check src/api/routers/integration_capabilities.py src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py`,
+  `python -m ruff format --check src/api/routers/integration_capabilities.py src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/integration_capabilities_service.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `make check`, and `git diff --check`.
+- Wiki decision: no wiki source change required; this is a service-architecture and router-thinness refactor with behavior preserved.
+
+## BACKEND-REVIEW-20260604-537: Move PM operating-quality command assembly into service helpers
+
+- Date: 2026-06-04
+- Scope: `src/api/services/pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Finding: PM operating-quality command assembly for score runs, PM book-scope evidence, review actions,
+  and summary invocations remained partly coupled to router-private helper paths, making service ownership
+  and direct low-level proof weaker than the surrounding architecture boundary now expects.
+- Action: added service-layer command dataclasses and builders for PM-quality policy resolution, score-run
+  assembly, PM book-scope evidence, review-action assembly, and summary-invocation assembly; expanded direct
+  service tests for success, missing-target, and hash-mismatch paths; and rewired API tests away from private
+  router helper calls toward public endpoint behavior with in-memory dependency overrides.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py tests/unit/api/test_pm_operating_quality_service.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is an internal service-layer architecture hardening and test-isolation slice.

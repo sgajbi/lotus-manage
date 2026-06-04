@@ -37,6 +37,14 @@ def _extract_banned_import_messages(module_path: Path) -> list[str]:
                 messages.append(
                     f"{module_path.as_posix()}: imports service-layer-router module '{module}'"
                 )
+            if module == "fastapi" or module.startswith("fastapi."):
+                messages.append(
+                    f"{module_path.as_posix()}: imports FastAPI framework module '{module}' in service layer"
+                )
+            if module == "starlette" or module.startswith("starlette."):
+                messages.append(
+                    f"{module_path.as_posix()}: imports Starlette framework module '{module}' in service layer"
+                )
             if module == "fastapi":
                 forbidden = {
                     alias.name
@@ -55,6 +63,14 @@ def _extract_banned_import_messages(module_path: Path) -> list[str]:
                 if alias.name.startswith("src.api.routers"):
                     messages.append(
                         f"{module_path.as_posix()}: imports service-layer-router package '{alias.name}'"
+                    )
+                if alias.name == "fastapi" or alias.name.startswith("fastapi."):
+                    messages.append(
+                        f"{module_path.as_posix()}: imports FastAPI framework package '{alias.name}' in service layer"
+                    )
+                if alias.name == "starlette" or alias.name.startswith("starlette."):
+                    messages.append(
+                        f"{module_path.as_posix()}: imports Starlette framework package '{alias.name}' in service layer"
                     )
 
     return messages
