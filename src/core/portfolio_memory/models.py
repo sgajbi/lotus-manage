@@ -531,57 +531,96 @@ class DpmPortfolioMemorySearchItem(BaseModel):
 
     @model_validator(mode="after")
     def validate_search_item_metadata(self) -> "DpmPortfolioMemorySearchItem":
-        expected_event_count = sum(self.event_type_counts.values())
-        if self.event_count != expected_event_count:
-            raise ValueError("event_count must equal the sum of event_type_counts.")
-
-        if self.matching_event_count > self.event_count:
-            raise ValueError("matching_event_count must not exceed event_count.")
-
-        if self.source_systems != sorted(set(self.source_systems)):
-            raise ValueError("source_systems must be sorted and unique.")
-
-        if self.reason_codes != sorted(set(self.reason_codes)):
-            raise ValueError("reason_codes must be sorted and unique.")
-
-        latest_event_fields = [self.latest_event_time, self.latest_event_type]
-        if self.event_count == 0:
-            if self.supportability_state != "EMPTY":
-                raise ValueError("empty search items must use EMPTY supportability_state.")
-            if self.event_type_counts or self.source_systems or self.reason_codes:
-                raise ValueError("empty search items must not carry aggregate event metadata.")
-            if any(value is not None for value in latest_event_fields):
-                raise ValueError("empty search items must not carry latest event metadata.")
-        else:
-            if self.supportability_state == "EMPTY":
-                raise ValueError("non-empty search items must not use EMPTY supportability_state.")
-            if any(value is None for value in latest_event_fields):
-                raise ValueError("non-empty search items must carry latest event metadata.")
-
-        latest_matching_fields = [
-            self.latest_matching_event_time,
-            self.latest_matching_event_type,
-            self.latest_matching_event_id,
-            self.latest_matching_event_identity,
-            self.latest_matching_event_source_system,
-            self.latest_matching_event_source_type,
-            self.latest_matching_event_source_id,
-        ]
-        if self.matching_event_count == 0:
-            if any(value is not None for value in latest_matching_fields):
-                raise ValueError(
-                    "search items with no matching events must not carry latest matching event metadata."
-                )
-            if self.latest_matching_event_content_hash is not None:
-                raise ValueError(
-                    "search items with no matching events must not carry latest matching event content hash."
-                )
-        elif any(value is None for value in latest_matching_fields):
-            raise ValueError(
-                "search items with matching events must carry latest matching event metadata."
-            )
+        _validate_search_item_metadata(
+            event_count=self.event_count,
+            event_type_counts=self.event_type_counts,
+            source_systems=self.source_systems,
+            reason_codes=self.reason_codes,
+            supportability_state=self.supportability_state,
+            matching_event_count=self.matching_event_count,
+            latest_event_time=self.latest_event_time,
+            latest_event_type=self.latest_event_type,
+            latest_matching_event_time=self.latest_matching_event_time,
+            latest_matching_event_type=self.latest_matching_event_type,
+            latest_matching_event_id=self.latest_matching_event_id,
+            latest_matching_event_identity=self.latest_matching_event_identity,
+            latest_matching_event_source_system=self.latest_matching_event_source_system,
+            latest_matching_event_source_type=self.latest_matching_event_source_type,
+            latest_matching_event_source_id=self.latest_matching_event_source_id,
+            latest_matching_event_content_hash=self.latest_matching_event_content_hash,
+        )
 
         return self
+
+
+def _validate_search_item_metadata(
+    *,
+    event_count: int,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+    supportability_state: PortfolioMemorySupportabilityState,
+    matching_event_count: int,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+    latest_matching_event_time: str | None,
+    latest_matching_event_type: PortfolioMemoryEventType | None,
+    latest_matching_event_id: str | None,
+    latest_matching_event_identity: str | None,
+    latest_matching_event_source_system: str | None,
+    latest_matching_event_source_type: str | None,
+    latest_matching_event_source_id: str | None,
+    latest_matching_event_content_hash: str | None,
+) -> None:
+    expected_event_count = sum(event_type_counts.values())
+    if event_count != expected_event_count:
+        raise ValueError("event_count must equal the sum of event_type_counts.")
+
+    if matching_event_count > event_count:
+        raise ValueError("matching_event_count must not exceed event_count.")
+
+    if source_systems != sorted(set(source_systems)):
+        raise ValueError("source_systems must be sorted and unique.")
+
+    if reason_codes != sorted(set(reason_codes)):
+        raise ValueError("reason_codes must be sorted and unique.")
+
+    latest_event_fields = [latest_event_time, latest_event_type]
+    if event_count == 0:
+        if supportability_state != "EMPTY":
+            raise ValueError("empty search items must use EMPTY supportability_state.")
+        if event_type_counts or source_systems or reason_codes:
+            raise ValueError("empty search items must not carry aggregate event metadata.")
+        if any(value is not None for value in latest_event_fields):
+            raise ValueError("empty search items must not carry latest event metadata.")
+    else:
+        if supportability_state == "EMPTY":
+            raise ValueError("non-empty search items must not use EMPTY supportability_state.")
+        if any(value is None for value in latest_event_fields):
+            raise ValueError("non-empty search items must carry latest event metadata.")
+
+    latest_matching_fields = [
+        latest_matching_event_time,
+        latest_matching_event_type,
+        latest_matching_event_id,
+        latest_matching_event_identity,
+        latest_matching_event_source_system,
+        latest_matching_event_source_type,
+        latest_matching_event_source_id,
+    ]
+    if matching_event_count == 0:
+        if any(value is not None for value in latest_matching_fields):
+            raise ValueError(
+                "search items with no matching events must not carry latest matching event metadata."
+            )
+        if latest_matching_event_content_hash is not None:
+            raise ValueError(
+                "search items with no matching events must not carry latest matching event content hash."
+            )
+    elif any(value is None for value in latest_matching_fields):
+        raise ValueError(
+            "search items with matching events must carry latest matching event metadata."
+        )
 
 
 class DpmPortfolioMemorySearchAppliedFilters(BaseModel):

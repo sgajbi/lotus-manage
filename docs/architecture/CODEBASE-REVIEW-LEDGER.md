@@ -12633,3 +12633,28 @@ and improves internal transaction-cost source posture maintainability only.
   `compile_mandate_digital_twin_from_core`.
 - Wiki decision: no wiki source change required; this preserves generated OpenAPI behavior and
   improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-513: Portfolio-memory search-item metadata validation helper
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this ledger.
+- Finding: `validate_search_item_metadata` mixed event-count consistency, sorting/uniqueness checks, empty
+  versus non-empty posture checks, and matching-event metadata enforcement in one validator.
+- Action: extracted `_validate_search_item_metadata` so cross-field search-item metadata rules are directly
+  testable independent of model instantiation internals. Added direct tests for empty search posture,
+  aggregate/ordering mismatches, and stale versus required matching metadata errors.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/models.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `validate_search_item_metadata` from 17 / 52 lines and move it further down the top hotspot list.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `compile_mandate_digital_twin_from_core`, `resolve_core_dpm_portfolio_universe_candidates`, or
+  `validate_search_page_metadata`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search contract behavior and
+  improves internal model governance maintainability only.

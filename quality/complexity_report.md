@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T04:18:26+00:00`
+- Generated at: `2026-06-04T04:20:12+00:00`
 
-- Current ref: `860862d`
+- Current ref: `fafa839`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,7 +32,7 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 52 |
+| 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
 | 2 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
 | 3 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
 | 4 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
