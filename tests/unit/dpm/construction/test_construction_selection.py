@@ -2,18 +2,21 @@ from decimal import Decimal
 
 import pytest
 
-from src.api.services.construction_selection import build_construction_selection
+from src.api.services.construction_selection import (
+    build_construction_selection,
+    construction_alternative_ids,
+)
+from src.core.construction.alternative_engine import build_alternative_set
 from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionComparisonMetrics,
+    ConstructionAlternativeSet,
 )
 from src.core.construction.repository import ConstructionAlternativeNotFoundError
 from src.core.construction.vocabulary import ConstructionMethod, ConstructionMethodStatus
 
 
-def _alternative_set():
-    from src.core.construction.alternative_engine import build_alternative_set
-
+def _alternative_set() -> ConstructionAlternativeSet:
     return build_alternative_set(
         alternative_set_id="cas_select_001",
         portfolio_id="pf_select",
@@ -38,6 +41,12 @@ def _alternative_set():
             )
         ],
     )
+
+
+def test_construction_alternative_ids_returns_selectable_ids() -> None:
+    assert construction_alternative_ids(alternative_set=_alternative_set()) == {
+        "alt_heuristic_explainable"
+    }
 
 
 def test_build_construction_selection_preserves_selection_fields() -> None:

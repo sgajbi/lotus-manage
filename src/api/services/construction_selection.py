@@ -17,9 +17,7 @@ def build_construction_selection(
     correlation_id: str | None,
     selection_id: str | None = None,
 ) -> ConstructionAlternativeSelection:
-    if alternative_id not in {
-        alternative.alternative_id for alternative in alternative_set.alternatives
-    }:
+    if alternative_id not in construction_alternative_ids(alternative_set=alternative_set):
         raise ConstructionAlternativeNotFoundError("CONSTRUCTION_ALTERNATIVE_NOT_FOUND")
     return ConstructionAlternativeSelection(
         selection_id=selection_id or f"casel_{uuid.uuid4().hex[:12]}",
@@ -32,4 +30,14 @@ def build_construction_selection(
     )
 
 
-__all__ = ["build_construction_selection"]
+def construction_alternative_ids(
+    *,
+    alternative_set: ConstructionAlternativeSet,
+) -> set[str]:
+    return {alternative.alternative_id for alternative in alternative_set.alternatives}
+
+
+__all__ = [
+    "build_construction_selection",
+    "construction_alternative_ids",
+]

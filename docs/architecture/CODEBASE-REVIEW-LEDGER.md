@@ -13292,3 +13292,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction idempotency semantics
   hardening with direct tests.
+
+## BACKEND-REVIEW-20260604-544: Construction selection alternative-id lookup extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_selection.py`,
+  `tests/unit/dpm/construction/test_construction_selection.py`.
+- Finding: construction alternative selection validated the requested alternative id through an
+  inline set comprehension, leaving the selectable-id projection implicit and untested outside the
+  error path.
+- Action: extracted `construction_alternative_ids` and reused it in selection validation. Added a
+  direct helper test and simplified the test fixture import so selection validation remains easy to
+  inspect.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_selection.py tests/unit/dpm/construction/test_construction_selection.py`,
+  `python -m ruff format --check src/api/services/construction_selection.py tests/unit/dpm/construction/test_construction_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_selection.py`,
+  `python -m pytest tests/unit/dpm/construction/test_construction_selection.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction selection validation
+  refactoring with direct helper coverage.
