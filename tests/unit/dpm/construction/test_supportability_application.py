@@ -1,10 +1,13 @@
 from datetime import date
 from decimal import Decimal
+from typing import Any, cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     apply_construction_supportability,
+    supportability_diagnostics,
 )
+from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction import build_rebalance_result_alternative
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import (
@@ -205,6 +208,56 @@ def test_supportability_application_attaches_cost_evidence_and_diagnostics() -> 
         enriched.diagnostics["authority_context"]["transaction_cost_context"]["source_system"]
         == "lotus-core"
     )
+
+
+def test_supportability_diagnostics_preserves_existing_context_and_source_posture() -> None:
+    result = _trade_result()
+    alternative = build_rebalance_result_alternative(
+        result=result,
+        method=ConstructionMethod.COST_AWARE,
+        alternative_id="alt_cost_aware",
+    ).model_copy(update={"diagnostics": {"existing": "kept"}})
+    authority_context = ConstructionAuthorityContext(
+        transaction_cost_context=_transaction_cost_context()
+    )
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=authority_context.transaction_cost_context,
+        liquidity_context=None,
+    )
+
+    diagnostics = supportability_diagnostics(
+        method=ConstructionMethod.COST_AWARE,
+        alternative=alternative,
+        plan=resolve_method_plan(ConstructionMethod.COST_AWARE, solver_available=True),
+        enrichment=enrichment,
+        method_reason_codes=["TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS"],
+        authority_context=authority_context,
+    )
+
+    assert diagnostics["existing"] == "kept"
+    method_plan = cast(dict[str, Any], diagnostics["method_plan"])
+    enrichment_summary = cast(dict[str, Any], diagnostics["enrichment_summary"])
+    authority_diagnostics = cast(dict[str, Any], diagnostics["authority_context"])
+    transaction_cost_diagnostics = cast(
+        dict[str, Any],
+        authority_diagnostics["transaction_cost_context"],
+    )
+    source_posture = cast(dict[str, Any], diagnostics["source_analytics_posture"])
+
+    assert method_plan["requested_method"] == "COST_AWARE"
+    assert (
+        "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS"
+        in enrichment_summary["reason_codes"]
+    )
+    assert transaction_cost_diagnostics["source_system"] == "lotus-core"
+    assert source_posture["product_family"] == ("CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT")
+    assert source_posture["risk_context_supplied"] is False
 
 
 def test_supportability_application_applies_esg_restriction_constraints() -> None:

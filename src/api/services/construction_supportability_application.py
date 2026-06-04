@@ -78,21 +78,40 @@ def apply_construction_supportability(
     return alternative.model_copy(
         update={
             "method_status": status,
-            "diagnostics": {
-                **alternative.diagnostics,
-                "method_plan": plan.model_dump(mode="json"),
-                "enrichment_summary": with_method_reason_codes(
-                    enrichment=enrichment,
-                    reason_codes=method_reason_codes,
-                ).model_dump(mode="json"),
-                "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
-                "source_analytics_posture": source_analytics_posture(
-                    method=method,
-                    authority_context=authority_context,
-                ),
-            },
+            "diagnostics": supportability_diagnostics(
+                method=method,
+                alternative=alternative,
+                plan=plan,
+                enrichment=enrichment,
+                method_reason_codes=method_reason_codes,
+                authority_context=authority_context,
+            ),
         }
     )
+
+
+def supportability_diagnostics(
+    *,
+    method: ConstructionMethod,
+    alternative: ConstructionAlternative,
+    plan: ConstructionMethodPlan,
+    enrichment: ConstructionEnrichmentSummary,
+    method_reason_codes: list[str],
+    authority_context: ConstructionAuthorityContext,
+) -> dict[str, object]:
+    return {
+        **alternative.diagnostics,
+        "method_plan": plan.model_dump(mode="json"),
+        "enrichment_summary": with_method_reason_codes(
+            enrichment=enrichment,
+            reason_codes=method_reason_codes,
+        ).model_dump(mode="json"),
+        "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
+        "source_analytics_posture": source_analytics_posture(
+            method=method,
+            authority_context=authority_context,
+        ),
+    }
 
 
 def _supportability_status(
@@ -167,4 +186,7 @@ def _authority_context_status(
     return None
 
 
-__all__ = ["apply_construction_supportability"]
+__all__ = [
+    "apply_construction_supportability",
+    "supportability_diagnostics",
+]

@@ -13218,3 +13218,29 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction authority-helper
   refactoring with direct fail-closed tests.
+
+## BACKEND-REVIEW-20260604-541: Construction supportability diagnostics builder extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: supportability application assembled method status, enrichment posture, and the
+  serialized diagnostics payload in one path. The diagnostics payload is a durable supportability
+  evidence surface, so keeping its serialization inline made it harder to test independently from
+  method-status calculation.
+- Action: extracted `supportability_diagnostics` to build the diagnostic payload from the
+  alternative, method plan, enrichment summary, reason codes, authority context, and source analytics
+  posture. Added a direct test proving existing diagnostics are preserved and source-owned
+  transaction-cost evidence plus risk/performance methodology posture are serialized correctly.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  diagnostics refactoring with behavior-preserving tests.
