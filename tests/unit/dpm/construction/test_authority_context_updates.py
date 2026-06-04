@@ -4,6 +4,7 @@ from src.api.services import construction_authority_context_updates
 from src.api.services.construction_authority_context_updates import (
     AuthorityContextUpdate,
     collect_authority_context_updates,
+    merge_authority_context_update_maps,
 )
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmCoreExecutionContext
@@ -14,6 +15,7 @@ def test_authority_context_updates_exports_collector_surface() -> None:
         "AuthorityContextUpdate",
         "AuthorityContextUpdateBuilder",
         "collect_authority_context_updates",
+        "merge_authority_context_update_maps",
     ]
 
 
@@ -63,3 +65,16 @@ def test_collect_authority_context_updates_uses_later_builder_for_same_key() -> 
         authority_context=ConstructionAuthorityContext(),
         update_builders=(first_update, second_update),
     ) == {"liquidity_context": {"source": "second"}}
+
+
+def test_merge_authority_context_update_maps_keeps_later_update_for_same_key() -> None:
+    assert merge_authority_context_update_maps(
+        {"liquidity_context": {"source": "profile"}},
+        {
+            "transaction_cost_context": {"source": "financial"},
+            "liquidity_context": {"source": "financial"},
+        },
+    ) == {
+        "liquidity_context": {"source": "financial"},
+        "transaction_cost_context": {"source": "financial"},
+    }

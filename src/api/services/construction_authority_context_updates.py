@@ -34,8 +34,18 @@ def collect_authority_context_updates(
     return context_updates
 
 
+def merge_authority_context_update_maps(
+    *update_maps: dict[str, object],
+) -> dict[str, object]:
+    context_updates: dict[str, object] = {}
+    for update_map in update_maps:
+        context_updates.update(update_map)
+    return context_updates
+
+
 __all__ = [
     "AuthorityContextUpdate",
     "AuthorityContextUpdateBuilder",
     "collect_authority_context_updates",
+    "merge_authority_context_update_maps",
 ]
