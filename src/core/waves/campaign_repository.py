@@ -11,7 +11,7 @@ class DpmBulkReviewCampaignDefinitionConflictError(ValueError):
 
 class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     def save_definition(self, *, definition: DpmBulkReviewCampaignDefinition) -> None:
-        raise NotImplementedError
+        """Persist a campaign definition."""
 
     def get_definition(
         self,
@@ -19,7 +19,7 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         campaign_id: str,
         campaign_version: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Return a campaign definition by identifier and version."""
 
     def list_definitions(
         self,
@@ -30,53 +30,53 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         limit: int = 50,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
-        raise NotImplementedError
+        """Return a bounded page of campaign definitions."""
 
     def retire_definition(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist a retired campaign definition version."""
 
     def supersede_definition(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist a superseded campaign definition version."""
 
     def record_definition_launch(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist launch evidence for a campaign definition."""
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist approval-decision evidence for a campaign definition."""
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist assignment-action evidence for a campaign definition."""
 
     def record_definition_assignment_task(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist assignment-task evidence for a campaign definition."""
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        raise NotImplementedError
+        """Persist maker-checker control evidence for a campaign definition."""

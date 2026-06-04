@@ -14490,3 +14490,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack router
   error-translation hardening.
+
+## BACKEND-REVIEW-20260604-595: Campaign repository protocol bodies clarified
+
+- Date: 2026-06-04
+- Scope: `src/core/waves/campaign_repository.py`.
+- Finding: the bulk-review campaign definition repository is a `Protocol`, but its method bodies
+  raised `NotImplementedError`, creating stale scan noise and diverging from the repository
+  contract style used by other Lotus Manage protocols.
+- Action: replaced protocol method raises with concise contract docstrings, preserving the same
+  structural typing surface while eliminating abstract-runtime placeholders from the core scan.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_repository.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/dpm/portfolio_memory/test_campaign_collection.py tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal repository protocol
+  contract cleanup.
