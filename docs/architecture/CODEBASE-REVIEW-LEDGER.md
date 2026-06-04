@@ -14384,3 +14384,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal wave service error-translation
   hardening.
+
+## BACKEND-REVIEW-20260604-591: Wave proof-pack degradation errors narrowed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/wave_selection_item.py` and
+  `tests/unit/dpm/waves/test_wave_selection_item.py`.
+- Finding: wave item selection degraded proof-pack state for every proof-pack generation
+  exception, which could hide unexpected repository or runtime side effects behind a normal
+  source-validation failure posture.
+- Action: narrowed degradation handling to proof-pack source validation, proof-pack conflict, and
+  run-not-found domain errors, and added tests proving expected validation failures degrade the
+  wave item while unexpected runtime failures propagate.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_selection_item.py tests/unit/dpm/waves/test_wave_selection_item.py`,
+  `python -m ruff format --check src/api/services/wave_selection_item.py tests/unit/dpm/waves/test_wave_selection_item.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_selection_item.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_selection_item.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal wave proof-pack error-translation
+  hardening.
