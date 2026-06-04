@@ -1,5 +1,6 @@
 import json
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Any, Optional
@@ -14,6 +15,90 @@ from src.core.rebalance_runs.models import (
     DpmSupportabilitySummaryData,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
+
+
+@dataclass(frozen=True)
+class _ExpiredRunIdentities:
+    run_ids: set[str]
+    correlation_ids: set[str]
+    idempotency_keys: set[str]
+
+    @property
+    def lineage_entity_ids(self) -> set[str]:
+        return self.run_ids | self.correlation_ids | self.idempotency_keys
+
+
+def _expired_runs(
+    *,
+    runs: dict[str, DpmRunRecord],
+    cutoff: datetime,
+) -> list[DpmRunRecord]:
+    return [run for run in runs.values() if run.created_at < cutoff]
+
+
+def _expired_run_identities(expired_runs: list[DpmRunRecord]) -> _ExpiredRunIdentities:
+    return _ExpiredRunIdentities(
+        run_ids={run.rebalance_run_id for run in expired_runs},
+        correlation_ids={run.correlation_id for run in expired_runs},
+        idempotency_keys={run.idempotency_key for run in expired_runs if run.idempotency_key},
+    )
+
+
+def _purge_expired_run_records(
+    *,
+    runs: dict[str, DpmRunRecord],
+    run_artifacts: dict[str, dict[str, Any]],
+    run_id_by_correlation: dict[str, str],
+    expired_runs: list[DpmRunRecord],
+) -> None:
+    for run in expired_runs:
+        runs.pop(run.rebalance_run_id, None)
+        run_artifacts.pop(run.rebalance_run_id, None)
+        if run_id_by_correlation.get(run.correlation_id) == run.rebalance_run_id:
+            run_id_by_correlation.pop(run.correlation_id, None)
+
+
+def _purge_expired_idempotency_mappings(
+    *,
+    idempotency: dict[str, DpmRunIdempotencyRecord],
+    expired_run_ids: set[str],
+    expired_idempotency_keys: set[str],
+) -> None:
+    for idempotency_key, mapping in list(idempotency.items()):
+        if mapping.rebalance_run_id in expired_run_ids:
+            idempotency.pop(idempotency_key, None)
+            expired_idempotency_keys.add(idempotency_key)
+
+
+def _purge_expired_idempotency_history(
+    *,
+    idempotency_history: dict[str, list[DpmRunIdempotencyHistoryRecord]],
+    expired_run_ids: set[str],
+) -> None:
+    for idempotency_key, history in list(idempotency_history.items()):
+        filtered = [row for row in history if row.rebalance_run_id not in expired_run_ids]
+        if filtered:
+            idempotency_history[idempotency_key] = filtered
+        else:
+            idempotency_history.pop(idempotency_key, None)
+
+
+def _purge_expired_lineage_edges(
+    *,
+    lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]],
+    expired_entities: set[str],
+) -> None:
+    for entity_id, edges in list(lineage_edges_by_entity.items()):
+        filtered_edges = [
+            edge
+            for edge in edges
+            if edge.source_entity_id not in expired_entities
+            and edge.target_entity_id not in expired_entities
+        ]
+        if filtered_edges:
+            lineage_edges_by_entity[entity_id] = filtered_edges
+        else:
+            lineage_edges_by_entity.pop(entity_id, None)
 
 
 class InMemoryDpmRunRepository(DpmRunRepository):
@@ -347,48 +432,31 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             if retention_days < 1:
                 return 0
             cutoff = now.astimezone(timezone.utc) - timedelta(days=retention_days)
-            expired_runs = [run for run in self._runs.values() if run.created_at < cutoff]
+            expired_runs = _expired_runs(runs=self._runs, cutoff=cutoff)
             if not expired_runs:
                 return 0
 
-            expired_run_ids = {run.rebalance_run_id for run in expired_runs}
-            expired_correlation_ids = {run.correlation_id for run in expired_runs}
-            expired_idempotency_keys = {
-                run.idempotency_key for run in expired_runs if run.idempotency_key
-            }
-
-            for run in expired_runs:
-                self._runs.pop(run.rebalance_run_id, None)
-                self._run_artifacts.pop(run.rebalance_run_id, None)
-                if self._run_id_by_correlation.get(run.correlation_id) == run.rebalance_run_id:
-                    self._run_id_by_correlation.pop(run.correlation_id, None)
-
-            for idempotency_key, mapping in list(self._idempotency.items()):
-                if mapping.rebalance_run_id in expired_run_ids:
-                    self._idempotency.pop(idempotency_key, None)
-                    expired_idempotency_keys.add(idempotency_key)
-
-            for idempotency_key, history in list(self._idempotency_history.items()):
-                filtered = [row for row in history if row.rebalance_run_id not in expired_run_ids]
-                if filtered:
-                    self._idempotency_history[idempotency_key] = filtered
-                else:
-                    self._idempotency_history.pop(idempotency_key, None)
-
-            for run_id in expired_run_ids:
+            expired_identities = _expired_run_identities(expired_runs)
+            _purge_expired_run_records(
+                runs=self._runs,
+                run_artifacts=self._run_artifacts,
+                run_id_by_correlation=self._run_id_by_correlation,
+                expired_runs=expired_runs,
+            )
+            _purge_expired_idempotency_mappings(
+                idempotency=self._idempotency,
+                expired_run_ids=expired_identities.run_ids,
+                expired_idempotency_keys=expired_identities.idempotency_keys,
+            )
+            _purge_expired_idempotency_history(
+                idempotency_history=self._idempotency_history,
+                expired_run_ids=expired_identities.run_ids,
+            )
+            for run_id in expired_identities.run_ids:
                 self._workflow_decisions.pop(run_id, None)
-
-            expired_entities = expired_run_ids | expired_correlation_ids | expired_idempotency_keys
-            for entity_id, edges in list(self._lineage_edges_by_entity.items()):
-                filtered_edges = [
-                    edge
-                    for edge in edges
-                    if edge.source_entity_id not in expired_entities
-                    and edge.target_entity_id not in expired_entities
-                ]
-                if filtered_edges:
-                    self._lineage_edges_by_entity[entity_id] = filtered_edges
-                else:
-                    self._lineage_edges_by_entity.pop(entity_id, None)
+            _purge_expired_lineage_edges(
+                lineage_edges_by_entity=self._lineage_edges_by_entity,
+                expired_entities=expired_identities.lineage_entity_ids,
+            )
 
             return len(expired_runs)
