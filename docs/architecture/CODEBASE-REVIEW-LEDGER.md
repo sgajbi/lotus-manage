@@ -12995,3 +12995,15 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
   and `git diff --check`.
 - Wiki decision: no wiki source change required; this is an internal service composition refactor.
+
+## BACKEND-REVIEW-20260604-530: Enforce service-layer architecture boundary checks in unit tests
+
+- Date: 2026-06-04
+- Scope: `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: architecture boundary posture depended on manual/spot checks and could drift; service modules should be protected by a continuous test gate that blocks router imports and transport-layer exception imports in services.
+- Action: added an AST-based unit test that enforces the service boundary contract for all `src/api/services/**/*.py`, failing fast on imports from `src.api.routers` or HTTP transport symbols (`HTTPException`, `status`, `Request`) from FastAPI.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`.
+- Wiki decision: no wiki source change required; this is an internal architecture-governance hardening slice.
