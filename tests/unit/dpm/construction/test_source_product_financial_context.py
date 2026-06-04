@@ -1,6 +1,9 @@
 from src.api.services import construction_source_product_financial_context
 from src.api.services.construction_source_product_financial_context import (
+    currency_overlay_context_update,
+    execution_acknowledgement_context_update,
     source_financial_context_updates,
+    transaction_cost_curve_context_update,
 )
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
@@ -23,7 +26,10 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_source_product_financial_context_exports_only_orchestration_surface() -> None:
     assert construction_source_product_financial_context.__all__ == [
+        "currency_overlay_context_update",
+        "execution_acknowledgement_context_update",
         "source_financial_context_updates",
+        "transaction_cost_curve_context_update",
     ]
 
 
@@ -42,6 +48,48 @@ def _source_execution_context(**overrides: object) -> DpmCoreExecutionContext:
         },
     )
     return DpmCoreExecutionContext.model_construct(**payload)
+
+
+def test_transaction_cost_curve_context_update_builds_missing_cost_context() -> None:
+    assert transaction_cost_curve_context_update(
+        source_context=_source_execution_context(
+            transaction_cost_curve=transaction_cost_curve_response()
+        ),
+        authority_context=ConstructionAuthorityContext(),
+    ) == (
+        "transaction_cost_context",
+        transaction_cost_context_from_curve(transaction_cost_curve_response()),
+    )
+
+
+def test_currency_overlay_context_update_builds_missing_currency_context() -> None:
+    assert currency_overlay_context_update(
+        source_context=_source_execution_context(
+            external_hedge_execution_readiness=hedge_readiness_response(),
+        ),
+        authority_context=ConstructionAuthorityContext(),
+    ) == (
+        "currency_overlay_context",
+        external_treasury_currency_overlay_context(
+            hedge_readiness=hedge_readiness_response(),
+            currency_exposure=None,
+            hedge_policy=None,
+            eligible_hedge_instruments=None,
+            fx_forward_curve=None,
+        ),
+    )
+
+
+def test_execution_acknowledgement_context_update_builds_missing_acknowledgement_context() -> None:
+    assert execution_acknowledgement_context_update(
+        source_context=_source_execution_context(
+            external_order_execution_acknowledgement=external_order_acknowledgement_response(),
+        ),
+        authority_context=ConstructionAuthorityContext(),
+    ) == (
+        "execution_acknowledgement_context",
+        external_order_execution_acknowledgement_context(external_order_acknowledgement_response()),
+    )
 
 
 def test_source_financial_context_updates_collects_cost_currency_and_acknowledgement() -> None:

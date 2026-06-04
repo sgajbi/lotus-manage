@@ -11,7 +11,7 @@ from src.core.construction.models import ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmCoreExecutionContext
 
 
-def _transaction_cost_curve_context_update(
+def transaction_cost_curve_context_update(
     *,
     source_context: DpmCoreExecutionContext,
     authority_context: ConstructionAuthorityContext,
@@ -27,7 +27,7 @@ def _transaction_cost_curve_context_update(
     )
 
 
-def _currency_overlay_context_update(
+def currency_overlay_context_update(
     *,
     source_context: DpmCoreExecutionContext,
     authority_context: ConstructionAuthorityContext,
@@ -50,7 +50,7 @@ def _currency_overlay_context_update(
     return ("currency_overlay_context", currency_context)
 
 
-def _execution_acknowledgement_context_update(
+def execution_acknowledgement_context_update(
     *,
     source_context: DpmCoreExecutionContext,
     authority_context: ConstructionAuthorityContext,
@@ -76,13 +76,16 @@ def source_financial_context_updates(
         source_context=source_context,
         authority_context=authority_context,
         update_builders=(
-            _transaction_cost_curve_context_update,
-            _currency_overlay_context_update,
-            _execution_acknowledgement_context_update,
+            transaction_cost_curve_context_update,
+            currency_overlay_context_update,
+            execution_acknowledgement_context_update,
         ),
     )
 
 
 __all__ = [
+    "currency_overlay_context_update",
+    "execution_acknowledgement_context_update",
     "source_financial_context_updates",
+    "transaction_cost_curve_context_update",
 ]
