@@ -14778,3 +14778,29 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/api_vocabulary_inventory.py --validate-only`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260604-607: Solver target universe helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/target_generation.py` and
+  `tests/unit/core/test_target_generation_helpers.py`.
+- Finding: `generate_targets_solver` still mixed solver dependency loading, sell-only
+  redistribution, tradeable/locked target universe assembly, cash-band invested-bound
+  calculation, constraint construction, solving, and result projection in one high-complexity
+  source function.
+- Action: introduced `SolverTargetUniverse`, `SolverInvestedBounds`,
+  `_solver_target_universe`, and `_solver_invested_bounds`, keeping solver orchestration behavior
+  unchanged while making the tradeable/locked split and invested-bound calculation directly
+  testable.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal solver target-generation
+  maintainability refactoring.

@@ -4,7 +4,9 @@ from src.core.models import EngineOptions, GroupConstraint, ShelfEntry
 from src.core.target_generation import (
     _build_solver_attempts,
     _collect_infeasibility_hints,
+    _solver_invested_bounds,
     _solver_failure_reason,
+    _solver_target_universe,
 )
 
 
@@ -25,6 +27,35 @@ def test_solver_failure_reason_classification() -> None:
     assert _solver_failure_reason("infeasible") == "INFEASIBLE_INFEASIBLE"
     assert _solver_failure_reason("unbounded_inaccurate") == "UNBOUNDED_UNBOUNDED_INACCURATE"
     assert _solver_failure_reason("optimal") == "SOLVER_NON_OPTIMAL_OPTIMAL"
+
+
+def test_solver_target_universe_splits_tradeable_and_locked_weights() -> None:
+    universe = _solver_target_universe(
+        eligible_targets={
+            "BUY_1": Decimal("0.25"),
+            "LOCKED_1": Decimal("0.35"),
+            "BUY_2": Decimal("0.15"),
+            "LOCKED_2": Decimal("0.05"),
+        },
+        buy_list=["BUY_1", "BUY_2"],
+    )
+
+    assert universe.tradeable_ids == ["BUY_1", "BUY_2"]
+    assert universe.locked_ids == ["LOCKED_1", "LOCKED_2"]
+    assert universe.locked_weight == Decimal("0.40")
+
+
+def test_solver_invested_bounds_subtract_locked_weight_from_cash_band() -> None:
+    bounds = _solver_invested_bounds(
+        locked_weight=Decimal("0.35"),
+        options=EngineOptions(
+            cash_band_min_weight=Decimal("0.05"),
+            cash_band_max_weight=Decimal("0.15"),
+        ),
+    )
+
+    assert bounds.minimum == Decimal("0.50")
+    assert bounds.maximum == Decimal("0.60")
 
 
 def test_collect_infeasibility_hints_reports_capacity_and_group_lock() -> None:
