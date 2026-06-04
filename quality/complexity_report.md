@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T16:41:40+00:00`
+- Generated at: `2026-06-04T16:49:19+00:00`
 
-- Current ref: `816cb1a0`
+- Current ref: `a44976a9`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
-| 2 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
-| 3 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
-| 4 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
-| 5 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
-| 6 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
-| 7 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
-| 8 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
-| 9 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
-| 10 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 1 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 2 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
+| 3 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 4 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 5 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
+| 6 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
+| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 8 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
+| 9 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 10 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
 
 ### Most Complex Current Test Functions
 
