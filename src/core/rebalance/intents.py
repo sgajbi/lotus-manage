@@ -161,6 +161,24 @@ class _TaxBudgetAccumulator:
     tax_budget_limit_base: Decimal | None
 
 
+@dataclass(frozen=True)
+class _TargetTradeDelta:
+    side: Literal["BUY", "SELL"]
+    raw_quantity: Decimal
+
+
+def _target_trade_delta(
+    *,
+    target_instrument_value: Decimal,
+    current_instrument_value: Decimal,
+    unit_value: Decimal,
+) -> _TargetTradeDelta:
+    delta = target_instrument_value - current_instrument_value
+    side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
+    raw_quantity = Decimal(int(abs(delta) // unit_value))
+    return _TargetTradeDelta(side=side, raw_quantity=raw_quantity)
+
+
 def _tax_budget_limited_sell_quantity(
     *,
     options: EngineOptions,
@@ -271,6 +289,44 @@ def _current_instrument_value_and_unit_value(
     return current_value, price.price
 
 
+def _tax_impact_from_budget(
+    *,
+    tax_budget: _TaxBudgetAccumulator,
+    base_currency: str,
+) -> TaxImpact:
+    normalized_budget_used = tax_budget.tax_budget_used_base
+    if tax_budget.tax_budget_limit_base is not None:
+        if abs(tax_budget.tax_budget_limit_base - normalized_budget_used) <= Decimal(
+            "0.0000000001"
+        ):
+            normalized_budget_used = tax_budget.tax_budget_limit_base
+    budget_limit = (
+        Money(amount=tax_budget.tax_budget_limit_base, currency=base_currency)
+        if tax_budget.tax_budget_limit_base is not None
+        else None
+    )
+    budget_used = (
+        Money(
+            amount=min(normalized_budget_used, tax_budget.tax_budget_limit_base),
+            currency=base_currency,
+        )
+        if tax_budget.tax_budget_limit_base is not None
+        else None
+    )
+    return TaxImpact(
+        total_realized_gain=Money(
+            amount=tax_budget.total_realized_gain_base,
+            currency=base_currency,
+        ),
+        total_realized_loss=Money(
+            amount=tax_budget.total_realized_loss_base,
+            currency=base_currency,
+        ),
+        budget_limit=budget_limit,
+        budget_used=budget_used,
+    )
+
+
 def generate_intents(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -309,16 +365,19 @@ def generate_intents(
 
         target_instr_val = (total_val * target_w) / rate
 
-        delta = target_instr_val - curr_instr_val
-        side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
-        qty = int(abs(delta) // unit_value)
-        quantity = Decimal(qty)
+        trade_delta = _target_trade_delta(
+            target_instrument_value=target_instr_val,
+            current_instrument_value=curr_instr_val,
+            unit_value=unit_value,
+        )
+        side = trade_delta.side
+        requested_quantity = trade_delta.raw_quantity
+        quantity = requested_quantity
 
         sell_quantity_before_tax: Decimal | None = None
-        if side == "SELL" and qty > 0:
-            requested_qty = Decimal(qty)
+        if side == "SELL" and requested_quantity > 0:
             quantity = _clamped_sell_quantity(
-                requested_qty=requested_qty,
+                requested_qty=requested_quantity,
                 position=curr,
                 diagnostics=diagnostics,
             )
@@ -363,7 +422,7 @@ def generate_intents(
                 threshold=threshold,
                 side=side,
                 quantity=quantity,
-                requested_quantity=Decimal(qty),
+                requested_quantity=requested_quantity,
                 sell_quantity_before_tax=sell_quantity_before_tax,
                 tax_awareness_enabled=options.enable_tax_awareness,
             )
@@ -382,36 +441,9 @@ def generate_intents(
 
     tax_impact = None
     if options.enable_tax_awareness:
-        normalized_budget_used = tax_budget.tax_budget_used_base
-        if tax_budget.tax_budget_limit_base is not None:
-            if abs(tax_budget.tax_budget_limit_base - normalized_budget_used) <= Decimal(
-                "0.0000000001"
-            ):
-                normalized_budget_used = tax_budget.tax_budget_limit_base
-        budget_limit = (
-            Money(amount=tax_budget.tax_budget_limit_base, currency=portfolio.base_currency)
-            if tax_budget.tax_budget_limit_base is not None
-            else None
-        )
-        budget_used = (
-            Money(
-                amount=min(normalized_budget_used, tax_budget.tax_budget_limit_base),
-                currency=portfolio.base_currency,
-            )
-            if tax_budget.tax_budget_limit_base is not None
-            else None
-        )
-        tax_impact = TaxImpact(
-            total_realized_gain=Money(
-                amount=tax_budget.total_realized_gain_base,
-                currency=portfolio.base_currency,
-            ),
-            total_realized_loss=Money(
-                amount=tax_budget.total_realized_loss_base,
-                currency=portfolio.base_currency,
-            ),
-            budget_limit=budget_limit,
-            budget_used=budget_used,
+        tax_impact = _tax_impact_from_budget(
+            tax_budget=tax_budget,
+            base_currency=portfolio.base_currency,
         )
 
     return intents, tax_impact

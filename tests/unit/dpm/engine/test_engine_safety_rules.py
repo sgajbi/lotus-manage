@@ -10,6 +10,8 @@ from src.core.rebalance.intents import (
     _record_tax_budget_limit_reached,
     _security_intent_constraints,
     _suppress_dust_trade,
+    _target_trade_delta,
+    _tax_impact_from_budget,
     _tax_budget_limited_sell_quantity,
     _trade_notional_threshold,
     generate_intents,
@@ -277,6 +279,41 @@ def test_suppress_dust_trade_keeps_supported_notional_unsuppressed() -> None:
 
     assert suppressed_trade is False
     assert suppressed == []
+
+
+def test_target_trade_delta_classifies_side_and_floor_quantity() -> None:
+    buy_delta = _target_trade_delta(
+        target_instrument_value=Decimal("127"),
+        current_instrument_value=Decimal("100"),
+        unit_value=Decimal("10"),
+    )
+    sell_delta = _target_trade_delta(
+        target_instrument_value=Decimal("70"),
+        current_instrument_value=Decimal("100"),
+        unit_value=Decimal("12"),
+    )
+
+    assert buy_delta.side == "BUY"
+    assert buy_delta.raw_quantity == Decimal("2")
+    assert sell_delta.side == "SELL"
+    assert sell_delta.raw_quantity == Decimal("2")
+
+
+def test_tax_impact_from_budget_normalizes_budget_used_at_tolerance_boundary() -> None:
+    tax_impact = _tax_impact_from_budget(
+        tax_budget=_TaxBudgetAccumulator(
+            total_realized_gain_base=Decimal("100.00000000001"),
+            total_realized_loss_base=Decimal("25"),
+            tax_budget_used_base=Decimal("99.99999999999"),
+            tax_budget_limit_base=Decimal("100"),
+        ),
+        base_currency="SGD",
+    )
+
+    assert tax_impact.total_realized_gain.amount == Decimal("100.00000000001")
+    assert tax_impact.total_realized_loss.amount == Decimal("25")
+    assert tax_impact.budget_limit == Money(amount=Decimal("100"), currency="SGD")
+    assert tax_impact.budget_used == Money(amount=Decimal("100"), currency="SGD")
 
 
 def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None:

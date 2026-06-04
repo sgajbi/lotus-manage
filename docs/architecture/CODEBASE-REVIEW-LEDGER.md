@@ -14983,3 +14983,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-616: Intent trade delta and tax-impact helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Finding: `generate_intents` still calculated trade side/raw quantity and tax-impact budget
+  projection inline while also orchestrating market lookup, sell clamping, tax-budget limiting,
+  dust suppression, and intent construction.
+- Action: introduced `_TargetTradeDelta`, `_target_trade_delta`, and `_tax_impact_from_budget`.
+  Kept `generate_intents` as the orchestration point and added direct tests for buy/sell quantity
+  flooring and tax-budget-used normalization at the tolerance boundary.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance intent-generation
+  maintainability refactoring.
