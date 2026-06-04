@@ -3,10 +3,12 @@ from src.api.services import (
     construction_transaction_cost_source_context,
     construction_treasury_source_context,
 )
+from src.api.services.construction_authority_context_updates import (
+    AuthorityContextUpdate,
+    collect_authority_context_updates,
+)
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmCoreExecutionContext
-
-AuthorityContextUpdate = tuple[str, object]
 
 
 def _transaction_cost_curve_context_update(
@@ -70,20 +72,15 @@ def source_financial_context_updates(
     source_context: DpmCoreExecutionContext,
     authority_context: ConstructionAuthorityContext,
 ) -> dict[str, object]:
-    context_updates: dict[str, object] = {}
-    for update_builder in (
-        _transaction_cost_curve_context_update,
-        _currency_overlay_context_update,
-        _execution_acknowledgement_context_update,
-    ):
-        update = update_builder(
-            source_context=source_context,
-            authority_context=authority_context,
-        )
-        if update is not None:
-            context_key, context_value = update
-            context_updates[context_key] = context_value
-    return context_updates
+    return collect_authority_context_updates(
+        source_context=source_context,
+        authority_context=authority_context,
+        update_builders=(
+            _transaction_cost_curve_context_update,
+            _currency_overlay_context_update,
+            _execution_acknowledgement_context_update,
+        ),
+    )
 
 
 __all__ = [

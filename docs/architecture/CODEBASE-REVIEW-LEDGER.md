@@ -13649,3 +13649,30 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal liquidity source-product mapper
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-559: Authority context update collector extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_authority_context_updates.py`,
+  `src/api/services/construction_source_product_financial_context.py`,
+  `src/api/services/construction_source_product_profile_context.py`,
+  `tests/unit/dpm/construction/test_authority_context_updates.py`,
+  `tests/unit/dpm/construction/test_source_product_financial_context.py`, and
+  `tests/unit/dpm/construction/test_source_product_profile_context.py`.
+- Finding: profile and financial source-product update modules duplicated the same
+  update-builder collection loop, leaving merge semantics implicit in two places.
+- Action: extracted `collect_authority_context_updates` with a typed builder protocol, reused it
+  from profile and financial update assembly, and added direct tests for skipping absent updates
+  and deterministic same-key overwrite semantics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m ruff format --check src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_authority_context_updates.py src/api/services/construction_source_product_financial_context.py src/api/services/construction_source_product_profile_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_authority_context_updates.py tests/unit/dpm/construction/test_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_profile_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal authority-context update
+  collection refactoring with direct helper tests.
