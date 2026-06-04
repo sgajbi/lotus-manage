@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.api.services.construction_solver_supportability import (
     solver_method_status,
+    solver_warning_codes,
     with_method_reason_codes,
 )
 from src.core.construction.models import ConstructionEnrichmentSummary
@@ -88,3 +89,21 @@ def test_solver_method_status_uses_lowest_solver_warning_posture() -> None:
     )
 
     assert solver_method_status(result=result) == ConstructionMethodStatus.BLOCKED
+
+
+def test_solver_warning_codes_filters_solver_diagnostics_only() -> None:
+    result = _trade_result().model_copy(deep=True)
+    result.diagnostics.warnings.extend(
+        [
+            "NON_SOLVER_DIAGNOSTIC",
+            "SOLVER_NON_OPTIMAL_USER_LIMIT",
+            "INFEASIBLE_INFEASIBLE",
+            "UNBOUNDED_MODEL",
+        ]
+    )
+
+    assert solver_warning_codes(result=result) == [
+        "SOLVER_NON_OPTIMAL_USER_LIMIT",
+        "INFEASIBLE_INFEASIBLE",
+        "UNBOUNDED_MODEL",
+    ]

@@ -13531,3 +13531,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction sustainability
   supportability refactoring with direct source-status tests.
+
+## BACKEND-REVIEW-20260604-554: Solver warning projection helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_solver_supportability.py`,
+  `tests/unit/dpm/construction/test_solver_supportability.py`.
+- Finding: solver supportability status filtered solver-specific diagnostics inline, making the
+  supported warning-code projection unavailable for direct tests and future reuse.
+- Action: extracted `solver_warning_codes`, reused it from `solver_method_status`, and added a
+  direct test proving non-solver diagnostics are ignored while solver/infeasible/unbounded warnings
+  are preserved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_solver_supportability.py tests/unit/dpm/construction/test_solver_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_solver_supportability.py tests/unit/dpm/construction/test_solver_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_solver_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_solver_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction solver supportability
+  refactoring with direct diagnostics tests.

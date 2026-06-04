@@ -16,11 +16,7 @@ def with_method_reason_codes(
 
 
 def solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus:
-    solver_warnings = [
-        warning
-        for warning in result.diagnostics.warnings
-        if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
-    ]
+    solver_warnings = solver_warning_codes(result=result)
     if not solver_warnings:
         return ConstructionMethodStatus.READY
     return lowest_construction_status(
@@ -28,7 +24,16 @@ def solver_method_status(*, result: RebalanceResult) -> ConstructionMethodStatus
     )
 
 
+def solver_warning_codes(*, result: RebalanceResult) -> list[str]:
+    return [
+        warning
+        for warning in result.diagnostics.warnings
+        if warning.startswith(("SOLVER_", "INFEASIBLE_", "UNBOUNDED_"))
+    ]
+
+
 __all__ = [
     "solver_method_status",
+    "solver_warning_codes",
     "with_method_reason_codes",
 ]
