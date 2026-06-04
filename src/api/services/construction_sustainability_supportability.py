@@ -51,10 +51,7 @@ def sustainability_allocation_breaches(
     result: RebalanceResult,
     context: AuthoritativeSustainabilityPreferenceContext,
 ) -> list[AuthoritativeSustainabilityPreference]:
-    weight_by_asset_class = {
-        allocation.key.lower(): allocation.weight
-        for allocation in result.after_simulated.allocation_by_asset_class
-    }
+    weight_by_asset_class = allocation_weight_by_asset_class(result=result)
     breaches: list[AuthoritativeSustainabilityPreference] = []
     for preference in active_sustainability_preferences(context=context):
         if not preference.applies_to_asset_classes:
@@ -68,6 +65,13 @@ def sustainability_allocation_breaches(
         if preference.maximum_allocation is not None and weight > preference.maximum_allocation:
             breaches.append(preference)
     return breaches
+
+
+def allocation_weight_by_asset_class(*, result: RebalanceResult) -> dict[str, Decimal]:
+    return {
+        allocation.key.lower(): allocation.weight
+        for allocation in result.after_simulated.allocation_by_asset_class
+    }
 
 
 def sustainability_classification_review_required(
@@ -93,6 +97,7 @@ def active_sustainability_preferences(
 
 __all__ = [
     "active_sustainability_preferences",
+    "allocation_weight_by_asset_class",
     "sustainability_allocation_breaches",
     "sustainability_classification_review_required",
     "sustainability_preference_reason_codes",

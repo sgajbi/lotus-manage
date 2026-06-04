@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.api.services.construction_sustainability_supportability import (
     active_sustainability_preferences,
+    allocation_weight_by_asset_class,
     sustainability_preference_reason_codes,
     sustainability_preference_status,
 )
@@ -97,6 +98,15 @@ def test_sustainability_supportability_marks_allocation_and_classification_revie
     )
     assert "SUSTAINABILITY_ALLOCATION_REVIEW_MAX_EQUITY" in reason_codes
     assert "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED" in reason_codes
+
+
+def test_allocation_weight_by_asset_class_projects_post_trade_weights() -> None:
+    result = _trade_result()
+
+    weight_by_asset_class = allocation_weight_by_asset_class(result=result)
+
+    assert set(weight_by_asset_class) == {"cash", "equity"}
+    assert weight_by_asset_class["equity"] > Decimal("0")
 
 
 def test_sustainability_supportability_degrades_without_source_profile() -> None:
