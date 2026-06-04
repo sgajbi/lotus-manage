@@ -15655,3 +15655,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-644: Regime-stress evidence posture helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_regime_stress_evidence_posture` became the top current source-complexity hotspot and
+  still mixed source-governance evidence projection, missing-evidence classification, source
+  reason-code posture classification, and final proof-pack section state aggregation.
+- Action: introduced focused helpers for regime-stress governance posture facts, missing governance
+  evidence classification, and source reason-code posture classification. Kept
+  `_regime_stress_evidence_posture` as the aggregation boundary for final section state, facts, and
+  reason codes. Added direct tests for governance posture projection, missing evidence detection,
+  and source reason-code posture classification.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability refactoring.

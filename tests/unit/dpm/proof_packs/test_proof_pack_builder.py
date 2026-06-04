@@ -35,6 +35,9 @@ from src.core.proof_packs.models import DpmProofPackSourceRef
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     ProofPackSourceAnalytics,
+    _missing_regime_stress_governance_evidence,
+    _regime_source_reason_posture,
+    _regime_stress_governance_posture_facts,
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
@@ -1738,6 +1741,44 @@ def test_regime_scenario_pack_missing_governance_evidence_is_pending_review() ->
         "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
         "REGIME_SCENARIO_WITHIN_POLICY",
     ]
+
+
+def test_regime_stress_governance_posture_helpers_project_missing_evidence() -> None:
+    context = AuthoritativeRegimeStressContext(
+        supportability_status="READY",
+        source_system="lotus-risk",
+        scenario_pack_id="CIO_REGIME_2026_Q4",
+        worst_case_loss_pct=Decimal("0.0600"),
+        maximum_allowed_loss_pct=Decimal("0.1200"),
+    )
+
+    assert _regime_stress_governance_posture_facts(context) == {
+        "cio_approval": "MISSING",
+        "effective_period": "MISSING",
+        "applicability": "MISSING",
+        "source_reason_posture": "READY",
+    }
+    assert _missing_regime_stress_governance_evidence(context) == {
+        "cio_approval",
+        "effective_period",
+        "applicability",
+    }
+
+
+@pytest.mark.parametrize(
+    ("source_reason_codes", "expected_posture"),
+    [
+        (["REGIME_SCENARIO_PORTFOLIO_INAPPLICABLE"], "INAPPLICABLE"),
+        (["REGIME_SCENARIO_OUTSIDE_EFFECTIVE_PERIOD"], "EFFECTIVE_PERIOD_EXCEPTION"),
+        (["REGIME_SCENARIO_CONTRIBUTION_PARTIAL"], "CONTRIBUTION_PARTIAL"),
+        (["REGIME_SCENARIO_WITHIN_POLICY"], "READY"),
+    ],
+)
+def test_regime_source_reason_posture_classifies_source_reason_codes(
+    source_reason_codes: list[str],
+    expected_posture: str,
+) -> None:
+    assert _regime_source_reason_posture(source_reason_codes) == expected_posture
 
 
 @pytest.mark.parametrize(

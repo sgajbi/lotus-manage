@@ -20,6 +20,13 @@ from src.core.construction.models import (
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.proof_packs.models import DpmProofPackSourceRef, ProofPackSectionState
 
+_RegimeStressSourceReasonPosture = Literal[
+    "READY",
+    "INAPPLICABLE",
+    "EFFECTIVE_PERIOD_EXCEPTION",
+    "CONTRIBUTION_PARTIAL",
+]
+
 ProofPackAnalyticsFamily = Literal[
     "risk",
     "performance",
@@ -407,7 +414,43 @@ def _regime_stress_evidence_posture(
     context: AuthoritativeRegimeStressContext,
 ) -> dict[str, Any]:
     reason_codes: set[str] = set()
-    posture_facts: dict[str, str] = {
+    posture_facts = _regime_stress_governance_posture_facts(context)
+    posture_states: list[ProofPackSectionState] = ["READY"]
+
+    missing_governance_evidence = _missing_regime_stress_governance_evidence(context)
+    if "cio_approval" in missing_governance_evidence:
+        reason_codes.add("REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+    if "effective_period" in missing_governance_evidence:
+        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+    if "applicability" in missing_governance_evidence:
+        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING")
+        posture_states.append("PENDING_REVIEW")
+
+    source_reason_posture = _regime_source_reason_posture(context.reason_codes)
+    posture_facts["source_reason_posture"] = source_reason_posture
+    if source_reason_posture == "INAPPLICABLE":
+        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED")
+        posture_states.append("BLOCKED")
+    elif source_reason_posture == "EFFECTIVE_PERIOD_EXCEPTION":
+        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION")
+        posture_states.append("DEGRADED")
+    elif source_reason_posture == "CONTRIBUTION_PARTIAL":
+        reason_codes.add("REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL")
+        posture_states.append("PENDING_REVIEW")
+
+    return {
+        "state": _lowest_section_state(posture_states),
+        "reason_codes": sorted(reason_codes),
+        "facts": posture_facts,
+    }
+
+
+def _regime_stress_governance_posture_facts(
+    context: AuthoritativeRegimeStressContext,
+) -> dict[str, str]:
+    return {
         "cio_approval": "PROJECTED" if context.cio_approval_ref else "MISSING",
         "effective_period": (
             "PROJECTED"
@@ -417,42 +460,38 @@ def _regime_stress_evidence_posture(
         "applicability": "PROJECTED" if _regime_applicability_projected(context) else "MISSING",
         "source_reason_posture": "READY",
     }
-    posture_states: list[ProofPackSectionState] = ["READY"]
-    if not context.cio_approval_ref:
-        reason_codes.add("REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
-    if context.effective_from is None and context.effective_to is None:
-        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
-    if not _regime_applicability_projected(context):
-        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
 
-    source_reason_codes = {reason.upper() for reason in context.reason_codes}
+
+def _missing_regime_stress_governance_evidence(
+    context: AuthoritativeRegimeStressContext,
+) -> set[str]:
+    missing_evidence: set[str] = set()
+    if not context.cio_approval_ref:
+        missing_evidence.add("cio_approval")
+    if context.effective_from is None and context.effective_to is None:
+        missing_evidence.add("effective_period")
+    if not _regime_applicability_projected(context):
+        missing_evidence.add("applicability")
+    return missing_evidence
+
+
+def _regime_source_reason_posture(
+    reason_codes: list[str],
+) -> _RegimeStressSourceReasonPosture:
+    normalized_reason_codes = {reason.upper() for reason in reason_codes}
     if any(
-        "INAPPLICABLE" in reason or "NOT_APPLICABLE" in reason for reason in source_reason_codes
+        "INAPPLICABLE" in reason or "NOT_APPLICABLE" in reason for reason in normalized_reason_codes
     ):
-        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED")
-        posture_facts["source_reason_posture"] = "INAPPLICABLE"
-        posture_states.append("BLOCKED")
-    elif any(
+        return "INAPPLICABLE"
+    if any(
         marker in reason
-        for reason in source_reason_codes
+        for reason in normalized_reason_codes
         for marker in ["STALE", "EXPIRED", "OUTSIDE_EFFECTIVE", "EFFECTIVE_PERIOD_EXCEPTION"]
     ):
-        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION")
-        posture_facts["source_reason_posture"] = "EFFECTIVE_PERIOD_EXCEPTION"
-        posture_states.append("DEGRADED")
-    elif any("CONTRIBUTION" in reason and "PARTIAL" in reason for reason in source_reason_codes):
-        reason_codes.add("REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL")
-        posture_facts["source_reason_posture"] = "CONTRIBUTION_PARTIAL"
-        posture_states.append("PENDING_REVIEW")
-
-    return {
-        "state": _lowest_section_state(posture_states),
-        "reason_codes": sorted(reason_codes),
-        "facts": posture_facts,
-    }
+        return "EFFECTIVE_PERIOD_EXCEPTION"
+    if any("CONTRIBUTION" in reason and "PARTIAL" in reason for reason in normalized_reason_codes):
+        return "CONTRIBUTION_PARTIAL"
+    return "READY"
 
 
 def _regime_applicability_projected(context: AuthoritativeRegimeStressContext) -> bool:
