@@ -179,6 +179,45 @@ def _collection_example_from_schema(
     return False, None
 
 
+def _ref_example_from_schema(
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    schema_ref = prop_schema.get("$ref")
+    if not isinstance(schema_ref, str):
+        return False, None
+
+    model_name = _schema_ref_name(schema_ref)
+    if model_name in seen_refs:
+        return True, {"sample_key": "sample_value"}
+    resolved_schema = schemas.get(model_name)
+    if isinstance(resolved_schema, dict):
+        return True, _example_from_schema(
+            model_name,
+            resolved_schema,
+            schemas,
+            seen_refs | {model_name},
+        )
+    return False, None
+
+
+def _composite_example_from_schema(
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    for composite_key in ("allOf", "oneOf", "anyOf"):
+        options = prop_schema.get(composite_key)
+        if not isinstance(options, list):
+            continue
+        for option in options:
+            if isinstance(option, dict) and option.get("type") != "null":
+                return True, _example_from_schema(prop_name, option, schemas, seen_refs)
+    return False, None
+
+
 def _example_from_schema(
     prop_name: str,
     prop_schema: dict[str, Any],
@@ -193,27 +232,18 @@ def _example_from_schema(
     if has_declared_example:
         return declared_example
 
-    schema_ref = prop_schema.get("$ref")
-    if isinstance(schema_ref, str):
-        model_name = _schema_ref_name(schema_ref)
-        if model_name in seen_refs:
-            return {"sample_key": "sample_value"}
-        resolved_schema = schemas.get(model_name)
-        if isinstance(resolved_schema, dict):
-            return _example_from_schema(
-                model_name,
-                resolved_schema,
-                schemas,
-                seen_refs | {model_name},
-            )
+    has_ref_example, ref_example = _ref_example_from_schema(prop_schema, schemas, seen_refs)
+    if has_ref_example:
+        return ref_example
 
-    for composite_key in ("allOf", "oneOf", "anyOf"):
-        options = prop_schema.get(composite_key)
-        if not isinstance(options, list):
-            continue
-        for option in options:
-            if isinstance(option, dict) and option.get("type") != "null":
-                return _example_from_schema(prop_name, option, schemas, seen_refs)
+    has_composite_example, composite_example = _composite_example_from_schema(
+        prop_name,
+        prop_schema,
+        schemas,
+        seen_refs,
+    )
+    if has_composite_example:
+        return composite_example
 
     has_collection_example, collection_example = _collection_example_from_schema(
         prop_name=prop_name,

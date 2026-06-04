@@ -1,4 +1,5 @@
 from src.api.openapi_enrichment import (
+    _composite_example_from_schema,
     _example_from_schema,
     _ensure_operation_examples,
     _infer_description,
@@ -6,6 +7,7 @@ from src.api.openapi_enrichment import (
     _number_example_for_key,
     _collection_example_from_schema,
     _operation_has_error_response,
+    _ref_example_from_schema,
     _operation_tag_for_path,
     _schema_declared_example,
     _semantic_string_example_for_key,
@@ -127,6 +129,55 @@ def test_openapi_enrichment_collects_object_array_and_map_examples() -> None:
         prop_schema={"type": "string"},
         schemas=schemas,
         seen_refs=set(),
+    ) == (False, None)
+
+
+def test_openapi_enrichment_ref_example_helper_resolves_and_guards_recursion() -> None:
+    schemas = {
+        "Recursive": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "child": {"$ref": "#/components/schemas/Recursive"},
+            },
+        }
+    }
+
+    assert _ref_example_from_schema(
+        {"$ref": "#/components/schemas/Recursive"},
+        schemas,
+        set(),
+    ) == (
+        True,
+        {"name": "sample_name", "child": {"sample_key": "sample_value"}},
+    )
+    assert _ref_example_from_schema(
+        {"$ref": "#/components/schemas/Recursive"},
+        schemas,
+        {"Recursive"},
+    ) == (True, {"sample_key": "sample_value"})
+    assert _ref_example_from_schema({"type": "string"}, schemas, set()) == (False, None)
+
+
+def test_openapi_enrichment_composite_example_helper_uses_first_non_null_option() -> None:
+    schemas = {
+        "Leaf": {
+            "type": "object",
+            "properties": {"currency": {"type": "string"}, "amount": {"type": "number"}},
+        }
+    }
+
+    assert _composite_example_from_schema(
+        "choice",
+        {"oneOf": [{"type": "null"}, {"$ref": "#/components/schemas/Leaf"}]},
+        schemas,
+        set(),
+    ) == (True, {"currency": "USD", "amount": 10.5})
+    assert _composite_example_from_schema(
+        "plain",
+        {"type": "string"},
+        schemas,
+        set(),
     ) == (False, None)
 
 
