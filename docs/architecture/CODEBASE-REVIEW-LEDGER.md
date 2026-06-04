@@ -14707,3 +14707,29 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction financial
   source-product mapping maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-604: Treasury source identities extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: `external_treasury_currency_overlay_context` resolved readiness, exposure,
+  hedge-policy, eligible-instrument, and FX-forward source identities inline before constructing
+  the currency-overlay context, making source identity fallback behavior harder to verify as one
+  unit.
+- Action: introduced `TreasurySourceIdentities` and `treasury_source_identities`, kept
+  `external_treasury_currency_overlay_context` as the family-level context assembler, and added a
+  direct test for readiness aggregate-hash fallback plus optional source-family identity
+  preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction treasury
+  source-product identity maintainability refactoring.

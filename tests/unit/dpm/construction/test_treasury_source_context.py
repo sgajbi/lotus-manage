@@ -3,6 +3,7 @@ from typing import Any
 from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     TreasuryPrimarySupportability,
+    TreasurySourceIdentities,
     external_treasury_currency_overlay_context,
     treasury_blocked_capabilities,
     treasury_fail_closed_reason_codes,
@@ -11,6 +12,7 @@ from src.api.services.construction_treasury_source_context import (
     treasury_primary_supportability,
     treasury_response_blocked_capabilities,
     treasury_response_missing_data_families,
+    treasury_source_identities,
     treasury_source_identity_fields,
     treasury_source_payload,
     treasury_source_payloads,
@@ -29,6 +31,7 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
         "TreasuryPrimarySupportability",
+        "TreasurySourceIdentities",
         "external_treasury_currency_overlay_context",
         "treasury_blocked_capabilities",
         "treasury_fail_closed_reason_codes",
@@ -37,6 +40,7 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
         "treasury_primary_supportability",
         "treasury_response_blocked_capabilities",
         "treasury_response_missing_data_families",
+        "treasury_source_identities",
         "treasury_source_identity_fields",
         "treasury_source_payload",
         "treasury_source_payloads",
@@ -127,6 +131,27 @@ def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
         "external_currency_exposure_source_id": None,
         "external_currency_exposure_content_hash": None,
     }
+
+
+def test_treasury_source_identities_resolve_source_families_and_readiness_fallback() -> None:
+    identities = treasury_source_identities(
+        source_hash="aggregate-hash",
+        hedge_readiness=_without_source_lineage(hedge_readiness_response()),
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=None,
+        eligible_hedge_instruments=eligible_hedge_instruments_response(),
+        fx_forward_curve=None,
+    )
+
+    assert isinstance(identities, TreasurySourceIdentities)
+    assert identities.readiness is not None
+    assert identities.readiness.source_id == "aggregate-hash"
+    assert identities.exposure is not None
+    assert identities.exposure.source_id == "core-currency-exposure"
+    assert identities.hedge_policy is None
+    assert identities.eligible_hedge_instruments is not None
+    assert identities.eligible_hedge_instruments.source_id == "core-eligible-hedges"
+    assert identities.fx_forward_curve is None
 
 
 def test_treasury_fail_closed_reason_codes_include_present_source_families() -> None:
