@@ -14939,3 +14939,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-614: Compliance rule result helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/compliance.py` and `tests/unit/core/test_common_edge_coverage.py`.
+- Finding: `RuleEngine.evaluate` still assembled single-position, data-quality, minimum-trade-size,
+  no-shorting, and insufficient-cash rule results inline, making individual post-trade compliance
+  rules harder to inspect and test independently.
+- Action: extracted `_single_position_max_rule_results`, `_data_quality_rule_result`,
+  `_min_trade_size_rule_result`, `_no_shorting_rule_result`, and
+  `_insufficient_cash_rule_result`. Kept `RuleEngine.evaluate` as the orchestration point and added
+  direct tests for each helper edge.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/compliance.py tests/unit/core/test_common_edge_coverage.py`,
+  `python -m ruff format --check src/core/compliance.py tests/unit/core/test_common_edge_coverage.py`,
+  `python -m mypy --config-file mypy.ini src/core/compliance.py`,
+  `python -m pytest tests/unit/core/test_common_edge_coverage.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal post-trade compliance
+  maintainability refactoring.

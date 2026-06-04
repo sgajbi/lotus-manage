@@ -14,10 +14,19 @@ from src.core.common.simulation_shared import (
     sort_execution_intents,
 )
 from src.core.common.workflow_gates import evaluate_gate_decision
-from src.core.compliance import RuleEngine, _cash_band_rule_result
+from src.core.compliance import (
+    RuleEngine,
+    _cash_band_rule_result,
+    _data_quality_rule_result,
+    _insufficient_cash_rule_result,
+    _min_trade_size_rule_result,
+    _no_shorting_rule_result,
+    _single_position_max_rule_results,
+)
 from src.core.models import (
     AllocationMetric,
     BatchRebalanceRequest,
+    CashBalance,
     DiagnosticsData,
     EngineOptions,
     FxSpotIntent,
@@ -31,6 +40,7 @@ from src.core.models import (
     SuitabilityEvidenceSnapshotIds,
     SecurityTradeIntent,
     SimulatedState,
+    SuppressedIntent,
     SuitabilityIssue,
     SuitabilityResult,
     SuitabilitySummary,
@@ -366,6 +376,127 @@ def test_rule_engine_flags_single_position_limit_breaches() -> None:
         and result.reason_code == "LIMIT_BREACH"
         for result in results
     )
+
+
+def test_single_position_rule_results_pass_when_limit_is_not_set() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[],
+        allocation_by_asset_class=[],
+        allocation_by_instrument=[],
+    )
+
+    results = _single_position_max_rule_results(state=state, options=EngineOptions())
+
+    assert len(results) == 1
+    assert results[0].rule_id == "SINGLE_POSITION_MAX"
+    assert results[0].status == "PASS"
+    assert results[0].reason_code == "NO_LIMIT_SET"
+
+
+def test_data_quality_rule_result_respects_blocking_options() -> None:
+    diagnostics = DiagnosticsData(
+        data_quality={
+            "price_missing": ["EQ_1"],
+            "fx_missing": ["EURUSD"],
+            "shelf_missing": ["EQ_2"],
+        },
+        suppressed_intents=[],
+        warnings=[],
+    )
+
+    result = _data_quality_rule_result(
+        diagnostics=diagnostics,
+        options=EngineOptions(block_on_missing_prices=True, block_on_missing_fx=False),
+    )
+
+    assert result.rule_id == "DATA_QUALITY"
+    assert result.status == "FAIL"
+    assert result.measured == Decimal("2")
+    assert result.reason_code == "MISSING_DATA"
+
+
+def test_min_trade_size_rule_result_reports_suppressed_intent_count() -> None:
+    diagnostics = DiagnosticsData(
+        data_quality={},
+        suppressed_intents=[
+            SuppressedIntent(
+                instrument_id="EQ_1",
+                reason="MIN_NOTIONAL",
+                intended_notional=Money(amount=Decimal("75"), currency="USD"),
+                threshold=Money(amount=Decimal("100"), currency="USD"),
+            ),
+            SuppressedIntent(
+                instrument_id="EQ_2",
+                reason="MIN_NOTIONAL",
+                intended_notional=Money(amount=Decimal("80"), currency="USD"),
+                threshold=Money(amount=Decimal("100"), currency="USD"),
+            ),
+        ],
+        warnings=[],
+    )
+
+    result = _min_trade_size_rule_result(diagnostics=diagnostics)
+
+    assert result.rule_id == "MIN_TRADE_SIZE"
+    assert result.status == "PASS"
+    assert result.measured == Decimal("2")
+    assert result.reason_code == "INTENTS_SUPPRESSED"
+
+
+def test_no_shorting_rule_result_reports_most_negative_position_quantity() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[
+            PositionSummary(
+                instrument_id="EQ_1",
+                quantity=Decimal("-1"),
+                instrument_currency="USD",
+                value_in_instrument_ccy=Money(amount=Decimal("-10"), currency="USD"),
+                value_in_base_ccy=Money(amount=Decimal("-10"), currency="USD"),
+                weight=Decimal("-0.1"),
+            ),
+            PositionSummary(
+                instrument_id="EQ_2",
+                quantity=Decimal("-3"),
+                instrument_currency="USD",
+                value_in_instrument_ccy=Money(amount=Decimal("-30"), currency="USD"),
+                value_in_base_ccy=Money(amount=Decimal("-30"), currency="USD"),
+                weight=Decimal("-0.3"),
+            ),
+        ],
+        cash_balances=[],
+        allocation_by_asset_class=[],
+        allocation_by_instrument=[],
+    )
+
+    result = _no_shorting_rule_result(state=state)
+
+    assert result.rule_id == "NO_SHORTING"
+    assert result.status == "FAIL"
+    assert result.measured == Decimal("-3")
+    assert result.reason_code == "SELL_EXCEEDS_HOLDINGS"
+
+
+def test_insufficient_cash_rule_result_reports_most_negative_cash_balance() -> None:
+    state = SimulatedState(
+        total_value=Money(amount=Decimal("100"), currency="USD"),
+        positions=[],
+        cash_balances=[
+            CashBalance(currency="USD", amount=Decimal("-5")),
+            CashBalance(currency="EUR", amount=Decimal("-8")),
+        ],
+        allocation_by_asset_class=[],
+        allocation_by_instrument=[],
+    )
+
+    result = _insufficient_cash_rule_result(state=state)
+
+    assert result.rule_id == "INSUFFICIENT_CASH"
+    assert result.status == "FAIL"
+    assert result.measured == Decimal("-8")
+    assert result.reason_code == "CASH_BALANCE_NEGATIVE"
 
 
 def test_cash_band_rule_result_passes_when_cash_is_inside_policy_band() -> None:
