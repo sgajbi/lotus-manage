@@ -13167,3 +13167,28 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is direct helper test hardening for internal
   construction source-product assembly.
+
+## BACKEND-REVIEW-20260604-539: Construction one-method alternative builder extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_builder.py`,
+  `tests/unit/dpm/construction/test_alternative_builder.py`.
+- Finding: `build_construction_alternatives` still mixed collection orchestration with per-method
+  plan resolution, effective-method execution, alternative construction, and supportability
+  application. That made the method-specific behavior harder to test directly and increased the
+  cost of future construction method hardening.
+- Action: extracted `build_construction_alternative_for_method` as the single-method helper and
+  rewired the list builder to delegate to it while preserving method ordering and solver-availability
+  resolution. Added direct tests for the do-nothing baseline path and effective-method rerun path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_alternative_builder.py tests/unit/dpm/construction/test_alternative_builder.py`,
+  `python -m ruff format --check src/api/services/construction_alternative_builder.py tests/unit/dpm/construction/test_alternative_builder.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_alternative_builder.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction service-helper
+  refactoring with behavior-preserving tests.

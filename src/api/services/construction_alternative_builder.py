@@ -19,6 +19,56 @@ from src.core.models import RebalanceResult
 from src.core.rebalance_runs.service import DpmRunSupportService
 
 
+def build_construction_alternative_for_method(
+    *,
+    request: RebalanceRequest,
+    method: ConstructionMethod,
+    base_result: RebalanceResult,
+    correlation_id: Optional[str],
+    request_hash: str,
+    authority_context: ConstructionAuthorityContext,
+    risk_authority_client: RiskAuthorityClient | None,
+    run_service: DpmRunSupportService | None,
+    solver_available: bool | None = None,
+) -> ConstructionAlternative:
+    if method == ConstructionMethod.DO_NOTHING_BASELINE:
+        return build_do_nothing_baseline(result=base_result)
+
+    resolved_solver_available = (
+        has_solver_dependencies() if solver_available is None else solver_available
+    )
+    plan = resolve_method_plan(method=method, solver_available=resolved_solver_available)
+    result = base_result
+    if plan.effective_method != ConstructionMethod.HEURISTIC_EXPLAINABLE:
+        result = run_construction_method(
+            request=request,
+            method=plan.effective_method,
+            correlation_id=correlation_id,
+            request_hash=f"{request_hash}:{plan.effective_method.value}",
+            run_service=run_service,
+        )
+    alternative = build_rebalance_result_alternative(
+        result=result,
+        method=method,
+        alternative_id=f"alt_{method.value.lower()}",
+    )
+    return apply_construction_supportability(
+        request=request,
+        method=method,
+        alternative=alternative,
+        result=result,
+        plan=plan,
+        authority_context=authority_context_for_request_method(
+            request=request,
+            method=method,
+            result=result,
+            authority_context=authority_context,
+            risk_authority_client=risk_authority_client,
+            correlation_id=correlation_id,
+        ),
+    )
+
+
 def build_construction_alternatives(
     *,
     request: RebalanceRequest,
@@ -31,47 +81,26 @@ def build_construction_alternatives(
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
 ) -> list[ConstructionAlternative]:
-    alternatives: list[ConstructionAlternative] = []
     resolved_solver_available = (
         has_solver_dependencies() if solver_available is None else solver_available
     )
-    for method in method_set:
-        if method == ConstructionMethod.DO_NOTHING_BASELINE:
-            alternatives.append(build_do_nothing_baseline(result=base_result))
-            continue
-        plan = resolve_method_plan(method=method, solver_available=resolved_solver_available)
-        result = base_result
-        if plan.effective_method != ConstructionMethod.HEURISTIC_EXPLAINABLE:
-            result = run_construction_method(
-                request=request,
-                method=plan.effective_method,
-                correlation_id=correlation_id,
-                request_hash=f"{request_hash}:{plan.effective_method.value}",
-                run_service=run_service,
-            )
-        alternative = build_rebalance_result_alternative(
-            result=result,
+    return [
+        build_construction_alternative_for_method(
+            request=request,
             method=method,
-            alternative_id=f"alt_{method.value.lower()}",
+            base_result=base_result,
+            correlation_id=correlation_id,
+            request_hash=request_hash,
+            authority_context=authority_context,
+            risk_authority_client=risk_authority_client,
+            run_service=run_service,
+            solver_available=resolved_solver_available,
         )
-        alternatives.append(
-            apply_construction_supportability(
-                request=request,
-                method=method,
-                alternative=alternative,
-                result=result,
-                plan=plan,
-                authority_context=authority_context_for_request_method(
-                    request=request,
-                    method=method,
-                    result=result,
-                    authority_context=authority_context,
-                    risk_authority_client=risk_authority_client,
-                    correlation_id=correlation_id,
-                ),
-            )
-        )
-    return alternatives
+        for method in method_set
+    ]
 
 
-__all__ = ["build_construction_alternatives"]
+__all__ = [
+    "build_construction_alternative_for_method",
+    "build_construction_alternatives",
+]
