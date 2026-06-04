@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.api.services.construction_regime_stress_supportability import (
     regime_stress_status,
+    regime_stress_threshold_breached,
 )
 from src.core.construction.models import AuthoritativeRegimeStressContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -34,6 +35,21 @@ def test_regime_stress_supportability_marks_threshold_breach_pending_review() ->
     )
 
     assert regime_stress_status(context) == ConstructionMethodStatus.PENDING_REVIEW
+
+
+def test_regime_stress_threshold_breach_helper_compares_source_threshold() -> None:
+    assert regime_stress_threshold_breached(
+        _regime_stress_context(
+            worst_case_loss_pct=Decimal("0.12"),
+            maximum_allowed_loss_pct=Decimal("0.10"),
+        )
+    )
+    assert not regime_stress_threshold_breached(
+        _regime_stress_context(
+            worst_case_loss_pct=Decimal("0.08"),
+            maximum_allowed_loss_pct=Decimal("0.10"),
+        )
+    )
 
 
 def test_regime_stress_supportability_preserves_source_status_without_breach() -> None:

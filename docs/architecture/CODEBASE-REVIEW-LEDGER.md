@@ -13461,3 +13461,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction currency-overlay
   supportability refactoring with direct source projection tests.
+
+## BACKEND-REVIEW-20260604-551: Regime-stress threshold policy helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_regime_stress_supportability.py`,
+  `tests/unit/dpm/construction/test_regime_stress_supportability.py`.
+- Finding: regime-stress supportability embedded source-provided worst-case-loss versus policy-threshold
+  comparison directly in the status function, leaving the policy check unaddressable as a direct
+  unit.
+- Action: extracted `regime_stress_threshold_breached`, reused it from `regime_stress_status`, and
+  added direct tests for breached and non-breached source threshold posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_regime_stress_supportability.py tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_regime_stress_supportability.py tests/unit/dpm/construction/test_regime_stress_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_regime_stress_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_regime_stress_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction regime-stress
+  supportability refactoring with direct source-threshold tests.
