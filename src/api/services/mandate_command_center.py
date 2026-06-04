@@ -78,6 +78,47 @@ def latest_command_center_run(
     )
 
 
+def command_center_health_distribution(
+    *,
+    latest_run: DpmMonitoringRun | None,
+    health_state: str | None,
+) -> dict[str, int]:
+    health_distribution = dict(latest_run.health_distribution) if latest_run else {}
+    if health_state is None:
+        return health_distribution
+    return {health_state: health_distribution.get(health_state, 0)}
+
+
+def command_center_partial_reasons(
+    *,
+    latest_run: DpmMonitoringRun | None,
+    portfolio_manager_id: str | None,
+    book_id: str | None,
+    active_exception_count: int,
+    limit: int,
+) -> list[str]:
+    partial_reasons: list[str] = []
+    if latest_run is None:
+        partial_reasons.append("NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
+    if portfolio_manager_id is None and book_id is None:
+        partial_reasons.append("PM_BOOK_DISCOVERY_NOT_YET_SOURCED")
+    if active_exception_count >= limit:
+        partial_reasons.append("ATTENTION_QUEUE_LIMIT_REACHED")
+    return partial_reasons
+
+
+def command_center_completeness(
+    *,
+    latest_run: DpmMonitoringRun | None,
+    partial_reasons: list[str],
+) -> Literal["COMPLETE", "PARTIAL", "EMPTY"]:
+    if latest_run is None:
+        return "EMPTY"
+    if partial_reasons:
+        return "PARTIAL"
+    return "COMPLETE"
+
+
 def build_command_center_summary(
     *,
     tenant_id: str | None,
@@ -90,23 +131,21 @@ def build_command_center_summary(
     limit: int,
     generated_at: datetime,
 ) -> DpmCommandCenterSummary:
-    health_distribution = dict(latest_run.health_distribution) if latest_run else {}
-    if health_state is not None:
-        health_distribution = {health_state: health_distribution.get(health_state, 0)}
-
-    partial_reasons: list[str] = []
-    if latest_run is None:
-        partial_reasons.append("NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
-    if portfolio_manager_id is None and book_id is None:
-        partial_reasons.append("PM_BOOK_DISCOVERY_NOT_YET_SOURCED")
-    if len(active_exceptions) >= limit:
-        partial_reasons.append("ATTENTION_QUEUE_LIMIT_REACHED")
-
-    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"] = "COMPLETE"
-    if latest_run is None:
-        completeness = "EMPTY"
-    elif partial_reasons:
-        completeness = "PARTIAL"
+    health_distribution = command_center_health_distribution(
+        latest_run=latest_run,
+        health_state=health_state,
+    )
+    partial_reasons = command_center_partial_reasons(
+        latest_run=latest_run,
+        portfolio_manager_id=portfolio_manager_id,
+        book_id=book_id,
+        active_exception_count=len(active_exceptions),
+        limit=limit,
+    )
+    completeness = command_center_completeness(
+        latest_run=latest_run,
+        partial_reasons=partial_reasons,
+    )
     supportability_state, supportability_reason = command_center_supportability_state(
         latest_run=latest_run,
         completeness=completeness,
@@ -216,6 +255,9 @@ def severity_rank(severity: str) -> int:
 __all__ = [
     "attention_buckets",
     "build_command_center_summary",
+    "command_center_completeness",
+    "command_center_health_distribution",
+    "command_center_partial_reasons",
     "command_center_supportability_state",
     "latest_command_center_run",
     "recommended_actions",

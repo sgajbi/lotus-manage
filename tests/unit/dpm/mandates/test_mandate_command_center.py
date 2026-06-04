@@ -3,6 +3,9 @@ from datetime import date, datetime, timezone
 from src.api.services.mandate_command_center import (
     attention_buckets,
     build_command_center_summary,
+    command_center_completeness,
+    command_center_health_distribution,
+    command_center_partial_reasons,
     command_center_supportability_state,
     latest_command_center_run,
     recommended_actions,
@@ -283,6 +286,43 @@ def test_build_command_center_summary_projects_empty_state_without_run() -> None
     assert summary.supportability.reason == "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
 
 
+def test_command_center_health_distribution_filters_selected_state() -> None:
+    assert command_center_health_distribution(
+        latest_run=_run(),
+        health_state="PENDING_REVIEW",
+    ) == {"PENDING_REVIEW": 1}
+    assert command_center_health_distribution(
+        latest_run=None,
+        health_state="READY",
+    ) == {"READY": 0}
+
+
+def test_command_center_partial_reasons_name_discovery_limit_and_missing_run() -> None:
+    assert command_center_partial_reasons(
+        latest_run=None,
+        portfolio_manager_id=None,
+        book_id=None,
+        active_exception_count=10,
+        limit=10,
+    ) == [
+        "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS",
+        "PM_BOOK_DISCOVERY_NOT_YET_SOURCED",
+        "ATTENTION_QUEUE_LIMIT_REACHED",
+    ]
+
+
+def test_command_center_completeness_classifies_empty_partial_and_complete() -> None:
+    assert command_center_completeness(latest_run=None, partial_reasons=[]) == "EMPTY"
+    assert (
+        command_center_completeness(
+            latest_run=_run(),
+            partial_reasons=["PM_BOOK_DISCOVERY_NOT_YET_SOURCED"],
+        )
+        == "PARTIAL"
+    )
+    assert command_center_completeness(latest_run=_run(), partial_reasons=[]) == "COMPLETE"
+
+
 def test_mandate_command_center_exports_only_projection_helpers() -> None:
     from src.api.services import mandate_command_center
 
@@ -290,6 +330,9 @@ def test_mandate_command_center_exports_only_projection_helpers() -> None:
     assert mandate_command_center.__all__ == [
         "attention_buckets",
         "build_command_center_summary",
+        "command_center_completeness",
+        "command_center_health_distribution",
+        "command_center_partial_reasons",
         "command_center_supportability_state",
         "latest_command_center_run",
         "recommended_actions",

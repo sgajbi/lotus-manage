@@ -14512,3 +14512,28 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal repository protocol
   contract cleanup.
+
+## BACKEND-REVIEW-20260604-596: Command-center summary projection helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_command_center.py` and
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`.
+- Finding: `build_command_center_summary` mixed health-distribution projection, partial-readiness
+  reason assembly, completeness classification, and response construction in one moderately
+  complex service function.
+- Action: extracted `command_center_health_distribution`, `command_center_partial_reasons`, and
+  `command_center_completeness`, kept summary orchestration in `build_command_center_summary`,
+  and added direct helper tests for selected-state filtering, missing-run/limit reasons, and
+  completeness classification.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal command-center service
+  maintainability refactoring.
