@@ -5,9 +5,17 @@ from src.api.services import rebalance_run_support_repository as run_support_rep
 
 def test_run_support_repository_builds_with_postgres_dsn(monkeypatch):
     monkeypatch.setenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "postgresql://supportability")
+    captured: dict[str, str] = {}
+
+    def _in_memory_postgres(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(run_support_repository, "PostgresDpmRunRepository", _in_memory_postgres)
 
     repository = run_support_repository.build_repository(dsn="postgresql://supportability")
     assert repository is not None
+    assert captured == {"dsn": "postgresql://supportability"}
 
 
 def test_run_support_repository_requires_dsn():

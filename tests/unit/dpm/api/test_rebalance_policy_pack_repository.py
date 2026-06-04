@@ -6,15 +6,39 @@ from src.api.services import rebalance_policy_pack_repository as policy_pack_rep
 def test_policy_pack_repository_builds_only_from_postgres_dsn(monkeypatch):
     monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://explicit")
     monkeypatch.delenv("DPM_SUPPORTABILITY_POSTGRES_DSN", raising=False)
+
+    captured: dict[str, str] = {}
+
+    def _in_memory_postgres(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        policy_pack_repository, "PostgresDpmPolicyPackRepository", _in_memory_postgres
+    )
+
     repository = policy_pack_repository.build_policy_pack_repository()
     assert repository is not None
+    assert captured == {"dsn": "postgresql://explicit"}
 
 
 def test_policy_pack_repository_falls_back_to_supportability_dsn(monkeypatch):
     monkeypatch.delenv("DPM_POLICY_PACK_POSTGRES_DSN", raising=False)
     monkeypatch.setenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "postgresql://fallback")
+
+    captured: dict[str, str] = {}
+
+    def _in_memory_postgres(**kwargs):
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        policy_pack_repository, "PostgresDpmPolicyPackRepository", _in_memory_postgres
+    )
+
     repository = policy_pack_repository.build_policy_pack_repository()
     assert repository is not None
+    assert captured == {"dsn": "postgresql://fallback"}
 
 
 def test_policy_pack_repository_requires_dsn(monkeypatch):

@@ -12858,3 +12858,20 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`, and service leakage scan
   (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-522: Adapter-focused DSN contract tests for repository builders
+
+- Date: 2026-06-04
+- Scope: `tests/unit/dpm/api/test_rebalance_policy_pack_repository.py`,
+  `tests/unit/dpm/api/test_rebalance_run_support_repository.py`.
+- Finding: existing success-path repository tests were indirectly exercising infrastructure constructors, allowing implicit constructor signature or runtime coupling to mask boundary regressions.
+- Action: replaced real constructor usage in success-path tests with monkeypatched in-memory constructors and assertive DSN capture to lock service adapter behavior at the boundary while preserving existing error-path coverage.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/dpm/api/test_rebalance_policy_pack_repository.py
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py`,
+  `python -m ruff format --check` on touched files, `python -m pytest
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py
+  tests/unit/dpm/api/test_rebalance_policy_pack_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python -m pytest` output for the two updated tests, `git diff --check`, and service leakage scan.
+- Wiki decision: no wiki source change required; this is an internal test hardening only.
