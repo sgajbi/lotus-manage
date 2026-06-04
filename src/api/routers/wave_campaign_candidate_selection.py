@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Collection, Iterable, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
+from typing import cast
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
@@ -14,6 +15,15 @@ class BulkReviewCampaignCandidate(Protocol):
 
     @property
     def source_refs(self) -> Sequence[object]: ...
+
+
+def _candidate_attribute(candidate: object, name: str) -> object | None:
+    if isinstance(candidate, Mapping):
+        if name in candidate:
+            value = candidate[name]
+            return cast(object | None, value)
+        return None
+    return cast(object | None, getattr(candidate, name, None))
 
 
 T = TypeVar("T", bound=BulkReviewCampaignCandidate)
@@ -33,8 +43,14 @@ def select_bulk_review_campaign_candidates(
     included_candidates: list[T] = []
     excluded_count = 0
     for candidate in candidates:
+        portfolio_type_value = _candidate_attribute(candidate, "portfolio_type")
+        if portfolio_type_value is not None and not isinstance(portfolio_type_value, str):
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_INVALID",
+                "BULK_REVIEW_CAMPAIGN candidate portfolio_type must be a string.",
+            )
         portfolio_type = normalize_required_portfolio_type(
-            candidate.portfolio_type,
+            portfolio_type_value,
             required_code="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED",
             required_message=(
                 "BULK_REVIEW_CAMPAIGN candidate portfolios require source-owned portfolio_type."
@@ -43,7 +59,13 @@ def select_bulk_review_campaign_candidates(
         if portfolio_type not in eligible_portfolio_types:
             excluded_count += 1
             continue
-        if not candidate.source_refs:
+        source_refs = _candidate_attribute(candidate, "source_refs")
+        if source_refs is not None and not isinstance(source_refs, Sequence):
+            raise wave_service.DpmWaveValidationError(
+                "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_INVALID",
+                "BULK_REVIEW_CAMPAIGN candidate source_refs must be a sequence.",
+            )
+        if not source_refs:
             raise wave_service.DpmWaveValidationError(
                 "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED",
                 "BULK_REVIEW_CAMPAIGN candidate portfolios require source_refs.",

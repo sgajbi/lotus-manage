@@ -150,6 +150,7 @@ def resolve_core_dpm_portfolio_universe_candidates(
             {
                 "portfolio_id": candidate.portfolio_id,
                 "mandate_id": candidate.mandate_id,
+                "portfolio_type": "DISCRETIONARY",
                 "source_refs": [
                     universe_ref,
                     _portfolio_universe_candidate_ref(
