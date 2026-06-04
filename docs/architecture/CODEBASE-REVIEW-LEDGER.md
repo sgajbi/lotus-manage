@@ -13244,3 +13244,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction supportability
   diagnostics refactoring with behavior-preserving tests.
+
+## BACKEND-REVIEW-20260604-542: Construction method readiness reason-code helpers made pure
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`.
+- Finding: method readiness reason-code assembly embedded solver warning filtering inline and used a
+  mutating helper for currency-overlay reason codes. That made two policy decisions harder to test
+  directly and kept unnecessary side effects in a service helper.
+- Action: extracted pure `solver_reason_codes` and `currency_overlay_reason_codes` helpers, removed
+  the mutating currency helper, and kept `method_specific_reason_codes` as the aggregate dispatcher.
+  Added direct tests for solver comparison evidence and currency-overlay missing-policy posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m ruff format --check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_readiness.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_readiness.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction readiness policy
+  refactoring with direct helper tests.
