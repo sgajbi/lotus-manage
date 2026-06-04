@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 from src.api.services.construction_source_identity import (
     SourceProductIdentity,
+    response_lineage_source_id,
     response_source_id,
     source_hash,
     source_payload,
@@ -45,6 +46,22 @@ def test_response_source_id_falls_back_to_lineage_then_hash() -> None:
         == "lineage-fingerprint"
     )
     assert response_source_id(_MinimalSourceResponse(), "sha256:fallback") == "sha256:fallback"
+
+
+def test_response_lineage_source_id_returns_only_valid_lineage_fingerprint() -> None:
+    assert (
+        response_lineage_source_id(
+            _MinimalSourceResponse(lineage={"source_batch_fingerprint": "lineage-fingerprint"})
+        )
+        == "lineage-fingerprint"
+    )
+    assert response_lineage_source_id(_MinimalSourceResponse()) is None
+    assert (
+        response_lineage_source_id(
+            _MinimalSourceResponse.model_construct(lineage={"source_batch_fingerprint": ""})
+        )
+        is None
+    )
 
 
 def test_source_product_identity_bundles_product_and_lineage_fields() -> None:

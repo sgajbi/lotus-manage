@@ -13316,3 +13316,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction selection validation
   refactoring with direct helper coverage.
+
+## BACKEND-REVIEW-20260604-545: Construction source lineage fingerprint helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_identity.py`,
+  `tests/unit/dpm/construction/test_source_identity.py`.
+- Finding: source-product identity resolution combined top-level source fingerprint preference,
+  lineage fingerprint lookup, and fallback-hash behavior in one helper, making lineage-specific
+  source-id semantics less visible.
+- Action: extracted `response_lineage_source_id` and reused it from `response_source_id`. Added
+  direct tests for valid lineage fingerprints and invalid/empty lineage fallback behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m ruff format --check src/api/services/construction_source_identity.py tests/unit/dpm/construction/test_source_identity.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_identity.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_identity.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction source-lineage
+  helper hardening with direct tests.
