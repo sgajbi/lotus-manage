@@ -140,7 +140,7 @@ def _supportability_status(
             enrichment=enrichment,
         ),
     ]
-    authority_status = _authority_context_status(
+    authority_status = authority_context_status(
         method=method,
         authority_context=authority_context,
     )
@@ -172,7 +172,7 @@ def _method_enrichment_statuses(
     return []
 
 
-def _authority_context_status(
+def authority_context_status(
     *,
     method: ConstructionMethod,
     authority_context: ConstructionAuthorityContext,
@@ -188,5 +188,6 @@ def _authority_context_status(
 
 __all__ = [
     "apply_construction_supportability",
+    "authority_context_status",
     "supportability_diagnostics",
 ]

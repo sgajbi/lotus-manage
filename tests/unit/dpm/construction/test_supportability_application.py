@@ -5,6 +5,7 @@ from typing import Any, cast
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     apply_construction_supportability,
+    authority_context_status,
     supportability_diagnostics,
 )
 from src.core.construction.enrichment import summarize_enrichment_posture
@@ -362,4 +363,42 @@ def test_supportability_application_applies_regime_context_status_overlay() -> N
     assert (
         enriched.diagnostics["authority_context"]["regime_stress_context"]["scenario_pack_id"]
         == "CIO_REGIME_2026_Q2"
+    )
+
+
+def test_authority_context_status_projects_method_specific_context_status() -> None:
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.LIQUIDITY_AWARE,
+            authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
+        )
+        == ConstructionMethodStatus.READY
+    )
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            authority_context=ConstructionAuthorityContext(
+                currency_overlay_context=_blocked_currency_context()
+            ),
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.REGIME_STRESS_AWARE,
+            authority_context=ConstructionAuthorityContext(
+                regime_stress_context=_blocked_regime_context()
+            ),
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+
+
+def test_authority_context_status_ignores_context_for_unrelated_method() -> None:
+    assert (
+        authority_context_status(
+            method=ConstructionMethod.COST_AWARE,
+            authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
+        )
+        is None
     )
