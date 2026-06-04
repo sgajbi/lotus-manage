@@ -57,7 +57,7 @@ def _optional_source_identity(
     return source_product_identity(response, fallback_source_id=fallback_source_id)
 
 
-def _source_identity_fields(
+def treasury_source_identity_fields(
     *,
     prefix: str,
     identity: SourceProductIdentity | None,
@@ -223,7 +223,7 @@ def external_treasury_currency_overlay_context(
             fx_forward_curve,
         ),
         readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
-        **_source_identity_fields(
+        **treasury_source_identity_fields(
             prefix="external_currency_exposure",
             identity=exposure_identity,
         ),
@@ -233,7 +233,7 @@ def external_treasury_currency_overlay_context(
         external_currency_exposure_rows=(
             currency_exposure.exposures if currency_exposure is not None else []
         ),
-        **_source_identity_fields(
+        **treasury_source_identity_fields(
             prefix="external_hedge_policy",
             identity=hedge_policy_identity,
         ),
@@ -241,7 +241,7 @@ def external_treasury_currency_overlay_context(
             hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
         ),
         external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
-        **_source_identity_fields(
+        **treasury_source_identity_fields(
             prefix="external_eligible_hedge_instrument",
             identity=eligible_hedge_instruments_identity,
         ),
@@ -255,7 +255,7 @@ def external_treasury_currency_overlay_context(
             if eligible_hedge_instruments is not None
             else []
         ),
-        **_source_identity_fields(
+        **treasury_source_identity_fields(
             prefix="external_fx_forward_curve",
             identity=fx_forward_curve_identity,
         ),
@@ -272,5 +272,6 @@ def external_treasury_currency_overlay_context(
 __all__ = [
     "external_treasury_currency_overlay_context",
     "treasury_fail_closed_reason_codes",
+    "treasury_source_identity_fields",
     "treasury_source_payloads",
 ]

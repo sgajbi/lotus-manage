@@ -13838,3 +13838,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal treasury source-context payload
   assembly refactoring with direct public-helper tests.
+
+## BACKEND-REVIEW-20260604-567: Treasury source identity field helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury nested source-product identity projection was directly tested through a
+  private helper even though it defines the contract fields for external currency exposure,
+  hedge policy, eligible hedge instruments, and FX forward curve evidence.
+- Action: exposed `treasury_source_identity_fields`, reused it from the currency-overlay mapper,
+  and updated tests to assert present and absent nested identity projections through the public
+  helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context identity
+  projection refactoring with direct public-helper tests.

@@ -4,6 +4,7 @@ from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
     treasury_fail_closed_reason_codes,
+    treasury_source_identity_fields,
     treasury_source_payloads,
 )
 from src.core.common.canonical import hash_canonical_payload
@@ -21,6 +22,7 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
         "external_treasury_currency_overlay_context",
         "treasury_fail_closed_reason_codes",
+        "treasury_source_identity_fields",
         "treasury_source_payloads",
     ]
 
@@ -79,7 +81,7 @@ def test_source_identity_fields_project_prefixed_source_product_identity() -> No
     )
 
     assert identity is not None
-    assert construction_treasury_source_context._source_identity_fields(
+    assert treasury_source_identity_fields(
         prefix="external_currency_exposure",
         identity=identity,
     ) == {
@@ -91,7 +93,7 @@ def test_source_identity_fields_project_prefixed_source_product_identity() -> No
 
 
 def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
-    assert construction_treasury_source_context._source_identity_fields(
+    assert treasury_source_identity_fields(
         prefix="external_currency_exposure",
         identity=None,
     ) == {
