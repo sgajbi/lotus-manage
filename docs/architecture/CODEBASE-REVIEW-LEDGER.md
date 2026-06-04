@@ -14849,3 +14849,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260604-610: Maker-checker control validation dispatch extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/waves/campaign_maker_checker_controls.py` and
+  `tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py`.
+- Finding: maker-checker control action validation was concentrated in one nested conditional
+  chain, keeping submission, reviewer-assignment, review-completion, exception-raised, and
+  exception-resolved rules harder to inspect and test independently.
+- Action: introduced `CampaignControlValidationContext`, named rule validators, and a dispatch
+  table for control-action validation. Added direct helper tests covering all valid action/outcome
+  pairs plus representative invalid rule failures.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_maker_checker_controls.py tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_maker_checker_controls.py tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_maker_checker_controls.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py tests/unit/dpm/waves/test_campaign_discovery.py::test_campaign_maker_checker_controls_record_actor_separation tests/unit/dpm/waves/test_campaign_discovery.py::test_campaign_maker_checker_controls_record_reviewer_assignment_and_exceptions tests/unit/dpm/waves/test_campaign_discovery.py::test_campaign_maker_checker_controls_validate_required_fields -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal maker-checker validation
+  maintainability refactoring.
