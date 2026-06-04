@@ -10,6 +10,8 @@ from uuid import uuid4
 from fastapi import FastAPI, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
 
+from src.api.response_headers import apply_observability_headers
+
 correlation_id_var: ContextVar[str] = ContextVar("correlation_id", default="")
 request_id_var: ContextVar[str] = ContextVar("request_id", default="")
 trace_id_var: ContextVar[str] = ContextVar("trace_id", default="")
@@ -333,6 +335,7 @@ def setup_observability(app: FastAPI) -> None:
         response.headers["X-Correlation-Id"] = response_correlation_id
         response.headers["X-Request-Id"] = request_id
         response.headers["X-Trace-Id"] = trace_id
+        apply_observability_headers(response)
         response.headers["traceparent"] = f"00-{trace_id}-0000000000000001-01"
         return response
 

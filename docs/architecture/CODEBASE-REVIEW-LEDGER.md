@@ -12962,3 +12962,19 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal service orchestration refactor with behavior-preserving test coverage.
+
+## BACKEND-REVIEW-20260604-528: Observability response hardening and security headers applied at edge
+
+- Date: 2026-06-04
+- Scope: `src/api/observability.py`, `src/api/main.py`, `src/api/response_headers.py`, `tests/unit/app/middleware/test_observability.py`.
+- Finding: response middleware did not apply a shared hardened header surface across successful and globally handled error paths, and there was no direct unit test coverage for edge response security headers.
+- Action: introduced `src/api/response_headers.py` with a single reusable response-header helper, wired it into observability middleware and the unhandled exception handler so production responses receive deterministic security/caching headers, and added focused middleware/helper tests that validate header injection plus correlation/trace propagation behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/observability.py src/api/main.py src/api/response_headers.py tests/unit/app/middleware/test_observability.py`,
+  `python -m ruff format --check src/api/observability.py src/api/main.py src/api/response_headers.py tests/unit/app/middleware/test_observability.py`,
+  `python -m mypy --config-file mypy.ini src/api/observability.py src/api/main.py src/api/response_headers.py`,
+  `python -m pytest tests/unit/app/middleware/test_observability.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service-boundary leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal API runtime hardening slice.
