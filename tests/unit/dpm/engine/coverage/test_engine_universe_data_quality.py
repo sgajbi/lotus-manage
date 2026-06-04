@@ -1,3 +1,9 @@
+from decimal import Decimal
+
+from src.core.rebalance.universe import (
+    _add_model_target_to_universe,
+    _add_portfolio_position_to_universe,
+)
 from src.core.rebalance.engine import run_simulation
 from src.core.models import (
     EngineOptions,
@@ -8,6 +14,7 @@ from tests.shared.factories import (
     cash,
     market_data_snapshot,
     model_portfolio,
+    portfolio_snapshot,
     position,
     price,
     shelf_entry,
@@ -17,6 +24,56 @@ from tests.unit.dpm.engine.coverage.helpers import usd_cash_portfolio
 
 
 class TestUniverseAndDataQuality:
+    def test_add_model_target_to_universe_tracks_sell_only_target(self):
+        eligible_targets = {}
+        excluded = []
+        buy_list = []
+        sell_list = []
+        dq_log = {"shelf_missing": []}
+
+        sell_only_excess = _add_model_target_to_universe(
+            target=target("SELL_ONLY_ASSET", "0.25"),
+            shelf_by_id={"SELL_ONLY_ASSET": shelf_entry("SELL_ONLY_ASSET", status="SELL_ONLY")},
+            options=EngineOptions(),
+            dq_log=dq_log,
+            eligible_targets=eligible_targets,
+            excluded=excluded,
+            buy_list=buy_list,
+            sell_list=sell_list,
+        )
+
+        assert sell_only_excess == Decimal("0.25")
+        assert eligible_targets == {"SELL_ONLY_ASSET": Decimal("0.0")}
+        assert buy_list == []
+        assert sell_list == ["SELL_ONLY_ASSET"]
+        assert excluded[0].reason_code == "SHELF_STATUS_SELL_ONLY"
+
+    def test_add_portfolio_position_to_universe_locks_current_weight(self):
+        portfolio = portfolio_snapshot(
+            portfolio_id="pf_locked_position",
+            positions=[position("SUSPENDED_ASSET", "2")],
+            cash_balances=[cash("USD", "0")],
+        )
+        market_data = market_data_snapshot(prices=[price("SUSPENDED_ASSET", "50", "USD")])
+        shelf = [shelf_entry("SUSPENDED_ASSET", status="SUSPENDED")]
+        current_val = build_simulated_state(portfolio, market_data, shelf, {}, [])
+        eligible_targets = {}
+        excluded = []
+        sell_list = []
+
+        _add_portfolio_position_to_universe(
+            position=portfolio.positions[0],
+            shelf_by_id={"SUSPENDED_ASSET": shelf[0]},
+            current_val=current_val,
+            eligible_targets=eligible_targets,
+            excluded=excluded,
+            sell_list=sell_list,
+        )
+
+        assert eligible_targets == {"SUSPENDED_ASSET": current_val.positions[0].weight}
+        assert excluded[0].reason_code == "LOCKED_DUE_TO_SUSPENDED"
+        assert sell_list == []
+
     def test_engine_restricted_logic(self, base_inputs):
         pf, mkt, model, shelf = base_inputs
         result = run_simulation(pf, mkt, model, shelf, EngineOptions(allow_restricted=False))

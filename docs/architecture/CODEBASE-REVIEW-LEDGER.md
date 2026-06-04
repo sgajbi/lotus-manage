@@ -15607,3 +15607,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-642: Rebalance universe eligibility helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/universe.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`.
+- Finding: `build_universe` became the top current source-complexity hotspot and still mixed model
+  target shelf eligibility, sell-only excess handling, current-position locking, missing-shelf data
+  quality logging, and residual sell-list construction.
+- Action: introduced helpers for shelf indexing, model-target exclusion reason resolution, model
+  target universe admission, current-position weight lookup, locked-position reason resolution, and
+  portfolio-position universe admission. Kept `build_universe` as the orchestration boundary over
+  model targets and current holdings. Added direct helper tests for sell-only target handling and
+  suspended-position current-weight locking.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/universe.py tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python -m ruff format --check src/core/rebalance/universe.py tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/universe.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance universe
+  maintainability refactoring.
