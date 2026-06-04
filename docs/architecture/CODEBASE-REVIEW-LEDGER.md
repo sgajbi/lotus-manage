@@ -14537,3 +14537,28 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal command-center service
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-597: Policy-pack catalog parser helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/rebalance/policy_packs.py` and
+  `tests/unit/dpm/engine/test_policy_pack_resolution.py`.
+- Finding: `parse_policy_pack_catalog` combined environment JSON normalization, raw catalog shape
+  checks, row normalization, Pydantic validation, and invalid-row skipping in a single function,
+  making malformed catalog behavior harder to inspect directly.
+- Action: extracted `_load_policy_pack_catalog_payload`,
+  `_policy_pack_definition_payload`, and `_parse_policy_pack_definition`, kept
+  `parse_policy_pack_catalog` as the catalog coordinator, and added direct helper tests for
+  default payload normalization plus invalid row rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m ruff format --check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/policy_packs.py`,
+  `python -m pytest tests/unit/dpm/engine/test_policy_pack_resolution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal policy-pack parser
+  maintainability refactoring.

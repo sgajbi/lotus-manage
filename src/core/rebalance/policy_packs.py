@@ -1,6 +1,6 @@
 import json
 from decimal import Decimal
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -272,6 +272,22 @@ def _normalize_policy_pack_id(value: Optional[str]) -> Optional[str]:
 
 
 def parse_policy_pack_catalog(catalog_json: Optional[str]) -> dict[str, DpmPolicyPackDefinition]:
+    raw = _load_policy_pack_catalog_payload(catalog_json)
+
+    catalog: dict[str, DpmPolicyPackDefinition] = {}
+    for policy_pack_id, definition in raw.items():
+        parsed = _parse_policy_pack_definition(
+            policy_pack_id=policy_pack_id,
+            definition=definition,
+        )
+        if parsed is None:
+            continue
+        normalized_id, policy_pack = parsed
+        catalog[normalized_id] = policy_pack
+    return catalog
+
+
+def _load_policy_pack_catalog_payload(catalog_json: Optional[str]) -> dict[Any, Any]:
     normalized_json = (catalog_json or "").strip()
     if not normalized_json:
         return {}
@@ -281,17 +297,24 @@ def parse_policy_pack_catalog(catalog_json: Optional[str]) -> dict[str, DpmPolic
         return {}
     if not isinstance(raw, dict):
         return {}
+    return raw
 
-    catalog: dict[str, DpmPolicyPackDefinition] = {}
-    for policy_pack_id, definition in raw.items():
-        if not isinstance(policy_pack_id, str):
-            continue
-        if not isinstance(definition, dict):
-            continue
-        normalized_id = policy_pack_id.strip()
-        if not normalized_id:
-            continue
-        payload = {
+
+def _policy_pack_definition_payload(
+    *,
+    policy_pack_id: Any,
+    definition: Any,
+) -> tuple[str, dict[str, object]] | None:
+    if not isinstance(policy_pack_id, str):
+        return None
+    if not isinstance(definition, dict):
+        return None
+    normalized_id = policy_pack_id.strip()
+    if not normalized_id:
+        return None
+    return (
+        normalized_id,
+        {
             "policy_pack_id": normalized_id,
             "version": str(definition.get("version", "1")),
             "turnover_policy": definition.get("turnover_policy") or {},
@@ -300,13 +323,26 @@ def parse_policy_pack_catalog(catalog_json: Optional[str]) -> dict[str, DpmPolic
             "constraint_policy": definition.get("constraint_policy") or {},
             "workflow_policy": definition.get("workflow_policy") or {},
             "idempotency_policy": definition.get("idempotency_policy") or {},
-        }
-        try:
-            parsed = DpmPolicyPackDefinition.model_validate(payload)
-        except ValidationError:
-            continue
-        catalog[normalized_id] = parsed
-    return catalog
+        },
+    )
+
+
+def _parse_policy_pack_definition(
+    *,
+    policy_pack_id: Any,
+    definition: Any,
+) -> tuple[str, DpmPolicyPackDefinition] | None:
+    payload = _policy_pack_definition_payload(
+        policy_pack_id=policy_pack_id,
+        definition=definition,
+    )
+    if payload is None:
+        return None
+    normalized_id, model_payload = payload
+    try:
+        return normalized_id, DpmPolicyPackDefinition.model_validate(model_payload)
+    except ValidationError:
+        return None
 
 
 def resolve_policy_pack_definition(

@@ -263,6 +263,44 @@ def test_policy_pack_catalog_parse_skips_non_string_and_blank_ids(monkeypatch):
     assert policy_pack_module.parse_policy_pack_catalog('{"ignored":"input"}') == {}
 
 
+def test_policy_pack_definition_payload_normalizes_defaults():
+    payload = policy_pack_module._policy_pack_definition_payload(
+        policy_pack_id="  dpm_standard_v1  ",
+        definition={"turnover_policy": {"max_turnover_pct": "0.05"}},
+    )
+
+    assert payload is not None
+    policy_pack_id, model_payload = payload
+    assert policy_pack_id == "dpm_standard_v1"
+    assert model_payload == {
+        "policy_pack_id": "dpm_standard_v1",
+        "version": "1",
+        "turnover_policy": {"max_turnover_pct": "0.05"},
+        "tax_policy": {},
+        "settlement_policy": {},
+        "constraint_policy": {},
+        "workflow_policy": {},
+        "idempotency_policy": {},
+    }
+
+
+def test_parse_policy_pack_definition_returns_none_for_invalid_rows():
+    assert (
+        policy_pack_module._parse_policy_pack_definition(
+            policy_pack_id="bad",
+            definition={"turnover_policy": {"max_turnover_pct": "not-decimal"}},
+        )
+        is None
+    )
+    assert (
+        policy_pack_module._parse_policy_pack_definition(
+            policy_pack_id=123,
+            definition={"version": "1"},
+        )
+        is None
+    )
+
+
 def test_policy_pack_resolve_definition_missing_or_none():
     resolution_none = resolve_effective_policy_pack(
         policy_packs_enabled=True,
