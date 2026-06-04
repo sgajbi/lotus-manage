@@ -105,7 +105,7 @@ def simulate_rebalance(
             examples=["tenant_001"],
         ),
     ] = None,
-    db: Annotated[None, Depends(get_db_session)] = None,
+    _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> RebalanceResult:
     try:
         rebalance_request, source_context = service.resolve_rebalance_request_envelope(

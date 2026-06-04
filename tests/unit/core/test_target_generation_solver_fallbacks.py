@@ -30,6 +30,8 @@ class _ProblemStub:
         self.calls: list[tuple[str, dict]] = []
 
     def solve(self, *, solver: str, verbose: bool, warm_start: bool, **kwargs) -> None:
+        _ = verbose
+        _ = warm_start
         self.calls.append((solver, kwargs))
         if "time_limit_secs" in kwargs:
             raise TypeError("unsupported kwarg")

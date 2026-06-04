@@ -103,7 +103,7 @@ def test_validate_cutover_migrations_applied_detects_missing(monkeypatch):
                 def __enter__(self):
                     return _FakeConnection(rows=[{"version": "dpm:0001"}])
 
-                def __exit__(self, exc_type, exc, tb):
+                def __exit__(self, _exc_type, _exc, _tb):
                     return False
 
             return _Context()

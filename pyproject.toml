@@ -66,6 +66,8 @@ skips = []
 [tool.deptry]
 known_first_party = ["src"]
 exclude = ["tests", "output", ".venv", ".venv-codex"]
+optional_dependencies_dev_groups = ["dev", "quality"]
+per_rule_ignores = { DEP002 = ["pydantic-settings", "uvicorn"] }
 
 [tool.interrogate]
 ignore-init-method = true

@@ -111,7 +111,7 @@ def analyze_scenarios_async(
             examples=["tenant_001"],
         ),
     ] = None,
-    db: Annotated[None, Depends(get_db_session)] = None,
+    _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> DpmAsyncAcceptedResponse:
     try:
         batch_request, source_context = service.resolve_batch_request_envelope(
