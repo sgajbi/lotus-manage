@@ -13007,3 +13007,19 @@ and improves internal transaction-cost source posture maintainability only.
   `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
   `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`.
 - Wiki decision: no wiki source change required; this is an internal architecture-governance hardening slice.
+
+## BACKEND-REVIEW-20260604-531: Service-layer infrastructure imports constrained to adapter modules
+
+- Date: 2026-06-04
+- Scope: `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: infrastructure-layer imports were now guarded indirectly through earlier tests, but explicit adapter-module intent for each service file was not codified in a dedicated assertion.
+- Action: extended the service boundary test module with an explicit infrastructure allowlist for adapter-intent service modules and a hard assertion against unexpected `src.infrastructure.*` imports in non-adapter services.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m mypy --config-file mypy.ini tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|src\\.infrastructure" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal architecture-governance hardening only.
