@@ -15,13 +15,13 @@ from src.api.routers.mandate_models import (
     DpmMandateRefreshFromCoreResponse,
 )
 from src.api.routers.mandates import get_core_resolver_client, router
+from src.api.services.core_resolver_service import CoreResolverClient
 from src.api.services.mandate_service import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
     refresh_mandate_from_core,
 )
 from src.core.mandate_repository import DpmMandateRepository
-from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
 
 @router.post(
@@ -78,7 +78,7 @@ async def refresh_mandate(
         ),
     ] = None,
     repository: DpmMandateRepository = Depends(get_mandate_repository),
-    core_resolver: DpmCoreResolverClient = Depends(get_core_resolver_client),
+    core_resolver: CoreResolverClient = Depends(get_core_resolver_client),
 ) -> DpmMandateRefreshFromCoreResponse:
     try:
         result = refresh_mandate_from_core(
