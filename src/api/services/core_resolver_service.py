@@ -6,6 +6,7 @@ from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
     DpmCoreResolverUnavailableError,
+    DpmCoreResolverError,
 )
 
 
@@ -43,6 +44,8 @@ def stateful_core_sourcing_enabled() -> bool:
 
 
 CoreResolverClient = DpmCoreResolverClient
+CoreResolverError = DpmCoreResolverError
+CoreResolverUnavailableError = DpmCoreResolverUnavailableError
 
 
 def build_core_resolver_client() -> DpmCoreResolverClient:

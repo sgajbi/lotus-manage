@@ -20,9 +20,12 @@ from src.api.services.mandate_service import (
     mandate_ids_from_pm_book_membership,
     run_mandate_monitoring_once,
 )
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMonitoringRun
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 
 
 @monitoring_router.router.post(
@@ -66,9 +69,9 @@ async def run_once(
                 include_inactive=False,
                 correlation_id=None,
             )
-        except DpmCoreResolverUnavailableError as exc:
+        except CoreResolverUnavailableError as exc:
             raise monitoring_core_resolver_unavailable_http_exception(exc) from exc
-        except DpmCoreResolverError as exc:
+        except CoreResolverError as exc:
             raise monitoring_core_resolver_incomplete_http_exception(exc) from exc
         if membership.supportability.state != "READY":
             raise monitoring_pm_book_membership_not_ready_http_exception(membership)

@@ -19,7 +19,10 @@ from src.api.routers.wave_source_dependency_http import (
     upstream_unavailable_http_exception,
 )
 from src.api.services import wave_service
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 
 
 CoreResolverFactory = Callable[[], Any]
@@ -57,12 +60,12 @@ def resolve_pm_book_portfolios(
             include_inactive=False,
             correlation_id=correlation_id,
         )
-    except DpmCoreResolverUnavailableError as exc:
+    except CoreResolverUnavailableError as exc:
         raise upstream_unavailable_http_exception(
             exc,
             default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
         ) from exc
-    except DpmCoreResolverError as exc:
+    except CoreResolverError as exc:
         raise upstream_dependency_failed_http_exception(
             exc,
             default_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
@@ -106,12 +109,12 @@ def resolve_cio_model_change_portfolios(
             include_inactive_mandates=False,
             correlation_id=correlation_id,
         )
-    except DpmCoreResolverUnavailableError as exc:
+    except CoreResolverUnavailableError as exc:
         raise upstream_unavailable_http_exception(
             exc,
             default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE",
         ) from exc
-    except DpmCoreResolverError as exc:
+    except CoreResolverError as exc:
         raise upstream_dependency_failed_http_exception(
             exc,
             default_code="DPM_CORE_CIO_MODEL_CHANGE_COHORT_INCOMPLETE",

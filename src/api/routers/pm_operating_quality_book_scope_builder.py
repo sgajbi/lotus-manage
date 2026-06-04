@@ -21,7 +21,10 @@ from src.core.pm_quality import (
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
 )
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 
 
 def resolve_pm_book_scope_evidence(
@@ -48,9 +51,9 @@ def resolve_pm_book_scope_evidence(
             include_inactive=scope.include_inactive,
             correlation_id=correlation_id,
         )
-    except DpmCoreResolverUnavailableError as exc:
+    except CoreResolverUnavailableError as exc:
         raise pm_quality_core_resolver_unavailable_http_exception(exc) from exc
-    except DpmCoreResolverError as exc:
+    except CoreResolverError as exc:
         raise pm_quality_core_resolver_incomplete_http_exception(exc) from exc
 
     if membership.supportability.state != "READY":
