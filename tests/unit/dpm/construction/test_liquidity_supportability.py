@@ -4,6 +4,7 @@ from src.api.services.construction_liquidity_supportability import (
     liquidity_reason_codes,
     liquidity_status,
     post_trade_cash_weight,
+    projected_cashflow_weight,
 )
 from src.api.services.construction_liquidity_source_context import source_liquidity_context
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -87,4 +88,40 @@ def test_cashflow_projection_status_degrades_when_projection_rows_are_excluded()
             cash_weight=post_trade_cash_weight(result=result),
         )
         == ConstructionMethodStatus.DEGRADED
+    )
+
+
+def test_projected_cashflow_weight_uses_source_projection_over_post_trade_value() -> None:
+    result = _trade_result()
+    source_context = source_liquidity_context(
+        cashflow_projection=cashflow_projection_response(),
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert source_context is not None
+    assert source_context.cashflow_projection is not None
+    assert projected_cashflow_weight(result=result, context=source_context) == (
+        source_context.cashflow_projection.total_net_cashflow.amount
+        / result.after_simulated.total_value.amount
+    )
+
+
+def test_projected_cashflow_weight_absent_for_missing_projection() -> None:
+    result = _trade_result()
+    source_context = source_liquidity_context(
+        cashflow_projection=None,
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert source_context is None
+    assert (
+        projected_cashflow_weight(
+            result=result,
+            context=derive_liquidity_context(result=result),
+        )
+        is None
     )

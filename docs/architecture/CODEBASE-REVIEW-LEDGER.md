@@ -14161,3 +14161,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal treasury source-context
   helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-581: Liquidity projected-cashflow weight helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Finding: projected cashflow weight calculation was duplicated across liquidity status and
+  reason-code paths, increasing the chance of future drift in cashflow supportability decisions.
+- Action: extracted `projected_cashflow_weight`, reused it from liquidity status and reason-code
+  assembly, and added direct tests for source-projected weight calculation plus absent projection
+  handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity supportability
+  helper refactoring with direct tests.

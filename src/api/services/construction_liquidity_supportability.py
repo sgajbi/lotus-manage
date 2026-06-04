@@ -54,10 +54,9 @@ def cashflow_projection_status(
             [cashflow_status, ConstructionMethodStatus.DEGRADED]
         )
     elif cash_weight is not None:
-        projected_cash_weight = (
-            context.cashflow_projection.total_net_cashflow.amount
-            / result.after_simulated.total_value.amount
-        )
+        projected_cash_weight = projected_cashflow_weight(result=result, context=context)
+        if projected_cash_weight is None:
+            return cashflow_status
         if cash_weight + projected_cash_weight < context.minimum_cash_weight:
             cashflow_status = lowest_construction_status(
                 [cashflow_status, ConstructionMethodStatus.PENDING_REVIEW]
@@ -110,14 +109,30 @@ def cashflow_projection_reason_codes(
     cash_weight = post_trade_cash_weight(result=result)
     if cash_weight is None:
         return reason_codes
-    projected_cash_weight = (
-        projection.total_net_cashflow.amount / result.after_simulated.total_value.amount
-    )
+    projected_cash_weight = projected_cashflow_weight(result=result, context=context)
+    if projected_cash_weight is None:
+        return reason_codes
     if cash_weight + projected_cash_weight < context.minimum_cash_weight:
         reason_codes.append("CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY")
     elif is_usable:
         reason_codes.append("CASHFLOW_PROJECTION_READY")
     return reason_codes
+
+
+def projected_cashflow_weight(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext,
+) -> Decimal | None:
+    projection = context.cashflow_projection
+    if projection is None:
+        return None
+    total_value = result.after_simulated.total_value
+    if projection.total_net_cashflow.currency != total_value.currency:
+        return None
+    if total_value.amount <= Decimal("0"):
+        return None
+    return projection.total_net_cashflow.amount / total_value.amount
 
 
 def post_trade_cash_weight(*, result: RebalanceResult) -> Decimal | None:
@@ -149,4 +164,5 @@ __all__ = [
     "liquidity_reason_codes",
     "liquidity_status",
     "post_trade_cash_weight",
+    "projected_cashflow_weight",
 ]
