@@ -167,6 +167,13 @@ class _TargetTradeDelta:
     raw_quantity: Decimal
 
 
+@dataclass(frozen=True)
+class _TaxBudgetLotAllowance:
+    requested_quantity: Decimal
+    allowed_quantity: Decimal
+    realized_base: Decimal
+
+
 def _target_trade_delta(
     *,
     target_instrument_value: Decimal,
@@ -177,6 +184,57 @@ def _target_trade_delta(
     side: Literal["BUY", "SELL"] = "BUY" if delta > 0 else "SELL"
     raw_quantity = Decimal(int(abs(delta) // unit_value))
     return _TargetTradeDelta(side=side, raw_quantity=raw_quantity)
+
+
+def _tax_budget_allowed_lot_quantity(
+    *,
+    lot_sell_qty: Decimal,
+    per_unit_gain_base: Decimal,
+    tax_budget: _TaxBudgetAccumulator,
+) -> Decimal:
+    if tax_budget.tax_budget_limit_base is None or per_unit_gain_base <= Decimal("0"):
+        return lot_sell_qty
+    if tax_budget.tax_budget_used_base >= tax_budget.tax_budget_limit_base:
+        return Decimal("0")
+
+    remaining_headroom = tax_budget.tax_budget_limit_base - tax_budget.tax_budget_used_base
+    max_qty_headroom = remaining_headroom / per_unit_gain_base
+    return min(lot_sell_qty, max_qty_headroom)
+
+
+def _tax_budget_lot_allowance(
+    *,
+    remaining_quantity: Decimal,
+    lot_quantity: Decimal,
+    lot_unit_cost: Decimal,
+    sell_price: Decimal,
+    base_rate: Decimal,
+    tax_budget: _TaxBudgetAccumulator,
+) -> _TaxBudgetLotAllowance:
+    lot_sell_qty = min(remaining_quantity, lot_quantity)
+    per_unit_gain_base = (sell_price - lot_unit_cost) * base_rate
+    allowed_quantity = _tax_budget_allowed_lot_quantity(
+        lot_sell_qty=lot_sell_qty,
+        per_unit_gain_base=per_unit_gain_base,
+        tax_budget=tax_budget,
+    )
+    return _TaxBudgetLotAllowance(
+        requested_quantity=lot_sell_qty,
+        allowed_quantity=allowed_quantity,
+        realized_base=per_unit_gain_base * allowed_quantity,
+    )
+
+
+def _apply_tax_budget_lot_allowance(
+    *,
+    allowance: _TaxBudgetLotAllowance,
+    tax_budget: _TaxBudgetAccumulator,
+) -> None:
+    if allowance.realized_base >= Decimal("0"):
+        tax_budget.total_realized_gain_base += allowance.realized_base
+        tax_budget.tax_budget_used_base += allowance.realized_base
+    else:
+        tax_budget.total_realized_loss_base += abs(allowance.realized_base)
 
 
 def _tax_budget_limited_sell_quantity(
@@ -211,39 +269,23 @@ def _tax_budget_limited_sell_quantity(
         if lot.quantity <= Decimal("0"):
             continue
 
-        lot_sell_qty = min(remaining, lot.quantity)
-        per_unit_gain_base = (sell_price - lot_unit_cost) * base_rate
-        allowed_from_lot = lot_sell_qty
-
-        if (
-            tax_budget.tax_budget_limit_base is not None
-            and per_unit_gain_base > Decimal("0")
-            and tax_budget.tax_budget_used_base < tax_budget.tax_budget_limit_base
-        ):
-            remaining_headroom = tax_budget.tax_budget_limit_base - tax_budget.tax_budget_used_base
-            max_qty_headroom = remaining_headroom / per_unit_gain_base
-            allowed_from_lot = min(lot_sell_qty, max_qty_headroom)
-        elif (
-            tax_budget.tax_budget_limit_base is not None
-            and per_unit_gain_base > Decimal("0")
-            and tax_budget.tax_budget_used_base >= tax_budget.tax_budget_limit_base
-        ):
-            allowed_from_lot = Decimal("0")
-
-        if allowed_from_lot <= Decimal("0"):
+        allowance = _tax_budget_lot_allowance(
+            remaining_quantity=remaining,
+            lot_quantity=lot.quantity,
+            lot_unit_cost=lot_unit_cost,
+            sell_price=sell_price,
+            base_rate=base_rate,
+            tax_budget=tax_budget,
+        )
+        if allowance.allowed_quantity <= Decimal("0"):
             break
 
-        lot_realized_base = per_unit_gain_base * allowed_from_lot
-        if lot_realized_base >= Decimal("0"):
-            tax_budget.total_realized_gain_base += lot_realized_base
-            tax_budget.tax_budget_used_base += lot_realized_base
-        else:
-            tax_budget.total_realized_loss_base += abs(lot_realized_base)
+        _apply_tax_budget_lot_allowance(allowance=allowance, tax_budget=tax_budget)
 
-        allowed_qty += allowed_from_lot
-        remaining -= allowed_from_lot
+        allowed_qty += allowance.allowed_quantity
+        remaining -= allowance.allowed_quantity
 
-        if allowed_from_lot < lot_sell_qty:
+        if allowance.allowed_quantity < allowance.requested_quantity:
             break
 
     return allowed_qty

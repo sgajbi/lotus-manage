@@ -3,6 +3,8 @@ from decimal import Decimal
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.rebalance.intents import (
     _TaxBudgetAccumulator,
+    _TaxBudgetLotAllowance,
+    _apply_tax_budget_lot_allowance,
     _clamped_sell_quantity,
     _current_instrument_value_and_unit_value,
     _hifo_sorted_lots,
@@ -12,6 +14,7 @@ from src.core.rebalance.intents import (
     _suppress_dust_trade,
     _target_trade_delta,
     _tax_impact_from_budget,
+    _tax_budget_lot_allowance,
     _tax_budget_limited_sell_quantity,
     _trade_notional_threshold,
     generate_intents,
@@ -352,6 +355,50 @@ def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None
     assert tax_budget.total_realized_gain_base == Decimal("50")
     assert tax_budget.total_realized_loss_base == Decimal("0")
     assert tax_budget.tax_budget_used_base == Decimal("50")
+
+
+def test_tax_budget_lot_allowance_returns_zero_when_gain_budget_exhausted() -> None:
+    allowance = _tax_budget_lot_allowance(
+        remaining_quantity=Decimal("10"),
+        lot_quantity=Decimal("10"),
+        lot_unit_cost=Decimal("90"),
+        sell_price=Decimal("100"),
+        base_rate=Decimal("1"),
+        tax_budget=_TaxBudgetAccumulator(
+            total_realized_gain_base=Decimal("50"),
+            total_realized_loss_base=Decimal("0"),
+            tax_budget_used_base=Decimal("50"),
+            tax_budget_limit_base=Decimal("50"),
+        ),
+    )
+
+    assert allowance == _TaxBudgetLotAllowance(
+        requested_quantity=Decimal("10"),
+        allowed_quantity=Decimal("0"),
+        realized_base=Decimal("0"),
+    )
+
+
+def test_apply_tax_budget_lot_allowance_records_realized_losses_without_using_budget() -> None:
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("25"),
+    )
+
+    _apply_tax_budget_lot_allowance(
+        allowance=_TaxBudgetLotAllowance(
+            requested_quantity=Decimal("4"),
+            allowed_quantity=Decimal("4"),
+            realized_base=Decimal("-12"),
+        ),
+        tax_budget=tax_budget,
+    )
+
+    assert tax_budget.total_realized_gain_base == Decimal("0")
+    assert tax_budget.total_realized_loss_base == Decimal("12")
+    assert tax_budget.tax_budget_used_base == Decimal("0")
 
 
 def test_tax_budget_limited_sell_quantity_bypasses_when_tax_awareness_disabled() -> None:

@@ -15221,3 +15221,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-626: Tax-budget lot allowance helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Finding: `_tax_budget_limited_sell_quantity` still mixed HIFO lot traversal, realized-gain
+  calculation, remaining tax-budget headroom math, allowed lot quantity selection, gain/loss
+  accumulator mutation, and partial-lot stopping behavior in one loop.
+- Action: introduced `_TaxBudgetLotAllowance`, `_tax_budget_allowed_lot_quantity`,
+  `_tax_budget_lot_allowance`, and `_apply_tax_budget_lot_allowance`. Kept
+  `_tax_budget_limited_sell_quantity` as the orchestration boundary and added direct helper tests
+  for exhausted gain-budget handling and realized-loss accumulator behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal tax-budget intent-generation
+  maintainability refactoring.
