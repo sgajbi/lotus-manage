@@ -71,6 +71,12 @@ class _BundleResolver:
         return _benchmark_assignment()
 
 
+class _InactiveBenchmarkResolver(_BundleResolver):
+    def resolve_benchmark_assignment(self, **kwargs: Any) -> DpmCoreBenchmarkAssignmentResponse:
+        self.calls.append(("benchmark_assignment", kwargs))
+        return _benchmark_assignment(assignment_status="RETIRED")
+
+
 def _benchmark_assignment(
     *,
     assignment_status: str = "ACTIVE",
@@ -190,6 +196,7 @@ def test_ready_benchmark_assignment_source_requires_active_assignment() -> None:
     ready_source, unavailable_family = ready_benchmark_assignment_source(
         source=assignment,
         unavailable_family=None,
+        family_name="BENCHMARK_ASSIGNMENT",
     )
 
     assert ready_source is None
@@ -228,6 +235,25 @@ def test_resolve_mandate_optional_sources_builds_typed_bundle_and_family_gaps() 
     assert calls["planned_withdrawal_schedule"]["horizon_days"] == 365
     assert calls["planned_withdrawal_schedule"]["include_inactive_withdrawals"] is False
     assert calls["benchmark_assignment"]["reporting_currency"] == "SGD"
+
+
+def test_resolve_mandate_optional_sources_marks_inactive_benchmark_as_unavailable() -> None:
+    resolver = _InactiveBenchmarkResolver()
+    sources = resolve_mandate_optional_sources(
+        resolver=resolver,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        as_of_date=date(2026, 5, 3),
+        tenant_id="default",
+        reference_currency="SGD",
+        correlation_id="corr_mandate_sources",
+    )
+
+    assert sources.benchmark_assignment is None
+    assert sources.unavailable_source_families == [
+        "LIQUIDITY_RESERVE_REQUIREMENT",
+        "BENCHMARK_ASSIGNMENT",
+    ]
 
 
 def test_optional_source_helper_exports_public_surface() -> None:

@@ -19,6 +19,7 @@ from src.api.openapi_enrichment import enrich_openapi_schema
 from src.api.persistence_profile import validate_persistence_profile_guardrails
 from src.api.persistence_profile import app_persistence_profile_name
 from src.api.production_cutover_contract import validate_cutover_migrations_applied
+from src.api.response_headers import apply_observability_headers
 from src.api.routers.construction import router as construction_router
 from src.api.routers.rebalance_policy_packs import router as rebalance_policy_pack_router
 from src.api.routers.rebalance_runs import (
@@ -70,6 +71,12 @@ class HealthStatusResponse(BaseModel):
 
 _HEALTH_RESPONSES: dict[int | str, dict[str, Any]] = {
     200: {"description": "Health probe succeeded."},
+    503: {
+        "description": (
+            "Health probe cannot run because a required dependency is unavailable or the "
+            "service is not accepting traffic."
+        )
+    },
 }
 
 _READY_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -248,7 +255,7 @@ def health_ready() -> HealthStatusResponse:
 @app.exception_handler(Exception)
 async def unhandled_exception_to_problem_details(request: Request, exc: Exception) -> JSONResponse:
     logger.exception("Unhandled exception while serving request", exc_info=exc)
-    return JSONResponse(
+    response = JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         media_type="application/problem+json",
         content={
@@ -260,6 +267,8 @@ async def unhandled_exception_to_problem_details(request: Request, exc: Exceptio
             "correlation_id": correlation_id_var.get() or "",
         },
     )
+    apply_observability_headers(response)
+    return response
 
 
 __all__ = [

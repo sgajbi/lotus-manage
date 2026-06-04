@@ -65,7 +65,7 @@ def generate_alternative_set(
     repository: ConstructionRepository = Depends(get_construction_repository),
     risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
-    db: Annotated[None, Depends(get_db_session)] = None,
+    _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:
     try:
         (

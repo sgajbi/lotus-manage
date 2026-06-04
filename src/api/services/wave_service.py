@@ -14,6 +14,7 @@ from src.api.services import wave_supportability_payload as wave_supportability_
 from src.api.services.wave_simulation_item import (
     DpmWaveSimulationInput as DpmWaveSimulationInput,
 )
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
@@ -25,7 +26,6 @@ from src.core.waves import (
     DpmWaveReportInput,
 )
 from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def preview_wave(
@@ -105,7 +105,7 @@ def simulate_wave(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
-    risk_authority_client: LotusRiskAuthorityClient | None = None,
+    risk_authority_client: RiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     return wave_preparation_commands.simulate_persisted_wave(
         wave_id=wave_id,

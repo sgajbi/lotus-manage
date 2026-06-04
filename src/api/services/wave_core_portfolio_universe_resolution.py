@@ -8,15 +8,15 @@ from src.api.services.wave_errors import (
     DpmWaveDependencyFailedError,
     DpmWaveDependencyUnavailableError,
 )
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 from src.core.dpm_source_context import (
     DpmCorePortfolioUniverseCandidate,
     DpmCorePortfolioUniverseCandidateResponse,
 )
 from src.core.waves import DpmWaveSourceRef
-from src.infrastructure.core_sourcing import (
-    DpmCoreResolverError,
-    DpmCoreResolverUnavailableError,
-)
 
 CoreResolverFactory = Callable[[], Any]
 
@@ -94,15 +94,15 @@ def resolve_core_dpm_portfolio_universe_candidates(
             if not next_page_token:
                 break
             if next_page_token in seen_page_tokens:
-                raise DpmCoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING")
+                raise CoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING")
             seen_page_tokens.add(next_page_token)
         else:
-            raise DpmCoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING")
-    except DpmCoreResolverUnavailableError as exc:
+            raise CoreResolverError("DPM_CORE_PORTFOLIO_UNIVERSE_NON_TERMINATING")
+    except CoreResolverUnavailableError as exc:
         raise DpmWaveDependencyUnavailableError(
             code=str(exc) or "DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE"
         ) from exc
-    except DpmCoreResolverError as exc:
+    except CoreResolverError as exc:
         raise DpmWaveDependencyFailedError(
             code=str(exc) or "DPM_CORE_PORTFOLIO_UNIVERSE_INCOMPLETE"
         ) from exc

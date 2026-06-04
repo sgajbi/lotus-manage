@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-04T06:06:00+00:00`
+- Generated at: `2026-06-04T06:45:02+00:00`
 
-- Current ref: `19bbdd1`
+- Current ref: `68e0309`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -14,12 +14,12 @@
 | OpenAPI governance | Active gate | `scripts/openapi_quality_gate.py`. |
 | API vocabulary | Active gate | `scripts/api_vocabulary_inventory.py --validate-only`. |
 | Service boundary leakage | Report plus focused scans | Current service boundary findings: 0. |
-| Router infrastructure imports | Report-only baseline evidence | `quality-baseline.yml` captures `.importlinter` findings; current known baseline debt: 17. |
-| OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 3. |
-| Complexity | Report-only baseline | `quality/complexity_report.md`; added `radon/xenon` capture in `quality-baseline.yml`. |
-| Dead code | Report-only baseline | `vulture` capture added in `quality-baseline.yml`. |
-| Dependency architecture | Report-only baseline | `deptry` and `import-linter` capture added in `quality-baseline.yml`. |
-| Security depth | Report-only + active | `bandit` and `pip-audit` are now captured in `quality-baseline.yml`; `make security-audit` remains active. |
+| Router infrastructure imports | Baseline debt | Current router infra imports: 0. |
+| OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 0. |
+| Complexity | Report-only gate | `make complexity-gate` (radon CC/MI). |
+| Dead code | Report-only gate | `make dead-code-gate` (vulture src+tests). |
+| Dependency architecture | Report-only gate | `make architecture-gate` + `make dependency-hygiene-gate` (import boundaries + deptry). |
+| Security depth | Partially active | `make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`. |
 | Documentation coverage | Partially active | Docs current-state tests exist; add docs-gap scoring later. |
 | Observability | Partially active | Observability contract validator exists; add runtime posture scoring later. |
 
@@ -28,6 +28,6 @@
 | Phase | Meaning | Current posture |
 | --- | --- | --- |
 | 1 - baseline/report-only | Measure current posture without failing builds. | Active for refactor health and baseline report. |
-| 2 - fail new regressions | Block newly introduced violations once the detector is stable. | Active for existing repo-native gates; planned for richer quality tools. |
-| 3 - enforce thresholds | Require agreed numeric thresholds. | Not active for new quality tools yet. |
+| 2 - fail new regressions | Block newly introduced violations once the detector is stable. | Active for existing repo-native gates; richer quality tools remain report-only until noise is reduced. |
+| 3 - enforce thresholds | Require agreed numeric thresholds. | Not active for report-only quality expansion tools. |
 | 4 - enterprise-readiness gates | Block release on full readiness posture. | Target state, not yet complete. |

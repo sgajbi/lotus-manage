@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from src.api.services.rebalance_run_support_config import (
-    PostgresDpmRunRepository,
+    DpmRunRepository,
     _postgres_connection_exception_types,
     artifact_store_mode,
     build_repository,
@@ -15,7 +15,7 @@ from src.api.services.rebalance_run_support_config import (
 )
 
 __all__ = [
-    "PostgresDpmRunRepository",
+    "DpmRunRepository",
     "_postgres_connection_exception_types",
     "artifact_store_mode",
     "build_repository",

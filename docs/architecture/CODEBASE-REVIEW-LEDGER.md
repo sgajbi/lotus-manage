@@ -12747,3 +12747,297 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
   `src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal service-boundary refactor.
+
+## BACKEND-REVIEW-20260604-518: Core resolver boundary imports centralized in services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_optional_sources.py`, `src/api/services/mandate_refresh.py`,
+  `src/api/services/mandate_service.py`, `src/api/services/rebalance_stateful_source_context.py`,
+  `src/api/services/wave_core_portfolio_universe_resolution.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: core-dependent services still imported infrastructure resolver client/error symbols directly, creating
+  direct coupling to `src.infrastructure.core_sourcing` and weakening dependency direction.
+- Action: routed resolver client/error typing and exception handling through
+  `src.api.services.core_resolver_service` aliases, and added a direct boundary regression test that verifies the
+  target service modules no longer import from `src.infrastructure.core_sourcing` directly.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_optional_sources.py
+  src/api/services/mandate_refresh.py src/api/services/mandate_service.py
+  src/api/services/rebalance_stateful_source_context.py src/api/services/wave_core_portfolio_universe_resolution.py
+  tests/unit/api/test_runtime_request_model_and_service_edges.py`, `python -m ruff format --check`
+  on touched files, `python -m mypy --config-file mypy.ini src/api/services/mandate_optional_sources.py
+  src/api/services/mandate_refresh.py src/api/services/mandate_service.py
+  src/api/services/rebalance_stateful_source_context.py src/api/services/wave_core_portfolio_universe_resolution.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py
+  tests/unit/dpm/mandates/test_mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_refresh.py
+  tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
+  `src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening slice.
+
+## BACKEND-REVIEW-20260604-519: Risk authority boundary imports centralized in services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_builder.py`,
+  `src/api/services/construction_method_authority.py`, `src/api/services/wave_preparation_commands.py`,
+  `src/api/services/wave_service.py`, `src/api/services/wave_simulation.py`,
+  `src/api/services/wave_simulation_item.py`, `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: multiple service modules imported concrete risk-authority client/error types directly from
+  `src.infrastructure.risk_authority`, creating mixed service-to-infrastructure coupling and reducing the intended
+  service boundary consistency.
+- Action: switched risk authority typing/imports in the listed services to `src.api.services.authority_client_service`
+  aliases (`RiskAuthorityClient`, `RiskAuthorityUnavailableError`) and added a boundary-regression test
+  that verifies these service modules no longer import directly from `src.infrastructure.risk_authority`.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_alternative_builder.py
+  src/api/services/construction_method_authority.py src/api/services/wave_preparation_commands.py
+  src/api/services/wave_service.py src/api/services/wave_simulation.py
+  src/api/services/wave_simulation_item.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format` on touched files, `python -m mypy --config-file mypy.ini` on touched files,
+  `python -m pytest tests/unit/dpm/construction/test_method_authority.py tests/unit/dpm/construction/test_alternative_builder.py
+  tests/unit/dpm/waves/test_wave_simulation.py tests/unit/dpm/waves/test_wave_simulation_item.py
+  tests/unit/dpm/waves/test_wave_preparation_commands.py tests/unit/dpm/api/test_waves_api.py -k "simulation or risk"`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service-risk boundary leakage check
+  (`from src.infrastructure.risk_authority import` in targeted `src/api/services` files).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-520: Repository infrastructure adapters split from services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/rebalance_policy_pack_repository.py`,
+  `src/api/services/rebalance_run_support_repository.py`,
+  `src/api/services/rebalance_policy_pack_service.py`,
+  `src/api/services/rebalance_run_support_config.py`,
+  `tests/unit/dpm/api/test_rebalance_policy_pack_repository.py`,
+  `tests/unit/dpm/api/test_rebalance_run_support_repository.py`,
+  `tests/unit/dpm/api/test_dpm_policy_pack_config.py`,
+  `tests/unit/dpm/api/test_dpm_runs_config.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, `tests/conftest.py`.
+- Finding: policy-pack catalog and supportability repository construction logic in services was coupled directly to
+  `src.infrastructure` classes (`PostgresDpmPolicyPackRepository`, `PostgresDpmRunRepository`), weakening module-level
+  dependency boundaries and forcing tests to patch infrastructure at service depth.
+- Action: introduced dedicated repository adapter modules, moved direct infrastructure construction and connection-exception
+  classification behind them, and preserved existing service behavior and mapped error semantics via explicit boundary-focused tests.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/rebalance_policy_pack_service.py
+  src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_repository.py
+  src/api/services/rebalance_run_support_repository.py tests/unit/dpm/api/test_dpm_policy_pack_config.py
+  tests/unit/dpm/api/test_dpm_runs_config.py tests/unit/dpm/api/test_rebalance_policy_pack_repository.py
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py tests/unit/dpm/api/test_api_rebalance.py`,
+  `python -m ruff format --check` on touched files, `python -m mypy --config-file mypy.ini` on touched source files,
+  `python -m pytest tests/unit/dpm/api/test_dpm_policy_pack_config.py tests/unit/dpm/api/test_dpm_runs_config.py
+  tests/unit/dpm/api/test_rebalance_policy_pack_repository.py tests/unit/dpm/api/test_rebalance_run_support_repository.py
+  tests/unit/dpm/api/test_api_rebalance.py -k "policy_pack and catalog or support_repository_backend_init_errors_return_503 or dpm_runs_config or connection_errors or driver_error_passthrough or connection_failure_mapped or mapping"` ,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-521: Service-layer infrastructure boundary scan hardened with regression test
+
+- Date: 2026-06-04
+- Scope: `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: service-boundary validation only covered selected modules after earlier remediations, leaving a gap for
+  future regressions in other `src/api/services` files.
+- Action: added a global service-layer regression test that fails if any non-adapter service module in
+  `src/api/services` imports directly from `src.infrastructure`.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/api/test_runtime_request_model_and_service_edges.py
+  src/api/services/rebalance_policy_pack_repository.py src/api/services/rebalance_run_support_repository.py
+  src/api/services/rebalance_policy_pack_service.py src/api/services/rebalance_run_support_config.py`,
+  `python -m ruff format --check tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_policy_pack_service.py
+  src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_repository.py
+  src/api/services/rebalance_run_support_repository.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -k service_modules_do_not_import_infrastructure_directly`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -k service_modules_route_core_resolver_types_via_service_boundary or
+  service_modules_route_risk_authority_types_via_service_boundary`,
+  `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-522: Adapter-focused DSN contract tests for repository builders
+
+- Date: 2026-06-04
+- Scope: `tests/unit/dpm/api/test_rebalance_policy_pack_repository.py`,
+  `tests/unit/dpm/api/test_rebalance_run_support_repository.py`.
+- Finding: existing success-path repository tests were indirectly exercising infrastructure constructors, allowing implicit constructor signature or runtime coupling to mask boundary regressions.
+- Action: replaced real constructor usage in success-path tests with monkeypatched in-memory constructors and assertive DSN capture to lock service adapter behavior at the boundary while preserving existing error-path coverage.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/dpm/api/test_rebalance_policy_pack_repository.py
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py`,
+  `python -m ruff format --check` on touched files, `python -m pytest
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py
+  tests/unit/dpm/api/test_rebalance_policy_pack_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python -m pytest` output for the two updated tests, `git diff --check`, and service leakage scan.
+- Wiki decision: no wiki source change required; this is an internal test hardening only.
+
+## BACKEND-REVIEW-20260604-523: Baseline quality and CI reporting foundation for refactor tracking
+
+- Date: 2026-06-04
+- Scope: `scripts/engineering_health_report.py`, `quality/baseline_report.md`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, `quality/complexity_report.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`,
+  `quality/ci_quality_gates.md`.
+- Finding: before sustained enterprise refactoring, the repository needed a refreshed baseline posture and explicit
+  CI/reporting contract map to measure progress against measurable quality and governance targets.
+- Action: refreshed baseline scorecards from current branch state, aligned quality-report text with available report-only
+  baselining coverage, and added `quality/ci_quality_gates.md` as the explicit gate map and enforcement
+  posture document.
+- Status: hardened
+- Evidence: `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  baseline outputs in `quality/*.md`,
+  and `quality/ci_quality_gates.md`.
+- Wiki decision: no wiki source change required; this is an internal reporting/measurement foundation slice.
+
+## BACKEND-REVIEW-20260604-524: Infrastructure probe endpoints expose explicit 5xx error responses
+
+- Date: 2026-06-04
+- Scope: `src/api/main.py`, `src/api/observability.py`, `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`, `quality/baseline_report.md`, `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, `quality/complexity_report.md`.
+- Finding: health and metrics probes still lacked explicit 4xx/5xx response entries in their OpenAPI operation-level declarations, which kept the API quality scorecard reporting missing error-response markers despite infrastructure endpoint coverage in runtime.
+- Action: added explicit `503` error-response documentation for `/health`, `/health/live`, and `/metrics`; added focused contract regression coverage that asserts these infra endpoints keep explicit error responses and JSON error examples; refreshed quality reports to show improved OpenAPI health.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/main.py src/api/observability.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
+  `python -m ruff format --check src/api/main.py src/api/observability.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
+  `python -m mypy --config-file mypy.ini src/api/main.py src/api/observability.py`,
+  `python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`, `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal API governance quality hardening slice.
+
+## BACKEND-REVIEW-20260604-525: Service boundary config adapter exports aligned for mypy and make check
+
+- Date: 2026-06-04
+- Scope: `src/api/services/rebalance_run_support_config.py`, `src/api/routers/rebalance_runs_config.py`.
+- Finding: a stale adapter name export mismatch (`PostgresDpmRunRepository`) in the router config module caused mypy to fail `make check`, blocking the repo's full validation gate despite existing boundary-focused changes.
+- Action: realigned the router import and service `__all__` export to the repository interface contract (`DpmRunRepository`), preserving runtime behavior and strengthening typed adapter boundary integrity.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `python -m ruff format --check src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `make check`, `python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary/type-correctness hardening only.
+
+## BACKEND-REVIEW-20260604-526: Mandate optional-source mappings extracted behind readiness helper
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_optional_sources.py`, `tests/unit/dpm/mandates/test_mandate_optional_sources.py`.
+- Finding: optional source-family resolution and readiness handling for mandate optional sources was still inline and repetitive, increasing maintenance risk as source families expand.
+- Action: introduced a table-driven family spec pipeline in `resolve_mandate_optional_sources` for seven optional families (client restriction, sustainability preference, cashflow projection, income needs, liquidity reserve, planned withdrawal, benchmark assignment), centralized readiness dispatch through `_resolve_optional_source_family`, and added protocol-typed readiness callback support.
+  Added focused test coverage for inactive benchmark assignment to ensure it is excluded and surfaced as an unavailable family.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_optional_sources.py`,
+  `python -m ruff format --check src/api/services/mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_optional_sources.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_optional_sources.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_optional_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `make check`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is a service-layer refactor and test hardening.
+
+## BACKEND-REVIEW-20260604-527: Mandate refresh source-context assembly extracted into helper module
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_refresh.py`, `src/api/services/mandate_refresh_context.py`, `tests/unit/dpm/mandates/test_mandate_refresh.py`, `tests/unit/dpm/mandates/test_mandate_refresh_context.py`.
+- Finding: `mandate_refresh` repeated optional-source to assembly-field mapping for twin compilation and health-input construction inline, increasing duplication risk as optional-source supportability fields evolve.
+- Action: extracted source-to-input assembly into `mandate_refresh_context` helpers (`build_digital_twin_source_context`, `build_health_input_source_context`) and switched refresh orchestration to spread those mapped kwargs into `compile_mandate_digital_twin_from_core` and `build_health_input_from_core_sources`.
+  Added focused tests that lock both helper payloads and public surface.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py`,
+  `python -m ruff format --check src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_optional_sources.py -q`,
+  `make check`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal service orchestration refactor with behavior-preserving test coverage.
+
+## BACKEND-REVIEW-20260604-528: Observability response hardening and security headers applied at edge
+
+- Date: 2026-06-04
+- Scope: `src/api/observability.py`, `src/api/main.py`, `src/api/response_headers.py`, `tests/unit/app/middleware/test_observability.py`.
+- Finding: response middleware did not apply a shared hardened header surface across successful and globally handled error paths, and there was no direct unit test coverage for edge response security headers.
+- Action: introduced `src/api/response_headers.py` with a single reusable response-header helper, wired it into observability middleware and the unhandled exception handler so production responses receive deterministic security/caching headers, and added focused middleware/helper tests that validate header injection plus correlation/trace propagation behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/observability.py src/api/main.py src/api/response_headers.py tests/unit/app/middleware/test_observability.py`,
+  `python -m ruff format --check src/api/observability.py src/api/main.py src/api/response_headers.py tests/unit/app/middleware/test_observability.py`,
+  `python -m mypy --config-file mypy.ini src/api/observability.py src/api/main.py src/api/response_headers.py`,
+  `python -m pytest tests/unit/app/middleware/test_observability.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service-boundary leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal API runtime hardening slice.
+
+## BACKEND-REVIEW-20260604-529: Centralize construction profile-source context updates
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_product_context.py`.
+- Finding: profile-context source assembly logic was manually duplicated in `source_product_authority_context_updates` while
+  `construction_source_product_profile_context.source_profile_context_updates` already provided that orchestration.
+- Action: switched `source_product_authority_context_updates` to reuse the shared helper, reducing duplication and ensuring all profile
+  source families flow through one compositional path while preserving existing guard semantics.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_source_product_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_context.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  and `git diff --check`.
+- Wiki decision: no wiki source change required; this is an internal service composition refactor.
+
+## BACKEND-REVIEW-20260604-530: Enforce service-layer architecture boundary checks in unit tests
+
+- Date: 2026-06-04
+- Scope: `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: architecture boundary posture depended on manual/spot checks and could drift; service modules should be protected by a continuous test gate that blocks router imports and transport-layer exception imports in services.
+- Action: added an AST-based unit test that enforces the service boundary contract for all `src/api/services/**/*.py`, failing fast on imports from `src.api.routers` or HTTP transport symbols (`HTTPException`, `status`, `Request`) from FastAPI.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`.
+- Wiki decision: no wiki source change required; this is an internal architecture-governance hardening slice.
+
+## BACKEND-REVIEW-20260604-531: Service-layer infrastructure imports constrained to adapter modules
+
+- Date: 2026-06-04
+- Scope: `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: infrastructure-layer imports were now guarded indirectly through earlier tests, but explicit adapter-module intent for each service file was not codified in a dedicated assertion.
+- Action: extended the service boundary test module with an explicit infrastructure allowlist for adapter-intent service modules and a hard assertion against unexpected `src.infrastructure.*` imports in non-adapter services.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m mypy --config-file mypy.ini tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|src\\.infrastructure" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal architecture-governance hardening only.
+
+## BACKEND-REVIEW-20260604-532: Shared service environment helper extraction
+
+- Date: 2026-06-04
+- Scope: `src/api/services/service_config.py`, `src/api/services/core_resolver_service.py`, `src/api/services/rebalance_async_config.py`, `src/api/services/rebalance_run_support_config.py`, `src/api/services/rebalance_policy_pack_service.py`, `tests/unit/api/test_service_config.py`.
+- Finding: four service modules each implemented their own lightweight environment parsing helpers, which duplicated behavior for boolean, integer, float, CSV-set, and non-negative integer handling.
+- Action: introduced a shared `service_config` helper module for all core env-parsing operations, switched affected services to import shared logic, and preserved compatibility through small compatibility wrappers in each service module where externally visible `env_*` symbols were already part of module behavior.
+  Added direct unit coverage for the shared parser behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/service_config.py src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py tests/unit/api/test_service_config.py`,
+  `python -m ruff format --check src/api/services/service_config.py src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py tests/unit/api/test_service_config.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py src/api/services/service_config.py`,
+  `python -m pytest tests/unit/api/test_service_config.py tests/unit/dpm/api/test_dpm_runs_config.py tests/unit/api/test_runtime_request_model_and_service_edges.py -k "core_resolver_service_env_helpers_reject_invalid_values or rebalance_async_config_normalizes_modes_and_flags or test_rebalance_async_config_exports_async_configuration_surface" -q`,
+  `make check`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal shared-service utility refactor.

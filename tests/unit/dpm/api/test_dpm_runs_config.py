@@ -81,7 +81,7 @@ def test_build_repository_postgres_driver_error_passthrough(monkeypatch):
         raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DRIVER_MISSING")
 
     monkeypatch.setattr(
-        dpm_runs_config,
+        dpm_runs_config.rebalance_run_support_repository,
         "PostgresDpmRunRepository",
         _raise_driver_error,
     )
@@ -105,7 +105,7 @@ def test_build_repository_postgres_connection_failure_mapped(monkeypatch):
         raise ValueError("connection broken")
 
     monkeypatch.setattr(
-        dpm_runs_config,
+        dpm_runs_config.rebalance_run_support_repository,
         "PostgresDpmRunRepository",
         _raise_connection_error,
     )

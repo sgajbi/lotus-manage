@@ -11,12 +11,12 @@ from src.core.construction.alternative_engine import (
     build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.method_registry import resolve_method_plan
 from src.core.construction.models import ConstructionAlternative, ConstructionAuthorityContext
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.models import RebalanceResult
 from src.core.rebalance_runs.service import DpmRunSupportService
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def build_construction_alternatives(
@@ -27,7 +27,7 @@ def build_construction_alternatives(
     correlation_id: Optional[str],
     request_hash: str,
     authority_context: ConstructionAuthorityContext,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     run_service: DpmRunSupportService | None,
     solver_available: bool | None = None,
 ) -> list[ConstructionAlternative]:

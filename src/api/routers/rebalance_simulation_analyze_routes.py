@@ -90,7 +90,7 @@ def analyze_scenarios(
             examples=["tenant_001"],
         ),
     ] = None,
-    db: Annotated[None, Depends(get_db_session)] = None,
+    _db: Annotated[None, Depends(get_db_session)] = None,
 ) -> BatchRebalanceResult:
     try:
         batch_request, source_context = service.resolve_batch_request_envelope(

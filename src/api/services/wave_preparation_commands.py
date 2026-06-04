@@ -6,12 +6,12 @@ from src.api.services.wave_transition_execution import (
     persist_transitioned_wave,
     prepare_wave_transition,
 )
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, DpmWaveRepository
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def source_check_persisted_wave(
@@ -57,7 +57,7 @@ def simulate_persisted_wave(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
-    risk_authority_client: LotusRiskAuthorityClient | None = None,
+    risk_authority_client: RiskAuthorityClient | None = None,
 ) -> tuple[DpmRebalanceWave, bool]:
     prepared = prepare_wave_transition(
         wave_id=wave_id,

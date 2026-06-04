@@ -5,11 +5,11 @@ from src.api.services.wave_aggregate_metrics import (
 )
 from src.api.services.wave_event_evidence import build_wave_event
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWave, apply_wave_transition
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def build_simulated_wave(
@@ -21,7 +21,7 @@ def build_simulated_wave(
     methods: list[ConstructionMethod] | None,
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
-    risk_authority_client: LotusRiskAuthorityClient | None = None,
+    risk_authority_client: RiskAuthorityClient | None = None,
 ) -> DpmRebalanceWave:
     simulating = apply_wave_transition(
         wave=wave,

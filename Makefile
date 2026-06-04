@@ -1,4 +1,4 @@
-.PHONY: install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 
@@ -9,7 +9,7 @@ install:
 
 install-ci:
 	python -m pip install --upgrade pip
-	pip install -e ".[dev]"
+	pip install -e ".[dev,quality]"
 
 pre-commit:
 	pre-commit run --all-files
@@ -101,6 +101,19 @@ lint:
 	python -m ruff format --check .
 	$(MAKE) monetary-float-guard
 
+architecture-gate:
+	python -m importlinter.cli import-linter lint --config .importlinter
+complexity-gate:
+	python -m radon cc src -s -n C
+	python -m radon mi src -s
+
+dependency-hygiene-gate:
+	python -m deptry src tests
+
+dead-code-gate:
+	python -m vulture src tests --min-confidence 80
+
+
 monetary-float-guard:
 	python scripts/check_monetary_float_usage.py
 
@@ -133,7 +146,10 @@ check-deps:
 security-audit:
 	# PYSEC-2024-277 / CVE-2024-34997 is a disputed joblib trusted-cache
 	# deserialization advisory with no fixed release in the current audit feed.
-	python -m pip_audit --ignore-vuln PYSEC-2024-277
+	# PYSEC-2022-42969 / py<1.11.1 has a CVSS 8.2 vulnerability in py package APIs.
+	# py is pulled transitively by test dependencies and currently has no direct fix path.
+	python -m bandit -q -r src -c pyproject.toml --severity-level high
+	python -m pip_audit --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969
 
 docker-build:
 	docker build -t lotus-manage:ci .
@@ -143,3 +159,4 @@ docker-up:
 
 docker-down:
 	docker compose down
+

@@ -16,9 +16,9 @@ from src.api.services.rebalance_simulation_errors import (
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.dpm_source_context import DpmCoreContextIncompleteError, DpmResolvedSourceContext
-from src.infrastructure.core_sourcing import (
-    DpmCoreResolverError,
-    DpmCoreResolverUnavailableError,
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
 )
 
 
@@ -52,7 +52,7 @@ def resolve_stateful_source_context(
             stateful_input=envelope.stateful_input,
             correlation_id=correlation_id,
         )
-    except DpmCoreResolverUnavailableError as exc:
+    except CoreResolverUnavailableError as exc:
         record_core_resolver_call(
             operation=DPM_CORE_RESOLVER_OPERATION,
             outcome="unavailable",
@@ -68,7 +68,7 @@ def resolve_stateful_source_context(
             reason="invalid_response",
         )
         raise DpmRebalanceCoreContextIncompleteError("DPM_CORE_CONTEXT_INCOMPLETE") from exc
-    except (DpmCoreContextIncompleteError, DpmCoreResolverError) as exc:
+    except (DpmCoreContextIncompleteError, CoreResolverError) as exc:
         record_core_resolver_call(
             operation=DPM_CORE_RESOLVER_OPERATION,
             outcome="incomplete",

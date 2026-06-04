@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -409,6 +410,53 @@ def test_core_resolver_service_exports_resolver_configuration_surface() -> None:
         "env_int",
         "stateful_core_sourcing_enabled",
     ]
+
+
+def test_service_modules_route_core_resolver_types_via_service_boundary() -> None:
+    for service_module in (
+        "src/api/services/mandate_optional_sources.py",
+        "src/api/services/mandate_refresh.py",
+        "src/api/services/mandate_service.py",
+        "src/api/services/rebalance_stateful_source_context.py",
+        "src/api/services/wave_core_portfolio_universe_resolution.py",
+    ):
+        source = Path(service_module).read_text(encoding="utf-8")
+        assert "from src.infrastructure.core_sourcing import" not in source, (
+            f"{service_module} should import core resolver symbols via core_resolver_service"
+        )
+
+
+def test_service_modules_route_risk_authority_types_via_service_boundary() -> None:
+    for service_module in (
+        "src/api/services/construction_alternative_builder.py",
+        "src/api/services/construction_method_authority.py",
+        "src/api/services/wave_preparation_commands.py",
+        "src/api/services/wave_service.py",
+        "src/api/services/wave_simulation.py",
+        "src/api/services/wave_simulation_item.py",
+    ):
+        source = Path(service_module).read_text(encoding="utf-8")
+        assert "from src.infrastructure.risk_authority import" not in source, (
+            f"{service_module} should import risk authority symbols via authority_client_service"
+        )
+
+
+def test_service_modules_do_not_import_infrastructure_directly_except_boundary_adapters() -> None:
+    allowed_infra_import_modules = {
+        "src/api/services/authority_client_service.py",
+        "src/api/services/core_resolver_service.py",
+        "src/api/services/rebalance_policy_pack_repository.py",
+        "src/api/services/rebalance_run_support_repository.py",
+    }
+    service_dir = Path("src/api/services")
+    for path in sorted(service_dir.glob("*.py")):
+        module_path = str(path).replace("\\", "/")
+        if module_path in allowed_infra_import_modules:
+            continue
+        source = path.read_text(encoding="utf-8")
+        assert "from src.infrastructure" not in source, (
+            f"{module_path} should not import directly from src.infrastructure"
+        )
 
 
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:

@@ -1,11 +1,10 @@
 import os
 
+from src.api.services.service_config import env_flag as _env_flag
+
 
 def env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+    return _env_flag(name, default)
 
 
 def resolve_async_execution_mode() -> str:
