@@ -14611,3 +14611,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal rebalance intent dependency
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-600: OpenAPI operation documentation helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: `_ensure_operation_documentation` mixed operation traversal, summary/description
+  defaults, path-to-tag classification, and error-response detection, leaving two API-governance
+  decisions testable only through the broader enrichment path.
+- Action: extracted `_operation_tag_for_path` and `_operation_has_error_response`, kept
+  `_ensure_operation_documentation` as the schema traversal coordinator, and added direct tests for
+  health/metrics/default tag classification plus default/4xx/5xx error response detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal API governance helper
+  maintainability refactoring.

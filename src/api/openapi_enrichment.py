@@ -403,22 +403,26 @@ def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -
                     f"{method.upper()} operation for {path} in {service_name}."
                 )
             if not operation.get("tags"):
-                if path.startswith("/health"):
-                    operation["tags"] = ["Health"]
-                elif path == "/metrics":
-                    operation["tags"] = ["Monitoring"]
-                else:
-                    segment = path.strip("/").split("/", 1)[0] or "default"
-                    operation["tags"] = [segment.replace("-", " ").title()]
+                operation["tags"] = [_operation_tag_for_path(path)]
 
             responses = operation.get("responses")
-            if isinstance(responses, dict):
-                has_error = any(
-                    code.startswith("4") or code.startswith("5") or code == "default"
-                    for code in responses
-                )
-                if not has_error:
-                    responses["default"] = {"description": "Unexpected error response."}
+            if isinstance(responses, dict) and not _operation_has_error_response(responses):
+                responses["default"] = {"description": "Unexpected error response."}
+
+
+def _operation_tag_for_path(path: str) -> str:
+    if path.startswith("/health"):
+        return "Health"
+    if path == "/metrics":
+        return "Monitoring"
+    segment = path.strip("/").split("/", 1)[0] or "default"
+    return segment.replace("-", " ").title()
+
+
+def _operation_has_error_response(responses: dict[str, Any]) -> bool:
+    return any(
+        code.startswith("4") or code.startswith("5") or code == "default" for code in responses
+    )
 
 
 def _ensure_schema_documentation(schema: dict[str, Any]) -> None:
