@@ -40,6 +40,30 @@ def test_source_refs_payload_serializes_refs_with_json_mode() -> None:
     ]
 
 
+def test_source_refs_payload_accepts_mapping_payloads() -> None:
+    refs: list[dict[str, object]] = [
+        {
+            "source_system": "lotus-core",
+            "source_type": "PortfolioManagerBookMembership",
+            "source_id": "pm-book-snapshot-001",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": "sha256:pm-book",
+        }
+    ]
+
+    assert source_refs_payload(refs) == [
+        {
+            "source_system": "lotus-core",
+            "source_type": "PortfolioManagerBookMembership",
+            "source_id": "pm-book-snapshot-001",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": "sha256:pm-book",
+        }
+    ]
+
+
 def test_pm_book_membership_ref_preserves_source_batch_lineage() -> None:
     assert pm_book_membership_ref(
         source_id="pm-book-snapshot-001",
