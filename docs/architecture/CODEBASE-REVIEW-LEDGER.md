@@ -14296,3 +14296,21 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal solver optional-dependency
   hardening with direct regression coverage.
+
+## BACKEND-REVIEW-20260604-587: Solver import helper preserves fallback contract
+
+- Date: 2026-06-04
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/dpm/engine/test_engine_solver_behavior.py`, and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: the extracted solver import helper used `importlib.import_module`, which could return
+  cached solver modules and bypass the existing import-hook simulation used to prove missing
+  optional solver dependencies fail closed.
+- Action: switched the helper to ordinary in-function imports, retaining the narrowed
+  `ImportError` handling while preserving the established missing-`cvxpy` fallback contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests/unit/dpm/engine/test_engine_solver_behavior.py::test_solver_returns_blocked_when_solver_dependencies_unavailable tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  plus the slice gates recorded for this commit.
+- Wiki decision: no wiki source change required; this is internal solver optional-dependency
+  contract hardening.

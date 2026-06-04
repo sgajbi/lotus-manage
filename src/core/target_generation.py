@@ -1,5 +1,4 @@
 from decimal import Decimal
-from importlib import import_module
 from typing import Any
 
 from src.core.common.capabilities import has_solver_dependencies
@@ -141,7 +140,10 @@ def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None
 
 
 def _import_solver_modules() -> tuple[Any, Any]:
-    return import_module("cvxpy"), import_module("numpy")
+    import cvxpy
+    import numpy
+
+    return cvxpy, numpy
 
 
 def build_target_trace(
