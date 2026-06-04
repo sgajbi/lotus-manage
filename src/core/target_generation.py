@@ -1,4 +1,5 @@
 from decimal import Decimal
+from importlib import import_module
 from typing import Any
 
 from src.core.common.capabilities import has_solver_dependencies
@@ -132,12 +133,15 @@ def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None
         diagnostics.warnings.append("SOLVER_ERROR")
         return None
     try:
-        import cvxpy as cp
-        import numpy as np
-    except Exception:
+        cp, np = _import_solver_modules()
+    except ImportError:
         diagnostics.warnings.append("SOLVER_ERROR")
         return None
     return cp, np
+
+
+def _import_solver_modules() -> tuple[Any, Any]:
+    return import_module("cvxpy"), import_module("numpy")
 
 
 def build_target_trace(

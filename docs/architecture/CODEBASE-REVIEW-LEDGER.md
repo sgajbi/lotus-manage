@@ -14273,3 +14273,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal client-restriction
   supportability helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-586: Solver optional-import failure handling narrowed
+
+- Date: 2026-06-04
+- Scope: `src/core/target_generation.py` and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: optional solver-module loading caught all exceptions, which could hide genuine runtime
+  defects behind the bounded `SOLVER_ERROR` optional-dependency posture.
+- Action: narrowed solver module loading to handle only import failures, extracted
+  `_import_solver_modules`, and added a regression test proving non-import failures propagate
+  without mutating solver diagnostics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_solver_fallbacks.py tests/unit/core/test_target_generation_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal solver optional-dependency
+  hardening with direct regression coverage.
