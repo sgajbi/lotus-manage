@@ -947,6 +947,109 @@ def test_builder_covers_trade_tax_approval_and_defensive_source_edges() -> None:
         )
 
 
+def test_proof_pack_build_context_prefers_explicit_correlation_then_falls_back_to_run() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_context_corr",
+        alternative_set_id="cas_context_corr",
+        alternative_id="alt_context_corr",
+        selected_at=CREATED_AT,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+        correlation_id="corr-selection-context",
+    )
+
+    explicit = builder_module._proof_pack_build_context(
+        source_type="REBALANCE_RUN",
+        run=run,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=selection,
+        correlation_id="corr-explicit-context",
+        created_at=CREATED_AT,
+        mandate_twin=None,
+        mandate_health=None,
+        direct_regime_stress_context=None,
+    )
+    selected = builder_module._proof_pack_build_context(
+        source_type="REBALANCE_RUN",
+        run=run,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=selection,
+        correlation_id=None,
+        created_at=CREATED_AT,
+        mandate_twin=None,
+        mandate_health=None,
+        direct_regime_stress_context=None,
+    )
+    run_fallback = builder_module._proof_pack_build_context(
+        source_type="REBALANCE_RUN",
+        run=run,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=None,
+        correlation_id=None,
+        created_at=CREATED_AT,
+        mandate_twin=None,
+        mandate_health=None,
+        direct_regime_stress_context=None,
+    )
+
+    assert explicit.correlation_id == "corr-explicit-context"
+    assert selected.correlation_id == "corr-selection-context"
+    assert run_fallback.correlation_id == result.correlation_id
+
+
+def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_context_direct_regime",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    context = builder_module._proof_pack_build_context(
+        source_type="SELECTED_ALTERNATIVE",
+        run=_run_record(result=result),
+        alternative_set=alternative_set,
+        selected_alternative=alternative,
+        selection=None,
+        correlation_id=None,
+        created_at=CREATED_AT,
+        mandate_twin=None,
+        mandate_health=None,
+        direct_regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status="READY",
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_CONTEXT_Q3",
+            worst_case_loss_pct=Decimal("0.0700"),
+            maximum_allowed_loss_pct=Decimal("0.1200"),
+            cio_approval_ref="CIO-APPROVAL-CONTEXT-Q3",
+            effective_from=date(2026, 7, 1),
+            reason_codes=["REGIME_SCENARIO_WITHIN_POLICY"],
+        ),
+    )
+
+    assert context.proof_pack_id == (
+        f"dpp_{alternative_set.alternative_set_id}_{alternative.alternative_id}"
+    )
+    assert context.portfolio_id == "pf_proof_pack_1"
+    assert context.source_hashes["regime_stress_context"].startswith("sha256:")
+    assert context.source_analytics["regime_stress"].facts["scenario_pack_id"] == (
+        "CIO_REGIME_CONTEXT_Q3"
+    )
+    assert any(
+        ref.source_system == "lotus-risk"
+        and ref.source_type == "RegimeScenarioPackEvaluation"
+        and ref.source_id == "CIO_REGIME_CONTEXT_Q3"
+        for ref in context.source_refs
+    )
+
+
 def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
     mandate_twin = _mandate_twin()
     kwargs = {

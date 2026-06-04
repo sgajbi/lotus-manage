@@ -5,6 +5,8 @@ from src.api.openapi_enrichment import (
     _infer_example,
     _number_example_for_key,
     _collection_example_from_schema,
+    _operation_has_error_response,
+    _operation_tag_for_path,
     _schema_declared_example,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
@@ -210,6 +212,19 @@ def test_openapi_enrichment_adds_operation_level_examples_and_errors() -> None:
         ]["status"]
         == 409
     )
+
+
+def test_openapi_enrichment_operation_tag_for_path_uses_governed_fallbacks() -> None:
+    assert _operation_tag_for_path("/health/live") == "Health"
+    assert _operation_tag_for_path("/metrics") == "Monitoring"
+    assert _operation_tag_for_path("/api/v1/rebalance") == "Api"
+    assert _operation_tag_for_path("/") == "Default"
+
+
+def test_openapi_enrichment_operation_error_response_detection() -> None:
+    assert _operation_has_error_response({"200": {}, "409": {}}) is True
+    assert _operation_has_error_response({"200": {}, "default": {}}) is True
+    assert _operation_has_error_response({"200": {}, "302": {}}) is False
 
 
 def test_openapi_enrichment_adds_operation_docs_errors_and_prometheus_examples() -> None:

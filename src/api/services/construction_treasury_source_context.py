@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import NamedTuple, TypeAlias
+from typing import Any, NamedTuple, TypeAlias
 
 from src.api.services.construction_source_product_status import source_status_to_method_status
 from src.api.services.construction_source_identity import (
@@ -141,6 +141,14 @@ class TreasuryPrimarySupportability(NamedTuple):
     exposure_currencies: list[str]
 
 
+class TreasurySourceIdentities(NamedTuple):
+    readiness: SourceProductIdentity | None
+    exposure: SourceProductIdentity | None
+    hedge_policy: SourceProductIdentity | None
+    eligible_hedge_instruments: SourceProductIdentity | None
+    fx_forward_curve: SourceProductIdentity | None
+
+
 def treasury_primary_supportability(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -165,6 +173,181 @@ def treasury_primary_supportability(
     return None
 
 
+def treasury_source_identities(
+    *,
+    source_hash: str,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> TreasurySourceIdentities:
+    return TreasurySourceIdentities(
+        readiness=treasury_optional_source_identity(hedge_readiness, source_hash),
+        exposure=treasury_optional_source_identity(currency_exposure),
+        hedge_policy=treasury_optional_source_identity(hedge_policy),
+        eligible_hedge_instruments=treasury_optional_source_identity(eligible_hedge_instruments),
+        fx_forward_curve=treasury_optional_source_identity(fx_forward_curve),
+    )
+
+
+def treasury_source_hash(
+    *,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> str:
+    return hash_canonical_payload(
+        treasury_source_payloads(
+            hedge_readiness=hedge_readiness,
+            currency_exposure=currency_exposure,
+            hedge_policy=hedge_policy,
+            eligible_hedge_instruments=eligible_hedge_instruments,
+            fx_forward_curve=fx_forward_curve,
+        )
+    )
+
+
+def _treasury_readiness_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    source_hash: str,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+) -> dict[str, Any]:
+    return {
+        "source_product_name": (
+            identities.readiness.source_product_name if identities.readiness is not None else None
+        ),
+        "source_product_version": (
+            identities.readiness.source_product_version
+            if identities.readiness is not None
+            else None
+        ),
+        "source_id": identities.readiness.source_id
+        if identities.readiness is not None
+        else source_hash,
+        "content_hash": source_hash,
+        "readiness_checks": hedge_readiness.readiness_checks if hedge_readiness is not None else [],
+    }
+
+
+def _treasury_currency_exposure_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+) -> dict[str, Any]:
+    return {
+        **treasury_source_identity_fields(
+            prefix="external_currency_exposure",
+            identity=identities.exposure,
+        ),
+        "external_currency_exposure_count": (
+            currency_exposure.supportability.exposure_count if currency_exposure is not None else 0
+        ),
+        "external_currency_exposure_rows": (
+            currency_exposure.exposures if currency_exposure is not None else []
+        ),
+    }
+
+
+def _treasury_hedge_policy_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+) -> dict[str, Any]:
+    return {
+        **treasury_source_identity_fields(
+            prefix="external_hedge_policy",
+            identity=identities.hedge_policy,
+        ),
+        "external_hedge_policy_rule_count": (
+            hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
+        ),
+        "external_hedge_policy_rules": (
+            hedge_policy.policy_rules if hedge_policy is not None else []
+        ),
+    }
+
+
+def _treasury_eligible_hedge_instrument_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+) -> dict[str, Any]:
+    return {
+        **treasury_source_identity_fields(
+            prefix="external_eligible_hedge_instrument",
+            identity=identities.eligible_hedge_instruments,
+        ),
+        "external_eligible_hedge_instrument_count": (
+            eligible_hedge_instruments.supportability.instrument_count
+            if eligible_hedge_instruments is not None
+            else 0
+        ),
+        "external_eligible_hedge_instruments": (
+            eligible_hedge_instruments.eligible_instruments
+            if eligible_hedge_instruments is not None
+            else []
+        ),
+    }
+
+
+def _treasury_fx_forward_curve_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> dict[str, Any]:
+    return {
+        **treasury_source_identity_fields(
+            prefix="external_fx_forward_curve",
+            identity=identities.fx_forward_curve,
+        ),
+        "external_fx_forward_curve_point_count": (
+            fx_forward_curve.supportability.curve_point_count if fx_forward_curve is not None else 0
+        ),
+        "external_fx_forward_curve_points": (
+            fx_forward_curve.curve_points if fx_forward_curve is not None else []
+        ),
+    }
+
+
+def _treasury_source_family_context_fields(
+    *,
+    identities: TreasurySourceIdentities,
+    source_hash: str,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> dict[str, Any]:
+    return {
+        **_treasury_readiness_context_fields(
+            identities=identities,
+            source_hash=source_hash,
+            hedge_readiness=hedge_readiness,
+        ),
+        **_treasury_currency_exposure_context_fields(
+            identities=identities,
+            currency_exposure=currency_exposure,
+        ),
+        **_treasury_hedge_policy_context_fields(
+            identities=identities,
+            hedge_policy=hedge_policy,
+        ),
+        **_treasury_eligible_hedge_instrument_context_fields(
+            identities=identities,
+            eligible_hedge_instruments=eligible_hedge_instruments,
+        ),
+        **_treasury_fx_forward_curve_context_fields(
+            identities=identities,
+            fx_forward_curve=fx_forward_curve,
+        ),
+    }
+
+
 def external_treasury_currency_overlay_context(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -183,23 +366,22 @@ def external_treasury_currency_overlay_context(
     if primary_supportability is None:
         return None
 
-    source_hash = hash_canonical_payload(
-        treasury_source_payloads(
-            hedge_readiness=hedge_readiness,
-            currency_exposure=currency_exposure,
-            hedge_policy=hedge_policy,
-            eligible_hedge_instruments=eligible_hedge_instruments,
-            fx_forward_curve=fx_forward_curve,
-        )
+    source_hash = treasury_source_hash(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=fx_forward_curve,
     )
 
-    readiness_identity = treasury_optional_source_identity(hedge_readiness, source_hash)
-    exposure_identity = treasury_optional_source_identity(currency_exposure)
-    hedge_policy_identity = treasury_optional_source_identity(hedge_policy)
-    eligible_hedge_instruments_identity = treasury_optional_source_identity(
-        eligible_hedge_instruments
+    identities = treasury_source_identities(
+        source_hash=source_hash,
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=fx_forward_curve,
     )
-    fx_forward_curve_identity = treasury_optional_source_identity(fx_forward_curve)
     reason_codes = treasury_fail_closed_reason_codes(
         primary_reason=primary_supportability.reason,
         hedge_readiness=hedge_readiness,
@@ -216,14 +398,6 @@ def external_treasury_currency_overlay_context(
         hedge_ratio_min=Decimal("0.00"),
         hedge_ratio_max=Decimal("0.00"),
         eligible_currencies=primary_supportability.exposure_currencies,
-        source_product_name=(
-            readiness_identity.source_product_name if readiness_identity is not None else None
-        ),
-        source_product_version=(
-            readiness_identity.source_product_version if readiness_identity is not None else None
-        ),
-        source_id=readiness_identity.source_id if readiness_identity is not None else source_hash,
-        content_hash=source_hash,
         missing_data_families=treasury_missing_data_families(
             hedge_readiness,
             currency_exposure,
@@ -238,48 +412,14 @@ def external_treasury_currency_overlay_context(
             eligible_hedge_instruments,
             fx_forward_curve,
         ),
-        readiness_checks=hedge_readiness.readiness_checks if hedge_readiness is not None else [],
-        **treasury_source_identity_fields(
-            prefix="external_currency_exposure",
-            identity=exposure_identity,
-        ),
-        external_currency_exposure_count=(
-            currency_exposure.supportability.exposure_count if currency_exposure is not None else 0
-        ),
-        external_currency_exposure_rows=(
-            currency_exposure.exposures if currency_exposure is not None else []
-        ),
-        **treasury_source_identity_fields(
-            prefix="external_hedge_policy",
-            identity=hedge_policy_identity,
-        ),
-        external_hedge_policy_rule_count=(
-            hedge_policy.supportability.policy_rule_count if hedge_policy is not None else 0
-        ),
-        external_hedge_policy_rules=(hedge_policy.policy_rules if hedge_policy is not None else []),
-        **treasury_source_identity_fields(
-            prefix="external_eligible_hedge_instrument",
-            identity=eligible_hedge_instruments_identity,
-        ),
-        external_eligible_hedge_instrument_count=(
-            eligible_hedge_instruments.supportability.instrument_count
-            if eligible_hedge_instruments is not None
-            else 0
-        ),
-        external_eligible_hedge_instruments=(
-            eligible_hedge_instruments.eligible_instruments
-            if eligible_hedge_instruments is not None
-            else []
-        ),
-        **treasury_source_identity_fields(
-            prefix="external_fx_forward_curve",
-            identity=fx_forward_curve_identity,
-        ),
-        external_fx_forward_curve_point_count=(
-            fx_forward_curve.supportability.curve_point_count if fx_forward_curve is not None else 0
-        ),
-        external_fx_forward_curve_points=(
-            fx_forward_curve.curve_points if fx_forward_curve is not None else []
+        **_treasury_source_family_context_fields(
+            identities=identities,
+            source_hash=source_hash,
+            hedge_readiness=hedge_readiness,
+            currency_exposure=currency_exposure,
+            hedge_policy=hedge_policy,
+            eligible_hedge_instruments=eligible_hedge_instruments,
+            fx_forward_curve=fx_forward_curve,
         ),
         reason_codes=reason_codes,
     )
@@ -287,6 +427,7 @@ def external_treasury_currency_overlay_context(
 
 __all__ = [
     "TreasuryPrimarySupportability",
+    "TreasurySourceIdentities",
     "external_treasury_currency_overlay_context",
     "treasury_blocked_capabilities",
     "treasury_fail_closed_reason_codes",
@@ -295,6 +436,8 @@ __all__ = [
     "treasury_primary_supportability",
     "treasury_response_blocked_capabilities",
     "treasury_response_missing_data_families",
+    "treasury_source_identities",
+    "treasury_source_hash",
     "treasury_source_identity_fields",
     "treasury_source_payload",
     "treasury_source_payloads",

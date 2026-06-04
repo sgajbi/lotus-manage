@@ -1,7 +1,9 @@
+import pytest
 from pytest import MonkeyPatch
 
 from src.api.services import wave_selection_item
 from src.api.services.wave_selection_item import with_selection_and_proof_pack
+from src.core.proof_packs import ProofPackSourceValidationError
 from src.core.proof_packs.models import DpmPreTradeProofPack
 from src.core.waves import DpmRebalanceWaveItem
 
@@ -81,7 +83,7 @@ def test_selection_records_degraded_proof_pack_generation_failure(
     monkeypatch: MonkeyPatch,
 ) -> None:
     def _generate(**_kwargs: object) -> DpmPreTradeProofPack:
-        raise RuntimeError("proof pack unavailable")
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
 
     monkeypatch.setattr(
         wave_selection_item.proof_pack_service,
@@ -96,7 +98,23 @@ def test_selection_records_degraded_proof_pack_generation_failure(
     assert updated.reason_codes == ["CONSTRUCTION_ALTERNATIVE_SELECTED"]
     assert updated.diagnostics["proof_pack_state"] == "DEGRADED"
     assert updated.diagnostics["proof_pack_reason_code"] == "PROOF_PACK_GENERATION_FAILED"
-    assert updated.diagnostics["proof_pack_error"] == "RuntimeError"
+    assert updated.diagnostics["proof_pack_error"] == "ProofPackSourceValidationError"
+
+
+def test_selection_does_not_hide_unexpected_proof_pack_generation_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    def _generate(**_kwargs: object) -> DpmPreTradeProofPack:
+        raise RuntimeError("proof pack repository side effect failed")
+
+    monkeypatch.setattr(
+        wave_selection_item.proof_pack_service,
+        "generate_proof_pack_from_selected_alternative",
+        _generate,
+    )
+
+    with pytest.raises(RuntimeError, match="proof pack repository side effect failed"):
+        _select()
 
 
 def test_wave_selection_item_exports_only_selection_builder() -> None:

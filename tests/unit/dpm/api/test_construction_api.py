@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import (
@@ -1624,6 +1625,29 @@ def test_construction_http_exception_mapping() -> None:
 
         assert http_exc.status_code == status_code
         assert http_exc.detail == detail
+
+
+def test_generate_construction_route_does_not_hide_unexpected_failures(monkeypatch) -> None:
+    repository = InMemoryConstructionRepository()
+
+    def fail_generation(**_kwargs):
+        raise RuntimeError("construction repository side effect failed")
+
+    monkeypatch.setattr(
+        construction_service,
+        "generate_construction_alternative_set",
+        fail_generation,
+    )
+
+    with _client(repository) as client:
+        with pytest.raises(RuntimeError, match="construction repository side effect failed"):
+            client.post(
+                "/api/v1/construction/alternative-sets/generate",
+                json=_payload(),
+                headers={"Idempotency-Key": "idem-construction-runtime-failure"},
+            )
+
+    app.dependency_overrides = {}
 
 
 def test_read_and_select_construction_alternative_set() -> None:

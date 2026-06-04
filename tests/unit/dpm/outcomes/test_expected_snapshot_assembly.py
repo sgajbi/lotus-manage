@@ -13,6 +13,7 @@ from src.core.construction.vocabulary import ConstructionMethod, ConstructionMet
 from src.core.models import Money
 from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
+    _proof_pack_state,
     assemble_expected_outcome_snapshot,
 )
 from src.core.proof_packs.models import (
@@ -179,6 +180,14 @@ def _proof_pack(
         created_by="lotus-manage",
         correlation_id="corr-outcome-001",
     )
+
+
+def test_proof_pack_state_maps_supported_statuses_and_unknown_status_fail_closed() -> None:
+    assert _proof_pack_state("READY") == "READY"
+    assert _proof_pack_state("PENDING_REVIEW") == "PENDING_REVIEW"
+    assert _proof_pack_state("DEGRADED") == "DEGRADED"
+    assert _proof_pack_state("BLOCKED") == "BLOCKED"
+    assert _proof_pack_state("STALE_UNBOUNDED_STATUS") == "BLOCKED"
 
 
 def _wave(

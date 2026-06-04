@@ -2,8 +2,13 @@ from decimal import Decimal
 
 import src.core.rebalance.policy_packs as policy_pack_module
 from src.core.rebalance.policy_packs import (
+    DpmPolicyPackDefinition,
+    DpmPolicyPackTaxPolicy,
+    DpmPolicyPackTurnoverPolicy,
+    DpmPolicyPackWorkflowPolicy,
     apply_policy_pack_to_engine_options,
     parse_policy_pack_catalog,
+    policy_pack_engine_option_updates,
     resolve_effective_policy_pack,
     resolve_policy_pack_definition,
     resolve_policy_pack_replay_enabled,
@@ -205,6 +210,35 @@ def test_policy_pack_apply_workflow_overrides():
     assert effective_options.mandate_approval_already_obtained is True
 
 
+def test_policy_pack_engine_option_updates_returns_only_configured_overrides():
+    updates = policy_pack_engine_option_updates(
+        policy_pack=DpmPolicyPackDefinition(
+            policy_pack_id="dpm_standard_v1",
+            version="1",
+            turnover_policy=DpmPolicyPackTurnoverPolicy(max_turnover_pct=Decimal("0.07")),
+            tax_policy=DpmPolicyPackTaxPolicy(enable_tax_awareness=True),
+            workflow_policy=DpmPolicyPackWorkflowPolicy(
+                workflow_requires_mandate_approval=True,
+            ),
+        )
+    )
+
+    assert updates == {
+        "max_turnover_pct": Decimal("0.07"),
+        "enable_tax_awareness": True,
+        "workflow_requires_mandate_approval": True,
+    }
+
+
+def test_policy_pack_engine_option_updates_empty_without_overrides():
+    assert (
+        policy_pack_engine_option_updates(
+            policy_pack=DpmPolicyPackDefinition(policy_pack_id="dpm_standard_v1", version="1")
+        )
+        == {}
+    )
+
+
 def test_policy_pack_resolve_replay_enabled_override_and_fallback():
     catalog = parse_policy_pack_catalog(
         '{"dpm_standard_v1":{"idempotency_policy":{"replay_enabled":false}}}'
@@ -261,6 +295,44 @@ def test_policy_pack_catalog_parse_skips_non_string_and_blank_ids(monkeypatch):
         lambda _raw: {123: {"version": "1"}, "  ": {"version": "1"}},
     )
     assert policy_pack_module.parse_policy_pack_catalog('{"ignored":"input"}') == {}
+
+
+def test_policy_pack_definition_payload_normalizes_defaults():
+    payload = policy_pack_module._policy_pack_definition_payload(
+        policy_pack_id="  dpm_standard_v1  ",
+        definition={"turnover_policy": {"max_turnover_pct": "0.05"}},
+    )
+
+    assert payload is not None
+    policy_pack_id, model_payload = payload
+    assert policy_pack_id == "dpm_standard_v1"
+    assert model_payload == {
+        "policy_pack_id": "dpm_standard_v1",
+        "version": "1",
+        "turnover_policy": {"max_turnover_pct": "0.05"},
+        "tax_policy": {},
+        "settlement_policy": {},
+        "constraint_policy": {},
+        "workflow_policy": {},
+        "idempotency_policy": {},
+    }
+
+
+def test_parse_policy_pack_definition_returns_none_for_invalid_rows():
+    assert (
+        policy_pack_module._parse_policy_pack_definition(
+            policy_pack_id="bad",
+            definition={"turnover_policy": {"max_turnover_pct": "not-decimal"}},
+        )
+        is None
+    )
+    assert (
+        policy_pack_module._parse_policy_pack_definition(
+            policy_pack_id=123,
+            definition={"version": "1"},
+        )
+        is None
+    )
 
 
 def test_policy_pack_resolve_definition_missing_or_none():

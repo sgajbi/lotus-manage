@@ -38,7 +38,37 @@ def build_settlement_ladder(
     options: EngineOptions,
     diagnostics: DiagnosticsData,
 ) -> None:
-    settlement_days_by_instrument = {entry.instrument_id: entry.settlement_days for entry in shelf}
+    settlement_days_by_instrument = _settlement_days_by_instrument(shelf)
+    horizon_days = _settlement_horizon_days(
+        settlement_days_by_instrument=settlement_days_by_instrument,
+        intents=intents,
+        options=options,
+    )
+    flows = _settlement_cash_flows(
+        portfolio=portfolio,
+        intents=intents,
+        settlement_days_by_instrument=settlement_days_by_instrument,
+        horizon_days=horizon_days,
+        options=options,
+    )
+    _append_settlement_ladder_points(
+        flows=flows,
+        horizon_days=horizon_days,
+        options=options,
+        diagnostics=diagnostics,
+    )
+
+
+def _settlement_days_by_instrument(shelf: list[ShelfEntry]) -> dict[str, int]:
+    return {entry.instrument_id: entry.settlement_days for entry in shelf}
+
+
+def _settlement_horizon_days(
+    *,
+    settlement_days_by_instrument: dict[str, int],
+    intents: list[OrderIntent],
+    options: EngineOptions,
+) -> int:
     max_security_day = max(
         (
             settlement_days_by_instrument.get(intent.instrument_id, 2)
@@ -47,26 +77,61 @@ def build_settlement_ladder(
         ),
         default=0,
     )
-    horizon_days = max(
-        options.settlement_horizon_days, options.fx_settlement_days, max_security_day
-    )
+    return max(options.settlement_horizon_days, options.fx_settlement_days, max_security_day)
 
+
+def _settlement_cash_flows(
+    *,
+    portfolio: PortfolioSnapshot,
+    intents: list[OrderIntent],
+    settlement_days_by_instrument: dict[str, int],
+    horizon_days: int,
+    options: EngineOptions,
+) -> dict[str, list[Decimal]]:
     flows: dict[str, list[Decimal]] = {}
 
-    def ensure_currency(currency: str) -> None:
-        if currency not in flows:
-            flows[currency] = [Decimal("0")] * (horizon_days + 1)
-
     for cash in portfolio.cash_balances:
-        ensure_currency(cash.currency)
+        _ensure_settlement_currency(flows=flows, currency=cash.currency, horizon_days=horizon_days)
         flows[cash.currency][0] += cash.settled if cash.settled is not None else cash.amount
 
+    _apply_intent_settlement_flows(
+        flows=flows,
+        intents=intents,
+        settlement_days_by_instrument=settlement_days_by_instrument,
+        horizon_days=horizon_days,
+        options=options,
+    )
+    return flows
+
+
+def _ensure_settlement_currency(
+    *,
+    flows: dict[str, list[Decimal]],
+    currency: str,
+    horizon_days: int,
+) -> None:
+    if currency not in flows:
+        flows[currency] = [Decimal("0")] * (horizon_days + 1)
+
+
+def _apply_intent_settlement_flows(
+    *,
+    flows: dict[str, list[Decimal]],
+    intents: list[OrderIntent],
+    settlement_days_by_instrument: dict[str, int],
+    horizon_days: int,
+    options: EngineOptions,
+) -> None:
     for intent in sorted(intents, key=lambda item: item.intent_id):
         if intent.intent_type == "SECURITY_TRADE":
             if intent.notional is None:
                 continue
             settlement_day = settlement_days_by_instrument.get(intent.instrument_id, 2)
-            ensure_currency(intent.notional.currency)
+            _ensure_settlement_currency(
+                flows=flows,
+                currency=intent.notional.currency,
+                horizon_days=horizon_days,
+            )
             signed_flow = (
                 intent.notional.amount if intent.side == "SELL" else -intent.notional.amount
             )
@@ -76,23 +141,38 @@ def build_settlement_ladder(
         if intent.intent_type != "FX_SPOT":
             continue
 
-        ensure_currency(intent.sell_currency)
-        ensure_currency(intent.buy_currency)
+        _ensure_settlement_currency(
+            flows=flows,
+            currency=intent.sell_currency,
+            horizon_days=horizon_days,
+        )
+        _ensure_settlement_currency(
+            flows=flows,
+            currency=intent.buy_currency,
+            horizon_days=horizon_days,
+        )
         flows[intent.sell_currency][options.fx_settlement_days] -= intent.sell_amount_estimated
         flows[intent.buy_currency][options.fx_settlement_days] += intent.buy_amount
 
+
+def _append_settlement_ladder_points(
+    *,
+    flows: dict[str, list[Decimal]],
+    horizon_days: int,
+    options: EngineOptions,
+    diagnostics: DiagnosticsData,
+) -> None:
     overdraft_utilized = False
     for currency in sorted(flows.keys()):
         projected_balance = Decimal("0")
         allowed_floor = -options.max_overdraft_by_ccy.get(currency, Decimal("0"))
         for day in range(horizon_days + 1):
             projected_balance += flows[currency][day]
-            diagnostics.cash_ladder.append(
-                CashLadderPoint(
-                    date_offset=day,
-                    currency=currency,
-                    projected_balance=projected_balance,
-                )
+            _append_cash_ladder_point(
+                diagnostics=diagnostics,
+                day=day,
+                currency=currency,
+                projected_balance=projected_balance,
             )
             if projected_balance < Decimal("0") and options.max_overdraft_by_ccy.get(
                 currency, Decimal("0")
@@ -111,6 +191,22 @@ def build_settlement_ladder(
 
     if overdraft_utilized:
         diagnostics.warnings.append("SETTLEMENT_OVERDRAFT_UTILIZED")
+
+
+def _append_cash_ladder_point(
+    *,
+    diagnostics: DiagnosticsData,
+    day: int,
+    currency: str,
+    projected_balance: Decimal,
+) -> None:
+    diagnostics.cash_ladder.append(
+        CashLadderPoint(
+            date_offset=day,
+            currency=currency,
+            projected_balance=projected_balance,
+        )
+    )
 
 
 def _project_cash_after_security_trades(

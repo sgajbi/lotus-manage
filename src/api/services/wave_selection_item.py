@@ -1,9 +1,16 @@
 from src.api.services import proof_pack_service
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.proof_packs.repository import DpmProofPackRepository
-from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.proof_packs import ProofPackSourceValidationError
+from src.core.proof_packs.repository import DpmProofPackConflictError, DpmProofPackRepository
+from src.core.rebalance_runs.service import DpmRunNotFoundError, DpmRunSupportService
 from src.core.waves import DpmRebalanceWaveItem
+
+_PROOF_PACK_GENERATION_DEGRADATION_ERRORS = (
+    DpmProofPackConflictError,
+    DpmRunNotFoundError,
+    ProofPackSourceValidationError,
+)
 
 
 def with_selection_and_proof_pack(
@@ -55,7 +62,7 @@ def with_selection_and_proof_pack(
             mandate_repository=mandate_repository,
             proof_pack_repository=proof_pack_repository,
         )
-    except Exception as exc:
+    except _PROOF_PACK_GENERATION_DEGRADATION_ERRORS as exc:
         return item.model_copy(
             update={
                 "state": "SELECTED",

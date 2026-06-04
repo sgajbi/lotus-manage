@@ -22,6 +22,14 @@ class DpmExpectedSnapshotAssemblyError(ValueError):
     """Raised when expected outcome evidence is missing or inconsistent."""
 
 
+_PROOF_PACK_OUTCOME_STATES: dict[str, OutcomeDimensionState] = {
+    "READY": "READY",
+    "PENDING_REVIEW": "PENDING_REVIEW",
+    "DEGRADED": "DEGRADED",
+    "BLOCKED": "BLOCKED",
+}
+
+
 def assemble_expected_outcome_snapshot(
     *,
     alternative_set: ConstructionAlternativeSet,
@@ -453,9 +461,7 @@ def _construction_state(
 
 
 def _proof_pack_state(status: str) -> OutcomeDimensionState:
-    if status in {"READY", "PENDING_REVIEW", "DEGRADED", "BLOCKED"}:
-        return status  # type: ignore[return-value]
-    return "BLOCKED"
+    return _PROOF_PACK_OUTCOME_STATES.get(status, "BLOCKED")
 
 
 def _wave_item_state(wave_item: DpmRebalanceWaveItem) -> OutcomeDimensionState:

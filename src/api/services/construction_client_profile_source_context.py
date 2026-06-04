@@ -42,13 +42,19 @@ def client_restriction_profile_context(
             **client_profile_source_fields(restriction_profile),
             "restriction_count": restriction_profile.supportability.restriction_count,
             "missing_data_families": restriction_profile.supportability.missing_data_families,
-            "restrictions": [
-                AuthoritativeClientRestrictionRule.model_validate(rule.model_dump(mode="python"))
-                for rule in restriction_profile.restrictions
-            ],
+            "restrictions": client_restriction_rules(restriction_profile),
             "reason_codes": [restriction_profile.supportability.reason],
         }
     )
+
+
+def client_restriction_rules(
+    restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> list[AuthoritativeClientRestrictionRule]:
+    return [
+        AuthoritativeClientRestrictionRule.model_validate(rule.model_dump(mode="python"))
+        for rule in restriction_profile.restrictions
+    ]
 
 
 def sustainability_preference_profile_context(
@@ -59,20 +65,26 @@ def sustainability_preference_profile_context(
             **client_profile_source_fields(sustainability_profile),
             "preference_count": sustainability_profile.supportability.preference_count,
             "missing_data_families": sustainability_profile.supportability.missing_data_families,
-            "preferences": [
-                AuthoritativeSustainabilityPreference.model_validate(
-                    preference.model_dump(mode="python")
-                )
-                for preference in sustainability_profile.preferences
-            ],
+            "preferences": sustainability_preferences(sustainability_profile),
             "reason_codes": [sustainability_profile.supportability.reason],
         }
     )
 
 
+def sustainability_preferences(
+    sustainability_profile: DpmCoreSustainabilityPreferenceProfileResponse,
+) -> list[AuthoritativeSustainabilityPreference]:
+    return [
+        AuthoritativeSustainabilityPreference.model_validate(preference.model_dump(mode="python"))
+        for preference in sustainability_profile.preferences
+    ]
+
+
 __all__ = [
     "ClientProfileSourceResponse",
+    "client_restriction_rules",
     "client_profile_source_fields",
     "client_restriction_profile_context",
     "sustainability_preference_profile_context",
+    "sustainability_preferences",
 ]

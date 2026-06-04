@@ -4,6 +4,7 @@ from src.api.services import construction_liquidity_source_context
 from src.api.services.construction_liquidity_source_context import (
     client_income_needs_schedule_context,
     liquidity_cashflow_projection_context,
+    liquidity_source_child_contexts,
     liquidity_source_identity_fields,
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
@@ -22,9 +23,11 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_liquidity_source_context_exports_only_liquidity_mappers() -> None:
     assert construction_liquidity_source_context.__all__ == [
+        "LiquiditySourceChildContexts",
         "LiquiditySourceResponse",
         "client_income_needs_schedule_context",
         "liquidity_cashflow_projection_context",
+        "liquidity_source_child_contexts",
         "liquidity_source_identity_fields",
         "liquidity_reserve_requirement_context",
         "planned_withdrawal_schedule_context",
@@ -199,6 +202,38 @@ def test_liquidity_cashflow_context_falls_back_to_content_hash_source_id() -> No
     context = liquidity_cashflow_projection_context(response)
 
     assert context.source_batch_fingerprint == expected_hash
+
+
+def test_liquidity_source_child_contexts_lifts_all_present_children() -> None:
+    child_contexts = liquidity_source_child_contexts(
+        cashflow_projection=cashflow_projection_response(),
+        income_needs=client_income_needs_schedule_response(),
+        reserve_requirement=liquidity_reserve_requirement_response(),
+        planned_withdrawals=planned_withdrawal_schedule_response(),
+    )
+
+    assert child_contexts.cashflow_projection is not None
+    assert child_contexts.cashflow_projection.source_batch_fingerprint == "cashflow-lineage"
+    assert child_contexts.client_income_needs_schedule is not None
+    assert child_contexts.client_income_needs_schedule.source_id == "income-lineage"
+    assert child_contexts.liquidity_reserve_requirement is not None
+    assert child_contexts.liquidity_reserve_requirement.source_id == "reserve-lineage"
+    assert child_contexts.planned_withdrawal_schedule is not None
+    assert child_contexts.planned_withdrawal_schedule.source_id == "withdrawal-lineage"
+
+
+def test_liquidity_source_child_contexts_keeps_absent_children_none() -> None:
+    child_contexts = liquidity_source_child_contexts(
+        cashflow_projection=None,
+        income_needs=client_income_needs_schedule_response(),
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert child_contexts.cashflow_projection is None
+    assert child_contexts.client_income_needs_schedule is not None
+    assert child_contexts.liquidity_reserve_requirement is None
+    assert child_contexts.planned_withdrawal_schedule is None
 
 
 def test_source_liquidity_context_preserves_source_family_policy_and_children() -> None:

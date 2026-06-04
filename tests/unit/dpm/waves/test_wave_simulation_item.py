@@ -1,9 +1,11 @@
+import pytest
 from pytest import MonkeyPatch
 
 from src.api.request_models import RebalanceRequest
 from src.api.services import wave_simulation_item
 from src.api.services.wave_simulation_item import DpmWaveSimulationInput, simulate_item
 from src.core.construction.models import ConstructionAlternative, ConstructionAlternativeSet
+from src.core.construction.repository import ConstructionIdempotencyConflictError
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.waves import DpmRebalanceWaveItem
 
@@ -122,7 +124,7 @@ def test_simulate_item_blocks_construction_generation_failure(
     monkeypatch: MonkeyPatch,
 ) -> None:
     def _generate(**_kwargs: object) -> ConstructionAlternativeSet:
-        raise RuntimeError("construction unavailable")
+        raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
 
     monkeypatch.setattr(
         wave_simulation_item.construction_service,
@@ -146,8 +148,32 @@ def test_simulate_item_blocks_construction_generation_failure(
         "existing": "value",
         "source_owner": "lotus-manage-construction",
         "required_action": "REVIEW_CONSTRUCTION_INPUTS",
-        "construction_error": "RuntimeError",
+        "construction_error": "ConstructionIdempotencyConflictError",
     }
+
+
+def test_simulate_item_does_not_hide_unexpected_construction_generation_failure(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    def _generate(**_kwargs: object) -> ConstructionAlternativeSet:
+        raise RuntimeError("construction repository side effect failed")
+
+    monkeypatch.setattr(
+        wave_simulation_item.construction_service,
+        "generate_construction_alternative_set",
+        _generate,
+    )
+
+    with pytest.raises(RuntimeError, match="construction repository side effect failed"):
+        simulate_item(
+            item=_item(),
+            correlation_id="corr-simulate",
+            item_inputs={"PB_SG_SIMULATE": _request()},
+            methods=None,
+            construction_repository=object(),  # type: ignore[arg-type]
+            run_service=object(),  # type: ignore[arg-type]
+            risk_authority_client=None,
+        )
 
 
 def test_wave_simulation_item_exports_only_simulation_item_contract() -> None:

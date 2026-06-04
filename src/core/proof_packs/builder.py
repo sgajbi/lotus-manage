@@ -1,5 +1,6 @@
 """Pure RFC-0040 proof-pack builders."""
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, cast
 
@@ -86,6 +87,20 @@ class ProofPackSourceValidationError(ValueError):
 
 
 _SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
+
+
+@dataclass(frozen=True)
+class _ProofPackBuildContext:
+    created_at: datetime
+    generated_at: str
+    result: RebalanceResult | None
+    run_artifact_hash: str | None
+    source_hashes: dict[str, str]
+    source_analytics: dict[str, ProofPackSourceAnalytics]
+    source_refs: list[DpmProofPackSourceRef]
+    proof_pack_id: str
+    portfolio_id: str
+    correlation_id: str
 
 
 def build_proof_pack_from_run(
@@ -190,84 +205,44 @@ def _build_proof_pack(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
 ) -> DpmPreTradeProofPack:
-    resolved_created_at = created_at or datetime.now(timezone.utc)
-    result = RebalanceResult.model_validate(run.result_json) if run is not None else None
-    run_artifact = build_dpm_run_artifact(run=run) if run is not None else None
-    source_hashes = _source_hashes(
-        run=run,
-        alternative_set=alternative_set,
-        selected_alternative=selected_alternative,
-        mandate_twin=mandate_twin,
-        mandate_health=mandate_health,
-    )
-    source_analytics = _source_analytics(
-        selected_alternative=selected_alternative,
-        direct_regime_stress_context=direct_regime_stress_context,
-    )
-    for analytics in source_analytics.values():
-        source_hashes[analytics.source_hash_key] = analytics.content_hash
-    portfolio_id = _resolve_portfolio_id(run=run, alternative_set=alternative_set)
-    resolved_correlation_id = (
-        correlation_id
-        or (
-            selection.correlation_id if selection is not None and selection.correlation_id else None
-        )
-        or (run.correlation_id if run is not None else None)
-        or f"proof-pack-{resolved_created_at.strftime('%Y%m%d%H%M%S')}"
-    )
-    proof_pack_id = _proof_pack_id(
+    context = _proof_pack_build_context(
         source_type=source_type,
         run=run,
         alternative_set=alternative_set,
         selected_alternative=selected_alternative,
+        selection=selection,
+        correlation_id=correlation_id,
+        created_at=created_at,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        direct_regime_stress_context=direct_regime_stress_context,
     )
-    generated_at = resolved_created_at.isoformat()
-    source_refs = _source_refs(
+
+    sections = _proof_pack_sections(
+        context=context,
         run=run,
         alternative_set=alternative_set,
         selected_alternative=selected_alternative,
-        source_hashes=source_hashes,
+        selection=selection,
+        reason=reason,
+        mandate_id=mandate_id,
         mandate_twin=mandate_twin,
         mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        created_by=created_by,
+        workflow_decisions=workflow_decisions,
     )
-    source_refs.extend(analytics.source_ref for analytics in source_analytics.values())
-
-    sections = [
-        _build_section(
-            section_type=section_type,
-            generated_at=generated_at,
-            result=result,
-            run=run,
-            run_artifact_hash=(
-                run_artifact.evidence.hashes.artifact_hash if run_artifact is not None else None
-            ),
-            alternative_set=alternative_set,
-            selected_alternative=selected_alternative,
-            selection=selection,
-            source_refs=source_refs,
-            source_ref_count=len(source_refs),
-            source_analytics=source_analytics,
-            reason=reason,
-            mandate_id=mandate_id,
-            mandate_twin=mandate_twin,
-            mandate_health=mandate_health,
-            mandate_evidence_gap_codes=mandate_evidence_gap_codes,
-            created_by=created_by,
-            workflow_decisions=workflow_decisions,
-        )
-        for section_type in _SECTION_ORDER
-    ]
     supportability = _supportability(sections)
     decision_summary = _decision_summary(
         source_type=source_type,
-        result=result,
+        result=context.result,
         selected_alternative=selected_alternative,
         reason=reason,
         supportability=supportability,
     )
     timeline = _decision_timeline(
-        proof_pack_id=proof_pack_id,
-        generated_at=generated_at,
+        proof_pack_id=context.proof_pack_id,
+        generated_at=context.generated_at,
         source_type=source_type,
         run=run,
         alternative_set=alternative_set,
@@ -278,9 +253,9 @@ def _build_proof_pack(
     )
     section_by_type = {section.section_type: section for section in sections}
     pack = DpmPreTradeProofPack(
-        proof_pack_id=proof_pack_id,
+        proof_pack_id=context.proof_pack_id,
         proof_pack_version=PROOF_PACK_VERSION,
-        portfolio_id=portfolio_id,
+        portfolio_id=context.portfolio_id,
         mandate_id=mandate_id,
         source_type=source_type,
         rebalance_run_id=run.rebalance_run_id if run is not None else None,
@@ -300,11 +275,135 @@ def _build_proof_pack(
         lineage=section_by_type["lineage"],
         supportability=supportability,
         content_hash="",
-        source_hashes=source_hashes,
-        created_at=resolved_created_at,
+        source_hashes=context.source_hashes,
+        created_at=context.created_at,
         created_by=created_by,
-        correlation_id=resolved_correlation_id,
+        correlation_id=context.correlation_id,
     )
+    return _finalize_proof_pack_content_hash(pack)
+
+
+def _proof_pack_build_context(
+    *,
+    source_type: ProofPackSourceType,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    correlation_id: str | None,
+    created_at: datetime | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+) -> _ProofPackBuildContext:
+    resolved_created_at = created_at or datetime.now(timezone.utc)
+    source_hashes = _source_hashes(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+    )
+    source_analytics = _source_analytics(
+        selected_alternative=selected_alternative,
+        direct_regime_stress_context=direct_regime_stress_context,
+    )
+    for analytics in source_analytics.values():
+        source_hashes[analytics.source_hash_key] = analytics.content_hash
+    source_refs = _source_refs(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        source_hashes=source_hashes,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+    )
+    source_refs.extend(analytics.source_ref for analytics in source_analytics.values())
+    run_artifact = build_dpm_run_artifact(run=run) if run is not None else None
+    return _ProofPackBuildContext(
+        created_at=resolved_created_at,
+        generated_at=resolved_created_at.isoformat(),
+        result=RebalanceResult.model_validate(run.result_json) if run is not None else None,
+        run_artifact_hash=(
+            run_artifact.evidence.hashes.artifact_hash if run_artifact is not None else None
+        ),
+        source_hashes=source_hashes,
+        source_analytics=source_analytics,
+        source_refs=source_refs,
+        proof_pack_id=_proof_pack_id(
+            source_type=source_type,
+            run=run,
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+        ),
+        portfolio_id=_resolve_portfolio_id(run=run, alternative_set=alternative_set),
+        correlation_id=_resolve_proof_pack_correlation_id(
+            correlation_id=correlation_id,
+            selection=selection,
+            run=run,
+            created_at=resolved_created_at,
+        ),
+    )
+
+
+def _resolve_proof_pack_correlation_id(
+    *,
+    correlation_id: str | None,
+    selection: ConstructionAlternativeSelection | None,
+    run: DpmRunRecord | None,
+    created_at: datetime,
+) -> str:
+    return (
+        correlation_id
+        or (
+            selection.correlation_id if selection is not None and selection.correlation_id else None
+        )
+        or (run.correlation_id if run is not None else None)
+        or f"proof-pack-{created_at.strftime('%Y%m%d%H%M%S')}"
+    )
+
+
+def _proof_pack_sections(
+    *,
+    context: _ProofPackBuildContext,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    reason: str | None,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+    created_by: str,
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> list[DpmProofPackSection]:
+    return [
+        _build_section(
+            section_type=section_type,
+            generated_at=context.generated_at,
+            result=context.result,
+            run=run,
+            run_artifact_hash=context.run_artifact_hash,
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
+            source_refs=context.source_refs,
+            source_ref_count=len(context.source_refs),
+            source_analytics=context.source_analytics,
+            reason=reason,
+            mandate_id=mandate_id,
+            mandate_twin=mandate_twin,
+            mandate_health=mandate_health,
+            mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+            created_by=created_by,
+            workflow_decisions=workflow_decisions,
+        )
+        for section_type in _SECTION_ORDER
+    ]
+
+
+def _finalize_proof_pack_content_hash(pack: DpmPreTradeProofPack) -> DpmPreTradeProofPack:
     payload = pack.model_dump(mode="json")
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     return DpmPreTradeProofPack.model_validate(payload)

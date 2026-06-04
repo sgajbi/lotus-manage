@@ -242,6 +242,70 @@ def _cap_tradeable_targets_to_available_weight(
     return "PENDING_REVIEW"
 
 
+def _apply_single_position_max_weight(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    max_weight: Decimal,
+) -> Literal["READY", "PENDING_REVIEW"]:
+    excess = sum(max(Decimal("0.0"), weight - max_weight) for weight in eligible_targets.values())
+    for instrument_id in eligible_targets:
+        eligible_targets[instrument_id] = min(eligible_targets[instrument_id], max_weight)
+
+    if excess <= Decimal("0.0"):
+        return "READY"
+
+    candidates = {
+        instrument_id: weight
+        for instrument_id, weight in eligible_targets.items()
+        if instrument_id in buy_set and weight < max_weight
+    }
+    total_candidate_weight = sum(candidates.values())
+    if total_candidate_weight <= Decimal("0.0"):
+        return "PENDING_REVIEW"
+
+    remainder = excess
+    for instrument_id, weight in candidates.items():
+        share = min(remainder * (weight / total_candidate_weight), max_weight - weight)
+        eligible_targets[instrument_id] += share
+        remainder -= share
+
+    if remainder > Decimal("0.001"):
+        return "PENDING_REVIEW"
+    return "READY"
+
+
+def _apply_min_cash_buffer(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    min_cash_buffer_pct: Decimal,
+) -> Literal["READY", "PENDING_REVIEW"]:
+    if min_cash_buffer_pct <= Decimal("0.0"):
+        return "READY"
+
+    tradeable_weight = sum(
+        weight for instrument_id, weight in eligible_targets.items() if instrument_id in buy_set
+    )
+    locked_weight = sum(
+        weight for instrument_id, weight in eligible_targets.items() if instrument_id not in buy_set
+    )
+    allowed_tradeable_weight = max(
+        Decimal("0.0"),
+        Decimal("1.0") - min_cash_buffer_pct - locked_weight,
+    )
+    if tradeable_weight <= allowed_tradeable_weight:
+        return "READY"
+
+    if tradeable_weight > Decimal("0.0"):
+        scale = allowed_tradeable_weight / tradeable_weight
+        for instrument_id in eligible_targets:
+            if instrument_id in buy_set:
+                eligible_targets[instrument_id] *= scale
+
+    return "PENDING_REVIEW"
+
+
 def generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -274,34 +338,20 @@ def generate_targets_heuristic(
         status = "PENDING_REVIEW"
 
     if options.single_position_max_weight is not None:
-        max_w = options.single_position_max_weight
-        excess = sum(max(Decimal("0.0"), w - max_w) for w in eligible_targets.values())
-        for i_id in eligible_targets:
-            eligible_targets[i_id] = min(eligible_targets[i_id], max_w)
-        if excess > Decimal("0.0"):
-            cands = {k: v for k, v in eligible_targets.items() if k in buy_set and v < max_w}
-            total_cand = sum(cands.values())
-            if total_cand > Decimal("0.0"):
-                rem = excess
-                for i_id, w in cands.items():
-                    share = min(rem * (w / total_cand), max_w - w)
-                    eligible_targets[i_id] += share
-                    rem -= share
-                if rem > Decimal("0.001"):
-                    status = "PENDING_REVIEW"
-            else:
-                status = "PENDING_REVIEW"
-
-    if options.min_cash_buffer_pct > Decimal("0.0"):
-        tw = sum(v for k, v in eligible_targets.items() if k in buy_set)
-        lw = sum(v for k, v in eligible_targets.items() if k not in buy_set)
-        allowed = max(Decimal("0.0"), Decimal("1.0") - options.min_cash_buffer_pct - lw)
-        if tw > allowed:
-            if tw > Decimal("0.0"):
-                scale = allowed / tw
-                for k in eligible_targets:
-                    if k in buy_set:
-                        eligible_targets[k] *= scale
+        single_position_status = _apply_single_position_max_weight(
+            eligible_targets=eligible_targets,
+            buy_set=buy_set,
+            max_weight=options.single_position_max_weight,
+        )
+        if single_position_status == "PENDING_REVIEW":
             status = "PENDING_REVIEW"
+
+    cash_buffer_status = _apply_min_cash_buffer(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        min_cash_buffer_pct=options.min_cash_buffer_pct,
+    )
+    if cash_buffer_status == "PENDING_REVIEW":
+        status = "PENDING_REVIEW"
 
     return build_target_trace(model, eligible_targets, buy_list, total_val, base_ccy), status

@@ -4,12 +4,21 @@ from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
 from src.api.services.wave_construction_diagnostics import proposed_changes_from_alternative_set
 from src.api.services.authority_client_service import RiskAuthorityClient
-from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionIdempotencyConflictError,
+    ConstructionRepository,
+)
 from src.core.construction.vocabulary import ConstructionMethod
-from src.core.rebalance_runs.service import DpmRunSupportService
+from src.core.rebalance_runs.service import DpmAsyncOperationConflictError, DpmRunSupportService
 from src.core.waves import DpmRebalanceWaveItem
 from src.core.waves.source_analytics import build_source_analytics_from_alternative_set
 from src.core.construction.models import ConstructionAuthorityContext
+
+_CONSTRUCTION_SIMULATION_BLOCKING_ERRORS = (
+    ConstructionIdempotencyConflictError,
+    DpmAsyncOperationConflictError,
+    ValueError,
+)
 
 
 @dataclass(frozen=True)
@@ -61,7 +70,7 @@ def simulate_item(
             risk_authority_client=risk_authority_client,
             run_service=run_service,
         )
-    except Exception as exc:
+    except _CONSTRUCTION_SIMULATION_BLOCKING_ERRORS as exc:
         return item.model_copy(
             update={
                 "state": "SIMULATION_BLOCKED",

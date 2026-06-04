@@ -21,7 +21,10 @@ from src.api.services import construction_service
 from src.api.services import rebalance_simulation_service
 from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.models import ConstructionAlternativeSet
-from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionIdempotencyConflictError,
+    ConstructionRepository,
+)
 from src.core.rebalance_runs.service import DpmRunSupportService
 
 
@@ -89,5 +92,5 @@ def generate_alternative_set(
             risk_authority_client=risk_authority_client,
             run_service=run_service,
         )
-    except Exception as exc:
+    except ConstructionIdempotencyConflictError as exc:
         raise construction_http_exception(exc) from exc

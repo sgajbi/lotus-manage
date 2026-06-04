@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timezone
-from typing import Literal
+from typing import Callable, Literal, NamedTuple
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -28,6 +28,13 @@ CampaignMakerCheckerControlOutcome = Literal[
     "EXCEPTION_OPEN",
     "EXCEPTION_RESOLVED",
 ]
+
+
+class CampaignControlValidationContext(NamedTuple):
+    control_outcome: CampaignMakerCheckerControlOutcome
+    submitter_actor_id: str | None
+    reviewer_actor_id: str | None
+    required_reviewer_role: str | None
 
 
 class DpmBulkReviewCampaignDefinitionMakerCheckerControlPage(BaseModel):
@@ -164,28 +171,59 @@ def _validate_control_action(
     reviewer_actor_id: str | None,
     required_reviewer_role: str | None,
 ) -> None:
-    if control_action == "SUBMITTED_FOR_REVIEW":
-        if not submitter_actor_id:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMITTER_REQUIRED")
-        if control_outcome != "PENDING":
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_OUTCOME_INVALID")
-    elif control_action == "REVIEWER_ASSIGNED":
-        if not reviewer_actor_id or not required_reviewer_role:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_REQUIRED")
-        if control_outcome != "PENDING":
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ASSIGNMENT_OUTCOME_INVALID")
-    elif control_action == "REVIEW_COMPLETED":
-        if not submitter_actor_id or not reviewer_actor_id:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTORS_REQUIRED")
-        if submitter_actor_id == reviewer_actor_id:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED")
-        if control_outcome not in {"PASSED", "FAILED"}:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEW_OUTCOME_INVALID")
-    elif control_action == "CONTROL_EXCEPTION_RAISED":
-        if control_outcome != "EXCEPTION_OPEN":
-            raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_EXCEPTION_OUTCOME_INVALID")
-    elif control_outcome != "EXCEPTION_RESOLVED":
+    context = CampaignControlValidationContext(
+        control_outcome=control_outcome,
+        submitter_actor_id=submitter_actor_id,
+        reviewer_actor_id=reviewer_actor_id,
+        required_reviewer_role=required_reviewer_role,
+    )
+    validator = _CONTROL_ACTION_VALIDATORS.get(control_action, _validate_exception_resolved_control)
+    validator(context)
+
+
+def _validate_submission_control(context: CampaignControlValidationContext) -> None:
+    if not context.submitter_actor_id:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMITTER_REQUIRED")
+    if context.control_outcome != "PENDING":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_OUTCOME_INVALID")
+
+
+def _validate_reviewer_assignment_control(context: CampaignControlValidationContext) -> None:
+    if not context.reviewer_actor_id or not context.required_reviewer_role:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_REQUIRED")
+    if context.control_outcome != "PENDING":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ASSIGNMENT_OUTCOME_INVALID")
+
+
+def _validate_review_completed_control(context: CampaignControlValidationContext) -> None:
+    if not context.submitter_actor_id or not context.reviewer_actor_id:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTORS_REQUIRED")
+    if context.submitter_actor_id == context.reviewer_actor_id:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED")
+    if context.control_outcome not in {"PASSED", "FAILED"}:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEW_OUTCOME_INVALID")
+
+
+def _validate_exception_raised_control(context: CampaignControlValidationContext) -> None:
+    if context.control_outcome != "EXCEPTION_OPEN":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_EXCEPTION_OUTCOME_INVALID")
+
+
+def _validate_exception_resolved_control(context: CampaignControlValidationContext) -> None:
+    if context.control_outcome != "EXCEPTION_RESOLVED":
         raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_EXCEPTION_RESOLUTION_INVALID")
+
+
+_CONTROL_ACTION_VALIDATORS: dict[
+    CampaignMakerCheckerControlAction,
+    Callable[[CampaignControlValidationContext], None],
+] = {
+    "SUBMITTED_FOR_REVIEW": _validate_submission_control,
+    "REVIEWER_ASSIGNED": _validate_reviewer_assignment_control,
+    "REVIEW_COMPLETED": _validate_review_completed_control,
+    "CONTROL_EXCEPTION_RAISED": _validate_exception_raised_control,
+    "CONTROL_EXCEPTION_RESOLVED": _validate_exception_resolved_control,
+}
 
 
 def _build_control(

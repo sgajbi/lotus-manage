@@ -10,7 +10,11 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    _validate_search_item_counts,
+    _validate_search_item_latest_event_metadata,
+    _validate_search_item_latest_matching_event_metadata,
     _validate_search_item_metadata,
+    _validate_search_item_sorted_aggregates,
     _validate_search_page_pagination,
 )
 from src.core.portfolio_memory.search_page import (
@@ -205,6 +209,51 @@ def test_validate_search_item_metadata_accepts_empty_search_item_metadata() -> N
         latest_matching_event_source_id=None,
         latest_matching_event_content_hash=None,
     )
+
+
+def test_validate_search_item_count_helper_rejects_matching_count_above_event_count() -> None:
+    with pytest.raises(ValueError, match="matching_event_count must not exceed"):
+        _validate_search_item_counts(
+            event_count=1,
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            matching_event_count=2,
+        )
+
+
+def test_validate_search_item_sorted_aggregate_helper_rejects_duplicate_reasons() -> None:
+    with pytest.raises(ValueError, match="reason_codes must be sorted and unique"):
+        _validate_search_item_sorted_aggregates(
+            source_systems=["lotus-manage"],
+            reason_codes=["READY_FOR_OPERATIONS_REVIEW", "READY_FOR_OPERATIONS_REVIEW"],
+        )
+
+
+def test_validate_search_item_latest_event_helper_rejects_empty_item_with_latest_event() -> None:
+    with pytest.raises(ValueError, match="empty search items must not carry latest event metadata"):
+        _validate_search_item_latest_event_metadata(
+            event_count=0,
+            supportability_state="EMPTY",
+            event_type_counts={},
+            source_systems=[],
+            reason_codes=[],
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type=None,
+        )
+
+
+def test_validate_search_item_latest_matching_helper_rejects_missing_identity() -> None:
+    with pytest.raises(ValueError, match="matching events must carry latest matching"):
+        _validate_search_item_latest_matching_event_metadata(
+            matching_event_count=1,
+            latest_matching_event_time="2026-05-31T10:00:00+00:00",
+            latest_matching_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_id="memory:search:handoff",
+            latest_matching_event_identity=None,
+            latest_matching_event_source_system="lotus-manage",
+            latest_matching_event_source_type="DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
+            latest_matching_event_source_id="handoff-001",
+            latest_matching_event_content_hash=None,
+        )
 
 
 def test_validate_search_item_metadata_rejects_mismatched_aggregates_and_ordering() -> None:

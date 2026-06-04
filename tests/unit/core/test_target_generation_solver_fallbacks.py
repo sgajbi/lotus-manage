@@ -1,6 +1,8 @@
 from decimal import Decimal
 import sys
 
+import pytest
+
 from src.core.models import DiagnosticsData, EngineOptions, ModelPortfolio, ModelTarget, ShelfEntry
 from src.core.target_generation import (
     _load_solver_modules,
@@ -181,6 +183,20 @@ def test_load_solver_modules_records_error_when_import_fails(monkeypatch) -> Non
 
     assert _load_solver_modules(diagnostics) is None
     assert diagnostics.warnings == ["SOLVER_ERROR"]
+
+
+def test_load_solver_modules_does_not_hide_non_import_failures(monkeypatch) -> None:
+    monkeypatch.setattr("src.core.target_generation.has_solver_dependencies", lambda: True)
+
+    def broken_import() -> tuple[object, object]:
+        raise RuntimeError("solver import side effect failed")
+
+    monkeypatch.setattr("src.core.target_generation._import_solver_modules", broken_import)
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+
+    with pytest.raises(RuntimeError, match="solver import side effect failed"):
+        _load_solver_modules(diagnostics)
+    assert diagnostics.warnings == []
 
 
 def test_generate_targets_solver_reports_pending_review_when_sell_excess_has_no_recipient(

@@ -10,7 +10,10 @@ from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.construction_models import CONSTRUCTION_ALTERNATIVE_SET_EXAMPLE
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSet
-from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionRepository,
+)
 
 
 @router.get(
@@ -42,5 +45,5 @@ def read_alternative_set(
             repository=repository,
             alternative_set_id=alternative_set_id,
         )
-    except Exception as exc:
+    except ConstructionAlternativeSetNotFoundError as exc:
         raise construction_http_exception(exc) from exc

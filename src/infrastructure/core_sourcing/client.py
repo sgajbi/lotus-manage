@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any, Optional
+from typing import Any, Mapping, Optional
 
 import httpx
 
@@ -51,6 +51,13 @@ class DpmCoreResolverUnavailableError(DpmCoreResolverError):
 
 
 LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
+
+
+@dataclass(frozen=True)
+class _CoreSnapshotMappedRow:
+    position: Position | None = None
+    cash_currency: str | None = None
+    cash_amount: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -1576,40 +1583,77 @@ class DpmCoreResolverClient:
             return None
 
 
-def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:
-    sections = payload.get("sections") or {}
-    rows = sections.get("positions_baseline") or []
+def _core_snapshot_base_currency(payload: Mapping[str, Any]) -> str:
     valuation_context = payload.get("valuation_context") or {}
-    base_currency = str(
+    return str(
         valuation_context.get("portfolio_currency")
         or valuation_context.get("reporting_currency")
         or "USD"
     )
 
+
+def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
+    return str(row.get("security_id") or row.get("instrument_id") or "").strip()
+
+
+def _map_core_snapshot_row(
+    row: Mapping[str, Any],
+    *,
+    base_currency: str,
+) -> _CoreSnapshotMappedRow | None:
+    instrument_id = _core_snapshot_row_instrument_id(row)
+    if not instrument_id:
+        return None
+
+    quantity = Decimal(str(row.get("quantity") or "0"))
+    currency = str(row.get("currency") or base_currency).upper()
+    if instrument_id.startswith("CASH_"):
+        return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
+
+    market_value = row.get("market_value_local")
+    return _CoreSnapshotMappedRow(
+        position=Position(
+            instrument_id=instrument_id,
+            quantity=quantity,
+            market_value=(
+                Money(amount=Decimal(str(market_value)), currency=currency)
+                if market_value is not None
+                else None
+            ),
+        )
+    )
+
+
+def _portfolio_positions_and_cash_from_core_rows(
+    rows: list[Mapping[str, Any]],
+    *,
+    base_currency: str,
+) -> tuple[list[Position], dict[str, Decimal]]:
     positions: list[Position] = []
     cash_by_currency: dict[str, Decimal] = {}
     for row in rows:
-        instrument_id = str(row.get("security_id") or row.get("instrument_id") or "").strip()
-        if not instrument_id:
+        mapped_row = _map_core_snapshot_row(row, base_currency=base_currency)
+        if mapped_row is None:
             continue
-        quantity = Decimal(str(row.get("quantity") or "0"))
-        currency = str(row.get("currency") or base_currency).upper()
-        if instrument_id.startswith("CASH_"):
-            cash_by_currency[currency] = cash_by_currency.get(currency, Decimal("0")) + quantity
-            continue
-
-        market_value = row.get("market_value_local")
-        positions.append(
-            Position(
-                instrument_id=instrument_id,
-                quantity=quantity,
-                market_value=(
-                    Money(amount=Decimal(str(market_value)), currency=currency)
-                    if market_value is not None
-                    else None
-                ),
+        if mapped_row.position is not None:
+            positions.append(mapped_row.position)
+        elif mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
+            cash_by_currency[mapped_row.cash_currency] = (
+                cash_by_currency.get(mapped_row.cash_currency, Decimal("0"))
+                + mapped_row.cash_amount
             )
-        )
+
+    return positions, cash_by_currency
+
+
+def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:
+    sections = payload.get("sections") or {}
+    rows = sections.get("positions_baseline") or []
+    base_currency = _core_snapshot_base_currency(payload)
+    positions, cash_by_currency = _portfolio_positions_and_cash_from_core_rows(
+        rows,
+        base_currency=base_currency,
+    )
 
     return PortfolioSnapshot(
         snapshot_id=payload.get("snapshot_id")

@@ -5,6 +5,11 @@ from datetime import date
 import pytest
 
 from src.api.services.wave_core_portfolio_universe_resolution import (
+    _PortfolioUniverseResolutionRequest,
+    _candidate_portfolio_payloads,
+    _portfolio_universe_candidate_page_ref,
+    _resolve_candidate_pages,
+    _selection_basis_payload,
     resolve_core_dpm_portfolio_universe_candidates,
 )
 from src.api.services.wave_errors import (
@@ -170,6 +175,76 @@ def test_resolve_core_dpm_portfolio_universe_candidates_paginates_and_attaches_s
     assert resolver.calls[1]["page_token"] == "page-2"
     assert candidates[0]["source_refs"][0]["source_type"] == "DpmPortfolioUniverseCandidate"
     assert candidates[0]["source_refs"][1]["source_type"] == "DPM_PORTFOLIO_UNIVERSE_CANDIDATE"
+
+
+def test_resolve_candidate_pages_passes_bounded_page_tokens() -> None:
+    page_0 = _candidate_page(next_page_token="page-2", returned_candidate_count=1)
+    page_1 = _candidate_page(
+        next_page_token=None,
+        returned_candidate_count=1,
+        candidates=[
+            _candidate_row(
+                portfolio_id="PB_SG_GLOBAL_BAL_002",
+                mandate_id="MANDATE_PB_SG_GLOBAL_BAL_002",
+                binding_version=4,
+                source_record_id="mandate-binding-002",
+            )
+        ],
+    )
+    resolver = _UniverseResolver([page_0, page_1])
+
+    pages = _resolve_candidate_pages(
+        resolver=resolver,
+        request=_PortfolioUniverseResolutionRequest(
+            as_of_date=date(2026, 5, 10),
+            tenant_id="default",
+            booking_center_code="Singapore",
+            model_portfolio_ids=["MODEL_PB_SG_GLOBAL_BAL_DPM"],
+            include_inactive_mandates=False,
+            campaign_candidate_page_size=1,
+            correlation_id="corr-universe-001",
+        ),
+    )
+
+    assert pages == [page_0, page_1]
+    assert resolver.calls[0]["page_token"] is None
+    assert resolver.calls[1]["page_token"] == "page-2"
+    assert resolver.calls[1]["page_size"] == 1
+
+
+def test_candidate_portfolio_payloads_preserve_page_and_candidate_source_refs() -> None:
+    page = _candidate_page()
+    candidate = page.candidates[0]
+
+    payloads = _candidate_portfolio_payloads(
+        candidates=[candidate],
+        universe_ref=_portfolio_universe_candidate_page_ref(page=page),
+        selection_basis=_selection_basis_payload(page),
+    )
+
+    assert len(payloads) == 1
+    assert payloads[0]["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
+    assert payloads[0]["mandate_id"] == "MANDATE_PB_SG_GLOBAL_BAL_001"
+    assert payloads[0]["portfolio_type"] == "DISCRETIONARY"
+
+    page_ref, candidate_ref = payloads[0]["source_refs"]
+    assert page_ref == {
+        "source_system": "lotus-core",
+        "source_type": "DpmPortfolioUniverseCandidate",
+        "source_id": "snapshot-001",
+        "source_version": "v1",
+        "content_hash": "sha256:portfolio-universe",
+        "supportability_state": "READY",
+    }
+    assert candidate_ref["source_type"] == "DPM_PORTFOLIO_UNIVERSE_CANDIDATE"
+    assert candidate_ref["source_id"] == "mandate-binding-001"
+    assert candidate_ref["source_version"] == "3"
+    assert candidate_ref["selection_basis"] == {
+        "basis_type": "EFFECTIVE_DISCRETIONARY_MANDATE_BINDING",
+        "source_table": "portfolio_mandate_bindings",
+        "included_when": [],
+        "downstream_boundary": "Candidate membership is not execution authority.",
+    }
 
 
 def test_resolve_core_dpm_portfolio_universe_candidates_rejects_duplicate_candidates() -> None:

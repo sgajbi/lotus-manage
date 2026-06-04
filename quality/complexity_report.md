@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T13:53:42+00:00`
+- Generated at: `2026-06-04T23:03:04+00:00`
 
-- Current ref: `e197d2cc`
+- Current ref: `5561b776`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
-| 2 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
-| 3 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
-| 4 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
-| 5 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
-| 6 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
-| 7 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
-| 8 | evaluate | src/core/compliance.py | 15 | 171 |
-| 9 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
-| 10 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 1 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 2 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
+| 3 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 4 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
+| 5 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
+| 6 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 7 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
+| 8 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
+| 9 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 10 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
 
 ### Most Complex Current Test Functions
 
