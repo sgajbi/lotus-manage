@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T23:30:27+00:00`
+- Generated at: `2026-06-04T23:34:47+00:00`
 
-- Current ref: `f207cc62`
+- Current ref: `19e54837`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
-| 2 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
-| 3 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
-| 4 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
-| 5 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
-| 6 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
-| 7 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
-| 8 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
-| 9 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
-| 10 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
+| 1 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
+| 2 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 3 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
+| 4 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
+| 5 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 6 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
+| 7 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
+| 8 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
+| 9 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
+| 10 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
 
 ### Most Complex Current Test Functions
 
