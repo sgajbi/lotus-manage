@@ -8,6 +8,11 @@ from src.api.services.mandate_errors import (
     DpmMandateSourceIncompleteError,
     DpmMandateSourceUnavailableError,
 )
+from src.api.services.core_resolver_service import (
+    CoreResolverClient,
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult,
     calculate_mandate_health_result,
@@ -20,11 +25,6 @@ from src.core.mandates import (
     build_health_input_from_core_sources,
     compile_mandate_digital_twin_from_core,
 )
-from src.infrastructure.core_sourcing import (
-    DpmCoreResolverClient,
-    DpmCoreResolverError,
-    DpmCoreResolverUnavailableError,
-)
 
 
 @dataclass(frozen=True)
@@ -36,7 +36,7 @@ class DpmMandateRefreshResult:
 
 def build_mandate_refresh_result_from_core(
     *,
-    core_resolver: DpmCoreResolverClient,
+    core_resolver: CoreResolverClient,
     portfolio_id: str,
     mandate_id: str,
     as_of_date: date,
@@ -74,9 +74,9 @@ def build_mandate_refresh_result_from_core(
                 tenant_id=tenant_id,
                 correlation_id=correlation_id,
             )
-    except DpmCoreResolverUnavailableError as exc:
+    except CoreResolverUnavailableError as exc:
         raise DpmMandateSourceUnavailableError("DPM_MANDATE_SOURCE_UNAVAILABLE") from exc
-    except DpmCoreResolverError as exc:
+    except CoreResolverError as exc:
         raise DpmMandateSourceIncompleteError("DPM_MANDATE_SOURCE_INCOMPLETE") from exc
 
     optional_sources = resolve_mandate_optional_sources(

@@ -13,7 +13,10 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
-from src.infrastructure.core_sourcing import DpmCoreResolverClient, DpmCoreResolverError
+from src.api.services.core_resolver_service import (
+    CoreResolverClient,
+    CoreResolverError,
+)
 
 
 @dataclass(frozen=True)
@@ -30,7 +33,7 @@ class DpmMandateOptionalSources:
 
 def try_resolve_optional_source(
     *,
-    resolver: DpmCoreResolverClient,
+    resolver: CoreResolverClient,
     method_name: str,
     family_name: str,
     **kwargs: Any,
@@ -40,7 +43,7 @@ def try_resolve_optional_source(
         return None, None
     try:
         return method(**kwargs), None
-    except DpmCoreResolverError:
+    except CoreResolverError:
         return None, family_name
 
 
@@ -67,7 +70,7 @@ def ready_optional_source(
 
 def resolve_mandate_optional_sources(
     *,
-    resolver: DpmCoreResolverClient,
+    resolver: CoreResolverClient,
     portfolio_id: str,
     mandate_id: str,
     as_of_date: date,

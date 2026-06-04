@@ -1,4 +1,5 @@
 from datetime import date
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -409,6 +410,20 @@ def test_core_resolver_service_exports_resolver_configuration_surface() -> None:
         "env_int",
         "stateful_core_sourcing_enabled",
     ]
+
+
+def test_service_modules_route_core_resolver_types_via_service_boundary() -> None:
+    for service_module in (
+        "src/api/services/mandate_optional_sources.py",
+        "src/api/services/mandate_refresh.py",
+        "src/api/services/mandate_service.py",
+        "src/api/services/rebalance_stateful_source_context.py",
+        "src/api/services/wave_core_portfolio_universe_resolution.py",
+    ):
+        source = Path(service_module).read_text(encoding="utf-8")
+        assert "from src.infrastructure.core_sourcing import" not in source, (
+            f"{service_module} should import core resolver symbols via core_resolver_service"
+        )
 
 
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:

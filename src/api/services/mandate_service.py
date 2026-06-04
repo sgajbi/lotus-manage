@@ -24,6 +24,7 @@ from src.api.services.mandate_health_result import (
     DpmMandateHealthCalculationResult as DpmMandateHealthCalculationResult,
     calculate_mandate_health_result,
 )
+from src.api.services.core_resolver_service import CoreResolverClient
 from src.api.services.mandate_health_persistence import persist_mandate_health_evidence
 from src.api.services.mandate_monitoring_run import (
     DpmMonitoringRunAccumulator as DpmMonitoringRunAccumulator,
@@ -48,13 +49,12 @@ from src.core.mandates import (
     DpmMonitoringException,
     DpmMonitoringRun,
 )
-from src.infrastructure.core_sourcing import DpmCoreResolverClient
 
 
 def refresh_mandate_from_core(
     *,
     repository: DpmMandateRepository,
-    core_resolver: DpmCoreResolverClient,
+    core_resolver: CoreResolverClient,
     portfolio_id: str,
     mandate_id: str,
     as_of_date: date,

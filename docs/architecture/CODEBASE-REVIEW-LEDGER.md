@@ -12747,3 +12747,31 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
   `src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal service-boundary refactor.
+
+## BACKEND-REVIEW-20260604-518: Core resolver boundary imports centralized in services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_optional_sources.py`, `src/api/services/mandate_refresh.py`,
+  `src/api/services/mandate_service.py`, `src/api/services/rebalance_stateful_source_context.py`,
+  `src/api/services/wave_core_portfolio_universe_resolution.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: core-dependent services still imported infrastructure resolver client/error symbols directly, creating
+  direct coupling to `src.infrastructure.core_sourcing` and weakening dependency direction.
+- Action: routed resolver client/error typing and exception handling through
+  `src.api.services.core_resolver_service` aliases, and added a direct boundary regression test that verifies the
+  target service modules no longer import from `src.infrastructure.core_sourcing` directly.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_optional_sources.py
+  src/api/services/mandate_refresh.py src/api/services/mandate_service.py
+  src/api/services/rebalance_stateful_source_context.py src/api/services/wave_core_portfolio_universe_resolution.py
+  tests/unit/api/test_runtime_request_model_and_service_edges.py`, `python -m ruff format --check`
+  on touched files, `python -m mypy --config-file mypy.ini src/api/services/mandate_optional_sources.py
+  src/api/services/mandate_refresh.py src/api/services/mandate_service.py
+  src/api/services/rebalance_stateful_source_context.py src/api/services/wave_core_portfolio_universe_resolution.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py
+  tests/unit/dpm/mandates/test_mandate_optional_sources.py tests/unit/dpm/mandates/test_mandate_refresh.py
+  tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
+  `src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening slice.
