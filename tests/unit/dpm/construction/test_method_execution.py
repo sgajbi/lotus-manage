@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_execution import (
+    construction_method_correlation_id,
     options_for_construction_method,
     run_construction_method,
 )
@@ -31,6 +32,26 @@ def test_construction_method_options_apply_bounded_method_overrides() -> None:
     assert solver.compare_target_methods is True
     assert liquidity.enable_settlement_awareness is True
     assert liquidity.min_cash_buffer_pct >= Decimal("0.03")
+
+
+def test_construction_method_correlation_id_preserves_caller_context() -> None:
+    assert (
+        construction_method_correlation_id(
+            method=ConstructionMethod.MIN_TURNOVER,
+            correlation_id="corr-construction",
+        )
+        == "corr-construction:min_turnover"
+    )
+
+
+def test_construction_method_correlation_id_generates_method_scoped_fallback() -> None:
+    correlation_id = construction_method_correlation_id(
+        method=ConstructionMethod.MIN_TURNOVER,
+        correlation_id=None,
+    )
+
+    assert correlation_id.startswith("corr_construction_min_turnover_")
+    assert len(correlation_id) == len("corr_construction_min_turnover_") + 10
 
 
 def test_run_construction_method_uses_method_specific_correlation_and_records_support() -> None:

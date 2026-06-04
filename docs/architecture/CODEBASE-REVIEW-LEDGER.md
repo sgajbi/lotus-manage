@@ -13554,3 +13554,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction solver supportability
   refactoring with direct diagnostics tests.
+
+## BACKEND-REVIEW-20260604-555: Construction method correlation helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_execution.py`,
+  `tests/unit/dpm/construction/test_method_execution.py`.
+- Finding: construction method execution assembled method-scoped correlation ids inline before
+  calling the rebalance engine, leaving correlation propagation behavior coupled to engine
+  invocation.
+- Action: extracted `construction_method_correlation_id`, reused it from
+  `run_construction_method`, and added direct tests for caller-provided and generated method-scoped
+  correlation ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m ruff format --check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_execution.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_execution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction method-execution
+  correlation refactoring with direct tests.
