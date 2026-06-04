@@ -6,6 +6,7 @@ from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     apply_construction_supportability,
     authority_context_status,
+    enrichment_summary_diagnostics,
     method_enrichment_statuses,
     supportability_diagnostics,
     supportability_status,
@@ -261,6 +262,27 @@ def test_supportability_diagnostics_preserves_existing_context_and_source_postur
     assert transaction_cost_diagnostics["source_system"] == "lotus-core"
     assert source_posture["product_family"] == ("CONSTRUCTION_ALTERNATIVE_RISK_PERFORMANCE_CONTEXT")
     assert source_posture["risk_context_supplied"] is False
+
+
+def test_enrichment_summary_diagnostics_adds_method_reason_codes() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+
+    diagnostics = enrichment_summary_diagnostics(
+        enrichment=enrichment,
+        method_reason_codes=["METHOD_SPECIFIC_REASON"],
+    )
+
+    assert "METHOD_SPECIFIC_REASON" in diagnostics["reason_codes"]
 
 
 def test_supportability_application_applies_esg_restriction_constraints() -> None:

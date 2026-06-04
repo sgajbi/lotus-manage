@@ -102,16 +102,27 @@ def supportability_diagnostics(
     return {
         **alternative.diagnostics,
         "method_plan": plan.model_dump(mode="json"),
-        "enrichment_summary": with_method_reason_codes(
+        "enrichment_summary": enrichment_summary_diagnostics(
             enrichment=enrichment,
-            reason_codes=method_reason_codes,
-        ).model_dump(mode="json"),
+            method_reason_codes=method_reason_codes,
+        ),
         "authority_context": authority_context.model_dump(mode="json", exclude_none=True),
         "source_analytics_posture": source_analytics_posture(
             method=method,
             authority_context=authority_context,
         ),
     }
+
+
+def enrichment_summary_diagnostics(
+    *,
+    enrichment: ConstructionEnrichmentSummary,
+    method_reason_codes: list[str],
+) -> dict[str, object]:
+    return with_method_reason_codes(
+        enrichment=enrichment,
+        reason_codes=method_reason_codes,
+    ).model_dump(mode="json")
 
 
 def supportability_status(
@@ -189,6 +200,7 @@ def authority_context_status(
 __all__ = [
     "apply_construction_supportability",
     "authority_context_status",
+    "enrichment_summary_diagnostics",
     "method_enrichment_statuses",
     "supportability_diagnostics",
     "supportability_status",
