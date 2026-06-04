@@ -70,6 +70,12 @@ class HealthStatusResponse(BaseModel):
 
 _HEALTH_RESPONSES: dict[int | str, dict[str, Any]] = {
     200: {"description": "Health probe succeeded."},
+    503: {
+        "description": (
+            "Health probe cannot run because a required dependency is unavailable or the "
+            "service is not accepting traffic."
+        )
+    },
 }
 
 _READY_RESPONSES: dict[int | str, dict[str, Any]] = {

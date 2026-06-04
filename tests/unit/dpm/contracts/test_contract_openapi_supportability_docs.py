@@ -1227,3 +1227,28 @@ def test_wave_preview_openapi_documents_core_portfolio_universe_candidate_source
     assert "CORE_DPM_PORTFOLIO_UNIVERSE" in str(candidate_source_schema)
     assert "continuation pages" in candidate_source_schema["description"]
     assert "duplicate, non-terminating" in candidate_source_schema["description"]
+
+
+def test_infra_endpoints_document_explicit_error_responses() -> None:
+    openapi = app.openapi()
+    infra_endpoints = {
+        "/health": {"503"},
+        "/health/live": {"503"},
+        "/metrics": {"503"},
+    }
+
+    for path, required_status_codes in infra_endpoints.items():
+        operation = openapi["paths"][path]["get"]
+        response_statuses = {str(status_code) for status_code in operation["responses"]}
+        missing = sorted(required_status_codes - response_statuses)
+        assert not missing, f"{path} missing explicit error responses: {missing}"
+
+        for status_code in required_status_codes:
+            response = operation["responses"][status_code]
+            json_content = response.get("content", {}).get("application/json")
+            assert isinstance(json_content, dict), (
+                f"{path} {status_code} missing application/json error response content"
+            )
+            assert _has_example(json_content), (
+                f"{path} {status_code} missing error response example"
+            )

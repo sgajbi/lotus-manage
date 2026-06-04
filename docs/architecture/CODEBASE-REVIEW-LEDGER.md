@@ -12896,3 +12896,19 @@ and improves internal transaction-cost source posture maintainability only.
   baseline outputs in `quality/*.md`,
   and `quality/ci_quality_gates.md`.
 - Wiki decision: no wiki source change required; this is an internal reporting/measurement foundation slice.
+
+## BACKEND-REVIEW-20260604-524: Infrastructure probe endpoints expose explicit 5xx error responses
+
+- Date: 2026-06-04
+- Scope: `src/api/main.py`, `src/api/observability.py`, `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`, `quality/baseline_report.md`, `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, `quality/complexity_report.md`.
+- Finding: health and metrics probes still lacked explicit 4xx/5xx response entries in their OpenAPI operation-level declarations, which kept the API quality scorecard reporting missing error-response markers despite infrastructure endpoint coverage in runtime.
+- Action: added explicit `503` error-response documentation for `/health`, `/health/live`, and `/metrics`; added focused contract regression coverage that asserts these infra endpoints keep explicit error responses and JSON error examples; refreshed quality reports to show improved OpenAPI health.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/main.py src/api/observability.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
+  `python -m ruff format --check src/api/main.py src/api/observability.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
+  `python -m mypy --config-file mypy.ini src/api/main.py src/api/observability.py`,
+  `python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`, `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal API governance quality hardening slice.

@@ -253,6 +253,7 @@ def setup_observability(app: FastAPI) -> None:
         tags=["Monitoring"],
         summary="Metrics",
         operation_id="metrics_metrics_get",
+        responses={503: {"description": "Metrics exposition unavailable."}},
         response_description="Prometheus text exposition for lotus-manage metrics.",
     )
     def _metrics() -> Response:
