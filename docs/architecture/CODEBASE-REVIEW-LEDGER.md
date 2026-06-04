@@ -13339,3 +13339,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction source-lineage
   helper hardening with direct tests.
+
+## BACKEND-REVIEW-20260604-546: Construction alternative-set source state helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_set_lineage.py`,
+  `tests/unit/dpm/construction/test_alternative_set_lineage.py`.
+- Finding: alternative-set lineage field assembly read source supportability state inline, coupling
+  source-context posture extraction to the full persistence update payload.
+- Action: extracted `source_supportability_state` and reused it from
+  `alternative_set_lineage_fields`. Added direct tests for absent source context and stateful
+  supportability posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_alternative_set_lineage.py tests/unit/dpm/construction/test_alternative_set_lineage.py`,
+  `python -m ruff format --check src/api/services/construction_alternative_set_lineage.py tests/unit/dpm/construction/test_alternative_set_lineage.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_alternative_set_lineage.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_set_lineage.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction lineage assembly
+  refactoring with direct helper tests.
