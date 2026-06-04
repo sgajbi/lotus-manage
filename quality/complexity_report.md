@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T23:39:16+00:00`
+- Generated at: `2026-06-04T23:43:28+00:00`
 
-- Current ref: `e52f99be`
+- Current ref: `8d45458a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
-| 2 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
-| 3 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
-| 4 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
-| 5 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
-| 6 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
-| 7 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
-| 8 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
-| 9 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
-| 10 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
+| 1 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
+| 2 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
+| 3 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 4 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
+| 5 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
+| 6 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
+| 7 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
+| 8 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
+| 9 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
+| 10 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
 
 ### Most Complex Current Test Functions
 

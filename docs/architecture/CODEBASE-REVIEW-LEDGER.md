@@ -15728,3 +15728,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal campaign assignment task
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-647: Campaign task transition refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `e52f99be`, before the campaign
+  assignment task transition helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign task transition helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_transitioned_task` dropped out of the top current
+  source-complexity list, with `record_bulk_review_campaign_definition_assignment_action` now the
+  top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
