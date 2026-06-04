@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T17:01:59+00:00`
+- Generated at: `2026-06-04T17:09:13+00:00`
 
-- Current ref: `b09057f2`
+- Current ref: `09590feb`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
-| 2 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
-| 3 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
-| 4 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
-| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
-| 6 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
-| 7 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
-| 8 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
-| 9 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
-| 10 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 1 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 2 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
+| 3 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
+| 4 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 5 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
+| 6 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 7 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
+| 8 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
+| 9 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 10 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
 
 ### Most Complex Current Test Functions
 
