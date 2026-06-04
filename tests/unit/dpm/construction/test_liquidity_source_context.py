@@ -8,6 +8,7 @@ from src.api.services.construction_liquidity_source_context import (
     liquidity_reserve_requirement_context,
     planned_withdrawal_schedule_context,
     source_liquidity_context,
+    source_liquidity_reason_codes,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -28,6 +29,20 @@ def test_liquidity_source_context_exports_only_liquidity_mappers() -> None:
         "liquidity_reserve_requirement_context",
         "planned_withdrawal_schedule_context",
         "source_liquidity_context",
+        "source_liquidity_reason_codes",
+    ]
+
+
+def test_source_liquidity_reason_codes_include_present_source_families() -> None:
+    assert source_liquidity_reason_codes(
+        has_income_needs=True,
+        has_reserve_requirement=False,
+        has_planned_withdrawals=True,
+    ) == [
+        "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES",
+        "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT",
+        "CLIENT_INCOME_NEEDS_SOURCE_PRESENT",
+        "PLANNED_WITHDRAWAL_SOURCE_PRESENT",
     ]
 
 

@@ -38,7 +38,7 @@ _MANAGE_LIQUIDITY_POLICY_REASON = "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEME
 _CORE_LIQUIDITY_SOURCE_REASON = "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT"
 
 
-def _liquidity_reason_codes(
+def source_liquidity_reason_codes(
     *,
     has_income_needs: bool,
     has_reserve_requirement: bool,
@@ -197,7 +197,7 @@ def source_liquidity_context(
         client_income_needs_schedule=income_context,
         liquidity_reserve_requirement=reserve_context,
         planned_withdrawal_schedule=withdrawal_context,
-        reason_codes=_liquidity_reason_codes(
+        reason_codes=source_liquidity_reason_codes(
             has_income_needs=income_context is not None,
             has_reserve_requirement=reserve_context is not None,
             has_planned_withdrawals=withdrawal_context is not None,
@@ -213,4 +213,5 @@ __all__ = [
     "liquidity_reserve_requirement_context",
     "planned_withdrawal_schedule_context",
     "source_liquidity_context",
+    "source_liquidity_reason_codes",
 ]

@@ -13792,3 +13792,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal treasury source-context
   fail-closed reason refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-565: Liquidity aggregate reason helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_source_context.py` and
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`.
+- Finding: aggregate source-liquidity context reason assembly was private and only indirectly
+  covered through the full liquidity context mapper.
+- Action: exposed `source_liquidity_reason_codes`, reused it from `source_liquidity_context`,
+  and added direct helper coverage proving optional income-needs, reserve, and planned-withdrawal
+  reason inclusion.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity source-context reason
+  refactoring with direct helper tests.
