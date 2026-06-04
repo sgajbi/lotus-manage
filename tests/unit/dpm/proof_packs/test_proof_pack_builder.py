@@ -506,6 +506,50 @@ def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
     assert reason_codes == []
 
 
+def test_operations_handoff_section_payload_marks_non_ready_for_review() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._operations_handoff_section_payload(result=result)
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Operations handoff reflects current pre-trade readiness."
+    assert facts == {"run_status": "PENDING_REVIEW"}
+    assert metrics == {}
+    assert reason_codes == ["DPM_OPERATIONS_REVIEW_REQUIRED"]
+
+
+def test_decision_timeline_section_payload_projects_run_and_selection_refs() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._decision_timeline_section_payload(
+            run=run,
+            selection=None,
+        )
+    )
+
+    assert state == "READY"
+    assert summary == (
+        "Timeline generated from source run, selection, and proof-pack generation events."
+    )
+    assert facts == {"run_created_at": run.created_at.isoformat(), "selection_id": None}
+    assert metrics == {}
+    assert reason_codes == []
+
+
+def test_supportability_section_payload_is_ready_placeholder() -> None:
+    assert builder_module._supportability_section_payload() == (
+        "READY",
+        "Supportability summary is generated for every proof pack.",
+        {},
+        {},
+        [],
+    )
+
+
 def test_mandate_context_section_payload_blocks_missing_identity() -> None:
     state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
         mandate_id=None,

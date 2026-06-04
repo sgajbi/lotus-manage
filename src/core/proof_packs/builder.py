@@ -705,35 +705,64 @@ def _proof_pack_governance_section_payload(
             workflow_decisions=workflow_decisions,
         )
     if section_type == "operations_handoff":
-        return (
-            "READY" if result.status == "READY" else "PENDING_REVIEW",
-            "Operations handoff reflects current pre-trade readiness.",
-            {"run_status": result.status},
-            {},
-            [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
-        )
+        return _operations_handoff_section_payload(result=result)
     if section_type == "decision_timeline":
-        return (
-            "READY",
-            "Timeline generated from source run, selection, and proof-pack generation events.",
-            {
-                "run_created_at": run.created_at.isoformat() if run else None,
-                "selection_id": selection.selection_id if selection else None,
-            },
-            {},
-            [],
-        )
+        return _decision_timeline_section_payload(run=run, selection=selection)
     if section_type == "lineage":
-        return (
-            "READY" if run is not None else "BLOCKED",
-            "Lineage identifiers captured from source run and source artifacts.",
-            result.lineage.model_dump(mode="json") if result else {},
-            {"source_ref_count": source_ref_count},
-            [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
+        return _lineage_section_payload(
+            result=result,
+            run=run,
+            source_ref_count=source_ref_count,
         )
     if section_type == "supportability":
-        return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
+        return _supportability_section_payload()
     return None
+
+
+def _operations_handoff_section_payload(*, result: RebalanceResult) -> _SectionPayload:
+    return (
+        "READY" if result.status == "READY" else "PENDING_REVIEW",
+        "Operations handoff reflects current pre-trade readiness.",
+        {"run_status": result.status},
+        {},
+        [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
+    )
+
+
+def _decision_timeline_section_payload(
+    *,
+    run: DpmRunRecord | None,
+    selection: ConstructionAlternativeSelection | None,
+) -> _SectionPayload:
+    return (
+        "READY",
+        "Timeline generated from source run, selection, and proof-pack generation events.",
+        {
+            "run_created_at": run.created_at.isoformat() if run else None,
+            "selection_id": selection.selection_id if selection else None,
+        },
+        {},
+        [],
+    )
+
+
+def _lineage_section_payload(
+    *,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    source_ref_count: int,
+) -> _SectionPayload:
+    return (
+        "READY" if run is not None else "BLOCKED",
+        "Lineage identifiers captured from source run and source artifacts.",
+        result.lineage.model_dump(mode="json") if result else {},
+        {"source_ref_count": source_ref_count},
+        [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
+    )
+
+
+def _supportability_section_payload() -> _SectionPayload:
+    return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
 
 
 def _approval_requirements_section_payload(

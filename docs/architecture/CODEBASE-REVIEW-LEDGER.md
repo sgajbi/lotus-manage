@@ -15895,3 +15895,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-654: Proof-pack governance payload helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_proof_pack_governance_section_payload` became the top current source-complexity
+  hotspot and still mixed governance section dispatch with operations handoff, decision timeline,
+  lineage, and supportability payload construction.
+- Action: introduced focused payload builders for operations handoff, decision timeline, lineage,
+  and supportability sections. Kept `_proof_pack_governance_section_payload` as the routing
+  boundary across proof-pack governance section types. Added direct helper tests for non-ready
+  operations handoff, decision timeline run projection, and supportability payload output.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring.
