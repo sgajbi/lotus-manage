@@ -14659,3 +14659,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction source-product
   mapping maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-602: Client profile source child mappers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_profile_source_context.py` and
+  `tests/unit/dpm/construction/test_client_profile_source_context.py`.
+- Finding: client restriction and sustainability source-profile context builders still performed
+  child-list conversion inline, so source rule/preference projection was only indirectly tested
+  through the parent context builders.
+- Action: extracted `client_restriction_rules` and `sustainability_preferences`, kept parent
+  profile context builders as source-profile coordinators, and added direct tests for restriction
+  rule and sustainability preference projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_profile_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_profile_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction client-profile
+  source-product mapping maintainability refactoring.

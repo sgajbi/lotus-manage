@@ -2,9 +2,11 @@ from decimal import Decimal
 
 from src.api.services import construction_client_profile_source_context
 from src.api.services.construction_client_profile_source_context import (
+    client_restriction_rules,
     client_profile_source_fields,
     client_restriction_profile_context,
     sustainability_preference_profile_context,
+    sustainability_preferences,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -17,9 +19,11 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 def test_client_profile_source_context_exports_only_client_profile_mappers() -> None:
     assert construction_client_profile_source_context.__all__ == [
         "ClientProfileSourceResponse",
+        "client_restriction_rules",
         "client_profile_source_fields",
         "client_restriction_profile_context",
         "sustainability_preference_profile_context",
+        "sustainability_preferences",
     ]
 
 
@@ -73,6 +77,15 @@ def test_client_restriction_profile_context_preserves_rules_and_lineage() -> Non
     assert context.restrictions[0].source_record_id == "restriction-record-1"
 
 
+def test_client_restriction_rules_project_source_rules() -> None:
+    rules = client_restriction_rules(client_restriction_profile_response())
+
+    assert len(rules) == 1
+    assert rules[0].restriction_code == "NO_SINGLE_STOCK_A"
+    assert rules[0].instrument_ids == ["EQ_A"]
+    assert rules[0].source_record_id == "restriction-record-1"
+
+
 def test_client_restriction_profile_context_falls_back_to_content_hash_source_id() -> None:
     response = client_restriction_profile_response().model_copy(
         update={
@@ -103,6 +116,15 @@ def test_sustainability_preference_context_preserves_preferences_and_status() ->
     assert context.preferences[0].preference_code == "MIN_ARTICLE_8"
     assert context.preferences[0].minimum_allocation == Decimal("0.40")
     assert context.preferences[0].positive_tilt_codes == ["LOW_CARBON"]
+
+
+def test_sustainability_preferences_project_source_preferences() -> None:
+    preferences = sustainability_preferences(sustainability_preference_profile_response())
+
+    assert len(preferences) == 1
+    assert preferences[0].preference_code == "MIN_ARTICLE_8"
+    assert preferences[0].minimum_allocation == Decimal("0.40")
+    assert preferences[0].positive_tilt_codes == ["LOW_CARBON"]
 
 
 def test_sustainability_preference_context_falls_back_to_content_hash_source_id() -> None:
