@@ -13095,3 +13095,24 @@ and improves internal transaction-cost source posture maintainability only.
   `python -m pytest tests/unit/dpm/mandates/test_mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_run.py -q`,
   and service-level regression check (`python -m pytest tests/unit/dpm/mandates/test_mandate_errors.py tests/unit/dpm/mandates/test_mandate_diff.py -q`).
 - Wiki decision: no wiki source change required; this is a service-layer architecture refactoring slice.
+
+## BACKEND-REVIEW-20260604-536: Move integration capability builder logic into service module
+
+- Date: 2026-06-04
+- Scope: `src/api/routers/integration_capabilities.py`,
+  `src/api/services/integration_capabilities_service.py`,
+  `tests/unit/dpm/test_integration_capabilities_service.py`.
+- Finding: capability assembly in `integration_capabilities.py` mixed response-shape and environment-resolution logic in the router,
+  leaving thinness and reusability goals partially unfulfilled despite existing API contract coverage.
+- Action: removed router-local builder helpers and extracted all capability/env resolution behavior into
+  `integration_capabilities_service`; `src/api/routers/integration_capabilities.py` now delegates to the service;
+  added direct service-focused tests validating input mode ordering, stateful publication gating, defaults, and env overrides.
+- Status: hardened.
+- Evidence: `python -m pytest tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py -q`,
+  `python -m ruff check src/api/routers/integration_capabilities.py src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py`,
+  `python -m ruff format --check src/api/routers/integration_capabilities.py src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py tests/unit/dpm/api/test_integration_capabilities_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/integration_capabilities_service.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `make check`, and `git diff --check`.
+- Wiki decision: no wiki source change required; this is a service-architecture and router-thinness refactor with behavior preserved.
