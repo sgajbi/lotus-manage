@@ -8,6 +8,7 @@ from src.api.services.construction_supportability_application import (
     authority_context_status,
     enrichment_summary_diagnostics,
     method_enrichment_statuses,
+    method_plan_diagnostics,
     supportability_diagnostics,
     supportability_status,
 )
@@ -283,6 +284,15 @@ def test_enrichment_summary_diagnostics_adds_method_reason_codes() -> None:
     )
 
     assert "METHOD_SPECIFIC_REASON" in diagnostics["reason_codes"]
+
+
+def test_method_plan_diagnostics_serializes_requested_method_and_status() -> None:
+    diagnostics = method_plan_diagnostics(
+        plan=resolve_method_plan(ConstructionMethod.COST_AWARE, solver_available=True)
+    )
+
+    assert diagnostics["requested_method"] == "COST_AWARE"
+    assert diagnostics["method_status"] == "READY"
 
 
 def test_supportability_application_applies_esg_restriction_constraints() -> None:

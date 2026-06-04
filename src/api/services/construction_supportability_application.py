@@ -101,7 +101,7 @@ def supportability_diagnostics(
 ) -> dict[str, object]:
     return {
         **alternative.diagnostics,
-        "method_plan": plan.model_dump(mode="json"),
+        "method_plan": method_plan_diagnostics(plan=plan),
         "enrichment_summary": enrichment_summary_diagnostics(
             enrichment=enrichment,
             method_reason_codes=method_reason_codes,
@@ -112,6 +112,10 @@ def supportability_diagnostics(
             authority_context=authority_context,
         ),
     }
+
+
+def method_plan_diagnostics(*, plan: ConstructionMethodPlan) -> dict[str, object]:
+    return plan.model_dump(mode="json")
 
 
 def enrichment_summary_diagnostics(
@@ -201,6 +205,7 @@ __all__ = [
     "apply_construction_supportability",
     "authority_context_status",
     "enrichment_summary_diagnostics",
+    "method_plan_diagnostics",
     "method_enrichment_statuses",
     "supportability_diagnostics",
     "supportability_status",

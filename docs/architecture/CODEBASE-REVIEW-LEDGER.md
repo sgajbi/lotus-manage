@@ -14024,3 +14024,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction diagnostics
   helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-575: Method plan diagnostics helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: supportability diagnostics serialized method-plan evidence inline, making the
+  diagnostic payload projection less visible and harder to test independently.
+- Action: extracted `method_plan_diagnostics`, reused it from `supportability_diagnostics`, and
+  added direct coverage for requested-method and method-status serialization.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction diagnostics
+  helper refactoring with direct tests.
