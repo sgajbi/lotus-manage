@@ -426,6 +426,21 @@ def test_service_modules_route_core_resolver_types_via_service_boundary() -> Non
         )
 
 
+def test_service_modules_route_risk_authority_types_via_service_boundary() -> None:
+    for service_module in (
+        "src/api/services/construction_alternative_builder.py",
+        "src/api/services/construction_method_authority.py",
+        "src/api/services/wave_preparation_commands.py",
+        "src/api/services/wave_service.py",
+        "src/api/services/wave_simulation.py",
+        "src/api/services/wave_simulation_item.py",
+    ):
+        source = Path(service_module).read_text(encoding="utf-8")
+        assert "from src.infrastructure.risk_authority import" not in source, (
+            f"{service_module} should import risk authority symbols via authority_client_service"
+        )
+
+
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:
     stateless_result = SimpleNamespace(lineage=SimpleNamespace(input_mode="stateful"))
 

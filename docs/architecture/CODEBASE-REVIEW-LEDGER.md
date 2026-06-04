@@ -12775,3 +12775,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`, and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
   `src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening slice.
+
+## BACKEND-REVIEW-20260604-519: Risk authority boundary imports centralized in services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_alternative_builder.py`,
+  `src/api/services/construction_method_authority.py`, `src/api/services/wave_preparation_commands.py`,
+  `src/api/services/wave_service.py`, `src/api/services/wave_simulation.py`,
+  `src/api/services/wave_simulation_item.py`, `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: multiple service modules imported concrete risk-authority client/error types directly from
+  `src.infrastructure.risk_authority`, creating mixed service-to-infrastructure coupling and reducing the intended
+  service boundary consistency.
+- Action: switched risk authority typing/imports in the listed services to `src.api.services.authority_client_service`
+  aliases (`RiskAuthorityClient`, `RiskAuthorityUnavailableError`) and added a boundary-regression test
+  that verifies these service modules no longer import directly from `src.infrastructure.risk_authority`.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_alternative_builder.py
+  src/api/services/construction_method_authority.py src/api/services/wave_preparation_commands.py
+  src/api/services/wave_service.py src/api/services/wave_simulation.py
+  src/api/services/wave_simulation_item.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format` on touched files, `python -m mypy --config-file mypy.ini` on touched files,
+  `python -m pytest tests/unit/dpm/construction/test_method_authority.py tests/unit/dpm/construction/test_alternative_builder.py
+  tests/unit/dpm/waves/test_wave_simulation.py tests/unit/dpm/waves/test_wave_simulation_item.py
+  tests/unit/dpm/waves/test_wave_preparation_commands.py tests/unit/dpm/api/test_waves_api.py -k "simulation or risk"`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service-risk boundary leakage check
+  (`from src.infrastructure.risk_authority import` in targeted `src/api/services` files).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.

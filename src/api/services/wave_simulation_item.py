@@ -3,12 +3,12 @@ from dataclasses import dataclass
 from src.api.request_models import RebalanceRequest
 from src.api.services import construction_service
 from src.api.services.wave_construction_diagnostics import proposed_changes_from_alternative_set
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmRebalanceWaveItem
 from src.core.waves.source_analytics import build_source_analytics_from_alternative_set
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 from src.core.construction.models import ConstructionAuthorityContext
 
 
@@ -26,7 +26,7 @@ def simulate_item(
     methods: list[ConstructionMethod] | None,
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
 ) -> DpmRebalanceWaveItem:
     if item.state != "SOURCE_READY":
         return item

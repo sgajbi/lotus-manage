@@ -2,6 +2,10 @@ from datetime import date
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_request_dates import construction_as_of_date
+from src.api.services.authority_client_service import (
+    RiskAuthorityClient,
+    RiskAuthorityUnavailableError,
+)
 from src.api.services.construction_method_supportability import (
     derive_currency_overlay_context,
     derive_liquidity_context,
@@ -9,10 +13,6 @@ from src.api.services.construction_method_supportability import (
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.construction.vocabulary import ConstructionMethod
 from src.core.models import RebalanceResult
-from src.infrastructure.risk_authority import (
-    LotusRiskAuthorityClient,
-    LotusRiskAuthorityUnavailableError,
-)
 
 
 def authority_context_for_method(
@@ -21,7 +21,7 @@ def authority_context_for_method(
     method: ConstructionMethod,
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     correlation_id: str | None,
     as_of_date: date,
 ) -> ConstructionAuthorityContext:
@@ -32,7 +32,7 @@ def authority_context_for_method(
                 result=result,
                 correlation_id=correlation_id,
             )
-        except LotusRiskAuthorityUnavailableError:
+        except RiskAuthorityUnavailableError:
             risk_context = None
 
     liquidity_context = authority_context.liquidity_context
@@ -56,7 +56,7 @@ def authority_context_for_method(
                 as_of_date=as_of_date,
                 correlation_id=correlation_id,
             )
-        except LotusRiskAuthorityUnavailableError:
+        except RiskAuthorityUnavailableError:
             regime_context = None
 
     return ConstructionAuthorityContext(
@@ -78,7 +78,7 @@ def authority_context_for_request_method(
     method: ConstructionMethod,
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     correlation_id: str | None,
 ) -> ConstructionAuthorityContext:
     return authority_context_for_method(
