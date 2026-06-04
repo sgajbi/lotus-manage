@@ -13578,3 +13578,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction method-execution
   correlation refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-556: Construction as-of date parser helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_request_dates.py`,
+  `tests/unit/dpm/construction/test_request_dates.py`.
+- Finding: construction as-of date resolution parsed candidate snapshot ids inline and had no direct
+  unit coverage for embedded date, ISO date, or market-versus-portfolio fallback behavior.
+- Action: extracted `candidate_as_of_date`, reused it from `construction_as_of_date`, and added
+  direct tests for embedded hyphen/underscore dates, ISO timestamp prefixes, invalid candidates,
+  market snapshot precedence, and portfolio snapshot fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_request_dates.py tests/unit/dpm/construction/test_request_dates.py`,
+  `python -m ruff format --check src/api/services/construction_request_dates.py tests/unit/dpm/construction/test_request_dates.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_request_dates.py`,
+  `python -m pytest tests/unit/dpm/construction/test_request_dates.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction request-date
+  determinism hardening with direct parser tests.
