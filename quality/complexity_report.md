@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T16:05:06+00:00`
+- Generated at: `2026-06-04T16:11:58+00:00`
 
-- Current ref: `f2aab1b9`
+- Current ref: `e31faaea`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
-| 2 | evaluate | src/core/compliance.py | 15 | 171 |
-| 3 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
-| 4 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
-| 5 | build_simulated_state | src/core/valuation.py | 15 | 118 |
-| 6 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
-| 7 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
-| 8 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
-| 9 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
-| 10 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 1 | evaluate | src/core/compliance.py | 15 | 171 |
+| 2 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
+| 3 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 4 | build_simulated_state | src/core/valuation.py | 15 | 118 |
+| 5 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
+| 6 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 7 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
+| 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 9 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 10 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
 
 ### Most Complex Current Test Functions
 
