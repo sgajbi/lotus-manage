@@ -15412,3 +15412,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-634: Treasury currency-overlay field helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: `external_treasury_currency_overlay_context` still assembled readiness,
+  currency-exposure, hedge-policy, eligible-instrument, and FX-forward-curve fields inline, making
+  source-family supportability projection harder to review and test directly.
+- Action: extracted focused treasury context field builders for readiness, currency exposure,
+  hedge policy, eligible hedge instruments, FX forward curve, and aggregate source-family fields.
+  Kept the public mapper as orchestration over primary supportability, aggregate source hash,
+  source identities, diagnostics, reason codes, and final context construction. Added direct helper
+  tests for readiness fallback source ids and optional source-family field projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction treasury
+  source-context maintainability refactoring.
