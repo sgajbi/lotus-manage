@@ -1,9 +1,11 @@
 from decimal import Decimal
 
 from src.api.services.construction_transaction_cost_supportability import (
+    covered_transaction_cost_security_ids,
     observed_transaction_cost_estimate,
     transaction_cost_reason_codes,
     transaction_cost_status,
+    traded_transaction_cost_security_ids,
     with_observed_transaction_cost_estimate,
 )
 from src.core.construction import build_rebalance_result_alternative
@@ -109,6 +111,14 @@ def test_transaction_cost_supportability_applies_observed_curve_to_candidate_not
     assert "TRANSACTION_COST_CURVE_APPLIED_TO_CANDIDATE_NOTIONALS" in transaction_cost_reason_codes(
         result=result, context=context
     )
+
+
+def test_transaction_cost_security_id_helpers_preserve_traded_and_covered_sets() -> None:
+    result = _trade_result()
+    context = _transaction_cost_context(security_ids=["EQ_A", "EQ_B"])
+
+    assert traded_transaction_cost_security_ids(result=result) == {"EQ_A", "EQ_B"}
+    assert covered_transaction_cost_security_ids(context=context) == {"EQ_A", "EQ_B"}
 
 
 def test_transaction_cost_supportability_degrades_missing_traded_security_coverage() -> None:

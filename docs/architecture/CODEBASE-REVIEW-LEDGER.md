@@ -13413,3 +13413,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction liquidity
   supportability refactoring with direct source-context tests.
+
+## BACKEND-REVIEW-20260604-549: Transaction-cost coverage projection helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`.
+- Finding: transaction-cost supportability repeated traded-security and covered-security set
+  projection in both status and reason-code paths, making observed-cost coverage semantics less
+  explicit.
+- Action: extracted `traded_transaction_cost_security_ids` and
+  `covered_transaction_cost_security_ids`, reused them in status and reason-code assembly, and
+  added direct tests for traded versus covered security sets.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction transaction-cost
+  supportability refactoring with direct coverage tests.

@@ -97,10 +97,8 @@ def transaction_cost_status(
     if context is None:
         return ConstructionMethodStatus.DEGRADED
     status = context.supportability_status
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
+    traded_security_ids = traded_transaction_cost_security_ids(result=result)
+    covered_security_ids = covered_transaction_cost_security_ids(context=context)
     if traded_security_ids and not traded_security_ids <= covered_security_ids:
         status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
     if observed_transaction_cost_estimate(result=result, context=context) is None:
@@ -116,10 +114,8 @@ def transaction_cost_reason_codes(
     if context is None:
         return ["TRANSACTION_COST_CURVE_UNAVAILABLE"]
     reason_codes = list(context.reason_codes)
-    traded_security_ids = {
-        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
-    }
-    covered_security_ids = {point.security_id for point in context.curve_points}
+    traded_security_ids = traded_transaction_cost_security_ids(result=result)
+    covered_security_ids = covered_transaction_cost_security_ids(context=context)
     missing_security_ids = sorted(traded_security_ids - covered_security_ids)
     if missing_security_ids:
         reason_codes.append("TRANSACTION_COST_CURVE_MISSING_TRADED_SECURITIES")
@@ -130,9 +126,24 @@ def transaction_cost_reason_codes(
     return sorted(set(reason_codes))
 
 
+def traded_transaction_cost_security_ids(*, result: RebalanceResult) -> set[str]:
+    return {
+        intent.instrument_id for intent in result.intents if isinstance(intent, SecurityTradeIntent)
+    }
+
+
+def covered_transaction_cost_security_ids(
+    *,
+    context: AuthoritativeTransactionCostContext,
+) -> set[str]:
+    return {point.security_id for point in context.curve_points}
+
+
 __all__ = [
+    "covered_transaction_cost_security_ids",
     "observed_transaction_cost_estimate",
     "transaction_cost_reason_codes",
     "transaction_cost_status",
+    "traded_transaction_cost_security_ids",
     "with_observed_transaction_cost_estimate",
 ]
