@@ -1,0 +1,23 @@
+[importlinter]
+root_package = src
+
+[importlinter:contract:routers_do_not_import_infrastructure]
+name = Routers depend on service layer, not concrete infrastructure clients
+type = forbidden
+source_modules = src.api.routers
+forbidden_modules =
+    src.infrastructure
+
+[importlinter:contract:services_do_not_depend_on_routers]
+name = Services do not depend on routers
+type = forbidden
+source_modules = src.api.services
+forbidden_modules =
+    src.api.routers
+
+[importlinter:contract:services_use_factory_modules]
+name = Services use factory modules for concrete clients
+type = forbidden
+source_modules = src.api.services
+forbidden_modules =
+    src.infrastructure

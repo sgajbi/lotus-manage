@@ -8,6 +8,7 @@ These rules define the report-only API-governance baseline for the enterprise-re
 2. Error responses should use consistent platform problem-details semantics where applicable.
 3. Public and internal endpoints should remain clearly separated.
 4. Health, readiness, liveness, metrics, internal, and public endpoints should be documented as distinct operational surfaces.
+5. Spectral baselines are now enforced in report-only mode via `.spectral.yaml` to keep missing metadata visible before phase-gate enforcement.
 
 ## API Behavior
 

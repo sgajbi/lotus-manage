@@ -1,0 +1,62 @@
+extends:
+  - spectral:oas
+
+rules:
+  lotus-operation-operation-id:
+    description: Every public operation should define a stable operationId.
+    message: "Operation must define operationId."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: operationId
+      function: truthy
+
+  lotus-operation-summary:
+    description: Every operation should have a concise summary.
+    message: "Operation must define summary."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: summary
+      function: truthy
+
+  lotus-operation-description:
+    description: Every operation should explain behavior and operational ownership.
+    message: "Operation must define description."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: description
+      function: truthy
+
+  lotus-operation-tags:
+    description: Every operation should be assigned to at least one tag.
+    message: "Operation must define tags."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: tags
+      function: truthy
+
+  lotus-standard-error-response:
+    description: Every operation should document at least one standard error response.
+    message: "Operation should define standard 4xx/5xx response."
+    severity: warn
+    given: "$.paths[*][get,post,put,patch,delete]"
+    then:
+      field: responses
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          anyOf:
+            - required: ["400"]
+            - required: ["401"]
+            - required: ["403"]
+            - required: ["404"]
+            - required: ["409"]
+            - required: ["422"]
+            - required: ["429"]
+            - required: ["500"]
+            - required: ["502"]
+            - required: ["503"]

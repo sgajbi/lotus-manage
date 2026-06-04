@@ -36,6 +36,15 @@ dev = [
   "cvxpy>=1.4.0",
   "numpy>=1.26.0"
 ]
+quality = [
+  "bandit[toml]>=1.7.10",
+  "deptry>=0.23.0",
+  "import-linter>=2.1",
+  "interrogate>=1.7.0",
+  "radon>=6.0.1",
+  "vulture>=2.14",
+  "xenon>=0.9.3"
+]
 
 [tool.ruff]
 line-length = 100
@@ -49,3 +58,22 @@ markers = [
   "integration: integration tests",
   "e2e: end-to-end tests",
 ]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", ".venv-codex", "output"]
+skips = []
+
+[tool.deptry]
+known_first_party = ["src"]
+exclude = ["tests", "output", ".venv", ".venv-codex"]
+
+[tool.interrogate]
+ignore-init-method = true
+ignore-init-module = true
+ignore-magic = true
+ignore-module = true
+ignore-nested-functions = true
+ignore-private = true
+ignore-property-decorators = true
+fail-under = 45
+exclude = ["tests", "output", ".venv", ".venv-codex"]
