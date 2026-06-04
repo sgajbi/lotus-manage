@@ -13268,3 +13268,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction readiness policy
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-543: Construction idempotency hash payload made inspectable
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_idempotency.py`,
+  `tests/unit/dpm/construction/test_construction_idempotency.py`.
+- Finding: construction alternative-set idempotency hash semantics were embedded directly in
+  `construction_request_hash`, making the canonical payload harder to inspect and test independently
+  from the hash function.
+- Action: extracted `construction_request_hash_payload` so request shape, ordered construction
+  methods, and stateful source-context hash participation are explicit. Added direct tests for the
+  payload while preserving the existing replay/conflict behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_idempotency.py tests/unit/dpm/construction/test_construction_idempotency.py`,
+  `python -m ruff format --check src/api/services/construction_idempotency.py tests/unit/dpm/construction/test_construction_idempotency.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_idempotency.py`,
+  `python -m pytest tests/unit/dpm/construction/test_construction_idempotency.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction idempotency semantics
+  hardening with direct tests.

@@ -6,6 +6,7 @@ import pytest
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_idempotency import (
     construction_request_hash,
+    construction_request_hash_payload,
     resolve_existing_construction_alternative_set,
 )
 from src.core.construction import build_alternative_set
@@ -45,6 +46,27 @@ def test_construction_request_hash_includes_methods_and_source_context() -> None
 
     assert heuristic_hash != baseline_hash
     assert heuristic_hash != stateful_hash
+
+
+def test_construction_request_hash_payload_preserves_methods_and_source_hash() -> None:
+    request = _request()
+    source_context = cast(
+        DpmResolvedSourceContext,
+        SimpleNamespace(stateful_context_hash="stateful-construction-hash"),
+    )
+
+    payload = construction_request_hash_payload(
+        request=request,
+        methods=[
+            ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            ConstructionMethod.MIN_TURNOVER,
+        ],
+        source_context=source_context,
+    )
+
+    assert payload["methods"] == ["HEURISTIC_EXPLAINABLE", "MIN_TURNOVER"]
+    assert payload["source_context_hash"] == "stateful-construction-hash"
+    assert payload["request"] == request.model_dump(mode="json")
 
 
 def test_construction_idempotency_returns_replay_and_rejects_conflict() -> None:
