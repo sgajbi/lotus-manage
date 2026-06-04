@@ -3,6 +3,7 @@ from typing import Any
 from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
+    treasury_fail_closed_reason_codes,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -17,7 +18,8 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
-        "external_treasury_currency_overlay_context"
+        "external_treasury_currency_overlay_context",
+        "treasury_fail_closed_reason_codes",
     ]
 
 
@@ -96,6 +98,22 @@ def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
         "external_currency_exposure_source_id": None,
         "external_currency_exposure_content_hash": None,
     }
+
+
+def test_treasury_fail_closed_reason_codes_include_present_source_families() -> None:
+    assert treasury_fail_closed_reason_codes(
+        primary_reason="EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+        hedge_readiness=hedge_readiness_response(),
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=None,
+        eligible_hedge_instruments=eligible_hedge_instruments_response(),
+        fx_forward_curve=None,
+    ) == [
+        "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED",
+        "EXTERNAL_HEDGE_EXECUTION_READINESS_FAIL_CLOSED",
+        "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED",
+        "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED",
+    ]
 
 
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:

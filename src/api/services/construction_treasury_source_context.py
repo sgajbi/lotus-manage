@@ -96,7 +96,7 @@ def _merged_blocked_capabilities(
     )
 
 
-def _fail_closed_reason_codes(
+def treasury_fail_closed_reason_codes(
     *,
     primary_reason: str,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -184,7 +184,7 @@ def external_treasury_currency_overlay_context(
     hedge_policy_identity = _optional_source_identity(hedge_policy)
     eligible_hedge_instruments_identity = _optional_source_identity(eligible_hedge_instruments)
     fx_forward_curve_identity = _optional_source_identity(fx_forward_curve)
-    reason_codes = _fail_closed_reason_codes(
+    reason_codes = treasury_fail_closed_reason_codes(
         primary_reason=primary_supportability.reason,
         hedge_readiness=hedge_readiness,
         currency_exposure=currency_exposure,
@@ -269,4 +269,7 @@ def external_treasury_currency_overlay_context(
     )
 
 
-__all__ = ["external_treasury_currency_overlay_context"]
+__all__ = [
+    "external_treasury_currency_overlay_context",
+    "treasury_fail_closed_reason_codes",
+]
