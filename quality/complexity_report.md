@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T23:52:04+00:00`
+- Generated at: `2026-06-04T23:55:50+00:00`
 
-- Current ref: `3e222fa1`
+- Current ref: `16434456`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
-| 2 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
-| 3 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
-| 4 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
-| 5 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
-| 6 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
-| 7 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
-| 8 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
-| 9 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
-| 10 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
+| 1 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
+| 2 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
+| 3 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
+| 4 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
+| 5 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
+| 6 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
+| 7 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
+| 8 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
+| 9 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
+| 10 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
 
 ### Most Complex Current Test Functions
 
