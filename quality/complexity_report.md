@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T17:18:27+00:00`
+- Generated at: `2026-06-04T23:03:04+00:00`
 
-- Current ref: `095f7319`
+- Current ref: `5561b776`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
-| 2 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
-| 3 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
-| 4 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
-| 5 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
-| 6 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
-| 7 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
-| 8 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
-| 9 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
-| 10 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 1 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 2 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
+| 3 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 4 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
+| 5 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
+| 6 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 7 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
+| 8 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
+| 9 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 10 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
 
 ### Most Complex Current Test Functions
 
