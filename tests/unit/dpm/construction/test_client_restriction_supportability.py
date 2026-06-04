@@ -1,5 +1,6 @@
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_client_restriction_supportability import (
+    active_applicable_restrictions,
     client_restriction_reason_codes,
     client_restriction_status,
     restriction_matches_intent,
@@ -157,6 +158,31 @@ def test_client_restriction_supportability_ignores_inactive_and_non_applicable_r
         "CLIENT_RESTRICTION_PROFILE_APPLIED",
         "CLIENT_RESTRICTION_PROFILE_READY",
     ]
+
+
+def test_active_applicable_restrictions_filter_status_and_trade_side() -> None:
+    restrictions = [
+        _restriction_rule(
+            restriction_code="ACTIVE_BUY", applies_to_buy=True, applies_to_sell=False
+        ),
+        _restriction_rule(
+            restriction_code="ACTIVE_SELL", applies_to_buy=False, applies_to_sell=True
+        ),
+        _restriction_rule(restriction_code="INACTIVE_BUY", restriction_status="INACTIVE"),
+        _restriction_rule(restriction_code="BUY_DISABLED", applies_to_buy=False),
+    ]
+
+    buy_restrictions = active_applicable_restrictions(
+        restrictions=restrictions,
+        trade_side="BUY",
+    )
+    sell_restrictions = active_applicable_restrictions(
+        restrictions=restrictions,
+        trade_side="SELL",
+    )
+
+    assert [restriction.restriction_code for restriction in buy_restrictions] == ["ACTIVE_BUY"]
+    assert [restriction.restriction_code for restriction in sell_restrictions] == ["ACTIVE_SELL"]
 
 
 def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> None:

@@ -13484,3 +13484,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction regime-stress
   supportability refactoring with direct source-threshold tests.
+
+## BACKEND-REVIEW-20260604-552: Client restriction applicability helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_restriction_supportability.py`,
+  `tests/unit/dpm/construction/test_client_restriction_supportability.py`.
+- Finding: client restriction violation detection embedded active-status and trade-side
+  applicability filtering in the nested violation loop, making source-owned restriction
+  applicability harder to test independently.
+- Action: extracted `active_applicable_restrictions`, reused it from
+  `violated_client_restrictions`, and added direct tests for active buy/sell applicability while
+  preserving existing violation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_restriction_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_restriction_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction client-restriction
+  supportability refactoring with direct applicability tests.
