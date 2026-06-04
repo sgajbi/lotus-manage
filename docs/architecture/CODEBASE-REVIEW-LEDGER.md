@@ -14586,3 +14586,28 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal policy-pack domain helper
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-599: Intent dependency helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/core/common/intent_dependencies.py` and
+  `tests/unit/core/test_intent_dependencies.py`.
+- Finding: `link_buy_intent_dependencies` mixed sell-intent currency indexing, duplicate-safe
+  dependency append behavior, and BUY intent orchestration in one function, leaving execution-order
+  edge rules covered only through broader common edge tests.
+- Action: extracted `sell_intent_id_by_currency` and `append_intent_dependency_once`, kept
+  `link_buy_intent_dependencies` as the in-place orchestration entrypoint, and added direct helper
+  tests for latest sell selection, duplicate-safe append ordering, and FX-before-sell dependency
+  ordering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m ruff format --check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/intent_dependencies.py`,
+  `python -m pytest tests/unit/core/test_intent_dependencies.py tests/unit/core/test_common_edge_coverage.py::test_intent_dependency_linking_and_simulated_state_edges -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance intent dependency
+  maintainability refactoring.
