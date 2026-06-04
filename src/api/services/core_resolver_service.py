@@ -2,41 +2,13 @@ from __future__ import annotations
 
 import os
 
+from src.api.services.service_config import env_flag, env_float, env_int
 from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
     DpmCoreResolverUnavailableError,
     DpmCoreResolverError,
 )
-
-
-def env_int(name: str, default: int) -> int:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    try:
-        parsed = int(value)
-    except ValueError:
-        return default
-    return parsed if parsed >= 1 else default
-
-
-def env_float(name: str, default: float) -> float:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    try:
-        parsed = float(raw)
-    except ValueError:
-        return default
-    return parsed if parsed > 0 else default
-
-
-def env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def stateful_core_sourcing_enabled() -> bool:

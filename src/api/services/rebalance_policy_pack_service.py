@@ -11,6 +11,7 @@ from src.core.rebalance.policy_packs import (
 )
 from src.core.rebalance.tenant_policy_packs import build_tenant_policy_pack_resolver
 from src.api.services import rebalance_policy_pack_repository
+from src.api.services.service_config import env_flag as _env_flag
 
 
 class DpmPolicyPackCatalogUnavailableError(RuntimeError):
@@ -20,10 +21,7 @@ class DpmPolicyPackCatalogUnavailableError(RuntimeError):
 
 
 def env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+    return _env_flag(name, default)
 
 
 def resolve_dpm_policy_pack(

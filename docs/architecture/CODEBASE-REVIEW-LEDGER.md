@@ -13023,3 +13023,21 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|src\\.infrastructure" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal architecture-governance hardening only.
+
+## BACKEND-REVIEW-20260604-532: Shared service environment helper extraction
+
+- Date: 2026-06-04
+- Scope: `src/api/services/service_config.py`, `src/api/services/core_resolver_service.py`, `src/api/services/rebalance_async_config.py`, `src/api/services/rebalance_run_support_config.py`, `src/api/services/rebalance_policy_pack_service.py`, `tests/unit/api/test_service_config.py`.
+- Finding: four service modules each implemented their own lightweight environment parsing helpers, which duplicated behavior for boolean, integer, float, CSV-set, and non-negative integer handling.
+- Action: introduced a shared `service_config` helper module for all core env-parsing operations, switched affected services to import shared logic, and preserved compatibility through small compatibility wrappers in each service module where externally visible `env_*` symbols were already part of module behavior.
+  Added direct unit coverage for the shared parser behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/service_config.py src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py tests/unit/api/test_service_config.py`,
+  `python -m ruff format --check src/api/services/service_config.py src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py tests/unit/api/test_service_config.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/core_resolver_service.py src/api/services/rebalance_async_config.py src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_service.py src/api/services/service_config.py`,
+  `python -m pytest tests/unit/api/test_service_config.py tests/unit/dpm/api/test_dpm_runs_config.py tests/unit/api/test_runtime_request_model_and_service_edges.py -k "core_resolver_service_env_helpers_reject_invalid_values or rebalance_async_config_normalizes_modes_and_flags or test_rebalance_async_config_exports_async_configuration_surface" -q`,
+  `make check`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal shared-service utility refactor.
