@@ -21,3 +21,11 @@ type = forbidden
 source_modules = src.api.services
 forbidden_modules =
     src.infrastructure
+
+[importlinter:contract:services_do_not_depend_on_fastapi_starlette]
+name = Services do not depend on FastAPI or Starlette transport modules
+type = forbidden
+source_modules = src.api.services
+forbidden_modules =
+    fastapi
+    starlette

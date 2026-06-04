@@ -13063,3 +13063,17 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal governance and architecture-hardening slice.
+
+## BACKEND-REVIEW-20260604-534: Extend import architecture rules to ban FastAPI/Starlette in services
+
+- Date: 2026-06-04
+- Scope: `.importlinter`, `quality/architecture_rules.md`.
+- Finding: service-layer boundary enforcement included only direct import-linter contracts for infrastructure modules; transport package leakage could only be caught in tests and not unified under shared architecture rules.
+- Action: added an explicit import-linter contract that bans FastAPI and Starlette modules under `src.api.services` and updated the architecture rulebook to codify the same boundary.
+- Status: hardened
+- Evidence:
+  `python -m importlinter.cli import-linter lint --config .importlinter`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`),
+  and `rg -n "services_do_not_depend_on_fastapi_starlette"` if `.importlinter` contract health is needed.
+- Wiki decision: no wiki source change required; this is a backend architecture governance control update.
