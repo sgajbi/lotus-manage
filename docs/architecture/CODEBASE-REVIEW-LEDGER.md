@@ -12875,3 +12875,24 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
   `python -m pytest` output for the two updated tests, `git diff --check`, and service leakage scan.
 - Wiki decision: no wiki source change required; this is an internal test hardening only.
+
+## BACKEND-REVIEW-20260604-523: Baseline quality and CI reporting foundation for refactor tracking
+
+- Date: 2026-06-04
+- Scope: `scripts/engineering_health_report.py`, `quality/baseline_report.md`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, `quality/complexity_report.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`,
+  `quality/ci_quality_gates.md`.
+- Finding: before sustained enterprise refactoring, the repository needed a refreshed baseline posture and explicit
+  CI/reporting contract map to measure progress against measurable quality and governance targets.
+- Action: refreshed baseline scorecards from current branch state, aligned quality-report text with available report-only
+  baselining coverage, and added `quality/ci_quality_gates.md` as the explicit gate map and enforcement
+  posture document.
+- Status: hardened
+- Evidence: `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  baseline outputs in `quality/*.md`,
+  and `quality/ci_quality_gates.md`.
+- Wiki decision: no wiki source change required; this is an internal reporting/measurement foundation slice.

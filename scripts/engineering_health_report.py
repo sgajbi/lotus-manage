@@ -530,15 +530,19 @@ def build_baseline_report(context: HealthReportContext) -> str:
                     "`quality/complexity_report.md`",
                     "1 - baseline",
                 ],
-                ["Dead code", "not instrumented yet", "planned"],
+                [
+                    "Dead code",
+                    "vulture baseline capture via `quality-baseline.yml`",
+                    "1 - report-only baseline",
+                ],
                 [
                     "Dependency hygiene",
-                    "`pip check`/security audit in repo gates; richer deptry planned",
+                    "`deptry` + `pip check` via `quality-baseline.yml` and `make security-audit`",
                     "2 - active/new-regression",
                 ],
                 [
                     "Security",
-                    "`make security-audit`; richer bandit/pip-audit scorecard planned",
+                    "`bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit`",
                     "2 - active/new-regression",
                 ],
                 ["Documentation gaps", "current docs tests plus planned docs scorecard", "planned"],
@@ -585,18 +589,18 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Dead code",
-            "Not yet instrumented",
-            "Add vulture report-only baseline before thresholds.",
+            "Report-only baseline",
+            "`quality-baseline.yml` captures `vulture` output; add thresholds after baseline review.",
         ],
         [
             "Dependency architecture",
-            "Not yet instrumented",
-            "Add import-linter/deptry report-only baseline before thresholds.",
+            "Report-only baseline",
+            "`quality-baseline.yml` captures `importlinter` and `deptry`; add thresholds after baseline review.",
         ],
         [
             "Security depth",
             "Partially active",
-            "Security audit is active; add bandit/pip-audit detail scorecard.",
+            "`make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`.",
         ],
         [
             "Documentation coverage",

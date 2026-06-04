@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-04T06:06:00+00:00`
+- Generated at: `2026-06-04T06:34:55+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `19bbdd1`
+- Current ref: `72059de`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -12,11 +12,11 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 772 | 772 | +0 |
-| Total Python LOC | 149604 | 149604 | +0 |
-| Test functions | 1958 | 1958 | +0 |
+| Python files | 779 | 783 | +4 |
+| Total Python LOC | 150021 | 150247 | +226 |
+| Test functions | 1967 | 1977 | +10 |
 | Service boundary findings | 0 | 0 | +0 |
-| Router infrastructure imports | 17 | 17 | +0 |
+| Router infrastructure imports | 0 | 0 | +0 |
 
 ## Current OpenAPI Completeness
 
@@ -139,44 +139,12 @@ No findings.
 
 ### Router infrastructure imports (origin/main)
 
-- `src/api/routers/construction_generate_routes.py:25: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/mandate_refresh_routes.py:24: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/mandates.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/monitoring.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/monitoring_http.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/monitoring_run_once_routes.py:25: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/pm_operating_quality_book_scope_builder.py:24: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/pm_operating_quality_http.py:13: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/wave_core_source_resolution.py:22: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/wave_create_preview_http.py:12: from src.infrastructure.advise_authority import LotusAdviseAuthorityClient`
-- `src/api/routers/wave_create_preview_http.py:13: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_create_preview_routes.py:28: from src.infrastructure.advise_authority import LotusAdviseAuthorityClient`
-- `src/api/routers/wave_create_preview_routes.py:29: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_portfolio_resolution.py:38: from src.infrastructure.advise_authority import (`
-- `src/api/routers/wave_portfolio_resolution.py:42: from src.infrastructure.risk_authority import (`
-- `src/api/routers/wave_simulation_http.py:14: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_simulation_routes.py:18: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
+No findings.
 
 
 ### Router infrastructure imports (current branch)
 
-- `src/api/routers/construction_generate_routes.py:25: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/mandate_refresh_routes.py:24: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/mandates.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/monitoring.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverClient`
-- `src/api/routers/monitoring_http.py:7: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/monitoring_run_once_routes.py:25: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/pm_operating_quality_book_scope_builder.py:24: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/pm_operating_quality_http.py:13: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/wave_core_source_resolution.py:22: from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError`
-- `src/api/routers/wave_create_preview_http.py:12: from src.infrastructure.advise_authority import LotusAdviseAuthorityClient`
-- `src/api/routers/wave_create_preview_http.py:13: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_create_preview_routes.py:28: from src.infrastructure.advise_authority import LotusAdviseAuthorityClient`
-- `src/api/routers/wave_create_preview_routes.py:29: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_portfolio_resolution.py:38: from src.infrastructure.advise_authority import (`
-- `src/api/routers/wave_portfolio_resolution.py:42: from src.infrastructure.risk_authority import (`
-- `src/api/routers/wave_simulation_http.py:14: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
-- `src/api/routers/wave_simulation_routes.py:18: from src.infrastructure.risk_authority import LotusRiskAuthorityClient`
+No findings.
 
 
 ## Notes
