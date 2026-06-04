@@ -80,6 +80,7 @@ def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
 
 __all__ = [
     "artifact_store_mode",
+    "DpmRunRepository",
     "build_repository",
     "env_csv_set",
     "env_flag",

@@ -12912,3 +12912,18 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/engineering_health_report.py`, `git diff --check`, and service leakage scan
   (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal API governance quality hardening slice.
+
+## BACKEND-REVIEW-20260604-525: Service boundary config adapter exports aligned for mypy and make check
+
+- Date: 2026-06-04
+- Scope: `src/api/services/rebalance_run_support_config.py`, `src/api/routers/rebalance_runs_config.py`.
+- Finding: a stale adapter name export mismatch (`PostgresDpmRunRepository`) in the router config module caused mypy to fail `make check`, blocking the repo's full validation gate despite existing boundary-focused changes.
+- Action: realigned the router import and service `__all__` export to the repository interface contract (`DpmRunRepository`), preserving runtime behavior and strengthening typed adapter boundary integrity.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `python -m ruff format --check src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_run_support_config.py src/api/routers/rebalance_runs_config.py`,
+  `make check`, `python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary/type-correctness hardening only.
