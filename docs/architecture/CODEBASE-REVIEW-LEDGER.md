@@ -15268,3 +15268,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-628: Target heuristic policy helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/targets.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`.
+- Finding: `generate_targets_heuristic` still mixed orchestration with single-position maximum
+  redistribution and minimum-cash-buffer scaling policy math, making target-generation behavior
+  harder to verify directly.
+- Action: extracted `_apply_single_position_max_weight` and `_apply_min_cash_buffer`, leaving
+  `generate_targets_heuristic` to sequence sell-only redistribution, group constraints,
+  tradeability caps, position caps, cash-buffer policy, and trace building. Added direct helper
+  tests for successful cap redistribution, remaining-excess pending review, and locked-weight
+  cash-buffer scaling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_target_generation.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation
+  maintainability refactoring.

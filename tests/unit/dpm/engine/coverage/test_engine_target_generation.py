@@ -4,7 +4,11 @@ import pytest
 from pydantic import ValidationError
 
 from src.core.common.target_redistribution import redistribute_sell_only_excess
-from src.core.rebalance.targets import _cap_tradeable_targets_to_available_weight
+from src.core.rebalance.targets import (
+    _apply_min_cash_buffer,
+    _apply_single_position_max_weight,
+    _cap_tradeable_targets_to_available_weight,
+)
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
 from tests.shared.assertions import assert_status
@@ -96,6 +100,66 @@ class TestTargetGeneration:
 
         assert status == "PENDING_REVIEW"
         assert eligible_targets == {"BUY_A": Decimal("0.00"), "LOCKED": Decimal("1.10")}
+
+    def test_apply_single_position_max_weight_caps_and_redistributes_excess(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.80"),
+            "BUY_B": Decimal("0.20"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+        status = _apply_single_position_max_weight(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            max_weight=Decimal("0.50"),
+        )
+
+        assert status == "READY"
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.50"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+    def test_apply_single_position_max_weight_marks_pending_when_excess_remains(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.90"),
+            "BUY_B": Decimal("0.10"),
+            "LOCKED": Decimal("0.80"),
+        }
+
+        status = _apply_single_position_max_weight(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            max_weight=Decimal("0.50"),
+        )
+
+        assert status == "PENDING_REVIEW"
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.50"),
+            "LOCKED": Decimal("0.50"),
+        }
+
+    def test_apply_min_cash_buffer_scales_tradeable_weight_after_locked_weight(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.30"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+        status = _apply_min_cash_buffer(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            min_cash_buffer_pct=Decimal("0.20"),
+        )
+
+        assert status == "PENDING_REVIEW"
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.43750"),
+            "BUY_B": Decimal("0.26250"),
+            "LOCKED": Decimal("0.10"),
+        }
 
     def test_target_locked_over_100(self, base_inputs):
         pf, mkt, model, shelf = base_inputs
