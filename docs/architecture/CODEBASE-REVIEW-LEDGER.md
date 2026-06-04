@@ -15124,3 +15124,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-622: Core portfolio-universe resolver helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/wave_core_portfolio_universe_resolution.py` and
+  `tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`.
+- Finding: `resolve_core_dpm_portfolio_universe_candidates` still mixed Core resolver request
+  assembly, bounded pagination, dependency-error translation, readiness/partial-page checks,
+  candidate flattening, duplicate detection, source-ref construction, and portfolio payload
+  projection in one function.
+- Action: introduced `_PortfolioUniverseResolutionRequest`, `_resolve_candidate_pages`,
+  `_portfolio_payloads_from_candidate_pages`, `_candidate_rows`, `_candidate_key`, and
+  `_candidate_portfolio_payloads`. Kept the public resolver as the orchestration boundary and
+  added direct helper tests for bounded page-token propagation and source-ref preserving payload
+  assembly.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_core_portfolio_universe_resolution.py tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `python -m ruff format --check src/api/services/wave_core_portfolio_universe_resolution.py tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_core_portfolio_universe_resolution.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal wave Core portfolio-universe
+  resolver maintainability refactoring.
