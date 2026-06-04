@@ -13077,3 +13077,21 @@ and improves internal transaction-cost source posture maintainability only.
   service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`),
   and `rg -n "services_do_not_depend_on_fastapi_starlette"` if `.importlinter` contract health is needed.
 - Wiki decision: no wiki source change required; this is a backend architecture governance control update.
+
+## BACKEND-REVIEW-20260604-535: Extract monitoring-result aggregation helper from mandate service
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_service.py`, `src/api/services/mandate_monitoring_support.py`,
+  `tests/unit/dpm/mandates/test_mandate_monitoring_support.py`.
+- Finding: `run_mandate_monitoring_once` contained inline monitoring loop state updates and persistence calls that mixed
+  orchestration and helper concerns.
+- Action: extracted monitoring result aggregation into `mandate_monitoring_support.aggregate_monitoring_results`
+  and added direct tests for that helper path, leaving `mandate_service` as orchestration with injected lookup/persistence steps.
+- Status: hardened
+- Evidence:
+  `python -m ruff format src/api/services/mandate_service.py`,
+  `python -m ruff check src/api/services/mandate_service.py src/api/services/mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_run.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_service.py src/api/services/mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_support.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_monitoring_support.py tests/unit/dpm/mandates/test_mandate_monitoring_run.py -q`,
+  and service-level regression check (`python -m pytest tests/unit/dpm/mandates/test_mandate_errors.py tests/unit/dpm/mandates/test_mandate_diff.py -q`).
+- Wiki decision: no wiki source change required; this is a service-layer architecture refactoring slice.
