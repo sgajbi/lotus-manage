@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.api.services import construction_client_profile_source_context
 from src.api.services.construction_client_profile_source_context import (
+    client_profile_source_fields,
     client_restriction_profile_context,
     sustainability_preference_profile_context,
 )
@@ -15,9 +16,44 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_client_profile_source_context_exports_only_client_profile_mappers() -> None:
     assert construction_client_profile_source_context.__all__ == [
+        "ClientProfileSourceResponse",
+        "client_profile_source_fields",
         "client_restriction_profile_context",
         "sustainability_preference_profile_context",
     ]
+
+
+def test_client_profile_source_fields_preserve_common_restriction_lineage() -> None:
+    response = client_restriction_profile_response()
+    fields = client_profile_source_fields(response)
+
+    assert fields["supportability_status"] == ConstructionMethodStatus.READY
+    assert fields["source_system"] == "lotus-core"
+    assert fields["source_product_name"] == "ClientRestrictionProfile"
+    assert fields["source_product_version"] == "v1"
+    assert fields["source_id"] == "restriction-lineage"
+    assert fields["content_hash"] == hash_canonical_payload(
+        response.model_dump(mode="json", exclude_none=True)
+    )
+    assert fields["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
+    assert fields["client_id"] == "client-1"
+    assert fields["mandate_id"] == "mandate-1"
+    assert fields["as_of_date"] == response.as_of_date
+
+
+def test_client_profile_source_fields_preserve_common_sustainability_lineage() -> None:
+    response = sustainability_preference_profile_response()
+    fields = client_profile_source_fields(response)
+
+    assert fields["supportability_status"] == ConstructionMethodStatus.BLOCKED
+    assert fields["source_product_name"] == "SustainabilityPreferenceProfile"
+    assert fields["source_id"] == "sustainability-lineage"
+    assert fields["content_hash"] == hash_canonical_payload(
+        response.model_dump(mode="json", exclude_none=True)
+    )
+    assert fields["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
+    assert fields["client_id"] == "client-1"
+    assert fields["mandate_id"] == "mandate-1"
 
 
 def test_client_restriction_profile_context_preserves_rules_and_lineage() -> None:

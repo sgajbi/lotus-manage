@@ -13601,3 +13601,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction request-date
   determinism hardening with direct parser tests.
+
+## BACKEND-REVIEW-20260604-557: Client profile source identity mapper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_client_profile_source_context.py`,
+  `tests/unit/dpm/construction/test_client_profile_source_context.py`.
+- Finding: client restriction and sustainability preference source-product context mappers
+  duplicated the same source identity, supportability status, portfolio, client, mandate, and
+  as-of field assembly, increasing the chance of lineage drift between profile families.
+- Action: extracted `client_profile_source_fields`, reused it from both profile context mappers,
+  and added direct helper tests for restriction and sustainability profile lineage fields while
+  preserving existing mapper behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_client_profile_source_context.py tests/unit/dpm/construction/test_client_profile_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_profile_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_profile_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal source-product lineage mapper
+  refactoring with direct helper tests.
