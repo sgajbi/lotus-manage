@@ -11378,3 +11378,1328 @@ This ledger records cleanup and structural review evidence for RFC-0036.
   observability checks.
 - Wiki decision: no wiki source change required yet; this is internal engineering-health evidence
   and does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-468: Report-only quality governance baseline artifacts
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/baseline_report.md`,
+  `quality/quality_scorecard.md`, `quality/architecture_rules.md`,
+  `quality/api_governance_rules.md`, `quality/refactor_health_report.md`,
+  `tests/unit/test_engineering_health_report.py`, and this ledger.
+- Finding: the branch had a useful refactor health report, but the enterprise-readiness objective
+  also needs durable baseline, scorecard, architecture-rule, and API-governance artifacts before
+  richer tools can be introduced as progressive gates.
+- Action: extended the dependency-free health report generator to write the baseline report,
+  quality scorecard, architecture rules, and API governance rules alongside the existing refactor
+  report; added renderer tests proving the artifacts remain report-only and distinguish active
+  gates from planned instrumentation.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`,
+  `python -m ruff format --check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m mypy --config-file mypy.ini
+  scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, ledger diff
+  review, service leakage scan, and generated-artifact sanity scan passed.
+- Follow-up: optimize baseline loading before CI integration, then add report-only optional-tool
+  collectors for complexity, dead code, dependency architecture, security depth, documentation gaps,
+  and observability gaps before enforcing thresholds.
+- Wiki decision: no wiki source change required yet; this is internal quality-governance evidence
+  and does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-469: Batch baseline loading for engineering health reports
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  generated quality reports, and this ledger.
+- Finding: the new quality report generator loaded baseline file contents with one `git show`
+  invocation per Python file, which made report-only evidence unnecessarily slow and unsuitable for
+  later CI integration.
+- Action: replaced per-file baseline reads with one `git archive` stream over `src`, `tests`, and
+  `scripts`; added a focused unit test that proves only Python files are read from the archive
+  payload and non-Python files are ignored.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `Measure-Command { python
+  scripts/engineering_health_report.py }` reported 12.87 seconds, `python
+  scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, service leakage scan, and targeted archive-reader sanity scan passed.
+- Follow-up: if the report still needs CI integration, profile OpenAPI schema generation separately
+  and keep the generator report-only until runtime is consistently acceptable.
+- Wiki decision: no wiki source change required; this is internal quality-tool performance and
+  maintainability work.
+
+## BACKEND-REVIEW-20260602-470: Report-only AST complexity baseline
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/complexity_report.md`,
+  `quality/baseline_report.md`, `quality/quality_scorecard.md`,
+  `quality/refactor_health_report.md`, `tests/unit/test_engineering_health_report.py`, and this
+  ledger.
+- Finding: complexity and maintainability were still listed as planned rather than measured, which
+  made the quality baseline weaker than the stated enterprise-readiness objective.
+- Action: added dependency-free AST branch counting, surfaced the most complex functions in the
+  refactor report, generated a standalone report-only complexity baseline, and updated the baseline
+  report and scorecard to treat complexity as measured phase-1 evidence instead of an uninstrumented
+  gap.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, service leakage scan, and generated complexity-artifact
+  sanity scan passed.
+- Follow-up: review the largest test and source complexity findings before setting thresholds; keep
+  the detector report-only until the expected baseline is agreed.
+- Wiki decision: no wiki source change required; this is internal quality-governance evidence and
+  does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-471: Source/test split for complexity rankings
+
+- Date: 2026-06-02
+- Scope: `scripts/engineering_health_report.py`, `quality/complexity_report.md`,
+  `tests/unit/test_engineering_health_report.py`, and this ledger.
+- Finding: the initial complexity report was useful but combined source and test functions in one
+  ranking, so very large contract tests could obscure source-code refactor targets.
+- Action: added source and test filtered complexity rankings while keeping the combined top list;
+  updated renderer tests to prove both sections remain present in the report-only artifact.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py`, `python -m ruff format --check
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/test_engineering_health_report.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, service leakage scan, and source/test complexity artifact
+  sanity scan passed.
+- Follow-up: use the separated source ranking to choose small source refactors without losing the
+  signal that oversized tests also need maintenance work.
+- Wiki decision: no wiki source change required; this is internal quality-governance evidence and
+  does not change route behavior, product feature truth, or operator procedure.
+
+## BACKEND-REVIEW-20260602-472: Proof-pack source analytics section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `quality/complexity_report.md` identified `_section_payload` as the top source-code
+  complexity hotspot; four source-analytics sections repeated the same context-present/fallback
+  branch pattern.
+- Action: extracted `_source_analytics_section_payload` and routed risk, performance,
+  sustainability, and scenario/regime sections through it while preserving the scenario reason-code
+  sorting behavior. Added direct helper tests for missing-context fallback and sorted reason-code
+  projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 85 / 465 lines to complexity 81 / 426
+  lines.
+- Follow-up: continue extracting cohesive section families from `_section_payload` with direct
+  behavior tests until source complexity is no longer concentrated in the dispatcher.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-473: Proof-pack adapter section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still contained repeated adapter-reference section payload assembly
+  for reporting and AI evidence refs after the source-analytics extraction.
+- Action: extracted `_adapter_section_payload` and routed `reporting_refs` and `ai_refs` through it;
+  added a direct helper test proving the ready-state adapter contract tuple shape.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` line count reduced from 426 to 420 while complexity remains 81.
+- Follow-up: prioritize branch-reducing extractions next; this slice improved reuse/readability but
+  did not lower the branch-count score.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-474: Proof-pack run-state section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried several simple run-state section branches for before,
+  target, trade-intent, and after-state payloads, keeping the dispatcher as the top source
+  complexity hotspot.
+- Action: extracted `_run_state_section_payload` for the cohesive run-state section family and left
+  `_section_payload` responsible for orchestration/dispatch. Added direct tests for blocked
+  trade-intent evidence and unrelated-section passthrough.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 81 / 420 lines to complexity 75 / 383
+  lines.
+- Follow-up: continue with branch-reducing section-family helpers, then revisit whether the
+  dispatcher should become table-driven once helper boundaries are stable.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-475: Proof-pack run diagnostics section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still owned diagnostic section branches for liquidity, FX funding, and
+  currency overlay, keeping proof-pack evidence assembly concentrated in one dispatcher.
+- Action: extracted `_run_diagnostics_section_payload` for the cohesive diagnostics section family
+  and added direct helper tests for ready liquidity posture and currency-overlay fallback posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 75 / 383 lines to complexity 69 / 353
+  lines.
+- Follow-up: continue extracting remaining source section families, especially approval/lineage and
+  tax/drift/rule sections, with direct helper tests.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-476: Proof-pack policy section payload helper and source complexity ranking fix
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`, `scripts/engineering_health_report.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `tests/unit/test_engineering_health_report.py`, generated quality reports, and this ledger.
+- Finding: `_section_payload` still carried drift, tax, and rule-result policy branches, and the
+  complexity report's source/test split was derived only from the combined top-ten list. Once source
+  complexity dropped below the combined top ten, the source ranking went empty and stopped being
+  useful evidence.
+- Action: extracted `_run_policy_section_payload` for drift, tax, and rule-result sections; added
+  direct helper tests for direct-run drift fallback and missing tax posture; changed the quality
+  report snapshot to compute source and test complexity rankings independently from all functions.
+- Status: hardened
+- Evidence: `python -m ruff check scripts/engineering_health_report.py
+  tests/unit/test_engineering_health_report.py src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py
+  scripts/engineering_health_report.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py tests/unit/test_engineering_health_report.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `_section_payload` at complexity 64 /
+  318 lines and preserves an independent populated source-complexity top-ten table.
+- Follow-up: continue extracting remaining proof-pack approval, timeline, lineage, and supportability
+  section families, then consider a table-driven dispatcher.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability and quality evidence.
+
+## BACKEND-REVIEW-20260602-477: Proof-pack governance section payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried proof-pack governance sections for approval
+  requirements, operations handoff, decision timeline, lineage, and supportability.
+- Action: extracted `_proof_pack_governance_section_payload` for the cohesive governance section
+  family. Added direct tests for deterministic workflow-decision ordering and lineage source-ref
+  metrics.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 64 / 318 lines to complexity 45 / 278
+  lines, moving `generate_intents` to the top source hotspot.
+- Follow-up: continue source-complexity reduction from the refreshed ranking, starting with
+  `src/core/rebalance/intents.py::generate_intents` or the remaining proof-pack dispatcher branches.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-478: Rebalance intent tax-lot HIFO helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: the refreshed complexity report moved `generate_intents` to the top source hotspot after
+  proof-pack dispatcher reductions. The function still contained nested tax-lot currency conversion
+  and HIFO lot sorting helpers that inflated parent complexity.
+- Action: extracted `_lot_cost_in_instrument_ccy` and `_hifo_sorted_lots` as private helpers and
+  routed tax-aware sell limiting through them. Added direct tests proving HIFO ordering and
+  missing-FX fallback logging.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 58 / 236 lines to complexity 52 / 217 lines.
+- Follow-up: continue decomposing `generate_intents`, especially sell quantity limiting and trade
+  construction, with direct tests around tax budget and constraint labels.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-479: Rebalance intent sell clamp and tax-budget event helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: after HIFO helper extraction, `generate_intents` still handled sell quantity clamping and
+  tax-budget event recording inline in the main target loop.
+- Action: extracted `_clamped_sell_quantity` and `_record_tax_budget_limit_reached`; added direct
+  tests proving sell-clamp warning de-duplication and tax-budget event payloads without duplicate
+  warnings.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 52 / 217 lines to complexity 48 / 210 lines.
+- Follow-up: continue with trade construction and threshold/suppression helper extraction from
+  `generate_intents`, preserving tax-aware behavior.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-480: Rebalance intent threshold and constraint helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still resolved option/shelf minimum-notional thresholds and assembled
+  applied constraint labels inline, adding branching to the target loop.
+- Action: extracted `_trade_notional_threshold` and `_security_intent_constraints`; added direct
+  tests for option-over-shelf threshold precedence and combined sell-safety/tax-budget labels.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 48 / 210 lines to complexity 38 / 207 lines.
+- Follow-up: `quality/complexity_report.md` now puts `_section_payload` back at the top source
+  hotspot; continue branch-reducing proof-pack dispatcher extraction or finish trade-construction
+  extraction in `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-481: Proof-pack mandate context payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried the mandate-context supportability ladder inline,
+  including missing mandate identity, missing twin evidence, missing health evidence, and complete
+  health-backed projection.
+- Action: extracted `_mandate_context_section_payload` and delegated the `mandate_context` branch
+  through it. Added direct helper tests for missing identity and full mandate-health projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 45 / 278 lines to complexity 41 / 224
+  lines.
+- Follow-up: continue extracting remaining proof-pack sections, especially selected-alternative and
+  eligibility/restriction payloads, with direct tests.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-482: Proof-pack selected alternative payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still assembled selected construction alternative facts, comparison
+  metrics, and not-ready reason codes inline, keeping the dispatcher responsible for section-specific
+  supportability projection.
+- Action: extracted `_selected_alternative_section_payload` and delegated the
+  `selected_alternative` branch through it. Added direct helper tests for the missing-selection
+  degraded state and the ready selected-alternative method trace projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 41 / 224 lines to complexity 36 / 192
+  lines.
+- Follow-up: continue extracting remaining proof-pack sections, especially source-readiness,
+  turnover/cost, and eligibility/restriction payloads, before returning to the
+  `external_treasury_currency_overlay_context` source hotspot.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-483: Proof-pack source readiness payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still carried source-run readiness projection inline, mixing the
+  dispatcher with lineage supportability state handling and missing-run failure behavior.
+- Action: extracted `_source_readiness_section_payload` and delegated the `source_readiness` branch
+  through it. Added direct helper tests for missing source runs and degraded lineage supportability.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 36 / 192 lines to complexity 32 / 178
+  lines.
+- Follow-up: continue extracting the remaining proof-pack section payloads, especially
+  turnover/cost and eligibility/restriction, then return to top-ranked source hotspots.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-484: Proof-pack turnover and cost payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still mixed turnover/cost proof-pack projection with dispatcher flow,
+  including selected-alternative comparison metrics, missing-metrics degradation, and source-owned
+  transaction-cost evidence merging.
+- Action: extracted `_turnover_and_cost_section_payload` and delegated the `turnover_and_cost`
+  branch through it. Added direct helper tests for missing selected metrics and merging
+  source-owned `TransactionCostCurve` facts and metrics.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 32 / 178 lines to complexity 27 / 154
+  lines.
+- Follow-up: extract eligibility/restriction payload projection or shift to the refreshed top source
+  hotspots: `external_treasury_currency_overlay_context` and `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-485: Proof-pack eligibility and restriction payload helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` still assembled eligibility and client-restriction proof-pack payloads
+  inline, including universe-exclusion fallback state, source-owned restriction facts, and combined
+  reason-code projection.
+- Action: extracted `_eligibility_and_restrictions_section_payload` and delegated the
+  `eligibility_and_restrictions` branch through it. Added direct helper tests for universe-exclusion
+  fallback and source-owned `ClientRestrictionProfile` evidence merged with exclusions.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `_section_payload` reduced from complexity 27 / 154 lines to complexity 22 / 130
+  lines.
+- Follow-up: `_section_payload` is no longer a top-five source hotspot; continue with
+  `external_treasury_currency_overlay_context` or `generate_intents` based on the refreshed
+  complexity ranking.
+- Wiki decision: no wiki source change required; this preserves proof-pack behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-486: Treasury overlay payload and supportability helpers
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_treasury_source_context.py`, generated quality reports, and
+  this ledger.
+- Finding: `external_treasury_currency_overlay_context` was the top source hotspot and still
+  assembled aggregate source payloads and primary source-family fallback selection inline before
+  building the authoritative currency-overlay context.
+- Action: extracted `_treasury_source_payloads` and `_primary_treasury_supportability`, then routed
+  the public currency-overlay mapper through them. Added direct helper tests proving aggregate hash
+  inputs and first-available source-family supportability selection.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m ruff format
+  src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m mypy --config-file
+  mypy.ini src/api/services/construction_treasury_source_context.py`, `python -m pytest
+  tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows
+  `external_treasury_currency_overlay_context` reduced from complexity 39 / 189 lines to complexity
+  30 / 164 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with `generate_intents`
+  or another narrow treasury overlay helper extraction if it stays behavior-preserving.
+- Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-487: Rebalance intent tax-budget sell limit helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` remained the top source hotspot after earlier refactors because it
+  still carried a nested tax-aware sell limiter with `nonlocal` realized-gain/loss and budget-used
+  state.
+- Action: extracted `_TaxBudgetAccumulator` and `_tax_budget_limited_sell_quantity`, then routed
+  `generate_intents` through the explicit accumulator. Added direct helper tests for realized-gain
+  budget capping and disabled tax-awareness passthrough behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 38 / 207 lines to complexity 24 / 149 lines.
+- Follow-up: continue with the refreshed top source hotspots:
+  `external_treasury_currency_overlay_context`, `validate_definition`, and `build_search_row`.
+- Wiki decision: no wiki source change required; this preserves engine behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-488: Treasury overlay source identity projection helper
+
+- Date: 2026-06-02
+- Scope: `src/api/services/construction_treasury_source_context.py`,
+  `tests/unit/dpm/construction/test_treasury_source_context.py`, generated quality reports, and
+  this ledger.
+- Finding: after the first treasury overlay extraction, `external_treasury_currency_overlay_context`
+  still repeated the same source-product identity projection fields for each external treasury
+  source family.
+- Action: extracted `_source_identity_fields` and used it for external currency exposure, hedge
+  policy, eligible hedge instruments, and FX forward curve source identity projection. Added direct
+  helper tests for populated and absent source identities.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m ruff format
+  src/api/services/construction_treasury_source_context.py
+  tests/unit/dpm/construction/test_treasury_source_context.py`, `python -m mypy --config-file
+  mypy.ini src/api/services/construction_treasury_source_context.py`, `python -m pytest
+  tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `external_treasury_currency_overlay_context` out of the top-ten current source functions after it
+  previously ranked at complexity 30 / 164 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `validate_definition`, `build_search_row`, or another narrow source-boundary mapper if it remains
+  behavior-preserving.
+- Wiki decision: no wiki source change required; this preserves source-product mapping behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-489: Campaign definition lifecycle validation helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, generated quality reports, and
+  this ledger.
+- Finding: `DpmBulkReviewCampaignDefinition.validate_definition` was the top source hotspot after
+  prior reductions because it mixed active, retired, and superseded lifecycle validation branches
+  with structural checks and content-hash assignment.
+- Action: extracted `_validate_active_lifecycle`, `_validate_retired_lifecycle`, and
+  `_validate_superseded_lifecycle`, then routed the Pydantic validator through the status-specific
+  helpers. Added direct helper tests proving the preserved lifecycle reason codes.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/waves/campaign_definitions.py
+  tests/unit/dpm/waves/test_campaign_definition_repository.py`, `python -m ruff format
+  src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definitions.py`, `python -m pytest
+  tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `validate_definition` out of the
+  top-ten current source functions after it previously ranked at complexity 30 / 69 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `build_search_row`, `compile_mandate_digital_twin_from_core`, or `generate_fx_and_simulate`.
+- Wiki decision: no wiki source change required; this preserves campaign-definition lifecycle
+  behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-490: Portfolio-memory search row helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/search_page.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this ledger.
+- Finding: `build_search_row` was the top source hotspot after prior reductions because it mixed
+  summary-level filtering, event-level filter matching, and search-item projection in one function.
+- Action: extracted `_memory_passes_search_summary_filters`, `_filters_require_matching_events`,
+  and `_portfolio_memory_search_item`, then routed `build_search_row` through them. Added direct
+  helper tests for summary filter rejection, event-level filter detection, and latest matching-event
+  projection.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/search_page.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_page.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py
+  tests/unit/dpm/portfolio_memory/test_search_filters.py
+  tests/unit/dpm/portfolio_memory/test_search_facets.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `build_search_row` out of the top-ten
+  current source functions after it previously ranked at complexity 28 / 86 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `compile_mandate_digital_twin_from_core`, `generate_fx_and_simulate`, or `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search behavior
+  and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-491: Mandate twin field-gap helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, generated quality
+  reports, and this ledger.
+- Finding: `compile_mandate_digital_twin_from_core` still mixed field-gap reason-code projection
+  with constraint, preference, lineage, and twin assembly, keeping source completeness decisions
+  embedded in the compiler body.
+- Action: extracted `_mandate_twin_field_gap_codes` and routed the compiler through it. Added direct
+  helper tests for fully missing core products and fully sourced core products.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m ruff format src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m mypy --config-file mypy.ini
+  src/core/mandates.py`, `python -m pytest tests/unit/dpm/core/test_mandate_health.py
+  tests/unit/dpm/mandates/test_mandate_health_result.py
+  tests/unit/dpm/mandates/test_mandate_refresh.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report moves `compile_mandate_digital_twin_from_core` out of the top-ten current source functions
+  after it previously ranked at complexity 26 / 182 lines.
+- Follow-up: continue reducing the refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `generate_intents`, or `_section_payload`.
+- Wiki decision: no wiki source change required; this preserves mandate twin behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-492: Rebalance execution projected cash helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` was the top source hotspot after mandate compiler reduction
+  and still calculated projected cash balances from security trades inline before FX funding and
+  sweep intent generation.
+- Action: extracted `_project_cash_after_security_trades` and routed FX generation through the
+  helper. Added direct tests proving buy/sell cash projection and skipped incomplete security
+  intents without notional evidence.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_fx_and_simulate` reduced
+  from complexity 26 / 167 lines to complexity 22 / 160 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `generate_fx_and_simulate`, `_section_payload`, or `generate_targets_heuristic`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-493: Rebalance intent market context helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still mixed target-loop orchestration with source-market lookup,
+  FX conversion, current-position lookup, and data-quality logging for missing price or FX evidence.
+- Action: extracted `_intent_market_context` and routed intent generation through the helper. Added
+  direct helper tests for successful price/FX/position resolution and missing price/FX logging.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_intents` reduced from
+  complexity 24 / 149 lines to complexity 23 / 149 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `_section_payload`, `generate_targets_heuristic`, or
+  `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-494: Rebalance FX intent and dependency helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` still mixed FX funding/sweep intent construction and
+  dependency-linking defaults with simulation orchestration, keeping direction-specific cash math
+  and dependency policy harder to test directly.
+- Action: extracted `_fx_intent_for_projected_cash_balance` and `_link_execution_dependencies`,
+  then routed FX generation through them. Added direct tests for funding intent construction, sweep
+  intent construction, zero-balance suppression, default same-currency sell dependency linking, and
+  explicit same-currency sell opt-out.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report shows `generate_fx_and_simulate` reduced
+  from complexity 22 / 160 lines to complexity 19 / 137 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `_section_payload`, `generate_targets_heuristic`, or `_infer_example`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-495: Heuristic target sell-only excess helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_heuristic` still mixed sell-only excess redistribution with group
+  constraints, total-weight normalization, single-position caps, cash-buffer scaling, and trace
+  assembly.
+- Action: extracted `_redistribute_sell_only_excess` and routed heuristic target generation through
+  it. Added direct tests for proportional redistribution to buyable recipients, no-excess no-op
+  behavior, and pending-review status when no recipient weight is available.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/targets.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `generate_targets_heuristic` reduced from complexity 22 / 74 lines to complexity 19 /
+  71 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `_section_payload`, `_infer_example`, or `summarize_enrichment_posture`.
+- Wiki decision: no wiki source change required; this preserves heuristic target-generation
+  behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-496: Rebalance intent valuation helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` still computed current instrument value and per-unit sizing inputs
+  inline, mixing trusted market-value handling with target-loop orchestration and sell/buy sizing.
+- Action: extracted `_current_instrument_value_and_unit_value` and routed intent generation through
+  it. Added direct tests for no-position pricing, calculated position value, trusted market value,
+  and trusted zero-quantity fallback behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_tax_awareness.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_intents` out of the top-ten
+  current source functions after it previously ranked first at complexity 23 / 149 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_section_payload`,
+  `_infer_example`, `summarize_enrichment_posture`, or `_proof_pack_governance_section_payload`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-497: Proof-pack pre-run section dispatcher helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_section_payload` mixed pre-run section routing for decision summaries, source
+  readiness, selected alternatives, source analytics, and adapter references with run-required
+  proof-pack sections and missing-run handling.
+- Action: extracted `_pre_run_section_payload` and routed `_section_payload` through it. Added
+  direct tests for degraded decision-summary evidence when actor rationale is missing and for
+  ignoring run-required sections so they remain handled by the run-backed dispatcher path.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_markdown.py
+  tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `_section_payload` out of the top-ten
+  current source functions after it previously ranked first at complexity 22 / 130 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_infer_example`,
+  `summarize_enrichment_posture`, `_proof_pack_governance_section_payload`, or
+  `generate_targets_solver`.
+- Wiki decision: no wiki source change required; this preserves proof-pack section evidence
+  behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-498: OpenAPI semantic example helper extraction
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_infer_example` mixed schema-type dispatch with semantic number examples and semantic
+  string examples, including ambiguous date/timestamp key handling in generated OpenAPI examples.
+- Action: extracted `_number_example_for_key` and `_semantic_string_example_for_key`, then routed
+  example inference through them. Added direct tests for weight, price/rate, quantity, fallback
+  numeric examples, identifier, currency, date, time/timestamp, status, string fallback, and
+  unknown-schema fallback examples. The timestamp check now takes precedence over generic `date`
+  substrings so keys such as `updated_timestamp` receive date-time examples.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `_infer_example` out of the top-ten
+  current source functions after it previously ranked first at complexity 22 / 48 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `summarize_enrichment_posture`, `_proof_pack_governance_section_payload`,
+  `generate_targets_solver`, or `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves API-enrichment behavior while
+  improving generated example semantics and maintainability only.
+
+## BACKEND-REVIEW-20260602-499: Construction enrichment tax and FX posture helpers
+
+- Date: 2026-06-02
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, generated quality reports, and this ledger.
+- Finding: `summarize_enrichment_posture` mixed tax-readiness and FX-source posture decisions with
+  liquidity, cost, turnover, risk, and performance enrichment aggregation.
+- Action: extracted `_tax_enrichment_status` and `_fx_enrichment_status`, then routed enrichment
+  summary aggregation through them. Added direct tests for required tax blocking, optional tax
+  degradation, available tax readiness, missing FX blocking, and ready FX posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/construction/enrichment.py
+  tests/unit/dpm/construction/test_enrichment.py`, `python -m ruff format
+  src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`, `python -m pytest
+  tests/unit/dpm/construction/test_enrichment.py
+  tests/unit/dpm/construction/test_method_readiness.py
+  tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `summarize_enrichment_posture` out of
+  the top-ten current source functions after it previously ranked first at complexity 21 / 89 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_proof_pack_governance_section_payload`, `generate_targets_solver`, `generate_fx_and_simulate`,
+  or `build_simulated_state`.
+- Wiki decision: no wiki source change required; this preserves construction enrichment behavior
+  and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-500: Proof-pack approval requirements helper
+
+- Date: 2026-06-02
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, generated quality reports, and this
+  ledger.
+- Finding: `_proof_pack_governance_section_payload` mixed approval-state derivation and workflow
+  decision ordering with operations handoff, timeline, lineage, and supportability section routing.
+- Action: extracted `_approval_requirements_section_payload` and routed approval requirements
+  through it. Added direct tests for workflow decision ordering, pending-review posture, blocked-run
+  posture, workflow decision metrics, and empty workflow-decision facts.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/proof_packs/builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `python -m ruff format
+  src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`, `python -m pytest
+  tests/unit/dpm/proof_packs/test_proof_pack_builder.py
+  tests/unit/dpm/proof_packs/test_proof_pack_markdown.py
+  tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `_proof_pack_governance_section_payload` out of the top-ten current source functions after it
+  previously ranked first at complexity 21 / 60 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_solver`, `generate_fx_and_simulate`, `build_simulated_state`, or
+  `validate_search_page_metadata`.
+- Wiki decision: no wiki source change required; this preserves proof-pack approval evidence
+  behavior and improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-501: Shared target redistribution helper
+
+- Date: 2026-06-02
+- Scope: `src/core/common/target_redistribution.py`, `src/core/rebalance/targets.py`,
+  `src/core/target_generation.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_solver` duplicated sell-only excess redistribution logic already
+  extracted for heuristic target generation, leaving solver and heuristic target paths with
+  parallel behavior that could drift.
+- Action: introduced shared `redistribute_sell_only_excess`, routed both heuristic and solver target
+  generation through it, and updated direct redistribution tests to exercise the common helper.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/common/target_redistribution.py
+  src/core/rebalance/targets.py src/core/target_generation.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/common/target_redistribution.py src/core/rebalance/targets.py
+  src/core/target_generation.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/target_redistribution.py
+  src/core/rebalance/targets.py src/core/target_generation.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report shows `generate_targets_solver` reduced from complexity 20 / 113 lines to complexity 17 /
+  109 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `build_simulated_state`, `validate_search_page_metadata`, or
+  `generate_targets_heuristic`.
+- Wiki decision: no wiki source change required; this preserves target-generation behavior and
+  improves shared target allocation maintainability only.
+
+## BACKEND-REVIEW-20260602-502: Valuation cash base-value helper
+
+- Date: 2026-06-02
+- Scope: `src/core/valuation.py`, `tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  generated quality reports, and this ledger.
+- Finding: `build_simulated_state` duplicated base-currency and foreign-currency cash valuation
+  across total-value and cash allocation paths, making missing-FX diagnostic behavior harder to
+  keep consistent.
+- Action: extracted `_cash_value_in_base` and routed both total-value cash valuation and asset-class
+  cash allocation through it. Added direct helper tests for base cash, FX conversion, missing-FX
+  logging, and the allocation path where no missing-FX log is requested.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/valuation.py
+  tests/unit/dpm/engine/test_engine_valuation_service.py`, `python -m ruff format
+  src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/valuation.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_valuation_service.py
+  tests/unit/dpm/engine/test_engine_simulation_shared.py
+  tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `build_simulated_state` out of the
+  top-ten current source functions after it previously ranked second at complexity 19 / 123 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_fx_and_simulate`, `validate_search_page_metadata`, `generate_targets_heuristic`, or
+  `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves valuation behavior and improves
+  internal maintainability only.
+
+## BACKEND-REVIEW-20260602-503: Rebalance projected-cash FX helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_fx_and_simulate` mixed projected-cash FX intent assembly, missing-FX
+  diagnostics, dependency-map preparation, settlement checks, portfolio mutation, valuation, rule
+  evaluation, and reconciliation in one orchestration function.
+- Action: extracted `_append_projected_cash_fx_intents` so projected-cash FX generation and
+  missing-FX blocking are directly testable while `generate_fx_and_simulate` keeps the orchestration
+  sequence. Added helper tests for funding and sweep FX intent creation, funding dependency-map
+  capture, base-currency skip behavior, and block-on-missing-FX diagnostics.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m ruff format
+  src/core/rebalance/execution.py
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`, `python -m mypy --config-file
+  mypy.ini src/core/rebalance/execution.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py
+  tests/unit/dpm/engine/test_engine_simulation_shared.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_fx_and_simulate` out of the
+  top-ten current source functions after it previously ranked first at complexity 19 / 137 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `validate_search_page_metadata`, `generate_targets_heuristic`, `_example_from_schema`, or
+  `_ensure_request_and_response_examples`.
+- Wiki decision: no wiki source change required; this preserves rebalance execution behavior and
+  improves internal maintainability only.
+
+## BACKEND-REVIEW-20260602-504: Portfolio-memory search pagination validator
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this
+  ledger.
+- Finding: `validate_search_page_metadata` mixed pagination posture validation with aggregate
+  supportability, source-system, and matching-event count validation, making the bounded search API
+  pagination contract harder to test directly.
+- Action: extracted `_validate_search_page_pagination` and routed search-page model validation
+  through it. Added direct tests for valid advancing pages, returned-count mismatches, incorrect
+  `has_more` posture, and invalid terminal-page `next_offset`.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/models.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py
+  tests/unit/dpm/api/test_portfolio_memory_api.py -k "search_page or search_indexes or
+  search_counts or search_facets"`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py
+  --validate-only`, `git diff --check`, and service leakage scan passed. The refreshed complexity
+  report moves `validate_search_page_metadata` out of the top-ten current source functions after it
+  previously ranked first at complexity 19 / 79 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_heuristic`, `_example_from_schema`, `_ensure_request_and_response_examples`, or
+  `evaluate`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search API
+  behavior and improves internal validation maintainability only.
+
+## BACKEND-REVIEW-20260602-505: Heuristic target total-weight cap helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, generated quality reports, and
+  this ledger.
+- Finding: `generate_targets_heuristic` mixed sell-only redistribution, group constraints,
+  total-weight capping, single-position caps, cash-buffer scaling, and trace construction in one
+  target allocation path.
+- Action: extracted `_cap_tradeable_targets_to_available_weight` so the total-weight cap for
+  tradeable buy targets is directly testable and separate from the rest of heuristic target
+  orchestration. Added helper tests for balanced no-op targets, proportional tradeable scaling, and
+  locked exposure above 100% forcing pending-review posture.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/targets.py
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, `python -m ruff format
+  src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`, `python -m pytest
+  tests/unit/dpm/engine/coverage/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_target_generation.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_targets_heuristic` out of
+  the top-ten current source functions after it previously ranked first at complexity 19 / 71
+  lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_example_from_schema`,
+  `_ensure_request_and_response_examples`, `evaluate`, or `generate_intents`.
+- Wiki decision: no wiki source change required; this preserves heuristic target-generation
+  behavior and improves internal allocation maintainability only.
+
+## BACKEND-REVIEW-20260602-506: OpenAPI declared schema example helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_example_from_schema` mixed explicit schema example selection with reference
+  resolution, composite schemas, object properties, arrays, maps, and inferred fallback examples.
+- Action: extracted `_schema_declared_example` so `example` and `examples` precedence is directly
+  testable before broader schema traversal. Added direct tests for explicit object examples, first
+  list example selection, empty examples, and schemas without declared examples.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report reduces `_example_from_schema` from
+  complexity 19 / 66 lines to complexity 17 / 64 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_ensure_request_and_response_examples`, `evaluate`, `generate_intents`, or
+  `generate_targets_solver`. `_example_from_schema` remains a top-ten source hotspot and should
+  receive a further traversal-focused extraction later.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
+  and improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-507: OpenAPI operation example enrichment helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_ensure_request_and_response_examples` mixed path traversal, metrics response handling,
+  request-body example generation, response example generation, and standard error response
+  enrichment in one OpenAPI governance pass.
+- Action: extracted `_ensure_operation_examples` so normal HTTP operation request, response, and
+  error example enrichment is directly testable while the top-level function keeps route traversal
+  and metrics special-case handling. Added direct tests for request payload examples, successful
+  JSON response examples, and RFC-style conflict error example content.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py tests/unit/test_openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves
+  `_ensure_request_and_response_examples` out of the top-ten current source functions after it
+  previously ranked first at complexity 18 / 75 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `evaluate`,
+  `generate_intents`, `generate_targets_solver`, or `summarize_enrichment_posture`.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI example behavior
+  and improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-508: Compliance cash-band rule helper
+
+- Date: 2026-06-02
+- Scope: `src/core/compliance.py`, `tests/unit/core/test_common_edge_coverage.py`, generated
+  quality reports, and this ledger.
+- Finding: `RuleEngine.evaluate` mixed cash-band policy evaluation with concentration, data
+  quality, minimum-trade, no-shorting, and insufficient-cash rules in one method.
+- Action: extracted `_cash_band_rule_result` so portfolio cash-band policy evidence is directly
+  testable and the rule engine can keep sequencing independent rule families. Added direct tests
+  for cash inside the policy band and cash breaching the configured maximum band.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/compliance.py
+  tests/unit/core/test_common_edge_coverage.py`, `python -m ruff format src/core/compliance.py
+  tests/unit/core/test_common_edge_coverage.py`, `python -m mypy --config-file mypy.ini
+  src/core/compliance.py`, `python -m pytest tests/unit/core/test_common_edge_coverage.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `evaluate` out of the top-ten current
+  source functions after it previously ranked first at complexity 17 / 199 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `generate_intents`,
+  `generate_targets_solver`, `summarize_enrichment_posture`, or `_example_from_schema`.
+- Wiki decision: no wiki source change required; this preserves compliance-rule behavior and
+  improves internal rule-engine maintainability only.
+
+## BACKEND-REVIEW-20260602-509: Rebalance dust-trade suppression helper
+
+- Date: 2026-06-02
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`, generated quality reports, and this ledger.
+- Finding: `generate_intents` mixed market context resolution, sell clamping, tax-budget limiting,
+  minimum-notional dust suppression, security intent construction, and tax-impact summarization in
+  one path.
+- Action: extracted `_suppress_dust_trade` so below-minimum-notional suppression and
+  `SuppressedIntent` construction are directly testable while `generate_intents` keeps trade-loop
+  orchestration. Added tests for suppressed below-threshold trades and supported notionals that
+  remain unsuppressed.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/rebalance/intents.py
+  tests/unit/dpm/engine/test_engine_safety_rules.py`, `python -m ruff format
+  src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`, `python -m pytest
+  tests/unit/dpm/engine/test_engine_safety_rules.py
+  tests/unit/dpm/engine/test_engine_core_flows.py
+  tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `generate_intents` out of the top-ten
+  current source functions after it previously ranked first at complexity 17 / 145 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `generate_targets_solver`, `summarize_enrichment_posture`, `_example_from_schema`, or
+  `validate_search_item_metadata`.
+- Wiki decision: no wiki source change required; this preserves rebalance intent behavior and
+  improves internal trade-suppression maintainability only.
+
+## BACKEND-REVIEW-20260602-510: Target solver dependency loader helper
+
+- Date: 2026-06-02
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`, generated quality reports, and this
+  ledger.
+- Finding: `generate_targets_solver` mixed solver dependency detection and import failure handling
+  with sell-only redistribution, constraint construction, fallback solving, infeasibility hints, and
+  target trace construction.
+- Action: extracted `_load_solver_modules` so solver dependency/import readiness is directly
+  testable and the solver path can keep optimization orchestration separate from environment
+  readiness handling. Added direct tests for missing solver dependencies and import failure
+  warning behavior.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/target_generation.py
+  tests/unit/core/test_target_generation_solver_fallbacks.py`, `python -m ruff format
+  src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`, `python -m pytest
+  tests/unit/core/test_target_generation_solver_fallbacks.py
+  tests/unit/dpm/engine/test_engine_solver_behavior.py
+  tests/unit/dpm/engine/test_engine_target_generation.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report reduces `generate_targets_solver` from
+  complexity 17 / 109 lines to complexity 16 / 102 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `summarize_enrichment_posture`, `_example_from_schema`, `validate_search_item_metadata`, or a
+  further solver constraint-construction extraction.
+- Wiki decision: no wiki source change required; this preserves target-solver behavior and improves
+  internal solver resilience maintainability only.
+
+## BACKEND-REVIEW-20260602-511: Construction cost enrichment status helper
+
+- Date: 2026-06-02
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, generated quality reports, and this ledger.
+- Finding: `summarize_enrichment_posture` mixed transaction-cost source posture with tax, FX,
+  liquidity, turnover, risk, and performance enrichment aggregation.
+- Action: extracted `_cost_enrichment_status` so local authoritative-cost availability and
+  source-owned transaction-cost context status are directly testable before summary aggregation.
+  Added direct tests for missing authoritative cost, local available cost posture, and source-owned
+  transaction-cost context reason-code propagation.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/construction/enrichment.py
+  tests/unit/dpm/construction/test_enrichment.py`, `python -m ruff format
+  src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`, `python -m pytest
+  tests/unit/dpm/construction/test_enrichment.py
+  tests/unit/dpm/construction/test_method_readiness.py
+  tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/engineering_health_report.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `git diff --check`, and service
+  leakage scan passed. The refreshed complexity report moves `summarize_enrichment_posture` out of
+  the top-ten current source functions after it previously ranked first at complexity 17 / 87
+  lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with `_example_from_schema`,
+  `validate_search_item_metadata`, `compile_mandate_digital_twin_from_core`, or
+  `resolve_core_dpm_portfolio_universe_candidates`.
+- Wiki decision: no wiki source change required; this preserves construction enrichment behavior
+and improves internal transaction-cost source posture maintainability only.
+
+## BACKEND-REVIEW-20260602-512: OpenAPI collection schema example helper
+
+- Date: 2026-06-02
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, generated quality reports, and this ledger.
+- Finding: `_example_from_schema` mixed explicit schema example selection, ref/composite resolution,
+  object-property recursion, array examples, map examples, and inference fallback in one place.
+- Action: extracted `_collection_example_from_schema` so property/object/array/map traversal is directly
+  testable and separated from reference/composite selection. Added direct tests for object properties,
+  arrays with typed and non-typed items, object maps, object defaults, and collection miss cases.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/openapi_enrichment.py
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python -m ruff format
+  src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, `python -m pytest
+  tests/unit/api/test_openapi_enrichment_helpers.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `_example_from_schema` from 17 / 64 lines and move it further down the top hotspot list.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `_ensure_request_and_response_examples`, `validate_search_item_metadata`, or
+  `compile_mandate_digital_twin_from_core`.
+- Wiki decision: no wiki source change required; this preserves generated OpenAPI behavior and
+  improves internal API-governance maintainability only.
+
+## BACKEND-REVIEW-20260602-513: Portfolio-memory search-item metadata validation helper
+
+- Date: 2026-06-02
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, generated quality reports, and this ledger.
+- Finding: `validate_search_item_metadata` mixed event-count consistency, sorting/uniqueness checks, empty
+  versus non-empty posture checks, and matching-event metadata enforcement in one validator.
+- Action: extracted `_validate_search_item_metadata` so cross-field search-item metadata rules are directly
+  testable independent of model instantiation internals. Added direct tests for empty search posture,
+  aggregate/ordering mismatches, and stale versus required matching metadata errors.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/portfolio_memory/models.py
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python -m ruff format
+  src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`, `python -m pytest
+  tests/unit/dpm/portfolio_memory/test_search_page.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `validate_search_item_metadata` from 17 / 52 lines and move it further down the top hotspot list.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `compile_mandate_digital_twin_from_core`, `resolve_core_dpm_portfolio_universe_candidates`, or
+  `validate_search_page_metadata`.
+- Wiki decision: no wiki source change required; this preserves portfolio-memory search contract behavior and
+  improves internal model governance maintainability only.
+
+## BACKEND-REVIEW-20260602-514: Mandate twin source-lineage helper
+
+- Date: 2026-06-02
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, generated
+  quality reports, and this ledger.
+- Finding: `compile_mandate_digital_twin_from_core` combined core-product lineage construction,
+  mandate/model source evidence assembly, and twin model construction in one function.
+- Action: extracted `_build_digital_twin_source_lineage` so source lineage assembly for mandate twin
+  construction is directly testable, isolated, and reusable. Added direct tests for required-only and
+  fully-populated lineage inputs.
+- Status: hardened
+- Evidence: `python -m ruff check src/core/mandates.py
+  tests/unit/dpm/core/test_mandate_health.py`, `python -m ruff format
+  src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`, `python -m pytest
+  tests/unit/dpm/core/test_mandate_health.py`, `python scripts/engineering_health_report.py`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan passed. The refreshed complexity report should reduce
+  `compile_mandate_digital_twin_from_core` from 16 / 173 lines.
+- Follow-up: continue reducing refreshed top source hotspots, starting with
+  `resolve_core_dpm_portfolio_universe_candidates` or `compile_mandate_digital_twin_from_core` remaining
+  behavior branches.
+- Wiki decision: no wiki source change required; this preserves mandate twin construction behavior and
+  improves internal construction maintainability only.
+
+## BACKEND-REVIEW-20260604-515: Core portfolio-universe discovery service boundary
+
+- Date: 2026-06-04
+- Scope: `src/api/services/wave_core_portfolio_universe_resolution.py`, `src/api/routers/wave_core_portfolio_universe_resolution.py`,
+  `src/api/services/wave_errors.py`, `tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`.
+- Finding: `resolve_core_dpm_portfolio_universe_candidates` lived in a router module and mixed source paging logic, source-reference assembly, and HTTP dependency mapping.
+- Action: extracted discovery orchestration into a dedicated service, introduced service dependency errors
+  (`DpmWaveDependencyError`, `DpmWaveDependencyUnavailableError`, `DpmWaveDependencyFailedError`),
+  and left a thin router adapter to map domain failures into API responses.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/wave_core_portfolio_universe_resolution.py
+  src/api/services/wave_errors.py src/api/routers/wave_core_portfolio_universe_resolution.py
+  tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`, `python -m ruff format
+  --check` on touched files, `python -m mypy --config-file mypy.ini src/api/services/wave_core_portfolio_universe_resolution.py
+  src/api/services/wave_errors.py`, targeted pytest (`tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `tests/unit/dpm/api/test_waves_api.py -k core_universe`), `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `rg` service leakage scan (`from src.api.routers|HTTPException|status.HTTP` in `src/api/services`).
+- Wiki decision: no wiki source change required; this is an internal service-boundary improvement only.

@@ -42,26 +42,95 @@ class PortfolioMemorySearchFilters:
 SearchRow = tuple[DpmPortfolioMemorySearchItem, list[DpmPortfolioMemoryEvent]]
 
 
+def _memory_passes_search_summary_filters(
+    *,
+    memory: DpmPortfolioMemory,
+    filters: PortfolioMemorySearchFilters,
+    explicit_candidate_ids: set[str],
+) -> bool:
+    if memory.event_count == 0:
+        if (
+            filters.supportability_state != "EMPTY"
+            or memory.portfolio_id not in explicit_candidate_ids
+        ):
+            return False
+    if filters.event_type is not None and filters.event_type not in memory.event_type_counts:
+        return False
+    if (
+        filters.supportability_state is not None
+        and memory.supportability_state != filters.supportability_state
+    ):
+        return False
+    if filters.source_system is not None and filters.source_system not in memory.source_systems:
+        return False
+    return True
+
+
+def _filters_require_matching_events(filters: PortfolioMemorySearchFilters) -> bool:
+    return (
+        filters.event_type is not None
+        or filters.source_system is not None
+        or filters.source_type is not None
+        or filters.supportability_state is not None
+    )
+
+
+def _portfolio_memory_search_item(
+    *,
+    memory: DpmPortfolioMemory,
+    matching_events: list[DpmPortfolioMemoryEvent],
+) -> DpmPortfolioMemorySearchItem:
+    latest_event = memory.events[0] if memory.events else None
+    latest_matching_event = matching_events[0] if matching_events else None
+    return DpmPortfolioMemorySearchItem(
+        portfolio_id=memory.portfolio_id,
+        event_count=memory.event_count,
+        supportability_state=memory.supportability_state,
+        event_type_counts=memory.event_type_counts,
+        source_systems=memory.source_systems,
+        reason_codes=memory.reason_codes,
+        latest_event_time=latest_event.event_time if latest_event else None,
+        latest_event_type=latest_event.event_type if latest_event else None,
+        matching_event_count=len(matching_events),
+        latest_matching_event_time=(
+            latest_matching_event.event_time if latest_matching_event else None
+        ),
+        latest_matching_event_type=(
+            latest_matching_event.event_type if latest_matching_event else None
+        ),
+        latest_matching_event_id=(
+            latest_matching_event.event_id if latest_matching_event else None
+        ),
+        latest_matching_event_identity=(
+            latest_matching_event.event_identity if latest_matching_event else None
+        ),
+        latest_matching_event_source_system=(
+            latest_matching_event.source_system if latest_matching_event else None
+        ),
+        latest_matching_event_source_type=(
+            latest_matching_event.source_type if latest_matching_event else None
+        ),
+        latest_matching_event_source_id=(
+            latest_matching_event.source_id if latest_matching_event else None
+        ),
+        latest_matching_event_content_hash=(
+            latest_matching_event.content_hash if latest_matching_event else None
+        ),
+        content_hash=memory.content_hash,
+    )
+
+
 def build_search_row(
     *,
     memory: DpmPortfolioMemory,
     filters: PortfolioMemorySearchFilters,
     explicit_candidate_ids: set[str],
 ) -> SearchRow | None:
-    if memory.event_count == 0:
-        if (
-            filters.supportability_state != "EMPTY"
-            or memory.portfolio_id not in explicit_candidate_ids
-        ):
-            return None
-    if filters.event_type is not None and filters.event_type not in memory.event_type_counts:
-        return None
-    if (
-        filters.supportability_state is not None
-        and memory.supportability_state != filters.supportability_state
+    if not _memory_passes_search_summary_filters(
+        memory=memory,
+        filters=filters,
+        explicit_candidate_ids=explicit_candidate_ids,
     ):
-        return None
-    if filters.source_system is not None and filters.source_system not in memory.source_systems:
         return None
 
     matching_events = [
@@ -76,56 +145,14 @@ def build_search_row(
         )
     ]
     if (
-        (
-            filters.event_type is not None
-            or filters.source_system is not None
-            or filters.source_type is not None
-            or filters.supportability_state is not None
-        )
+        _filters_require_matching_events(filters)
         and filters.supportability_state != "EMPTY"
         and not matching_events
     ):
         return None
 
-    latest_event = memory.events[0] if memory.events else None
-    latest_matching_event = matching_events[0] if matching_events else None
     return (
-        DpmPortfolioMemorySearchItem(
-            portfolio_id=memory.portfolio_id,
-            event_count=memory.event_count,
-            supportability_state=memory.supportability_state,
-            event_type_counts=memory.event_type_counts,
-            source_systems=memory.source_systems,
-            reason_codes=memory.reason_codes,
-            latest_event_time=latest_event.event_time if latest_event else None,
-            latest_event_type=latest_event.event_type if latest_event else None,
-            matching_event_count=len(matching_events),
-            latest_matching_event_time=(
-                latest_matching_event.event_time if latest_matching_event else None
-            ),
-            latest_matching_event_type=(
-                latest_matching_event.event_type if latest_matching_event else None
-            ),
-            latest_matching_event_id=(
-                latest_matching_event.event_id if latest_matching_event else None
-            ),
-            latest_matching_event_identity=(
-                latest_matching_event.event_identity if latest_matching_event else None
-            ),
-            latest_matching_event_source_system=(
-                latest_matching_event.source_system if latest_matching_event else None
-            ),
-            latest_matching_event_source_type=(
-                latest_matching_event.source_type if latest_matching_event else None
-            ),
-            latest_matching_event_source_id=(
-                latest_matching_event.source_id if latest_matching_event else None
-            ),
-            latest_matching_event_content_hash=(
-                latest_matching_event.content_hash if latest_matching_event else None
-            ),
-            content_hash=memory.content_hash,
-        ),
+        _portfolio_memory_search_item(memory=memory, matching_events=matching_events),
         matching_events,
     )
 

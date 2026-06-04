@@ -85,6 +85,9 @@ class ProofPackSourceValidationError(ValueError):
     pass
 
 
+_SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
+
+
 def build_proof_pack_from_run(
     *,
     run: DpmRunRecord,
@@ -377,227 +380,48 @@ def _build_section(
     return DpmProofPackSection.model_validate(payload)
 
 
-def _section_payload(
+def _source_analytics_section_payload(
+    *,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    family: ProofPackAnalyticsFamily,
+    missing_summary: str,
+    missing_reason_code: str,
+    sort_reason_codes: bool = False,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    analytics = source_analytics.get(family)
+    if analytics is None:
+        return ("DEGRADED", missing_summary, {}, {}, [missing_reason_code])
+    reason_codes = list(analytics.reason_codes)
+    if sort_reason_codes:
+        reason_codes = sorted(set(reason_codes))
+    return (
+        analytics.state,
+        analytics.summary,
+        analytics.facts,
+        analytics.metrics,
+        reason_codes,
+    )
+
+
+def _adapter_section_payload(
+    *,
+    summary: str,
+    adapter_contract: str,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    return (
+        "READY",
+        summary,
+        {"adapter_contract": adapter_contract},
+        {},
+        [],
+    )
+
+
+def _run_state_section_payload(
     *,
     section_type: ProofPackSectionType,
-    result: RebalanceResult | None,
-    run: DpmRunRecord | None,
-    run_artifact_hash: str | None,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-    selection: ConstructionAlternativeSelection | None,
-    reason: str | None,
-    mandate_id: str | None,
-    mandate_twin: DpmMandateDigitalTwin | None,
-    mandate_health: DpmMandateHealthSnapshot | None,
-    mandate_evidence_gap_codes: list[str],
-    created_by: str,
-    source_ref_count: int,
-    source_analytics: dict[str, ProofPackSourceAnalytics],
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    if section_type == "decision_summary":
-        reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
-        return (
-            "READY" if reason else "DEGRADED",
-            "Decision evidence assembled from manage run and actor rationale.",
-            {
-                "actor": created_by,
-                "reason": reason,
-                "source_run_status": result.status if result is not None else None,
-                "selected_alternative_id": (
-                    selected_alternative.alternative_id if selected_alternative else None
-                ),
-            },
-            {},
-            reason_codes,
-        )
-    if section_type == "mandate_context":
-        if not mandate_id:
-            return (
-                "BLOCKED",
-                "Mandate identity is required before proof-pack promotion.",
-                {"mandate_id": None},
-                {},
-                ["DPM_PROOF_PACK_MANDATE_ID_MISSING"],
-            )
-        if mandate_twin is None:
-            reason_codes = mandate_evidence_gap_codes or ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
-            return (
-                "DEGRADED",
-                "Mandate identity is present, but no persisted mandate digital-twin evidence is attached.",
-                {"mandate_id": mandate_id},
-                {},
-                reason_codes,
-            )
-        if mandate_health is None:
-            return (
-                "DEGRADED",
-                "Mandate digital-twin evidence is attached, but latest mandate-health evidence is missing.",
-                {
-                    "mandate_id": mandate_twin.mandate_id,
-                    "mandate_version": mandate_twin.mandate_version,
-                    "portfolio_id": mandate_twin.portfolio_id,
-                    "as_of_date": mandate_twin.as_of_date.isoformat(),
-                    "risk_profile": mandate_twin.risk_profile,
-                    "model_portfolio_id": mandate_twin.model_portfolio_id,
-                    "field_gap_codes": mandate_twin.field_gap_codes,
-                },
-                {},
-                ["DPM_MANDATE_HEALTH_EVIDENCE_MISSING", *mandate_twin.field_gap_codes],
-            )
-        mandate_state = _mandate_health_state(mandate_health)
-        reason_codes = [reason.reason_code for reason in mandate_health.top_reasons]
-        return (
-            mandate_state,
-            "Mandate digital-twin and health evidence are attached from persisted RFC-0038 truth.",
-            {
-                "mandate_id": mandate_twin.mandate_id,
-                "mandate_version": mandate_twin.mandate_version,
-                "portfolio_id": mandate_twin.portfolio_id,
-                "as_of_date": mandate_twin.as_of_date.isoformat(),
-                "risk_profile": mandate_twin.risk_profile,
-                "investment_objective": mandate_twin.investment_objective,
-                "model_portfolio_id": mandate_twin.model_portfolio_id,
-                "model_portfolio_version": mandate_twin.model_portfolio_version,
-                "health_snapshot_id": mandate_health.health_snapshot_id,
-                "health_state": mandate_health.health_state.value,
-                "source_readiness_state": mandate_health.source_readiness_state,
-                "field_gap_codes": mandate_twin.field_gap_codes,
-            },
-            {
-                "health_score": mandate_health.health_score,
-                "dimension_count": len(mandate_health.dimension_scores),
-                "top_reason_count": len(mandate_health.top_reasons),
-                "source_lineage_count": len(mandate_twin.source_lineage),
-            },
-            [*reason_codes, *mandate_twin.field_gap_codes],
-        )
-    if section_type == "source_readiness":
-        source_state = result.lineage.source_supportability_state if result is not None else None
-        if result is None:
-            return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
-        reason_codes = (
-            [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
-        )
-        return (
-            "READY" if not reason_codes else "DEGRADED",
-            "Source readiness captured from run lineage.",
-            {
-                "input_mode": result.lineage.input_mode,
-                "source_system": result.lineage.source_system,
-                "source_supportability_state": source_state,
-            },
-            {},
-            reason_codes,
-        )
-    if section_type == "selected_alternative":
-        if selected_alternative is None:
-            return (
-                "DEGRADED",
-                "Direct-run proof pack has no selected construction alternative.",
-                {},
-                {},
-                ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
-            )
-        selected_state = (
-            "READY"
-            if selected_alternative.method_status == "READY"
-            else cast(ProofPackSectionState, str(selected_alternative.method_status))
-        )
-        return (
-            selected_state,
-            "Selected construction alternative captured with method and trace evidence.",
-            {
-                "alternative_set_id": alternative_set.alternative_set_id
-                if alternative_set
-                else None,
-                "selected_alternative_id": selected_alternative.alternative_id,
-                "selection_id": selection.selection_id if selection else None,
-                "method": selected_alternative.method,
-                "method_status": selected_alternative.method_status,
-                "summary": selected_alternative.summary,
-                "objective_trace": [
-                    item.model_dump(mode="json") for item in selected_alternative.objective_trace
-                ],
-                "constraint_trace": [
-                    item.model_dump(mode="json") for item in selected_alternative.constraint_trace
-                ],
-            },
-            selected_alternative.comparison_metrics.model_dump(mode="json"),
-            []
-            if selected_alternative.method_status == "READY"
-            else ["DPM_SELECTED_METHOD_NOT_READY"],
-        )
-    if section_type == "risk_impact":
-        risk_context = source_analytics.get("risk")
-        if risk_context is not None:
-            return (
-                risk_context.state,
-                risk_context.summary,
-                risk_context.facts,
-                risk_context.metrics,
-                risk_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "No risk-authoritative enrichment is attached to this first-wave proof pack.",
-            {},
-            {},
-            ["DPM_RISK_AUTHORITY_CONTEXT_MISSING"],
-        )
-    if section_type == "performance_context":
-        performance_context = source_analytics.get("performance")
-        if performance_context is not None:
-            return (
-                performance_context.state,
-                performance_context.summary,
-                performance_context.facts,
-                performance_context.metrics,
-                performance_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "No performance-authoritative benchmark context is attached.",
-            {},
-            {},
-            ["DPM_PERFORMANCE_CONTEXT_MISSING"],
-        )
-    if section_type == "sustainability_controls":
-        sustainability_context = source_analytics.get("sustainability_preference")
-        if sustainability_context is not None:
-            return (
-                sustainability_context.state,
-                sustainability_context.summary,
-                sustainability_context.facts,
-                sustainability_context.metrics,
-                sustainability_context.reason_codes,
-            )
-        return (
-            "DEGRADED",
-            "Sustainability preference authority context is not attached.",
-            {},
-            {},
-            ["DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING"],
-        )
-    if section_type == "reporting_refs":
-        return (
-            "READY",
-            "Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
-            {"adapter_contract": "DpmProofPackReportInput"},
-            {},
-            [],
-        )
-    if section_type == "ai_refs":
-        return (
-            "READY",
-            "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
-            {"adapter_contract": "DpmProofPackAiEvidenceInput"},
-            {},
-            [],
-        )
-    if result is None:
-        return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "before_state":
         return (
             "READY",
@@ -638,68 +462,14 @@ def _section_payload(
             {"position_count": len(result.after_simulated.positions)},
             [] if result.status != "BLOCKED" else ["DPM_AFTER_STATE_BLOCKED"],
         )
-    if section_type == "drift_impact":
-        if selected_alternative is not None:
-            metrics = selected_alternative.comparison_metrics.model_dump(mode="json")
-            return (
-                "READY",
-                "Drift impact captured from construction comparison metrics.",
-                {},
-                metrics,
-                [],
-            )
-        return (
-            "DEGRADED",
-            "Direct-run proof has no construction comparison drift trace.",
-            {},
-            {},
-            ["DPM_DRIFT_COMPARISON_UNAVAILABLE"],
-        )
-    if section_type == "tax_impact":
-        if result.tax_impact is None:
-            return (
-                "DEGRADED",
-                "Tax impact is not available for this run.",
-                {},
-                {},
-                ["DPM_TAX_IMPACT_MISSING"],
-            )
-        return (
-            "READY",
-            "Tax impact captured from manage tax-aware simulation.",
-            result.tax_impact.model_dump(mode="json"),
-            {},
-            [],
-        )
-    if section_type == "turnover_and_cost":
-        transaction_cost_context = source_analytics.get("transaction_cost")
-        metrics = (
-            selected_alternative.comparison_metrics.model_dump(mode="json")
-            if selected_alternative
-            else {}
-        )
-        facts: dict[str, Any] = {}
-        reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
-        state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
-        summary = "Turnover and cost evidence captured when construction metrics are available."
-        if transaction_cost_context is not None:
-            facts = transaction_cost_context.facts
-            metrics = {**metrics, **transaction_cost_context.metrics}
-            reason_codes.extend(transaction_cost_context.reason_codes)
-            state = _lowest_section_state([state, transaction_cost_context.state])
-            summary = (
-                "Turnover metrics and source-owned observed transaction-cost evidence are attached."
-            )
-        elif metrics:
-            reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
-            state = "DEGRADED"
-        return (
-            state,
-            summary,
-            facts,
-            metrics,
-            sorted(set(reason_codes)),
-        )
+    return None
+
+
+def _run_diagnostics_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "liquidity_and_cash":
         breaches = result.diagnostics.cash_ladder_breaches
         return (
@@ -736,51 +506,47 @@ def _section_payload(
             {},
             ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"],
         )
-    if section_type == "scenario_and_regime_evidence":
-        regime_context = source_analytics.get("regime_stress")
-        if regime_context is not None:
+    return None
+
+
+def _run_policy_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    selected_alternative: ConstructionAlternative | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
+    if section_type == "drift_impact":
+        if selected_alternative is not None:
+            metrics = selected_alternative.comparison_metrics.model_dump(mode="json")
             return (
-                regime_context.state,
-                regime_context.summary,
-                regime_context.facts,
-                regime_context.metrics,
-                sorted(set(regime_context.reason_codes)),
+                "READY",
+                "Drift impact captured from construction comparison metrics.",
+                {},
+                metrics,
+                [],
             )
         return (
             "DEGRADED",
-            "Scenario/regime authority context is not attached.",
+            "Direct-run proof has no construction comparison drift trace.",
             {},
             {},
-            ["DPM_SCENARIO_CONTEXT_MISSING"],
+            ["DPM_DRIFT_COMPARISON_UNAVAILABLE"],
         )
-    if section_type == "eligibility_and_restrictions":
-        restriction_context = source_analytics.get("client_restriction")
-        excluded = result.universe.excluded
-        if restriction_context is not None:
-            reason_codes = list(restriction_context.reason_codes)
-            if excluded:
-                reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
+    if section_type == "tax_impact":
+        if result.tax_impact is None:
             return (
-                _lowest_section_state(
-                    [
-                        restriction_context.state,
-                        "PENDING_REVIEW" if excluded else "READY",
-                    ]
-                ),
-                "Eligibility evidence and source-owned client restriction profile are attached.",
-                {
-                    **restriction_context.facts,
-                    "excluded": [item.model_dump(mode="json") for item in excluded],
-                },
-                {**restriction_context.metrics, "excluded_count": len(excluded)},
-                sorted(set(reason_codes)),
+                "DEGRADED",
+                "Tax impact is not available for this run.",
+                {},
+                {},
+                ["DPM_TAX_IMPACT_MISSING"],
             )
         return (
-            "READY" if not excluded else "PENDING_REVIEW",
-            "Eligibility and restriction evidence captured from source run universe.",
-            {"excluded": [item.model_dump(mode="json") for item in excluded]},
-            {"excluded_count": len(excluded)},
-            ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
+            "READY",
+            "Tax impact captured from manage tax-aware simulation.",
+            result.tax_impact.model_dump(mode="json"),
+            {},
+            [],
         )
     if section_type == "rule_results":
         failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
@@ -791,26 +557,22 @@ def _section_payload(
             {"fail_count": len(failed)},
             [rule.reason_code for rule in failed],
         )
+    return None
+
+
+def _proof_pack_governance_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    selection: ConstructionAlternativeSelection | None,
+    source_ref_count: int,
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "approval_requirements":
-        gate = result.gate_decision
-        workflow_facts = [
-            decision.model_dump(mode="json")
-            for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
-        ]
-        approval_state: ProofPackSectionState = "READY"
-        if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
-            approval_state = "PENDING_REVIEW"
-        if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
-            approval_state = "BLOCKED"
-        return (
-            approval_state,
-            "Approval posture captured from run status and gate decision.",
-            {
-                "gate_decision": gate.model_dump(mode="json") if gate else None,
-                "workflow_decisions": workflow_facts,
-            },
-            {"workflow_decision_count": len(workflow_facts)},
-            [reason.reason_code for reason in gate.reasons] if gate else [],
+        return _approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=workflow_decisions,
         )
     if section_type == "operations_handoff":
         return (
@@ -841,6 +603,406 @@ def _section_payload(
         )
     if section_type == "supportability":
         return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
+    return None
+
+
+def _approval_requirements_section_payload(
+    *,
+    result: RebalanceResult,
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> _SectionPayload:
+    gate = result.gate_decision
+    workflow_facts = [
+        decision.model_dump(mode="json")
+        for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
+    ]
+    approval_state: ProofPackSectionState = "READY"
+    if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
+        approval_state = "PENDING_REVIEW"
+    if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
+        approval_state = "BLOCKED"
+    return (
+        approval_state,
+        "Approval posture captured from run status and gate decision.",
+        {
+            "gate_decision": gate.model_dump(mode="json") if gate else None,
+            "workflow_decisions": workflow_facts,
+        },
+        {"workflow_decision_count": len(workflow_facts)},
+        [reason.reason_code for reason in gate.reasons] if gate else [],
+    )
+
+
+def _mandate_context_section_payload(
+    *,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if not mandate_id:
+        return (
+            "BLOCKED",
+            "Mandate identity is required before proof-pack promotion.",
+            {"mandate_id": None},
+            {},
+            ["DPM_PROOF_PACK_MANDATE_ID_MISSING"],
+        )
+    if mandate_twin is None:
+        reason_codes = mandate_evidence_gap_codes or ["DPM_MANDATE_TWIN_EVIDENCE_MISSING"]
+        return (
+            "DEGRADED",
+            "Mandate identity is present, but no persisted mandate digital-twin evidence is attached.",
+            {"mandate_id": mandate_id},
+            {},
+            reason_codes,
+        )
+    if mandate_health is None:
+        return (
+            "DEGRADED",
+            "Mandate digital-twin evidence is attached, but latest mandate-health evidence is missing.",
+            {
+                "mandate_id": mandate_twin.mandate_id,
+                "mandate_version": mandate_twin.mandate_version,
+                "portfolio_id": mandate_twin.portfolio_id,
+                "as_of_date": mandate_twin.as_of_date.isoformat(),
+                "risk_profile": mandate_twin.risk_profile,
+                "model_portfolio_id": mandate_twin.model_portfolio_id,
+                "field_gap_codes": mandate_twin.field_gap_codes,
+            },
+            {},
+            ["DPM_MANDATE_HEALTH_EVIDENCE_MISSING", *mandate_twin.field_gap_codes],
+        )
+    mandate_state = _mandate_health_state(mandate_health)
+    reason_codes = [reason.reason_code for reason in mandate_health.top_reasons]
+    return (
+        mandate_state,
+        "Mandate digital-twin and health evidence are attached from persisted RFC-0038 truth.",
+        {
+            "mandate_id": mandate_twin.mandate_id,
+            "mandate_version": mandate_twin.mandate_version,
+            "portfolio_id": mandate_twin.portfolio_id,
+            "as_of_date": mandate_twin.as_of_date.isoformat(),
+            "risk_profile": mandate_twin.risk_profile,
+            "investment_objective": mandate_twin.investment_objective,
+            "model_portfolio_id": mandate_twin.model_portfolio_id,
+            "model_portfolio_version": mandate_twin.model_portfolio_version,
+            "health_snapshot_id": mandate_health.health_snapshot_id,
+            "health_state": mandate_health.health_state.value,
+            "source_readiness_state": mandate_health.source_readiness_state,
+            "field_gap_codes": mandate_twin.field_gap_codes,
+        },
+        {
+            "health_score": mandate_health.health_score,
+            "dimension_count": len(mandate_health.dimension_scores),
+            "top_reason_count": len(mandate_health.top_reasons),
+            "source_lineage_count": len(mandate_twin.source_lineage),
+        },
+        [*reason_codes, *mandate_twin.field_gap_codes],
+    )
+
+
+def _selected_alternative_section_payload(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if selected_alternative is None:
+        return (
+            "DEGRADED",
+            "Direct-run proof pack has no selected construction alternative.",
+            {},
+            {},
+            ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
+        )
+    selected_state = (
+        "READY"
+        if selected_alternative.method_status == "READY"
+        else cast(ProofPackSectionState, str(selected_alternative.method_status))
+    )
+    return (
+        selected_state,
+        "Selected construction alternative captured with method and trace evidence.",
+        {
+            "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
+            "selected_alternative_id": selected_alternative.alternative_id,
+            "selection_id": selection.selection_id if selection else None,
+            "method": selected_alternative.method,
+            "method_status": selected_alternative.method_status,
+            "summary": selected_alternative.summary,
+            "objective_trace": [
+                item.model_dump(mode="json") for item in selected_alternative.objective_trace
+            ],
+            "constraint_trace": [
+                item.model_dump(mode="json") for item in selected_alternative.constraint_trace
+            ],
+        },
+        selected_alternative.comparison_metrics.model_dump(mode="json"),
+        [] if selected_alternative.method_status == "READY" else ["DPM_SELECTED_METHOD_NOT_READY"],
+    )
+
+
+def _source_readiness_section_payload(
+    *,
+    result: RebalanceResult | None,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if result is None:
+        return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+
+    source_state = result.lineage.source_supportability_state
+    reason_codes = (
+        [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
+    )
+    return (
+        "READY" if not reason_codes else "DEGRADED",
+        "Source readiness captured from run lineage.",
+        {
+            "input_mode": result.lineage.input_mode,
+            "source_system": result.lineage.source_system,
+            "source_supportability_state": source_state,
+        },
+        {},
+        reason_codes,
+    )
+
+
+def _turnover_and_cost_section_payload(
+    *,
+    selected_alternative: ConstructionAlternative | None,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    transaction_cost_context = source_analytics.get("transaction_cost")
+    metrics = (
+        selected_alternative.comparison_metrics.model_dump(mode="json")
+        if selected_alternative
+        else {}
+    )
+    facts: dict[str, Any] = {}
+    reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
+    state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
+    summary = "Turnover and cost evidence captured when construction metrics are available."
+
+    if transaction_cost_context is not None:
+        facts = transaction_cost_context.facts
+        metrics = {**metrics, **transaction_cost_context.metrics}
+        reason_codes.extend(transaction_cost_context.reason_codes)
+        state = _lowest_section_state([state, transaction_cost_context.state])
+        summary = (
+            "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+        )
+    elif metrics:
+        reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
+        state = "DEGRADED"
+
+    return (
+        state,
+        summary,
+        facts,
+        metrics,
+        sorted(set(reason_codes)),
+    )
+
+
+def _eligibility_and_restrictions_section_payload(
+    *,
+    result: RebalanceResult,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    restriction_context = source_analytics.get("client_restriction")
+    excluded = result.universe.excluded
+    if restriction_context is not None:
+        reason_codes = list(restriction_context.reason_codes)
+        if excluded:
+            reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
+        return (
+            _lowest_section_state(
+                [
+                    restriction_context.state,
+                    "PENDING_REVIEW" if excluded else "READY",
+                ]
+            ),
+            "Eligibility evidence and source-owned client restriction profile are attached.",
+            {
+                **restriction_context.facts,
+                "excluded": [item.model_dump(mode="json") for item in excluded],
+            },
+            {**restriction_context.metrics, "excluded_count": len(excluded)},
+            sorted(set(reason_codes)),
+        )
+
+    return (
+        "READY" if not excluded else "PENDING_REVIEW",
+        "Eligibility and restriction evidence captured from source run universe.",
+        {"excluded": [item.model_dump(mode="json") for item in excluded]},
+        {"excluded_count": len(excluded)},
+        ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
+    )
+
+
+def _pre_run_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    reason: str | None,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+    created_by: str,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> _SectionPayload | None:
+    if section_type == "decision_summary":
+        reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
+        return (
+            "READY" if reason else "DEGRADED",
+            "Decision evidence assembled from manage run and actor rationale.",
+            {
+                "actor": created_by,
+                "reason": reason,
+                "source_run_status": result.status if result is not None else None,
+                "selected_alternative_id": (
+                    selected_alternative.alternative_id if selected_alternative else None
+                ),
+            },
+            {},
+            reason_codes,
+        )
+    if section_type == "mandate_context":
+        return _mandate_context_section_payload(
+            mandate_id=mandate_id,
+            mandate_twin=mandate_twin,
+            mandate_health=mandate_health,
+            mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        )
+    if section_type == "source_readiness":
+        return _source_readiness_section_payload(
+            result=result,
+        )
+    if section_type == "selected_alternative":
+        return _selected_alternative_section_payload(
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
+        )
+    if section_type == "risk_impact":
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="risk",
+            missing_summary="No risk-authoritative enrichment is attached to this first-wave proof pack.",
+            missing_reason_code="DPM_RISK_AUTHORITY_CONTEXT_MISSING",
+        )
+    if section_type == "performance_context":
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="performance",
+            missing_summary="No performance-authoritative benchmark context is attached.",
+            missing_reason_code="DPM_PERFORMANCE_CONTEXT_MISSING",
+        )
+    if section_type == "sustainability_controls":
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="sustainability_preference",
+            missing_summary="Sustainability preference authority context is not attached.",
+            missing_reason_code="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING",
+        )
+    if section_type == "reporting_refs":
+        return _adapter_section_payload(
+            summary="Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
+            adapter_contract="DpmProofPackReportInput",
+        )
+    if section_type == "ai_refs":
+        return _adapter_section_payload(
+            summary="AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
+            adapter_contract="DpmProofPackAiEvidenceInput",
+        )
+    return None
+
+
+def _section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult | None,
+    run: DpmRunRecord | None,
+    run_artifact_hash: str | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    reason: str | None,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+    created_by: str,
+    source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    pre_run_payload = _pre_run_section_payload(
+        section_type=section_type,
+        result=result,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        reason=reason,
+        mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        created_by=created_by,
+        source_analytics=source_analytics,
+    )
+    if pre_run_payload is not None:
+        return pre_run_payload
+    if result is None:
+        return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+    run_state_payload = _run_state_section_payload(section_type=section_type, result=result)
+    if run_state_payload is not None:
+        return run_state_payload
+    run_policy_payload = _run_policy_section_payload(
+        section_type=section_type,
+        result=result,
+        selected_alternative=selected_alternative,
+    )
+    if run_policy_payload is not None:
+        return run_policy_payload
+    if section_type == "turnover_and_cost":
+        return _turnover_and_cost_section_payload(
+            selected_alternative=selected_alternative,
+            source_analytics=source_analytics,
+        )
+    run_diagnostics_payload = _run_diagnostics_section_payload(
+        section_type=section_type,
+        result=result,
+    )
+    if run_diagnostics_payload is not None:
+        return run_diagnostics_payload
+    if section_type == "scenario_and_regime_evidence":
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="regime_stress",
+            missing_summary="Scenario/regime authority context is not attached.",
+            missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
+            sort_reason_codes=True,
+        )
+    if section_type == "eligibility_and_restrictions":
+        return _eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics=source_analytics,
+        )
+    governance_payload = _proof_pack_governance_section_payload(
+        section_type=section_type,
+        result=result,
+        run=run,
+        selection=selection,
+        source_ref_count=source_ref_count,
+        workflow_decisions=workflow_decisions,
+    )
+    if governance_payload is not None:
+        return governance_payload
     raise AssertionError(f"Unhandled proof-pack section type: {section_type}")
 
 

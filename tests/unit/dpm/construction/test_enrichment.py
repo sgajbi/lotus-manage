@@ -51,6 +51,8 @@ from src.core.construction import (
     estimate_transaction_cost,
     summarize_enrichment_posture,
 )
+from src.core.construction.enrichment import _fx_enrichment_status, _tax_enrichment_status
+from src.core.construction.enrichment import _cost_enrichment_status
 from src.core.construction.repository import (
     ConstructionAlternativeSetNotFoundError,
     ConstructionIdempotencyConflictError,
@@ -127,6 +129,65 @@ def test_transaction_cost_estimate_is_labelled_local_and_reconciles_to_turnover_
 
     assert cost.currency == "USD"
     assert cost.amount == Decimal("1.00")
+
+
+def test_tax_enrichment_status_distinguishes_required_optional_and_available_tax() -> None:
+    assert _tax_enrichment_status(tax_required=True, tax_impact_available=False) == (
+        ConstructionMethodStatus.BLOCKED,
+        ["TAX_LOTS_REQUIRED_BUT_NO_TAX_IMPACT"],
+    )
+    assert _tax_enrichment_status(tax_required=False, tax_impact_available=False) == (
+        ConstructionMethodStatus.DEGRADED,
+        ["TAX_ENRICHMENT_NOT_REQUESTED_OR_UNAVAILABLE"],
+    )
+    assert _tax_enrichment_status(tax_required=True, tax_impact_available=True) == (
+        ConstructionMethodStatus.READY,
+        [],
+    )
+
+
+def test_fx_enrichment_status_blocks_only_when_pairs_are_missing() -> None:
+    assert _fx_enrichment_status(missing_fx_pairs=[("USD", "SGD")]) == (
+        ConstructionMethodStatus.BLOCKED,
+        ["FX_SOURCE_MISSING"],
+    )
+    assert _fx_enrichment_status(missing_fx_pairs=[]) == (
+        ConstructionMethodStatus.READY,
+        [],
+    )
+
+
+def test_cost_enrichment_status_distinguishes_missing_local_and_source_context() -> None:
+    assert _cost_enrichment_status(
+        authoritative_cost_available=False,
+        transaction_cost_context=None,
+    ) == (
+        ConstructionMethodStatus.DEGRADED,
+        ["AUTHORITATIVE_TRANSACTION_COST_UNAVAILABLE"],
+    )
+    assert _cost_enrichment_status(
+        authoritative_cost_available=True,
+        transaction_cost_context=None,
+    ) == (ConstructionMethodStatus.READY, [])
+
+    context = AuthoritativeTransactionCostContext(
+        supportability_status=ConstructionMethodStatus.PENDING_REVIEW,
+        source_system="lotus-core",
+        as_of_date="2026-05-03",
+        window_start_date="2026-05-01",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=0,
+        missing_security_ids=["EQ_MISSING"],
+        reason_codes=["TRANSACTION_COST_CURVE_MISSING_SECURITIES"],
+    )
+
+    assert _cost_enrichment_status(
+        authoritative_cost_available=False,
+        transaction_cost_context=context,
+    ) == (
+        ConstructionMethodStatus.PENDING_REVIEW,
+        ["TRANSACTION_COST_CURVE_MISSING_SECURITIES"],
+    )
 
 
 def test_enrichment_summary_blocks_required_tax_without_tax_impact() -> None:

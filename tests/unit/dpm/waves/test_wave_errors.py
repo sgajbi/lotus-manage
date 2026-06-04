@@ -26,4 +26,10 @@ def test_wave_service_preserves_imported_error_surface() -> None:
 def test_wave_errors_exports_only_wave_error_types() -> None:
     from src.api.services import wave_errors
 
-    assert wave_errors.__all__ == ["DpmWaveLookupError", "DpmWaveValidationError"]
+    assert set(wave_errors.__all__) == {
+        "DpmWaveLookupError",
+        "DpmWaveValidationError",
+        "DpmWaveDependencyError",
+        "DpmWaveDependencyFailedError",
+        "DpmWaveDependencyUnavailableError",
+    }

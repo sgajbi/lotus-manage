@@ -30,6 +30,74 @@ def _without_source_lineage(response: Any) -> Any:
     )
 
 
+def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
+    hedge_readiness = hedge_readiness_response()
+    currency_exposure = currency_exposure_response()
+
+    payloads = construction_treasury_source_context._treasury_source_payloads(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+
+    assert payloads["external_hedge_execution_readiness"] == hedge_readiness.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert payloads["external_currency_exposure"] == currency_exposure.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert payloads["external_hedge_policy"] is None
+    assert hash_canonical_payload(payloads)
+
+
+def test_primary_treasury_supportability_uses_first_available_source_family() -> None:
+    primary = construction_treasury_source_context._primary_treasury_supportability(
+        hedge_readiness=None,
+        currency_exposure=currency_exposure_response(),
+        hedge_policy=hedge_policy_response(),
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+
+    assert primary is not None
+    assert primary.state == "UNAVAILABLE"
+    assert primary.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
+    assert primary.exposure_currencies == ["EUR", "JPY"]
+
+
+def test_source_identity_fields_project_prefixed_source_product_identity() -> None:
+    identity = construction_treasury_source_context._optional_source_identity(
+        currency_exposure_response()
+    )
+
+    assert identity is not None
+    assert construction_treasury_source_context._source_identity_fields(
+        prefix="external_currency_exposure",
+        identity=identity,
+    ) == {
+        "external_currency_exposure_source_product_name": "ExternalCurrencyExposure",
+        "external_currency_exposure_source_product_version": "v1",
+        "external_currency_exposure_source_id": "core-currency-exposure",
+        "external_currency_exposure_content_hash": identity.content_hash,
+    }
+
+
+def test_source_identity_fields_project_absent_identity_as_nulls() -> None:
+    assert construction_treasury_source_context._source_identity_fields(
+        prefix="external_currency_exposure",
+        identity=None,
+    ) == {
+        "external_currency_exposure_source_product_name": None,
+        "external_currency_exposure_source_product_version": None,
+        "external_currency_exposure_source_id": None,
+        "external_currency_exposure_content_hash": None,
+    }
+
+
 def test_external_treasury_currency_overlay_context_preserves_fail_closed_readiness() -> None:
     context = external_treasury_currency_overlay_context(
         hedge_readiness=hedge_readiness_response(),

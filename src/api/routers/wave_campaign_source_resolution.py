@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from typing import Any
+from typing import cast
 
 from fastapi import HTTPException, status
 
@@ -12,6 +13,7 @@ from src.api.routers.wave_campaign_governance_resolution import (
     resolve_bulk_review_campaign_governance,
 )
 from src.api.routers.wave_campaign_hashing import campaign_membership_hash
+from src.core.waves import DpmWaveSourceRef
 from src.api.routers.wave_core_portfolio_universe_resolution import (
     resolve_core_dpm_portfolio_universe_candidates,
 )
@@ -85,45 +87,62 @@ def resolve_bulk_review_campaign_portfolios(
             },
         )
 
+    def _candidate_payload(candidate: object) -> dict[str, object]:
+        if hasattr(candidate, "model_dump"):
+            payload = candidate.model_dump(mode="json")
+            if not isinstance(payload, dict):
+                raise TypeError("Candidate payload from model_dump() must be a dictionary.")
+            return cast(dict[str, object], payload)
+        if isinstance(candidate, Mapping):
+            payload = dict(candidate)
+            return cast(dict[str, object], payload)
+        raise TypeError(
+            "Bulk review campaign candidates must expose model_dump() or mapping semantics."
+        )
+
+    candidate_payloads = [_candidate_payload(candidate) for candidate in included_candidates]
     membership_hash = campaign_membership_hash(
         trigger_id=request.trigger_id,
         as_of_date=campaign_as_of_date,
         portfolio_types=sorted(eligible_portfolio_types),
-        portfolios=[candidate.model_dump(mode="json") for candidate in included_candidates],
+        portfolios=candidate_payloads,
     )
     membership_ref = bulk_review_campaign_membership_ref(
         trigger_id=request.trigger_id,
         campaign_as_of_date=campaign_as_of_date,
         membership_hash=membership_hash,
     )
-    return [
-        {
-            "portfolio_id": candidate.portfolio_id,
-            "mandate_id": candidate.mandate_id,
-            "source_refs": [
-                membership_ref,
-                *governance_refs,
-                bulk_review_campaign_member_ref(
-                    trigger_id=request.trigger_id,
-                    portfolio_id=candidate.portfolio_id,
-                    campaign_as_of_date=campaign_as_of_date,
-                    membership_hash=membership_hash,
-                ),
-                *source_refs_payload(candidate.source_refs),
-            ],
-            "diagnostics": {
-                "source_owner": "lotus-manage",
-                "source_product": "BulkReviewCampaignMembership:v1",
-                "campaign_id": request.trigger_id,
-                "campaign_as_of_date": campaign_as_of_date.isoformat(),
-                "portfolio_type": candidate.portfolio_type.strip().upper()
-                if candidate.portfolio_type
-                else None,
-                "eligible_portfolio_types": sorted(eligible_portfolio_types),
-                "excluded_candidate_count": selection.excluded_count,
-                "membership_supportability_state": "READY",
-                **governance_diagnostics,
-            },
-        }
-        for candidate in included_candidates
-    ]
+    output: list[dict[str, object]] = []
+    for payload in candidate_payloads:
+        portfolio_type = cast("str | None", payload["portfolio_type"])
+        output.append(
+            {
+                "portfolio_id": cast("str", payload["portfolio_id"]),
+                "mandate_id": cast("str | None", payload["mandate_id"]),
+                "source_refs": [
+                    membership_ref,
+                    *governance_refs,
+                    bulk_review_campaign_member_ref(
+                        trigger_id=request.trigger_id,
+                        portfolio_id=cast("str", payload["portfolio_id"]),
+                        campaign_as_of_date=campaign_as_of_date,
+                        membership_hash=membership_hash,
+                    ),
+                    *source_refs_payload(
+                        cast(Sequence[DpmWaveSourceRef], payload["source_refs"]),
+                    ),
+                ],
+                "diagnostics": {
+                    "source_owner": "lotus-manage",
+                    "source_product": "BulkReviewCampaignMembership:v1",
+                    "campaign_id": request.trigger_id,
+                    "campaign_as_of_date": campaign_as_of_date.isoformat(),
+                    "portfolio_type": portfolio_type.strip().upper() if portfolio_type else None,
+                    "eligible_portfolio_types": sorted(eligible_portfolio_types),
+                    "excluded_candidate_count": selection.excluded_count,
+                    "membership_supportability_state": "READY",
+                    **governance_diagnostics,
+                },
+            }
+        )
+    return output

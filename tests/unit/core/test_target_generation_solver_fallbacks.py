@@ -3,6 +3,7 @@ import sys
 
 from src.core.models import DiagnosticsData, EngineOptions, ModelPortfolio, ModelTarget, ShelfEntry
 from src.core.target_generation import (
+    _load_solver_modules,
     _solve_with_fallbacks,
     build_target_trace,
     generate_targets_solver,
@@ -161,6 +162,23 @@ def test_solve_with_fallbacks_skips_uninstalled_solver_and_tries_compatibility_k
     assert solved is True
     assert latest_status == "optimal"
     assert [solver for solver, _ in problem.calls] == ["SCS", "SCS"]
+
+
+def test_load_solver_modules_records_error_when_dependencies_are_absent(monkeypatch) -> None:
+    monkeypatch.setattr("src.core.target_generation.has_solver_dependencies", lambda: False)
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+
+    assert _load_solver_modules(diagnostics) is None
+    assert diagnostics.warnings == ["SOLVER_ERROR"]
+
+
+def test_load_solver_modules_records_error_when_import_fails(monkeypatch) -> None:
+    monkeypatch.setattr("src.core.target_generation.has_solver_dependencies", lambda: True)
+    monkeypatch.setitem(sys.modules, "cvxpy", None)
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+
+    assert _load_solver_modules(diagnostics) is None
+    assert diagnostics.warnings == ["SOLVER_ERROR"]
 
 
 def test_generate_targets_solver_reports_pending_review_when_sell_excess_has_no_recipient(

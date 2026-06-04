@@ -1,3 +1,5 @@
+import pytest
+
 from src.core.portfolio_memory.envelopes import finalize_portfolio_memory
 from src.core.portfolio_memory.governance import (
     client_communication_boundary_evidence,
@@ -8,9 +10,14 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    _validate_search_item_metadata,
+    _validate_search_page_pagination,
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
+    _filters_require_matching_events,
+    _memory_passes_search_summary_filters,
+    _portfolio_memory_search_item,
     build_search_page,
     build_search_row,
 )
@@ -75,6 +82,236 @@ def test_build_search_row_keeps_only_explicit_empty_portfolios() -> None:
         )
         is None
     )
+
+
+def test_memory_passes_search_summary_filters_rejects_unmatched_summary_fields() -> None:
+    memory = _memory(
+        portfolio_id="PB_SEARCH_001",
+        events=[
+            _event(
+                event_id="memory:search:handoff",
+                event_type="WAVE_HANDOFF_READY",
+                event_time="2026-05-31T10:00:00+00:00",
+                source_id="handoff-001",
+                content_hash="sha256:handoff",
+            )
+        ],
+    )
+
+    assert not _memory_passes_search_summary_filters(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type="OUTCOME_REVIEW_CREATED",
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        ),
+        explicit_candidate_ids=set(),
+    )
+    assert not _memory_passes_search_summary_filters(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system="lotus-risk",
+            source_type=None,
+        ),
+        explicit_candidate_ids=set(),
+    )
+
+
+def test_filters_require_matching_events_tracks_event_level_filters() -> None:
+    assert not _filters_require_matching_events(
+        PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        )
+    )
+    assert _filters_require_matching_events(
+        PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system=None,
+            source_type="PortfolioManagerBookMembership",
+        )
+    )
+
+
+def test_validate_search_page_pagination_accepts_advancing_page() -> None:
+    _validate_search_page_pagination(
+        returned_count=2,
+        item_count=2,
+        total_count=5,
+        offset=0,
+        has_more=True,
+        next_offset=2,
+    )
+
+
+def test_validate_search_page_pagination_rejects_item_count_mismatch() -> None:
+    with pytest.raises(ValueError, match="returned_count must equal"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=1,
+            total_count=5,
+            offset=0,
+            has_more=True,
+            next_offset=2,
+        )
+
+
+def test_validate_search_page_pagination_rejects_wrong_has_more_posture() -> None:
+    with pytest.raises(ValueError, match="has_more must match"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=2,
+            total_count=5,
+            offset=0,
+            has_more=False,
+            next_offset=None,
+        )
+
+
+def test_validate_search_page_pagination_rejects_terminal_next_offset() -> None:
+    with pytest.raises(ValueError, match="next_offset must be null"):
+        _validate_search_page_pagination(
+            returned_count=2,
+            item_count=2,
+            total_count=2,
+            offset=0,
+            has_more=False,
+            next_offset=2,
+        )
+
+
+def test_validate_search_item_metadata_accepts_empty_search_item_metadata() -> None:
+    _validate_search_item_metadata(
+        event_count=0,
+        event_type_counts={},
+        source_systems=[],
+        reason_codes=[],
+        supportability_state="EMPTY",
+        matching_event_count=0,
+        latest_event_time=None,
+        latest_event_type=None,
+        latest_matching_event_time=None,
+        latest_matching_event_type=None,
+        latest_matching_event_id=None,
+        latest_matching_event_identity=None,
+        latest_matching_event_source_system=None,
+        latest_matching_event_source_type=None,
+        latest_matching_event_source_id=None,
+        latest_matching_event_content_hash=None,
+    )
+
+
+def test_validate_search_item_metadata_rejects_mismatched_aggregates_and_ordering() -> None:
+    with pytest.raises(ValueError, match="event_count must equal"):
+        _validate_search_item_metadata(
+            event_count=2,
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            source_systems=["lotus-manage"],
+            reason_codes=[],
+            supportability_state="READY",
+            matching_event_count=0,
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_time=None,
+            latest_matching_event_type=None,
+            latest_matching_event_id=None,
+            latest_matching_event_identity=None,
+            latest_matching_event_source_system=None,
+            latest_matching_event_source_type=None,
+            latest_matching_event_source_id=None,
+            latest_matching_event_content_hash=None,
+        )
+
+    with pytest.raises(ValueError, match="source_systems must be sorted"):
+        _validate_search_item_metadata(
+            event_count=1,
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            source_systems=["b", "a"],
+            reason_codes=["READY_FOR_OPERATIONS_REVIEW"],
+            supportability_state="READY",
+            matching_event_count=0,
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_time=None,
+            latest_matching_event_type=None,
+            latest_matching_event_id=None,
+            latest_matching_event_identity=None,
+            latest_matching_event_source_system=None,
+            latest_matching_event_source_type=None,
+            latest_matching_event_source_id=None,
+            latest_matching_event_content_hash=None,
+        )
+
+
+def test_validate_search_item_metadata_rejects_missing_matching_event_metadata() -> None:
+    with pytest.raises(ValueError, match="matching events must carry latest matching"):
+        _validate_search_item_metadata(
+            event_count=1,
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            source_systems=["lotus-manage"],
+            reason_codes=["READY_FOR_OPERATIONS_REVIEW"],
+            supportability_state="READY",
+            matching_event_count=1,
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_time="2026-05-31T10:00:00+00:00",
+            latest_matching_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_id=None,
+            latest_matching_event_identity="memory:search:handoff",
+            latest_matching_event_source_system="lotus-manage",
+            latest_matching_event_source_type="DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
+            latest_matching_event_source_id="handoff-001",
+            latest_matching_event_content_hash="sha256:handoff",
+        )
+
+
+def test_validate_search_item_metadata_rejects_stale_matching_metadata() -> None:
+    with pytest.raises(
+        ValueError, match="no matching events must not carry latest matching event metadata"
+    ):
+        _validate_search_item_metadata(
+            event_count=1,
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            source_systems=["lotus-manage"],
+            reason_codes=["READY_FOR_OPERATIONS_REVIEW"],
+            supportability_state="READY",
+            matching_event_count=0,
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_time="2026-05-31T10:00:00+00:00",
+            latest_matching_event_type="WAVE_HANDOFF_READY",
+            latest_matching_event_id="memory:search:handoff",
+            latest_matching_event_identity="memory:search:handoff:id",
+            latest_matching_event_source_system="lotus-manage",
+            latest_matching_event_source_type="DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
+            latest_matching_event_source_id="handoff-001",
+            latest_matching_event_content_hash=None,
+        )
+
+
+def test_portfolio_memory_search_item_projects_latest_matching_event() -> None:
+    event = _event(
+        event_id="memory:search:handoff",
+        event_type="WAVE_HANDOFF_READY",
+        event_time="2026-05-31T10:00:00+00:00",
+        source_id="handoff-001",
+        content_hash="sha256:handoff",
+    )
+    memory = _memory(portfolio_id="PB_SEARCH_001", events=[event])
+
+    item = _portfolio_memory_search_item(memory=memory, matching_events=[event])
+
+    assert item.portfolio_id == "PB_SEARCH_001"
+    assert item.matching_event_count == 1
+    assert item.latest_matching_event_id == "memory:search:handoff"
+    assert item.latest_matching_event_source_type == "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
+    assert item.latest_matching_event_content_hash == "sha256:handoff"
 
 
 def test_build_search_page_counts_matching_event_facets_and_paginates() -> None:

@@ -18,7 +18,7 @@ from src.core.construction import (
     build_alternative_set,
     build_rebalance_result_alternative,
 )
-from src.core.models import EngineOptions, Money, RebalanceResult, TaxImpact
+from src.core.models import EngineOptions, ExcludedInstrument, Money, RebalanceResult, TaxImpact
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
@@ -31,8 +31,10 @@ from src.core.proof_packs import (
     build_proof_pack_from_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
+from src.core.proof_packs.models import DpmProofPackSourceRef
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
+    ProofPackSourceAnalytics,
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
@@ -126,6 +128,620 @@ def _mandate_twin() -> DpmMandateDigitalTwin:
 
 def _section(pack, section_type: str):
     return next(section for section in pack.sections if section.section_type == section_type)
+
+
+def _source_ref() -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-risk",
+        source_type="RiskMetricsReport",
+        source_id="risk-report:pf_proof_pack_1:2026-05-03",
+        supportability_state="READY",
+        content_hash="sha256:risk-report-proof",
+    )
+
+
+def test_source_analytics_section_payload_returns_degraded_missing_context() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._source_analytics_section_payload(
+        source_analytics={},
+        family="risk",
+        missing_summary="No risk-authoritative enrichment is attached.",
+        missing_reason_code="DPM_RISK_AUTHORITY_CONTEXT_MISSING",
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "No risk-authoritative enrichment is attached."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_RISK_AUTHORITY_CONTEXT_MISSING"]
+
+
+def test_source_analytics_section_payload_preserves_context_and_can_sort_reason_codes() -> None:
+    analytics = ProofPackSourceAnalytics(
+        family="regime_stress",
+        state="PENDING_REVIEW",
+        summary="Scenario evidence is attached.",
+        facts={"scenario_pack_id": "CIO_REGIME_2026_Q2"},
+        metrics={"worst_case_loss_pct": "0.1800"},
+        reason_codes=["Z_REASON", "A_REASON", "Z_REASON"],
+        source_ref=_source_ref(),
+        source_hash_key="regime_stress_context",
+        content_hash="sha256:regime-stress-context",
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._source_analytics_section_payload(
+        source_analytics={"regime_stress": analytics},
+        family="regime_stress",
+        missing_summary="Scenario/regime authority context is not attached.",
+        missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
+        sort_reason_codes=True,
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Scenario evidence is attached."
+    assert facts == {"scenario_pack_id": "CIO_REGIME_2026_Q2"}
+    assert metrics == {"worst_case_loss_pct": "0.1800"}
+    assert reason_codes == ["A_REASON", "Z_REASON"]
+
+
+def test_adapter_section_payload_returns_ready_contract_reference() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._adapter_section_payload(
+        summary="Report input adapter is available.",
+        adapter_contract="DpmProofPackReportInput",
+    )
+
+    assert state == "READY"
+    assert summary == "Report input adapter is available."
+    assert facts == {"adapter_contract": "DpmProofPackReportInput"}
+    assert metrics == {}
+    assert reason_codes == []
+
+
+def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_section_payload(
+        section_type="decision_summary",
+        result=result,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=None,
+        reason=None,
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+        created_by="pm_001",
+        source_analytics={},
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Decision evidence assembled from manage run and actor rationale."
+    assert facts == {
+        "actor": "pm_001",
+        "reason": None,
+        "source_run_status": result.status,
+        "selected_alternative_id": None,
+    }
+    assert metrics == {}
+    assert reason_codes == ["DPM_PROOF_PACK_REASON_MISSING"]
+
+
+def test_pre_run_section_payload_ignores_run_required_sections() -> None:
+    assert (
+        builder_module._pre_run_section_payload(
+            section_type="trade_intents",
+            result=_ready_rebalance_result(),
+            alternative_set=None,
+            selected_alternative=None,
+            selection=None,
+            reason="Review rebalance.",
+            mandate_id=None,
+            mandate_twin=None,
+            mandate_health=None,
+            mandate_evidence_gap_codes=[],
+            created_by="pm_001",
+            source_analytics={},
+        )
+        is None
+    )
+
+
+def test_run_state_section_payload_blocks_missing_trade_intents() -> None:
+    result = _ready_rebalance_result().model_copy(update={"intents": []})
+
+    state, summary, facts, metrics, reason_codes = builder_module._run_state_section_payload(
+        section_type="trade_intents",
+        result=result,
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "No trade intents are available for pre-trade proof."
+    assert facts == {"intent_ids": []}
+    assert metrics == {"trade_count": 0}
+    assert reason_codes == ["DPM_TRADE_INTENTS_MISSING"]
+
+
+def test_run_state_section_payload_ignores_unrelated_sections() -> None:
+    assert (
+        builder_module._run_state_section_payload(
+            section_type="tax_impact",
+            result=_ready_rebalance_result(),
+        )
+        is None
+    )
+
+
+def test_run_diagnostics_section_payload_returns_ready_liquidity_posture() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_diagnostics_section_payload(
+        section_type="liquidity_and_cash",
+        result=_ready_rebalance_result(),
+    )
+
+    assert state == "READY"
+    assert summary == "Liquidity and cash posture captured from run diagnostics."
+    assert facts["cash_ladder_breaches"] == []
+    assert metrics == {"breach_count": 0}
+    assert reason_codes == []
+
+
+def test_run_diagnostics_section_payload_returns_currency_overlay_fallback() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_diagnostics_section_payload(
+        section_type="currency_overlay_evidence",
+        result=_ready_rebalance_result(),
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Currency-overlay authority context is not attached."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"]
+
+
+def test_run_policy_section_payload_returns_direct_run_drift_fallback() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_policy_section_payload(
+        section_type="drift_impact",
+        result=_ready_rebalance_result(),
+        selected_alternative=None,
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Direct-run proof has no construction comparison drift trace."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_DRIFT_COMPARISON_UNAVAILABLE"]
+
+
+def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._run_policy_section_payload(
+        section_type="tax_impact",
+        result=_ready_rebalance_result(),
+        selected_alternative=None,
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Tax impact is not available for this run."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
+
+
+def test_approval_requirements_section_payload_orders_workflow_decisions() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
+    later = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_later",
+        run_id=result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="LATER",
+        actor_id="pm_002",
+        decided_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        correlation_id="corr-later",
+    )
+    earlier = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_earlier",
+        run_id=result.rebalance_run_id,
+        action="REQUEST_CHANGES",
+        reason_code="EARLIER",
+        actor_id="pm_001",
+        decided_at=datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        correlation_id="corr-earlier",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=[later, earlier],
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Approval posture captured from run status and gate decision."
+    assert [decision["decision_id"] for decision in facts["workflow_decisions"]] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+    assert metrics == {"workflow_decision_count": 2}
+    assert reason_codes == []
+
+
+def test_approval_requirements_section_payload_blocks_for_blocked_run() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "BLOCKED"})
+
+    state, _summary, facts, metrics, reason_codes = (
+        builder_module._approval_requirements_section_payload(
+            result=result,
+            workflow_decisions=[],
+        )
+    )
+
+    assert state == "BLOCKED"
+    assert facts["workflow_decisions"] == []
+    assert metrics == {"workflow_decision_count": 0}
+    assert reason_codes == []
+
+
+def test_proof_pack_governance_section_payload_orders_workflow_decisions() -> None:
+    result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
+    later = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_later",
+        run_id=result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="LATER",
+        actor_id="pm_002",
+        decided_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        correlation_id="corr-later",
+    )
+    earlier = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_earlier",
+        run_id=result.rebalance_run_id,
+        action="REQUEST_CHANGES",
+        reason_code="EARLIER",
+        actor_id="pm_001",
+        decided_at=datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        correlation_id="corr-earlier",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._proof_pack_governance_section_payload(
+            section_type="approval_requirements",
+            result=result,
+            run=_run_record(result=result),
+            selection=None,
+            source_ref_count=3,
+            workflow_decisions=[later, earlier],
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Approval posture captured from run status and gate decision."
+    assert [decision["decision_id"] for decision in facts["workflow_decisions"]] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+    assert metrics == {"workflow_decision_count": 2}
+    assert reason_codes == []
+
+
+def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._proof_pack_governance_section_payload(
+            section_type="lineage",
+            result=result,
+            run=_run_record(result=result),
+            selection=None,
+            source_ref_count=7,
+            workflow_decisions=[],
+        )
+    )
+
+    assert state == "READY"
+    assert summary == "Lineage identifiers captured from source run and source artifacts."
+    assert facts["source_system"] == result.lineage.source_system
+    assert metrics == {"source_ref_count": 7}
+    assert reason_codes == []
+
+
+def test_mandate_context_section_payload_blocks_missing_identity() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "Mandate identity is required before proof-pack promotion."
+    assert facts == {"mandate_id": None}
+    assert metrics == {}
+    assert reason_codes == ["DPM_PROOF_PACK_MANDATE_ID_MISSING"]
+
+
+def test_mandate_context_section_payload_projects_health_evidence() -> None:
+    mandate_twin = _mandate_twin()
+    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin))
+
+    state, summary, facts, metrics, reason_codes = builder_module._mandate_context_section_payload(
+        mandate_id=mandate_twin.mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=[],
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == (
+        "Mandate digital-twin and health evidence are attached from persisted RFC-0038 truth."
+    )
+    assert facts["mandate_id"] == mandate_twin.mandate_id
+    assert facts["health_snapshot_id"] == mandate_health.health_snapshot_id
+    assert metrics["dimension_count"] == len(mandate_health.dimension_scores)
+    assert metrics["source_lineage_count"] == len(mandate_twin.source_lineage)
+    assert reason_codes == [reason.reason_code for reason in mandate_health.top_reasons]
+
+
+def test_selected_alternative_section_payload_degrades_without_selection() -> None:
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._selected_alternative_section_payload(
+            alternative_set=None,
+            selected_alternative=None,
+            selection=None,
+        )
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Direct-run proof pack has no selected construction alternative."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"]
+
+
+def test_selected_alternative_section_payload_projects_method_trace() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_selected_section",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_selected_section",
+        alternative_set_id=alternative_set.alternative_set_id,
+        alternative_id=alternative.alternative_id,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._selected_alternative_section_payload(
+            alternative_set=alternative_set,
+            selected_alternative=alternative,
+            selection=selection,
+        )
+    )
+
+    assert state == "READY"
+    assert summary == "Selected construction alternative captured with method and trace evidence."
+    assert facts["alternative_set_id"] == "cas_selected_section"
+    assert facts["selected_alternative_id"] == alternative.alternative_id
+    assert facts["selection_id"] == "sel_selected_section"
+    assert facts["objective_trace"]
+    assert facts["constraint_trace"]
+    assert metrics == alternative.comparison_metrics.model_dump(mode="json")
+    assert reason_codes == []
+
+
+def test_source_readiness_section_payload_blocks_missing_run() -> None:
+    state, summary, facts, metrics, reason_codes = builder_module._source_readiness_section_payload(
+        result=None
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "No source run is available."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_SOURCE_RUN_MISSING"]
+
+
+def test_source_readiness_section_payload_degrades_on_lineage_state() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "lineage": result.lineage.model_copy(
+                update={
+                    "input_mode": "stateful",
+                    "source_system": "lotus-core",
+                    "source_supportability_state": "DEGRADED",
+                }
+            )
+        }
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._source_readiness_section_payload(
+        result=result
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Source readiness captured from run lineage."
+    assert facts == {
+        "input_mode": "stateful",
+        "source_system": "lotus-core",
+        "source_supportability_state": "DEGRADED",
+    }
+    assert metrics == {}
+    assert reason_codes == ["DPM_SOURCE_READINESS_DEGRADED"]
+
+
+def test_turnover_and_cost_section_payload_degrades_without_selected_metrics() -> None:
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._turnover_and_cost_section_payload(
+            selected_alternative=None,
+            source_analytics={},
+        )
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Turnover and cost evidence captured when construction metrics are available."
+    assert facts == {}
+    assert metrics == {}
+    assert reason_codes == ["DPM_TURNOVER_COST_METRICS_MISSING"]
+
+
+def test_turnover_and_cost_section_payload_merges_source_cost_context() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    cost_context = AuthoritativeTransactionCostContext(
+        supportability_status="READY",
+        source_system="lotus-core",
+        source_id="transaction-cost-scope-001",
+        content_hash="sha256:transaction-cost-curve-proof",
+        as_of_date="2026-05-03",
+        window_start_date="2026-02-02",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=1,
+        reason_codes=["TRANSACTION_COST_CURVE_READY"],
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id="EQ_B",
+                transaction_type="BUY",
+                currency="USD",
+                observation_count=3,
+                total_notional=Decimal("30000"),
+                total_cost=Decimal("15"),
+                average_cost_bps=Decimal("5.0000"),
+                min_cost_bps=Decimal("4.5000"),
+                max_cost_bps=Decimal("5.5000"),
+                first_observed_date="2026-04-01",
+                last_observed_date="2026-05-03",
+            )
+        ],
+    )
+    transaction_cost = source_analytics_for_context(
+        source_context=cost_context.model_dump(mode="json", exclude_none=True),
+        family="transaction_cost",
+    )
+
+    assert transaction_cost is not None
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._turnover_and_cost_section_payload(
+            selected_alternative=alternative,
+            source_analytics={"transaction_cost": transaction_cost},
+        )
+    )
+
+    assert state == "READY"
+    assert (
+        summary
+        == "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+    )
+    assert facts["source_system"] == "lotus-core"
+    assert facts["curve_points"][0]["average_cost_bps"] == "5.0000"
+    assert metrics["returned_curve_point_count"] == 1
+    assert metrics["represented_observation_count"] == 3
+    assert metrics["estimated_transaction_cost"] is None
+    assert reason_codes == ["TRANSACTION_COST_CURVE_READY"]
+
+
+def test_eligibility_and_restrictions_section_payload_reports_universe_exclusions() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "universe": result.universe.model_copy(
+                update={
+                    "excluded": [
+                        ExcludedInstrument(
+                            instrument_id="PRIVATE_CREDIT_FUND",
+                            reason_code="SHELF_NOT_APPROVED",
+                            details="Instrument is outside the approved shelf.",
+                        )
+                    ]
+                }
+            )
+        }
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics={},
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert summary == "Eligibility and restriction evidence captured from source run universe."
+    assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
+    assert metrics == {"excluded_count": 1}
+    assert reason_codes == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
+
+
+def test_eligibility_and_restrictions_section_payload_merges_restriction_context() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "universe": result.universe.model_copy(
+                update={
+                    "excluded": [
+                        ExcludedInstrument(
+                            instrument_id="PRIVATE_CREDIT_FUND",
+                            reason_code="CLIENT_RESTRICTION",
+                        )
+                    ]
+                }
+            )
+        }
+    )
+    restriction_context = AuthoritativeClientRestrictionContext(
+        supportability_status="READY",
+        source_system="lotus-core",
+        source_id="sha256:client-restrictions",
+        content_hash="sha256:client-restrictions",
+        portfolio_id="pf_proof_pack_1",
+        client_id="client_001",
+        mandate_id="mandate_001",
+        as_of_date="2026-05-03",
+        restriction_count=1,
+        reason_codes=["CLIENT_RESTRICTION_PROFILE_READY"],
+        restrictions=[
+            AuthoritativeClientRestrictionRule(
+                restriction_scope="instrument",
+                restriction_code="NO_PRIVATE_CREDIT_BUY",
+                restriction_status="active",
+                restriction_source="client_mandate",
+                applies_to_buy=True,
+                applies_to_sell=False,
+                instrument_ids=["PRIVATE_CREDIT_FUND"],
+                effective_from="2026-01-01",
+                restriction_version=1,
+            )
+        ],
+    )
+    restriction = source_analytics_for_context(
+        source_context=restriction_context.model_dump(mode="json", exclude_none=True),
+        family="client_restriction",
+    )
+
+    assert restriction is not None
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics={"client_restriction": restriction},
+        )
+    )
+
+    assert state == "PENDING_REVIEW"
+    assert (
+        summary == "Eligibility evidence and source-owned client restriction profile are attached."
+    )
+    assert facts["source_product_name"] == "ClientRestrictionProfile"
+    assert facts["restrictions"][0]["restriction_code"] == "NO_PRIVATE_CREDIT_BUY"
+    assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
+    assert metrics == {"restriction_count": 1, "excluded_count": 1}
+    assert reason_codes == [
+        "CLIENT_RESTRICTION_PROFILE_READY",
+        "DPM_UNIVERSE_EXCLUSIONS_PRESENT",
+    ]
 
 
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:

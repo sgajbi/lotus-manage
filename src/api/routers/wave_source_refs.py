@@ -1,13 +1,23 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import date
+from typing import cast
 
 from src.core.waves import DpmWaveSourceRef
 
 
 def source_refs_payload(refs: Iterable[DpmWaveSourceRef]) -> list[dict[str, object]]:
-    return [ref.model_dump(mode="json") for ref in refs]
+    def _ref_payload(ref: DpmWaveSourceRef | Mapping[str, object]) -> dict[str, object]:
+        if hasattr(ref, "model_dump"):
+            payload = ref.model_dump(mode="json")
+            if isinstance(payload, dict):
+                return cast(dict[str, object], payload)
+        if isinstance(ref, Mapping):
+            return cast(dict[str, object], dict(ref))
+        raise TypeError("DpmWaveSourceRef payload must be a model or mapping.")
+
+    return [_ref_payload(ref) for ref in refs]
 
 
 def source_ref_payload(

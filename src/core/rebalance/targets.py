@@ -2,6 +2,7 @@ from copy import deepcopy
 from decimal import Decimal
 from typing import Any, Literal, cast
 
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.common.diagnostics import make_diagnostics_data
 from src.core.models import (
     DiagnosticsData,
@@ -215,6 +216,32 @@ def compare_target_generation_methods(
     }
 
 
+def _cap_tradeable_targets_to_available_weight(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+) -> str:
+    total_w = sum(eligible_targets.values())
+    if total_w <= Decimal("1.0001"):
+        return "READY"
+
+    tradeable_keys = [k for k in eligible_targets if k in buy_set]
+    locked_w = sum(v for k, v in eligible_targets.items() if k not in buy_set)
+    available_space = max(Decimal("0.0"), Decimal("1.0") - locked_w)
+    status = "PENDING_REVIEW" if locked_w > Decimal("1.0") else "READY"
+
+    tradeable_w = sum(eligible_targets[k] for k in tradeable_keys)
+    if tradeable_w <= available_space:
+        return status
+
+    if tradeable_w > Decimal("0.0"):
+        scale = available_space / tradeable_w
+        for k in tradeable_keys:
+            eligible_targets[k] *= scale
+
+    return "PENDING_REVIEW"
+
+
 def generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -229,33 +256,22 @@ def generate_targets_heuristic(
     status = "READY"
     buy_set = set(buy_list)
 
-    if sell_only_excess > Decimal("0.0"):
-        recs = {k: v for k, v in eligible_targets.items() if k in buy_set}
-        total_rec = sum(recs.values())
-        if total_rec > Decimal("0.0"):
-            for i_id, w in recs.items():
-                eligible_targets[i_id] = w + (sell_only_excess * (w / total_rec))
-        else:
-            status = "PENDING_REVIEW"
+    status = redistribute_sell_only_excess(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        sell_only_excess=sell_only_excess,
+    )
 
     group_status = apply_group_constraints(eligible_targets, buy_list, shelf, options, diagnostics)
     if group_status == "BLOCKED":
         return [], "BLOCKED"
 
-    total_w = sum(eligible_targets.values())
-    if total_w > Decimal("1.0001"):
-        tradeable_keys = [k for k in eligible_targets if k in buy_set]
-        locked_w = sum(v for k, v in eligible_targets.items() if k not in buy_set)
-        available_space = max(Decimal("0.0"), Decimal("1.0") - locked_w)
-        if locked_w > Decimal("1.0"):
-            status = "PENDING_REVIEW"
-        tradeable_w = sum(eligible_targets[k] for k in tradeable_keys)
-        if tradeable_w > available_space:
-            if tradeable_w > Decimal("0.0"):
-                scale = available_space / tradeable_w
-                for k in tradeable_keys:
-                    eligible_targets[k] *= scale
-            status = "PENDING_REVIEW"
+    cap_status = _cap_tradeable_targets_to_available_weight(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+    )
+    if cap_status == "PENDING_REVIEW":
+        status = "PENDING_REVIEW"
 
     if options.single_position_max_weight is not None:
         max_w = options.single_position_max_weight

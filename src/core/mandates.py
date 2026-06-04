@@ -574,24 +574,17 @@ class DpmCommandCenterSummary(BaseModel):
     )
 
 
-def compile_mandate_digital_twin_from_core(
+def _mandate_twin_field_gap_codes(
     *,
     mandate: DpmCoreMandateBindingResponse,
-    model_targets: DpmCoreModelPortfolioTargetResponse,
-    as_of_date: date,
-    reference_currency: Optional[str] = None,
-    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = None,
-    sustainability_preference_profile: Optional[
-        DpmCoreSustainabilityPreferenceProfileResponse
-    ] = None,
-    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
-    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse] = None,
-    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse] = None,
-    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse] = None,
-    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
-) -> DpmMandateDigitalTwin:
-    """Compile the minimum viable mandate twin from current RFC-087 core products."""
-
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse],
+    sustainability_preference_profile: Optional[DpmCoreSustainabilityPreferenceProfileResponse],
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse],
+    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse],
+    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse],
+    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse],
+    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse],
+) -> list[str]:
     field_gaps = []
     if client_income_needs_schedule is None:
         field_gaps.append("CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED")
@@ -611,31 +604,23 @@ def compile_mandate_digital_twin_from_core(
         field_gaps.append("PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED")
     if benchmark_assignment is None:
         field_gaps.append("BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED")
-    cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
-    constraints = DpmMandateConstraintSet(
-        cash_band_min_weight=cash_reserve_weight,
-        cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
-        turnover_budget=Decimal("0.15"),
-    )
-    if client_restriction_profile is not None:
-        constraints.restricted_instruments = sorted(
-            {
-                instrument_id
-                for restriction in client_restriction_profile.restrictions
-                if restriction.restriction_status.upper() == "ACTIVE"
-                for instrument_id in restriction.instrument_ids
-            }
-        )
-    preferences = DpmMandatePreferences()
-    if sustainability_preference_profile is not None:
-        preferences.sustainability_strategy = _sustainability_strategy(
-            sustainability_preference_profile
-        )
-        preferences.bespoke_notes = [
-            preference.preference_code
-            for preference in sustainability_preference_profile.preferences
-            if preference.preference_status.upper() == "ACTIVE"
-        ]
+    return field_gaps
+
+
+def _build_digital_twin_source_lineage(
+    *,
+    mandate: DpmCoreMandateBindingResponse,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = None,
+    sustainability_preference_profile: Optional[
+        DpmCoreSustainabilityPreferenceProfileResponse
+    ] = None,
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
+    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse] = None,
+    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse] = None,
+    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse] = None,
+    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
+) -> list[DpmSourceProductLineage]:
     source_lineage = [
         _lineage_from_core_product(
             product_name=mandate.product_name,
@@ -731,6 +716,73 @@ def compile_mandate_digital_twin_from_core(
                 lineage={"contract_version": benchmark_assignment.contract_version},
             )
         )
+    return source_lineage
+
+
+def compile_mandate_digital_twin_from_core(
+    *,
+    mandate: DpmCoreMandateBindingResponse,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+    as_of_date: date,
+    reference_currency: Optional[str] = None,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse] = None,
+    sustainability_preference_profile: Optional[
+        DpmCoreSustainabilityPreferenceProfileResponse
+    ] = None,
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
+    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse] = None,
+    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse] = None,
+    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse] = None,
+    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
+) -> DpmMandateDigitalTwin:
+    """Compile the minimum viable mandate twin from current RFC-087 core products."""
+
+    field_gaps = _mandate_twin_field_gap_codes(
+        mandate=mandate,
+        client_restriction_profile=client_restriction_profile,
+        sustainability_preference_profile=sustainability_preference_profile,
+        portfolio_cashflow_projection=portfolio_cashflow_projection,
+        client_income_needs_schedule=client_income_needs_schedule,
+        liquidity_reserve_requirement=liquidity_reserve_requirement,
+        planned_withdrawal_schedule=planned_withdrawal_schedule,
+        benchmark_assignment=benchmark_assignment,
+    )
+    cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
+    constraints = DpmMandateConstraintSet(
+        cash_band_min_weight=cash_reserve_weight,
+        cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
+        turnover_budget=Decimal("0.15"),
+    )
+    if client_restriction_profile is not None:
+        constraints.restricted_instruments = sorted(
+            {
+                instrument_id
+                for restriction in client_restriction_profile.restrictions
+                if restriction.restriction_status.upper() == "ACTIVE"
+                for instrument_id in restriction.instrument_ids
+            }
+        )
+    preferences = DpmMandatePreferences()
+    if sustainability_preference_profile is not None:
+        preferences.sustainability_strategy = _sustainability_strategy(
+            sustainability_preference_profile
+        )
+        preferences.bespoke_notes = [
+            preference.preference_code
+            for preference in sustainability_preference_profile.preferences
+            if preference.preference_status.upper() == "ACTIVE"
+        ]
+    source_lineage = _build_digital_twin_source_lineage(
+        mandate=mandate,
+        model_targets=model_targets,
+        client_restriction_profile=client_restriction_profile,
+        sustainability_preference_profile=sustainability_preference_profile,
+        portfolio_cashflow_projection=portfolio_cashflow_projection,
+        client_income_needs_schedule=client_income_needs_schedule,
+        liquidity_reserve_requirement=liquidity_reserve_requirement,
+        planned_withdrawal_schedule=planned_withdrawal_schedule,
+        benchmark_assignment=benchmark_assignment,
+    )
     return DpmMandateDigitalTwin(
         mandate_id=mandate.mandate_id,
         portfolio_id=mandate.portfolio_id,

@@ -39,6 +39,33 @@ def _humanize(key: str) -> str:
     return _to_snake_case(key).replace("_", " ").strip()
 
 
+def _number_example_for_key(key: str) -> float:
+    if "weight" in key:
+        return 0.125
+    if "price" in key or "rate" in key:
+        return 1.2345
+    if "quantity" in key:
+        return 100.0
+    return 10.5
+
+
+def _semantic_string_example_for_key(key: str, schema_type: Any) -> str | None:
+    if key.endswith("_id"):
+        entity = key[: -len("_id")]
+        return f"{entity.upper()}_001"
+    if "currency" in key:
+        return "USD"
+    if "time" in key or "timestamp" in key:
+        return "2026-03-02T10:30:00Z"
+    if "date" in key:
+        return "2026-03-02"
+    if "status" in key:
+        return "READY"
+    if schema_type == "string":
+        return f"sample_{key}"
+    return None
+
+
 def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
     key = _to_snake_case(prop_name)
     if key in _EXAMPLE_BY_KEY:
@@ -60,32 +87,16 @@ def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
     if schema_type == "integer":
         return 10
     if schema_type == "number":
-        if "weight" in key:
-            return 0.125
-        if "price" in key or "rate" in key:
-            return 1.2345
-        if "quantity" in key:
-            return 100.0
-        return 10.5
+        return _number_example_for_key(key)
 
     if schema_format == "date":
         return "2026-03-02"
     if schema_format == "date-time":
         return "2026-03-02T10:30:00Z"
 
-    if key.endswith("_id"):
-        entity = key[: -len("_id")]
-        return f"{entity.upper()}_001"
-    if "currency" in key:
-        return "USD"
-    if "date" in key:
-        return "2026-03-02"
-    if "time" in key or "timestamp" in key:
-        return "2026-03-02T10:30:00Z"
-    if "status" in key:
-        return "READY"
-    if schema_type == "string":
-        return f"sample_{key}"
+    semantic_string = _semantic_string_example_for_key(key, schema_type)
+    if semantic_string is not None:
+        return semantic_string
     return f"{key}_example"
 
 
@@ -116,6 +127,58 @@ def _schema_ref_name(ref: str) -> str:
     return ref.rsplit("/", 1)[-1]
 
 
+def _schema_declared_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:
+    if "example" in prop_schema:
+        return True, prop_schema["example"]
+    examples = prop_schema.get("examples")
+    if isinstance(examples, list) and examples:
+        return True, examples[0]
+    return False, None
+
+
+def _collection_example_from_schema(
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    properties = prop_schema.get("properties")
+    if isinstance(properties, dict):
+        return True, {
+            child_name: _example_from_schema(
+                child_name,
+                child_schema,
+                schemas,
+                seen_refs,
+            )
+            for child_name, child_schema in properties.items()
+            if isinstance(child_schema, dict)
+        }
+
+    schema_type = prop_schema.get("type")
+    if schema_type == "array":
+        item_schema = prop_schema.get("items", {})
+        if isinstance(item_schema, dict):
+            return True, [
+                _example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)
+            ]
+        return True, []
+    if schema_type == "object":
+        additional_properties = prop_schema.get("additionalProperties")
+        if isinstance(additional_properties, dict):
+            return True, {
+                "sample_key": _example_from_schema(
+                    f"{prop_name}_value",
+                    additional_properties,
+                    schemas,
+                    seen_refs,
+                )
+            }
+        return True, {"sample_key": "sample_value"}
+
+    return False, None
+
+
 def _example_from_schema(
     prop_name: str,
     prop_schema: dict[str, Any],
@@ -126,11 +189,9 @@ def _example_from_schema(
     if not isinstance(prop_schema, dict):
         return _infer_example(prop_name, {})
 
-    if "example" in prop_schema:
-        return prop_schema["example"]
-    examples = prop_schema.get("examples")
-    if isinstance(examples, list) and examples:
-        return examples[0]
+    has_declared_example, declared_example = _schema_declared_example(prop_schema)
+    if has_declared_example:
+        return declared_example
 
     schema_ref = prop_schema.get("$ref")
     if isinstance(schema_ref, str):
@@ -154,32 +215,14 @@ def _example_from_schema(
             if isinstance(option, dict) and option.get("type") != "null":
                 return _example_from_schema(prop_name, option, schemas, seen_refs)
 
-    properties = prop_schema.get("properties")
-    if isinstance(properties, dict):
-        return {
-            child_name: _example_from_schema(child_name, child_schema, schemas, seen_refs)
-            for child_name, child_schema in properties.items()
-            if isinstance(child_schema, dict)
-        }
-
-    schema_type = prop_schema.get("type")
-    if schema_type == "array":
-        item_schema = prop_schema.get("items", {})
-        if isinstance(item_schema, dict):
-            return [_example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)]
-        return []
-    if schema_type == "object":
-        additional_properties = prop_schema.get("additionalProperties")
-        if isinstance(additional_properties, dict):
-            return {
-                "sample_key": _example_from_schema(
-                    f"{prop_name}_value",
-                    additional_properties,
-                    schemas,
-                    seen_refs,
-                )
-            }
-        return {"sample_key": "sample_value"}
+    has_collection_example, collection_example = _collection_example_from_schema(
+        prop_name=prop_name,
+        prop_schema=prop_schema,
+        schemas=schemas,
+        seen_refs=seen_refs,
+    )
+    if has_collection_example:
+        return collection_example
 
     return _infer_example(prop_name, prop_schema)
 
@@ -255,6 +298,41 @@ def _ensure_error_response_content(
         )
 
 
+def _ensure_operation_examples(
+    *,
+    method: str,
+    path: str,
+    operation: dict[str, Any],
+    schemas: dict[str, Any],
+) -> None:
+    request_content = operation.get("requestBody", {}).get("content", {}).get(_JSON_MEDIA_TYPE)
+    if isinstance(request_content, dict):
+        _ensure_json_content_example(
+            content=request_content,
+            schemas=schemas,
+            name=f"{method}_{path}_request",
+            summary="Example request payload.",
+        )
+
+    for status_code, response in operation.get("responses", {}).items():
+        if not isinstance(response, dict):
+            continue
+        normalized_status_code = str(status_code)
+        if normalized_status_code.startswith(("4", "5")) or normalized_status_code == "default":
+            _ensure_error_response_content(
+                response=response,
+                status_code=normalized_status_code,
+            )
+        response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
+        if isinstance(response_content, dict):
+            _ensure_json_content_example(
+                content=response_content,
+                schemas=schemas,
+                name=f"{method}_{path}_{status_code}_response",
+                summary="Example response payload.",
+            )
+
+
 def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
     schemas = schema.get("components", {}).get("schemas", {})
     if not isinstance(schemas, dict):
@@ -300,36 +378,12 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
             if not isinstance(operation, dict):
                 continue
 
-            request_content = (
-                operation.get("requestBody", {}).get("content", {}).get(_JSON_MEDIA_TYPE)
+            _ensure_operation_examples(
+                method=method,
+                path=path,
+                operation=operation,
+                schemas=schemas,
             )
-            if isinstance(request_content, dict):
-                _ensure_json_content_example(
-                    content=request_content,
-                    schemas=schemas,
-                    name=f"{method}_{path}_request",
-                    summary="Example request payload.",
-                )
-
-            for status_code, response in operation.get("responses", {}).items():
-                if not isinstance(response, dict):
-                    continue
-                normalized_status_code = str(status_code)
-                if normalized_status_code.startswith(("4", "5")) or (
-                    normalized_status_code == "default"
-                ):
-                    _ensure_error_response_content(
-                        response=response,
-                        status_code=normalized_status_code,
-                    )
-                response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
-                if isinstance(response_content, dict):
-                    _ensure_json_content_example(
-                        content=response_content,
-                        schemas=schemas,
-                        name=f"{method}_{path}_{status_code}_response",
-                        summary="Example response payload.",
-                    )
 
 
 def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -> None:

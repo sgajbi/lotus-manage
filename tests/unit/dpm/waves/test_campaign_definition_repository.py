@@ -226,6 +226,47 @@ def test_campaign_definition_retired_and_superseded_validation_edges() -> None:
         )
 
 
+def test_campaign_definition_lifecycle_helpers_preserve_reason_codes() -> None:
+    definition = _definition()
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ACTIVE_LIFECYCLE_FIELDS_FORBIDDEN",
+    ):
+        definition.model_copy(update={"retired_by": "ops"})._validate_active_lifecycle()
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_RETIREMENT_TIMESTAMP_REQUIRED",
+    ):
+        definition.model_copy(
+            update={
+                "status": "RETIRED",
+                "retired_by": "ops",
+                "retirement_reason": "Campaign completed.",
+                "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            }
+        )._validate_retired_lifecycle()
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSEDED_RETIREMENT_FIELDS_FORBIDDEN",
+    ):
+        definition.model_copy(
+            update={
+                "status": "SUPERSEDED",
+                "superseded_at": datetime(2026, 5, 12, 8, 0, tzinfo=timezone.utc),
+                "superseded_by": "ops",
+                "supersession_reason": "Campaign candidate set refreshed.",
+                "supersession_correlation_id": "corr-campaign-definition-supersede-001",
+                "superseded_by_campaign_id": definition.campaign_id,
+                "superseded_by_campaign_version": "2026.06",
+                "superseded_by_content_hash": "sha256:replacement",
+                "retired_by": "ops",
+            }
+        )._validate_superseded_lifecycle()
+
+
 def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> None:
     repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     definition = _definition()

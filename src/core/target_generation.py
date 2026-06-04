@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 from src.core.common.capabilities import has_solver_dependencies
+from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.models import DiagnosticsData, EngineOptions, Money, ShelfEntry, TargetInstrument
 
 _SOLVER_STATUS_OPTIMAL = {"optimal", "optimal_inaccurate"}
@@ -126,6 +127,19 @@ def _collect_infeasibility_hints(
     return hints
 
 
+def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None:
+    if not has_solver_dependencies():
+        diagnostics.warnings.append("SOLVER_ERROR")
+        return None
+    try:
+        import cvxpy as cp
+        import numpy as np
+    except Exception:
+        diagnostics.warnings.append("SOLVER_ERROR")
+        return None
+    return cp, np
+
+
 def build_target_trace(
     model: Any,
     eligible_targets: dict[str, Decimal],
@@ -181,27 +195,16 @@ def generate_targets_solver(
     base_ccy: str,
     diagnostics: DiagnosticsData,
 ) -> tuple[list[TargetInstrument], str]:
-    if not has_solver_dependencies():
-        diagnostics.warnings.append("SOLVER_ERROR")
+    solver_modules = _load_solver_modules(diagnostics)
+    if solver_modules is None:
         return [], "BLOCKED"
-    try:
-        import cvxpy as _cp
-        import numpy as _np
-    except Exception:
-        diagnostics.warnings.append("SOLVER_ERROR")
-        return [], "BLOCKED"
-    cp: Any = _cp
-    np: Any = _np
+    cp, np = solver_modules
 
-    status = "READY"
-    if sell_only_excess > Decimal("0.0"):
-        recs = {k: v for k, v in eligible_targets.items() if k in buy_list}
-        total_rec = sum(recs.values())
-        if total_rec > Decimal("0.0"):
-            for i_id, rec_weight in recs.items():
-                eligible_targets[i_id] = rec_weight + (sell_only_excess * (rec_weight / total_rec))
-        else:
-            status = "PENDING_REVIEW"
+    status = redistribute_sell_only_excess(
+        eligible_targets=eligible_targets,
+        buy_set=set(buy_list),
+        sell_only_excess=sell_only_excess,
+    )
 
     tradeable_ids = [i_id for i_id in eligible_targets if i_id in buy_list]
     locked_ids = [i_id for i_id in eligible_targets if i_id not in buy_list]
