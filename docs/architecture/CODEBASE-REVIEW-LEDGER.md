@@ -13724,3 +13724,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal transaction-cost source evidence
   bounding refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-562: Refactor quality measurement refreshed
+
+- Date: 2026-06-04
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: quality measurement artifacts still pointed at `e2398635`, so the scorecard did not
+  reflect the latest construction-source helper extractions, test additions, and service-boundary
+  posture.
+- Action: reran `scripts/engineering_health_report.py` at `7d82a8c8`, refreshing current
+  Python-file, LOC, test-function, complexity, and architecture-boundary measurements while
+  preserving zero service-boundary findings.
+- Status: measurement refreshed.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m pytest tests/unit/test_engineering_health_report.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal quality measurement and review
+  ledger refresh, not a README/wiki/operator-truth change.
