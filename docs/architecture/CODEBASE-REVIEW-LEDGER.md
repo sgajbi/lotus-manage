@@ -13508,3 +13508,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction client-restriction
   supportability refactoring with direct applicability tests.
+
+## BACKEND-REVIEW-20260604-553: Sustainability active-preference helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_sustainability_supportability.py`,
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`.
+- Finding: sustainability allocation and classification-review logic each interpreted active
+  source-preference status inline, duplicating source-status filtering across supportability paths.
+- Action: extracted `active_sustainability_preferences`, reused it from allocation breach and
+  classification-review checks, and added direct tests for active versus inactive source
+  preference filtering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_sustainability_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_sustainability_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction sustainability
+  supportability refactoring with direct source-status tests.
