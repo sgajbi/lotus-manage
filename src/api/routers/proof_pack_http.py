@@ -10,6 +10,14 @@ from src.core.proof_packs import ProofPackSourceValidationError
 from src.core.proof_packs.repository import DpmProofPackConflictError
 from src.core.rebalance_runs.service import DpmRunNotFoundError
 
+PROOF_PACK_ROUTE_ERRORS = (
+    DpmProofPackConflictError,
+    DpmRunNotFoundError,
+    ProofPackSourceValidationError,
+    DpmProofPackReportInputNotGeneratedError,
+    DpmProofPackAiEvidenceInputNotGeneratedError,
+)
+
 
 def proof_pack_http_exception(exc: Exception) -> HTTPException:
     if isinstance(exc, DpmProofPackConflictError):

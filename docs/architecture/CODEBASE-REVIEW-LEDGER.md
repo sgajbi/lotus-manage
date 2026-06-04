@@ -14463,3 +14463,30 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction router
   error-translation hardening.
+
+## BACKEND-REVIEW-20260604-594: Proof-pack router error translation narrowed
+
+- Date: 2026-06-04
+- Scope: `src/api/routers/proof_pack_http.py`,
+  `src/api/routers/proof_pack_generate_routes.py`,
+  `src/api/routers/proof_pack_read_routes.py`,
+  `src/api/routers/proof_pack_handoff_routes.py`, and
+  `tests/unit/dpm/api/test_proof_pack_api.py`.
+- Finding: proof-pack router endpoints caught every service exception and mapped unexpected
+  runtime failures into generic proof-pack HTTP responses, obscuring defects that should surface
+  during tests and CI.
+- Action: introduced a shared `PROOF_PACK_ROUTE_ERRORS` tuple for mapped proof-pack domain errors,
+  narrowed generate/read/handoff route catches to that tuple, removed duplicate HTTPException
+  reconstruction, and updated API coverage to prove unexpected service failures are not hidden.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/proof_pack_http.py src/api/routers/proof_pack_generate_routes.py src/api/routers/proof_pack_read_routes.py src/api/routers/proof_pack_handoff_routes.py tests/unit/dpm/api/test_proof_pack_api.py`,
+  `python -m ruff format --check src/api/routers/proof_pack_http.py src/api/routers/proof_pack_generate_routes.py src/api/routers/proof_pack_read_routes.py src/api/routers/proof_pack_handoff_routes.py tests/unit/dpm/api/test_proof_pack_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/proof_pack_http.py src/api/routers/proof_pack_generate_routes.py src/api/routers/proof_pack_read_routes.py src/api/routers/proof_pack_handoff_routes.py`,
+  `python -m pytest tests/unit/dpm/api/test_proof_pack_api.py::test_generate_proof_pack_preserves_governed_http_exceptions tests/unit/dpm/api/test_proof_pack_api.py::test_generate_proof_pack_does_not_hide_unexpected_service_exceptions tests/unit/dpm/api/test_proof_pack_api.py::test_proof_pack_read_routes_return_404_for_missing_pack -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack router
+  error-translation hardening.

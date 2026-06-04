@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Path, status
+from fastapi import Depends, Path, status
 
 from src.api.dependencies import (
     get_mandate_repository,
@@ -10,7 +10,7 @@ from src.api.dependencies import (
     get_proof_pack_repository,
     get_wave_repository,
 )
-from src.api.routers.proof_pack_http import proof_pack_http_exception
+from src.api.routers.proof_pack_http import PROOF_PACK_ROUTE_ERRORS, proof_pack_http_exception
 from src.api.routers.proof_packs import router
 from src.api.services import proof_pack_service
 from src.core.mandate_repository import DpmMandateRepository
@@ -49,9 +49,8 @@ def get_proof_pack_report_input(
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
         )
-    except Exception as exc:
-        http_exc = proof_pack_http_exception(exc)
-        raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc
+    except PROOF_PACK_ROUTE_ERRORS as exc:
+        raise proof_pack_http_exception(exc) from exc
 
 
 @router.get(
@@ -83,6 +82,5 @@ def get_proof_pack_ai_evidence_input(
             outcome_review_repository=outcome_review_repository,
             mandate_repository=mandate_repository,
         )
-    except Exception as exc:
-        http_exc = proof_pack_http_exception(exc)
-        raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc
+    except PROOF_PACK_ROUTE_ERRORS as exc:
+        raise proof_pack_http_exception(exc) from exc

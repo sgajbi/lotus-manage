@@ -434,7 +434,7 @@ def test_generate_proof_pack_preserves_governed_http_exceptions(
     assert response.json()["detail"] == "DPM_TEST_HTTP_EXCEPTION"
 
 
-def test_generate_proof_pack_maps_unexpected_service_exceptions(
+def test_generate_proof_pack_does_not_hide_unexpected_service_exceptions(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -449,19 +449,17 @@ def test_generate_proof_pack_maps_unexpected_service_exceptions(
         raise_unexpected_exception,
     )
 
-    response = client.post(
-        "/api/v1/rebalance/proof-packs",
-        json={
-            "source_type": "REBALANCE_RUN",
-            "rebalance_run_id": run_id,
-            "actor_id": "pm_api",
-            "mandate_id": "mandate_api_001",
-        },
-        headers={"Idempotency-Key": "proof-pack-api-unexpected-exception"},
-    )
-
-    assert response.status_code == 500
-    assert response.json()["detail"] == "RuntimeError"
+    with pytest.raises(RuntimeError, match="boom"):
+        client.post(
+            "/api/v1/rebalance/proof-packs",
+            json={
+                "source_type": "REBALANCE_RUN",
+                "rebalance_run_id": run_id,
+                "actor_id": "pm_api",
+                "mandate_id": "mandate_api_001",
+            },
+            headers={"Idempotency-Key": "proof-pack-api-unexpected-exception"},
+        )
 
 
 def test_proof_pack_read_routes_return_404_for_missing_pack(client: TestClient) -> None:
