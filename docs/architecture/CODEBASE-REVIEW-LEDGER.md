@@ -15703,3 +15703,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-646: Campaign assignment task transition helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `_transitioned_task` became the top current source-complexity hotspot and still mixed
+  transition-edge validation, next task field resolution, transition ledger construction, and
+  content-hash refresh.
+- Action: introduced `_validate_transition_allowed` and `_transition_task_fields` so
+  `_transitioned_task` remains the orchestration boundary for building the transition event and
+  refreshed task. Added direct helper tests for due-date field resolution and forbidden opened or
+  closed task transitions while preserving the public transition API tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment task
+  maintainability refactoring.

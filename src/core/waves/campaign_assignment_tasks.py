@@ -48,6 +48,15 @@ CampaignAssignmentTaskTransitionType = Literal[
 CampaignAssignmentEscalationTier = Literal["NONE", "PM", "OPS", "GOVERNANCE"]
 CampaignAssignmentSlaPosture = Literal["ON_TRACK", "ATTENTION", "BREACHED_OR_BLOCKED"]
 
+
+class _TransitionTaskFields(BaseModel):
+    next_status: CampaignAssignmentTaskStatus
+    next_assignees: list[str]
+    next_tier: CampaignAssignmentEscalationTier
+    next_sla: CampaignAssignmentSlaPosture
+    next_due_at: datetime | None
+
+
 _CLOSED_STATUSES = {"RESOLVED", "CANCELLED"}
 _STATUS_TRANSITIONS: dict[
     CampaignAssignmentTaskTransitionType, tuple[set[str], CampaignAssignmentTaskStatus]
@@ -338,25 +347,15 @@ def _transitioned_task(
     due_at: datetime | None,
     source_refs: list[DpmWaveSourceRef],
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTask:
-    if transition_type == "OPENED":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_OPENED_TRANSITION_FORBIDDEN")
-    if task.status in _CLOSED_STATUSES:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CLOSED_TRANSITION_FORBIDDEN")
-    next_status = _next_status(task.status, transition_type)
-    next_assignees = (
-        _normalize_actor_ids(assigned_actor_ids)
-        if assigned_actor_ids is not None
-        else task.assigned_actor_ids
+    _validate_transition_allowed(task=task, transition_type=transition_type)
+    fields = _transition_task_fields(
+        task=task,
+        transition_type=transition_type,
+        assigned_actor_ids=assigned_actor_ids,
+        escalation_tier=escalation_tier,
+        sla_posture=sla_posture,
+        due_at=due_at,
     )
-    next_tier = escalation_tier or task.escalation_tier
-    next_sla = sla_posture or task.sla_posture
-    next_due_at = due_at if due_at is not None else task.due_at
-    if next_status not in _CLOSED_STATUSES and not next_assignees:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type == "DUE_DATE_CHANGED" and due_at is None:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED")
     transition = _build_transition(
         definition=None,
         task_id=task.task_id,
@@ -364,27 +363,69 @@ def _transitioned_task(
         transition_ref=transition_ref,
         transitioned_by=transitioned_by,
         from_status=task.status,
-        to_status=next_status,
+        to_status=fields.next_status,
         transition_reason=transition_reason,
-        assigned_actor_ids=next_assignees,
-        escalation_tier=next_tier,
-        sla_posture=next_sla,
-        due_at=next_due_at,
+        assigned_actor_ids=fields.next_assignees,
+        escalation_tier=fields.next_tier,
+        sla_posture=fields.next_sla,
+        due_at=fields.next_due_at,
         correlation_id=correlation_id,
         source_refs=source_refs,
     )
     updated = task.model_copy(
         update={
-            "status": next_status,
-            "assigned_actor_ids": next_assignees,
-            "escalation_tier": next_tier,
-            "sla_posture": next_sla,
-            "due_at": next_due_at,
+            "status": fields.next_status,
+            "assigned_actor_ids": fields.next_assignees,
+            "escalation_tier": fields.next_tier,
+            "sla_posture": fields.next_sla,
+            "due_at": fields.next_due_at,
             "transitions": [*task.transitions, transition],
             "content_hash": "",
         }
     )
     return updated.model_copy(update={"content_hash": _task_hash(updated)})
+
+
+def _validate_transition_allowed(
+    *,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    transition_type: CampaignAssignmentTaskTransitionType,
+) -> None:
+    if transition_type == "OPENED":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_OPENED_TRANSITION_FORBIDDEN")
+    if task.status in _CLOSED_STATUSES:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CLOSED_TRANSITION_FORBIDDEN")
+
+
+def _transition_task_fields(
+    *,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    transition_type: CampaignAssignmentTaskTransitionType,
+    assigned_actor_ids: list[str] | None,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+    sla_posture: CampaignAssignmentSlaPosture | None,
+    due_at: datetime | None,
+) -> _TransitionTaskFields:
+    next_status = _next_status(task.status, transition_type)
+    next_assignees = (
+        _normalize_actor_ids(assigned_actor_ids)
+        if assigned_actor_ids is not None
+        else task.assigned_actor_ids
+    )
+    if next_status not in _CLOSED_STATUSES and not next_assignees:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
+    if transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
+    if transition_type == "DUE_DATE_CHANGED" and due_at is None:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED")
+
+    return _TransitionTaskFields(
+        next_status=next_status,
+        next_assignees=next_assignees,
+        next_tier=escalation_tier or task.escalation_tier,
+        next_sla=sla_posture or task.sla_posture,
+        next_due_at=due_at if due_at is not None else task.due_at,
+    )
 
 
 def _next_status(
