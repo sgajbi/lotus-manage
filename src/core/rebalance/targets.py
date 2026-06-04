@@ -1,6 +1,6 @@
 from copy import deepcopy
 from decimal import Decimal
-from typing import Any, Literal, cast
+from typing import Any, Literal, TypeAlias, cast
 
 from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.common.diagnostics import make_diagnostics_data
@@ -14,6 +14,8 @@ from src.core.models import (
 )
 from src.core.target_generation import build_target_trace, generate_targets_solver
 
+_GroupConstraintStatus: TypeAlias = Literal["READY", "BLOCKED"]
+
 
 def _build_shelf_attr_indexes(
     shelf: list[ShelfEntry],
@@ -23,13 +25,124 @@ def _build_shelf_attr_indexes(
     return shelf_attrs_by_id, known_attr_keys
 
 
+def _constraint_key_parts(
+    constraint_key: str,
+    *,
+    known_attr_keys: set[str],
+    diagnostics: DiagnosticsData,
+) -> tuple[str, str] | None:
+    try:
+        attr_key, attr_val = constraint_key.split(":", 1)
+    except ValueError:
+        diagnostics.warnings.append(f"INVALID_CONSTRAINT_KEY_{constraint_key}")
+        return None
+
+    if attr_key not in known_attr_keys:
+        diagnostics.warnings.append(f"UNKNOWN_CONSTRAINT_ATTRIBUTE_{attr_key}")
+        return None
+
+    return attr_key, attr_val
+
+
+def _group_constraint_members(
+    *,
+    eligible_targets: dict[str, Decimal],
+    shelf_attrs_by_id: dict[str, dict[str, str]],
+    attr_key: str,
+    attr_val: str,
+) -> list[str]:
+    return [
+        instrument_id
+        for instrument_id in eligible_targets
+        if shelf_attrs_by_id.get(instrument_id, {}).get(attr_key) == attr_val
+    ]
+
+
+def _cap_group_constraint_members(
+    *,
+    eligible_targets: dict[str, Decimal],
+    group_members: list[str],
+    max_weight: Decimal,
+) -> tuple[Decimal, Decimal]:
+    current_weight = sum((eligible_targets[i] for i in group_members), Decimal("0"))
+    scale = max_weight / current_weight
+    released_weight = current_weight - max_weight
+
+    for instrument_id in group_members:
+        eligible_targets[instrument_id] *= scale
+
+    return current_weight, released_weight
+
+
+def _redistribute_group_constraint_excess(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    group_members: list[str],
+    released_weight: Decimal,
+) -> dict[str, Decimal]:
+    candidates = [
+        instrument_id
+        for instrument_id in eligible_targets
+        if instrument_id in buy_set and instrument_id not in group_members
+    ]
+    total_candidate_weight = sum((eligible_targets[c] for c in candidates), Decimal("0"))
+    if total_candidate_weight <= Decimal("0"):
+        return {}
+
+    recipients = {}
+    for candidate in candidates:
+        share = released_weight * (eligible_targets[candidate] / total_candidate_weight)
+        eligible_targets[candidate] += share
+        recipients[candidate] = share
+
+    return recipients
+
+
+def _record_group_constraint_event(
+    *,
+    diagnostics: DiagnosticsData,
+    constraint_key: str,
+    group_weight_before: Decimal,
+    max_weight: Decimal,
+    released_weight: Decimal,
+    recipients: dict[str, Decimal],
+) -> _GroupConstraintStatus:
+    diagnostics.warnings.append(f"CAPPED_BY_GROUP_LIMIT_{constraint_key}")
+    if recipients:
+        diagnostics.group_constraint_events.append(
+            GroupConstraintEvent(
+                constraint_key=constraint_key,
+                group_weight_before=group_weight_before,
+                max_weight=max_weight,
+                released_weight=released_weight,
+                recipients=recipients,
+                status="CAPPED",
+            )
+        )
+        return "READY"
+
+    diagnostics.warnings.append("NO_ELIGIBLE_REDISTRIBUTION_DESTINATION")
+    diagnostics.group_constraint_events.append(
+        GroupConstraintEvent(
+            constraint_key=constraint_key,
+            group_weight_before=group_weight_before,
+            max_weight=max_weight,
+            released_weight=released_weight,
+            recipients={},
+            status="BLOCKED",
+        )
+    )
+    return "BLOCKED"
+
+
 def apply_group_constraints(
     eligible_targets: dict[str, Decimal],
     buy_list: list[str],
     shelf: list[ShelfEntry],
     options: EngineOptions,
     diagnostics: DiagnosticsData,
-) -> Literal["READY", "BLOCKED"]:
+) -> _GroupConstraintStatus:
     """
     RFC-0008: Apply multi-dimensional group constraints.
     Caps overweight groups and redistributes excess to eligible buyable instruments.
@@ -44,22 +157,21 @@ def apply_group_constraints(
     for constraint_key in sorted_keys:
         constraint = options.group_constraints[constraint_key]
 
-        try:
-            attr_key, attr_val = constraint_key.split(":", 1)
-        except ValueError:
-            diagnostics.warnings.append(f"INVALID_CONSTRAINT_KEY_{constraint_key}")
+        constraint_parts = _constraint_key_parts(
+            constraint_key,
+            known_attr_keys=known_attr_keys,
+            diagnostics=diagnostics,
+        )
+        if constraint_parts is None:
             continue
 
-        if attr_key not in known_attr_keys:
-            diagnostics.warnings.append(f"UNKNOWN_CONSTRAINT_ATTRIBUTE_{attr_key}")
-            continue
-
-        group_members = []
-        for i_id in eligible_targets:
-            attrs = shelf_attrs_by_id.get(i_id)
-            if attrs and attrs.get(attr_key) == attr_val:
-                group_members.append(i_id)
-
+        attr_key, attr_val = constraint_parts
+        group_members = _group_constraint_members(
+            eligible_targets=eligible_targets,
+            shelf_attrs_by_id=shelf_attrs_by_id,
+            attr_key=attr_key,
+            attr_val=attr_val,
+        )
         if not group_members:
             continue
 
@@ -67,46 +179,26 @@ def apply_group_constraints(
         if current_w <= constraint.max_weight + Decimal("0.0001"):
             continue
 
-        scale = constraint.max_weight / current_w
-        excess = current_w - constraint.max_weight
-
-        for i_id in group_members:
-            eligible_targets[i_id] *= scale
-
-        candidates = [i for i in eligible_targets if i in buy_set and i not in group_members]
-        total_cand_w = sum((eligible_targets[c] for c in candidates), Decimal("0"))
-
-        if total_cand_w > Decimal("0"):
-            recipients = {}
-            for c in candidates:
-                share = excess * (eligible_targets[c] / total_cand_w)
-                eligible_targets[c] += share
-                recipients[c] = share
-
-            diagnostics.warnings.append(f"CAPPED_BY_GROUP_LIMIT_{constraint_key}")
-            diagnostics.group_constraint_events.append(
-                GroupConstraintEvent(
-                    constraint_key=constraint_key,
-                    group_weight_before=current_w,
-                    max_weight=constraint.max_weight,
-                    released_weight=excess,
-                    recipients=recipients,
-                    status="CAPPED",
-                )
-            )
-        else:
-            diagnostics.warnings.append(f"CAPPED_BY_GROUP_LIMIT_{constraint_key}")
-            diagnostics.warnings.append("NO_ELIGIBLE_REDISTRIBUTION_DESTINATION")
-            diagnostics.group_constraint_events.append(
-                GroupConstraintEvent(
-                    constraint_key=constraint_key,
-                    group_weight_before=current_w,
-                    max_weight=constraint.max_weight,
-                    released_weight=excess,
-                    recipients={},
-                    status="BLOCKED",
-                )
-            )
+        current_w, excess = _cap_group_constraint_members(
+            eligible_targets=eligible_targets,
+            group_members=group_members,
+            max_weight=constraint.max_weight,
+        )
+        recipients = _redistribute_group_constraint_excess(
+            eligible_targets=eligible_targets,
+            buy_set=buy_set,
+            group_members=group_members,
+            released_weight=excess,
+        )
+        status = _record_group_constraint_event(
+            diagnostics=diagnostics,
+            constraint_key=constraint_key,
+            group_weight_before=current_w,
+            max_weight=constraint.max_weight,
+            released_weight=excess,
+            recipients=recipients,
+        )
+        if status == "BLOCKED":
             return "BLOCKED"
 
     return "READY"
