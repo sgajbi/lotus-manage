@@ -1,6 +1,7 @@
 from src.api.services import construction_source_product_financial_context
 from src.api.services.construction_source_product_financial_context import (
     currency_overlay_context_update,
+    currency_overlay_source_inputs,
     execution_acknowledgement_context_update,
     source_financial_context_updates,
     transaction_cost_curve_context_update,
@@ -26,7 +27,9 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_source_product_financial_context_exports_only_orchestration_surface() -> None:
     assert construction_source_product_financial_context.__all__ == [
+        "CurrencyOverlaySourceInputs",
         "currency_overlay_context_update",
+        "currency_overlay_source_inputs",
         "execution_acknowledgement_context_update",
         "source_financial_context_updates",
         "transaction_cost_curve_context_update",
@@ -78,6 +81,20 @@ def test_currency_overlay_context_update_builds_missing_currency_context() -> No
             fx_forward_curve=None,
         ),
     )
+
+
+def test_currency_overlay_source_inputs_capture_treasury_sources() -> None:
+    source_inputs = currency_overlay_source_inputs(
+        _source_execution_context(
+            external_hedge_execution_readiness=hedge_readiness_response(),
+        )
+    )
+
+    assert source_inputs.hedge_readiness == hedge_readiness_response()
+    assert source_inputs.currency_exposure is None
+    assert source_inputs.hedge_policy is None
+    assert source_inputs.eligible_hedge_instruments is None
+    assert source_inputs.fx_forward_curve is None
 
 
 def test_execution_acknowledgement_context_update_builds_missing_acknowledgement_context() -> None:

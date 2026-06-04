@@ -14683,3 +14683,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction client-profile
   source-product mapping maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-603: Financial source currency-overlay inputs extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_product_financial_context.py` and
+  `tests/unit/dpm/construction/test_source_product_financial_context.py`.
+- Finding: `currency_overlay_context_update` pulled five external treasury source-product fields
+  from `DpmCoreExecutionContext` inline before calling the treasury mapper, making the
+  source-field boundary implicit.
+- Action: introduced `CurrencyOverlaySourceInputs` and `currency_overlay_source_inputs`, kept
+  `currency_overlay_context_update` as the authority-context update coordinator, and added a
+  direct test for source-input capture and absent-source preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_financial_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_financial_context.py tests/unit/dpm/construction/test_source_product_financial_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_financial_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_financial_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction financial
+  source-product mapping maintainability refactoring.
