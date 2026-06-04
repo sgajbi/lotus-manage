@@ -15364,3 +15364,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-632: Campaign lifecycle validation helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_definitions.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: the campaign definition lifecycle validators repeated required-field and
+  forbidden-field checks across active, retired, and superseded states, with the superseded path
+  carrying the highest current source complexity.
+- Action: introduced `_validate_lifecycle_fields_absent` and
+  `_validate_required_lifecycle_value`, then reused them across active, retired, and superseded
+  lifecycle validation. Added direct helper tests for missing/blank required values and forbidden
+  lifecycle fields while preserving existing lifecycle reason-code tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definitions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign-definition
+  maintainability refactoring.

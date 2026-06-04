@@ -42,6 +42,8 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+    _validate_lifecycle_fields_absent,
+    _validate_required_lifecycle_value,
     bulk_review_campaign_definition_hash,
 )
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionConflictError
@@ -265,6 +267,20 @@ def test_campaign_definition_lifecycle_helpers_preserve_reason_codes() -> None:
                 "retired_by": "ops",
             }
         )._validate_superseded_lifecycle()
+
+
+def test_lifecycle_required_value_helper_rejects_missing_and_blank_values() -> None:
+    for value in [None, "  "]:
+        with pytest.raises(ValueError, match="LIFECYCLE_VALUE_REQUIRED"):
+            _validate_required_lifecycle_value(value, reason_code="LIFECYCLE_VALUE_REQUIRED")
+
+
+def test_lifecycle_absent_fields_helper_rejects_present_values() -> None:
+    with pytest.raises(ValueError, match="LIFECYCLE_FIELDS_FORBIDDEN"):
+        _validate_lifecycle_fields_absent(
+            [None, "ops"],
+            reason_code="LIFECYCLE_FIELDS_FORBIDDEN",
+        )
 
 
 def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> None:
