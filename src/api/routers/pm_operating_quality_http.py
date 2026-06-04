@@ -10,7 +10,10 @@ from src.core.pm_quality import (
     DpmPmQualitySummaryInvocationConflictError,
 )
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 
 PmQualityConflictError = (
     DpmPmQualityScoreRunConflictError
@@ -42,7 +45,7 @@ def pm_quality_validation_http_exception(detail: str | Exception) -> HTTPExcepti
 
 
 def pm_quality_core_resolver_unavailable_http_exception(
-    exc: DpmCoreResolverUnavailableError,
+    exc: CoreResolverUnavailableError,
 ) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -50,7 +53,7 @@ def pm_quality_core_resolver_unavailable_http_exception(
     )
 
 
-def pm_quality_core_resolver_incomplete_http_exception(exc: DpmCoreResolverError) -> HTTPException:
+def pm_quality_core_resolver_incomplete_http_exception(exc: CoreResolverError) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_424_FAILED_DEPENDENCY,
         detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},

@@ -3,8 +3,11 @@ from __future__ import annotations
 from fastapi import HTTPException, status
 
 from src.api.services.mandate_service import DpmMandateSourceIncompleteError
+from src.api.services.core_resolver_service import (
+    CoreResolverError,
+    CoreResolverUnavailableError,
+)
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
-from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 
 
 def monitoring_selector_required_http_exception() -> HTTPException:
@@ -28,7 +31,7 @@ def monitoring_pm_book_portfolio_types_required_http_exception() -> HTTPExceptio
 
 
 def monitoring_core_resolver_unavailable_http_exception(
-    exc: DpmCoreResolverUnavailableError,
+    exc: CoreResolverUnavailableError,
 ) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -36,7 +39,7 @@ def monitoring_core_resolver_unavailable_http_exception(
     )
 
 
-def monitoring_core_resolver_incomplete_http_exception(exc: DpmCoreResolverError) -> HTTPException:
+def monitoring_core_resolver_incomplete_http_exception(exc: CoreResolverError) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_424_FAILED_DEPENDENCY,
         detail={"code": str(exc) or "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"},
