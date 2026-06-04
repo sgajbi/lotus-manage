@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T13:53:42+00:00`
+- Generated at: `2026-06-04T15:47:26+00:00`
 
-- Current ref: `e197d2cc`
+- Current ref: `226d8694`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -34,14 +34,14 @@
 | --- | --- | --- | --- | --- |
 | 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
 | 2 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
-| 3 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
-| 4 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
-| 5 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
-| 6 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
-| 7 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
-| 8 | evaluate | src/core/compliance.py | 15 | 171 |
-| 9 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
-| 10 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 3 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
+| 4 | evaluate | src/core/compliance.py | 15 | 171 |
+| 5 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
+| 6 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 7 | build_simulated_state | src/core/valuation.py | 15 | 118 |
+| 8 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
+| 9 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 10 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
 
 ### Most Complex Current Test Functions
 

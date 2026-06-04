@@ -14757,3 +14757,24 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction treasury
   source-product hash maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-606: Refactor quality reports refreshed
+
+- Date: 2026-06-04
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: the refactor scorecard still pointed at the early branch ref after multiple focused
+  hardening commits, so the current-state quality evidence no longer reflected the latest measured
+  branch posture.
+- Action: refreshed the report-only current-state quality artifacts with
+  `scripts/engineering_health_report.py`, preserving the original baseline report values while
+  updating current ref, current test count, current size deltas, and complexity rankings that show
+  recently extracted helpers leaving the top source-complexity list.
+- Status: evidence refreshed.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
