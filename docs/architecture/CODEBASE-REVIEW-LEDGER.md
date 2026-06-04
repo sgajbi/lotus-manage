@@ -15027,3 +15027,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-618: Proof-pack build context extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_build_proof_pack` still resolved run artifacts, source hashes, source analytics,
+  source refs, proof-pack identity, portfolio identity, and correlation-id precedence inline while
+  also assembling sections, supportability, summary, timeline, and the final immutable content hash.
+- Action: introduced `_ProofPackBuildContext`, `_proof_pack_build_context`,
+  `_resolve_proof_pack_correlation_id`, `_proof_pack_sections`, and
+  `_finalize_proof_pack_content_hash`. Kept the public proof-pack builders as orchestration entry
+  points and added direct helper tests for correlation-id precedence and direct source-owned
+  regime-scenario evidence hashes/refs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring.
