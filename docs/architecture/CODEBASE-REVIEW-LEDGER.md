@@ -13746,3 +13746,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal quality measurement and review
   ledger refresh, not a README/wiki/operator-truth change.
+
+## BACKEND-REVIEW-20260604-563: Execution acknowledgement fail-closed reasons extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_execution_source_context.py` and
+  `tests/unit/dpm/construction/test_execution_source_context.py`.
+- Finding: external order acknowledgement source mapping embedded fail-closed reason assembly
+  inline, making the source unavailability posture less visible as a standalone rule.
+- Action: extracted `external_order_acknowledgement_reason_codes`, reused it from the
+  acknowledgement context mapper, and added direct helper coverage for the source reason plus
+  fail-closed posture reason.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_execution_source_context.py tests/unit/dpm/construction/test_execution_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_execution_source_context.py tests/unit/dpm/construction/test_execution_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_execution_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_execution_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal execution source-context
+  fail-closed reason refactoring with direct helper tests.
