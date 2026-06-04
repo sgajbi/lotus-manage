@@ -15751,3 +15751,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-648: Campaign assignment action helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_actions.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `record_bulk_review_campaign_definition_assignment_action` became the top current
+  source-complexity hotspot and still mixed active-definition validation, required text
+  normalization, actor normalization, resolved-state validation, idempotent replay detection, and
+  append-only action recording.
+- Action: introduced focused helpers for active-definition validation, normalized assignment action
+  request construction, actor normalization, required text validation, and assignment action
+  replay/conflict handling. Kept the public recorder as the orchestration boundary for action
+  construction and immutable definition update. Added direct helper tests for normalized action
+  request fields and replay/conflict handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_actions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment action
+  maintainability refactoring.

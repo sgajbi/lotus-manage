@@ -25,6 +25,14 @@ CampaignAssignmentEscalationTier = Literal["NONE", "PM", "OPS", "GOVERNANCE"]
 CampaignAssignmentSlaPosture = Literal["ON_TRACK", "ATTENTION", "BREACHED_OR_BLOCKED"]
 
 
+class _AssignmentActionRequest(BaseModel):
+    action_ref: str
+    recorded_by: str
+    action_reason: str
+    assigned_actor_ids: list[str]
+    correlation_id: str
+
+
 class DpmBulkReviewCampaignDefinitionAssignmentActionPage(BaseModel):
     product_name: Literal["BulkReviewCampaignDefinitionAssignmentActionPage"] = (
         "BulkReviewCampaignDefinitionAssignmentActionPage"
@@ -70,40 +78,32 @@ def record_bulk_review_campaign_definition_assignment_action(
     correlation_id: str,
     source_refs: list[DpmWaveSourceRef] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
-    if definition.status != "ACTIVE":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTIVE_REQUIRED")
-    if not action_ref.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_REQUIRED")
-    if not recorded_by.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTOR_REQUIRED")
-    if not action_reason.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REASON_REQUIRED")
-    if not correlation_id.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_CORRELATION_REQUIRED")
-    normalized_actor_ids = sorted({actor.strip() for actor in assigned_actor_ids if actor.strip()})
-    if action_type != "RESOLVED" and not normalized_actor_ids:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTORS_REQUIRED")
-    if action_type == "RESOLVED" and escalation_tier != "NONE":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_RESOLVED_TIER_INVALID")
+    _validate_active_assignment_action_definition(definition)
+    request = _assignment_action_request(
+        action_type=action_type,
+        action_ref=action_ref,
+        recorded_by=recorded_by,
+        action_reason=action_reason,
+        assigned_actor_ids=assigned_actor_ids,
+        escalation_tier=escalation_tier,
+        correlation_id=correlation_id,
+    )
 
     action = _build_action(
         definition=definition,
         action_type=action_type,
-        action_ref=action_ref.strip(),
-        recorded_by=recorded_by.strip(),
-        action_reason=action_reason.strip(),
-        assigned_actor_ids=normalized_actor_ids,
+        action_ref=request.action_ref,
+        recorded_by=request.recorded_by,
+        action_reason=request.action_reason,
+        assigned_actor_ids=request.assigned_actor_ids,
         escalation_tier=escalation_tier,
         sla_posture=sla_posture,
-        correlation_id=correlation_id.strip(),
+        correlation_id=request.correlation_id,
         source_refs=source_refs or [],
     )
-    existing_refs = {existing.action_ref: existing for existing in definition.assignment_actions}
-    existing = existing_refs.get(action.action_ref)
-    if existing is not None:
-        if existing.content_hash == action.content_hash:
-            return definition
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT")
+    replay = _assignment_action_replay_result(definition=definition, action=action)
+    if replay is not None:
+        return replay
 
     updated = definition.model_copy(
         update={
@@ -112,6 +112,68 @@ def record_bulk_review_campaign_definition_assignment_action(
         }
     )
     return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
+
+
+def _validate_active_assignment_action_definition(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> None:
+    if definition.status != "ACTIVE":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTIVE_REQUIRED")
+
+
+def _assignment_action_request(
+    *,
+    action_type: CampaignAssignmentActionType,
+    action_ref: str,
+    recorded_by: str,
+    action_reason: str,
+    assigned_actor_ids: list[str],
+    escalation_tier: CampaignAssignmentEscalationTier,
+    correlation_id: str,
+) -> _AssignmentActionRequest:
+    normalized_ref = _required_text(
+        action_ref,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_REQUIRED",
+    )
+    normalized_recorded_by = _required_text(
+        recorded_by,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTOR_REQUIRED",
+    )
+    normalized_reason = _required_text(
+        action_reason,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REASON_REQUIRED",
+    )
+    normalized_correlation = _required_text(
+        correlation_id,
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_CORRELATION_REQUIRED",
+    )
+    normalized_actor_ids = _normalize_actor_ids(assigned_actor_ids)
+    if action_type != "RESOLVED" and not normalized_actor_ids:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_ACTORS_REQUIRED")
+    if action_type == "RESOLVED" and escalation_tier != "NONE":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_RESOLVED_TIER_INVALID")
+
+    return _AssignmentActionRequest(
+        action_ref=normalized_ref,
+        recorded_by=normalized_recorded_by,
+        action_reason=normalized_reason,
+        assigned_actor_ids=normalized_actor_ids,
+        correlation_id=normalized_correlation,
+    )
+
+
+def _assignment_action_replay_result(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    action: DpmBulkReviewCampaignDefinitionAssignmentAction,
+) -> DpmBulkReviewCampaignDefinition | None:
+    existing_refs = {existing.action_ref: existing for existing in definition.assignment_actions}
+    existing = existing_refs.get(action.action_ref)
+    if existing is None:
+        return None
+    if existing.content_hash == action.content_hash:
+        return definition
+    raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT")
 
 
 def build_bulk_review_campaign_definition_assignment_action_page(
@@ -141,6 +203,17 @@ def build_bulk_review_campaign_definition_assignment_action_page(
         limit=limit,
         offset=offset,
     )
+
+
+def _required_text(value: str, reason_code: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(reason_code)
+    return normalized
+
+
+def _normalize_actor_ids(actor_ids: list[str]) -> list[str]:
+    return sorted({actor.strip() for actor in actor_ids if actor.strip()})
 
 
 def _build_action(

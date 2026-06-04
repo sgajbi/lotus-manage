@@ -47,6 +47,8 @@ from src.core.waves.campaign_workflow_automation import (
 )
 from src.core.waves.campaign_assignment_actions import (
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    _assignment_action_replay_result,
+    _assignment_action_request,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
@@ -634,6 +636,49 @@ def test_campaign_assignment_actions_validate_conflicts_and_resolved_state() -> 
         assert str(exc) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
     else:  # pragma: no cover
         raise AssertionError("Expected duplicate assignment action ref conflict")
+
+
+def test_assignment_action_request_normalizes_actor_ids_and_text_fields() -> None:
+    request = _assignment_action_request(
+        action_type="ASSIGNED",
+        action_ref=" BRC-ASSIGN-2026-05-001 ",
+        recorded_by=" ops ",
+        action_reason=" Route ready campaign. ",
+        assigned_actor_ids=[" pm_002 ", "pm_001", "pm_001", " "],
+        escalation_tier="PM",
+        correlation_id=" corr-assignment-action ",
+    )
+
+    assert request.action_ref == "BRC-ASSIGN-2026-05-001"
+    assert request.recorded_by == "ops"
+    assert request.action_reason == "Route ready campaign."
+    assert request.assigned_actor_ids == ["pm_001", "pm_002"]
+    assert request.correlation_id == "corr-assignment-action"
+
+
+def test_assignment_action_replay_helper_returns_definition_or_rejects_conflict() -> None:
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=_definition(),
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    existing_action = assigned.assignment_actions[0]
+
+    assert _assignment_action_replay_result(definition=assigned, action=existing_action) is assigned
+    conflicting_action = existing_action.model_copy(
+        update={"content_hash": "sha256:conflicting-action"}
+    )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT",
+    ):
+        _assignment_action_replay_result(definition=assigned, action=conflicting_action)
 
 
 @pytest.mark.parametrize(
