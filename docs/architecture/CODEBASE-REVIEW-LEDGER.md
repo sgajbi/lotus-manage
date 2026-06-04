@@ -14422,7 +14422,9 @@ and improves internal transaction-cost source posture maintainability only.
   conflicts, and value-level construction/input failures, and added tests proving expected
   construction conflicts block the item while unexpected runtime failures propagate. Updated the
   wave selection API degradation test to use the proof-pack validation error now required by the
-  narrowed proof-pack degradation contract.
+  narrowed proof-pack degradation contract, aligned the wave simulation API degradation test to
+  construction idempotency conflict, and model-validated direct service simulation inputs that were
+  previously relying on broad exception masking.
 - Status: hardened.
 - Evidence:
   `python -m ruff check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
@@ -14434,4 +14436,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal wave simulation
+  error-translation hardening.
+
+## BACKEND-REVIEW-20260604-593: Construction router error translation narrowed
+
+- Date: 2026-06-04
+- Scope: `src/api/routers/construction_generate_routes.py`,
+  `src/api/routers/construction_read_routes.py`,
+  `src/api/routers/construction_selection_routes.py`, and
+  `tests/unit/dpm/api/test_construction_api.py`.
+- Finding: construction router endpoints caught every service exception and passed it through the
+  construction HTTP mapper, which could hide unexpected runtime defects behind generic typed
+  construction responses.
+- Action: narrowed route translation to construction idempotency and not-found domain exceptions,
+  removed an extra HTTPException reconstruction in selection routing, and added API coverage
+  proving unexpected generation failures are not hidden by the router mapper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/construction_generate_routes.py src/api/routers/construction_read_routes.py src/api/routers/construction_selection_routes.py tests/unit/dpm/api/test_construction_api.py`,
+  `python -m ruff format --check src/api/routers/construction_generate_routes.py src/api/routers/construction_read_routes.py src/api/routers/construction_selection_routes.py tests/unit/dpm/api/test_construction_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/construction_generate_routes.py src/api/routers/construction_read_routes.py src/api/routers/construction_selection_routes.py`,
+  `python -m pytest tests/unit/dpm/api/test_construction_api.py::test_generate_construction_alternative_set_idempotency_conflict tests/unit/dpm/api/test_construction_api.py::test_read_and_select_construction_alternative_set tests/unit/dpm/api/test_construction_api.py::test_generate_construction_route_does_not_hide_unexpected_failures -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction router
   error-translation hardening.

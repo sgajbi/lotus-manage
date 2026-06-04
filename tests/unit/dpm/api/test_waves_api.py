@@ -26,6 +26,7 @@ from src.api.services import construction_service, proof_pack_service, wave_serv
 from src.api.services.wave_aggregate_metrics import simulation_result_state
 from src.api.services.wave_event_append import append_same_state_event
 from src.api.services.wave_event_evidence import build_wave_event
+from src.core.construction.repository import ConstructionIdempotencyConflictError
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -4595,7 +4596,7 @@ def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyP
     wave_repository = InMemoryDpmWaveRepository()
 
     def fail_generation(**_: object) -> None:
-        raise RuntimeError("construction unavailable")
+        raise ConstructionIdempotencyConflictError("CONSTRUCTION_IDEMPOTENCY_KEY_CONFLICT")
 
     monkeypatch.setattr(
         construction_service,
@@ -4639,7 +4640,7 @@ def test_wave_simulation_degrades_generation_failure(monkeypatch: pytest.MonkeyP
     assert simulated.json()["wave"]["state"] == "SIMULATION_FAILED"
     assert item["state"] == "SIMULATION_BLOCKED"
     assert item["reason_codes"] == ["CONSTRUCTION_ALTERNATIVE_GENERATION_FAILED"]
-    assert item["diagnostics"]["construction_error"] == "RuntimeError"
+    assert item["diagnostics"]["construction_error"] == "ConstructionIdempotencyConflictError"
 
 
 def test_wave_selection_degrades_when_proof_pack_generation_is_not_requested() -> None:
@@ -5302,7 +5303,11 @@ def test_wave_services_translate_durable_write_conflicts_to_governed_errors() ->
             wave_id=simulate_wave.wave_id,
             actor_id="pm_001",
             correlation_id="corr-conflict-simulate",
-            item_inputs={simulate_wave.items[0].wave_item_id: _rebalance_request(PORTFOLIO_ID)},
+            item_inputs={
+                simulate_wave.items[0].wave_item_id: RebalanceRequest.model_validate(
+                    _rebalance_request(PORTFOLIO_ID)
+                )
+            },
             methods=None,
             construction_repository=InMemoryConstructionRepository(),
             run_service=_run_service(),

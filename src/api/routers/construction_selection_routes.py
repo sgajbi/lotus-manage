@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Optional
 
-from fastapi import Depends, Header, HTTPException, Path, status
+from fastapi import Depends, Header, Path, status
 
 from src.api.dependencies import get_construction_repository
 from src.api.routers.construction import router
@@ -10,7 +10,16 @@ from src.api.routers.construction_http import construction_http_exception
 from src.api.routers.construction_models import ConstructionAlternativeSelectionRequest
 from src.api.services import construction_service
 from src.core.construction.models import ConstructionAlternativeSelection
-from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionAlternativeNotFoundError,
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionRepository,
+)
+
+_CONSTRUCTION_SELECTION_ROUTE_ERRORS = (
+    ConstructionAlternativeNotFoundError,
+    ConstructionAlternativeSetNotFoundError,
+)
 
 
 @router.post(
@@ -53,6 +62,5 @@ def select_alternative(
             comment=request.comment,
             correlation_id=x_correlation_id,
         )
-    except Exception as exc:
-        http_exc = construction_http_exception(exc)
-        raise HTTPException(status_code=http_exc.status_code, detail=http_exc.detail) from exc
+    except _CONSTRUCTION_SELECTION_ROUTE_ERRORS as exc:
+        raise construction_http_exception(exc) from exc
