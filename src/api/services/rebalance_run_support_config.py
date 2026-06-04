@@ -1,13 +1,9 @@
 from __future__ import annotations
 
 import os
-from typing import cast
 
-from src.core.common.capabilities import psycopg_error_type
 from src.core.rebalance_runs.repository import DpmRunRepository
-from src.infrastructure.rebalance_runs import (
-    PostgresDpmRunRepository,
-)
+from src.api.services import rebalance_run_support_repository
 
 
 def env_flag(name: str, default: bool) -> bool:
@@ -63,40 +59,26 @@ def supportability_postgres_dsn() -> str:
     return os.getenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "").strip()
 
 
-def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    types: list[type[BaseException]] = [
-        ConnectionError,
-        OSError,
-        TimeoutError,
-        TypeError,
-        ValueError,
-    ]
-    error_type = psycopg_error_type()
-    if error_type is not None:
-        types.append(error_type)
-    return tuple(types)
-
-
-def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    return postgres_connection_exception_types()
-
-
 def build_repository() -> DpmRunRepository:
     _ = supportability_store_backend_name()
     dsn = supportability_postgres_dsn()
     if not dsn:
         raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_DSN_REQUIRED")
     try:
-        return cast(DpmRunRepository, PostgresDpmRunRepository(dsn=dsn))
-    except RuntimeError:
-        raise
-    except _postgres_connection_exception_types() as exc:
+        return rebalance_run_support_repository.build_repository(dsn=dsn)
+    except rebalance_run_support_repository.postgres_connection_exception_types() as exc:
         raise RuntimeError("DPM_SUPPORTABILITY_POSTGRES_CONNECTION_FAILED") from exc
 
 
+def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
+    return rebalance_run_support_repository.postgres_connection_exception_types()
+
+
+def _postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
+    return postgres_connection_exception_types()
+
+
 __all__ = [
-    "PostgresDpmRunRepository",
-    "_postgres_connection_exception_types",
     "artifact_store_mode",
     "build_repository",
     "env_csv_set",

@@ -55,7 +55,7 @@ def test_policy_pack_catalog_postgres_connection_errors_return_503(monkeypatch):
         monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
         monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://u:p@localhost:5432/db")
         monkeypatch.setattr(
-            "src.api.services.rebalance_policy_pack_service.PostgresDpmPolicyPackRepository",
+            "src.api.services.rebalance_policy_pack_repository.PostgresDpmPolicyPackRepository",
             _ExplodingRepository,
         )
         reset_dpm_policy_pack_repository_for_tests()
@@ -74,7 +74,7 @@ def test_policy_pack_catalog_postgres_runtime_errors_return_503(monkeypatch):
         monkeypatch.setenv("DPM_POLICY_PACK_CATALOG_BACKEND", "POSTGRES")
         monkeypatch.setenv("DPM_POLICY_PACK_POSTGRES_DSN", "postgresql://u:p@localhost:5432/db")
         monkeypatch.setattr(
-            "src.api.services.rebalance_policy_pack_service.PostgresDpmPolicyPackRepository",
+            "src.api.services.rebalance_policy_pack_repository.PostgresDpmPolicyPackRepository",
             _RuntimeErrorRepository,
         )
         reset_dpm_policy_pack_repository_for_tests()

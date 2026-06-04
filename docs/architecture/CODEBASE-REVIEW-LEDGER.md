@@ -12802,3 +12802,35 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`, and service-risk boundary leakage check
   (`from src.infrastructure.risk_authority import` in targeted `src/api/services` files).
 - Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-520: Repository infrastructure adapters split from services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/rebalance_policy_pack_repository.py`,
+  `src/api/services/rebalance_run_support_repository.py`,
+  `src/api/services/rebalance_policy_pack_service.py`,
+  `src/api/services/rebalance_run_support_config.py`,
+  `tests/unit/dpm/api/test_rebalance_policy_pack_repository.py`,
+  `tests/unit/dpm/api/test_rebalance_run_support_repository.py`,
+  `tests/unit/dpm/api/test_dpm_policy_pack_config.py`,
+  `tests/unit/dpm/api/test_dpm_runs_config.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, `tests/conftest.py`.
+- Finding: policy-pack catalog and supportability repository construction logic in services was coupled directly to
+  `src.infrastructure` classes (`PostgresDpmPolicyPackRepository`, `PostgresDpmRunRepository`), weakening module-level
+  dependency boundaries and forcing tests to patch infrastructure at service depth.
+- Action: introduced dedicated repository adapter modules, moved direct infrastructure construction and connection-exception
+  classification behind them, and preserved existing service behavior and mapped error semantics via explicit boundary-focused tests.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/rebalance_policy_pack_service.py
+  src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_repository.py
+  src/api/services/rebalance_run_support_repository.py tests/unit/dpm/api/test_dpm_policy_pack_config.py
+  tests/unit/dpm/api/test_dpm_runs_config.py tests/unit/dpm/api/test_rebalance_policy_pack_repository.py
+  tests/unit/dpm/api/test_rebalance_run_support_repository.py tests/unit/dpm/api/test_api_rebalance.py`,
+  `python -m ruff format --check` on touched files, `python -m mypy --config-file mypy.ini` on touched source files,
+  `python -m pytest tests/unit/dpm/api/test_dpm_policy_pack_config.py tests/unit/dpm/api/test_dpm_runs_config.py
+  tests/unit/dpm/api/test_rebalance_policy_pack_repository.py tests/unit/dpm/api/test_rebalance_run_support_repository.py
+  tests/unit/dpm/api/test_api_rebalance.py -k "policy_pack and catalog or support_repository_backend_init_errors_return_503 or dpm_runs_config or connection_errors or driver_error_passthrough or connection_failure_mapped or mapping"` ,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.

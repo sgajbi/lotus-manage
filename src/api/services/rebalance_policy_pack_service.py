@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, cast
+from typing import Optional
 
-from src.core.common.capabilities import psycopg_error_type
 from src.core.rebalance.policy_pack_repository import DpmPolicyPackRepository
 from src.core.rebalance.policy_packs import (
     DpmEffectivePolicyPackResolution,
@@ -11,9 +10,7 @@ from src.core.rebalance.policy_packs import (
     resolve_effective_policy_pack,
 )
 from src.core.rebalance.tenant_policy_packs import build_tenant_policy_pack_resolver
-from src.infrastructure.dpm_policy_packs import (
-    PostgresDpmPolicyPackRepository,
-)
+from src.api.services import rebalance_policy_pack_repository
 
 
 class DpmPolicyPackCatalogUnavailableError(RuntimeError):
@@ -73,29 +70,17 @@ def policy_pack_postgres_dsn() -> str:
 
 
 def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    types: list[type[BaseException]] = [
-        ConnectionError,
-        OSError,
-        TimeoutError,
-        TypeError,
-        ValueError,
-    ]
-    error_type = psycopg_error_type()
-    if error_type is not None:
-        types.append(error_type)
-    return tuple(types)
+    return rebalance_policy_pack_repository.postgres_connection_exception_types()
 
 
 def build_policy_pack_repository() -> DpmPolicyPackRepository:
-    _ = policy_pack_catalog_backend_name()
     dsn = policy_pack_postgres_dsn()
+    _ = policy_pack_catalog_backend_name()
     if not dsn:
         raise RuntimeError("DPM_POLICY_PACK_POSTGRES_DSN_REQUIRED")
     try:
-        return cast(DpmPolicyPackRepository, PostgresDpmPolicyPackRepository(dsn=dsn))
-    except RuntimeError:
-        raise
-    except postgres_connection_exception_types() as exc:
+        return rebalance_policy_pack_repository.build_policy_pack_repository()
+    except rebalance_policy_pack_repository.postgres_connection_exception_types() as exc:
         raise RuntimeError("DPM_POLICY_PACK_POSTGRES_CONNECTION_FAILED") from exc
 
 
