@@ -17,6 +17,7 @@ from src.api.services.construction_selection import build_construction_selection
 from src.api.services.construction_source_product_context import (
     authority_context_with_source_products,
 )
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.common.capabilities import has_solver_dependencies as has_solver_dependencies
 from src.core.construction.models import (
     ConstructionAlternativeSelection,
@@ -36,9 +37,13 @@ from src.core.dpm_source_context import (
 )
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.api.request_models import RebalanceRequest
-from src.infrastructure.risk_authority import (
-    LotusRiskAuthorityClient,
-)
+
+__all__ = [
+    "generate_construction_alternative_set",
+    "get_construction_alternative_set",
+    "select_construction_alternative",
+    "RiskAuthorityClient",
+]
 
 
 def generate_construction_alternative_set(
@@ -50,7 +55,7 @@ def generate_construction_alternative_set(
     methods: list[ConstructionMethod] | None = None,
     source_context: Optional[DpmResolvedSourceContext] = None,
     authority_context: ConstructionAuthorityContext | None = None,
-    risk_authority_client: LotusRiskAuthorityClient | None = None,
+    risk_authority_client: RiskAuthorityClient | None = None,
     run_service: DpmRunSupportService | None = None,
 ) -> ConstructionAlternativeSet:
     method_set = list(methods or FIRST_WAVE_CONSTRUCTION_METHODS)
