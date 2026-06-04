@@ -15075,3 +15075,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-620: Valuation simulated-state helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/valuation.py` and
+  `tests/unit/dpm/engine/test_engine_valuation_service.py`.
+- Finding: `build_simulated_state` still mixed option defaulting, position valuation, price/FX
+  data-quality logging, cash conversion, safe-total handling, asset-class aggregation, attribute
+  aggregation, and response model assembly in one function.
+- Action: extracted `_valuation_options`, `_valued_position_summaries`,
+  `_record_position_fx_gap`, `_total_cash_value`, `_safe_total_value`, `_allocation_metric`,
+  `_position_allocation_maps`, `_add_attribute_allocations`, `_allocation_metrics`, and
+  `_allocation_by_attribute_metrics`. Kept `build_simulated_state` as the orchestration point and
+  added direct helper tests for price/FX data-quality capture plus shelf-backed allocation
+  aggregation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m ruff format --check src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/valuation.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_valuation_service.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal valuation maintainability
+  refactoring.

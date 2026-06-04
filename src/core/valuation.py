@@ -114,6 +114,156 @@ def _cash_value_in_base(
     return Decimal("0")
 
 
+def _valuation_options(options: Optional[EngineOptions]) -> EngineOptions:
+    return options or EngineOptions()
+
+
+def _valued_position_summaries(
+    *,
+    portfolio: PortfolioSnapshot,
+    market_data: MarketDataSnapshot,
+    options: EngineOptions,
+    dq_log: Dict[str, List[str]],
+) -> tuple[list[PositionSummary], Decimal]:
+    price_instruments = {price.instrument_id for price in market_data.prices}
+    summaries: list[PositionSummary] = []
+    total_value = Decimal("0")
+
+    for position in portfolio.positions:
+        if position.instrument_id not in price_instruments:
+            dq_log.setdefault("price_missing", []).append(position.instrument_id)
+
+        summary = ValuationService.value_position(
+            position,
+            market_data,
+            portfolio.base_currency,
+            options,
+            dq_log,
+        )
+        _record_position_fx_gap(
+            summary=summary,
+            base_ccy=portfolio.base_currency,
+            market_data=market_data,
+            dq_log=dq_log,
+        )
+        summaries.append(summary)
+        total_value += summary.value_in_base_ccy.amount
+
+    return summaries, total_value
+
+
+def _record_position_fx_gap(
+    *,
+    summary: PositionSummary,
+    base_ccy: str,
+    market_data: MarketDataSnapshot,
+    dq_log: Dict[str, List[str]],
+) -> None:
+    if summary.instrument_currency == base_ccy:
+        return
+    if get_fx_rate(market_data, summary.instrument_currency, base_ccy) is None:
+        dq_log.setdefault("fx_missing", []).append(f"{summary.instrument_currency}/{base_ccy}")
+
+
+def _total_cash_value(
+    *,
+    cash_balances: list[CashBalance],
+    market_data: MarketDataSnapshot,
+    base_ccy: str,
+    dq_log: Dict[str, List[str]] | None = None,
+) -> Decimal:
+    total = Decimal("0")
+    for cash in cash_balances:
+        total += _cash_value_in_base(
+            cash=cash,
+            market_data=market_data,
+            base_ccy=base_ccy,
+            dq_log=dq_log,
+        )
+    return total
+
+
+def _safe_total_value(total_value: Decimal) -> Decimal:
+    if total_value == 0:
+        return Decimal("1")
+    return total_value
+
+
+def _allocation_metric(
+    *, key: str, value: Decimal, total_value: Decimal, base_ccy: str
+) -> AllocationMetric:
+    return AllocationMetric(
+        key=key,
+        weight=value / total_value,
+        value=Money(amount=value, currency=base_ccy),
+    )
+
+
+def _position_allocation_maps(
+    *,
+    position_summaries: list[PositionSummary],
+    shelf: list[ShelfEntry],
+) -> tuple[dict[str, Decimal], dict[str, dict[str, Decimal]]]:
+    shelf_by_instrument = {entry.instrument_id: entry for entry in shelf}
+    allocation_by_asset_class: dict[str, Decimal] = {}
+    allocation_by_attribute: dict[str, dict[str, Decimal]] = {}
+
+    for position in position_summaries:
+        value = position.value_in_base_ccy.amount
+        shelf_entry = shelf_by_instrument.get(position.instrument_id)
+        if shelf_entry is not None:
+            position.asset_class = shelf_entry.asset_class
+            _add_attribute_allocations(
+                allocation_by_attribute=allocation_by_attribute,
+                shelf_entry=shelf_entry,
+                value=value,
+            )
+        allocation_by_asset_class[position.asset_class] = (
+            allocation_by_asset_class.get(position.asset_class, Decimal("0")) + value
+        )
+
+    return allocation_by_asset_class, allocation_by_attribute
+
+
+def _add_attribute_allocations(
+    *,
+    allocation_by_attribute: dict[str, dict[str, Decimal]],
+    shelf_entry: ShelfEntry,
+    value: Decimal,
+) -> None:
+    for attr_key, attr_val in shelf_entry.attributes.items():
+        value_map = allocation_by_attribute.setdefault(attr_key, {})
+        value_map[attr_val] = value_map.get(attr_val, Decimal("0")) + value
+
+
+def _allocation_metrics(
+    *,
+    values_by_key: dict[str, Decimal],
+    total_value: Decimal,
+    base_ccy: str,
+) -> list[AllocationMetric]:
+    return [
+        _allocation_metric(key=key, value=value, total_value=total_value, base_ccy=base_ccy)
+        for key, value in values_by_key.items()
+    ]
+
+
+def _allocation_by_attribute_metrics(
+    *,
+    allocation_by_attribute: dict[str, dict[str, Decimal]],
+    total_value: Decimal,
+    base_ccy: str,
+) -> dict[str, list[AllocationMetric]]:
+    return {
+        attr_key: _allocation_metrics(
+            values_by_key=value_map,
+            total_value=total_value,
+            base_ccy=base_ccy,
+        )
+        for attr_key, value_map in allocation_by_attribute.items()
+    }
+
+
 def build_simulated_state(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -125,110 +275,56 @@ def build_simulated_state(
     """
     Constructs a full valuation of the portfolio.
     """
-    if options is None:
-        options = EngineOptions()
-
+    options = _valuation_options(options)
     base_ccy = portfolio.base_currency
-    pos_summaries = []
-    total_val = Decimal("0")
+    pos_summaries, position_value = _valued_position_summaries(
+        portfolio=portfolio,
+        market_data=market_data,
+        options=options,
+        dq_log=dq_log,
+    )
+    cash_value = _total_cash_value(
+        cash_balances=portfolio.cash_balances,
+        market_data=market_data,
+        base_ccy=base_ccy,
+        dq_log=dq_log,
+    )
+    total_val = position_value + cash_value
+    total_val_safe = _safe_total_value(total_val)
 
-    for pos in portfolio.positions:
-        has_price = any(p.instrument_id == pos.instrument_id for p in market_data.prices)
-        if not has_price:
-            dq_log.setdefault("price_missing", []).append(pos.instrument_id)
+    for position in pos_summaries:
+        position.weight = position.value_in_base_ccy.amount / total_val_safe
 
-        summary = ValuationService.value_position(pos, market_data, base_ccy, options, dq_log)
-
-        if summary.instrument_currency != base_ccy:
-            rate = get_fx_rate(market_data, summary.instrument_currency, base_ccy)
-            if rate is None:
-                dq_log.setdefault("fx_missing", []).append(
-                    f"{summary.instrument_currency}/{base_ccy}"
-                )
-
-        pos_summaries.append(summary)
-        total_val += summary.value_in_base_ccy.amount
-
-    for cash in portfolio.cash_balances:
-        total_val += _cash_value_in_base(
-            cash=cash,
-            market_data=market_data,
-            base_ccy=base_ccy,
-            dq_log=dq_log,
-        )
-
-    if total_val == 0:
-        total_val_safe = Decimal("1")
-    else:
-        total_val_safe = total_val
-
-    # Aggregation containers
-    alloc_class_map: Dict[str, Decimal] = {}
-    alloc_attr_map: Dict[str, Dict[str, Decimal]] = {}
-
-    for p in pos_summaries:
-        p.weight = p.value_in_base_ccy.amount / total_val_safe
-        shelf_entry = next((s for s in shelf if s.instrument_id == p.instrument_id), None)
-
-        # Asset Class Aggregation
-        if shelf_entry:
-            p.asset_class = shelf_entry.asset_class
-            # Attribute Aggregation
-            for attr_key, attr_val in shelf_entry.attributes.items():
-                if attr_key not in alloc_attr_map:
-                    alloc_attr_map[attr_key] = {}
-                alloc_attr_map[attr_key][attr_val] = (
-                    alloc_attr_map[attr_key].get(attr_val, Decimal("0"))
-                    + p.value_in_base_ccy.amount
-                )
-
-        ac = p.asset_class
-        alloc_class_map[ac] = alloc_class_map.get(ac, Decimal("0")) + p.value_in_base_ccy.amount
-
+    alloc_class_map, alloc_attr_map = _position_allocation_maps(
+        position_summaries=pos_summaries,
+        shelf=shelf,
+    )
     alloc_instr = [
-        AllocationMetric(key=p.instrument_id, weight=p.weight, value=p.value_in_base_ccy)
-        for p in pos_summaries
-    ]
-
-    total_cash_val = Decimal("0")
-    for cash in portfolio.cash_balances:
-        total_cash_val += _cash_value_in_base(
-            cash=cash,
-            market_data=market_data,
-            base_ccy=base_ccy,
-        )
-
-    alloc_class_map["CASH"] = alloc_class_map.get("CASH", Decimal("0")) + total_cash_val
-
-    alloc_asset_class = [
         AllocationMetric(
-            key=k,
-            weight=v / total_val_safe,
-            value=Money(amount=v, currency=base_ccy),
+            key=position.instrument_id, weight=position.weight, value=position.value_in_base_ccy
         )
-        for k, v in alloc_class_map.items()
+        for position in pos_summaries
     ]
-
-    # Convert attribute map to model output
-    alloc_by_attr = {}
-    for attr_key, val_map in alloc_attr_map.items():
-        metrics = []
-        for val_key, val_amount in val_map.items():
-            metrics.append(
-                AllocationMetric(
-                    key=val_key,
-                    weight=val_amount / total_val_safe,
-                    value=Money(amount=val_amount, currency=base_ccy),
-                )
-            )
-        alloc_by_attr[attr_key] = metrics
+    alloc_class_map["CASH"] = alloc_class_map.get("CASH", Decimal("0")) + _total_cash_value(
+        cash_balances=portfolio.cash_balances,
+        market_data=market_data,
+        base_ccy=base_ccy,
+    )
 
     return SimulatedState(
         total_value=Money(amount=total_val, currency=base_ccy),
         cash_balances=portfolio.cash_balances,
         positions=pos_summaries,
-        allocation_by_asset_class=alloc_asset_class,
+        allocation_by_asset_class=_allocation_metrics(
+            values_by_key=alloc_class_map,
+            total_value=total_val_safe,
+            base_ccy=base_ccy,
+        ),
         allocation_by_instrument=alloc_instr,
         allocation=alloc_instr,
-        allocation_by_attribute=alloc_by_attr,
+        allocation_by_attribute=_allocation_by_attribute_metrics(
+            allocation_by_attribute=alloc_attr_map,
+            total_value=total_val_safe,
+            base_ccy=base_ccy,
+        ),
     )
