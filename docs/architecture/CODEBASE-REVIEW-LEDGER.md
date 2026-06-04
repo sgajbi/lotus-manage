@@ -13192,3 +13192,29 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction service-helper
   refactoring with behavior-preserving tests.
+
+## BACKEND-REVIEW-20260604-540: Construction risk authority lookup helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_method_authority.py`,
+  `tests/unit/dpm/construction/test_method_authority.py`.
+- Finding: construction method authority assembly still embedded `lotus-risk` concentration and
+  regime-scenario lookup branches inline with the final authority-context object assembly. That
+  obscured fail-closed lookup behavior and made source-authority preservation harder to test
+  independently from context reconstruction.
+- Action: extracted `risk_context_for_method` and `regime_context_for_method`, preserving existing
+  context precedence, governed as-of-date forwarding, and fail-closed handling for unavailable risk
+  authority responses. Added direct helper tests for ready, existing-context, and unavailable
+  postures.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_authority.py tests/unit/dpm/construction/test_method_authority.py`,
+  `python -m ruff format --check src/api/services/construction_method_authority.py tests/unit/dpm/construction/test_method_authority.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_authority.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_authority.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction authority-helper
+  refactoring with direct fail-closed tests.
