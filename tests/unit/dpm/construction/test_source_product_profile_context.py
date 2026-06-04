@@ -12,6 +12,7 @@ from src.api.services.construction_client_profile_source_context import (
 from src.api.services.construction_liquidity_source_context import source_liquidity_context
 from src.core.construction.models import ConstructionAuthorityContext
 from src.core.dpm_source_context import DpmCoreExecutionContext
+from typing import Any, cast
 from tests.unit.dpm.construction.source_product_context_fixtures import (
     client_restriction_profile_response,
     liquidity_reserve_requirement_response,
@@ -32,16 +33,19 @@ def test_source_product_profile_context_exports_expected_public_api() -> None:
 
 
 def _source_execution_context(**overrides: object) -> DpmCoreExecutionContext:
-    values = {
-        "portfolio_cashflow_projection": None,
-        "client_income_needs_schedule": None,
-        "liquidity_reserve_requirement": None,
-        "planned_withdrawal_schedule": None,
-        "client_restriction_profile": None,
-        "sustainability_preference_profile": None,
-    }
-    values.update(overrides)
-    return DpmCoreExecutionContext.model_construct(**values)
+    payload = cast(
+        dict[str, Any],
+        {
+            "portfolio_cashflow_projection": None,
+            "client_income_needs_schedule": None,
+            "liquidity_reserve_requirement": None,
+            "planned_withdrawal_schedule": None,
+            "client_restriction_profile": None,
+            "sustainability_preference_profile": None,
+            **overrides,
+        },
+    )
+    return DpmCoreExecutionContext.model_construct(**payload)
 
 
 def test_profile_context_updates_returns_all_expected_contexts() -> None:
