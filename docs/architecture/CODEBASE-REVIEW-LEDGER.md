@@ -12703,3 +12703,26 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/api_vocabulary_inventory.py --validate-only`,
   `rg` service leakage scan (`from src.api.routers|HTTPException|status.HTTP` in `src/api/services`).
 - Wiki decision: no wiki source change required; this is an internal service-boundary improvement only.
+
+## BACKEND-REVIEW-20260604-516: Add baseline governance and quality infrastructure
+
+- Date: 2026-06-04
+- Scope: `.github/workflows/quality-baseline.yml`, `pyproject.toml`, `.importlinter`,
+  `.spectral.yaml`, `docs/architecture.md`, `docs/api-governance.md`, `docs/observability.md`,
+  `docs/security.md`, `docs/operations-runbook.md`, `docs/supported-features.md`,
+  `quality/baseline_report.md`, `quality/refactor_health_report.md`, `quality/quality_scorecard.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`.
+- Finding: quality-governance artifacts for enterprise-readiness slicing were missing in-repo:
+  quality dependency group, baseline workflow, architecture/import contracts, spectral rules, and
+  required governance documentation anchors.
+- Action: added report-only baseline workflow with controlled tooling slices (Ruff, mypy, coverage,
+  import-linter, radon/xenon, vulture, deptry, bandit, OpenAPI spectral), added quality dependency
+  group for on-demand tooling, added governing docs and updated quality scorecards to reflect the new baseline
+  slice.
+- Status: hardened
+- Evidence: `python -m ruff check .`, `python -m ruff format --check .`, `python -m mypy
+  --config-file mypy.ini src/api/services` (no new typed src violations introduced outside baseline scope),
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`,
+  `git diff --check`.
+- Wiki decision: no wiki source change required; slice is repository-local quality governance scaffolding.

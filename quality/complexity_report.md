@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T04:20:12+00:00`
+- Generated at: `2026-06-04T06:06:00+00:00`
 
-- Current ref: `fafa839`
+- Current ref: `19bbdd1`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -33,15 +33,15 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
-| 2 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 16 | 173 |
-| 3 | resolve_core_dpm_portfolio_universe_candidates | src/api/routers/wave_core_portfolio_universe_resolution.py | 16 | 116 |
-| 4 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
-| 5 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
-| 6 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
-| 7 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
-| 8 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
-| 9 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
-| 10 | evaluate | src/core/compliance.py | 15 | 171 |
+| 2 | generate_targets_solver | src/core/target_generation.py | 16 | 102 |
+| 3 | build_command_center_summary | src/api/services/mandate_command_center.py | 16 | 60 |
+| 4 | parse_policy_pack_catalog | src/core/rebalance/policy_packs.py | 16 | 36 |
+| 5 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 16 | 34 |
+| 6 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 16 | 33 |
+| 7 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
+| 8 | evaluate | src/core/compliance.py | 15 | 171 |
+| 9 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
+| 10 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
 
 ### Most Complex Current Test Functions
 

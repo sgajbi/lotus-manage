@@ -23,3 +23,11 @@ They are explicit so later validators can enforce them without changing their me
 ## Current Gate Phase
 
 These rules are in phase 1/report-only except for checks already covered by repo-native gates.
+
+Planned baseline signal additions in `.github/workflows/quality-baseline.yml` keep these rules measurable without
+moving to hard thresholds yet:
+
+- architectural import leakage (via `.importlinter`)
+- OpenAPI operation/response completeness (via `.spectral.yaml`)
+- dead-code and complexity trends (`vulture`, `radon`, `xenon`)
+- dependency hygiene (`deptry`) and security trend (`bandit`, `pip-audit`)
