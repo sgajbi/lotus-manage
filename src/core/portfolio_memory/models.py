@@ -572,6 +572,43 @@ def _validate_search_item_metadata(
     latest_matching_event_source_id: str | None,
     latest_matching_event_content_hash: str | None,
 ) -> None:
+    _validate_search_item_counts(
+        event_count=event_count,
+        event_type_counts=event_type_counts,
+        matching_event_count=matching_event_count,
+    )
+    _validate_search_item_sorted_aggregates(
+        source_systems=source_systems,
+        reason_codes=reason_codes,
+    )
+    _validate_search_item_latest_event_metadata(
+        event_count=event_count,
+        supportability_state=supportability_state,
+        event_type_counts=event_type_counts,
+        source_systems=source_systems,
+        reason_codes=reason_codes,
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    )
+    _validate_search_item_latest_matching_event_metadata(
+        matching_event_count=matching_event_count,
+        latest_matching_event_time=latest_matching_event_time,
+        latest_matching_event_type=latest_matching_event_type,
+        latest_matching_event_id=latest_matching_event_id,
+        latest_matching_event_identity=latest_matching_event_identity,
+        latest_matching_event_source_system=latest_matching_event_source_system,
+        latest_matching_event_source_type=latest_matching_event_source_type,
+        latest_matching_event_source_id=latest_matching_event_source_id,
+        latest_matching_event_content_hash=latest_matching_event_content_hash,
+    )
+
+
+def _validate_search_item_counts(
+    *,
+    event_count: int,
+    event_type_counts: dict[str, int],
+    matching_event_count: int,
+) -> None:
     expected_event_count = sum(event_type_counts.values())
     if event_count != expected_event_count:
         raise ValueError("event_count must equal the sum of event_type_counts.")
@@ -579,12 +616,29 @@ def _validate_search_item_metadata(
     if matching_event_count > event_count:
         raise ValueError("matching_event_count must not exceed event_count.")
 
+
+def _validate_search_item_sorted_aggregates(
+    *,
+    source_systems: list[str],
+    reason_codes: list[str],
+) -> None:
     if source_systems != sorted(set(source_systems)):
         raise ValueError("source_systems must be sorted and unique.")
 
     if reason_codes != sorted(set(reason_codes)):
         raise ValueError("reason_codes must be sorted and unique.")
 
+
+def _validate_search_item_latest_event_metadata(
+    *,
+    event_count: int,
+    supportability_state: PortfolioMemorySupportabilityState,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> None:
     latest_event_fields = [latest_event_time, latest_event_type]
     if event_count == 0:
         if supportability_state != "EMPTY":
@@ -599,6 +653,19 @@ def _validate_search_item_metadata(
         if any(value is None for value in latest_event_fields):
             raise ValueError("non-empty search items must carry latest event metadata.")
 
+
+def _validate_search_item_latest_matching_event_metadata(
+    *,
+    matching_event_count: int,
+    latest_matching_event_time: str | None,
+    latest_matching_event_type: PortfolioMemoryEventType | None,
+    latest_matching_event_id: str | None,
+    latest_matching_event_identity: str | None,
+    latest_matching_event_source_system: str | None,
+    latest_matching_event_source_type: str | None,
+    latest_matching_event_source_id: str | None,
+    latest_matching_event_content_hash: str | None,
+) -> None:
     latest_matching_fields = [
         latest_matching_event_time,
         latest_matching_event_type,

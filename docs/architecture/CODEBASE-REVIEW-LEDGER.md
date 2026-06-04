@@ -14893,3 +14893,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-612: Portfolio-memory search item metadata validators extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/models.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `_validate_search_item_metadata` still combined count reconciliation, aggregate
+  ordering, empty/non-empty latest-event posture, and latest matching-event posture in one
+  high-complexity validator, making search-result metadata invariants harder to inspect and test
+  independently.
+- Action: extracted `_validate_search_item_counts`,
+  `_validate_search_item_sorted_aggregates`, `_validate_search_item_latest_event_metadata`, and
+  `_validate_search_item_latest_matching_event_metadata`. Added direct tests for each helper edge
+  while preserving the existing Pydantic search-item validation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory metadata
+  validation maintainability refactoring.
