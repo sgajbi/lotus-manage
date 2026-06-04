@@ -14873,3 +14873,23 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal maker-checker validation
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-611: Maker-checker refactor quality reports refreshed
+
+- Date: 2026-06-04
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `64620b5d`, before the maker-checker
+  validation dispatch extraction, so the latest source-complexity improvement was not visible in
+  the branch scorecard.
+- Action: regenerated current-state refactor reports after the maker-checker validation helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

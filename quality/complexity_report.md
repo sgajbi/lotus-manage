@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T15:57:06+00:00`
+- Generated at: `2026-06-04T16:05:06+00:00`
 
-- Current ref: `64620b5d`
+- Current ref: `f2aab1b9`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -33,15 +33,15 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | _validate_search_item_metadata | src/core/portfolio_memory/models.py | 17 | 68 |
-| 2 | _validate_control_action | src/core/waves/campaign_maker_checker_controls.py | 16 | 30 |
-| 3 | evaluate | src/core/compliance.py | 15 | 171 |
-| 4 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
-| 5 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
-| 6 | build_simulated_state | src/core/valuation.py | 15 | 118 |
-| 7 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
-| 8 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
-| 9 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
-| 10 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 2 | evaluate | src/core/compliance.py | 15 | 171 |
+| 3 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
+| 4 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 5 | build_simulated_state | src/core/valuation.py | 15 | 118 |
+| 6 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
+| 7 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 8 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
+| 9 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 10 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
 
 ### Most Complex Current Test Functions
 
