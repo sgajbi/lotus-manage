@@ -14207,3 +14207,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal transaction-cost supportability
   helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-583: Currency-overlay market currency helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_currency_overlay_supportability.py` and
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`.
+- Finding: currency-overlay supportability projected non-base market price currencies inline,
+  making required FX-pair assembly and context eligibility checks easier to drift apart.
+- Action: extracted `non_base_market_price_currencies`, reused it from required-pair assembly and
+  status evaluation, and added direct test coverage through the currency-overlay pair helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_currency_overlay_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_currency_overlay_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal currency-overlay supportability
+  helper refactoring with direct tests.

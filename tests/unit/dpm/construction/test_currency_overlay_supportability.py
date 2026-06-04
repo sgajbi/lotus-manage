@@ -6,6 +6,7 @@ from src.api.services.construction_currency_overlay_supportability import (
     currency_overlay_status,
     derive_currency_overlay_context,
     missing_currency_overlay_pairs,
+    non_base_market_price_currencies,
     non_base_position_currencies,
     required_currency_overlay_pairs,
 )
@@ -88,6 +89,7 @@ def test_currency_overlay_pair_helpers_preserve_required_and_available_pairs() -
     request = _currency_overlay_request(fx_pairs=["SGD/USD"])
 
     assert available_fx_pairs(request=request) == {"SGD/USD"}
+    assert non_base_market_price_currencies(request=request) == {"SGD"}
     assert required_currency_overlay_pairs(request=request) == {"SGD/USD"}
     assert missing_currency_overlay_pairs(request=request) == []
 

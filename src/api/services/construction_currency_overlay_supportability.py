@@ -37,12 +37,7 @@ def currency_overlay_status(
         return ConstructionMethodStatus.DEGRADED
     if context.supportability_status != ConstructionMethodStatus.READY:
         return context.supportability_status
-    base_currency = request.portfolio_snapshot.base_currency
-    instrument_currencies = {
-        price.currency
-        for price in request.market_data_snapshot.prices
-        if price.currency != base_currency
-    }
+    instrument_currencies = non_base_market_price_currencies(request=request)
     if instrument_currencies - set(context.eligible_currencies):
         return ConstructionMethodStatus.PENDING_REVIEW
     return (
@@ -64,8 +59,18 @@ def available_fx_pairs(*, request: RebalanceRequest) -> set[str]:
 
 def required_currency_overlay_pairs(*, request: RebalanceRequest) -> set[str]:
     base_currency = request.portfolio_snapshot.base_currency
+    non_base_currencies = non_base_market_price_currencies(request=request)
     return {
         f"{price.currency}/{base_currency}"
+        for price in request.market_data_snapshot.prices
+        if price.currency in non_base_currencies
+    }
+
+
+def non_base_market_price_currencies(*, request: RebalanceRequest) -> set[str]:
+    base_currency = request.portfolio_snapshot.base_currency
+    return {
+        price.currency
         for price in request.market_data_snapshot.prices
         if price.currency != base_currency
     }
@@ -84,6 +89,7 @@ __all__ = [
     "currency_overlay_status",
     "derive_currency_overlay_context",
     "missing_currency_overlay_pairs",
+    "non_base_market_price_currencies",
     "non_base_position_currencies",
     "required_currency_overlay_pairs",
 ]
