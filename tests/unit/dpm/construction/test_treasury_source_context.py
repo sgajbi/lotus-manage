@@ -4,6 +4,7 @@ from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
     external_treasury_currency_overlay_context,
     treasury_fail_closed_reason_codes,
+    treasury_source_payloads,
 )
 from src.core.common.canonical import hash_canonical_payload
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -20,6 +21,7 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
         "external_treasury_currency_overlay_context",
         "treasury_fail_closed_reason_codes",
+        "treasury_source_payloads",
     ]
 
 
@@ -36,7 +38,7 @@ def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
     hedge_readiness = hedge_readiness_response()
     currency_exposure = currency_exposure_response()
 
-    payloads = construction_treasury_source_context._treasury_source_payloads(
+    payloads = treasury_source_payloads(
         hedge_readiness=hedge_readiness,
         currency_exposure=currency_exposure,
         hedge_policy=None,

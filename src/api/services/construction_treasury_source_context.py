@@ -31,7 +31,7 @@ def _optional_source_payload(response: _TreasurySourceResponse | None) -> JsonPa
     return source_payload(response) if response is not None else None
 
 
-def _treasury_source_payloads(
+def treasury_source_payloads(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
     currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
@@ -170,7 +170,7 @@ def external_treasury_currency_overlay_context(
         return None
 
     source_hash = hash_canonical_payload(
-        _treasury_source_payloads(
+        treasury_source_payloads(
             hedge_readiness=hedge_readiness,
             currency_exposure=currency_exposure,
             hedge_policy=hedge_policy,
@@ -272,4 +272,5 @@ def external_treasury_currency_overlay_context(
 __all__ = [
     "external_treasury_currency_overlay_context",
     "treasury_fail_closed_reason_codes",
+    "treasury_source_payloads",
 ]

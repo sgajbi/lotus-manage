@@ -13815,3 +13815,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal liquidity source-context reason
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-566: Treasury aggregate payload helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury aggregate source-payload assembly was directly tested through a private
+  helper even though it defines the canonical hash input for the currency-overlay context.
+- Action: exposed `treasury_source_payloads`, reused it from
+  `external_treasury_currency_overlay_context`, and updated tests to assert aggregate hash inputs
+  through the public service helper.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context payload
+  assembly refactoring with direct public-helper tests.
