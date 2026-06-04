@@ -15173,3 +15173,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-624: Settlement-ladder helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/test_engine_settlement_awareness.py`.
+- Finding: `build_settlement_ladder` still mixed settlement-day lookup, horizon calculation,
+  cash-flow initialization, security-trade and FX flow projection, projected-balance ladder
+  assembly, breach detection, and overdraft-warning emission in one function.
+- Action: extracted `_settlement_days_by_instrument`, `_settlement_horizon_days`,
+  `_settlement_cash_flows`, `_ensure_settlement_currency`, `_apply_intent_settlement_flows`,
+  `_append_settlement_ladder_points`, and `_append_cash_ladder_point`. Kept
+  `build_settlement_ladder` as the orchestration boundary and added direct helper tests for
+  security/FX settlement flow projection plus breach and overdraft-warning generation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_settlement_awareness.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal settlement-ladder
+  maintainability refactoring.
