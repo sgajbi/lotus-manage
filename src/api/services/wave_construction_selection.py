@@ -2,7 +2,16 @@ from __future__ import annotations
 
 from src.api.services import construction_service
 from src.api.services.wave_errors import DpmWaveLookupError
-from src.core.construction.repository import ConstructionRepository
+from src.core.construction.repository import (
+    ConstructionAlternativeNotFoundError,
+    ConstructionAlternativeSetNotFoundError,
+    ConstructionRepository,
+)
+
+_CONSTRUCTION_SELECTION_LOOKUP_ERRORS = (
+    ConstructionAlternativeNotFoundError,
+    ConstructionAlternativeSetNotFoundError,
+)
 
 
 def select_construction_alternative_for_wave(
@@ -25,7 +34,7 @@ def select_construction_alternative_for_wave(
             comment=comment,
             correlation_id=correlation_id,
         )
-    except Exception as exc:
+    except _CONSTRUCTION_SELECTION_LOOKUP_ERRORS as exc:
         raise DpmWaveLookupError("DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND", str(exc)) from exc
 
 

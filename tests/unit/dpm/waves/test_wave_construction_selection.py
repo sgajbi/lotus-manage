@@ -3,6 +3,7 @@ import pytest
 from src.api.services import wave_construction_selection
 from src.api.services.wave_construction_selection import select_construction_alternative_for_wave
 from src.api.services.wave_errors import DpmWaveLookupError
+from src.core.construction.repository import ConstructionAlternativeNotFoundError
 
 
 class _ConstructionService:
@@ -47,7 +48,7 @@ def test_select_construction_alternative_for_wave_maps_selection_failures(
     monkeypatch,
 ) -> None:
     service = _ConstructionService()
-    service.error = LookupError("alternative missing")
+    service.error = ConstructionAlternativeNotFoundError("alternative missing")
     monkeypatch.setattr(wave_construction_selection, "construction_service", service)
 
     with pytest.raises(DpmWaveLookupError) as exc_info:
@@ -63,6 +64,25 @@ def test_select_construction_alternative_for_wave_maps_selection_failures(
 
     assert exc_info.value.code == "DPM_CONSTRUCTION_ALTERNATIVE_NOT_FOUND"
     assert exc_info.value.message == "alternative missing"
+
+
+def test_select_construction_alternative_for_wave_does_not_hide_unexpected_failures(
+    monkeypatch,
+) -> None:
+    service = _ConstructionService()
+    service.error = RuntimeError("repository write side effect failed")
+    monkeypatch.setattr(wave_construction_selection, "construction_service", service)
+
+    with pytest.raises(RuntimeError, match="repository write side effect failed"):
+        select_construction_alternative_for_wave(
+            repository="repository",
+            alternative_set_id="alt_set_001",
+            alternative_id="alt_balanced",
+            actor_id="pm_001",
+            reason_code="PM_SELECTED",
+            comment=None,
+            correlation_id="corr_wave_select",
+        )
 
 
 def test_wave_construction_selection_exports_public_surface() -> None:

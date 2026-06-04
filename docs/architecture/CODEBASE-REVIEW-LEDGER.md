@@ -14360,3 +14360,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal expected-outcome snapshot
   maintainability hardening.
+
+## BACKEND-REVIEW-20260604-590: Wave construction selection error translation narrowed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/wave_construction_selection.py` and
+  `tests/unit/dpm/waves/test_wave_construction_selection.py`.
+- Finding: the wave construction-selection adapter converted every service exception into
+  `DpmWaveLookupError`, which could hide repository write or unexpected runtime defects behind an
+  alternative-not-found posture.
+- Action: narrowed translation to construction set/alternative not-found domain exceptions and
+  added tests proving domain lookup failures still map to bounded wave lookup errors while
+  unexpected runtime failures propagate.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_construction_selection.py tests/unit/dpm/waves/test_wave_construction_selection.py`,
+  `python -m ruff format --check src/api/services/wave_construction_selection.py tests/unit/dpm/waves/test_wave_construction_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_construction_selection.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_construction_selection.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal wave service error-translation
+  hardening.
