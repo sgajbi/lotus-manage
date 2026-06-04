@@ -1,4 +1,5 @@
 from importlib.util import find_spec
+from types import ModuleType
 
 
 def has_optional_dependency(module_name: str) -> bool:
@@ -17,10 +18,16 @@ def psycopg_error_type() -> type[BaseException] | None:
     if not has_psycopg():
         return None
     try:
-        import psycopg
-    except Exception:
+        psycopg = _import_psycopg()
+    except ImportError:
         return None
     return getattr(psycopg, "Error", None)
+
+
+def _import_psycopg() -> ModuleType:
+    import psycopg
+
+    return psycopg
 
 
 __all__ = [

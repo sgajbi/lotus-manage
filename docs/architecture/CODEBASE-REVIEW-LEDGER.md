@@ -14314,3 +14314,25 @@ and improves internal transaction-cost source posture maintainability only.
   plus the slice gates recorded for this commit.
 - Wiki decision: no wiki source change required; this is internal solver optional-dependency
   contract hardening.
+
+## BACKEND-REVIEW-20260604-588: Psycopg optional-import failure handling narrowed
+
+- Date: 2026-06-04
+- Scope: `src/core/common/capabilities.py` and `tests/unit/core/test_capabilities.py`.
+- Finding: `psycopg_error_type` caught every exception during optional driver import, which could
+  hide genuine driver import side effects or packaging defects behind the same posture as a
+  missing optional dependency.
+- Action: extracted `_import_psycopg`, narrowed the tolerated failure to `ImportError`, and added
+  direct tests for missing-driver fallback and non-import failure propagation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/capabilities.py tests/unit/core/test_capabilities.py`,
+  `python -m ruff format --check src/core/common/capabilities.py tests/unit/core/test_capabilities.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/capabilities.py`,
+  `python -m pytest tests/unit/core/test_capabilities.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal optional dependency
+  capability-detection hardening.
