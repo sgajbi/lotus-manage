@@ -9,7 +9,10 @@ from src.api.services.construction_treasury_source_context import (
     treasury_missing_data_families,
     treasury_optional_source_identity,
     treasury_primary_supportability,
+    treasury_response_blocked_capabilities,
+    treasury_response_missing_data_families,
     treasury_source_identity_fields,
+    treasury_source_payload,
     treasury_source_payloads,
 )
 from src.core.common.canonical import hash_canonical_payload
@@ -32,7 +35,10 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
         "treasury_missing_data_families",
         "treasury_optional_source_identity",
         "treasury_primary_supportability",
+        "treasury_response_blocked_capabilities",
+        "treasury_response_missing_data_families",
         "treasury_source_identity_fields",
+        "treasury_source_payload",
         "treasury_source_payloads",
     ]
 
@@ -44,6 +50,16 @@ def _without_source_lineage(response: Any) -> Any:
             "lineage": {},
         }
     )
+
+
+def test_treasury_source_payload_preserves_single_source_payload_or_absence() -> None:
+    hedge_readiness = hedge_readiness_response()
+
+    assert treasury_source_payload(hedge_readiness) == hedge_readiness.model_dump(
+        mode="json",
+        exclude_none=True,
+    )
+    assert treasury_source_payload(None) is None
 
 
 def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
@@ -127,6 +143,21 @@ def test_treasury_fail_closed_reason_codes_include_present_source_families() -> 
         "EXTERNAL_CURRENCY_EXPOSURE_FAIL_CLOSED",
         "EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_FAIL_CLOSED",
     ]
+
+
+def test_treasury_response_diagnostics_return_single_source_supportability() -> None:
+    hedge_readiness = hedge_readiness_response()
+
+    assert treasury_response_missing_data_families(hedge_readiness) == [
+        "external_treasury_hedge_readiness"
+    ]
+    assert treasury_response_missing_data_families(None) == []
+    assert treasury_response_blocked_capabilities(hedge_readiness) == [
+        "treasury",
+        "oms",
+        "execution",
+    ]
+    assert treasury_response_blocked_capabilities(None) == []
 
 
 def test_treasury_source_diagnostics_merge_missing_data_and_blocked_capabilities() -> None:

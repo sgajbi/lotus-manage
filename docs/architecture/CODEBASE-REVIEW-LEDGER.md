@@ -14137,3 +14137,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal financial source-context
   update-builder refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-580: Treasury leaf diagnostics helpers exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_treasury_source_context.py` and
+  `tests/unit/dpm/construction/test_treasury_source_context.py`.
+- Finding: treasury optional source-payload and per-response supportability diagnostics remained
+  private leaf helpers, leaving single-source payload and diagnostic behavior less visible than the
+  aggregate currency-overlay mapper.
+- Action: exposed `treasury_source_payload`, `treasury_response_missing_data_families`, and
+  `treasury_response_blocked_capabilities`, reused them from aggregate treasury helpers, and added
+  direct tests for absent sources plus single-source diagnostic projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_treasury_source_context.py tests/unit/dpm/construction/test_treasury_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_treasury_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_treasury_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal treasury source-context
+  helper refactoring with direct tests.

@@ -27,7 +27,7 @@ _TreasurySourceResponse: TypeAlias = (
 )
 
 
-def _optional_source_payload(response: _TreasurySourceResponse | None) -> JsonPayload | None:
+def treasury_source_payload(response: _TreasurySourceResponse | None) -> JsonPayload | None:
     return source_payload(response) if response is not None else None
 
 
@@ -40,11 +40,11 @@ def treasury_source_payloads(
     fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
 ) -> dict[str, JsonPayload | None]:
     return {
-        "external_hedge_execution_readiness": _optional_source_payload(hedge_readiness),
-        "external_currency_exposure": _optional_source_payload(currency_exposure),
-        "external_hedge_policy": _optional_source_payload(hedge_policy),
-        "external_eligible_hedge_instruments": _optional_source_payload(eligible_hedge_instruments),
-        "external_fx_forward_curve": _optional_source_payload(fx_forward_curve),
+        "external_hedge_execution_readiness": treasury_source_payload(hedge_readiness),
+        "external_currency_exposure": treasury_source_payload(currency_exposure),
+        "external_hedge_policy": treasury_source_payload(hedge_policy),
+        "external_eligible_hedge_instruments": treasury_source_payload(eligible_hedge_instruments),
+        "external_fx_forward_curve": treasury_source_payload(fx_forward_curve),
     }
 
 
@@ -74,25 +74,39 @@ def treasury_source_identity_fields(
     }
 
 
-def _missing_data_families(response: _TreasurySourceResponse | None) -> list[str]:
+def treasury_response_missing_data_families(
+    response: _TreasurySourceResponse | None,
+) -> list[str]:
     return response.supportability.missing_data_families if response is not None else []
 
 
-def _blocked_capabilities(response: _TreasurySourceResponse | None) -> list[str]:
+def treasury_response_blocked_capabilities(
+    response: _TreasurySourceResponse | None,
+) -> list[str]:
     return response.supportability.blocked_capabilities if response is not None else []
 
 
 def treasury_missing_data_families(
     *responses: _TreasurySourceResponse | None,
 ) -> list[str]:
-    return sorted({family for response in responses for family in _missing_data_families(response)})
+    return sorted(
+        {
+            family
+            for response in responses
+            for family in treasury_response_missing_data_families(response)
+        }
+    )
 
 
 def treasury_blocked_capabilities(
     *responses: _TreasurySourceResponse | None,
 ) -> list[str]:
     return sorted(
-        {capability for response in responses for capability in _blocked_capabilities(response)}
+        {
+            capability
+            for response in responses
+            for capability in treasury_response_blocked_capabilities(response)
+        }
     )
 
 
@@ -279,6 +293,9 @@ __all__ = [
     "treasury_missing_data_families",
     "treasury_optional_source_identity",
     "treasury_primary_supportability",
+    "treasury_response_blocked_capabilities",
+    "treasury_response_missing_data_families",
     "treasury_source_identity_fields",
+    "treasury_source_payload",
     "treasury_source_payloads",
 ]
