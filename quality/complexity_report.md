@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T16:25:32+00:00`
+- Generated at: `2026-06-04T16:36:10+00:00`
 
-- Current ref: `8b772a14`
+- Current ref: `299a455a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
-| 2 | build_simulated_state | src/core/valuation.py | 15 | 118 |
-| 3 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
-| 4 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
-| 5 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
-| 6 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
-| 7 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
-| 8 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
-| 9 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
-| 10 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 1 | build_simulated_state | src/core/valuation.py | 15 | 118 |
+| 2 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
+| 3 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 4 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
+| 5 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 6 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 7 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
+| 8 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
+| 9 | generate_fx_and_simulate | src/core/rebalance/execution.py | 14 | 120 |
+| 10 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
 
 ### Most Complex Current Test Functions
 
