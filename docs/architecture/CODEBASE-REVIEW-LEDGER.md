@@ -13116,3 +13116,28 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/api_vocabulary_inventory.py --validate-only`,
   `make check`, and `git diff --check`.
 - Wiki decision: no wiki source change required; this is a service-architecture and router-thinness refactor with behavior preserved.
+
+## BACKEND-REVIEW-20260604-537: Move PM operating-quality command assembly into service helpers
+
+- Date: 2026-06-04
+- Scope: `src/api/services/pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Finding: PM operating-quality command assembly for score runs, PM book-scope evidence, review actions,
+  and summary invocations remained partly coupled to router-private helper paths, making service ownership
+  and direct low-level proof weaker than the surrounding architecture boundary now expects.
+- Action: added service-layer command dataclasses and builders for PM-quality policy resolution, score-run
+  assembly, PM book-scope evidence, review-action assembly, and summary-invocation assembly; expanded direct
+  service tests for success, missing-target, and hash-mismatch paths; and rewired API tests away from private
+  router helper calls toward public endpoint behavior with in-memory dependency overrides.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py tests/unit/api/test_pm_operating_quality_service.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is an internal service-layer architecture hardening and test-isolation slice.

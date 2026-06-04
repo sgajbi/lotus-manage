@@ -2,7 +2,6 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
-from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_outcome_review_repository
@@ -29,6 +28,7 @@ from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityEvidenceItem,
     DpmPmQualityGovernanceApproval,
+    DpmPmQualityReviewAction,
     DpmPmQualityReviewActionConflictError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualitySummaryInvocationConflictError,
@@ -329,31 +329,48 @@ def test_pm_operating_quality_request_models_normalize_and_validate_scope_edges(
 
 
 def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
-    with pytest.raises(HTTPException) as missing_policy_ref:
-        pmq_router._resolve_policy(
-            request=pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_construct(
-                policy=None,
-                policy_id=None,
-                policy_version=None,
-            ),
-            repository=InMemoryDpmPmQualityPolicyRepository(),
-        )
-    with pytest.raises(HTTPException) as invalid_book_scope_date:
-        pmq_router._resolve_pm_book_scope_evidence(
-            request=pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_construct(
-                pm_id="pm_001",
-                as_of_date="not-a-date",
-            ),
-            scope=pmq_router.DpmPmOperatingQualityPmBookScopeRequest(
-                booking_center_code="Singapore"
-            ),
-            correlation_id="corr-invalid-date",
-        )
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+    try:
+        with TestClient(app) as client:
+            missing_policy_ref = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json={
+                    "pm_id": "pm_001",
+                    "book_id": "sg_dpm_book",
+                    "as_of_date": "2026-05-12",
+                    "evidence_items": [],
+                    "outcome_review_ids": [],
+                    "actor_id": "ops",
+                },
+            )
+            invalid_book_scope_date = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json={
+                    "pm_id": "pm_001",
+                    "book_id": "sg_dpm_book",
+                    "as_of_date": "not-a-date",
+                    "policy": _policy(),
+                    "evidence_items": [],
+                    "outcome_review_ids": [],
+                    "actor_id": "ops",
+                    "pm_book_scope": {
+                        "booking_center_code": "Singapore",
+                    },
+                },
+            )
+    finally:
+        app.dependency_overrides.clear()
 
-    assert missing_policy_ref.value.status_code == 422
-    assert missing_policy_ref.value.detail == "PM_QUALITY_POLICY_REFERENCE_REQUIRED"
-    assert invalid_book_scope_date.value.status_code == 422
-    assert invalid_book_scope_date.value.detail == "INVALID_AS_OF_DATE"
+    assert missing_policy_ref.status_code == 422
+    missing_policy_detail = missing_policy_ref.json()["detail"]
+    assert any(
+        "Supply inline policy or both policy_id and policy_version" in error["msg"]
+        for error in missing_policy_detail
+    )
+    assert invalid_book_scope_date.status_code == 422
+    assert invalid_book_scope_date.json()["detail"] == "INVALID_AS_OF_DATE"
 
 
 class _PmBookResolver:
@@ -1081,29 +1098,27 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
     summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
     score_repository.save_score_run(score_run=score_run)
-    review_action = pmq_router._build_review_action(
-        request=pmq_router.DpmPmQualityReviewActionRequest(
-            target_type="SCORE_RUN",
-            target_id=score_run.score_run_id,
-            action_type="ACKNOWLEDGE",
-            review_action_ref="PMQ-REVIEW-2026-05-001",
-            review_reason="Reviewed and acknowledged for support-summary evidence.",
-            actor_id="ops",
-        ),
-        x_correlation_id="corr-review",
-        score_run_repository=score_repository,
-        fairness_repository=InMemoryDpmPmQualityFairnessAnalysisRepository(),
-    )
-    review_repository.save_review_action(action=review_action)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        InMemoryDpmPmQualityFairnessAnalysisRepository()
+    )
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: review_repository
     app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
         summary_repository
     )
 
+    review_action_request = {
+        "target_type": "SCORE_RUN",
+        "target_id": score_run.score_run_id,
+        "action_type": "ACKNOWLEDGE",
+        "review_action_ref": "PMQ-REVIEW-2026-05-001",
+        "review_reason": "Reviewed and acknowledged for support-summary evidence.",
+        "actor_id": "ops",
+    }
+
     request = {
         "score_run_id": score_run.score_run_id,
-        "review_action_id": review_action.review_action_id,
+        "review_action_id": "placeholder",
         "invocation_state": "COMPLETED",
         "summary_ref": "PMQ-SUMMARY-2026-05-001",
         "workflow_pack_name": "pm_quality_summary.pack",
@@ -1124,6 +1139,14 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
     }
     try:
         with TestClient(app) as client:
+            review_action = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions",
+                json=review_action_request,
+                headers={"X-Correlation-Id": "corr-review"},
+            )
+            assert review_action.status_code == 201
+            review_action_id = review_action.json()["review_action"]["review_action_id"]
+            request["review_action_id"] = review_action_id
             preview = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json=request,
@@ -1222,36 +1245,26 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
     review_repository = InMemoryDpmPmQualityReviewActionRepository()
     score_run = _source_only_score_run(pm_id="pm_001", score=Decimal("91"))
     score_repository.save_score_run(score_run=score_run)
-    review_action = pmq_router._build_review_action(
-        request=pmq_router.DpmPmQualityReviewActionRequest(
-            target_type="SCORE_RUN",
-            target_id=score_run.score_run_id,
-            action_type="ACKNOWLEDGE",
-            review_action_ref="PMQ-REVIEW-2026-05-001",
-            review_reason="Reviewed and acknowledged for support-summary evidence.",
-            actor_id="ops",
-        ),
-        x_correlation_id="corr-review",
-        score_run_repository=score_repository,
-        fairness_repository=InMemoryDpmPmQualityFairnessAnalysisRepository(),
-    )
-    review_repository.save_review_action(action=review_action)
-    mismatched_review_action = review_action.model_copy(
-        update={
-            "review_action_id": "pmq_review_mismatch",
-            "target_content_hash": "sha256:other",
-        }
-    )
-    review_repository.save_review_action(action=mismatched_review_action)
     app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_repository
+    app.dependency_overrides[get_pm_quality_fairness_analysis_repository] = lambda: (
+        InMemoryDpmPmQualityFairnessAnalysisRepository()
+    )
     app.dependency_overrides[get_pm_quality_review_action_repository] = lambda: review_repository
     app.dependency_overrides[get_pm_quality_summary_invocation_repository] = lambda: (
         _ConflictingSummaryInvocationRepository()
     )
+    review_action_request = {
+        "target_type": "SCORE_RUN",
+        "target_id": score_run.score_run_id,
+        "action_type": "ACKNOWLEDGE",
+        "review_action_ref": "PMQ-REVIEW-2026-05-001",
+        "review_reason": "Reviewed and acknowledged for support-summary evidence.",
+        "actor_id": "ops",
+    }
 
     request = {
         "score_run_id": score_run.score_run_id,
-        "review_action_id": review_action.review_action_id,
+        "review_action_id": "placeholder",
         "summary_ref": "PMQ-SUMMARY-2026-05-001",
         "workflow_pack_name": "pm_quality_summary.pack",
         "workflow_pack_version": "v1",
@@ -1259,6 +1272,25 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
     }
     try:
         with TestClient(app) as client:
+            review_action = client.post(
+                "/api/v1/rebalance/pm-operating-quality/review-actions",
+                json=review_action_request,
+                headers={"X-Correlation-Id": "corr-review"},
+            )
+            assert review_action.status_code == 201
+            review_action_payload = review_action.json()["review_action"]
+            mismatched_review_action = DpmPmQualityReviewAction.model_validate(
+                review_action_payload
+            )
+            mismatched_review_action = mismatched_review_action.model_copy(
+                update={
+                    "review_action_id": "pmq_review_mismatch",
+                    "target_content_hash": "sha256:other",
+                }
+            )
+            review_repository.save_review_action(action=mismatched_review_action)
+
+            request["review_action_id"] = review_action_payload["review_action_id"]
             missing_review_action = client.post(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "review_action_id": "missing"},
