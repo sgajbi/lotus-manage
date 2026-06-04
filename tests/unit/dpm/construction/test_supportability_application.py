@@ -6,6 +6,7 @@ from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
     apply_construction_supportability,
     authority_context_status,
+    method_enrichment_statuses,
     supportability_diagnostics,
 )
 from src.core.construction.enrichment import summarize_enrichment_posture
@@ -401,4 +402,57 @@ def test_authority_context_status_ignores_context_for_unrelated_method() -> None
             authority_context=ConstructionAuthorityContext(liquidity_context=_liquidity_context()),
         )
         is None
+    )
+
+
+def test_method_enrichment_statuses_project_method_specific_enrichment() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=True,
+        risk_required=True,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=_liquidity_context(),
+    )
+
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.TAX_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.tax_status]
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.LIQUIDITY_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.liquidity_status]
+    assert method_enrichment_statuses(
+        method=ConstructionMethod.RISK_AWARE,
+        result=result,
+        enrichment=enrichment,
+    ) == [enrichment.risk_status]
+
+
+def test_method_enrichment_statuses_empty_for_method_without_overlay() -> None:
+    result = _trade_result()
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+
+    assert (
+        method_enrichment_statuses(
+            method=ConstructionMethod.HEURISTIC_EXPLAINABLE,
+            result=result,
+            enrichment=enrichment,
+        )
+        == []
     )

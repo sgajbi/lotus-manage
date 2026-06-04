@@ -13955,3 +13955,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction supportability
   status-overlay refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-572: Method enrichment status helper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: method-specific enrichment status overlays were hidden behind a private helper and
+  only indirectly covered through full construction supportability application tests.
+- Action: exposed `method_enrichment_statuses`, reused it from supportability status assembly,
+  and added direct tests for tax-aware, liquidity-aware, risk-aware, and no-overlay method
+  behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  enrichment-status refactoring with direct tests.

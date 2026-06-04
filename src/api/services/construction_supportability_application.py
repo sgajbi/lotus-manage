@@ -134,7 +134,7 @@ def _supportability_status(
             enrichment=enrichment,
             authority_context=authority_context,
         ),
-        *_method_enrichment_statuses(
+        *method_enrichment_statuses(
             method=method,
             result=result,
             enrichment=enrichment,
@@ -149,7 +149,7 @@ def _supportability_status(
     return lowest_construction_status(statuses)
 
 
-def _method_enrichment_statuses(
+def method_enrichment_statuses(
     *,
     method: ConstructionMethod,
     result: RebalanceResult,
@@ -189,5 +189,6 @@ def authority_context_status(
 __all__ = [
     "apply_construction_supportability",
     "authority_context_status",
+    "method_enrichment_statuses",
     "supportability_diagnostics",
 ]
