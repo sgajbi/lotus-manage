@@ -2,8 +2,10 @@ from typing import Any
 
 from src.api.services import construction_treasury_source_context
 from src.api.services.construction_treasury_source_context import (
+    TreasuryPrimarySupportability,
     external_treasury_currency_overlay_context,
     treasury_fail_closed_reason_codes,
+    treasury_primary_supportability,
     treasury_source_identity_fields,
     treasury_source_payloads,
 )
@@ -20,8 +22,10 @@ from tests.unit.dpm.construction.source_product_context_fixtures import (
 
 def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
     assert construction_treasury_source_context.__all__ == [
+        "TreasuryPrimarySupportability",
         "external_treasury_currency_overlay_context",
         "treasury_fail_closed_reason_codes",
+        "treasury_primary_supportability",
         "treasury_source_identity_fields",
         "treasury_source_payloads",
     ]
@@ -61,7 +65,7 @@ def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
 
 
 def test_primary_treasury_supportability_uses_first_available_source_family() -> None:
-    primary = construction_treasury_source_context._primary_treasury_supportability(
+    primary = treasury_primary_supportability(
         hedge_readiness=None,
         currency_exposure=currency_exposure_response(),
         hedge_policy=hedge_policy_response(),
@@ -70,6 +74,7 @@ def test_primary_treasury_supportability_uses_first_available_source_family() ->
     )
 
     assert primary is not None
+    assert isinstance(primary, TreasuryPrimarySupportability)
     assert primary.state == "UNAVAILABLE"
     assert primary.reason == "EXTERNAL_TREASURY_SOURCE_NOT_INGESTED"
     assert primary.exposure_currencies == ["EUR", "JPY"]

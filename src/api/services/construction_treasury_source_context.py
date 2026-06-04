@@ -121,20 +121,20 @@ def treasury_fail_closed_reason_codes(
     return reason_codes
 
 
-class _PrimaryTreasurySupportability(NamedTuple):
+class TreasuryPrimarySupportability(NamedTuple):
     state: str
     reason: str
     exposure_currencies: list[str]
 
 
-def _primary_treasury_supportability(
+def treasury_primary_supportability(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
     currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
     hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
     eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
     fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
-) -> _PrimaryTreasurySupportability | None:
+) -> TreasuryPrimarySupportability | None:
     for response in (
         hedge_readiness,
         currency_exposure,
@@ -143,7 +143,7 @@ def _primary_treasury_supportability(
         fx_forward_curve,
     ):
         if response is not None:
-            return _PrimaryTreasurySupportability(
+            return TreasuryPrimarySupportability(
                 state=response.supportability.state,
                 reason=response.supportability.reason,
                 exposure_currencies=response.exposure_currencies,
@@ -159,7 +159,7 @@ def external_treasury_currency_overlay_context(
     eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
     fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
 ) -> AuthoritativeCurrencyOverlayContext | None:
-    primary_supportability = _primary_treasury_supportability(
+    primary_supportability = treasury_primary_supportability(
         hedge_readiness=hedge_readiness,
         currency_exposure=currency_exposure,
         hedge_policy=hedge_policy,
@@ -270,8 +270,10 @@ def external_treasury_currency_overlay_context(
 
 
 __all__ = [
+    "TreasuryPrimarySupportability",
     "external_treasury_currency_overlay_context",
     "treasury_fail_closed_reason_codes",
+    "treasury_primary_supportability",
     "treasury_source_identity_fields",
     "treasury_source_payloads",
 ]
