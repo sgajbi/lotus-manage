@@ -18,6 +18,10 @@ from src.api.services.mandate_health_result import (
     calculate_mandate_health_result,
 )
 from src.api.services.mandate_optional_sources import resolve_mandate_optional_sources
+from src.api.services.mandate_refresh_context import (
+    build_digital_twin_source_context,
+    build_health_input_source_context,
+)
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthSnapshot,
@@ -93,19 +97,15 @@ def build_mandate_refresh_result_from_core(
         model_targets=model_targets,
         as_of_date=as_of_date,
         reference_currency=reference_currency,
-        client_restriction_profile=optional_sources.client_restriction_profile,
-        sustainability_preference_profile=optional_sources.sustainability_preference_profile,
-        portfolio_cashflow_projection=optional_sources.portfolio_cashflow_projection,
-        client_income_needs_schedule=optional_sources.client_income_needs_schedule,
-        liquidity_reserve_requirement=optional_sources.liquidity_reserve_requirement,
-        planned_withdrawal_schedule=optional_sources.planned_withdrawal_schedule,
-        benchmark_assignment=optional_sources.benchmark_assignment,
+        **build_digital_twin_source_context(optional_sources=optional_sources),
     )
     health_result = _health_result_for_refresh(
-        twin=twin,
-        model_targets=model_targets,
-        market_data_coverage=market_data_coverage,
-        optional_sources=optional_sources,
+        health_input=build_health_input_source_context(
+            twin=twin,
+            model_targets=model_targets,
+            market_data_coverage=market_data_coverage,
+            optional_sources=optional_sources,
+        ),
     )
     return DpmMandateRefreshResult(
         twin=twin,
@@ -116,21 +116,9 @@ def build_mandate_refresh_result_from_core(
 
 def _health_result_for_refresh(
     *,
-    twin: DpmMandateDigitalTwin,
-    model_targets: Any,
-    market_data_coverage: Any | None,
-    optional_sources: Any,
+    health_input: dict[str, Any],
 ) -> DpmMandateHealthCalculationResult:
-    health_input = build_health_input_from_core_sources(
-        twin=twin,
-        model_targets=model_targets,
-        market_data_coverage=market_data_coverage,
-        client_restriction_profile=optional_sources.client_restriction_profile,
-        sustainability_preference_profile=optional_sources.sustainability_preference_profile,
-        portfolio_cashflow_projection=optional_sources.portfolio_cashflow_projection,
-        unavailable_source_families=optional_sources.unavailable_source_families,
-    )
-    return calculate_mandate_health_result(health_input)
+    return calculate_mandate_health_result(build_health_input_from_core_sources(**health_input))
 
 
 __all__ = ["DpmMandateRefreshResult", "build_mandate_refresh_result_from_core"]

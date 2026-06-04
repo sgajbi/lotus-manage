@@ -12945,3 +12945,20 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is a service-layer refactor and test hardening.
+
+## BACKEND-REVIEW-20260604-527: Mandate refresh source-context assembly extracted into helper module
+
+- Date: 2026-06-04
+- Scope: `src/api/services/mandate_refresh.py`, `src/api/services/mandate_refresh_context.py`, `tests/unit/dpm/mandates/test_mandate_refresh.py`, `tests/unit/dpm/mandates/test_mandate_refresh_context.py`.
+- Finding: `mandate_refresh` repeated optional-source to assembly-field mapping for twin compilation and health-input construction inline, increasing duplication risk as optional-source supportability fields evolve.
+- Action: extracted source-to-input assembly into `mandate_refresh_context` helpers (`build_digital_twin_source_context`, `build_health_input_source_context`) and switched refresh orchestration to spread those mapped kwargs into `compile_mandate_digital_twin_from_core` and `build_health_input_from_core_sources`.
+  Added focused tests that lock both helper payloads and public surface.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py`,
+  `python -m ruff format --check src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_refresh.py src/api/services/mandate_refresh_context.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_refresh.py tests/unit/dpm/mandates/test_mandate_refresh_context.py tests/unit/dpm/mandates/test_mandate_optional_sources.py -q`,
+  `make check`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal service orchestration refactor with behavior-preserving test coverage.
