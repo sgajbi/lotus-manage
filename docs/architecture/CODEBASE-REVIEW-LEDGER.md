@@ -12683,3 +12683,23 @@ and improves internal transaction-cost source posture maintainability only.
   behavior branches.
 - Wiki decision: no wiki source change required; this preserves mandate twin construction behavior and
   improves internal construction maintainability only.
+
+## BACKEND-REVIEW-20260604-515: Core portfolio-universe discovery service boundary
+
+- Date: 2026-06-04
+- Scope: `src/api/services/wave_core_portfolio_universe_resolution.py`, `src/api/routers/wave_core_portfolio_universe_resolution.py`,
+  `src/api/services/wave_errors.py`, `tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`.
+- Finding: `resolve_core_dpm_portfolio_universe_candidates` lived in a router module and mixed source paging logic, source-reference assembly, and HTTP dependency mapping.
+- Action: extracted discovery orchestration into a dedicated service, introduced service dependency errors
+  (`DpmWaveDependencyError`, `DpmWaveDependencyUnavailableError`, `DpmWaveDependencyFailedError`),
+  and left a thin router adapter to map domain failures into API responses.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/wave_core_portfolio_universe_resolution.py
+  src/api/services/wave_errors.py src/api/routers/wave_core_portfolio_universe_resolution.py
+  tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`, `python -m ruff format
+  --check` on touched files, `python -m mypy --config-file mypy.ini src/api/services/wave_core_portfolio_universe_resolution.py
+  src/api/services/wave_errors.py`, targeted pytest (`tests/unit/dpm/waves/test_wave_core_portfolio_universe_resolution_service.py`,
+  `tests/unit/dpm/api/test_waves_api.py -k core_universe`), `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `rg` service leakage scan (`from src.api.routers|HTTPException|status.HTTP` in `src/api/services`).
+- Wiki decision: no wiki source change required; this is an internal service-boundary improvement only.
