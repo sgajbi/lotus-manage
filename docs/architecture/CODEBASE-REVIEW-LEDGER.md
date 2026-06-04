@@ -14336,3 +14336,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal optional dependency
   capability-detection hardening.
+
+## BACKEND-REVIEW-20260604-589: Outcome proof-pack state mapping made explicit
+
+- Date: 2026-06-04
+- Scope: `src/core/outcomes/snapshots.py` and
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`.
+- Finding: expected outcome snapshot assembly used a local `type: ignore[return-value]` to return
+  proof-pack status strings as bounded outcome dimension states, obscuring the defensive fallback
+  for unknown status values.
+- Action: replaced the ignore with an explicit proof-pack-status-to-outcome-state mapping and
+  added direct coverage proving supported statuses are preserved while unknown values fail closed
+  to `BLOCKED`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal expected-outcome snapshot
+  maintainability hardening.
