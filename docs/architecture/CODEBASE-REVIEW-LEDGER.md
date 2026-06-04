@@ -14069,3 +14069,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal treasury source-context
   diagnostics refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-577: Transaction-cost point mapper exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_source_context.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_source_context.py`.
+- Finding: transaction-cost curve point mapping was private and only indirectly covered through
+  full transaction-cost context assembly, obscuring field-level payload preservation.
+- Action: exposed `transaction_cost_point`, reused it from the curve-context mapper, and added
+  direct coverage for source curve point payload fields plus bounded sample transaction ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_source_context.py tests/unit/dpm/construction/test_transaction_cost_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost source-context
+  mapper refactoring with direct helper tests.

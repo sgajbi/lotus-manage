@@ -2,6 +2,7 @@ from src.api.services import construction_transaction_cost_source_context
 from src.api.services.construction_transaction_cost_source_context import (
     transaction_cost_context_from_curve,
     transaction_cost_curve_points,
+    transaction_cost_point,
     transaction_cost_sample_transaction_ids,
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
@@ -14,6 +15,7 @@ def test_transaction_cost_source_context_exports_only_curve_mapper() -> None:
     assert construction_transaction_cost_source_context.__all__ == [
         "transaction_cost_context_from_curve",
         "transaction_cost_curve_points",
+        "transaction_cost_point",
         "transaction_cost_sample_transaction_ids",
     ]
 
@@ -39,6 +41,21 @@ def test_transaction_cost_curve_points_bounds_source_evidence() -> None:
     curve = curve.model_copy(update={"curve_points": curve.curve_points * 12})
 
     assert len(transaction_cost_curve_points(curve)) == 10
+
+
+def test_transaction_cost_point_preserves_curve_point_payload_and_bounds_samples() -> None:
+    point = transaction_cost_point(transaction_cost_curve_response().curve_points[0])
+
+    assert point.security_id == "EQ_A"
+    assert point.transaction_type == "BUY"
+    assert point.currency == "USD"
+    assert point.observation_count == 3
+    assert point.total_notional == 1000
+    assert point.total_cost == 2
+    assert point.average_cost_bps == 20
+    assert point.min_cost_bps == 15
+    assert point.max_cost_bps == 25
+    assert point.sample_transaction_ids == ["tx1", "tx2", "tx3", "tx4", "tx5"]
 
 
 def test_transaction_cost_context_preserves_core_curve_lineage_and_bounds_samples() -> None:

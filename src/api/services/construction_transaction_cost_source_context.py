@@ -25,7 +25,7 @@ def transaction_cost_curve_points(
     return curve.curve_points[:_MAX_TRANSACTION_COST_CURVE_POINTS]
 
 
-def _transaction_cost_point(
+def transaction_cost_point(
     point: DpmCoreTransactionCostCurvePoint,
 ) -> AuthoritativeTransactionCostPoint:
     return AuthoritativeTransactionCostPoint(
@@ -64,7 +64,7 @@ def transaction_cost_context_from_curve(
         returned_curve_point_count=curve.supportability.returned_curve_point_count,
         missing_security_ids=curve.supportability.missing_security_ids,
         curve_points=[
-            _transaction_cost_point(point) for point in transaction_cost_curve_points(curve)
+            transaction_cost_point(point) for point in transaction_cost_curve_points(curve)
         ],
         reason_codes=[curve.supportability.reason],
     )
@@ -73,5 +73,6 @@ def transaction_cost_context_from_curve(
 __all__ = [
     "transaction_cost_context_from_curve",
     "transaction_cost_curve_points",
+    "transaction_cost_point",
     "transaction_cost_sample_transaction_ids",
 ]
