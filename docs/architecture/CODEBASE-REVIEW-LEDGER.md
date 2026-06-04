@@ -13041,3 +13041,25 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal shared-service utility refactor.
+
+## BACKEND-REVIEW-20260604-533: Baseline quality artifact refresh and transport-layer service boundary hardening
+
+- Date: 2026-06-04
+- Scope: `quality/baseline_report.md`, `quality/complexity_report.md`, `quality/quality_scorecard.md`,
+  `quality/refactor_health_report.md`, `tests/unit/test_service_layer_architecture_boundaries.py`.
+- Finding: quality baselines were stale against current `origin/main` and service-boundary enforcement only guarded
+  FastAPI symbols on a narrow list, leaving a transport-framework import class unguarded in services.
+- Action: regenerated the enterprise baseline/scoring artifacts against current `HEAD` for a real post-merge measurement
+  baseline and hardened the architecture boundary test to ban all FastAPI/Starlette transport imports in service modules.
+  This prevents silent framework leakage while preserving existing domain/service-layer ownership.
+- Status: hardened
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m ruff check src/api/services tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m ruff format --check tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m mypy --config-file mypy.ini tests/unit/test_service_layer_architecture_boundaries.py`,
+  `python -m pytest tests/unit/test_service_layer_architecture_boundaries.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service-boundary leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal governance and architecture-hardening slice.
