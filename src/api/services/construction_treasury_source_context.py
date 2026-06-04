@@ -191,6 +191,25 @@ def treasury_source_identities(
     )
 
 
+def treasury_source_hash(
+    *,
+    hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
+    currency_exposure: DpmCoreExternalCurrencyExposureResponse | None,
+    hedge_policy: DpmCoreExternalHedgePolicyResponse | None,
+    eligible_hedge_instruments: DpmCoreExternalEligibleHedgeInstrumentResponse | None,
+    fx_forward_curve: DpmCoreExternalFXForwardCurveResponse | None,
+) -> str:
+    return hash_canonical_payload(
+        treasury_source_payloads(
+            hedge_readiness=hedge_readiness,
+            currency_exposure=currency_exposure,
+            hedge_policy=hedge_policy,
+            eligible_hedge_instruments=eligible_hedge_instruments,
+            fx_forward_curve=fx_forward_curve,
+        )
+    )
+
+
 def external_treasury_currency_overlay_context(
     *,
     hedge_readiness: DpmCoreExternalHedgeExecutionReadinessResponse | None,
@@ -209,14 +228,12 @@ def external_treasury_currency_overlay_context(
     if primary_supportability is None:
         return None
 
-    source_hash = hash_canonical_payload(
-        treasury_source_payloads(
-            hedge_readiness=hedge_readiness,
-            currency_exposure=currency_exposure,
-            hedge_policy=hedge_policy,
-            eligible_hedge_instruments=eligible_hedge_instruments,
-            fx_forward_curve=fx_forward_curve,
-        )
+    source_hash = treasury_source_hash(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=hedge_policy,
+        eligible_hedge_instruments=eligible_hedge_instruments,
+        fx_forward_curve=fx_forward_curve,
     )
 
     identities = treasury_source_identities(
@@ -328,6 +345,7 @@ __all__ = [
     "treasury_response_blocked_capabilities",
     "treasury_response_missing_data_families",
     "treasury_source_identities",
+    "treasury_source_hash",
     "treasury_source_identity_fields",
     "treasury_source_payload",
     "treasury_source_payloads",

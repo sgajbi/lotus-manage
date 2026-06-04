@@ -13,6 +13,7 @@ from src.api.services.construction_treasury_source_context import (
     treasury_response_blocked_capabilities,
     treasury_response_missing_data_families,
     treasury_source_identities,
+    treasury_source_hash,
     treasury_source_identity_fields,
     treasury_source_payload,
     treasury_source_payloads,
@@ -41,6 +42,7 @@ def test_treasury_source_context_exports_only_currency_overlay_mapper() -> None:
         "treasury_response_blocked_capabilities",
         "treasury_response_missing_data_families",
         "treasury_source_identities",
+        "treasury_source_hash",
         "treasury_source_identity_fields",
         "treasury_source_payload",
         "treasury_source_payloads",
@@ -88,6 +90,26 @@ def test_treasury_source_payloads_preserve_aggregate_hash_inputs() -> None:
     )
     assert payloads["external_hedge_policy"] is None
     assert hash_canonical_payload(payloads)
+
+
+def test_treasury_source_hash_uses_aggregate_source_payloads() -> None:
+    hedge_readiness = hedge_readiness_response()
+    currency_exposure = currency_exposure_response()
+    payloads = treasury_source_payloads(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    )
+
+    assert treasury_source_hash(
+        hedge_readiness=hedge_readiness,
+        currency_exposure=currency_exposure,
+        hedge_policy=None,
+        eligible_hedge_instruments=None,
+        fx_forward_curve=None,
+    ) == hash_canonical_payload(payloads)
 
 
 def test_primary_treasury_supportability_uses_first_available_source_family() -> None:
