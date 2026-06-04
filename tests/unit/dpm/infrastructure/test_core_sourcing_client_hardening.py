@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import httpx
 import pytest
 
@@ -6,7 +8,9 @@ from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverConfig,
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
+    _map_core_snapshot_row,
     _portfolio_snapshot_from_core_snapshot,
+    _portfolio_positions_and_cash_from_core_rows,
     _required_currency_pairs,
 )
 
@@ -231,6 +235,44 @@ def test_core_snapshot_transform_uses_reporting_currency_and_skips_blank_rows() 
     assert snapshot.base_currency == "EUR"
     assert [position.instrument_id for position in snapshot.positions] == ["EQ_EU"]
     assert snapshot.cash_balances[0].currency == "USD"
+
+
+def test_core_snapshot_row_mapper_returns_none_for_blank_identifier() -> None:
+    assert _map_core_snapshot_row({"quantity": "99"}, base_currency="USD") is None
+
+
+def test_core_snapshot_row_mapper_preserves_position_market_value_currency() -> None:
+    mapped_row = _map_core_snapshot_row(
+        {
+            "security_id": "EQ_US",
+            "quantity": "12.5",
+            "currency": "usd",
+            "market_value_local": "1234.56",
+        },
+        base_currency="SGD",
+    )
+
+    assert mapped_row is not None
+    assert mapped_row.position is not None
+    assert mapped_row.position.instrument_id == "EQ_US"
+    assert mapped_row.position.quantity == Decimal("12.5")
+    assert mapped_row.position.market_value is not None
+    assert mapped_row.position.market_value.amount == Decimal("1234.56")
+    assert mapped_row.position.market_value.currency == "USD"
+
+
+def test_core_snapshot_rows_aggregate_cash_by_currency() -> None:
+    positions, cash_by_currency = _portfolio_positions_and_cash_from_core_rows(
+        [
+            {"instrument_id": "CASH_USD", "quantity": "10", "currency": "USD"},
+            {"instrument_id": "CASH_USD_2", "quantity": "15", "currency": "USD"},
+            {"instrument_id": "EQ_EU", "quantity": "2", "currency": "EUR"},
+        ],
+        base_currency="SGD",
+    )
+
+    assert [position.instrument_id for position in positions] == ["EQ_EU"]
+    assert cash_by_currency == {"USD": Decimal("25")}
 
 
 def test_required_currency_pairs_ignores_base_currency_and_missing_market_values() -> None:

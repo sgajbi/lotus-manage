@@ -15316,3 +15316,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-630: Core snapshot row mapper helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Finding: `_portfolio_snapshot_from_core_snapshot` still combined base-currency resolution,
+  source-row identifier cleanup, blank-row filtering, cash aggregation, and position market-value
+  construction in one adapter mapper.
+- Action: introduced `_CoreSnapshotMappedRow`, `_core_snapshot_base_currency`,
+  `_core_snapshot_row_instrument_id`, `_map_core_snapshot_row`, and
+  `_portfolio_positions_and_cash_from_core_rows`. Kept `_portfolio_snapshot_from_core_snapshot`
+  as the payload-level orchestration boundary and added direct helper tests for blank identifiers,
+  position market-value currency preservation, and cash aggregation by currency.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal core-sourcing adapter
+  maintainability refactoring.
