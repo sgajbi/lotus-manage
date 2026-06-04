@@ -14635,3 +14635,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal API governance helper
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-601: Liquidity source child contexts extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_source_context.py` and
+  `tests/unit/dpm/construction/test_liquidity_source_context.py`.
+- Finding: `source_liquidity_context` still assembled cashflow, income-needs, liquidity-reserve,
+  and planned-withdrawal child contexts inline before constructing the source-owned liquidity
+  authority context, making source-family projection harder to verify independently.
+- Action: introduced `LiquiditySourceChildContexts` and `liquidity_source_child_contexts`, kept
+  `source_liquidity_context` as the family-level coordinator, and added direct tests for fully
+  populated and partially absent source-product child context bundles.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_source_context.py tests/unit/dpm/construction/test_liquidity_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_source_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction source-product
+  mapping maintainability refactoring.

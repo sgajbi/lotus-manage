@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import TypeAlias
 
@@ -36,6 +37,14 @@ _MANAGE_MINIMUM_CASH_WEIGHT = Decimal("0.02")
 _MANAGE_ALLOWED_LIQUIDITY_TIERS = ["L1", "L2", "L3"]
 _MANAGE_LIQUIDITY_POLICY_REASON = "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES"
 _CORE_LIQUIDITY_SOURCE_REASON = "CORE_LIQUIDITY_SOURCE_CONTEXT_PRESENT"
+
+
+@dataclass(frozen=True)
+class LiquiditySourceChildContexts:
+    cashflow_projection: AuthoritativeLiquidityCashflowProjection | None
+    client_income_needs_schedule: AuthoritativeClientIncomeNeedsSchedule | None
+    liquidity_reserve_requirement: AuthoritativeLiquidityReserveRequirement | None
+    planned_withdrawal_schedule: AuthoritativePlannedWithdrawalSchedule | None
 
 
 def source_liquidity_reason_codes(
@@ -153,6 +162,35 @@ def planned_withdrawal_schedule_context(
     )
 
 
+def liquidity_source_child_contexts(
+    *,
+    cashflow_projection: DpmCorePortfolioCashflowProjectionResponse | None,
+    income_needs: DpmCoreClientIncomeNeedsScheduleResponse | None,
+    reserve_requirement: DpmCoreLiquidityReserveRequirementResponse | None,
+    planned_withdrawals: DpmCorePlannedWithdrawalScheduleResponse | None,
+) -> LiquiditySourceChildContexts:
+    return LiquiditySourceChildContexts(
+        cashflow_projection=(
+            liquidity_cashflow_projection_context(cashflow_projection)
+            if cashflow_projection is not None
+            else None
+        ),
+        client_income_needs_schedule=(
+            client_income_needs_schedule_context(income_needs) if income_needs is not None else None
+        ),
+        liquidity_reserve_requirement=(
+            liquidity_reserve_requirement_context(reserve_requirement)
+            if reserve_requirement is not None
+            else None
+        ),
+        planned_withdrawal_schedule=(
+            planned_withdrawal_schedule_context(planned_withdrawals)
+            if planned_withdrawals is not None
+            else None
+        ),
+    )
+
+
 def source_liquidity_context(
     *,
     cashflow_projection: DpmCorePortfolioCashflowProjectionResponse | None,
@@ -168,23 +206,11 @@ def source_liquidity_context(
     ):
         return None
 
-    cashflow_context = (
-        liquidity_cashflow_projection_context(cashflow_projection)
-        if cashflow_projection is not None
-        else None
-    )
-    income_context = (
-        client_income_needs_schedule_context(income_needs) if income_needs is not None else None
-    )
-    reserve_context = (
-        liquidity_reserve_requirement_context(reserve_requirement)
-        if reserve_requirement is not None
-        else None
-    )
-    withdrawal_context = (
-        planned_withdrawal_schedule_context(planned_withdrawals)
-        if planned_withdrawals is not None
-        else None
+    child_contexts = liquidity_source_child_contexts(
+        cashflow_projection=cashflow_projection,
+        income_needs=income_needs,
+        reserve_requirement=reserve_requirement,
+        planned_withdrawals=planned_withdrawals,
     )
 
     return AuthoritativeLiquidityContext(
@@ -193,22 +219,24 @@ def source_liquidity_context(
         policy_id=_MANAGE_LIQUIDITY_POLICY_ID,
         minimum_cash_weight=_MANAGE_MINIMUM_CASH_WEIGHT,
         allowed_liquidity_tiers=_MANAGE_ALLOWED_LIQUIDITY_TIERS,
-        cashflow_projection=cashflow_context,
-        client_income_needs_schedule=income_context,
-        liquidity_reserve_requirement=reserve_context,
-        planned_withdrawal_schedule=withdrawal_context,
+        cashflow_projection=child_contexts.cashflow_projection,
+        client_income_needs_schedule=child_contexts.client_income_needs_schedule,
+        liquidity_reserve_requirement=child_contexts.liquidity_reserve_requirement,
+        planned_withdrawal_schedule=child_contexts.planned_withdrawal_schedule,
         reason_codes=source_liquidity_reason_codes(
-            has_income_needs=income_context is not None,
-            has_reserve_requirement=reserve_context is not None,
-            has_planned_withdrawals=withdrawal_context is not None,
+            has_income_needs=child_contexts.client_income_needs_schedule is not None,
+            has_reserve_requirement=child_contexts.liquidity_reserve_requirement is not None,
+            has_planned_withdrawals=child_contexts.planned_withdrawal_schedule is not None,
         ),
     )
 
 
 __all__ = [
+    "LiquiditySourceChildContexts",
     "LiquiditySourceResponse",
     "client_income_needs_schedule_context",
     "liquidity_cashflow_projection_context",
+    "liquidity_source_child_contexts",
     "liquidity_source_identity_fields",
     "liquidity_reserve_requirement_context",
     "planned_withdrawal_schedule_context",
