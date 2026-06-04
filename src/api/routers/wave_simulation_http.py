@@ -8,10 +8,10 @@ from src.api.routers.wave_http_errors import (
 from src.api.routers.wave_request_models import DpmWaveSimulationRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse, wave_response
 from src.api.services import wave_service
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmWaveRepository
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def build_wave_simulation_item_inputs(
@@ -38,7 +38,7 @@ def simulate_wave_response(
     construction_repository: ConstructionRepository,
     run_service: DpmRunSupportService,
     wave_repository: DpmWaveRepository,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
 ) -> DpmWaveResponse:
     try:
         wave, replayed = wave_service.simulate_wave(

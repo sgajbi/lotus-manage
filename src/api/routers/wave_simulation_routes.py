@@ -12,10 +12,10 @@ from src.api.routers.wave_request_models import DpmWaveSimulationRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse
 from src.api.routers.wave_route_parameters import WaveCorrelationIdHeader, WaveIdPath
 from src.api.routers.wave_simulation_http import simulate_wave_response
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
 from src.core.waves import DpmWaveRepository
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 router = APIRouter()
@@ -45,7 +45,7 @@ def simulate_wave(
     request: DpmWaveSimulationRequest,
     x_correlation_id: WaveCorrelationIdHeader = None,
     construction_repository: ConstructionRepository = Depends(get_construction_repository),
-    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+    risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
 ) -> DpmWaveResponse:

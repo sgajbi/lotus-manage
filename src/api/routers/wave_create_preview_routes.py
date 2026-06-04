@@ -20,13 +20,15 @@ from src.api.routers.wave_route_parameters import (
     WaveCreateIdempotencyKeyHeader,
 )
 from src.api.services.core_resolver_service import build_core_resolver_client
+from src.api.services.authority_client_service import (
+    AdviseAuthorityClient,
+    RiskAuthorityClient,
+)
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import (
     DpmBulkReviewCampaignDefinitionRepository,
     DpmWaveRepository,
 )
-from src.infrastructure.advise_authority import LotusAdviseAuthorityClient
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 def register_wave_create_preview_routes(
@@ -86,10 +88,10 @@ def register_wave_create_preview_routes(
         request: DpmWavePreviewRequest,
         x_correlation_id: WaveCorrelationIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
-        advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
+        advise_authority_client: AdviseAuthorityClient | None = Depends(
             get_advise_authority_client
         ),
-        risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+        risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
         campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
             get_campaign_definition_repository
         ),
@@ -167,10 +169,10 @@ def register_wave_create_preview_routes(
         x_correlation_id: WaveCorrelationIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
         wave_repository: DpmWaveRepository = Depends(get_wave_repository),
-        advise_authority_client: LotusAdviseAuthorityClient | None = Depends(
+        advise_authority_client: AdviseAuthorityClient | None = Depends(
             get_advise_authority_client
         ),
-        risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+        risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
         campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
             get_campaign_definition_repository
         ),

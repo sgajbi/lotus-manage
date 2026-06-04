@@ -19,10 +19,10 @@ from src.api.routers.rebalance_simulation_http import rebalance_envelope_http_ex
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
 from src.api.services import construction_service
 from src.api.services import rebalance_simulation_service
+from src.api.services.authority_client_service import RiskAuthorityClient
 from src.core.construction.models import ConstructionAlternativeSet
 from src.core.construction.repository import ConstructionRepository
 from src.core.rebalance_runs.service import DpmRunSupportService
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
 
 
 @router.post(
@@ -63,7 +63,7 @@ def generate_alternative_set(
         ),
     ] = None,
     repository: ConstructionRepository = Depends(get_construction_repository),
-    risk_authority_client: LotusRiskAuthorityClient | None = Depends(get_risk_authority_client),
+    risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
     run_service: DpmRunSupportService = Depends(get_dpm_run_support_service),
     db: Annotated[None, Depends(get_db_session)] = None,
 ) -> ConstructionAlternativeSet:

@@ -35,13 +35,11 @@ from src.api.routers.wave_tactical_candidate_selection import (
 )
 from src.api.services import wave_service
 from src.core.waves import DpmBulkReviewCampaignDefinitionRepository
-from src.infrastructure.advise_authority import (
-    LotusAdviseAuthorityClient,
-    LotusAdviseAuthorityUnavailableError,
-)
-from src.infrastructure.risk_authority import (
-    LotusRiskAuthorityClient,
-    LotusRiskAuthorityUnavailableError,
+from src.api.services.authority_client_service import (
+    AdviseAuthorityClient,
+    AdviseAuthorityUnavailableError,
+    RiskAuthorityClient,
+    RiskAuthorityUnavailableError,
 )
 
 
@@ -49,8 +47,8 @@ def resolve_portfolio_inputs_for_request(
     *,
     request: DpmWavePreviewRequest,
     correlation_id: str,
-    advise_authority_client: LotusAdviseAuthorityClient | None,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    advise_authority_client: AdviseAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     core_resolver_factory: Callable[[], object],
 ) -> list[dict[str, object]]:
@@ -97,7 +95,7 @@ def _resolve_tactical_house_view_portfolios(
     *,
     request: DpmWavePreviewRequest,
     correlation_id: str,
-    advise_authority_client: LotusAdviseAuthorityClient | None,
+    advise_authority_client: AdviseAuthorityClient | None,
 ) -> list[dict[str, object]]:
     tactical_view = request.tactical_house_view
     if tactical_view is None:
@@ -150,7 +148,7 @@ def _resolve_tactical_house_view_portfolios(
             ),
             correlation_id=correlation_id,
         )
-    except LotusAdviseAuthorityUnavailableError as exc:
+    except AdviseAuthorityUnavailableError as exc:
         raise source_authority_unavailable_http_exception(
             exc,
             default_code="DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
@@ -178,7 +176,7 @@ def _resolve_risk_event_portfolios(
     *,
     request: DpmWavePreviewRequest,
     correlation_id: str,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
 ) -> list[dict[str, object]]:
     risk_event_id = normalize_required_text(
         request.risk_event_id,
@@ -207,7 +205,7 @@ def _resolve_risk_event_portfolios(
             minimum_impact_score=Decimal(str(request.minimum_impact_score)),
             correlation_id=correlation_id,
         )
-    except LotusRiskAuthorityUnavailableError as exc:
+    except RiskAuthorityUnavailableError as exc:
         raise source_authority_unavailable_http_exception(
             exc,
             default_code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",
