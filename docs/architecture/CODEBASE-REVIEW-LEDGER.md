@@ -12726,3 +12726,24 @@ and improves internal transaction-cost source posture maintainability only.
   `rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`,
   `git diff --check`.
 - Wiki decision: no wiki source change required; slice is repository-local quality governance scaffolding.
+
+## BACKEND-REVIEW-20260604-517: Wave authority client boundary aliases routed through services
+
+- Date: 2026-06-04
+- Scope: `src/api/services/authority_client_service.py`, `src/api/routers/construction_generate_routes.py`,
+  `src/api/routers/wave_simulation_routes.py`, `src/api/routers/wave_simulation_http.py`,
+  `src/api/routers/wave_create_preview_routes.py`, `src/api/routers/wave_create_preview_http.py`,
+  `src/api/routers/wave_portfolio_resolution.py`.
+- Finding: wave construction/simulation and portfolio-resolution routers imported concrete authority client and
+  unavailable-error types directly from infrastructure modules, creating brittle route-level coupling.
+- Action: introduced a dedicated authority-client service alias module and migrated wave router signatures and
+  exception catch points to these service aliases, preserving behavior while reducing infrastructure coupling at
+  router boundaries.
+- Status: hardened
+- Evidence: `python -m ruff check` on touched files, `python -m ruff format --check` on touched files,
+  `python -m mypy --config-file mypy.ini` on touched files, `python -m pytest tests/unit/api/test_wave_source_dependency_http.py
+  tests/unit/api/test_wave_http_errors.py tests/unit/dpm/api/test_waves_api.py`, `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`, `python -m ruff format` touched files, `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP"`
+  `src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal service-boundary refactor.

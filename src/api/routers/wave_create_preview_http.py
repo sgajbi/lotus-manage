@@ -9,8 +9,10 @@ from src.api.routers.wave_response_contracts import DpmWaveResponse, wave_respon
 from src.api.services import wave_service
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import DpmBulkReviewCampaignDefinitionRepository, DpmWaveRepository
-from src.infrastructure.advise_authority import LotusAdviseAuthorityClient
-from src.infrastructure.risk_authority import LotusRiskAuthorityClient
+from src.api.services.authority_client_service import (
+    AdviseAuthorityClient,
+    RiskAuthorityClient,
+)
 
 
 def preview_wave_response(
@@ -18,8 +20,8 @@ def preview_wave_response(
     request: DpmWavePreviewRequest,
     correlation_id: str,
     mandate_repository: DpmMandateRepository,
-    advise_authority_client: LotusAdviseAuthorityClient | None,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    advise_authority_client: AdviseAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     core_resolver_factory: Callable[[], object],
 ) -> DpmWaveResponse:
@@ -54,8 +56,8 @@ def create_wave_response(
     correlation_id: str,
     mandate_repository: DpmMandateRepository,
     wave_repository: DpmWaveRepository,
-    advise_authority_client: LotusAdviseAuthorityClient | None,
-    risk_authority_client: LotusRiskAuthorityClient | None,
+    advise_authority_client: AdviseAuthorityClient | None,
+    risk_authority_client: RiskAuthorityClient | None,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     core_resolver_factory: Callable[[], object],
 ) -> DpmWaveResponse:
