@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T16:11:58+00:00`
+- Generated at: `2026-06-04T16:18:13+00:00`
 
-- Current ref: `e31faaea`
+- Current ref: `b444ee84`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | evaluate | src/core/compliance.py | 15 | 171 |
-| 2 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
-| 3 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
-| 4 | build_simulated_state | src/core/valuation.py | 15 | 118 |
-| 5 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
-| 6 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
-| 7 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
-| 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
-| 9 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
-| 10 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 15 | 144 |
+| 2 | _build_proof_pack | src/core/proof_packs/builder.py | 15 | 136 |
+| 3 | build_simulated_state | src/core/valuation.py | 15 | 118 |
+| 4 | resolve_core_dpm_portfolio_universe_candidates | src/api/services/wave_core_portfolio_universe_resolution.py | 15 | 101 |
+| 5 | build_settlement_ladder | src/core/rebalance/execution.py | 15 | 80 |
+| 6 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 15 | 68 |
+| 7 | generate_targets_heuristic | src/core/rebalance/targets.py | 15 | 63 |
+| 8 | _portfolio_snapshot_from_core_snapshot | src/infrastructure/core_sourcing/client.py | 15 | 46 |
+| 9 | _validate_superseded_lifecycle | src/core/waves/campaign_definitions.py | 15 | 23 |
+| 10 | external_treasury_currency_overlay_context | src/api/services/construction_treasury_source_context.py | 14 | 121 |
 
 ### Most Complex Current Test Functions
 
