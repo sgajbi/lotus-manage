@@ -1,8 +1,11 @@
 from src.api.services.construction_liquidity_supportability import (
+    cashflow_projection_status,
     derive_liquidity_context,
     liquidity_reason_codes,
     liquidity_status,
+    post_trade_cash_weight,
 )
+from src.api.services.construction_liquidity_source_context import source_liquidity_context
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import EngineOptions, RebalanceResult
 from src.core.rebalance.engine import run_simulation
@@ -15,6 +18,9 @@ from tests.shared.factories import (
     price,
     shelf_entry,
     target,
+)
+from tests.unit.dpm.construction.source_product_context_fixtures import (
+    cashflow_projection_response,
 )
 
 
@@ -59,4 +65,26 @@ def test_liquidity_supportability_uses_manage_settlement_policy_context() -> Non
     assert "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES" in liquidity_reason_codes(
         result=result,
         context=context,
+    )
+
+
+def test_cashflow_projection_status_degrades_when_projection_rows_are_excluded() -> None:
+    result = _trade_result()
+    source_context = source_liquidity_context(
+        cashflow_projection=cashflow_projection_response().model_copy(
+            update={"include_projected": False}
+        ),
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert source_context is not None
+    assert (
+        cashflow_projection_status(
+            result=result,
+            context=source_context,
+            cash_weight=post_trade_cash_weight(result=result),
+        )
+        == ConstructionMethodStatus.DEGRADED
     )

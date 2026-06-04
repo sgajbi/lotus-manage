@@ -19,8 +19,24 @@ def liquidity_status(
     cash_weight = post_trade_cash_weight(result=result)
     if cash_weight is not None and cash_weight < context.minimum_cash_weight:
         status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
-    if context.cashflow_projection is None:
+    cashflow_status = cashflow_projection_status(
+        result=result,
+        context=context,
+        cash_weight=cash_weight,
+    )
+    if cashflow_status is None:
         return status
+    return lowest_construction_status([status, cashflow_status])
+
+
+def cashflow_projection_status(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext,
+    cash_weight: Decimal | None,
+) -> ConstructionMethodStatus | None:
+    if context.cashflow_projection is None:
+        return None
     cashflow_status = context.cashflow_projection.data_quality_status
     if not context.cashflow_projection.include_projected:
         cashflow_status = lowest_construction_status(
@@ -46,7 +62,7 @@ def liquidity_status(
             cashflow_status = lowest_construction_status(
                 [cashflow_status, ConstructionMethodStatus.PENDING_REVIEW]
             )
-    return lowest_construction_status([status, cashflow_status])
+    return cashflow_status
 
 
 def liquidity_reason_codes(
@@ -128,6 +144,7 @@ def derive_liquidity_context(*, result: RebalanceResult) -> AuthoritativeLiquidi
 
 __all__ = [
     "cashflow_projection_reason_codes",
+    "cashflow_projection_status",
     "derive_liquidity_context",
     "liquidity_reason_codes",
     "liquidity_status",

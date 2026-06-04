@@ -13390,3 +13390,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal quality-measurement governance
   hardening and scorecard refresh.
+
+## BACKEND-REVIEW-20260604-548: Liquidity cashflow projection status helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Finding: liquidity supportability status calculation embedded source-owned cashflow projection
+  status policy inside the broader liquidity policy status function, making projected-row,
+  currency, total-value, and adjusted-cash posture harder to test independently.
+- Action: extracted `cashflow_projection_status` and reused it from `liquidity_status`. Added a
+  direct source-shaped test proving excluded projected rows degrade the cashflow projection posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction liquidity
+  supportability refactoring with direct source-context tests.
