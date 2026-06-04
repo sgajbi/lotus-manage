@@ -12978,3 +12978,20 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`, and service-boundary leakage scan
   (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal API runtime hardening slice.
+
+## BACKEND-REVIEW-20260604-529: Centralize construction profile-source context updates
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_source_product_context.py`.
+- Finding: profile-context source assembly logic was manually duplicated in `source_product_authority_context_updates` while
+  `construction_source_product_profile_context.source_profile_context_updates` already provided that orchestration.
+- Action: switched `source_product_authority_context_updates` to reuse the shared helper, reducing duplication and ensuring all profile
+  source families flow through one compositional path while preserving existing guard semantics.
+- Status: hardened
+- Evidence: `python -m ruff check src/api/services/construction_source_product_context.py`,
+  `python -m ruff format --check src/api/services/construction_source_product_context.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_source_product_context.py`,
+  `python -m pytest tests/unit/dpm/construction/test_source_product_context.py -q`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  and `git diff --check`.
+- Wiki decision: no wiki source change required; this is an internal service composition refactor.

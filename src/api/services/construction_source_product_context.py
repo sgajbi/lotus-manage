@@ -10,24 +10,12 @@ def source_product_authority_context_updates(
     authority_context: ConstructionAuthorityContext,
 ) -> dict[str, object]:
     context_updates: dict[str, object] = {}
-    profile_updates = (
-        construction_source_product_profile_context.liquidity_context_update(
+    context_updates.update(
+        construction_source_product_profile_context.source_profile_context_updates(
             source_context=source_context,
             authority_context=authority_context,
-        ),
-        construction_source_product_profile_context.client_restriction_profile_context_update(
-            source_context=source_context,
-            authority_context=authority_context,
-        ),
-        construction_source_product_profile_context.sustainability_preference_profile_context_update(
-            source_context=source_context,
-            authority_context=authority_context,
-        ),
+        )
     )
-    for update in (*profile_updates,):
-        if update is not None:
-            context_key, context_value = update
-            context_updates[context_key] = context_value
     for (
         context_key,
         context_value,
