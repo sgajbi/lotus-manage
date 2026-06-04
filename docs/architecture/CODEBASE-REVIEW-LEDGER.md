@@ -13437,3 +13437,27 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction transaction-cost
   supportability refactoring with direct coverage tests.
+
+## BACKEND-REVIEW-20260604-550: Currency-overlay source projection helpers extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`.
+- Finding: currency-overlay supportability embedded required FX-pair, available FX-pair, and
+  non-base simulated position currency projection inline, making FX supportability inputs less
+  inspectable.
+- Action: extracted `available_fx_pairs`, `required_currency_overlay_pairs`, and
+  `non_base_position_currencies`, reused them from missing-pair and derived-context assembly, and
+  added direct tests for pair coverage and derived eligible currency posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_currency_overlay_supportability.py tests/unit/dpm/construction/test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_currency_overlay_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_currency_overlay_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction currency-overlay
+  supportability refactoring with direct source projection tests.
