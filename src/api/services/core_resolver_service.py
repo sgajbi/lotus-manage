@@ -42,6 +42,9 @@ def stateful_core_sourcing_enabled() -> bool:
     return env_flag("DPM_STATEFUL_CORE_SOURCING_ENABLED", False)
 
 
+CoreResolverClient = DpmCoreResolverClient
+
+
 def build_core_resolver_client() -> DpmCoreResolverClient:
     base_url = os.getenv("DPM_CORE_BASE_URL", "").strip()
     if not base_url:

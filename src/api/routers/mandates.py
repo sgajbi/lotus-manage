@@ -4,13 +4,13 @@ from fastapi import APIRouter
 
 from src.api.routers.route_registration import register_route_modules
 from src.api.services.core_resolver_service import build_core_resolver_client
-from src.infrastructure.core_sourcing import DpmCoreResolverClient
+from src.api.services.core_resolver_service import CoreResolverClient
 
 
 router = APIRouter(prefix="/mandates", tags=["lotus-manage Mandates"])
 
 
-def get_core_resolver_client() -> DpmCoreResolverClient:
+def get_core_resolver_client() -> CoreResolverClient:
     return build_core_resolver_client()
 
 
