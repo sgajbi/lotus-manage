@@ -8,6 +8,7 @@ from src.api.services.construction_supportability_application import (
     authority_context_status,
     method_enrichment_statuses,
     supportability_diagnostics,
+    supportability_status,
 )
 from src.core.construction.enrichment import summarize_enrichment_posture
 from src.core.construction import build_rebalance_result_alternative
@@ -455,4 +456,43 @@ def test_method_enrichment_statuses_empty_for_method_without_overlay() -> None:
             enrichment=enrichment,
         )
         == []
+    )
+
+
+def test_supportability_status_uses_lowest_method_and_authority_status() -> None:
+    request = _request()
+    result = _trade_result()
+    authority_context = ConstructionAuthorityContext(
+        currency_overlay_context=_blocked_currency_context()
+    )
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+    alternative = build_rebalance_result_alternative(
+        result=result,
+        method=ConstructionMethod.CURRENCY_OVERLAY,
+        alternative_id="alt_currency_overlay",
+    )
+
+    assert (
+        supportability_status(
+            request=request,
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            alternative=alternative,
+            result=result,
+            plan=resolve_method_plan(
+                ConstructionMethod.CURRENCY_OVERLAY,
+                solver_available=True,
+            ),
+            enrichment=enrichment,
+            authority_context=authority_context,
+        )
+        == ConstructionMethodStatus.BLOCKED
     )

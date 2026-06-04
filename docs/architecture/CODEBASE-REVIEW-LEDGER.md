@@ -13978,3 +13978,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction supportability
   enrichment-status refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-573: Supportability status aggregator exposed
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: aggregate method supportability status calculation was hidden behind a private helper
+  and only indirectly covered through full construction alternative enrichment.
+- Action: exposed `supportability_status`, reused it from `apply_construction_supportability`,
+  and added direct coverage proving authority-context overlays participate in the lowest-status
+  rollup.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  status aggregation refactoring with direct tests.

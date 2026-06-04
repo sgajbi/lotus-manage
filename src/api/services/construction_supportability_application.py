@@ -66,7 +66,7 @@ def apply_construction_supportability(
         result=result,
         authority_context=authority_context,
     )
-    status = _supportability_status(
+    status = supportability_status(
         request=request,
         method=method,
         alternative=alternative,
@@ -114,7 +114,7 @@ def supportability_diagnostics(
     }
 
 
-def _supportability_status(
+def supportability_status(
     *,
     request: RebalanceRequest,
     method: ConstructionMethod,
@@ -191,4 +191,5 @@ __all__ = [
     "authority_context_status",
     "method_enrichment_statuses",
     "supportability_diagnostics",
+    "supportability_status",
 ]
