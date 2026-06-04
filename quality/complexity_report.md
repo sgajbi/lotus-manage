@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T23:22:24+00:00`
+- Generated at: `2026-06-04T23:26:32+00:00`
 
-- Current ref: `37b619f0`
+- Current ref: `92082623`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | apply_group_constraints | src/core/rebalance/targets.py | 14 | 87 |
-| 2 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
-| 3 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
-| 4 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
-| 5 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
-| 6 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
-| 7 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
-| 8 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
-| 9 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
-| 10 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
+| 1 | _pre_run_section_payload | src/core/proof_packs/builder.py | 14 | 80 |
+| 2 | build_universe | src/core/rebalance/universe.py | 14 | 78 |
+| 3 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 14 | 50 |
+| 4 | _transitioned_task | src/core/waves/campaign_assignment_tasks.py | 13 | 61 |
+| 5 | record_bulk_review_campaign_definition_assignment_action | src/core/waves/campaign_assignment_actions.py | 13 | 55 |
+| 6 | purge_expired_runs | src/infrastructure/rebalance_runs/in_memory.py | 13 | 50 |
+| 7 | _example_from_schema | src/api/openapi_enrichment.py | 13 | 46 |
+| 8 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 13 | 44 |
+| 9 | _portfolio_memory_search_item | src/core/portfolio_memory/search_page.py | 13 | 43 |
+| 10 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 13 | 37 |
 
 ### Most Complex Current Test Functions
 
