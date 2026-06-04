@@ -1,6 +1,6 @@
 from copy import deepcopy
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from src.core.common.intent_dependencies import link_buy_intent_dependencies
 from src.core.common.simulation_shared import (
@@ -29,6 +29,15 @@ from src.core.models import (
     ValuationMode,
 )
 from src.core.valuation import build_simulated_state, get_fx_rate
+
+_ExecutionSimulationStatus: TypeAlias = Literal["READY", "BLOCKED", "PENDING_REVIEW"]
+_ExecutionSimulationResult: TypeAlias = tuple[
+    list[OrderIntent],
+    SimulatedState | PortfolioSnapshot,
+    list[RuleResult],
+    _ExecutionSimulationStatus,
+    Reconciliation | None,
+]
 
 
 def build_settlement_ladder(
@@ -318,6 +327,65 @@ def _append_projected_cash_fx_intents(
     return False, fx_intent_id_by_currency
 
 
+def _settlement_blocked_simulation_result(
+    *,
+    portfolio: PortfolioSnapshot,
+    market_data: MarketDataSnapshot,
+    shelf: list[ShelfEntry],
+    intents: list[OrderIntent],
+    options: EngineOptions,
+    diagnostics: DiagnosticsData,
+) -> _ExecutionSimulationResult:
+    first_breach = diagnostics.cash_ladder_breaches[0]
+    diagnostics.warnings.append(first_breach.reason_code)
+
+    blocked_state = build_simulated_state(
+        deepcopy(portfolio),
+        market_data,
+        shelf,
+        diagnostics.data_quality,
+        diagnostics.warnings,
+        options,
+    )
+    blocked_rules = [
+        RuleResult(
+            rule_id="SETTLEMENT_CASH_LADDER",
+            severity="HARD",
+            status="FAIL",
+            measured=first_breach.allowed_floor - first_breach.projected_balance,
+            threshold={"min": first_breach.allowed_floor},
+            reason_code=first_breach.reason_code,
+            remediation_hint="Adjust timing, funding, or overdraft settings.",
+        )
+    ]
+    return intents, blocked_state, blocked_rules, "BLOCKED", None
+
+
+def _apply_execution_intents(
+    *,
+    portfolio: PortfolioSnapshot,
+    intents: list[OrderIntent],
+) -> PortfolioSnapshot:
+    after = deepcopy(portfolio)
+
+    for intent in intents:
+        if intent.intent_type == "SECURITY_TRADE":
+            apply_security_trade_to_portfolio(after, intent)
+        elif intent.intent_type == "FX_SPOT":
+            apply_fx_spot_to_portfolio(after, intent)
+
+    return after
+
+
+def _after_simulation_options(options: EngineOptions) -> EngineOptions:
+    after_valuation_mode = (
+        ValuationMode.TRUST_SNAPSHOT
+        if options.valuation_mode == ValuationMode.TRUST_SNAPSHOT
+        else ValuationMode.CALCULATED
+    )
+    return options.model_copy(update={"valuation_mode": after_valuation_mode})
+
+
 def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -326,13 +394,7 @@ def generate_fx_and_simulate(
     options: EngineOptions,
     total_val_before: Decimal,
     diagnostics: DiagnosticsData,
-) -> tuple[
-    list[OrderIntent],
-    SimulatedState | PortfolioSnapshot,
-    list[RuleResult],
-    Literal["READY", "BLOCKED", "PENDING_REVIEW"],
-    Reconciliation | None,
-]:
+) -> _ExecutionSimulationResult:
     """
     Applies intents, generates FX, checks Safety Guards, and computes Reconciliation.
     """
@@ -360,44 +422,20 @@ def generate_fx_and_simulate(
     if options.enable_settlement_awareness:
         build_settlement_ladder(portfolio, shelf, intents, options, diagnostics)
         if diagnostics.cash_ladder_breaches:
-            first_breach = diagnostics.cash_ladder_breaches[0]
-            diagnostics.warnings.append(first_breach.reason_code)
-
-            blocked_state = build_simulated_state(
-                deepcopy(portfolio),
-                market_data,
-                shelf,
-                diagnostics.data_quality,
-                diagnostics.warnings,
-                options,
+            return _settlement_blocked_simulation_result(
+                portfolio=portfolio,
+                market_data=market_data,
+                shelf=shelf,
+                intents=intents,
+                options=options,
+                diagnostics=diagnostics,
             )
-            blocked_rules = [
-                RuleResult(
-                    rule_id="SETTLEMENT_CASH_LADDER",
-                    severity="HARD",
-                    status="FAIL",
-                    measured=first_breach.allowed_floor - first_breach.projected_balance,
-                    threshold={"min": first_breach.allowed_floor},
-                    reason_code=first_breach.reason_code,
-                    remediation_hint="Adjust timing, funding, or overdraft settings.",
-                )
-            ]
-            return intents, blocked_state, blocked_rules, "BLOCKED", None
 
-    after = deepcopy(portfolio)
-
-    for i in intents:
-        if i.intent_type == "SECURITY_TRADE":
-            apply_security_trade_to_portfolio(after, i)
-        elif i.intent_type == "FX_SPOT":
-            apply_fx_spot_to_portfolio(after, i)
-
-    after_valuation_mode = (
-        ValuationMode.TRUST_SNAPSHOT
-        if options.valuation_mode == ValuationMode.TRUST_SNAPSHOT
-        else ValuationMode.CALCULATED
+    after = _apply_execution_intents(
+        portfolio=portfolio,
+        intents=intents,
     )
-    after_opts = options.model_copy(update={"valuation_mode": after_valuation_mode})
+    after_opts = _after_simulation_options(options)
     state = build_simulated_state(
         after, market_data, shelf, diagnostics.data_quality, diagnostics.warnings, after_opts
     )

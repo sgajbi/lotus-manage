@@ -15461,3 +15461,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-636: Execution simulation helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Finding: `generate_fx_and_simulate` remained the top current source-complexity hotspot and still
+  mixed execution orchestration with settlement-blocked result assembly, intent application, and
+  post-simulation valuation-mode selection.
+- Action: introduced explicit execution simulation result/status aliases plus focused helpers for
+  settlement-blocked result construction, immutable intent application over a portfolio copy, and
+  after-simulation valuation options. Kept `generate_fx_and_simulate` as the orchestration boundary
+  over FX generation, settlement awareness, simulation, rules, reconciliation, and readiness
+  status. Added direct helper tests for settlement-blocked rule/warning projection, FX intent
+  application without mutating the source portfolio, and trust-snapshot valuation preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal execution simulation
+  maintainability refactoring.
