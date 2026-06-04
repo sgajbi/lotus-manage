@@ -14828,3 +14828,24 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal solver target-generation
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260604-609: Solver refactor quality reports refreshed
+
+- Date: 2026-06-04
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: the quality reports still pointed at `226d8694`, before the two solver target-generation
+  helper extractions, so the before/after scorecard did not show the latest maintainability
+  improvement.
+- Action: regenerated current-state refactor reports after the solver target-universe and
+  group-member helper extractions. Preserved `quality/baseline_report.md` so the original baseline
+  remains stable.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
