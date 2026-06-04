@@ -93,7 +93,6 @@ def build_core_resolver_client() -> DpmCoreResolverClient:
 
 
 __all__ = [
-    "CoreResolverClient",
     "build_core_resolver_client",
     "env_float",
     "env_flag",
