@@ -49,7 +49,7 @@ def violated_client_restrictions(
     result: RebalanceResult,
     context: AuthoritativeClientRestrictionContext,
 ) -> list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]]:
-    shelf_by_instrument = {entry.instrument_id: entry for entry in request.shelf_entries}
+    shelf_by_instrument = shelf_entries_by_instrument(request=request)
     violations: list[tuple[SecurityTradeIntent, AuthoritativeClientRestrictionRule]] = []
     for intent in result.intents:
         if not isinstance(intent, SecurityTradeIntent):
@@ -65,6 +65,10 @@ def violated_client_restrictions(
             ):
                 violations.append((intent, restriction))
     return violations
+
+
+def shelf_entries_by_instrument(*, request: RebalanceRequest) -> dict[str, ShelfEntry]:
+    return {entry.instrument_id: entry for entry in request.shelf_entries}
 
 
 def active_applicable_restrictions(
@@ -114,5 +118,6 @@ __all__ = [
     "client_restriction_reason_codes",
     "client_restriction_status",
     "restriction_matches_intent",
+    "shelf_entries_by_instrument",
     "violated_client_restrictions",
 ]

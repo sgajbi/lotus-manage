@@ -4,6 +4,7 @@ from src.api.services.construction_client_restriction_supportability import (
     client_restriction_reason_codes,
     client_restriction_status,
     restriction_matches_intent,
+    shelf_entries_by_instrument,
 )
 from src.core.construction.models import (
     AuthoritativeClientRestrictionContext,
@@ -183,6 +184,13 @@ def test_active_applicable_restrictions_filter_status_and_trade_side() -> None:
 
     assert [restriction.restriction_code for restriction in buy_restrictions] == ["ACTIVE_BUY"]
     assert [restriction.restriction_code for restriction in sell_restrictions] == ["ACTIVE_SELL"]
+
+
+def test_shelf_entries_by_instrument_indexes_request_shelf_entries() -> None:
+    entries_by_instrument = shelf_entries_by_instrument(request=_request())
+
+    assert entries_by_instrument["EQ_B"].issuer_id == "ISSUER_TECH"
+    assert entries_by_instrument["EQ_B"].attributes["country_of_risk"] == "US"
 
 
 def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> None:
