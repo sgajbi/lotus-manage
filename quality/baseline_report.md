@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-04T08:40:33+00:00`
+- Generated at: `2026-06-04T12:23:10+00:00`
 
-- Baseline commit: `639a37a`
+- Baseline commit: `e2398635`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -10,9 +10,9 @@
 
 | Metric | Value |
 | --- | --- |
-| Python files | 790 |
-| Total Python LOC | 150689 |
-| Test functions | 1992 |
+| Python files | 793 |
+| Total Python LOC | 152206 |
+| Test functions | 2027 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 

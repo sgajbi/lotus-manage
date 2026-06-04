@@ -13362,3 +13362,31 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction lineage assembly
   refactoring with direct helper tests.
+
+## BACKEND-REVIEW-20260604-547: Quality report generator preserves service transport boundary
+
+- Date: 2026-06-04
+- Scope: `scripts/engineering_health_report.py`, `quality/architecture_rules.md`,
+  `quality/baseline_report.md`, `quality/complexity_report.md`,
+  `quality/quality_scorecard.md`, `quality/refactor_health_report.md`,
+  `tests/unit/test_engineering_health_report.py`.
+- Finding: refreshing the enterprise quality artifacts showed that
+  `scripts/engineering_health_report.py` regenerated `quality/architecture_rules.md` without the
+  service-layer FastAPI/Starlette transport-boundary rule added by the architecture hardening slice,
+  and its service-boundary scan did not measure those transport imports.
+- Action: updated the generator to include FastAPI/Starlette service leakage patterns and to
+  regenerate the transport-boundary architecture rule, refreshed the quality artifacts for the
+  current branch, and added unit tests that pin both the rule text and detector coverage.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `python -m ruff check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m ruff format --check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`,
+  `python -m pytest tests/unit/test_engineering_health_report.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal quality-measurement governance
+  hardening and scorecard refresh.

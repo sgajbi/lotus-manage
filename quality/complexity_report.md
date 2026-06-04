@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-04T08:40:33+00:00`
+- Generated at: `2026-06-04T12:23:10+00:00`
 
-- Current ref: `639a37a`
+- Current ref: `e2398635`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 

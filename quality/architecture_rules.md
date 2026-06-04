@@ -11,7 +11,7 @@ They are explicit so later validators can enforce them without changing their me
 4. Domain and application code must not depend on FastAPI, framework objects, infrastructure clients, or persistence models.
 5. Service modules must not import FastAPI or Starlette transport packages.
 6. Infrastructure sits behind explicit ports/adapters.
-6. DTOs and persistence models must not leak into domain logic.
+7. DTOs and persistence models must not leak into domain logic.
 
 ## Reliability And Auditability
 

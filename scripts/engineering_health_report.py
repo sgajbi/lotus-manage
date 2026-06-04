@@ -28,6 +28,10 @@ SERVICE_LEAKAGE_PATTERNS = (
     "import src.api.routers",
     "HTTPException",
     "status.HTTP",
+    "from fastapi",
+    "import fastapi",
+    "from starlette",
+    "import starlette",
 )
 ROUTER_INFRA_PATTERNS = (
     "from src.infrastructure",
@@ -714,8 +718,9 @@ They are explicit so later validators can enforce them without changing their me
 2. Routers must not call repositories, database clients, HTTP clients, Kafka, Redis, or downstream adapters directly.
 3. Middleware stays thin, cross-cutting, and business-logic-free.
 4. Domain and application code must not depend on FastAPI, framework objects, infrastructure clients, or persistence models.
-5. Infrastructure sits behind explicit ports/adapters.
-6. DTOs and persistence models must not leak into domain logic.
+5. Service modules must not import FastAPI or Starlette transport packages.
+6. Infrastructure sits behind explicit ports/adapters.
+7. DTOs and persistence models must not leak into domain logic.
 
 ## Reliability And Auditability
 
