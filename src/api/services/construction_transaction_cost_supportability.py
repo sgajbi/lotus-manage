@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from src.core.construction.models import (
     AuthoritativeTransactionCostContext,
+    AuthoritativeTransactionCostPoint,
     ConstructionAlternative,
     ConstructionConstraintTrace,
     ConstructionObjectiveTerm,
@@ -70,9 +71,7 @@ def observed_transaction_cost_estimate(
 ) -> Money | None:
     if context is None or context.supportability_status != ConstructionMethodStatus.READY:
         return None
-    point_by_key = {
-        (point.security_id, point.transaction_type): point for point in context.curve_points
-    }
+    point_by_key = transaction_cost_curve_points_by_key(context=context)
     total = Decimal("0")
     currency = result.before.total_value.currency
     matched = False
@@ -139,9 +138,17 @@ def covered_transaction_cost_security_ids(
     return {point.security_id for point in context.curve_points}
 
 
+def transaction_cost_curve_points_by_key(
+    *,
+    context: AuthoritativeTransactionCostContext,
+) -> dict[tuple[str, str], AuthoritativeTransactionCostPoint]:
+    return {(point.security_id, point.transaction_type): point for point in context.curve_points}
+
+
 __all__ = [
     "covered_transaction_cost_security_ids",
     "observed_transaction_cost_estimate",
+    "transaction_cost_curve_points_by_key",
     "transaction_cost_reason_codes",
     "transaction_cost_status",
     "traded_transaction_cost_security_ids",

@@ -14184,3 +14184,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal liquidity supportability
   helper refactoring with direct tests.
+
+## BACKEND-REVIEW-20260604-582: Transaction-cost curve lookup helper extracted
+
+- Date: 2026-06-04
+- Scope: `src/api/services/construction_transaction_cost_supportability.py` and
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`.
+- Finding: transaction-cost supportability built source curve point lookup inline inside observed
+  estimate assembly, hiding the matching contract between security id, transaction type, and
+  observed bps.
+- Action: extracted `transaction_cost_curve_points_by_key`, reused it from observed estimate
+  assembly, and added direct tests for key shape and source point preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal transaction-cost supportability
+  helper refactoring with direct tests.
