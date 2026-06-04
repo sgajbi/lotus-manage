@@ -12834,3 +12834,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`, and service leakage scan
   (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
 - Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.
+
+## BACKEND-REVIEW-20260604-521: Service-layer infrastructure boundary scan hardened with regression test
+
+- Date: 2026-06-04
+- Scope: `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Finding: service-boundary validation only covered selected modules after earlier remediations, leaving a gap for
+  future regressions in other `src/api/services` files.
+- Action: added a global service-layer regression test that fails if any non-adapter service module in
+  `src/api/services` imports directly from `src.infrastructure`.
+- Status: hardened
+- Evidence: `python -m ruff check tests/unit/api/test_runtime_request_model_and_service_edges.py
+  src/api/services/rebalance_policy_pack_repository.py src/api/services/rebalance_run_support_repository.py
+  src/api/services/rebalance_policy_pack_service.py src/api/services/rebalance_run_support_config.py`,
+  `python -m ruff format --check tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_policy_pack_service.py
+  src/api/services/rebalance_run_support_config.py src/api/services/rebalance_policy_pack_repository.py
+  src/api/services/rebalance_run_support_repository.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -k service_modules_do_not_import_infrastructure_directly`,
+  `python scripts/openapi_quality_gate.py`, `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -k service_modules_route_core_resolver_types_via_service_boundary or
+  service_modules_route_risk_authority_types_via_service_boundary`,
+  `git diff --check`, and service leakage scan
+  (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP" src/api/services -g "*.py"`).
+- Wiki decision: no wiki source change required; this is an internal dependency-boundary hardening only.

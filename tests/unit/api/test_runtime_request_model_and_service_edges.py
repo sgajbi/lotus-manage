@@ -441,6 +441,24 @@ def test_service_modules_route_risk_authority_types_via_service_boundary() -> No
         )
 
 
+def test_service_modules_do_not_import_infrastructure_directly_except_boundary_adapters() -> None:
+    allowed_infra_import_modules = {
+        "src/api/services/authority_client_service.py",
+        "src/api/services/core_resolver_service.py",
+        "src/api/services/rebalance_policy_pack_repository.py",
+        "src/api/services/rebalance_run_support_repository.py",
+    }
+    service_dir = Path("src/api/services")
+    for path in sorted(service_dir.glob("*.py")):
+        module_path = str(path).replace("\\", "/")
+        if module_path in allowed_infra_import_modules:
+            continue
+        source = path.read_text(encoding="utf-8")
+        assert "from src.infrastructure" not in source, (
+            f"{module_path} should not import directly from src.infrastructure"
+        )
+
+
 def test_rebalance_source_lineage_stamps_result_metadata() -> None:
     stateless_result = SimpleNamespace(lineage=SimpleNamespace(input_mode="stateful"))
 
