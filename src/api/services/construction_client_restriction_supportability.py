@@ -87,37 +87,64 @@ def active_applicable_restrictions(
     ]
 
 
+def restriction_has_scope(restriction: AuthoritativeClientRestrictionRule) -> bool:
+    return bool(
+        restriction.instrument_ids
+        or restriction.asset_classes
+        or restriction.issuer_ids
+        or restriction.country_codes
+    )
+
+
+def restriction_matches_instrument(
+    *,
+    intent: SecurityTradeIntent,
+    restriction: AuthoritativeClientRestrictionRule,
+) -> bool:
+    return intent.instrument_id in restriction.instrument_ids
+
+
+def shelf_country_code(shelf: ShelfEntry) -> str | None:
+    return shelf.attributes.get("country_of_risk") or shelf.attributes.get("country")
+
+
+def restriction_matches_shelf(
+    *,
+    shelf: ShelfEntry,
+    restriction: AuthoritativeClientRestrictionRule,
+) -> bool:
+    if shelf.asset_class in restriction.asset_classes:
+        return True
+    if shelf.issuer_id and shelf.issuer_id in restriction.issuer_ids:
+        return True
+    country_code = shelf_country_code(shelf)
+    return bool(country_code and country_code in restriction.country_codes)
+
+
 def restriction_matches_intent(
     *,
     intent: SecurityTradeIntent,
     shelf: ShelfEntry | None,
     restriction: AuthoritativeClientRestrictionRule,
 ) -> bool:
-    scoped_values = (
-        restriction.instrument_ids
-        or restriction.asset_classes
-        or restriction.issuer_ids
-        or restriction.country_codes
-    )
-    if not scoped_values:
+    if not restriction_has_scope(restriction):
         return True
-    if intent.instrument_id in restriction.instrument_ids:
+    if restriction_matches_instrument(intent=intent, restriction=restriction):
         return True
     if shelf is None:
         return False
-    if shelf.asset_class in restriction.asset_classes:
-        return True
-    if shelf.issuer_id and shelf.issuer_id in restriction.issuer_ids:
-        return True
-    country_of_risk = shelf.attributes.get("country_of_risk") or shelf.attributes.get("country")
-    return bool(country_of_risk and country_of_risk in restriction.country_codes)
+    return restriction_matches_shelf(shelf=shelf, restriction=restriction)
 
 
 __all__ = [
     "active_applicable_restrictions",
     "client_restriction_reason_codes",
     "client_restriction_status",
+    "restriction_has_scope",
+    "restriction_matches_instrument",
     "restriction_matches_intent",
+    "restriction_matches_shelf",
+    "shelf_country_code",
     "shelf_entries_by_instrument",
     "violated_client_restrictions",
 ]

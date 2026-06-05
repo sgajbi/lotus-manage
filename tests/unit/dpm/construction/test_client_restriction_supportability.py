@@ -3,7 +3,11 @@ from src.api.services.construction_client_restriction_supportability import (
     active_applicable_restrictions,
     client_restriction_reason_codes,
     client_restriction_status,
+    restriction_has_scope,
+    restriction_matches_instrument,
     restriction_matches_intent,
+    restriction_matches_shelf,
+    shelf_country_code,
     shelf_entries_by_instrument,
 )
 from src.core.construction.models import (
@@ -222,3 +226,25 @@ def test_restriction_matching_uses_default_asset_issuer_and_country_scopes() -> 
         shelf=shelf,
         restriction=_restriction_rule(instrument_ids=[], country_codes=["US"]),
     )
+
+
+def test_restriction_match_helpers_keep_scope_predicates_explicit() -> None:
+    intent = next(intent for intent in _trade_result().intents if intent.instrument_id == "EQ_B")
+    shelf = shelf_entry(
+        "EQ_B",
+        status="APPROVED",
+        asset_class="EQUITY",
+        issuer_id="ISSUER_TECH",
+    ).model_copy(update={"attributes": {"country": "SG"}})
+
+    assert not restriction_has_scope(_restriction_rule(instrument_ids=[]))
+    assert restriction_has_scope(_restriction_rule(instrument_ids=["EQ_B"]))
+    assert restriction_matches_instrument(
+        intent=intent,
+        restriction=_restriction_rule(instrument_ids=["EQ_B"]),
+    )
+    assert restriction_matches_shelf(
+        shelf=shelf,
+        restriction=_restriction_rule(instrument_ids=[], issuer_ids=["ISSUER_TECH"]),
+    )
+    assert shelf_country_code(shelf) == "SG"

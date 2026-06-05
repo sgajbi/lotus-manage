@@ -16780,3 +16780,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-691: Client restriction match predicates extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/construction_client_restriction_supportability.py` and
+  `tests/unit/dpm/construction/test_client_restriction_supportability.py`.
+- Finding: `restriction_matches_intent` became the top current source-complexity hotspot and mixed
+  unscoped-rule handling, direct instrument matching, missing-shelf fail-closed behavior,
+  asset-class matching, issuer matching, and country-code fallback matching in one service helper.
+- Action: extracted explicit scope, instrument, shelf, and country-code predicate helpers while
+  keeping `restriction_matches_intent` as the exported orchestration boundary used by construction
+  and ESG supportability. Added direct tests for unscoped rules, instrument scope, issuer shelf
+  matching, and country fallback extraction.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_client_restriction_supportability.py tests/unit/dpm/construction/test_client_restriction_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_client_restriction_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_client_restriction_supportability.py tests/unit/dpm/construction/test_enrichment.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  maintainability refactoring.
