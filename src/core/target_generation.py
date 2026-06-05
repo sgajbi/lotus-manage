@@ -110,36 +110,48 @@ def _collect_infeasibility_hints(
     hints: list[str] = []
     shelf_attrs_by_id = {s.instrument_id: s.attributes for s in shelf}
 
+    hints.extend(
+        _infeasibility_capacity_hints(
+            tradeable_count=len(tradeable_ids),
+            locked_weight=locked_weight,
+            options=options,
+        )
+    )
+
+    indexed_tradeable = {i_id: idx for idx, i_id in enumerate(tradeable_ids)}
+    for constraint_key in sorted(options.group_constraints.keys()):
+        constraint = options.group_constraints[constraint_key]
+        group_members = _solver_group_members(
+            attr_key=constraint_key.split(":", 1)[0],
+            attr_val=constraint_key.split(":", 1)[1],
+            eligible_targets=eligible_targets,
+            shelf_attrs_by_id=shelf_attrs_by_id,
+            indexed_tradeable=indexed_tradeable,
+        )
+        if group_members.locked_weight > constraint.max_weight:
+            hints.append(f"INFEASIBILITY_HINT_LOCKED_GROUP_WEIGHT_{constraint_key}")
+        if not group_members.tradeable_ids and group_members.locked_weight == Decimal("0"):
+            continue
+
+    return hints
+
+
+def _infeasibility_capacity_hints(
+    *,
+    tradeable_count: int,
+    locked_weight: Decimal,
+    options: EngineOptions,
+) -> list[str]:
+    hints: list[str] = []
     invested_min = Decimal("1.0") - options.cash_band_max_weight - locked_weight
     invested_max = Decimal("1.0") - options.cash_band_min_weight - locked_weight
     if invested_min > invested_max:
         hints.append("INFEASIBILITY_HINT_CASH_BAND_CONTRADICTION")
 
     if options.single_position_max_weight is not None:
-        max_capacity = options.single_position_max_weight * Decimal(len(tradeable_ids))
+        max_capacity = options.single_position_max_weight * Decimal(tradeable_count)
         if max_capacity < invested_min:
             hints.append("INFEASIBILITY_HINT_SINGLE_POSITION_CAPACITY")
-
-    indexed_tradeable = {i_id: idx for idx, i_id in enumerate(tradeable_ids)}
-    for constraint_key in sorted(options.group_constraints.keys()):
-        constraint = options.group_constraints[constraint_key]
-        attr_key, attr_val = constraint_key.split(":", 1)
-        group_locked_weight = Decimal("0")
-        group_tradeable_count = 0
-        for i_id in eligible_targets:
-            attrs = shelf_attrs_by_id.get(i_id)
-            if attrs is None or attrs.get(attr_key) != attr_val:
-                continue
-            if i_id in indexed_tradeable:
-                group_tradeable_count += 1
-            else:
-                group_locked_weight += eligible_targets[i_id]
-
-        if group_locked_weight > constraint.max_weight:
-            hints.append(f"INFEASIBILITY_HINT_LOCKED_GROUP_WEIGHT_{constraint_key}")
-        if group_tradeable_count == 0 and group_locked_weight == Decimal("0"):
-            continue
-
     return hints
 
 

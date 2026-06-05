@@ -12,6 +12,7 @@ from src.core.target_generation import (
     _apply_solver_values,
     _build_solver_attempts,
     _collect_infeasibility_hints,
+    _infeasibility_capacity_hints,
     _solver_model_weight_array,
     _solver_group_members,
     _solver_invested_bounds,
@@ -181,3 +182,31 @@ def test_collect_infeasibility_hints_reports_capacity_and_group_lock() -> None:
 
     assert "INFEASIBILITY_HINT_SINGLE_POSITION_CAPACITY" in hints
     assert "INFEASIBILITY_HINT_LOCKED_GROUP_WEIGHT_sector:TECH" in hints
+
+
+def test_infeasibility_capacity_hints_reports_cash_band_and_single_position_limits() -> None:
+    assert _infeasibility_capacity_hints(
+        tradeable_count=2,
+        locked_weight=Decimal("0.20"),
+        options=EngineOptions(
+            cash_band_min_weight=Decimal("0.30"),
+            cash_band_max_weight=Decimal("0.10"),
+            single_position_max_weight=Decimal("0.10"),
+        ),
+    ) == [
+        "INFEASIBILITY_HINT_CASH_BAND_CONTRADICTION",
+        "INFEASIBILITY_HINT_SINGLE_POSITION_CAPACITY",
+    ]
+
+    assert (
+        _infeasibility_capacity_hints(
+            tradeable_count=3,
+            locked_weight=Decimal("0.10"),
+            options=EngineOptions(
+                cash_band_min_weight=Decimal("0.05"),
+                cash_band_max_weight=Decimal("0.20"),
+                single_position_max_weight=Decimal("0.40"),
+            ),
+        )
+        == []
+    )

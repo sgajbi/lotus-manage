@@ -16638,3 +16638,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-685: Target-generation infeasibility capacity helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: `_collect_infeasibility_hints` became the top current source-complexity hotspot and
+  combined cash-band contradiction detection, single-position capacity detection, shelf attribute
+  indexing, group-member scanning, and locked group-weight hint projection in one helper.
+- Action: extracted cash-band and single-position capacity hint projection into
+  `_infeasibility_capacity_hints` and reused the existing `_solver_group_members` helper for
+  group-constraint scanning. Added direct helper coverage for cash-band contradiction,
+  single-position capacity shortfall, and feasible capacity posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation solver
+  maintainability refactoring.
