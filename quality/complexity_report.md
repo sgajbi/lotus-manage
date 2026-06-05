@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T06:56:18+00:00`
+- Generated at: `2026-06-05T09:50:49+00:00`
 
-- Current ref: `50e263c0`
+- Current ref: `5ebd12c9`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
-| 2 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
-| 3 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 4 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 5 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 6 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 7 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 8 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
-| 9 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
-| 10 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 1 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
+| 2 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 3 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 4 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 5 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 6 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
+| 7 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 8 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 9 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
+| 10 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
 
 ### Most Complex Current Test Functions
 
