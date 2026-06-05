@@ -17074,3 +17074,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-703: Core market-data coverage helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/dpm_source_context.py` and
+  `tests/unit/dpm/core/test_dpm_source_context.py`.
+- Finding: `build_market_data_snapshot_from_core_coverage` became the top current
+  source-complexity hotspot and mixed supportability gating, price coverage validation, price
+  projection, FX coverage validation, FX pair normalization, and snapshot assembly in one mapper.
+- Action: extracted source-owned price coverage and FX coverage projection into focused helpers
+  while keeping the public snapshot builder as the supportability and assembly boundary. Added
+  direct helper tests for price and FX projection plus incomplete source-record rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m ruff format --check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/core/dpm_source_context.py`,
+  `python -m pytest tests/unit/dpm/core/test_dpm_source_context.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal core source-context
+  maintainability refactoring.

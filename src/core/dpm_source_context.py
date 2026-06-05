@@ -1793,38 +1793,46 @@ def build_market_data_snapshot_from_core_coverage(
     if response.supportability.state != "READY":
         raise DpmCoreContextIncompleteError(response.supportability.reason)
 
-    prices: list[Price] = []
-    for record in response.price_coverage:
-        if (
-            not record.found
-            or record.quality_status != "READY"
-            or record.price is None
-            or record.currency is None
-        ):
-            raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_PRICE_INCOMPLETE")
-        prices.append(
-            Price(
-                instrument_id=record.instrument_id,
-                price=record.price,
-                currency=record.currency,
-            )
-        )
-
-    fx_rates: list[FxRate] = []
-    for fx_record in response.fx_coverage:
-        if not fx_record.found or fx_record.quality_status != "READY" or fx_record.rate is None:
-            raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_FX_INCOMPLETE")
-        fx_rates.append(
-            FxRate(
-                pair=f"{fx_record.from_currency.upper()}/{fx_record.to_currency.upper()}",
-                rate=fx_record.rate,
-            )
-        )
-
     return MarketDataSnapshot(
         snapshot_id=f"core-market-data-coverage:{response.as_of_date.isoformat()}",
-        prices=prices,
-        fx_rates=fx_rates,
+        prices=_core_coverage_prices(response.price_coverage),
+        fx_rates=_core_coverage_fx_rates(response.fx_coverage),
+    )
+
+
+def _core_coverage_prices(
+    records: list[DpmCoreMarketDataPriceCoverageRecord],
+) -> list[Price]:
+    return [_core_coverage_price(record) for record in records]
+
+
+def _core_coverage_price(record: DpmCoreMarketDataPriceCoverageRecord) -> Price:
+    if (
+        not record.found
+        or record.quality_status != "READY"
+        or record.price is None
+        or record.currency is None
+    ):
+        raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_PRICE_INCOMPLETE")
+    return Price(
+        instrument_id=record.instrument_id,
+        price=record.price,
+        currency=record.currency,
+    )
+
+
+def _core_coverage_fx_rates(
+    records: list[DpmCoreMarketDataFxCoverageRecord],
+) -> list[FxRate]:
+    return [_core_coverage_fx_rate(record) for record in records]
+
+
+def _core_coverage_fx_rate(record: DpmCoreMarketDataFxCoverageRecord) -> FxRate:
+    if not record.found or record.quality_status != "READY" or record.rate is None:
+        raise DpmCoreContextIncompleteError("DPM_CORE_MARKET_DATA_FX_INCOMPLETE")
+    return FxRate(
+        pair=f"{record.from_currency.upper()}/{record.to_currency.upper()}",
+        rate=record.rate,
     )
 
 

@@ -9,13 +9,15 @@ from src.core.dpm_source_context import (
     DpmCoreMarketDataCoverageWindowResponse,
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePortfolioTaxLotWindowResponse,
+    _core_coverage_fx_rates,
+    _core_coverage_prices,
     build_batch_rebalance_request_from_core_context,
+    build_core_resolver_payload,
     build_market_data_snapshot_from_core_coverage,
     build_model_portfolio_from_core_targets,
     build_portfolio_snapshot_with_core_tax_lots,
     build_policy_context_from_core_mandate,
     build_rebalance_request_from_core_context,
-    build_core_resolver_payload,
     build_shelf_entries_from_core_eligibility,
     _shelf_attribute_value,
     DpmStatefulInput,
@@ -698,6 +700,67 @@ def test_core_market_data_coverage_transforms_to_engine_snapshot():
     assert [(fx.pair, fx.rate) for fx in market_data.fx_rates] == [
         ("USD/SGD", Decimal("1.3521000000"))
     ]
+
+
+def test_core_market_data_coverage_helpers_project_prices_and_fx_rates():
+    response = DpmCoreMarketDataCoverageWindowResponse.model_validate(
+        _core_market_data_coverage_payload()
+    )
+
+    prices = _core_coverage_prices(response.price_coverage)
+    fx_rates = _core_coverage_fx_rates(response.fx_coverage)
+
+    assert [(price.instrument_id, price.price, price.currency) for price in prices] == [
+        ("EQ_US_AAPL", Decimal("187.1200000000"), "USD"),
+        ("FI_US_TREASURY_10Y", Decimal("98.4500000000"), "USD"),
+    ]
+    assert [(fx.pair, fx.rate) for fx in fx_rates] == [("USD/SGD", Decimal("1.3521000000"))]
+
+
+def test_core_market_data_coverage_helpers_reject_incomplete_records():
+    missing_price_response = DpmCoreMarketDataCoverageWindowResponse.model_validate(
+        _core_market_data_coverage_payload(
+            price_coverage=[
+                {
+                    "instrument_id": "UNKNOWN_SEC",
+                    "found": False,
+                    "price_date": None,
+                    "price": None,
+                    "currency": None,
+                    "age_days": None,
+                    "quality_status": "MISSING",
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MARKET_DATA_PRICE_INCOMPLETE",
+    ):
+        _core_coverage_prices(missing_price_response.price_coverage)
+
+    missing_fx_response = DpmCoreMarketDataCoverageWindowResponse.model_validate(
+        _core_market_data_coverage_payload(
+            fx_coverage=[
+                {
+                    "from_currency": "USD",
+                    "to_currency": "SGD",
+                    "found": False,
+                    "rate_date": None,
+                    "rate": None,
+                    "age_days": None,
+                    "quality_status": "MISSING",
+                }
+            ]
+        )
+    )
+
+    with pytest.raises(
+        DpmCoreContextIncompleteError,
+        match="DPM_CORE_MARKET_DATA_FX_INCOMPLETE",
+    ):
+        _core_coverage_fx_rates(missing_fx_response.fx_coverage)
 
 
 def test_core_market_data_coverage_rejects_stale_or_missing_source_data():
