@@ -6,6 +6,9 @@ import pytest
 
 from src.core.waves import DpmWaveSourceRef
 from src.core.waves.campaign_definition_readiness import (
+    _actor_entitlement_state,
+    _approval_governance_status,
+    _expiry_readiness_state,
     build_bulk_review_campaign_definition_preview_readiness,
 )
 from src.core.waves.campaign_definition_lifecycle import (
@@ -653,6 +656,40 @@ def test_campaign_definition_preview_readiness_records_ineligible_and_entitlemen
 
     assert invalid_expiry.expiry_state == "INVALID"
     assert "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID" in invalid_expiry.reason_codes
+
+
+def test_campaign_definition_governance_readiness_helpers_fail_closed() -> None:
+    reason_codes: list[str] = []
+    governance = DpmBulkReviewCampaignDefinitionGovernance(
+        approval_ref="BRC-APPROVAL-2026-05",
+        expires_on="2026-05-09",
+        entitled_actor_ids=["pm_001"],
+    )
+
+    assert (
+        _approval_governance_status(governance=governance, reason_codes=reason_codes)
+        == "INCOMPLETE"
+    )
+    assert (
+        _expiry_readiness_state(
+            governance=governance,
+            requested_date=datetime(2026, 5, 10, tzinfo=timezone.utc).date(),
+            reason_codes=reason_codes,
+        )
+        == "EXPIRED"
+    )
+    assert (
+        _actor_entitlement_state(
+            governance=governance,
+            actor_id="pm_002",
+            reason_codes=reason_codes,
+        )
+        == "UNAUTHORIZED"
+    )
+
+    assert "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE" in reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in reason_codes
 
 
 def test_campaign_definition_assignment_actions_are_append_only() -> None:

@@ -16445,3 +16445,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-677: Campaign-definition governance readiness helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_definition_readiness.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: `_governance_readiness` became the top current source-complexity hotspot and combined
+  governance source-ref counting, approval-evidence completeness, expiry-date readiness, actor
+  entitlement readiness, and fail-closed reason-code mutation in one helper.
+- Action: extracted approval governance status, expiry readiness state, and actor entitlement state
+  helpers. Kept `_governance_readiness` as the small orchestration boundary that returns the
+  readiness tuple and governance source-ref count. Added direct helper coverage for incomplete
+  approval evidence, expired governance, and unauthorized actor entitlement.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_readiness.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign-definition readiness
+  maintainability refactoring.
