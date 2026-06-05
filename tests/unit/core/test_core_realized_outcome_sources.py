@@ -12,6 +12,12 @@ from src.core.outcomes import (
     unavailable_core_cashflow_projection_source,
     unavailable_core_cash_source,
 )
+from src.core.outcomes.core_sources import (
+    _cash_movement_bucket_matches,
+    _cash_movement_buckets,
+    _transaction_cashflow_value,
+    _transaction_fx_pnl_value,
+)
 from tests.unit.core.test_realized_outcome_sources import _window
 
 
@@ -632,6 +638,31 @@ def test_cash_movement_summary_adapter_wraps_source_owned_bucket_total() -> None
     assert "CASH_MOVEMENT_TOTAL_CASHFLOW_COUNT_3" in source.reason_codes
 
 
+def test_cash_movement_bucket_helpers_extract_and_match_source_buckets() -> None:
+    response = _cash_movement_summary_response()
+
+    buckets = _cash_movement_buckets(response)
+
+    assert len(buckets) == 2
+    assert _cash_movement_bucket_matches(
+        bucket=buckets[1],
+        classification="trade_settlement",
+        timing="settled",
+        currency="usd",
+        is_position_flow=True,
+        is_portfolio_flow=False,
+    )
+    assert not _cash_movement_bucket_matches(
+        bucket=buckets[1],
+        classification="trade_settlement",
+        timing="settled",
+        currency="sgd",
+        is_position_flow=True,
+        is_portfolio_flow=False,
+    )
+    assert _cash_movement_buckets({"buckets": "not-a-list"}) == []
+
+
 def test_cash_movement_summary_source_can_make_rfc42_cash_dimension_ready() -> None:
     source = realized_cash_movement_source_from_cash_movement_summary_response(
         _cash_movement_summary_response(),
@@ -937,6 +968,30 @@ def test_transaction_adapter_rejects_missing_fx_pnl_and_cashflow_amount() -> Non
             transaction_id="TXN-INT-001",
             measure="cashflow_amount",
         )
+
+
+def test_transaction_value_helpers_select_fx_and_cashflow_source_values() -> None:
+    transactions = _transaction_ledger_response()["transactions"]
+    assert isinstance(transactions, list)
+    fx_transaction = transactions[0]
+    cashflow_transaction = transactions[1]
+    assert isinstance(fx_transaction, dict)
+    assert isinstance(cashflow_transaction, dict)
+
+    fx_value, fx_unit, fx_reason = _transaction_fx_pnl_value(transaction=fx_transaction)
+    assert str(fx_value) == str(fx_transaction["realized_fx_pnl_base"])
+    assert fx_unit == "USD"
+    assert fx_reason == "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE"
+    fx_transaction["realized_fx_pnl_base"] = None
+    assert _transaction_fx_pnl_value(transaction=fx_transaction)[2] == (
+        "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL"
+    )
+    cashflow_value, cashflow_unit, cashflow_reason = _transaction_cashflow_value(
+        transaction=cashflow_transaction
+    )
+    assert str(cashflow_value) == str(cashflow_transaction["cashflow"]["amount"])
+    assert cashflow_unit == "USD"
+    assert cashflow_reason == "TRANSACTION_VALUE_CASHFLOW_AMOUNT"
 
 
 def test_transaction_adapter_treats_missing_transaction_list_as_source_gap() -> None:

@@ -407,17 +407,17 @@ def _transition_task_fields(
     due_at: datetime | None,
 ) -> _TransitionTaskFields:
     next_status = _next_status(task.status, transition_type)
-    next_assignees = (
-        _normalize_actor_ids(assigned_actor_ids)
-        if assigned_actor_ids is not None
-        else task.assigned_actor_ids
+    next_assignees = _transition_next_assignees(
+        task=task,
+        assigned_actor_ids=assigned_actor_ids,
     )
-    if next_status not in _CLOSED_STATUSES and not next_assignees:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type == "DUE_DATE_CHANGED" and due_at is None:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED")
+    _validate_transition_field_requirements(
+        transition_type=transition_type,
+        next_status=next_status,
+        next_assignees=next_assignees,
+        assigned_actor_ids=assigned_actor_ids,
+        due_at=due_at,
+    )
 
     return _TransitionTaskFields(
         next_status=next_status,
@@ -426,6 +426,32 @@ def _transition_task_fields(
         next_sla=sla_posture or task.sla_posture,
         next_due_at=due_at if due_at is not None else task.due_at,
     )
+
+
+def _transition_next_assignees(
+    *,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    assigned_actor_ids: list[str] | None,
+) -> list[str]:
+    if assigned_actor_ids is None:
+        return task.assigned_actor_ids
+    return _normalize_actor_ids(assigned_actor_ids)
+
+
+def _validate_transition_field_requirements(
+    *,
+    transition_type: CampaignAssignmentTaskTransitionType,
+    next_status: CampaignAssignmentTaskStatus,
+    next_assignees: list[str],
+    assigned_actor_ids: list[str] | None,
+    due_at: datetime | None,
+) -> None:
+    if next_status not in _CLOSED_STATUSES and not next_assignees:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
+    if transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
+    if transition_type == "DUE_DATE_CHANGED" and due_at is None:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED")
 
 
 def _next_status(

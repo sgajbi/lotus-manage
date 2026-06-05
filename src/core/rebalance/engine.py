@@ -210,6 +210,53 @@ def _compare_target_generation_methods(
     )
 
 
+def _compare_target_methods_if_requested(
+    *,
+    model: ModelPortfolio,
+    eligible_targets: dict[str, Decimal],
+    buy_list: list[str],
+    sell_only_excess: Decimal,
+    shelf: list[ShelfEntry],
+    options: EngineOptions,
+    total_val: Decimal,
+    base_ccy: str,
+    primary_trace: list[Any],
+    primary_status: str,
+    diagnostics: DiagnosticsData,
+) -> dict[str, Any] | None:
+    if not options.compare_target_methods:
+        return None
+
+    comparison = _compare_target_generation_methods(
+        model=model,
+        eligible_targets=eligible_targets,
+        buy_list=buy_list,
+        sell_only_excess=sell_only_excess,
+        shelf=shelf,
+        options=options,
+        total_val=total_val,
+        base_ccy=base_ccy,
+        primary_trace=primary_trace,
+        primary_status=primary_status,
+    )
+    _record_target_method_comparison_warnings(
+        comparison=comparison,
+        diagnostics=diagnostics,
+    )
+    return comparison
+
+
+def _record_target_method_comparison_warnings(
+    *,
+    comparison: dict[str, Any],
+    diagnostics: DiagnosticsData,
+) -> None:
+    if comparison["primary_status"] != comparison["alternate_status"]:
+        diagnostics.warnings.append("TARGET_METHOD_STATUS_DIVERGENCE")
+    if comparison["differing_instruments"]:
+        diagnostics.warnings.append("TARGET_METHOD_WEIGHT_DIVERGENCE")
+
+
 def _generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -310,26 +357,19 @@ def run_simulation(
         model, eligible, buy_l, s_exc, shelf, options, tv, portfolio.base_currency, diag_data
     )
 
-    target_method_comparison = None
-    if options.compare_target_methods:
-        target_method_comparison = _compare_target_generation_methods(
-            model=model,
-            eligible_targets=eligible_before_s3,
-            buy_list=buy_l,
-            sell_only_excess=s_exc,
-            shelf=shelf,
-            options=options,
-            total_val=tv,
-            base_ccy=portfolio.base_currency,
-            primary_trace=trace,
-            primary_status=s3_stat,
-        )
-        primary_status = target_method_comparison["primary_status"]
-        alternate_status = target_method_comparison["alternate_status"]
-        if primary_status != alternate_status:
-            diag_data.warnings.append("TARGET_METHOD_STATUS_DIVERGENCE")
-        if target_method_comparison["differing_instruments"]:
-            diag_data.warnings.append("TARGET_METHOD_WEIGHT_DIVERGENCE")
+    target_method_comparison = _compare_target_methods_if_requested(
+        model=model,
+        eligible_targets=eligible_before_s3,
+        buy_list=buy_l,
+        sell_only_excess=s_exc,
+        shelf=shelf,
+        options=options,
+        total_val=tv,
+        base_ccy=portfolio.base_currency,
+        primary_trace=trace,
+        primary_status=s3_stat,
+        diagnostics=diag_data,
+    )
 
     if _check_blocking_dq(diag_data.data_quality, options) or s3_stat == "BLOCKED":
         return _make_blocked_result(

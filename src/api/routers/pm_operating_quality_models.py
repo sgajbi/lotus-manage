@@ -325,29 +325,66 @@ class DpmPmQualitySummaryInvocationRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_summary_invocation_request(self) -> "DpmPmQualitySummaryInvocationRequest":
-        self.score_run_id = self.score_run_id.strip()
-        self.review_action_id = self.review_action_id.strip()
-        self.summary_ref = self.summary_ref.strip()
-        self.workflow_pack_name = self.workflow_pack_name.strip()
-        self.workflow_pack_version = self.workflow_pack_version.strip()
-        self.workflow_run_id = self.workflow_run_id.strip() if self.workflow_run_id else None
-        self.summary_artifact_ref = (
-            self.summary_artifact_ref.strip() if self.summary_artifact_ref else None
+        self.score_run_id = _required_summary_text(self.score_run_id)
+        self.review_action_id = _required_summary_text(self.review_action_id)
+        self.summary_ref = _required_summary_text(self.summary_ref)
+        self.workflow_pack_name = _required_summary_text(self.workflow_pack_name)
+        self.workflow_pack_version = _required_summary_text(self.workflow_pack_version)
+        self.workflow_run_id = _optional_summary_text(self.workflow_run_id)
+        self.summary_artifact_ref = _optional_summary_text(self.summary_artifact_ref)
+        self.requested_by = _required_summary_text(self.requested_by)
+        _validate_summary_invocation_required_ids(
+            score_run_id=self.score_run_id,
+            review_action_id=self.review_action_id,
         )
-        self.requested_by = self.requested_by.strip()
-        if not self.score_run_id or not self.review_action_id:
-            raise ValueError("score_run_id and review_action_id must be non-empty")
-        if not self.summary_ref or not self.workflow_pack_version or not self.requested_by:
-            raise ValueError(
-                "summary_ref, workflow_pack_version, and requested_by must be non-empty"
-            )
-        if self.summary_content_hash is not None and not self.summary_content_hash.startswith(
-            "sha256:"
-        ):
-            raise ValueError("summary_content_hash must start with sha256:")
-        if self.workflow_pack_name != "pm_quality_summary.pack":
-            raise ValueError("workflow_pack_name must be pm_quality_summary.pack")
+        _validate_summary_invocation_required_workflow_fields(
+            summary_ref=self.summary_ref,
+            workflow_pack_version=self.workflow_pack_version,
+            requested_by=self.requested_by,
+        )
+        _validate_summary_content_hash(self.summary_content_hash)
+        _validate_summary_workflow_pack_name(self.workflow_pack_name)
         return self
+
+
+def _required_summary_text(value: str) -> str:
+    return value.strip()
+
+
+def _optional_summary_text(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized or None
+
+
+def _validate_summary_invocation_required_ids(
+    *,
+    score_run_id: str,
+    review_action_id: str,
+) -> None:
+    if not score_run_id or not review_action_id:
+        raise ValueError("score_run_id and review_action_id must be non-empty")
+
+
+def _validate_summary_invocation_required_workflow_fields(
+    *,
+    summary_ref: str,
+    workflow_pack_version: str,
+    requested_by: str,
+) -> None:
+    if not summary_ref or not workflow_pack_version or not requested_by:
+        raise ValueError("summary_ref, workflow_pack_version, and requested_by must be non-empty")
+
+
+def _validate_summary_content_hash(summary_content_hash: str | None) -> None:
+    if summary_content_hash is not None and not summary_content_hash.startswith("sha256:"):
+        raise ValueError("summary_content_hash must start with sha256:")
+
+
+def _validate_summary_workflow_pack_name(workflow_pack_name: str) -> None:
+    if workflow_pack_name != "pm_quality_summary.pack":
+        raise ValueError("workflow_pack_name must be pm_quality_summary.pack")
 
 
 class DpmPmQualitySummaryInvocationResponse(BaseModel):

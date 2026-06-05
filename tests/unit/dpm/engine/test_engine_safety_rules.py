@@ -10,9 +10,12 @@ from src.core.rebalance.intents import (
     _hifo_sorted_lots,
     _intent_market_context,
     _record_tax_budget_limit_reached,
+    _security_trade_intent,
     _security_intent_constraints,
+    _sell_quantity_after_safety_limits,
     _suppress_dust_trade,
     _target_trade_delta,
+    _target_weight_by_instrument,
     _tax_impact_from_budget,
     _tax_budget_lot_allowance,
     _tax_budget_limited_sell_quantity,
@@ -300,6 +303,112 @@ def test_target_trade_delta_classifies_side_and_floor_quantity() -> None:
     assert buy_delta.raw_quantity == Decimal("2")
     assert sell_delta.side == "SELL"
     assert sell_delta.raw_quantity == Decimal("2")
+
+
+def test_target_weight_by_instrument_projects_latest_target_weight() -> None:
+    targets = [
+        type("Target", (), {"instrument_id": "EQ_1", "final_weight": Decimal("0.40")})(),
+        type("Target", (), {"instrument_id": "EQ_2", "final_weight": Decimal("0.25")})(),
+        type("Target", (), {"instrument_id": "EQ_1", "final_weight": Decimal("0.60")})(),
+    ]
+
+    assert _target_weight_by_instrument(targets) == {
+        "EQ_1": Decimal("0.60"),
+        "EQ_2": Decimal("0.25"),
+    }
+
+
+def test_sell_quantity_after_safety_limits_bypasses_non_sell_quantity() -> None:
+    diagnostics = empty_diagnostics()
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("0"),
+    )
+
+    decision = _sell_quantity_after_safety_limits(
+        instrument_id="EQ_1",
+        side="BUY",
+        requested_quantity=Decimal("5"),
+        position=None,
+        options=EngineOptions(enable_tax_awareness=True),
+        sell_price=Decimal("100"),
+        price_currency="SGD",
+        base_rate=Decimal("1"),
+        market_data=market_data_snapshot(),
+        dq_log={"fx_missing": []},
+        tax_budget=tax_budget,
+        diagnostics=diagnostics,
+    )
+
+    assert decision.quantity == Decimal("5")
+    assert decision.sell_quantity_before_tax is None
+    assert diagnostics.warnings == []
+
+
+def test_sell_quantity_after_safety_limits_records_tax_budget_limit() -> None:
+    lot_position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("10"),
+        lots=[
+            TaxLot(
+                lot_id="LOT_GAIN",
+                quantity=Decimal("10"),
+                unit_cost=Money(amount=Decimal("90"), currency="SGD"),
+                purchase_date="2024-01-01",
+            )
+        ],
+    )
+    diagnostics = empty_diagnostics()
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("50"),
+    )
+
+    decision = _sell_quantity_after_safety_limits(
+        instrument_id="EQ_1",
+        side="SELL",
+        requested_quantity=Decimal("10"),
+        position=lot_position,
+        options=EngineOptions(enable_tax_awareness=True),
+        sell_price=Decimal("100"),
+        price_currency="SGD",
+        base_rate=Decimal("1"),
+        market_data=market_data_snapshot(),
+        dq_log={"fx_missing": []},
+        tax_budget=tax_budget,
+        diagnostics=diagnostics,
+    )
+
+    assert decision.quantity == Decimal("5")
+    assert decision.sell_quantity_before_tax == Decimal("10")
+    assert diagnostics.warnings == ["TAX_BUDGET_LIMIT_REACHED"]
+    assert diagnostics.tax_budget_constraint_events[0].allowed_quantity == Decimal("5")
+
+
+def test_security_trade_intent_projects_money_and_constraints() -> None:
+    intent = _security_trade_intent(
+        intent_id="oi_1",
+        side="SELL",
+        instrument_id="EQ_1",
+        quantity=Decimal("5"),
+        unit_value=Decimal("20"),
+        base_rate=Decimal("1.5"),
+        price_currency="USD",
+        portfolio_base_currency="SGD",
+        threshold=Money(amount=Decimal("50"), currency="USD"),
+        requested_quantity=Decimal("8"),
+        sell_quantity_before_tax=Decimal("6"),
+        tax_awareness_enabled=True,
+    )
+
+    assert intent.intent_id == "oi_1"
+    assert intent.notional == Money(amount=Decimal("100"), currency="USD")
+    assert intent.notional_base == Money(amount=Decimal("150.0"), currency="SGD")
+    assert intent.constraints_applied == ["MIN_NOTIONAL", "AVAILABLE_HOLDING", "TAX_BUDGET"]
 
 
 def test_tax_impact_from_budget_normalizes_budget_used_at_tolerance_boundary() -> None:

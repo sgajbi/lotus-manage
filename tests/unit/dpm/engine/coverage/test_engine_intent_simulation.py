@@ -4,10 +4,15 @@ from src.core.rebalance.execution import (
     _after_simulation_options,
     _apply_execution_intents,
     _append_projected_cash_fx_intents,
+    _blocked_simulation_result_from_rules,
     _fx_intent_for_projected_cash_balance,
+    _hard_rule_blockers,
     _link_execution_dependencies,
     _project_cash_after_security_trades,
+    _reconciliation_rule,
+    _record_simulation_safety_warnings,
     _settlement_blocked_simulation_result,
+    _simulation_result_with_reconciliation,
     build_settlement_ladder,
 )
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
@@ -16,6 +21,9 @@ from src.core.models import (
     EngineOptions,
     FxSpotIntent,
     IntentRationale,
+    Money,
+    Reconciliation,
+    RuleResult,
     SecurityTradeIntent,
     ValuationMode,
 )
@@ -258,6 +266,101 @@ class TestIntentDependenciesAndSimulation:
         assert diagnostics.warnings == ["OVERDRAFT_ON_T_PLUS_1"]
         assert rules[0].rule_id == "SETTLEMENT_CASH_LADDER"
         assert rules[0].measured == Decimal("25")
+
+    def test_blocked_simulation_result_from_rules_records_safety_warning(self):
+        diagnostics = empty_diagnostics()
+        state = portfolio_snapshot(portfolio_id="pf_rule_block", base_currency="USD")
+        rules = [
+            RuleResult(
+                rule_id="NO_SHORTING",
+                severity="HARD",
+                status="FAIL",
+                measured=Decimal("1"),
+                threshold={"max": Decimal("0")},
+                reason_code="SHORT_POSITION",
+            ),
+            RuleResult(
+                rule_id="SOFT_RULE",
+                severity="SOFT",
+                status="FAIL",
+                measured=Decimal("1"),
+                threshold={"max": Decimal("0")},
+                reason_code="SOFT_FAIL",
+            ),
+        ]
+
+        result = _blocked_simulation_result_from_rules(
+            intents=[],
+            state=state,
+            rules=rules,
+            diagnostics=diagnostics,
+        )
+
+        assert _hard_rule_blockers(rules) == ["NO_SHORTING"]
+        assert result == ([], state, rules, "BLOCKED", None)
+        assert diagnostics.warnings == ["SIMULATION_SAFETY_CHECK_FAILED"]
+
+    def test_blocked_simulation_result_from_rules_skips_non_blocking_rules(self):
+        diagnostics = empty_diagnostics()
+        rules = [
+            RuleResult(
+                rule_id="SOFT_RULE",
+                severity="SOFT",
+                status="FAIL",
+                measured=Decimal("1"),
+                threshold={"max": Decimal("0")},
+                reason_code="SOFT_FAIL",
+            )
+        ]
+
+        result = _blocked_simulation_result_from_rules(
+            intents=[],
+            state=portfolio_snapshot(portfolio_id="pf_ready_rules", base_currency="USD"),
+            rules=rules,
+            diagnostics=diagnostics,
+        )
+
+        assert result is None
+        assert diagnostics.warnings == []
+
+    def test_record_simulation_safety_warnings_requires_safety_blocker(self):
+        diagnostics = empty_diagnostics()
+
+        _record_simulation_safety_warnings(
+            blockers=["TURNOVER_LIMIT"],
+            diagnostics=diagnostics,
+        )
+        _record_simulation_safety_warnings(
+            blockers=["INSUFFICIENT_CASH"],
+            diagnostics=diagnostics,
+        )
+
+        assert diagnostics.warnings == ["SIMULATION_SAFETY_CHECK_FAILED"]
+
+    def test_simulation_result_with_reconciliation_blocks_mismatch(self):
+        state = portfolio_snapshot(portfolio_id="pf_recon_mismatch", base_currency="USD")
+        recon = Reconciliation(
+            before_total_value=Money(amount=Decimal("100"), currency="USD"),
+            after_total_value=Money(amount=Decimal("95"), currency="USD"),
+            delta=Money(amount=Decimal("-5"), currency="USD"),
+            tolerance=Money(amount=Decimal("0.01"), currency="USD"),
+            status="MISMATCH",
+        )
+
+        intents, result_state, rules, status, result_recon = _simulation_result_with_reconciliation(
+            intents=[],
+            state=state,
+            rules=[],
+            recon=recon,
+            recon_diff=Decimal("5"),
+            tolerance=Decimal("0.01"),
+        )
+
+        assert intents == []
+        assert result_state is state
+        assert status == "BLOCKED"
+        assert result_recon is recon
+        assert rules == [_reconciliation_rule(recon_diff=Decimal("5"), tolerance=Decimal("0.01"))]
 
     def test_apply_execution_intents_returns_mutated_copy_for_fx_intent(self):
         portfolio = portfolio_snapshot(

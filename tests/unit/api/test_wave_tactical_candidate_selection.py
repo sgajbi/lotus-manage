@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date
+from decimal import Decimal
 
 import pytest
 
 from src.api.routers.wave_tactical_candidate_selection import (
+    build_tactical_house_view_authority_request,
     build_tactical_house_view_candidate_payloads,
     build_tactical_house_view_resolved_portfolios,
+    tactical_house_view_cohort_failure,
 )
 from src.api.services import wave_service
 from src.core.waves import DpmWaveSourceRef
@@ -67,6 +71,27 @@ class Cohort:
     affected_portfolios: tuple[AffectedPortfolio, ...] = (AffectedPortfolio(),)
 
 
+@dataclass(frozen=True)
+class TacticalView:
+    tactical_view_id: str = "THV_20260519"
+    tactical_view_version: str = "v3"
+    theme_id: str = "QUALITY_ROTATION"
+    target_action: str = "INCREASE"
+    rationale: str = "Increase quality equity exposure."
+    source_refs: list[DpmWaveSourceRef] = field(
+        default_factory=lambda: [
+            DpmWaveSourceRef(
+                source_system="lotus-advise",
+                source_type="TACTICAL_HOUSE_VIEW_DECISION",
+                source_id="thv-quality-20260519",
+                source_version="v3",
+                supportability_state="READY",
+                content_hash="sha256:tactical-view",
+            )
+        ]
+    )
+
+
 def test_build_tactical_house_view_candidate_payloads_maps_source_backed_candidate() -> None:
     payloads = build_tactical_house_view_candidate_payloads([Candidate()])
 
@@ -101,6 +126,51 @@ def test_build_tactical_house_view_candidate_payloads_preserves_missing_weight()
     assert payloads[0]["current_exposure_weight"] is None
 
 
+def test_build_tactical_house_view_authority_request_maps_source_backed_invocation() -> None:
+    invocation = build_tactical_house_view_authority_request(
+        tactical_view=TacticalView(),
+        portfolios=[Candidate()],
+        eligible_portfolio_types=["DISCRETIONARY", "DPM"],
+        as_of_date=date(2026, 5, 19),
+        min_exposure_weight=0.05,
+    )
+
+    assert invocation.tactical_view == {
+        "tactical_view_id": "THV_20260519",
+        "tactical_view_version": "v3",
+        "theme_id": "QUALITY_ROTATION",
+        "as_of_date": "2026-05-19",
+        "target_action": "INCREASE",
+        "rationale": "Increase quality equity exposure.",
+        "source_refs": [
+            {
+                "source_system": "lotus-advise",
+                "source_type": "TACTICAL_HOUSE_VIEW_DECISION",
+                "source_id": "thv-quality-20260519",
+                "source_version": "v3",
+                "supportability_state": "READY",
+                "content_hash": "sha256:tactical-view",
+            }
+        ],
+        "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
+    }
+    assert invocation.candidate_portfolios[0]["portfolio_id"] == "PB_SG_GLOBAL_BAL_001"
+    assert invocation.eligible_portfolio_types == ["DISCRETIONARY", "DPM"]
+    assert invocation.min_exposure_weight == Decimal("0.05")
+
+
+def test_build_tactical_house_view_authority_request_preserves_missing_minimum_weight() -> None:
+    invocation = build_tactical_house_view_authority_request(
+        tactical_view=TacticalView(),
+        portfolios=[Candidate()],
+        eligible_portfolio_types=["DISCRETIONARY"],
+        as_of_date=date(2026, 5, 19),
+        min_exposure_weight=None,
+    )
+
+    assert invocation.min_exposure_weight is None
+
+
 @pytest.mark.parametrize(
     ("candidate", "code", "message"),
     [
@@ -131,6 +201,47 @@ def test_build_tactical_house_view_candidate_payloads_requires_source_evidence(
 
     assert exc_info.value.code == code
     assert exc_info.value.message == message
+
+
+@pytest.mark.parametrize(
+    ("cohort", "expected_code", "expected_message", "expected_reason_codes"),
+    [
+        (
+            Cohort(supportability_state="EMPTY"),
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+            "Tactical house-view affected cohort is not source-ready.",
+            ("TACTICAL_HOUSE_VIEW_READY",),
+        ),
+        (
+            Cohort(supportability_state="BLOCKED"),
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
+            "Tactical house-view affected cohort is not source-ready.",
+            ("TACTICAL_HOUSE_VIEW_READY",),
+        ),
+        (
+            Cohort(affected_portfolios=()),
+            "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+            "Tactical house-view cohort returned no affected portfolios.",
+            (),
+        ),
+    ],
+)
+def test_tactical_house_view_cohort_failure_classifies_not_ready_source_results(
+    cohort: Cohort,
+    expected_code: str,
+    expected_message: str,
+    expected_reason_codes: tuple[str, ...],
+) -> None:
+    failure = tactical_house_view_cohort_failure(cohort)
+
+    assert failure is not None
+    assert failure.code == expected_code
+    assert failure.message == expected_message
+    assert failure.reason_codes == expected_reason_codes
+
+
+def test_tactical_house_view_cohort_failure_accepts_ready_source_cohort() -> None:
+    assert tactical_house_view_cohort_failure(Cohort()) is None
 
 
 def test_build_tactical_house_view_resolved_portfolios_preserves_lineage_and_diagnostics() -> None:

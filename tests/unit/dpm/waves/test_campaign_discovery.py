@@ -57,7 +57,9 @@ from src.core.waves.campaign_assignment_tasks import (
     _optional_transition_replay_fields_match,
     _required_transition_replay_fields,
     _source_ref_payloads,
+    _transition_next_assignees,
     _transition_task_fields,
+    _validate_transition_field_requirements,
     _validate_transition_allowed,
     build_bulk_review_campaign_definition_assignment_task_page,
     open_bulk_review_campaign_definition_assignment_task,
@@ -1566,6 +1568,57 @@ def test_campaign_assignment_task_transition_field_helper_resolves_due_date_chan
     assert fields.next_tier == "PM"
     assert fields.next_sla == "ATTENTION"
     assert fields.next_due_at == due_at
+
+
+def test_campaign_assignment_task_transition_assignee_helper_normalizes_actor_ids() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    assert _transition_next_assignees(
+        task=opened.assignment_tasks[0],
+        assigned_actor_ids=[" pm_002 ", "pm_001", "pm_002", ""],
+    ) == ["pm_001", "pm_002"]
+    assert _transition_next_assignees(
+        task=opened.assignment_tasks[0],
+        assigned_actor_ids=None,
+    ) == ["pm_001"]
+
+
+def test_campaign_assignment_task_transition_field_requirement_helper_rejects_missing_fields() -> (
+    None
+):
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED",
+    ):
+        _validate_transition_field_requirements(
+            transition_type="REASSIGNED",
+            next_status="OPEN",
+            next_assignees=[],
+            assigned_actor_ids=None,
+            due_at=None,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED",
+    ):
+        _validate_transition_field_requirements(
+            transition_type="DUE_DATE_CHANGED",
+            next_status="OPEN",
+            next_assignees=["pm_001"],
+            assigned_actor_ids=None,
+            due_at=None,
+        )
 
 
 def test_campaign_assignment_task_transition_validation_blocks_opened_and_closed() -> None:

@@ -350,65 +350,15 @@ class DpmPortfolioMemory(BaseModel):
 
     @model_validator(mode="after")
     def validate_aggregate_metadata(self) -> "DpmPortfolioMemory":
-        if self.event_count != len(self.events):
-            raise ValueError("event_count must equal the number of events.")
-
-        expected_event_type_counts = _counts(event.event_type for event in self.events)
-        if self.event_type_counts != expected_event_type_counts:
-            raise ValueError("event_type_counts must match the returned events.")
-
-        expected_source_systems = sorted(
-            {
-                source_system
-                for event in self.events
-                for source_system in _event_source_systems(event)
-            }
+        validate_portfolio_memory_aggregate_metadata(
+            event_count=self.event_count,
+            event_type_counts=self.event_type_counts,
+            source_systems=self.source_systems,
+            reason_codes=self.reason_codes,
+            supportability_state=self.supportability_state,
+            governance_policy=self.governance_policy,
+            events=self.events,
         )
-        if self.source_systems != expected_source_systems:
-            raise ValueError("source_systems must match the returned events.")
-
-        expected_reason_codes = sorted(
-            {reason for event in self.events for reason in event.reason_codes}
-        )
-        if self.reason_codes != expected_reason_codes:
-            raise ValueError("reason_codes must match the returned events.")
-
-        expected_supportability_state = _portfolio_memory_supportability_state(self.events)
-        if self.supportability_state != expected_supportability_state:
-            raise ValueError("supportability_state must match the returned events.")
-
-        missing_governance_keys = (
-            PORTFOLIO_MEMORY_REQUIRED_GOVERNANCE_KEYS - self.governance_policy.keys()
-        )
-        if missing_governance_keys:
-            raise ValueError(
-                "governance_policy missing required keys: "
-                f"{', '.join(sorted(missing_governance_keys))}."
-            )
-
-        blank_governance_keys = [
-            key for key, value in self.governance_policy.items() if not value.strip()
-        ]
-        if blank_governance_keys:
-            raise ValueError(
-                "governance_policy values must be non-blank for keys: "
-                f"{', '.join(sorted(blank_governance_keys))}."
-            )
-
-        for event_field, governance_key in PORTFOLIO_MEMORY_EVENT_GOVERNANCE_FIELDS.items():
-            expected_value = self.governance_policy[governance_key]
-            mismatched_events = [
-                event.event_identity
-                for event in self.events
-                if getattr(event, event_field) != expected_value
-            ]
-            if mismatched_events:
-                raise ValueError(
-                    "events must match governance_policy."
-                    f"{governance_key} for {event_field}: "
-                    f"{', '.join(mismatched_events)}."
-                )
-
         return self
 
 
@@ -1023,6 +973,100 @@ def _counts(values: Iterable[str]) -> dict[str, int]:
     for value in values:
         counts[value] = counts.get(value, 0) + 1
     return counts
+
+
+def validate_portfolio_memory_aggregate_metadata(
+    *,
+    event_count: int,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+    supportability_state: PortfolioMemorySupportabilityState,
+    governance_policy: dict[str, str],
+    events: list[DpmPortfolioMemoryEvent],
+) -> None:
+    _validate_portfolio_memory_event_aggregates(
+        event_count=event_count,
+        event_type_counts=event_type_counts,
+        source_systems=source_systems,
+        reason_codes=reason_codes,
+        supportability_state=supportability_state,
+        events=events,
+    )
+    _validate_portfolio_memory_governance_policy(governance_policy)
+    _validate_portfolio_memory_event_governance(
+        events=events,
+        governance_policy=governance_policy,
+    )
+
+
+def _validate_portfolio_memory_event_aggregates(
+    *,
+    event_count: int,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+    supportability_state: PortfolioMemorySupportabilityState,
+    events: list[DpmPortfolioMemoryEvent],
+) -> None:
+    if event_count != len(events):
+        raise ValueError("event_count must equal the number of events.")
+    if event_type_counts != _counts(event.event_type for event in events):
+        raise ValueError("event_type_counts must match the returned events.")
+    if source_systems != _portfolio_memory_source_systems(events):
+        raise ValueError("source_systems must match the returned events.")
+    if reason_codes != _portfolio_memory_reason_codes(events):
+        raise ValueError("reason_codes must match the returned events.")
+    if supportability_state != _portfolio_memory_supportability_state(events):
+        raise ValueError("supportability_state must match the returned events.")
+
+
+def _portfolio_memory_source_systems(events: list[DpmPortfolioMemoryEvent]) -> list[str]:
+    return sorted(
+        {source_system for event in events for source_system in _event_source_systems(event)}
+    )
+
+
+def _portfolio_memory_reason_codes(events: list[DpmPortfolioMemoryEvent]) -> list[str]:
+    return sorted({reason for event in events for reason in event.reason_codes})
+
+
+def _validate_portfolio_memory_governance_policy(
+    governance_policy: dict[str, str],
+) -> None:
+    missing_governance_keys = PORTFOLIO_MEMORY_REQUIRED_GOVERNANCE_KEYS - governance_policy.keys()
+    if missing_governance_keys:
+        raise ValueError(
+            "governance_policy missing required keys: "
+            f"{', '.join(sorted(missing_governance_keys))}."
+        )
+
+    blank_governance_keys = [key for key, value in governance_policy.items() if not value.strip()]
+    if blank_governance_keys:
+        raise ValueError(
+            "governance_policy values must be non-blank for keys: "
+            f"{', '.join(sorted(blank_governance_keys))}."
+        )
+
+
+def _validate_portfolio_memory_event_governance(
+    *,
+    events: list[DpmPortfolioMemoryEvent],
+    governance_policy: dict[str, str],
+) -> None:
+    for event_field, governance_key in PORTFOLIO_MEMORY_EVENT_GOVERNANCE_FIELDS.items():
+        expected_value = governance_policy[governance_key]
+        mismatched_events = [
+            event.event_identity
+            for event in events
+            if getattr(event, event_field) != expected_value
+        ]
+        if mismatched_events:
+            raise ValueError(
+                "events must match governance_policy."
+                f"{governance_key} for {event_field}: "
+                f"{', '.join(mismatched_events)}."
+            )
 
 
 def _validate_non_negative_counts(*, label: str, counts: dict[str, int]) -> None:

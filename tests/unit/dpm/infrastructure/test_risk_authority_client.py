@@ -16,7 +16,9 @@ from src.infrastructure.risk_authority.client import (
     _concentration_breach_inputs,
     _concentration_reason_codes,
     _post_with_retries,
+    _risk_event_affected_portfolios,
     _risk_event_cohort_from_response,
+    _risk_event_reason_codes,
     _regime_context_from_scenario_response,
     _scenario_bucket,
     _scenario_status_from_supportability,
@@ -298,6 +300,29 @@ def test_lotus_risk_authority_client_maps_risk_event_affected_cohort() -> None:
     assert cohort.request_fingerprint == "sha256:risk-event-cohort"
     assert cohort.affected_portfolios[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
     assert cohort.affected_portfolios[0].impact_score == Decimal("0.0745")
+
+
+def test_risk_event_cohort_helpers_project_reason_codes_and_affected_portfolios() -> None:
+    body = _risk_event_cohort_response()
+
+    affected = _risk_event_affected_portfolios(body["affected_portfolios"])
+
+    assert affected[0].portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert affected[0].mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
+    assert affected[0].source_ref.endswith(":PB_SG_GLOBAL_BAL_001")
+    assert affected[0].reason_codes == ("RISK_EVENT_THRESHOLD_BREACHED",)
+    assert affected[0].impact_score == Decimal("0.0745")
+    assert affected[0].dominant_bucket == "FIXED_INCOME"
+    assert _risk_event_reason_codes(body["reason_codes"]) == ("RISK_EVENT_AFFECTED_COHORT_READY",)
+    assert _risk_event_reason_codes("not-a-list") == ("RISK_EVENT_COHORT_REASON_CODES_MISSING",)
+
+
+def test_risk_event_affected_portfolios_rejects_invalid_payload_shape() -> None:
+    with pytest.raises(ValueError, match="affected_portfolios must be a list"):
+        _risk_event_affected_portfolios({"portfolio_id": "pf_test"})
+
+    with pytest.raises(ValueError, match="affected_portfolios entries must be objects"):
+        _risk_event_affected_portfolios(["not-an-object"])
 
 
 def test_lotus_risk_authority_client_rejects_invalid_risk_event_response() -> None:

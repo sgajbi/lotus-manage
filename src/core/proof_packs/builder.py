@@ -1109,6 +1109,63 @@ def _pre_run_section_payload(
     return None
 
 
+def _run_bound_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    selected_alternative: ConstructionAlternative | None,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> _SectionPayload | None:
+    run_state_payload = _run_state_section_payload(section_type=section_type, result=result)
+    if run_state_payload is not None:
+        return run_state_payload
+
+    run_policy_payload = _run_policy_section_payload(
+        section_type=section_type,
+        result=result,
+        selected_alternative=selected_alternative,
+    )
+    if run_policy_payload is not None:
+        return run_policy_payload
+
+    if section_type == "turnover_and_cost":
+        return _turnover_and_cost_section_payload(
+            selected_alternative=selected_alternative,
+            source_analytics=source_analytics,
+        )
+
+    run_diagnostics_payload = _run_diagnostics_section_payload(
+        section_type=section_type,
+        result=result,
+    )
+    if run_diagnostics_payload is not None:
+        return run_diagnostics_payload
+
+    return None
+
+
+def _run_source_context_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> _SectionPayload | None:
+    if section_type == "scenario_and_regime_evidence":
+        return _source_analytics_section_payload(
+            source_analytics=source_analytics,
+            family="regime_stress",
+            missing_summary="Scenario/regime authority context is not attached.",
+            missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
+            sort_reason_codes=True,
+        )
+    if section_type == "eligibility_and_restrictions":
+        return _eligibility_and_restrictions_section_payload(
+            result=result,
+            source_analytics=source_analytics,
+        )
+    return None
+
+
 def _section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -1146,40 +1203,23 @@ def _section_payload(
         return pre_run_payload
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
-    run_state_payload = _run_state_section_payload(section_type=section_type, result=result)
-    if run_state_payload is not None:
-        return run_state_payload
-    run_policy_payload = _run_policy_section_payload(
+    run_bound_payload = _run_bound_section_payload(
         section_type=section_type,
         result=result,
         selected_alternative=selected_alternative,
+        source_analytics=source_analytics,
     )
-    if run_policy_payload is not None:
-        return run_policy_payload
-    if section_type == "turnover_and_cost":
-        return _turnover_and_cost_section_payload(
-            selected_alternative=selected_alternative,
-            source_analytics=source_analytics,
-        )
-    run_diagnostics_payload = _run_diagnostics_section_payload(
+    if run_bound_payload is not None:
+        return run_bound_payload
+
+    run_source_context_payload = _run_source_context_section_payload(
         section_type=section_type,
         result=result,
+        source_analytics=source_analytics,
     )
-    if run_diagnostics_payload is not None:
-        return run_diagnostics_payload
-    if section_type == "scenario_and_regime_evidence":
-        return _source_analytics_section_payload(
-            source_analytics=source_analytics,
-            family="regime_stress",
-            missing_summary="Scenario/regime authority context is not attached.",
-            missing_reason_code="DPM_SCENARIO_CONTEXT_MISSING",
-            sort_reason_codes=True,
-        )
-    if section_type == "eligibility_and_restrictions":
-        return _eligibility_and_restrictions_section_payload(
-            result=result,
-            source_analytics=source_analytics,
-        )
+    if run_source_context_payload is not None:
+        return run_source_context_payload
+
     governance_payload = _proof_pack_governance_section_payload(
         section_type=section_type,
         result=result,

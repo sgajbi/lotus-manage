@@ -1,21 +1,27 @@
 from src.api.openapi_enrichment import (
     _composite_example_from_schema,
+    _collection_example_from_schema,
     _description_context,
+    _enum_example,
     _example_from_schema,
     _ensure_metrics_path_examples,
+    _ensure_operation_default_docs,
+    _ensure_operation_default_error_response,
     _ensure_operation_examples,
     _infer_description,
     _infer_example,
     _is_error_status_code,
     _is_http_operation_method,
     _number_example_for_key,
-    _collection_example_from_schema,
     _operation_has_error_response,
-    _ref_example_from_schema,
     _operation_tag_for_path,
+    _ref_example_from_schema,
     _schema_declared_example,
-    _semantic_description_for_context,
+    _schema_format_example,
+    _schema_http_operations,
+    _schema_type_example,
     _SEMANTIC_DESCRIPTION_RULES,
+    _semantic_description_for_context,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
@@ -111,6 +117,37 @@ def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -
     assert _semantic_string_example_for_key("workflow_status", "string") == "READY"
     assert _semantic_string_example_for_key("display_name", "string") == "sample_display_name"
     assert _semantic_string_example_for_key("unknown", None) is None
+
+
+def test_openapi_enrichment_infer_example_helpers_separate_schema_concerns() -> None:
+    assert _enum_example({"enum": ["READY", "BLOCKED"]}) == (True, "READY")
+    assert _enum_example({"enum": []}) == (False, None)
+    assert _schema_type_example(
+        "allocations",
+        key="allocations",
+        prop_schema={"type": "array", "items": {"type": "integer"}},
+    ) == (True, [10])
+    assert _schema_type_example(
+        "metadata",
+        key="metadata",
+        prop_schema={"type": "object"},
+    ) == (True, {"sample_key": "sample_value"})
+    assert _schema_type_example(
+        "targetWeight",
+        key="target_weight",
+        prop_schema={"type": "number"},
+    ) == (True, 0.125)
+    assert _schema_type_example(
+        "displayName",
+        key="display_name",
+        prop_schema={"type": "string"},
+    ) == (False, None)
+    assert _schema_format_example({"format": "date"}) == (True, "2026-03-02")
+    assert _schema_format_example({"format": "date-time"}) == (
+        True,
+        "2026-03-02T10:30:00Z",
+    )
+    assert _schema_format_example({"format": "uuid"}) == (False, None)
 
 
 def test_openapi_enrichment_prefers_declared_schema_examples() -> None:
@@ -327,6 +364,59 @@ def test_openapi_enrichment_operation_method_and_error_status_helpers() -> None:
     assert _is_error_status_code("404")
     assert _is_error_status_code("default")
     assert not _is_error_status_code("302")
+
+
+def test_openapi_enrichment_operation_documentation_helpers_handle_defaults() -> None:
+    operation = {"responses": {"200": {"description": "ok"}}}
+
+    _ensure_operation_default_docs(
+        operation=operation,
+        method="post",
+        path="/api/v1/custom-items",
+        service_name="lotus-manage",
+    )
+    _ensure_operation_default_error_response(operation)
+
+    assert operation["summary"] == "POST /api/v1/custom-items"
+    assert operation["description"] == ("POST operation for /api/v1/custom-items in lotus-manage.")
+    assert operation["tags"] == ["Api"]
+    assert operation["responses"]["default"] == {"description": "Unexpected error response."}
+
+    existing = {
+        "summary": "Existing summary",
+        "description": "Existing description",
+        "tags": ["Existing"],
+        "responses": {"200": {}, "409": {"description": "Conflict."}},
+    }
+
+    _ensure_operation_default_docs(
+        operation=existing,
+        method="get",
+        path="/health/live",
+        service_name="lotus-manage",
+    )
+    _ensure_operation_default_error_response(existing)
+
+    assert existing["summary"] == "Existing summary"
+    assert existing["description"] == "Existing description"
+    assert existing["tags"] == ["Existing"]
+    assert "default" not in existing["responses"]
+
+
+def test_openapi_enrichment_schema_http_operations_filters_schema_fragments() -> None:
+    operation = {"responses": {"200": {"description": "ok"}}}
+
+    schema = {
+        "paths": {
+            "/api/v1/custom": {"get": operation, "trace": {"responses": {}}},
+            "/non-dict": [],
+            42: {"get": {"responses": {}}},
+            "/bad-operation": {"post": []},
+        }
+    }
+
+    assert list(_schema_http_operations(schema)) == [("/api/v1/custom", "get", operation)]
+    assert list(_schema_http_operations({"paths": []})) == []
 
 
 def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() -> None:

@@ -15,6 +15,15 @@ from src.core.rebalance_runs.models import (
 )
 from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
+from src.infrastructure.rebalance_runs.operation_query import (
+    build_operation_filter_query,
+    operation_page,
+)
+from src.infrastructure.rebalance_runs.workflow_decision_query import (
+    build_workflow_decision_filter_query,
+    workflow_decision_page,
+    workflow_decisions_from_rows,
+)
 
 
 class PostgresDpmRunRepository:
@@ -385,24 +394,14 @@ class PostgresDpmRunRepository:
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
-        where_clauses = []
-        args: list[str] = []
-        if created_from is not None:
-            where_clauses.append("created_at >= %s")
-            args.append(created_from.isoformat())
-        if created_to is not None:
-            where_clauses.append("created_at <= %s")
-            args.append(created_to.isoformat())
-        if operation_type is not None:
-            where_clauses.append("operation_type = %s")
-            args.append(operation_type)
-        if status is not None:
-            where_clauses.append("status = %s")
-            args.append(status)
-        if correlation_id is not None:
-            where_clauses.append("correlation_id = %s")
-            args.append(correlation_id)
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        filters = build_operation_filter_query(
+            placeholder="%s",
+            created_from=created_from,
+            created_to=created_to,
+            operation_type=operation_type,
+            status=status,
+            correlation_id=correlation_id,
+        )
         query = f"""
             SELECT
                 operation_id,
@@ -416,27 +415,17 @@ class PostgresDpmRunRepository:
                 error_json,
                 request_json
             FROM dpm_async_operations
-            {where_sql}
+            {filters.where_sql}
             ORDER BY created_at DESC, operation_id DESC
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
+            rows = connection.execute(query, filters.args).fetchall()
         operation_candidates = [self._to_operation(row) for row in rows]
         operations = cast(
             list[DpmAsyncOperationRecord],
             [operation for operation in operation_candidates if operation is not None],
         )
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(operations) if row.operation_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            operations = operations[cursor_index + 1 :]
-        page = operations[:limit]
-        next_cursor = page[-1].operation_id if len(operations) > limit else None
-        return page, next_cursor
+        return operation_page(operations, limit=limit, cursor=cursor)
 
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
         cutoff = now.astimezone(timezone.utc) - timedelta(seconds=ttl_seconds)
@@ -523,27 +512,15 @@ class PostgresDpmRunRepository:
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmRunWorkflowDecisionRecord], Optional[str]]:
-        where_clauses = []
-        args: list[str] = []
-        if rebalance_run_id is not None:
-            where_clauses.append("run_id = %s")
-            args.append(rebalance_run_id)
-        if action is not None:
-            where_clauses.append("action = %s")
-            args.append(action)
-        if actor_id is not None:
-            where_clauses.append("actor_id = %s")
-            args.append(actor_id)
-        if reason_code is not None:
-            where_clauses.append("reason_code = %s")
-            args.append(reason_code)
-        if decided_from is not None:
-            where_clauses.append("decided_at >= %s")
-            args.append(decided_from.isoformat())
-        if decided_to is not None:
-            where_clauses.append("decided_at <= %s")
-            args.append(decided_to.isoformat())
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        filter_query = build_workflow_decision_filter_query(
+            placeholder="%s",
+            rebalance_run_id=rebalance_run_id,
+            action=action,
+            actor_id=actor_id,
+            reason_code=reason_code,
+            decided_from=decided_from,
+            decided_to=decided_to,
+        )
         query = f"""
             SELECT
                 decision_id,
@@ -555,35 +532,13 @@ class PostgresDpmRunRepository:
                 decided_at,
                 correlation_id
             FROM dpm_workflow_decisions
-            {where_sql}
+            {filter_query.where_sql}
             ORDER BY decided_at DESC, decision_id DESC
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
-        decisions = [
-            DpmRunWorkflowDecisionRecord(
-                decision_id=row["decision_id"],
-                run_id=row["run_id"],
-                action=row["action"],
-                reason_code=row["reason_code"],
-                comment=row["comment"],
-                actor_id=row["actor_id"],
-                decided_at=datetime.fromisoformat(row["decided_at"]),
-                correlation_id=row["correlation_id"],
-            )
-            for row in rows
-        ]
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(decisions) if row.decision_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            decisions = decisions[cursor_index + 1 :]
-        page = decisions[:limit]
-        next_cursor = page[-1].decision_id if len(decisions) > limit else None
-        return page, next_cursor
+            rows = connection.execute(query, filter_query.args).fetchall()
+        decisions = workflow_decisions_from_rows(rows)
+        return workflow_decision_page(decisions=decisions, limit=limit, cursor=cursor)
 
     def append_lineage_edge(self, edge: DpmLineageEdgeRecord) -> None:
         query = """

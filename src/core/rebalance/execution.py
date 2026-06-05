@@ -386,6 +386,69 @@ def _after_simulation_options(options: EngineOptions) -> EngineOptions:
     return options.model_copy(update={"valuation_mode": after_valuation_mode})
 
 
+def _hard_rule_blockers(rules: list[RuleResult]) -> list[str]:
+    return [rule.rule_id for rule in rules if rule.severity == "HARD" and rule.status == "FAIL"]
+
+
+def _record_simulation_safety_warnings(
+    *,
+    blockers: list[str],
+    diagnostics: DiagnosticsData,
+) -> None:
+    if "NO_SHORTING" in blockers or "INSUFFICIENT_CASH" in blockers:
+        diagnostics.warnings.append("SIMULATION_SAFETY_CHECK_FAILED")
+
+
+def _blocked_simulation_result_from_rules(
+    *,
+    intents: list[OrderIntent],
+    state: SimulatedState | PortfolioSnapshot,
+    rules: list[RuleResult],
+    diagnostics: DiagnosticsData,
+) -> _ExecutionSimulationResult | None:
+    blockers = _hard_rule_blockers(rules)
+    if not blockers:
+        return None
+
+    _record_simulation_safety_warnings(
+        blockers=blockers,
+        diagnostics=diagnostics,
+    )
+    return intents, state, rules, "BLOCKED", None
+
+
+def _reconciliation_rule(
+    *,
+    recon_diff: Decimal,
+    tolerance: Decimal,
+) -> RuleResult:
+    return RuleResult(
+        rule_id="RECONCILIATION",
+        severity="HARD",
+        status="FAIL",
+        measured=recon_diff,
+        threshold={"max": tolerance},
+        reason_code="VALUE_MISMATCH",
+        remediation_hint="Check pricing/FX or engine logic.",
+    )
+
+
+def _simulation_result_with_reconciliation(
+    *,
+    intents: list[OrderIntent],
+    state: SimulatedState,
+    rules: list[RuleResult],
+    recon: Reconciliation,
+    recon_diff: Decimal,
+    tolerance: Decimal,
+) -> _ExecutionSimulationResult:
+    if recon.status == "MISMATCH":
+        rules.append(_reconciliation_rule(recon_diff=recon_diff, tolerance=tolerance))
+        return intents, state, rules, "BLOCKED", recon
+
+    return intents, state, rules, derive_status_from_rules(rules), recon
+
+
 def generate_fx_and_simulate(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -443,16 +506,14 @@ def generate_fx_and_simulate(
 
     rules = RuleEngine.evaluate(state, options, diagnostics)
 
-    blocked = any(r.severity == "HARD" and r.status == "FAIL" for r in rules)
-
-    if blocked:
-        blockers = [r.rule_id for r in rules if r.severity == "HARD" and r.status == "FAIL"]
-        if "NO_SHORTING" in blockers:
-            diagnostics.warnings.append("SIMULATION_SAFETY_CHECK_FAILED")
-        if "INSUFFICIENT_CASH" in blockers:
-            diagnostics.warnings.append("SIMULATION_SAFETY_CHECK_FAILED")
-
-        return intents, state, rules, "BLOCKED", None
+    blocked_result = _blocked_simulation_result_from_rules(
+        intents=intents,
+        state=state,
+        rules=rules,
+        diagnostics=diagnostics,
+    )
+    if blocked_result is not None:
+        return blocked_result
 
     recon, recon_diff, tolerance = build_reconciliation(
         before_total=total_val_before,
@@ -461,21 +522,14 @@ def generate_fx_and_simulate(
         base_currency=portfolio.base_currency,
     )
 
-    if recon.status == "MISMATCH":
-        rules.append(
-            RuleResult(
-                rule_id="RECONCILIATION",
-                severity="HARD",
-                status="FAIL",
-                measured=recon_diff,
-                threshold={"max": tolerance},
-                reason_code="VALUE_MISMATCH",
-                remediation_hint="Check pricing/FX or engine logic.",
-            )
-        )
-        return intents, state, rules, "BLOCKED", recon
-
-    return intents, state, rules, derive_status_from_rules(rules), recon
+    return _simulation_result_with_reconciliation(
+        intents=intents,
+        state=state,
+        rules=rules,
+        recon=recon,
+        recon_diff=recon_diff,
+        tolerance=tolerance,
+    )
 
 
 def check_blocking_dq(dq_log: dict[str, list[str]], options: EngineOptions) -> bool:

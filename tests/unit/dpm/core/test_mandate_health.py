@@ -30,6 +30,9 @@ from src.core.mandates import (
     MandateHealthState,
     MandateRecommendedAction,
     _build_digital_twin_source_lineage,
+    _mandate_binding_profile_gap_codes,
+    _mandate_optional_source_product_gap_codes,
+    _mandate_source_schedule_gap_codes,
     _mandate_twin_field_gap_codes,
     calculate_mandate_health,
     build_health_input_from_core_sources,
@@ -534,6 +537,63 @@ def test_mandate_twin_field_gap_codes_project_missing_core_products() -> None:
         "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED",
         "BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED",
     ]
+
+
+def test_mandate_source_schedule_gap_codes_project_missing_source_products() -> None:
+    assert _mandate_source_schedule_gap_codes(
+        client_income_needs_schedule=None,
+        liquidity_reserve_requirement=None,
+        planned_withdrawal_schedule=None,
+    ) == [
+        "CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED",
+        "LIQUIDITY_RESERVE_REQUIREMENT_NOT_YET_SOURCED",
+        "PLANNED_WITHDRAWAL_SCHEDULE_NOT_YET_SOURCED",
+    ]
+    assert (
+        _mandate_source_schedule_gap_codes(
+            client_income_needs_schedule=_client_income_needs_schedule(),
+            liquidity_reserve_requirement=_liquidity_reserve_requirement(),
+            planned_withdrawal_schedule=_planned_withdrawal_schedule(),
+        )
+        == []
+    )
+
+
+def test_mandate_binding_profile_gap_codes_project_missing_profile_fields() -> None:
+    assert _mandate_binding_profile_gap_codes(
+        _mandate_binding(
+            mandate_objective=None,
+            review_cadence=None,
+            next_review_due_date=None,
+        )
+    ) == [
+        "MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED",
+        "MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED",
+    ]
+    assert _mandate_binding_profile_gap_codes(_mandate_binding()) == []
+
+
+def test_mandate_optional_source_product_gap_codes_project_missing_products() -> None:
+    assert _mandate_optional_source_product_gap_codes(
+        client_restriction_profile=None,
+        sustainability_preference_profile=None,
+        portfolio_cashflow_projection=None,
+        benchmark_assignment=None,
+    ) == [
+        "CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED",
+        "SUSTAINABILITY_PREFERENCE_PROFILE_NOT_YET_SOURCED",
+        "PORTFOLIO_CASHFLOW_PROJECTION_NOT_YET_SOURCED",
+        "BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED",
+    ]
+    assert (
+        _mandate_optional_source_product_gap_codes(
+            client_restriction_profile=_client_restriction_profile(),
+            sustainability_preference_profile=_sustainability_preference_profile(),
+            portfolio_cashflow_projection=_portfolio_cashflow_projection(),
+            benchmark_assignment=_benchmark_assignment(),
+        )
+        == []
+    )
 
 
 def test_mandate_twin_field_gap_codes_clear_when_core_products_are_sourced() -> None:

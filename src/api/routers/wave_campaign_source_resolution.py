@@ -87,20 +87,7 @@ def resolve_bulk_review_campaign_portfolios(
             },
         )
 
-    def _candidate_payload(candidate: object) -> dict[str, object]:
-        if hasattr(candidate, "model_dump"):
-            payload = candidate.model_dump(mode="json")
-            if not isinstance(payload, dict):
-                raise TypeError("Candidate payload from model_dump() must be a dictionary.")
-            return cast(dict[str, object], payload)
-        if isinstance(candidate, Mapping):
-            payload = dict(candidate)
-            return cast(dict[str, object], payload)
-        raise TypeError(
-            "Bulk review campaign candidates must expose model_dump() or mapping semantics."
-        )
-
-    candidate_payloads = [_candidate_payload(candidate) for candidate in included_candidates]
+    candidate_payloads = _candidate_payloads(included_candidates)
     membership_hash = campaign_membership_hash(
         trigger_id=request.trigger_id,
         as_of_date=campaign_as_of_date,
@@ -112,37 +99,96 @@ def resolve_bulk_review_campaign_portfolios(
         campaign_as_of_date=campaign_as_of_date,
         membership_hash=membership_hash,
     )
-    output: list[dict[str, object]] = []
-    for payload in candidate_payloads:
-        portfolio_type = cast("str | None", payload["portfolio_type"])
-        output.append(
-            {
-                "portfolio_id": cast("str", payload["portfolio_id"]),
-                "mandate_id": cast("str | None", payload["mandate_id"]),
-                "source_refs": [
-                    membership_ref,
-                    *governance_refs,
-                    bulk_review_campaign_member_ref(
-                        trigger_id=request.trigger_id,
-                        portfolio_id=cast("str", payload["portfolio_id"]),
-                        campaign_as_of_date=campaign_as_of_date,
-                        membership_hash=membership_hash,
-                    ),
-                    *source_refs_payload(
-                        cast(Sequence[DpmWaveSourceRef], payload["source_refs"]),
-                    ),
-                ],
-                "diagnostics": {
-                    "source_owner": "lotus-manage",
-                    "source_product": "BulkReviewCampaignMembership:v1",
-                    "campaign_id": request.trigger_id,
-                    "campaign_as_of_date": campaign_as_of_date.isoformat(),
-                    "portfolio_type": portfolio_type.strip().upper() if portfolio_type else None,
-                    "eligible_portfolio_types": sorted(eligible_portfolio_types),
-                    "excluded_candidate_count": selection.excluded_count,
-                    "membership_supportability_state": "READY",
-                    **governance_diagnostics,
-                },
-            }
+    return [
+        _bulk_review_campaign_portfolio_payload(
+            payload=payload,
+            trigger_id=request.trigger_id,
+            campaign_as_of_date=campaign_as_of_date,
+            membership_hash=membership_hash,
+            membership_ref=membership_ref,
+            governance_refs=governance_refs,
+            governance_diagnostics=governance_diagnostics,
+            eligible_portfolio_types=eligible_portfolio_types,
+            excluded_candidate_count=selection.excluded_count,
         )
-    return output
+        for payload in candidate_payloads
+    ]
+
+
+def _candidate_payloads(candidates: Sequence[object]) -> list[dict[str, object]]:
+    return [_candidate_payload(candidate) for candidate in candidates]
+
+
+def _candidate_payload(candidate: object) -> dict[str, object]:
+    if hasattr(candidate, "model_dump"):
+        payload = candidate.model_dump(mode="json")
+        if not isinstance(payload, dict):
+            raise TypeError("Candidate payload from model_dump() must be a dictionary.")
+        return cast(dict[str, object], payload)
+    if isinstance(candidate, Mapping):
+        payload = dict(candidate)
+        return cast(dict[str, object], payload)
+    raise TypeError(
+        "Bulk review campaign candidates must expose model_dump() or mapping semantics."
+    )
+
+
+def _bulk_review_campaign_portfolio_payload(
+    *,
+    payload: dict[str, object],
+    trigger_id: str,
+    campaign_as_of_date: Any,
+    membership_hash: str,
+    membership_ref: dict[str, object],
+    governance_refs: Sequence[dict[str, object]],
+    governance_diagnostics: dict[str, object],
+    eligible_portfolio_types: set[str],
+    excluded_candidate_count: int,
+) -> dict[str, object]:
+    portfolio_id = cast("str", payload["portfolio_id"])
+    portfolio_type = cast("str | None", payload["portfolio_type"])
+    return {
+        "portfolio_id": portfolio_id,
+        "mandate_id": cast("str | None", payload["mandate_id"]),
+        "source_refs": [
+            membership_ref,
+            *governance_refs,
+            bulk_review_campaign_member_ref(
+                trigger_id=trigger_id,
+                portfolio_id=portfolio_id,
+                campaign_as_of_date=campaign_as_of_date,
+                membership_hash=membership_hash,
+            ),
+            *source_refs_payload(cast(Sequence[DpmWaveSourceRef], payload["source_refs"])),
+        ],
+        "diagnostics": _bulk_review_campaign_membership_diagnostics(
+            trigger_id=trigger_id,
+            campaign_as_of_date=campaign_as_of_date,
+            portfolio_type=portfolio_type,
+            eligible_portfolio_types=eligible_portfolio_types,
+            excluded_candidate_count=excluded_candidate_count,
+            governance_diagnostics=governance_diagnostics,
+        ),
+    }
+
+
+def _bulk_review_campaign_membership_diagnostics(
+    *,
+    trigger_id: str,
+    campaign_as_of_date: Any,
+    portfolio_type: str | None,
+    eligible_portfolio_types: set[str],
+    excluded_candidate_count: int,
+    governance_diagnostics: dict[str, object],
+) -> dict[str, object]:
+    return {
+        "source_owner": "lotus-manage",
+        "source_product": "BulkReviewCampaignMembership:v1",
+        "campaign_id": trigger_id,
+        "campaign_as_of_date": campaign_as_of_date.isoformat(),
+        "portfolio_type": portfolio_type.strip().upper() if portfolio_type else None,
+        "eligible_portfolio_types": sorted(eligible_portfolio_types),
+        "excluded_candidate_count": excluded_candidate_count,
+        "membership_supportability_state": "READY",
+        **governance_diagnostics,
+    }
