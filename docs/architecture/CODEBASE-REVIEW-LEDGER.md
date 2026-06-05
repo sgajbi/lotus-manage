@@ -17215,3 +17215,26 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-709: Mandate twin field-gap helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/mandates.py` and `tests/unit/dpm/core/test_mandate_health.py`.
+- Finding: `_mandate_twin_field_gap_codes` became the top current source-complexity hotspot and
+  mixed source schedule gaps, mandate binding profile gaps, optional source-product gaps, and
+  ordered gap-code composition in one helper.
+- Action: extracted source schedule, mandate binding profile, and optional source-product gap-code
+  helpers while preserving the public mandate twin gap-code order. Added direct helper tests for
+  missing and fully sourced cases in each category.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m ruff format --check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`,
+  `python -m pytest tests/unit/dpm/core/test_mandate_health.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate twin maintainability
+  refactoring.

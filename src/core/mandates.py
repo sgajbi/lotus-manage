@@ -585,6 +585,29 @@ def _mandate_twin_field_gap_codes(
     planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse],
     benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse],
 ) -> list[str]:
+    field_gaps = _mandate_source_schedule_gap_codes(
+        client_income_needs_schedule=client_income_needs_schedule,
+        liquidity_reserve_requirement=liquidity_reserve_requirement,
+        planned_withdrawal_schedule=planned_withdrawal_schedule,
+    )
+    field_gaps.extend(_mandate_binding_profile_gap_codes(mandate))
+    field_gaps.extend(
+        _mandate_optional_source_product_gap_codes(
+            client_restriction_profile=client_restriction_profile,
+            sustainability_preference_profile=sustainability_preference_profile,
+            portfolio_cashflow_projection=portfolio_cashflow_projection,
+            benchmark_assignment=benchmark_assignment,
+        )
+    )
+    return field_gaps
+
+
+def _mandate_source_schedule_gap_codes(
+    *,
+    client_income_needs_schedule: Optional[DpmCoreClientIncomeNeedsScheduleResponse],
+    liquidity_reserve_requirement: Optional[DpmCoreLiquidityReserveRequirementResponse],
+    planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse],
+) -> list[str]:
     field_gaps = []
     if client_income_needs_schedule is None:
         field_gaps.append("CLIENT_INCOME_NEED_PROFILE_NOT_YET_SOURCED")
@@ -592,10 +615,28 @@ def _mandate_twin_field_gap_codes(
         field_gaps.append("LIQUIDITY_RESERVE_REQUIREMENT_NOT_YET_SOURCED")
     if planned_withdrawal_schedule is None:
         field_gaps.append("PLANNED_WITHDRAWAL_SCHEDULE_NOT_YET_SOURCED")
+    return field_gaps
+
+
+def _mandate_binding_profile_gap_codes(
+    mandate: DpmCoreMandateBindingResponse,
+) -> list[str]:
+    field_gaps = []
     if not mandate.mandate_objective:
         field_gaps.append("MANDATE_OBJECTIVE_PROFILE_NOT_YET_SOURCED")
     if not mandate.review_cadence or mandate.next_review_due_date is None:
         field_gaps.append("MANDATE_REVIEW_SCHEDULE_NOT_YET_SOURCED")
+    return field_gaps
+
+
+def _mandate_optional_source_product_gap_codes(
+    *,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse],
+    sustainability_preference_profile: Optional[DpmCoreSustainabilityPreferenceProfileResponse],
+    portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse],
+    benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse],
+) -> list[str]:
+    field_gaps = []
     if client_restriction_profile is None:
         field_gaps.append("CLIENT_RESTRICTION_PROFILE_NOT_YET_SOURCED")
     if sustainability_preference_profile is None:
