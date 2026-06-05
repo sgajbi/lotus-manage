@@ -142,34 +142,9 @@ def _tactical_house_view_cohort_from_response(
 ) -> TacticalHouseViewAffectedCohort:
     try:
         supportability = _dict_section(body, "supportability")
-        affected_payload = body.get("affected_portfolios")
-        if not isinstance(affected_payload, list):
-            raise ValueError("affected_portfolios must be a list")
-        source_refs_payload = body.get("source_refs")
-        if not isinstance(source_refs_payload, list):
-            raise ValueError("source_refs must be a list")
-        if not all(isinstance(portfolio, dict) for portfolio in affected_payload):
-            raise ValueError("affected_portfolios entries must be objects")
-        if not all(isinstance(ref, dict) for ref in source_refs_payload):
-            raise ValueError("source_refs entries must be objects")
-        reason_codes = supportability.get("reason_codes")
-        if not isinstance(reason_codes, list):
-            reason_codes = ["TACTICAL_HOUSE_VIEW_SUPPORTABILITY_REASON_CODES_MISSING"]
-        affected = tuple(
-            TacticalHouseViewAffectedPortfolio(
-                portfolio_id=str(portfolio["portfolio_id"]),
-                mandate_id=(
-                    str(portfolio["mandate_id"])
-                    if portfolio.get("mandate_id") is not None
-                    else None
-                ),
-                inclusion_reason_codes=tuple(
-                    str(code) for code in portfolio.get("inclusion_reason_codes", [])
-                ),
-                source_refs=_dict_tuple(portfolio.get("source_refs")),
-            )
-            for portfolio in affected_payload
-        )
+        affected = _tactical_affected_portfolios_from_response(body)
+        source_refs = _dict_list_section(body, "source_refs")
+        reason_codes = _supportability_reason_codes(supportability)
         return TacticalHouseViewAffectedCohort(
             cohort_id=str(body["cohort_id"]),
             tactical_view_id=str(body["tactical_view_id"]),
@@ -184,10 +159,50 @@ def _tactical_house_view_cohort_from_response(
             supportability_state=str(supportability.get("state") or "BLOCKED"),
             supportability_reason_codes=tuple(str(code) for code in reason_codes),
             affected_portfolios=affected,
-            source_refs=tuple(dict(ref) for ref in source_refs_payload),
+            source_refs=tuple(dict(ref) for ref in source_refs),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_INVALID_RESPONSE") from exc
+
+
+def _tactical_affected_portfolios_from_response(
+    body: dict[str, Any],
+) -> tuple[TacticalHouseViewAffectedPortfolio, ...]:
+    affected_payload = _dict_list_section(body, "affected_portfolios")
+    return tuple(
+        _tactical_affected_portfolio_from_payload(portfolio) for portfolio in affected_payload
+    )
+
+
+def _tactical_affected_portfolio_from_payload(
+    portfolio: dict[str, Any],
+) -> TacticalHouseViewAffectedPortfolio:
+    return TacticalHouseViewAffectedPortfolio(
+        portfolio_id=str(portfolio["portfolio_id"]),
+        mandate_id=str(portfolio["mandate_id"])
+        if portfolio.get("mandate_id") is not None
+        else None,
+        inclusion_reason_codes=tuple(
+            str(code) for code in portfolio.get("inclusion_reason_codes", [])
+        ),
+        source_refs=_dict_tuple(portfolio.get("source_refs")),
+    )
+
+
+def _supportability_reason_codes(supportability: dict[str, Any]) -> list[Any]:
+    reason_codes = supportability.get("reason_codes")
+    if isinstance(reason_codes, list):
+        return reason_codes
+    return ["TACTICAL_HOUSE_VIEW_SUPPORTABILITY_REASON_CODES_MISSING"]
+
+
+def _dict_list_section(body: dict[str, Any], key: str) -> list[dict[str, Any]]:
+    value = body.get(key)
+    if not isinstance(value, list):
+        raise ValueError(f"{key} must be a list")
+    if not all(isinstance(item, dict) for item in value):
+        raise ValueError(f"{key} entries must be objects")
+    return value
 
 
 def _dict_section(body: dict[str, Any], key: str) -> dict[str, Any]:

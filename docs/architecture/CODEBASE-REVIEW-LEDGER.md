@@ -16542,3 +16542,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-681: Advise tactical cohort response helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/advise_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_advise_authority_client.py`.
+- Finding: `_tactical_house_view_cohort_from_response` became the top current source-complexity
+  hotspot and mixed response list-shape validation, supportability reason-code defaulting,
+  affected-portfolio projection, source-ref copying, and cohort dataclass assembly in one
+  infrastructure parser.
+- Action: extracted list-section validation, supportability reason-code normalization,
+  affected-portfolio item projection, and affected-portfolio collection projection helpers. Kept
+  `_tactical_house_view_cohort_from_response` as the cohort assembly and invalid-response
+  translation boundary. Added direct helper tests for source-backed portfolio projection, optional
+  mandate defaulting, reason-code defaulting, and invalid list shapes.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/advise_authority/client.py tests/unit/dpm/infrastructure/test_advise_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/advise_authority/client.py tests/unit/dpm/infrastructure/test_advise_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/advise_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_advise_authority_client.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal Advise authority client
+  maintainability refactoring.
