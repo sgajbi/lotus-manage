@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T04:29:26+00:00`
+- Generated at: `2026-06-05T04:35:11+00:00`
 
-- Current ref: `7e3b8e9c`
+- Current ref: `c1f82002`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
-| 2 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
-| 3 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
-| 4 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
-| 5 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
-| 6 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
-| 7 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
-| 8 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
-| 9 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 10 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 1 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
+| 2 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 3 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
+| 4 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
+| 5 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
+| 6 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
+| 7 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 8 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
+| 9 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 10 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
 
 ### Most Complex Current Test Functions
 
