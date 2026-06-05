@@ -16,6 +16,10 @@ from src.core.rebalance_runs.models import (
     DpmSupportabilitySummaryData,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
+from src.infrastructure.rebalance_runs.operation_query import (
+    build_operation_filter_query,
+    operation_page,
+)
 from src.infrastructure.rebalance_runs.workflow_decision_query import (
     build_workflow_decision_filter_query,
     workflow_decision_page,
@@ -371,25 +375,14 @@ class SqliteDpmRunRepository(DpmRunRepository):
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
-        where_clauses = []
-        args: list[str] = []
-        if created_from is not None:
-            where_clauses.append("created_at >= ?")
-            args.append(created_from.isoformat())
-        if created_to is not None:
-            where_clauses.append("created_at <= ?")
-            args.append(created_to.isoformat())
-        if operation_type is not None:
-            where_clauses.append("operation_type = ?")
-            args.append(operation_type)
-        if status is not None:
-            where_clauses.append("status = ?")
-            args.append(status)
-        if correlation_id is not None:
-            where_clauses.append("correlation_id = ?")
-            args.append(correlation_id)
-
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        filters = build_operation_filter_query(
+            placeholder="?",
+            created_from=created_from,
+            created_to=created_to,
+            operation_type=operation_type,
+            status=status,
+            correlation_id=correlation_id,
+        )
         query = f"""
             SELECT
                 operation_id,
@@ -403,27 +396,17 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 error_json,
                 request_json
             FROM dpm_async_operations
-            {where_sql}
+            {filters.where_sql}
             ORDER BY created_at DESC, operation_id DESC
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
+            rows = connection.execute(query, filters.args).fetchall()
         operation_candidates = [self._to_operation(row) for row in rows]
         operations = cast(
             list[DpmAsyncOperationRecord],
             [operation for operation in operation_candidates if operation is not None],
         )
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(operations) if row.operation_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            operations = operations[cursor_index + 1 :]
-        page = operations[:limit]
-        next_cursor = page[-1].operation_id if len(operations) > limit else None
-        return page, next_cursor
+        return operation_page(operations, limit=limit, cursor=cursor)
 
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
         cutoff = now.astimezone(timezone.utc) - timedelta(seconds=ttl_seconds)

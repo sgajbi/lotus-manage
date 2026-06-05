@@ -17793,3 +17793,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-733: Rebalance operation list query helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/operation_query.py`,
+  `src/infrastructure/rebalance_runs/sqlite.py`,
+  `src/infrastructure/rebalance_runs/postgres.py`, and
+  `tests/unit/dpm/supportability/test_operation_query.py`.
+- Finding: sqlite and postgres rebalance-run repositories duplicated async-operation list filter
+  assembly and cursor pagination logic, leaving both `list_operations` implementations as the top
+  current source hotspots.
+- Action: extracted backend-agnostic operation filter query assembly and cursor pagination helpers,
+  then reused them from both sqlite and postgres repositories. Added direct helper tests for
+  placeholder-specific SQL, ordered filter arguments, empty filters, next-cursor paging, cursor
+  advancement, and unknown-cursor fail-closed behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/operation_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py tests/unit/dpm/supportability/test_operation_query.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/operation_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py tests/unit/dpm/supportability/test_operation_query.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/operation_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_operation_query.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_list_operations_filter_and_cursor_contract tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_list_operations_time_window_and_invalid_cursor_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_list_operations_and_purge tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_list_operations_filters_and_invalid_cursor -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-run repository
+  maintainability refactoring.
