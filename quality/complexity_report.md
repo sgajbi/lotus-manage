@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T11:32:59+00:00`
+- Generated at: `2026-06-05T11:41:04+00:00`
 
-- Current ref: `24da1e5b`
+- Current ref: `e204b141`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
-| 2 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
-| 3 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
-| 4 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
-| 5 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
-| 6 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
-| 7 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
-| 8 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
-| 9 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
-| 10 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
+| 1 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
+| 2 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
+| 3 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
+| 4 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
+| 5 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
+| 6 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
+| 7 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
+| 8 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
+| 9 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
+| 10 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
 
 ### Most Complex Current Test Functions
 
