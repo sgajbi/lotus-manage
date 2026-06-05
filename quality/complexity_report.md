@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T06:10:56+00:00`
+- Generated at: `2026-06-05T06:27:19+00:00`
 
-- Current ref: `c6d682a3`
+- Current ref: `56978097`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
-| 2 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
-| 3 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
-| 4 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
-| 5 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
-| 6 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
-| 7 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
-| 8 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 9 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 10 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 1 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
+| 2 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
+| 3 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
+| 4 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
+| 5 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
+| 6 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
+| 7 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
+| 8 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 9 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 10 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
 
 ### Most Complex Current Test Functions
 
