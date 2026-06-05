@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T01:08:10+00:00`
+- Generated at: `2026-06-05T01:12:34+00:00`
 
-- Current ref: `55fbf762`
+- Current ref: `9cf033bd`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
-| 2 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
-| 3 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
-| 4 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
-| 5 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
-| 6 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 7 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 8 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
-| 9 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
-| 10 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
+| 1 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
+| 2 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
+| 3 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
+| 4 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
+| 5 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 6 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 7 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
+| 8 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
+| 9 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
+| 10 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
 
 ### Most Complex Current Test Functions
 
