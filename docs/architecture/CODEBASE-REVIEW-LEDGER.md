@@ -16345,3 +16345,32 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-673: Campaign-definition request resolution helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/wave_campaign_definition_resolution.py` and
+  `tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`.
+- Finding: `request_with_campaign_definition` became the top current source-complexity hotspot and
+  mixed campaign-definition reference validation, repository lookup narrowing, lifecycle/as-of
+  rejection, source-ref creation, candidate portfolio projection, governance DTO projection, and
+  final request copying in one router helper.
+- Action: extracted router-local helpers for campaign-definition reference validation, availability
+  validation, definition source-ref projection, candidate portfolio projection, and governance input
+  projection. Kept API DTO construction and `DpmWaveValidationError` translation at the router
+  boundary. Added direct helper coverage for definition source lineage, candidate evidence ordering,
+  governance override/fallback behavior, successful request projection, and retired-definition
+  rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_campaign_definition_resolution.py tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_campaign_definition_resolution.py tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_campaign_definition_resolution.py`,
+  `python -m pytest tests/unit/dpm/api/test_wave_campaign_definition_resolution.py -q`,
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py -k bulk_review_campaign_definition_reference_validation -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign-definition request
+  resolution maintainability refactoring.
