@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_outcome_review_repository
@@ -12,6 +13,12 @@ from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.dependencies import get_pm_quality_summary_invocation_repository
 from src.api.main import app
 from src.api.routers import pm_operating_quality as pmq_router
+from src.api.routers.pm_operating_quality_book_scope_builder import (
+    _parse_pm_book_scope_preview_as_of_date,
+    _pm_book_member_source_refs,
+    _pm_book_scope_evidence_from_membership,
+    _pm_book_scope_source_id,
+)
 from src.api.routers.pm_operating_quality_models import (
     _optional_summary_text,
     _required_summary_text,
@@ -284,6 +291,52 @@ def _pm_book_membership_payload(
         "source_batch_fingerprint": "sha256:pm-book",
         "snapshot_id": "pm-book-snapshot-20260512",
     }
+
+
+def test_pm_book_scope_router_helpers_preserve_source_id_fallbacks_and_member_limit() -> None:
+    snapshot_membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
+        _pm_book_membership_payload()
+    )
+    batch_membership = snapshot_membership.model_copy(update={"snapshot_id": ""}, deep=True)
+    fallback_membership = batch_membership.model_copy(
+        update={"source_batch_fingerprint": None},
+        deep=True,
+    )
+    capped_membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
+        {
+            **_pm_book_membership_payload(),
+            "members": [
+                {
+                    "portfolio_id": f"PF_{index:03d}",
+                    "client_id": f"client_{index:03d}",
+                    "booking_center_code": "Singapore",
+                    "portfolio_type": "DPM",
+                    "status": "ACTIVE",
+                    "open_date": "2023-01-03",
+                    "base_currency": "USD",
+                    "source_record_id": f"pm-book:{index:03d}",
+                }
+                for index in range(105)
+            ],
+        }
+    )
+
+    assert _pm_book_scope_source_id(snapshot_membership) == "pm-book-snapshot-20260512"
+    assert _pm_book_scope_source_id(batch_membership) == "sha256:pm-book"
+    assert _pm_book_scope_source_id(fallback_membership) == "pm_book:pm_001:2026-05-12"
+    assert len(_pm_book_member_source_refs(capped_membership)) == 100
+    evidence = _pm_book_scope_evidence_from_membership(capped_membership)
+    assert evidence.returned_portfolio_count == 105
+    assert evidence.member_portfolio_ids[-1] == "PF_099"
+    assert evidence.source_refs[0].source_type == "PortfolioManagerBookMembership"
+
+
+def test_pm_book_scope_router_date_helper_raises_http_422_for_invalid_date() -> None:
+    assert _parse_pm_book_scope_preview_as_of_date("2026-05-12").isoformat() == "2026-05-12"
+    with pytest.raises(HTTPException) as exc_info:
+        _parse_pm_book_scope_preview_as_of_date("bad-date")
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == "INVALID_AS_OF_DATE"
 
 
 def test_pm_operating_quality_request_models_normalize_and_validate_scope_edges() -> None:
