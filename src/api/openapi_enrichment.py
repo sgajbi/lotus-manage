@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from collections.abc import Iterator
 from typing import Any
 
 _EXAMPLE_BY_KEY: dict[str, Any] = {
@@ -28,6 +29,7 @@ _EXAMPLE_BY_KEY: dict[str, Any] = {
 
 _JSON_MEDIA_TYPE = "application/json"
 _PROMETHEUS_MEDIA_TYPE = "text/plain; version=0.0.4"
+_HTTP_OPERATION_METHODS = frozenset({"get", "post", "put", "patch", "delete"})
 
 
 @dataclass(frozen=True)
@@ -433,7 +435,7 @@ def _ensure_operation_examples(
 
 
 def _is_http_operation_method(method: str) -> bool:
-    return method.lower() in {"get", "post", "put", "patch", "delete"}
+    return method.lower() in _HTTP_OPERATION_METHODS
 
 
 def _ensure_metrics_path_examples(methods: dict[str, Any]) -> None:
@@ -496,27 +498,53 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
 
 
 def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -> None:
+    for path, method, operation in _schema_http_operations(schema):
+        _ensure_operation_default_docs(
+            operation=operation,
+            method=method,
+            path=path,
+            service_name=service_name,
+        )
+        _ensure_operation_default_error_response(operation)
+
+
+def _schema_http_operations(
+    schema: dict[str, Any],
+) -> Iterator[tuple[str, str, dict[str, Any]]]:
     paths = schema.get("paths", {})
+    if not isinstance(paths, dict):
+        return
     for path, methods in paths.items():
-        if not isinstance(methods, dict):
+        if not isinstance(path, str) or not isinstance(methods, dict):
             continue
         for method, operation in methods.items():
-            if method.lower() not in {"get", "post", "put", "patch", "delete"}:
-                continue
-            if not isinstance(operation, dict):
-                continue
-            if not operation.get("summary"):
-                operation["summary"] = f"{method.upper()} {path}"
-            if not operation.get("description"):
-                operation["description"] = (
-                    f"{method.upper()} operation for {path} in {service_name}."
-                )
-            if not operation.get("tags"):
-                operation["tags"] = [_operation_tag_for_path(path)]
+            if (
+                isinstance(method, str)
+                and _is_http_operation_method(method)
+                and isinstance(operation, dict)
+            ):
+                yield path, method, operation
 
-            responses = operation.get("responses")
-            if isinstance(responses, dict) and not _operation_has_error_response(responses):
-                responses["default"] = {"description": "Unexpected error response."}
+
+def _ensure_operation_default_docs(
+    *,
+    operation: dict[str, Any],
+    method: str,
+    path: str,
+    service_name: str,
+) -> None:
+    if not operation.get("summary"):
+        operation["summary"] = f"{method.upper()} {path}"
+    if not operation.get("description"):
+        operation["description"] = f"{method.upper()} operation for {path} in {service_name}."
+    if not operation.get("tags"):
+        operation["tags"] = [_operation_tag_for_path(path)]
+
+
+def _ensure_operation_default_error_response(operation: dict[str, Any]) -> None:
+    responses = operation.get("responses")
+    if isinstance(responses, dict) and not _operation_has_error_response(responses):
+        responses["default"] = {"description": "Unexpected error response."}
 
 
 def _operation_tag_for_path(path: str) -> str:
