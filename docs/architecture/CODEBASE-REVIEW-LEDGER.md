@@ -17820,3 +17820,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal rebalance-run repository
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-734: Operation list query reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `c4f79cfd`, before the shared operation
+  list query helper extraction, so the branch scorecard did not yet reflect the latest sqlite and
+  postgres repository simplification.
+- Action: regenerated current-state refactor reports after the operation list query helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows both rebalance-run `list_operations` implementations dropped
+  out of the top current source-complexity list, with `validate_aggregate_metadata` now the top
+  source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
