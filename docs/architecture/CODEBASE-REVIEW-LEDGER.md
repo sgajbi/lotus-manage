@@ -18744,3 +18744,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is router-local PM-quality API
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-772: PM quality router book-scope reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `be00f0d4`, before the PM-quality
+  router book-scope helper extraction, so the branch scorecard did not yet reflect the router
+  helper simplification and direct tests.
+- Action: regenerated current-state refactor reports after the router-local PM book-scope helper
+  extraction. Preserved `quality/baseline_report.md` so the branch baseline remains stable. The
+  refreshed complexity report shows `resolve_pm_book_scope_evidence` dropped out of the top
+  current source-complexity list, with realized attribution source mapping now the top source
+  hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

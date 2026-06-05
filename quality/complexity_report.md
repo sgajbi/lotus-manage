@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T11:22:59+00:00`
+- Generated at: `2026-06-05T11:29:15+00:00`
 
-- Current ref: `b8b5577c`
+- Current ref: `c616b399`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
-| 2 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
-| 3 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
-| 4 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
-| 5 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
-| 6 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
-| 7 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
-| 8 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
-| 9 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
-| 10 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
+| 1 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
+| 2 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
+| 3 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
+| 4 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
+| 5 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
+| 6 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
+| 7 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
+| 8 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
+| 9 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
+| 10 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
 
 ### Most Complex Current Test Functions
 
