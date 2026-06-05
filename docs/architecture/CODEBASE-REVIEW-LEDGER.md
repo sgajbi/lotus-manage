@@ -15942,3 +15942,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-656: Portfolio-memory search item metadata helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/search_page.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `_portfolio_memory_search_item` became the top current source-complexity hotspot and
+  still mixed search-item construction with latest-event and latest-matching-event metadata
+  projection.
+- Action: introduced typed metadata helpers for latest memory event projection and latest matching
+  event source-identity projection. Kept `_portfolio_memory_search_item` as the search item
+  assembly boundary. Added direct helper tests for empty and populated latest-event metadata and
+  matching-event source identity projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_page.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search
+  maintainability refactoring.

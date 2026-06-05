@@ -19,7 +19,11 @@ from src.core.portfolio_memory.models import (
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
+    _LatestEventMetadata,
+    _LatestMatchingEventMetadata,
     _filters_require_matching_events,
+    _latest_event_metadata,
+    _latest_matching_event_metadata,
     _memory_passes_search_summary_filters,
     _portfolio_memory_search_item,
     build_search_page,
@@ -361,6 +365,57 @@ def test_portfolio_memory_search_item_projects_latest_matching_event() -> None:
     assert item.latest_matching_event_id == "memory:search:handoff"
     assert item.latest_matching_event_source_type == "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
     assert item.latest_matching_event_content_hash == "sha256:handoff"
+
+
+def test_latest_event_metadata_projects_empty_and_populated_memory() -> None:
+    event = _event(
+        event_id="memory:search:handoff",
+        event_type="WAVE_HANDOFF_READY",
+        event_time="2026-05-31T10:00:00+00:00",
+        source_id="handoff-001",
+        content_hash="sha256:handoff",
+    )
+
+    assert _latest_event_metadata(
+        _memory(portfolio_id="PB_SEARCH_EMPTY", events=[])
+    ) == _LatestEventMetadata(latest_event_time=None, latest_event_type=None)
+    assert _latest_event_metadata(
+        _memory(portfolio_id="PB_SEARCH_001", events=[event])
+    ) == _LatestEventMetadata(
+        latest_event_time="2026-05-31T10:00:00+00:00",
+        latest_event_type="WAVE_HANDOFF_READY",
+    )
+
+
+def test_latest_matching_event_metadata_projects_source_identity() -> None:
+    event = _event(
+        event_id="memory:search:handoff",
+        event_type="WAVE_HANDOFF_READY",
+        event_time="2026-05-31T10:00:00+00:00",
+        source_id="handoff-001",
+        content_hash="sha256:handoff",
+    )
+
+    assert _latest_matching_event_metadata([]) == _LatestMatchingEventMetadata(
+        latest_matching_event_time=None,
+        latest_matching_event_type=None,
+        latest_matching_event_id=None,
+        latest_matching_event_identity=None,
+        latest_matching_event_source_system=None,
+        latest_matching_event_source_type=None,
+        latest_matching_event_source_id=None,
+        latest_matching_event_content_hash=None,
+    )
+    assert _latest_matching_event_metadata([event]) == _LatestMatchingEventMetadata(
+        latest_matching_event_time="2026-05-31T10:00:00+00:00",
+        latest_matching_event_type="WAVE_HANDOFF_READY",
+        latest_matching_event_id="memory:search:handoff",
+        latest_matching_event_identity=event.event_identity,
+        latest_matching_event_source_system="lotus-manage",
+        latest_matching_event_source_type="DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
+        latest_matching_event_source_id="handoff-001",
+        latest_matching_event_content_hash="sha256:handoff",
+    )
 
 
 def test_build_search_page_counts_matching_event_facets_and_paginates() -> None:
