@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T04:51:31+00:00`
+- Generated at: `2026-06-05T04:57:39+00:00`
 
-- Current ref: `a4469263`
+- Current ref: `9874359d`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
-| 2 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
-| 3 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
-| 4 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
-| 5 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 6 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
-| 7 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
-| 8 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
-| 9 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
-| 10 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 1 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
+| 2 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
+| 3 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 4 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
+| 5 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 6 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
+| 8 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
+| 9 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 10 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
 
 ### Most Complex Current Test Functions
 
