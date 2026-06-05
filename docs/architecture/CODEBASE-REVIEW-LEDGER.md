@@ -17940,3 +17940,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-739: Risk authority regime scenario mapping helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Finding: `_regime_context_from_scenario_response` became the top current source-complexity
+  hotspot and mixed response-shape validation with source defaults, governance-evidence fallback,
+  effective-date projection, and reason-code fail-closed handling.
+- Action: kept the public risk-authority client orchestration unchanged and extracted pure helper
+  functions for source-system defaults, product-version defaults, governance text/date fallback,
+  and sorted fail-closed reason-code projection. Added direct helper tests to pin source defaults,
+  source-governance precedence, body fallbacks, date parsing, and missing reason-code behavior
+  while preserving the existing end-to-end regime scenario client tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal risk-authority mapping
+  maintainability refactoring.
