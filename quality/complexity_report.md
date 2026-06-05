@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T01:21:13+00:00`
+- Generated at: `2026-06-05T01:25:31+00:00`
 
-- Current ref: `d479d8fb`
+- Current ref: `ed254d67`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
-| 2 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
-| 3 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 4 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 5 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
-| 6 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
-| 7 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
-| 8 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
-| 9 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
-| 10 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
+| 1 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
+| 2 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 3 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 4 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
+| 5 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
+| 6 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
+| 7 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
+| 8 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
+| 9 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
+| 10 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
 
 ### Most Complex Current Test Functions
 
