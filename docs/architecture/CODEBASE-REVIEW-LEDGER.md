@@ -18283,3 +18283,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-753: Outcome review list helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/outcomes/in_memory.py` and
+  `tests/unit/infrastructure/test_outcome_review_repository.py`.
+- Finding: `list_outcome_reviews` became the top current source-complexity hotspot and mixed
+  repository locking with optional outcome-review filters, descending created-at/id ordering,
+  pagination, and defensive cloning.
+- Action: kept locking and defensive copying in the repository method and extracted pure helpers
+  for outcome-review filter criteria, optional value matching, descending created-at/id sorting,
+  and filtered page assembly. Added direct helper tests for optional field matching, descending
+  sort order, and limit/offset pagination while preserving existing in-memory and Postgres
+  repository behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m ruff format --check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/outcomes/in_memory.py`,
+  `python -m pytest tests/unit/infrastructure/test_outcome_review_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal outcome-review repository
+  maintainability refactoring.

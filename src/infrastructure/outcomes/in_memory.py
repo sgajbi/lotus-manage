@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
+from typing import Iterable
 
 from src.core.outcomes.models import (
     DpmOutcomeEvent,
@@ -13,6 +15,15 @@ from src.core.outcomes.repository import (
     DpmOutcomeReviewConflictError,
     DpmOutcomeReviewRepository,
 )
+
+
+@dataclass(frozen=True)
+class _OutcomeReviewFilters:
+    portfolio_id: str | None
+    mandate_id: str | None
+    wave_id: str | None
+    rebalance_run_id: str | None
+    state: str | None
 
 
 class InMemoryDpmOutcomeReviewRepository(DpmOutcomeReviewRepository):
@@ -85,20 +96,19 @@ class InMemoryDpmOutcomeReviewRepository(DpmOutcomeReviewRepository):
         offset: int = 0,
     ) -> list[DpmPostTradeOutcomeReview]:
         with self._lock:
-            reviews = [
-                review
-                for review in self._reviews.values()
-                if (portfolio_id is None or review.portfolio_id == portfolio_id)
-                and (mandate_id is None or review.mandate_id == mandate_id)
-                and (wave_id is None or review.wave_id == wave_id)
-                and (rebalance_run_id is None or review.rebalance_run_id == rebalance_run_id)
-                and (state is None or review.state == state)
-            ]
-            reviews.sort(
-                key=lambda review: (review.created_at, review.outcome_review_id),
-                reverse=True,
+            reviews = _list_outcome_reviews(
+                self._reviews.values(),
+                _OutcomeReviewFilters(
+                    portfolio_id=portfolio_id,
+                    mandate_id=mandate_id,
+                    wave_id=wave_id,
+                    rebalance_run_id=rebalance_run_id,
+                    state=state,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(reviews[offset : offset + limit])
+            return deepcopy(reviews)
 
     def get_retention_metadata(
         self,
@@ -119,3 +129,44 @@ class InMemoryDpmOutcomeReviewRepository(DpmOutcomeReviewRepository):
         with self._lock:
             events = self._events.get(outcome_review_id, [])
             return deepcopy(sorted(events, key=lambda event: (event.event_time, event.event_id)))
+
+
+def _outcome_review_matches_filters(
+    review: DpmPostTradeOutcomeReview,
+    filters: _OutcomeReviewFilters,
+) -> bool:
+    return (
+        _optional_value_matches(review.portfolio_id, filters.portfolio_id)
+        and _optional_value_matches(review.mandate_id, filters.mandate_id)
+        and _optional_value_matches(review.wave_id, filters.wave_id)
+        and _optional_value_matches(review.rebalance_run_id, filters.rebalance_run_id)
+        and _optional_value_matches(review.state, filters.state)
+    )
+
+
+def _optional_value_matches(actual: str | None, expected: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _sort_outcome_reviews(
+    reviews: list[DpmPostTradeOutcomeReview],
+) -> list[DpmPostTradeOutcomeReview]:
+    return sorted(
+        reviews,
+        key=lambda review: (review.created_at, review.outcome_review_id),
+        reverse=True,
+    )
+
+
+def _list_outcome_reviews(
+    reviews: Iterable[DpmPostTradeOutcomeReview],
+    filters: _OutcomeReviewFilters,
+    *,
+    limit: int,
+    offset: int,
+) -> list[DpmPostTradeOutcomeReview]:
+    matched_reviews = [
+        review for review in reviews if _outcome_review_matches_filters(review, filters)
+    ]
+    sorted_reviews = _sort_outcome_reviews(matched_reviews)
+    return sorted_reviews[offset : offset + limit]

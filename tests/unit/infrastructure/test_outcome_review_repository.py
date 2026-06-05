@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -19,6 +19,11 @@ from src.core.outcomes import (
 from src.core.outcomes.models import DpmOutcomeDimensionInput
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
+from src.infrastructure.outcomes.in_memory import (
+    _list_outcome_reviews,
+    _outcome_review_matches_filters,
+    _OutcomeReviewFilters,
+)
 from src.infrastructure.outcomes.postgres import (
     PostgresDpmOutcomeReviewRepository,
     _insert_event,
@@ -257,6 +262,83 @@ def test_in_memory_outcome_repository_lists_filters_and_append_only_events() -> 
         "OUTCOME_REVIEW_CREATED",
         "OUTCOME_REVIEW_SOURCE_REFRESHED",
     ]
+
+
+def test_outcome_review_filter_helper_matches_all_optional_fields() -> None:
+    review = _review()
+
+    assert _outcome_review_matches_filters(
+        review,
+        _OutcomeReviewFilters(
+            portfolio_id=review.portfolio_id,
+            mandate_id=review.mandate_id,
+            wave_id=review.wave_id,
+            rebalance_run_id=review.rebalance_run_id,
+            state=review.state,
+        ),
+    )
+    assert _outcome_review_matches_filters(
+        review,
+        _OutcomeReviewFilters(
+            portfolio_id=None,
+            mandate_id=None,
+            wave_id=None,
+            rebalance_run_id=None,
+            state=None,
+        ),
+    )
+    assert not _outcome_review_matches_filters(
+        review,
+        _OutcomeReviewFilters(
+            portfolio_id="PB_OTHER",
+            mandate_id=None,
+            wave_id=None,
+            rebalance_run_id=None,
+            state=None,
+        ),
+    )
+
+
+def test_outcome_review_list_helper_filters_sorts_and_pages() -> None:
+    older = _review(
+        outcome_review_id="dor_older",
+        content_hash="sha256:older",
+        idempotency_key="idem_older",
+    )
+    newer = older.model_copy(
+        update={
+            "outcome_review_id": "dor_newer",
+            "content_hash": "sha256:newer",
+            "created_at": older.created_at + timedelta(minutes=1),
+            "idempotency_key": "idem_newer",
+        },
+        deep=True,
+    )
+    blocked = older.model_copy(
+        update={
+            "outcome_review_id": "dor_blocked",
+            "content_hash": "sha256:blocked",
+            "created_at": older.created_at + timedelta(minutes=2),
+            "state": "BLOCKED",
+            "idempotency_key": "idem_blocked",
+        },
+        deep=True,
+    )
+
+    listed = _list_outcome_reviews(
+        [older, blocked, newer],
+        _OutcomeReviewFilters(
+            portfolio_id=older.portfolio_id,
+            mandate_id=older.mandate_id,
+            wave_id=older.wave_id,
+            rebalance_run_id=older.rebalance_run_id,
+            state="READY",
+        ),
+        limit=1,
+        offset=0,
+    )
+
+    assert [review.outcome_review_id for review in listed] == ["dor_newer"]
 
 
 def test_in_memory_outcome_repository_returns_deep_copies() -> None:
