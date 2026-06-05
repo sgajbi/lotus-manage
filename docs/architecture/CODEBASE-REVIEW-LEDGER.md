@@ -17574,3 +17574,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal bulk-review campaign membership
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-724: Bulk-review campaign membership reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `ef1dbcb7`, before the bulk-review
+  campaign membership helper extraction, so the branch scorecard did not yet reflect the latest
+  campaign membership payload simplification and direct helper tests.
+- Action: regenerated current-state refactor reports after the bulk-review campaign membership
+  helper extraction. Preserved `quality/baseline_report.md` so the original baseline remains
+  stable. The refreshed complexity report shows `resolve_bulk_review_campaign_portfolios` dropped
+  out of the top current source-complexity list, with `generate_fx_and_simulate` now the top source
+  hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T05:26:21+00:00`
+- Generated at: `2026-06-05T05:32:34+00:00`
 
-- Current ref: `ef1dbcb7`
+- Current ref: `c9003131`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
-| 2 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
-| 3 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
-| 4 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
-| 5 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
-| 6 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
-| 7 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
-| 8 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
-| 9 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
-| 10 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
+| 1 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
+| 2 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
+| 3 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 4 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 5 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
+| 6 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
+| 7 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
+| 8 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
+| 9 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
+| 10 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
 
 ### Most Complex Current Test Functions
 
