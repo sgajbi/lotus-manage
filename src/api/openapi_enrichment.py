@@ -409,6 +409,43 @@ def _ensure_operation_examples(
             )
 
 
+def _is_http_operation_method(method: str) -> bool:
+    return method.lower() in {"get", "post", "put", "patch", "delete"}
+
+
+def _ensure_metrics_path_examples(methods: dict[str, Any]) -> None:
+    responses = methods.get("get", {}).setdefault("responses", {})
+    responses.setdefault("200", {})["content"] = {
+        _PROMETHEUS_MEDIA_TYPE: {
+            "schema": {"type": "string"},
+            "examples": {
+                "prometheus": {
+                    "summary": "Prometheus metrics exposition.",
+                    "value": (
+                        "# HELP http_requests_total Total HTTP requests.\n"
+                        "# TYPE http_requests_total counter\n"
+                        'http_requests_total{service="lotus-manage",method="GET",'
+                        'path="/health",status="200"} 1\n'
+                    ),
+                }
+            },
+        }
+    }
+    for status_code, response in responses.items():
+        if not isinstance(response, dict):
+            continue
+        normalized_status_code = str(status_code)
+        if _is_error_status_code(normalized_status_code):
+            _ensure_error_response_content(
+                response=response,
+                status_code=normalized_status_code,
+            )
+
+
+def _is_error_status_code(status_code: str) -> bool:
+    return status_code.startswith(("4", "5")) or status_code == "default"
+
+
 def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
     schemas = schema.get("components", {}).get("schemas", {})
     if not isinstance(schemas, dict):
@@ -419,37 +456,10 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
         if not isinstance(methods, dict):
             continue
         if path == "/metrics":
-            responses = methods.get("get", {}).setdefault("responses", {})
-            responses.setdefault("200", {})["content"] = {
-                _PROMETHEUS_MEDIA_TYPE: {
-                    "schema": {"type": "string"},
-                    "examples": {
-                        "prometheus": {
-                            "summary": "Prometheus metrics exposition.",
-                            "value": (
-                                "# HELP http_requests_total Total HTTP requests.\n"
-                                "# TYPE http_requests_total counter\n"
-                                'http_requests_total{service="lotus-manage",method="GET",'
-                                'path="/health",status="200"} 1\n'
-                            ),
-                        }
-                    },
-                }
-            }
-            for status_code, response in responses.items():
-                if not isinstance(response, dict):
-                    continue
-                normalized_status_code = str(status_code)
-                if normalized_status_code.startswith(("4", "5")) or (
-                    normalized_status_code == "default"
-                ):
-                    _ensure_error_response_content(
-                        response=response,
-                        status_code=normalized_status_code,
-                    )
+            _ensure_metrics_path_examples(methods)
             continue
         for method, operation in methods.items():
-            if method.lower() not in {"get", "post", "put", "patch", "delete"}:
+            if not _is_http_operation_method(method):
                 continue
             if not isinstance(operation, dict):
                 continue

@@ -2,9 +2,12 @@ from src.api.openapi_enrichment import (
     _composite_example_from_schema,
     _description_context,
     _example_from_schema,
+    _ensure_metrics_path_examples,
     _ensure_operation_examples,
     _infer_description,
     _infer_example,
+    _is_error_status_code,
+    _is_http_operation_method,
     _number_example_for_key,
     _collection_example_from_schema,
     _operation_has_error_response,
@@ -315,6 +318,33 @@ def test_openapi_enrichment_operation_error_response_detection() -> None:
     assert _operation_has_error_response({"200": {}, "409": {}}) is True
     assert _operation_has_error_response({"200": {}, "default": {}}) is True
     assert _operation_has_error_response({"200": {}, "302": {}}) is False
+
+
+def test_openapi_enrichment_operation_method_and_error_status_helpers() -> None:
+    assert _is_http_operation_method("GET")
+    assert _is_http_operation_method("patch")
+    assert not _is_http_operation_method("trace")
+    assert _is_error_status_code("404")
+    assert _is_error_status_code("default")
+    assert not _is_error_status_code("302")
+
+
+def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() -> None:
+    methods = {"get": {"responses": {"200": {"description": "metrics"}, "503": {}}}}
+
+    _ensure_metrics_path_examples(methods)
+
+    responses = methods["get"]["responses"]
+    metrics_content = responses["200"]["content"]
+    assert "text/plain; version=0.0.4" in metrics_content
+    assert (
+        "http_requests_total"
+        in metrics_content["text/plain; version=0.0.4"]["examples"]["prometheus"]["value"]
+    )
+    assert (
+        responses["503"]["content"]["application/json"]["examples"]["default"]["value"]["status"]
+        == 503
+    )
 
 
 def test_openapi_enrichment_adds_operation_docs_errors_and_prometheus_examples() -> None:

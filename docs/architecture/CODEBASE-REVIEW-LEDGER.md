@@ -16493,3 +16493,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-679: OpenAPI metrics example helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: `_ensure_request_and_response_examples` became the top current source-complexity hotspot
+  and mixed schema extraction, path iteration, metrics-route Prometheus example injection,
+  error-response enrichment, HTTP method filtering, and operation example enrichment in one helper.
+- Action: extracted HTTP operation method classification, error-status classification, and
+  metrics-path Prometheus/error example enrichment helpers. Kept
+  `_ensure_request_and_response_examples` as the schema traversal boundary. Added direct helper
+  coverage for method classification, error-status classification, Prometheus content injection,
+  and metrics error example enrichment.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.
