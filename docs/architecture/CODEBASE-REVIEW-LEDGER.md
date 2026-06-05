@@ -16929,3 +16929,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-697: Monitoring run-once router helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/monitoring_run_once_routes.py` and
+  `tests/unit/dpm/api/test_monitoring_api.py`.
+- Finding: monitoring `run_once` became the top current source-complexity hotspot and mixed
+  explicit mandate-id handling, PM-book selector validation, portfolio-type normalization,
+  core-resolver exception mapping, PM-book supportability checks, mandate-id resolution,
+  source-filter assembly, and service invocation in one router endpoint.
+- Action: extracted router-local PM-book selector helpers for portfolio-type normalization,
+  core membership resolution, source-filter assembly, and mandate-id resolution. Kept FastAPI
+  dependency injection and HTTP exception mapping in the router layer, and kept business monitoring
+  execution delegated to the mandate service. Added direct helper tests for portfolio-type
+  normalization and source-filter preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/monitoring_run_once_routes.py tests/unit/dpm/api/test_monitoring_api.py`,
+  `python -m ruff format --check src/api/routers/monitoring_run_once_routes.py tests/unit/dpm/api/test_monitoring_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/monitoring_run_once_routes.py`,
+  `python -m pytest tests/unit/dpm/api/test_monitoring_api.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal monitoring-router
+  maintainability refactoring.

@@ -24,6 +24,7 @@ from src.api.services.core_resolver_service import (
     CoreResolverError,
     CoreResolverUnavailableError,
 )
+from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.mandates import DpmMonitoringRun
 
@@ -50,49 +51,10 @@ async def run_once(
     mandate_ids = list(request.mandate_ids)
     source_filters: dict[str, str] = {}
     if not mandate_ids:
-        if not request.portfolio_manager_id:
-            raise monitoring_selector_required_http_exception()
-        portfolio_types = [
-            portfolio_type.strip().upper()
-            for portfolio_type in request.portfolio_types
-            if portfolio_type.strip()
-        ]
-        if not portfolio_types:
-            raise monitoring_pm_book_portfolio_types_required_http_exception()
-        try:
-            membership = monitoring_router.get_core_resolver_client().resolve_portfolio_manager_book_membership(
-                portfolio_manager_id=request.portfolio_manager_id,
-                as_of_date=request.as_of_date,
-                tenant_id=request.tenant_id,
-                booking_center_code=request.booking_center_code,
-                portfolio_types=portfolio_types,
-                include_inactive=False,
-                correlation_id=None,
-            )
-        except CoreResolverUnavailableError as exc:
-            raise monitoring_core_resolver_unavailable_http_exception(exc) from exc
-        except CoreResolverError as exc:
-            raise monitoring_core_resolver_incomplete_http_exception(exc) from exc
-        if membership.supportability.state != "READY":
-            raise monitoring_pm_book_membership_not_ready_http_exception(membership)
-        if not membership.members:
-            raise monitoring_pm_book_membership_empty_http_exception()
-        try:
-            mandate_ids = mandate_ids_from_pm_book_membership(
-                repository=repository,
-                membership=membership,
-            )
-        except DpmMandateSourceIncompleteError as exc:
-            raise monitoring_pm_book_mandate_snapshot_incomplete_http_exception(exc) from exc
-        source_filters = {
-            "source_product": membership.product_name,
-            "source_product_version": membership.product_version,
-            "source_supportability_state": membership.supportability.state,
-        }
-        if membership.snapshot_id:
-            source_filters["source_snapshot_id"] = membership.snapshot_id
-        if membership.source_batch_fingerprint:
-            source_filters["source_content_hash"] = membership.source_batch_fingerprint
+        mandate_ids, source_filters = _mandate_ids_from_pm_book_selector(
+            request=request,
+            repository=repository,
+        )
 
     return read_mandate_with_not_found_http_mapping(
         lambda: run_mandate_monitoring_once(
@@ -105,6 +67,77 @@ async def run_once(
             ),
         )
     )
+
+
+def _portfolio_types_from_request(request: DpmMonitoringRunOnceRequest) -> list[str]:
+    return [
+        portfolio_type.strip().upper()
+        for portfolio_type in request.portfolio_types
+        if portfolio_type.strip()
+    ]
+
+
+def _resolve_pm_book_membership(
+    *,
+    request: DpmMonitoringRunOnceRequest,
+    portfolio_types: list[str],
+) -> DpmCorePortfolioManagerBookMembershipResponse:
+    try:
+        return (
+            monitoring_router.get_core_resolver_client().resolve_portfolio_manager_book_membership(
+                portfolio_manager_id=request.portfolio_manager_id or "",
+                as_of_date=request.as_of_date,
+                tenant_id=request.tenant_id,
+                booking_center_code=request.booking_center_code,
+                portfolio_types=portfolio_types,
+                include_inactive=False,
+                correlation_id=None,
+            )
+        )
+    except CoreResolverUnavailableError as exc:
+        raise monitoring_core_resolver_unavailable_http_exception(exc) from exc
+    except CoreResolverError as exc:
+        raise monitoring_core_resolver_incomplete_http_exception(exc) from exc
+
+
+def _pm_book_source_filters(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> dict[str, str]:
+    source_filters = {
+        "source_product": membership.product_name,
+        "source_product_version": membership.product_version,
+        "source_supportability_state": membership.supportability.state,
+    }
+    if membership.snapshot_id:
+        source_filters["source_snapshot_id"] = membership.snapshot_id
+    if membership.source_batch_fingerprint:
+        source_filters["source_content_hash"] = membership.source_batch_fingerprint
+    return source_filters
+
+
+def _mandate_ids_from_pm_book_selector(
+    *,
+    request: DpmMonitoringRunOnceRequest,
+    repository: DpmMandateRepository,
+) -> tuple[list[str], dict[str, str]]:
+    if not request.portfolio_manager_id:
+        raise monitoring_selector_required_http_exception()
+    portfolio_types = _portfolio_types_from_request(request)
+    if not portfolio_types:
+        raise monitoring_pm_book_portfolio_types_required_http_exception()
+    membership = _resolve_pm_book_membership(request=request, portfolio_types=portfolio_types)
+    if membership.supportability.state != "READY":
+        raise monitoring_pm_book_membership_not_ready_http_exception(membership)
+    if not membership.members:
+        raise monitoring_pm_book_membership_empty_http_exception()
+    try:
+        mandate_ids = mandate_ids_from_pm_book_membership(
+            repository=repository,
+            membership=membership,
+        )
+    except DpmMandateSourceIncompleteError as exc:
+        raise monitoring_pm_book_mandate_snapshot_incomplete_http_exception(exc) from exc
+    return mandate_ids, _pm_book_source_filters(membership)
 
 
 def _monitoring_run_filters(

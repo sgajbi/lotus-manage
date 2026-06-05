@@ -7,6 +7,11 @@ from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_mandate_repository
 from src.api.main import app
+from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
+from src.api.routers.monitoring_run_once_routes import (
+    _pm_book_source_filters,
+    _portfolio_types_from_request,
+)
 from src.core.mandates import (
     DpmMandateConstraintSet,
     DpmMandateDigitalTwin,
@@ -201,6 +206,27 @@ def test_monitoring_run_once_resolves_pm_book_from_core(monkeypatch) -> None:
     assert command_center.json()["supportability"]["state"] == "READY"
     assert command_center.json()["supportability"]["reason"] == "COMMAND_CENTER_READY"
     assert command_center.json()["supportability"]["data_completeness_state"] == "COMPLETE"
+
+
+def test_monitoring_run_once_helpers_normalize_pm_book_selector_and_source_filters() -> None:
+    request = DpmMonitoringRunOnceRequest(
+        mandate_ids=[],
+        as_of_date=date(2026, 5, 3),
+        portfolio_manager_id="PM_SG_DPM_001",
+        portfolio_types=[" discretionary ", "", "ADVISORY"],
+    )
+    membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
+        _pm_book_membership_payload()
+    )
+
+    assert _portfolio_types_from_request(request) == ["DISCRETIONARY", "ADVISORY"]
+    assert _pm_book_source_filters(membership) == {
+        "source_product": "PortfolioManagerBookMembership",
+        "source_product_version": "v1",
+        "source_supportability_state": "READY",
+        "source_snapshot_id": "pm-book-snapshot-20260503",
+        "source_content_hash": "sha256:pm-book-membership",
+    }
 
 
 def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:
