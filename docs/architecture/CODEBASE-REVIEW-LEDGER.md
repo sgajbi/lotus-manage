@@ -16878,3 +16878,31 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-695: Workflow decision query helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/postgres.py`,
+  `src/infrastructure/rebalance_runs/sqlite.py`,
+  `src/infrastructure/rebalance_runs/workflow_decision_query.py`,
+  `tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py`, and
+  `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`.
+- Finding: the Postgres and SQLite `list_workflow_decisions_filtered` methods became the top
+  current source-complexity hotspots and duplicated workflow-decision filter construction,
+  row-to-record mapping, cursor handling, page slicing, and next-cursor calculation.
+- Action: extracted backend-neutral workflow-decision filter-query construction, row mapping, and
+  cursor paging helpers. Kept backend-specific SQL placeholder style and query execution inside the
+  Postgres and SQLite repositories. Added direct helper tests for placeholder-specific filter SQL,
+  ordered bind arguments, row conversion, cursor paging, and missing-cursor fail-closed behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/postgres.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/workflow_decision_query.py tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/postgres.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/workflow_decision_query.py tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/postgres.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/workflow_decision_query.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-run repository
+  maintainability refactoring.

@@ -16,6 +16,11 @@ from src.core.rebalance_runs.models import (
     DpmSupportabilitySummaryData,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
+from src.infrastructure.rebalance_runs.workflow_decision_query import (
+    build_workflow_decision_filter_query,
+    workflow_decision_page,
+    workflow_decisions_from_rows,
+)
 
 
 class SqliteDpmRunRepository(DpmRunRepository):
@@ -505,27 +510,15 @@ class SqliteDpmRunRepository(DpmRunRepository):
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmRunWorkflowDecisionRecord], Optional[str]]:
-        where_clauses = []
-        args: list[str] = []
-        if rebalance_run_id is not None:
-            where_clauses.append("run_id = ?")
-            args.append(rebalance_run_id)
-        if action is not None:
-            where_clauses.append("action = ?")
-            args.append(action)
-        if actor_id is not None:
-            where_clauses.append("actor_id = ?")
-            args.append(actor_id)
-        if reason_code is not None:
-            where_clauses.append("reason_code = ?")
-            args.append(reason_code)
-        if decided_from is not None:
-            where_clauses.append("decided_at >= ?")
-            args.append(decided_from.isoformat())
-        if decided_to is not None:
-            where_clauses.append("decided_at <= ?")
-            args.append(decided_to.isoformat())
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        filter_query = build_workflow_decision_filter_query(
+            placeholder="?",
+            rebalance_run_id=rebalance_run_id,
+            action=action,
+            actor_id=actor_id,
+            reason_code=reason_code,
+            decided_from=decided_from,
+            decided_to=decided_to,
+        )
         query = f"""
             SELECT
                 decision_id,
@@ -537,35 +530,13 @@ class SqliteDpmRunRepository(DpmRunRepository):
                 decided_at,
                 correlation_id
             FROM dpm_workflow_decisions
-            {where_sql}
+            {filter_query.where_sql}
             ORDER BY decided_at DESC, decision_id DESC
         """
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
-        decisions = [
-            DpmRunWorkflowDecisionRecord(
-                decision_id=row["decision_id"],
-                run_id=row["run_id"],
-                action=row["action"],
-                reason_code=row["reason_code"],
-                comment=row["comment"],
-                actor_id=row["actor_id"],
-                decided_at=datetime.fromisoformat(row["decided_at"]),
-                correlation_id=row["correlation_id"],
-            )
-            for row in rows
-        ]
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(decisions) if row.decision_id == cursor),
-                None,
-            )
-            if cursor_index is None:
-                return [], None
-            decisions = decisions[cursor_index + 1 :]
-        page = decisions[:limit]
-        next_cursor = page[-1].decision_id if len(decisions) > limit else None
-        return page, next_cursor
+            rows = connection.execute(query, filter_query.args).fetchall()
+        decisions = workflow_decisions_from_rows(rows)
+        return workflow_decision_page(decisions=decisions, limit=limit, cursor=cursor)
 
     def append_lineage_edge(self, edge: DpmLineageEdgeRecord) -> None:
         query = """
