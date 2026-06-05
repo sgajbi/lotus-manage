@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T10:43:00+00:00`
+- Generated at: `2026-06-05T10:49:00+00:00`
 
-- Current ref: `3fd02b4c`
+- Current ref: `0e18cd08`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 2 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 3 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 4 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
-| 5 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
-| 6 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
-| 7 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
-| 8 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
-| 9 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
-| 10 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
+| 1 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 2 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 3 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
+| 4 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 5 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 6 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
+| 7 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
+| 8 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
+| 9 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
+| 10 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
 
 ### Most Complex Current Test Functions
 
