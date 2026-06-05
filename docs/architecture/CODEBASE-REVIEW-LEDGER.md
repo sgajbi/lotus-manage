@@ -17597,3 +17597,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-725: Rebalance execution result helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Finding: `generate_fx_and_simulate` became the top current source-complexity hotspot and mixed
+  execution orchestration with hard-rule blocker detection, simulation-safety warning projection,
+  reconciliation failure rule construction, and final execution status derivation.
+- Action: extracted hard-rule blocker detection, safety-warning projection, blocked execution
+  result assembly, reconciliation failure rule construction, and reconciliation-backed result
+  assembly helpers while keeping FX generation, settlement awareness, and execution application
+  behavior unchanged. Added direct tests for hard blocker selection, safety warning emission,
+  non-blocking rule handling, and reconciliation mismatch result assembly.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py -q`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_core_flows.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance execution
+  maintainability refactoring.
