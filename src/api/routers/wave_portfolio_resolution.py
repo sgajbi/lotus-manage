@@ -28,10 +28,10 @@ from src.api.routers.wave_source_dependency_http import (
     source_dependency_failed_http_exception,
     source_unavailable_http_exception,
 )
-from src.api.routers.wave_source_refs import source_refs_payload
 from src.api.routers.wave_tactical_candidate_selection import (
-    build_tactical_house_view_candidate_payloads,
+    build_tactical_house_view_authority_request,
     build_tactical_house_view_resolved_portfolios,
+    tactical_house_view_cohort_failure,
 )
 from src.api.services import wave_service
 from src.core.waves import DpmBulkReviewCampaignDefinitionRepository
@@ -125,27 +125,20 @@ def _resolve_tactical_house_view_portfolios(
         required_message="TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
     )
 
-    candidate_payloads = build_tactical_house_view_candidate_payloads(request.portfolios)
+    authority_request = build_tactical_house_view_authority_request(
+        tactical_view=tactical_view,
+        portfolios=request.portfolios,
+        eligible_portfolio_types=eligible_portfolio_types,
+        as_of_date=as_of_date,
+        min_exposure_weight=request.min_tactical_exposure_weight,
+    )
 
     try:
         cohort = advise_authority_client.tactical_house_view_affected_cohort(
-            tactical_view={
-                "tactical_view_id": tactical_view.tactical_view_id,
-                "tactical_view_version": tactical_view.tactical_view_version,
-                "theme_id": tactical_view.theme_id,
-                "as_of_date": as_of_date.isoformat(),
-                "target_action": tactical_view.target_action,
-                "rationale": tactical_view.rationale,
-                "source_refs": source_refs_payload(tactical_view.source_refs),
-                "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
-            },
-            candidate_portfolios=candidate_payloads,
-            eligible_portfolio_types=eligible_portfolio_types,
-            min_exposure_weight=(
-                Decimal(str(request.min_tactical_exposure_weight))
-                if request.min_tactical_exposure_weight is not None
-                else None
-            ),
+            tactical_view=authority_request.tactical_view,
+            candidate_portfolios=authority_request.candidate_portfolios,
+            eligible_portfolio_types=authority_request.eligible_portfolio_types,
+            min_exposure_weight=authority_request.min_exposure_weight,
             correlation_id=correlation_id,
         )
     except AdviseAuthorityUnavailableError as exc:
@@ -155,18 +148,12 @@ def _resolve_tactical_house_view_portfolios(
             rejected_code="LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED",
         ) from exc
 
-    if cohort.supportability_state != "READY":
+    failure = tactical_house_view_cohort_failure(cohort)
+    if failure is not None:
         raise source_dependency_failed_http_exception(
-            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY"
-            if cohort.supportability_state == "EMPTY"
-            else "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE",
-            message="Tactical house-view affected cohort is not source-ready.",
-            reason_codes=list(cohort.supportability_reason_codes),
-        )
-    if not cohort.affected_portfolios:
-        raise source_dependency_failed_http_exception(
-            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
-            message="Tactical house-view cohort returned no affected portfolios.",
+            code=failure.code,
+            message=failure.message,
+            reason_codes=list(failure.reason_codes),
         )
 
     return build_tactical_house_view_resolved_portfolios(cohort)

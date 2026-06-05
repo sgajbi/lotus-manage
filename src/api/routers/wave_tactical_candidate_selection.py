@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Sequence
+from dataclasses import dataclass
+from datetime import date
+from decimal import Decimal
 from typing import Protocol
 
 from src.api.routers.wave_portfolio_type_validation import normalize_required_portfolio_type
@@ -89,6 +92,41 @@ class TacticalHouseViewAffectedCohort(Protocol):
     def affected_portfolios(self) -> tuple[TacticalHouseViewAffectedPortfolio, ...]: ...
 
 
+class TacticalHouseViewSource(Protocol):
+    @property
+    def tactical_view_id(self) -> str: ...
+
+    @property
+    def tactical_view_version(self) -> str: ...
+
+    @property
+    def theme_id(self) -> str: ...
+
+    @property
+    def target_action(self) -> str: ...
+
+    @property
+    def rationale(self) -> str: ...
+
+    @property
+    def source_refs(self) -> Sequence[DpmWaveSourceRef]: ...
+
+
+@dataclass(frozen=True)
+class TacticalHouseViewAuthorityRequest:
+    tactical_view: dict[str, object]
+    candidate_portfolios: list[dict[str, object]]
+    eligible_portfolio_types: list[str]
+    min_exposure_weight: Decimal | None
+
+
+@dataclass(frozen=True)
+class TacticalHouseViewCohortFailure:
+    code: str
+    message: str
+    reason_codes: tuple[str, ...] = ()
+
+
 def build_tactical_house_view_candidate_payloads(
     candidates: Iterable[TacticalHouseViewCandidate],
 ) -> list[dict[str, object]]:
@@ -128,6 +166,54 @@ def build_tactical_house_view_candidate_payloads(
             }
         )
     return payloads
+
+
+def build_tactical_house_view_authority_request(
+    *,
+    tactical_view: TacticalHouseViewSource,
+    portfolios: Iterable[TacticalHouseViewCandidate],
+    eligible_portfolio_types: list[str],
+    as_of_date: date,
+    min_exposure_weight: float | None,
+) -> TacticalHouseViewAuthorityRequest:
+    return TacticalHouseViewAuthorityRequest(
+        tactical_view={
+            "tactical_view_id": tactical_view.tactical_view_id,
+            "tactical_view_version": tactical_view.tactical_view_version,
+            "theme_id": tactical_view.theme_id,
+            "as_of_date": as_of_date.isoformat(),
+            "target_action": tactical_view.target_action,
+            "rationale": tactical_view.rationale,
+            "source_refs": source_refs_payload(tactical_view.source_refs),
+            "reason_codes": ["TACTICAL_HOUSE_VIEW_BANK_AUTHORED"],
+        },
+        candidate_portfolios=build_tactical_house_view_candidate_payloads(portfolios),
+        eligible_portfolio_types=eligible_portfolio_types,
+        min_exposure_weight=(
+            Decimal(str(min_exposure_weight)) if min_exposure_weight is not None else None
+        ),
+    )
+
+
+def tactical_house_view_cohort_failure(
+    cohort: TacticalHouseViewAffectedCohort,
+) -> TacticalHouseViewCohortFailure | None:
+    if cohort.supportability_state != "READY":
+        return TacticalHouseViewCohortFailure(
+            code=(
+                "DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY"
+                if cohort.supportability_state == "EMPTY"
+                else "DPM_TACTICAL_HOUSE_VIEW_COHORT_INCOMPLETE"
+            ),
+            message="Tactical house-view affected cohort is not source-ready.",
+            reason_codes=tuple(cohort.supportability_reason_codes),
+        )
+    if not cohort.affected_portfolios:
+        return TacticalHouseViewCohortFailure(
+            code="DPM_TACTICAL_HOUSE_VIEW_COHORT_EMPTY",
+            message="Tactical house-view cohort returned no affected portfolios.",
+        )
+    return None
 
 
 def build_tactical_house_view_resolved_portfolios(

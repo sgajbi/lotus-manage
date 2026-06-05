@@ -17695,3 +17695,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-729: Tactical house-view resolver helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/wave_portfolio_resolution.py`,
+  `src/api/routers/wave_tactical_candidate_selection.py`, and
+  `tests/unit/api/test_wave_tactical_candidate_selection.py`.
+- Finding: `_resolve_tactical_house_view_portfolios` became the top current source-complexity
+  hotspot and still mixed router orchestration with lotus-advise invocation payload assembly,
+  minimum-weight conversion, and source-cohort supportability classification.
+- Action: extracted tactical house-view authority invocation assembly and cohort-failure
+  classification into source-selection helpers while keeping dependency availability and HTTP
+  translation in the router. Added direct helper tests for invocation payload lineage,
+  optional minimum exposure weight handling, READY source cohorts, EMPTY/BLOCKED source cohorts,
+  and READY cohorts with no affected portfolios.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_tactical_candidate_selection.py tests/unit/api/test_wave_tactical_candidate_selection.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_tactical_candidate_selection.py tests/unit/api/test_wave_tactical_candidate_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_tactical_candidate_selection.py`,
+  `python -m pytest tests/unit/api/test_wave_tactical_candidate_selection.py tests/unit/dpm/api/test_waves_api.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal wave tactical house-view
+  resolver maintainability refactoring.
