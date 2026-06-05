@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T06:35:26+00:00`
+- Generated at: `2026-06-05T06:41:14+00:00`
 
-- Current ref: `efae0895`
+- Current ref: `8645556b`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
-| 2 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
-| 3 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
-| 4 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
-| 5 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
-| 6 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 7 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 8 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 9 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 10 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 1 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
+| 2 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
+| 3 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
+| 4 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
+| 5 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
+| 6 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 7 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 8 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 9 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 10 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
 
 ### Most Complex Current Test Functions
 
