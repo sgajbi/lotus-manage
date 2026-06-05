@@ -6,6 +6,7 @@ from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityFairnessSegmentInput,
+    DpmPmQualityFairnessSegmentResult,
     DpmPmOperatingQualityPolicy,
     DpmPmQualityGovernanceApproval,
     DpmPmQualityEvidenceItem,
@@ -911,6 +912,114 @@ def test_pm_quality_fairness_analysis_rejects_invalid_inputs() -> None:
             generated_by="ops",
             correlation_id="corr-fairness-invalid-spread",
         )
+
+
+def _fairness_segment_result(
+    *,
+    segment_id: str,
+    state: str,
+    average_score: Decimal | None,
+    reason_codes: list[str],
+) -> DpmPmQualityFairnessSegmentResult:
+    return DpmPmQualityFairnessSegmentResult(
+        segment_id=segment_id,
+        segment_type="MANDATE_TYPE",
+        display_name=segment_id,
+        state=state,
+        score_run_count=1 if average_score is not None else 0,
+        average_score=average_score,
+        minimum_score=average_score,
+        maximum_score=average_score,
+        reason_codes=reason_codes,
+        score_run_refs=[],
+        source_refs=[_source_ref()],
+    )
+
+
+def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
+    segment = DpmPmQualityFairnessSegmentInput(
+        segment_id="sg_dpm_balanced",
+        segment_type="MANDATE_TYPE",
+        display_name="Singapore DPM balanced mandates",
+        score_runs=[_ready_score_run()],
+        source_refs=[_source_ref()],
+    )
+
+    with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED"):
+        scoring._validate_fairness_analysis_inputs(
+            segments=[segment],
+            minimum_segment_score_run_count=1,
+            maximum_average_score_spread=Decimal("10"),
+        )
+    with pytest.raises(
+        DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID"
+    ):
+        scoring._validate_fairness_analysis_inputs(
+            segments=[segment, segment],
+            minimum_segment_score_run_count=0,
+            maximum_average_score_spread=Decimal("10"),
+        )
+
+
+def test_fairness_analysis_posture_helper_classifies_blocked_pending_and_ready() -> None:
+    blocked = scoring._fairness_analysis_posture(
+        segment_results=[
+            _fairness_segment_result(
+                segment_id="blocked",
+                state="BLOCKED",
+                average_score=None,
+                reason_codes=["PM_QUALITY_FAIRNESS_POLICY_MISMATCH"],
+            ),
+            _fairness_segment_result(
+                segment_id="ready",
+                state="READY",
+                average_score=Decimal("90"),
+                reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_READY"],
+            ),
+        ],
+        maximum_average_score_spread=Decimal("10"),
+    )
+    pending = scoring._fairness_analysis_posture(
+        segment_results=[
+            _fairness_segment_result(
+                segment_id="a",
+                state="READY",
+                average_score=Decimal("95"),
+                reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_READY"],
+            ),
+            _fairness_segment_result(
+                segment_id="b",
+                state="READY",
+                average_score=Decimal("80"),
+                reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_READY"],
+            ),
+        ],
+        maximum_average_score_spread=Decimal("10"),
+    )
+    ready = scoring._fairness_analysis_posture(
+        segment_results=[
+            _fairness_segment_result(
+                segment_id="a",
+                state="READY",
+                average_score=Decimal("95"),
+                reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_READY"],
+            ),
+            _fairness_segment_result(
+                segment_id="b",
+                state="READY",
+                average_score=Decimal("80"),
+                reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_READY"],
+            ),
+        ],
+        maximum_average_score_spread=Decimal("20"),
+    )
+
+    assert blocked.state == "BLOCKED"
+    assert "PM_QUALITY_FAIRNESS_SEGMENT_BLOCKED" in blocked.reason_codes
+    assert pending.state == "PENDING_REVIEW"
+    assert pending.observed_spread == Decimal("15.00")
+    assert ready.state == "READY"
+    assert ready.reason_codes == ["PM_QUALITY_FAIRNESS_WITHIN_GOVERNED_SPREAD"]
 
 
 def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postures() -> None:
