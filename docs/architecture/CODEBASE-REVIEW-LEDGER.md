@@ -17547,3 +17547,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-723: Bulk-review campaign membership helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/wave_campaign_source_resolution.py` and
+  `tests/unit/api/test_wave_campaign_source_resolution.py`.
+- Finding: `resolve_bulk_review_campaign_portfolios` became the top current source-complexity
+  hotspot and mixed source candidate handling, candidate payload normalization, membership hash
+  assembly, member lineage projection, and membership diagnostics construction in one router helper.
+- Action: extracted candidate payload normalization, candidate payload-list assembly, final
+  membership portfolio payload construction, and membership diagnostics projection into focused
+  helpers while keeping validation and HTTP error behavior at the router boundary. Added direct
+  tests for mapping/model candidates, unsupported candidate payloads, portfolio-type diagnostics
+  normalization, source-ref ordering, member lineage, and governance diagnostics propagation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_campaign_source_resolution.py tests/unit/api/test_wave_campaign_source_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_campaign_source_resolution.py tests/unit/api/test_wave_campaign_source_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_campaign_source_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_campaign_source_resolution.py -q`,
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py -q -k "bulk_review_campaign_preview_publishes_manage_membership_product or bulk_review_campaign_preview_preserves_governance_evidence or bulk_review_campaign_preview_rejects_invalid_or_empty_membership or bulk_review_campaign_create_persists_manage_membership_wave"`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal bulk-review campaign membership
+  maintainability refactoring.
