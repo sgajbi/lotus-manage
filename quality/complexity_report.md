@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T11:09:41+00:00`
+- Generated at: `2026-06-05T11:14:29+00:00`
 
-- Current ref: `9ad827e5`
+- Current ref: `8700592d`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
-| 2 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
-| 3 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
-| 4 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
-| 5 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
-| 6 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
-| 7 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
-| 8 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
-| 9 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
-| 10 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
+| 1 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
+| 2 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
+| 3 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
+| 4 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
+| 5 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
+| 6 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
+| 7 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
+| 8 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
+| 9 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
+| 10 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
 
 ### Most Complex Current Test Functions
 

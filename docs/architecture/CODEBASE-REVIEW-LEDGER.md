@@ -18594,3 +18594,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal PM-quality scoring
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-766: PM quality fairness-analysis reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `13eec5dd`, before the PM-quality
+  fairness-analysis posture helper extraction, so the branch scorecard did not yet reflect the
+  fairness scoring simplification and direct helper tests.
+- Action: regenerated current-state refactor reports after the PM-quality fairness posture helper
+  extraction. Preserved `quality/baseline_report.md` so the branch baseline remains stable. The
+  refreshed complexity report shows `build_pm_operating_quality_fairness_analysis` dropped out of
+  the top current source-complexity list, with PM-quality book-scope evidence resolution now the
+  top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
