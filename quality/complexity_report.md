@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T00:11:58+00:00`
+- Generated at: `2026-06-05T00:16:53+00:00`
 
-- Current ref: `dc5f0fcd`
+- Current ref: `65f83212`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _transition_matches_request | src/core/waves/campaign_assignment_tasks.py | 13 | 34 |
-| 2 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
-| 3 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
-| 4 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
-| 5 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
-| 6 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
-| 7 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
-| 8 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
-| 9 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
-| 10 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
+| 1 | _scope_evidence_from_policy | src/core/pm_quality/scoring.py | 13 | 27 |
+| 2 | _infer_description | src/api/openapi_enrichment.py | 13 | 21 |
+| 3 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
+| 4 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
+| 5 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
+| 6 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
+| 7 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
+| 8 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
+| 9 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
+| 10 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
 
 ### Most Complex Current Test Functions
 
