@@ -16323,3 +16323,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal construction enrichment
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-672: Construction enrichment reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `a7288c36`, before the construction
+  enrichment status helper extraction, so the latest source-complexity improvement and direct
+  helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the construction enrichment helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `summarize_enrichment_posture` dropped out of the top current
+  source-complexity list, with `request_with_campaign_definition` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
