@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T05:15:51+00:00`
+- Generated at: `2026-06-05T05:19:46+00:00`
 
-- Current ref: `f0ed05f9`
+- Current ref: `e5354212`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 2 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
-| 3 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
-| 4 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
-| 5 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
-| 6 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
-| 7 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
-| 8 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
-| 9 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
-| 10 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 2 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 3 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
+| 4 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
+| 5 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 6 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 7 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
+| 8 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
+| 9 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
+| 10 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
 
 ### Most Complex Current Test Functions
 
