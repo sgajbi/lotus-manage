@@ -18617,3 +18617,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-767: PM quality book-scope evidence helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/pm_operating_quality_service.py` and
+  `tests/unit/api/test_pm_operating_quality_service.py`.
+- Finding: `resolve_pm_quality_book_scope_evidence` became the top current source-complexity
+  hotspot and mixed date parsing, Core resolver orchestration, supportability validation,
+  source-id fallback, member source-ref projection, and evidence assembly in one service method.
+- Action: kept Core resolver orchestration in the service layer and extracted pure helpers for
+  as-of date parsing, membership validation, source-id fallback, member source refs, and
+  `DpmPmQualityBookScopeEvidence` assembly. Added direct helper tests for invalid date handling,
+  source-id fallback order, member-ref truncation, and filter/evidence preservation while
+  preserving existing service behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py`,
+  `python -m ruff format --check src/api/services/pm_operating_quality_service.py tests/unit/api/test_pm_operating_quality_service.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/pm_operating_quality_service.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_service.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality service
+  maintainability refactoring.

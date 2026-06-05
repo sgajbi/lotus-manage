@@ -17,6 +17,10 @@ from src.api.services.pm_operating_quality_service import (
     build_pm_quality_summary_invocation_from_command,
     build_pm_quality_fairness_analysis_from_command,
     build_pm_quality_score_run_from_command,
+    _parse_pm_book_scope_as_of_date,
+    _pm_book_member_source_refs,
+    _pm_book_scope_evidence_from_membership,
+    _pm_book_scope_source_id,
     resolve_pm_quality_policy_from_command,
 )
 from src.core.dpm_source_context import (
@@ -307,6 +311,52 @@ def test_pm_quality_service_materializes_pm_book_scope_with_resolver() -> None:
     assert score_run.book_scope_evidence.filters_applied == {"portfolio_types": ["DPM"]}
     assert score_run.score_run_id.startswith("pmq_")
     assert resolver.last_as_of_date == date(2026, 5, 12)
+
+
+def test_pm_book_scope_helper_parses_date_and_source_id_fallbacks() -> None:
+    assert _parse_pm_book_scope_as_of_date("2026-05-12") == date(2026, 5, 12)
+    with pytest.raises(DpmPmOperatingQualityServiceError, match="INVALID_AS_OF_DATE"):
+        _parse_pm_book_scope_as_of_date("bad-date")
+
+    snapshot_membership = _membership_response(snapshot_id="snapshot-001")
+    batch_membership = _membership_response(snapshot_id="")
+    fallback_membership = batch_membership.model_copy(
+        update={"source_batch_fingerprint": None},
+        deep=True,
+    )
+
+    assert _pm_book_scope_source_id(snapshot_membership) == "snapshot-001"
+    assert _pm_book_scope_source_id(batch_membership) == "sha256:pm-book"
+    assert _pm_book_scope_source_id(fallback_membership) == "pm-book:pm_001:2026-05-12"
+
+
+def test_pm_book_scope_evidence_helper_limits_member_refs_and_preserves_filters() -> None:
+    membership = _membership_response().model_copy(
+        update={
+            "members": [
+                DpmCorePortfolioManagerBookMember(
+                    portfolio_id=f"PF_{index:03d}",
+                    client_id=f"client-{index:03d}",
+                    booking_center_code="Singapore",
+                    portfolio_type="DPM",
+                    status="ACTIVE",
+                    source_record_id=f"member-source-{index:03d}",
+                )
+                for index in range(105)
+            ]
+        },
+        deep=True,
+    )
+
+    member_refs = _pm_book_member_source_refs(membership)
+    evidence = _pm_book_scope_evidence_from_membership(membership)
+
+    assert len(member_refs) == 100
+    assert member_refs[0].source_id == "member-source-000"
+    assert evidence.returned_portfolio_count == 105
+    assert evidence.member_portfolio_ids[-1] == "PF_099"
+    assert evidence.filters_applied == {"portfolio_types": ["DPM"]}
+    assert evidence.source_refs[0].source_type == "PortfolioManagerBookMembership"
 
 
 def test_pm_quality_service_builds_review_action_for_score_run() -> None:
