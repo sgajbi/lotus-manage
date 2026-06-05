@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T04:18:27+00:00`
+- Generated at: `2026-06-05T04:22:47+00:00`
 
-- Current ref: `d6a77d71`
+- Current ref: `8cbca37b`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
-| 2 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
-| 3 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
-| 4 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
-| 5 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
-| 6 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
-| 7 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
-| 8 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
-| 9 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
-| 10 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 1 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
+| 2 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
+| 3 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
+| 4 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 5 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
+| 6 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
+| 7 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
+| 8 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
+| 9 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 10 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
 
 ### Most Complex Current Test Functions
 
