@@ -16978,3 +16978,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-699: Transaction outcome value helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/outcomes/core_sources.py` and
+  `tests/unit/core/test_core_realized_outcome_sources.py`.
+- Finding: `_transaction_measure_value` became the top current source-complexity hotspot and mixed
+  reporting/source money selection, realized FX P&L base/local fallback, missing FX error mapping,
+  cashflow bucket reading, missing cashflow error mapping, unit selection, and reason-code
+  selection in one outcome-source helper.
+- Action: extracted realized FX P&L value selection and cashflow value selection into direct
+  helpers while keeping `_transaction_measure_value` as the measure-dispatch boundary used by the
+  public transaction ledger adapter. Added direct helper tests for base FX value selection, local
+  FX fallback reason, and cashflow amount/unit/reason selection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/core_sources.py`,
+  `python -m pytest tests/unit/core/test_core_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal realized outcome source
+  maintainability refactoring.

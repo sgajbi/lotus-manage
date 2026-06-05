@@ -565,37 +565,8 @@ def _transaction_measure_value(
             reason="TRANSACTION_VALUE_WITHHOLDING_TAX",
         )
     if measure == "realized_fx_pnl":
-        value = transaction.get("realized_fx_pnl_base")
-        if value is not None:
-            return (
-                _decimal_value(value),
-                _read_text(transaction.get("currency")) or "base_currency",
-                "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE",
-            )
-        local_value = transaction.get("realized_fx_pnl_local")
-        if local_value is not None:
-            return (
-                _decimal_value(local_value),
-                _read_text(transaction.get("trade_currency"))
-                or _read_text(transaction.get("currency"))
-                or "local_currency",
-                "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL",
-            )
-        raise CoreOutcomeSourceError(
-            "lotus-core transaction ledger response is missing realized_fx_pnl"
-        )
-
-    cashflow = _read_mapping(transaction.get("cashflow"))
-    cashflow_amount = cashflow.get("amount")
-    if cashflow_amount is None:
-        raise CoreOutcomeSourceError(
-            "lotus-core transaction ledger response is missing cashflow.amount"
-        )
-    return (
-        _decimal_value(cashflow_amount),
-        _read_text(cashflow.get("currency")) or "cashflow_currency",
-        "TRANSACTION_VALUE_CASHFLOW_AMOUNT",
-    )
+        return _transaction_fx_pnl_value(transaction=transaction)
+    return _transaction_cashflow_value(transaction=transaction)
 
 
 def _transaction_money_value(
@@ -624,6 +595,42 @@ def _transaction_money_value(
         or _read_text(transaction.get(fallback_currency_field))
         or "transaction_currency",
         f"{reason}_SOURCE",
+    )
+
+
+def _transaction_fx_pnl_value(*, transaction: dict[str, Any]) -> tuple[Decimal, str, str]:
+    value = transaction.get("realized_fx_pnl_base")
+    if value is not None:
+        return (
+            _decimal_value(value),
+            _read_text(transaction.get("currency")) or "base_currency",
+            "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE",
+        )
+    local_value = transaction.get("realized_fx_pnl_local")
+    if local_value is not None:
+        return (
+            _decimal_value(local_value),
+            _read_text(transaction.get("trade_currency"))
+            or _read_text(transaction.get("currency"))
+            or "local_currency",
+            "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL",
+        )
+    raise CoreOutcomeSourceError(
+        "lotus-core transaction ledger response is missing realized_fx_pnl"
+    )
+
+
+def _transaction_cashflow_value(*, transaction: dict[str, Any]) -> tuple[Decimal, str, str]:
+    cashflow = _read_mapping(transaction.get("cashflow"))
+    cashflow_amount = cashflow.get("amount")
+    if cashflow_amount is None:
+        raise CoreOutcomeSourceError(
+            "lotus-core transaction ledger response is missing cashflow.amount"
+        )
+    return (
+        _decimal_value(cashflow_amount),
+        _read_text(cashflow.get("currency")) or "cashflow_currency",
+        "TRANSACTION_VALUE_CASHFLOW_AMOUNT",
     )
 
 
