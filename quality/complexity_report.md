@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T02:01:52+00:00`
+- Generated at: `2026-06-05T04:13:59+00:00`
 
-- Current ref: `aa4f1a6c`
+- Current ref: `0df7da2f`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
-| 2 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
-| 3 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
-| 4 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
-| 5 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
-| 6 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
-| 7 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
-| 8 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
-| 9 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
-| 10 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
+| 1 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
+| 2 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
+| 3 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
+| 4 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
+| 5 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
+| 6 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 7 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
+| 8 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
+| 9 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
+| 10 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
 
 ### Most Complex Current Test Functions
 
