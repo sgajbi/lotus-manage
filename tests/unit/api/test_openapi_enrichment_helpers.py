@@ -1,5 +1,6 @@
 from src.api.openapi_enrichment import (
     _composite_example_from_schema,
+    _description_context,
     _example_from_schema,
     _ensure_operation_examples,
     _infer_description,
@@ -10,6 +11,7 @@ from src.api.openapi_enrichment import (
     _ref_example_from_schema,
     _operation_tag_for_path,
     _schema_declared_example,
+    _semantic_description_for_context,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
@@ -56,6 +58,25 @@ def test_openapi_enrichment_number_examples_follow_domain_semantics() -> None:
     assert _number_example_for_key("fx_rate") == 1.2345
     assert _number_example_for_key("quantity") == 100.0
     assert _number_example_for_key("other_number") == 10.5
+
+
+def test_openapi_enrichment_description_helpers_follow_domain_semantics() -> None:
+    context = _description_context("portfolioId", {"format": "uuid"})
+
+    assert context.key == "portfolio_id"
+    assert context.text == "portfolio id"
+    assert context.schema_format == "uuid"
+    assert _semantic_description_for_context(context) == "Unique portfolio identifier."
+    assert (
+        _semantic_description_for_context(
+            _description_context("workflowStatus", {"type": "string"})
+        )
+        == "Current status for workflow status."
+    )
+    assert (
+        _semantic_description_for_context(_description_context("displayName", {"type": "string"}))
+        is None
+    )
 
 
 def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -> None:

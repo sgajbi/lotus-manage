@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 
 _EXAMPLE_BY_KEY: dict[str, Any] = {
@@ -27,6 +28,13 @@ _EXAMPLE_BY_KEY: dict[str, Any] = {
 
 _JSON_MEDIA_TYPE = "application/json"
 _PROMETHEUS_MEDIA_TYPE = "text/plain; version=0.0.4"
+
+
+@dataclass(frozen=True)
+class _DescriptionContext:
+    key: str
+    text: str
+    schema_format: Any
 
 
 def _to_snake_case(value: str) -> str:
@@ -101,26 +109,40 @@ def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
 
 
 def _infer_description(model_name: str, prop_name: str, prop_schema: dict[str, Any]) -> str:
-    key = _to_snake_case(prop_name)
-    text = _humanize(prop_name)
-    if key.endswith("_id"):
-        entity = key[: -len("_id")].replace("_", " ")
+    context = _description_context(prop_name=prop_name, prop_schema=prop_schema)
+    semantic_description = _semantic_description_for_context(context)
+    if semantic_description is not None:
+        return semantic_description
+    return f"{_humanize(model_name)} field: {context.text}."
+
+
+def _description_context(prop_name: str, prop_schema: dict[str, Any]) -> _DescriptionContext:
+    return _DescriptionContext(
+        key=_to_snake_case(prop_name),
+        text=_humanize(prop_name),
+        schema_format=prop_schema.get("format"),
+    )
+
+
+def _semantic_description_for_context(context: _DescriptionContext) -> str | None:
+    if context.key.endswith("_id"):
+        entity = context.key[: -len("_id")].replace("_", " ")
         return f"Unique {entity} identifier."
-    if "date" in key and prop_schema.get("format") == "date":
-        return f"Business date for {text}."
-    if "time" in key or prop_schema.get("format") == "date-time":
-        return f"Timestamp for {text}."
-    if "currency" in key:
-        return f"ISO currency code for {text}."
-    if "amount" in key or "value" in key:
-        return f"Monetary value for {text}."
-    if "quantity" in key:
-        return f"Quantity value for {text}."
-    if "rate" in key or "price" in key:
-        return f"Rate/price value for {text}."
-    if "status" in key:
-        return f"Current status for {text}."
-    return f"{_humanize(model_name)} field: {text}."
+    if "date" in context.key and context.schema_format == "date":
+        return f"Business date for {context.text}."
+    if "time" in context.key or context.schema_format == "date-time":
+        return f"Timestamp for {context.text}."
+    if "currency" in context.key:
+        return f"ISO currency code for {context.text}."
+    if "amount" in context.key or "value" in context.key:
+        return f"Monetary value for {context.text}."
+    if "quantity" in context.key:
+        return f"Quantity value for {context.text}."
+    if "rate" in context.key or "price" in context.key:
+        return f"Rate/price value for {context.text}."
+    if "status" in context.key:
+        return f"Current status for {context.text}."
+    return None
 
 
 def _schema_ref_name(ref: str) -> str:
