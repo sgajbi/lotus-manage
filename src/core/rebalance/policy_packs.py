@@ -372,35 +372,64 @@ def policy_pack_engine_option_updates(
     *,
     policy_pack: DpmPolicyPackDefinition,
 ) -> dict[str, object]:
+    updates = {}
+    updates.update(_turnover_engine_option_updates(policy_pack.turnover_policy))
+    updates.update(_tax_engine_option_updates(policy_pack.tax_policy))
+    updates.update(_settlement_engine_option_updates(policy_pack.settlement_policy))
+    updates.update(_constraint_engine_option_updates(policy_pack.constraint_policy))
+    updates.update(_workflow_engine_option_updates(policy_pack.workflow_policy))
+    return updates
+
+
+def _turnover_engine_option_updates(
+    policy: DpmPolicyPackTurnoverPolicy,
+) -> dict[str, object]:
+    if policy.max_turnover_pct is None:
+        return {}
+    return {"max_turnover_pct": policy.max_turnover_pct}
+
+
+def _tax_engine_option_updates(policy: DpmPolicyPackTaxPolicy) -> dict[str, object]:
     updates: dict[str, object] = {}
-    if policy_pack.turnover_policy.max_turnover_pct is not None:
-        updates["max_turnover_pct"] = policy_pack.turnover_policy.max_turnover_pct
-    if policy_pack.tax_policy.enable_tax_awareness is not None:
-        updates["enable_tax_awareness"] = policy_pack.tax_policy.enable_tax_awareness
-    if policy_pack.tax_policy.max_realized_capital_gains is not None:
-        updates["max_realized_capital_gains"] = policy_pack.tax_policy.max_realized_capital_gains
-    if policy_pack.settlement_policy.enable_settlement_awareness is not None:
-        updates["enable_settlement_awareness"] = (
-            policy_pack.settlement_policy.enable_settlement_awareness
-        )
-    if policy_pack.settlement_policy.settlement_horizon_days is not None:
-        updates["settlement_horizon_days"] = policy_pack.settlement_policy.settlement_horizon_days
-    if policy_pack.constraint_policy.single_position_max_weight is not None:
-        updates["single_position_max_weight"] = (
-            policy_pack.constraint_policy.single_position_max_weight
-        )
-    if policy_pack.constraint_policy.group_constraints:
-        updates["group_constraints"] = policy_pack.constraint_policy.group_constraints
-    if policy_pack.workflow_policy.enable_workflow_gates is not None:
-        updates["enable_workflow_gates"] = policy_pack.workflow_policy.enable_workflow_gates
-    if policy_pack.workflow_policy.workflow_requires_mandate_approval is not None:
-        updates["workflow_requires_mandate_approval"] = (
-            policy_pack.workflow_policy.workflow_requires_mandate_approval
-        )
-    if policy_pack.workflow_policy.mandate_approval_already_obtained is not None:
-        updates["mandate_approval_already_obtained"] = (
-            policy_pack.workflow_policy.mandate_approval_already_obtained
-        )
+    if policy.enable_tax_awareness is not None:
+        updates["enable_tax_awareness"] = policy.enable_tax_awareness
+    if policy.max_realized_capital_gains is not None:
+        updates["max_realized_capital_gains"] = policy.max_realized_capital_gains
+    return updates
+
+
+def _settlement_engine_option_updates(
+    policy: DpmPolicyPackSettlementPolicy,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if policy.enable_settlement_awareness is not None:
+        updates["enable_settlement_awareness"] = policy.enable_settlement_awareness
+    if policy.settlement_horizon_days is not None:
+        updates["settlement_horizon_days"] = policy.settlement_horizon_days
+    return updates
+
+
+def _constraint_engine_option_updates(
+    policy: DpmPolicyPackConstraintPolicy,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if policy.single_position_max_weight is not None:
+        updates["single_position_max_weight"] = policy.single_position_max_weight
+    if policy.group_constraints:
+        updates["group_constraints"] = policy.group_constraints
+    return updates
+
+
+def _workflow_engine_option_updates(
+    policy: DpmPolicyPackWorkflowPolicy,
+) -> dict[str, object]:
+    updates: dict[str, object] = {}
+    if policy.enable_workflow_gates is not None:
+        updates["enable_workflow_gates"] = policy.enable_workflow_gates
+    if policy.workflow_requires_mandate_approval is not None:
+        updates["workflow_requires_mandate_approval"] = policy.workflow_requires_mandate_approval
+    if policy.mandate_approval_already_obtained is not None:
+        updates["mandate_approval_already_obtained"] = policy.mandate_approval_already_obtained
     return updates
 
 

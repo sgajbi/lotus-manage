@@ -2,10 +2,17 @@ from decimal import Decimal
 
 import src.core.rebalance.policy_packs as policy_pack_module
 from src.core.rebalance.policy_packs import (
+    DpmPolicyPackConstraintPolicy,
     DpmPolicyPackDefinition,
+    DpmPolicyPackSettlementPolicy,
     DpmPolicyPackTaxPolicy,
     DpmPolicyPackTurnoverPolicy,
     DpmPolicyPackWorkflowPolicy,
+    _constraint_engine_option_updates,
+    _settlement_engine_option_updates,
+    _tax_engine_option_updates,
+    _turnover_engine_option_updates,
+    _workflow_engine_option_updates,
     apply_policy_pack_to_engine_options,
     parse_policy_pack_catalog,
     policy_pack_engine_option_updates,
@@ -228,6 +235,63 @@ def test_policy_pack_engine_option_updates_returns_only_configured_overrides():
         "enable_tax_awareness": True,
         "workflow_requires_mandate_approval": True,
     }
+
+
+def test_policy_pack_engine_option_category_helpers_return_configured_overrides_only():
+    assert _turnover_engine_option_updates(
+        DpmPolicyPackTurnoverPolicy(max_turnover_pct=Decimal("0.07"))
+    ) == {"max_turnover_pct": Decimal("0.07")}
+    assert _tax_engine_option_updates(
+        DpmPolicyPackTaxPolicy(
+            enable_tax_awareness=True,
+            max_realized_capital_gains=Decimal("100"),
+        )
+    ) == {
+        "enable_tax_awareness": True,
+        "max_realized_capital_gains": Decimal("100"),
+    }
+    assert _settlement_engine_option_updates(
+        DpmPolicyPackSettlementPolicy(
+            enable_settlement_awareness=True,
+            settlement_horizon_days=3,
+        )
+    ) == {
+        "enable_settlement_awareness": True,
+        "settlement_horizon_days": 3,
+    }
+    assert _workflow_engine_option_updates(
+        DpmPolicyPackWorkflowPolicy(
+            enable_workflow_gates=False,
+            workflow_requires_mandate_approval=True,
+            mandate_approval_already_obtained=True,
+        )
+    ) == {
+        "enable_workflow_gates": False,
+        "workflow_requires_mandate_approval": True,
+        "mandate_approval_already_obtained": True,
+    }
+
+
+def test_policy_pack_constraint_option_helper_preserves_group_constraints():
+    group_constraint = {
+        "sector:TECH": {
+            "attribute": "sector",
+            "value": "TECH",
+            "max_weight": Decimal("0.20"),
+        }
+    }
+
+    updates = _constraint_engine_option_updates(
+        DpmPolicyPackConstraintPolicy(
+            single_position_max_weight=Decimal("0.25"),
+            group_constraints=group_constraint,
+        )
+    )
+
+    assert updates["single_position_max_weight"] == Decimal("0.25")
+    resolved_group_constraints = updates["group_constraints"]
+    assert isinstance(resolved_group_constraints, dict)
+    assert resolved_group_constraints["sector:TECH"].max_weight == Decimal("0.20")
 
 
 def test_policy_pack_engine_option_updates_empty_without_overrides():
