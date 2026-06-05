@@ -1,10 +1,15 @@
 from decimal import Decimal
 from typing import Literal
 
-from src.core.common.workflow_gates import evaluate_gate_decision
+from src.core.common.workflow_gates import (
+    _select_gate_route,
+    _sorted_gate_reasons,
+    evaluate_gate_decision,
+)
 from src.core.models import (
     DiagnosticsData,
     EngineOptions,
+    GateReason,
     RuleResult,
     SuitabilityEvidence,
     SuitabilityEvidenceSnapshotIds,
@@ -154,4 +159,63 @@ def test_workflow_gate_prioritizes_data_quality_in_reason_sorting() -> None:
     assert [reason.reason_code for reason in gate.reasons[:2]] == [
         "DATA_QUALITY_MISSING_FX",
         "DATA_QUALITY_MISSING_PRICE",
+    ]
+
+
+def test_select_gate_route_preserves_decision_precedence() -> None:
+    assert _select_gate_route(
+        status="BLOCKED",
+        hard_fail_count=0,
+        soft_fail_count=0,
+        new_high=1,
+        new_medium=1,
+        options=EngineOptions(),
+        requires_mandate_approval=True,
+    ) == ("BLOCKED", "FIX_INPUT")
+    assert _select_gate_route(
+        status="READY",
+        hard_fail_count=0,
+        soft_fail_count=0,
+        new_high=1,
+        new_medium=1,
+        options=EngineOptions(),
+        requires_mandate_approval=True,
+    ) == ("COMPLIANCE_REVIEW_REQUIRED", "COMPLIANCE_REVIEW")
+    assert _select_gate_route(
+        status="READY",
+        hard_fail_count=0,
+        soft_fail_count=0,
+        new_high=0,
+        new_medium=0,
+        options=EngineOptions(mandate_approval_already_obtained=True),
+        requires_mandate_approval=True,
+    ) == ("EXECUTION_READY", "EXECUTE")
+
+
+def test_sorted_gate_reasons_orders_by_severity_source_code_and_detail() -> None:
+    reasons = [
+        GateReason(
+            reason_code="SOFT_RULE_FAIL:CASH",
+            severity="MEDIUM",
+            source="RULE_ENGINE",
+            details={"reason_code": "CASH"},
+        ),
+        GateReason(
+            reason_code="NEW_HIGH_SUITABILITY_ISSUE",
+            severity="HIGH",
+            source="SUITABILITY",
+            details={"issue_key": "B"},
+        ),
+        GateReason(
+            reason_code="DATA_QUALITY_MISSING_PRICE",
+            severity="HIGH",
+            source="DATA_QUALITY",
+            details={"count": "1"},
+        ),
+    ]
+
+    assert [reason.reason_code for reason in _sorted_gate_reasons(reasons)] == [
+        "DATA_QUALITY_MISSING_PRICE",
+        "NEW_HIGH_SUITABILITY_ISSUE",
+        "SOFT_RULE_FAIL:CASH",
     ]

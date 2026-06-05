@@ -65,28 +65,23 @@ def method_specific_reason_codes(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
-    reason_codes: list[str] = []
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        reason_codes.extend(solver_reason_codes(result=result))
+        return _sorted_unique_reason_codes(solver_reason_codes(result=result))
     if method == ConstructionMethod.LIQUIDITY_AWARE:
-        reason_codes.append("SETTLEMENT_AWARENESS_ENABLED")
-        reason_codes.extend(
-            liquidity_reason_codes(result=result, context=authority_context.liquidity_context)
+        return _sorted_unique_reason_codes(
+            _liquidity_aware_reason_codes(result=result, authority_context=authority_context)
         )
     if method == ConstructionMethod.RISK_AWARE:
-        if authority_context.risk_context is None:
-            reason_codes.append("RISK_AUTHORITY_NOT_CONNECTED")
-        else:
-            reason_codes.extend(authority_context.risk_context.reason_codes)
+        return _sorted_unique_reason_codes(_risk_aware_reason_codes(authority_context))
     if method == ConstructionMethod.COST_AWARE:
-        reason_codes.extend(
+        return _sorted_unique_reason_codes(
             transaction_cost_reason_codes(
                 result=result,
                 context=authority_context.transaction_cost_context,
             )
         )
     if method == ConstructionMethod.ESG_AWARE:
-        reason_codes.extend(
+        return _sorted_unique_reason_codes(
             esg_restriction_reason_codes(
                 request=request,
                 result=result,
@@ -94,7 +89,7 @@ def method_specific_reason_codes(
             )
         )
     if method == ConstructionMethod.CURRENCY_OVERLAY:
-        reason_codes.extend(
+        return _sorted_unique_reason_codes(
             currency_overlay_reason_codes(
                 request=request,
                 result=result,
@@ -102,10 +97,34 @@ def method_specific_reason_codes(
             )
         )
     if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        if authority_context.regime_stress_context is None:
-            reason_codes.append("REGIME_SCENARIO_PACK_UNAVAILABLE")
-        else:
-            reason_codes.extend(authority_context.regime_stress_context.reason_codes)
+        return _sorted_unique_reason_codes(_regime_stress_reason_codes(authority_context))
+    return []
+
+
+def _liquidity_aware_reason_codes(
+    *,
+    result: RebalanceResult,
+    authority_context: ConstructionAuthorityContext,
+) -> list[str]:
+    return [
+        "SETTLEMENT_AWARENESS_ENABLED",
+        *liquidity_reason_codes(result=result, context=authority_context.liquidity_context),
+    ]
+
+
+def _risk_aware_reason_codes(authority_context: ConstructionAuthorityContext) -> list[str]:
+    if authority_context.risk_context is None:
+        return ["RISK_AUTHORITY_NOT_CONNECTED"]
+    return list(authority_context.risk_context.reason_codes)
+
+
+def _regime_stress_reason_codes(authority_context: ConstructionAuthorityContext) -> list[str]:
+    if authority_context.regime_stress_context is None:
+        return ["REGIME_SCENARIO_PACK_UNAVAILABLE"]
+    return list(authority_context.regime_stress_context.reason_codes)
+
+
+def _sorted_unique_reason_codes(reason_codes: list[str]) -> list[str]:
     return sorted(set(reason_codes))
 
 

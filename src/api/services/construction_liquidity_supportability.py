@@ -1,6 +1,9 @@
 from decimal import Decimal
 
-from src.core.construction.models import AuthoritativeLiquidityContext
+from src.core.construction.models import (
+    AuthoritativeLiquidityCashflowProjection,
+    AuthoritativeLiquidityContext,
+)
 from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
@@ -93,17 +96,11 @@ def cashflow_projection_reason_codes(
     if projection is None:
         return []
     reason_codes = ["CASHFLOW_PROJECTION_CONTEXT_PRESENT", *projection.reason_codes]
-    is_usable = True
-    if projection.data_quality_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"CASHFLOW_PROJECTION_{projection.data_quality_status}_BY_SOURCE")
-        is_usable = False
-    if not projection.include_projected:
-        reason_codes.append("CASHFLOW_PROJECTION_PROJECTED_ROWS_NOT_INCLUDED")
-        is_usable = False
-    if projection.total_net_cashflow.currency != result.after_simulated.total_value.currency:
+    reason_codes.extend(_cashflow_projection_usability_reason_codes(projection))
+    if _cashflow_projection_currency_mismatch(result=result, projection=projection):
         reason_codes.append("CASHFLOW_PROJECTION_CURRENCY_MISMATCH")
         return reason_codes
-    if result.after_simulated.total_value.amount <= Decimal("0"):
+    if _post_trade_total_value_unavailable(result=result):
         reason_codes.append("CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE")
         return reason_codes
     cash_weight = post_trade_cash_weight(result=result)
@@ -114,9 +111,41 @@ def cashflow_projection_reason_codes(
         return reason_codes
     if cash_weight + projected_cash_weight < context.minimum_cash_weight:
         reason_codes.append("CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY")
-    elif is_usable:
+    elif _cashflow_projection_is_usable(projection):
         reason_codes.append("CASHFLOW_PROJECTION_READY")
     return reason_codes
+
+
+def _cashflow_projection_usability_reason_codes(
+    projection: AuthoritativeLiquidityCashflowProjection,
+) -> list[str]:
+    reason_codes: list[str] = []
+    if projection.data_quality_status != ConstructionMethodStatus.READY:
+        reason_codes.append(f"CASHFLOW_PROJECTION_{projection.data_quality_status}_BY_SOURCE")
+    if not projection.include_projected:
+        reason_codes.append("CASHFLOW_PROJECTION_PROJECTED_ROWS_NOT_INCLUDED")
+    return reason_codes
+
+
+def _cashflow_projection_is_usable(
+    projection: AuthoritativeLiquidityCashflowProjection,
+) -> bool:
+    return (
+        projection.data_quality_status == ConstructionMethodStatus.READY
+        and projection.include_projected
+    )
+
+
+def _cashflow_projection_currency_mismatch(
+    *,
+    result: RebalanceResult,
+    projection: AuthoritativeLiquidityCashflowProjection,
+) -> bool:
+    return projection.total_net_cashflow.currency != result.after_simulated.total_value.currency
+
+
+def _post_trade_total_value_unavailable(*, result: RebalanceResult) -> bool:
+    return result.after_simulated.total_value.amount <= Decimal("0")
 
 
 def projected_cashflow_weight(

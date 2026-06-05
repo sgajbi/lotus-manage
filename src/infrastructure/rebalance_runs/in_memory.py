@@ -28,6 +28,16 @@ class _ExpiredRunIdentities:
         return self.run_ids | self.correlation_ids | self.idempotency_keys
 
 
+@dataclass(frozen=True)
+class _WorkflowDecisionFilters:
+    rebalance_run_id: str | None
+    action: str | None
+    actor_id: str | None
+    reason_code: str | None
+    decided_from: datetime | None
+    decided_to: datetime | None
+
+
 def _expired_runs(
     *,
     runs: dict[str, DpmRunRecord],
@@ -99,6 +109,169 @@ def _purge_expired_lineage_edges(
             lineage_edges_by_entity[entity_id] = filtered_edges
         else:
             lineage_edges_by_entity.pop(entity_id, None)
+
+
+def _status_counts(values: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for value in values:
+        if value:
+            counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def _workflow_decision_counts(
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+) -> tuple[int, dict[str, int], dict[str, int]]:
+    decisions = [decision for rows in workflow_decisions.values() for decision in rows]
+    return (
+        len(decisions),
+        _status_counts([decision.action for decision in decisions]),
+        _status_counts([decision.reason_code for decision in decisions]),
+    )
+
+
+def _lineage_edge_identity(edge: DpmLineageEdgeRecord) -> tuple[str, str, str, str, str]:
+    return (
+        edge.source_entity_id,
+        edge.edge_type,
+        edge.target_entity_id,
+        edge.created_at.isoformat(),
+        json.dumps(edge.metadata_json, sort_keys=True, separators=(",", ":")),
+    )
+
+
+def _unique_lineage_edge_count(
+    lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]],
+) -> int:
+    return len(
+        {
+            _lineage_edge_identity(edge)
+            for edges in lineage_edges_by_entity.values()
+            for edge in edges
+        }
+    )
+
+
+def _datetime_bounds(values: list[datetime]) -> tuple[datetime | None, datetime | None]:
+    if not values:
+        return None, None
+    return min(values), max(values)
+
+
+def _supportability_summary_data(
+    *,
+    runs: list[DpmRunRecord],
+    operations: list[DpmAsyncOperationRecord],
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+    lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]],
+) -> DpmSupportabilitySummaryData:
+    workflow_decision_count, workflow_action_counts, workflow_reason_code_counts = (
+        _workflow_decision_counts(workflow_decisions)
+    )
+    oldest_run_created_at, newest_run_created_at = _datetime_bounds(
+        [run.created_at for run in runs]
+    )
+    oldest_operation_created_at, newest_operation_created_at = _datetime_bounds(
+        [operation.created_at for operation in operations]
+    )
+    return DpmSupportabilitySummaryData(
+        run_count=len(runs),
+        operation_count=len(operations),
+        operation_status_counts=_status_counts([operation.status for operation in operations]),
+        run_status_counts=_status_counts([str(run.result_json.get("status", "")) for run in runs]),
+        workflow_decision_count=workflow_decision_count,
+        workflow_action_counts=workflow_action_counts,
+        workflow_reason_code_counts=workflow_reason_code_counts,
+        lineage_edge_count=_unique_lineage_edge_count(lineage_edges_by_entity),
+        oldest_run_created_at=oldest_run_created_at,
+        newest_run_created_at=newest_run_created_at,
+        oldest_operation_created_at=oldest_operation_created_at,
+        newest_operation_created_at=newest_operation_created_at,
+    )
+
+
+def _all_workflow_decisions(
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return [decision for decisions in workflow_decisions.values() for decision in decisions]
+
+
+def _workflow_decision_matches_filters(
+    decision: DpmRunWorkflowDecisionRecord,
+    filters: _WorkflowDecisionFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(decision.run_id, filters.rebalance_run_id),
+            _optional_value_matches(decision.action, filters.action),
+            _optional_value_matches(decision.actor_id, filters.actor_id),
+            _optional_value_matches(decision.reason_code, filters.reason_code),
+            _decided_at_is_on_or_after(decision.decided_at, filters.decided_from),
+            _decided_at_is_on_or_before(decision.decided_at, filters.decided_to),
+        )
+    )
+
+
+def _optional_value_matches(actual: str, expected: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _decided_at_is_on_or_after(decided_at: datetime, lower_bound: datetime | None) -> bool:
+    return lower_bound is None or decided_at >= lower_bound
+
+
+def _decided_at_is_on_or_before(decided_at: datetime, upper_bound: datetime | None) -> bool:
+    return upper_bound is None or decided_at <= upper_bound
+
+
+def _filter_workflow_decisions(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+    filters: _WorkflowDecisionFilters,
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return [
+        decision for decision in decisions if _workflow_decision_matches_filters(decision, filters)
+    ]
+
+
+def _sorted_workflow_decisions(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return sorted(
+        decisions, key=lambda decision: (decision.decided_at, decision.decision_id), reverse=True
+    )
+
+
+def _workflow_decision_page(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+    *,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmRunWorkflowDecisionRecord], str | None]:
+    rows = decisions
+    if cursor is not None:
+        cursor_index = next(
+            (index for index, decision in enumerate(rows) if decision.decision_id == cursor),
+            None,
+        )
+        if cursor_index is None:
+            return [], None
+        rows = rows[cursor_index + 1 :]
+    page = rows[:limit]
+    next_cursor = page[-1].decision_id if len(rows) > limit else None
+    return page, next_cursor
+
+
+def _list_workflow_decisions_filtered(
+    *,
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+    filters: _WorkflowDecisionFilters,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmRunWorkflowDecisionRecord], str | None]:
+    decisions = _all_workflow_decisions(workflow_decisions)
+    filtered = _filter_workflow_decisions(decisions, filters)
+    sorted_decisions = _sorted_workflow_decisions(filtered)
+    return _workflow_decision_page(sorted_decisions, limit=limit, cursor=cursor)
 
 
 class InMemoryDpmRunRepository(DpmRunRepository):
@@ -323,34 +496,19 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmRunWorkflowDecisionRecord], Optional[str]]:
         with self._lock:
-            rows = [
-                decision
-                for decisions in self._workflow_decisions.values()
-                for decision in decisions
-            ]
-            if rebalance_run_id is not None:
-                rows = [row for row in rows if row.run_id == rebalance_run_id]
-            if action is not None:
-                rows = [row for row in rows if row.action == action]
-            if actor_id is not None:
-                rows = [row for row in rows if row.actor_id == actor_id]
-            if reason_code is not None:
-                rows = [row for row in rows if row.reason_code == reason_code]
-            if decided_from is not None:
-                rows = [row for row in rows if row.decided_at >= decided_from]
-            if decided_to is not None:
-                rows = [row for row in rows if row.decided_at <= decided_to]
-            rows = sorted(rows, key=lambda row: (row.decided_at, row.decision_id), reverse=True)
-            if cursor is not None:
-                cursor_index = next(
-                    (index for index, row in enumerate(rows) if row.decision_id == cursor),
-                    None,
-                )
-                if cursor_index is None:
-                    return [], None
-                rows = rows[cursor_index + 1 :]
-            page = rows[:limit]
-            next_cursor = page[-1].decision_id if len(rows) > limit else None
+            page, next_cursor = _list_workflow_decisions_filtered(
+                workflow_decisions=self._workflow_decisions,
+                filters=_WorkflowDecisionFilters(
+                    rebalance_run_id=rebalance_run_id,
+                    action=action,
+                    actor_id=actor_id,
+                    reason_code=reason_code,
+                    decided_from=decided_from,
+                    decided_to=decided_to,
+                ),
+                limit=limit,
+                cursor=cursor,
+            )
             return [deepcopy(row) for row in page], next_cursor
 
     def append_lineage_edge(self, edge: DpmLineageEdgeRecord) -> None:
@@ -368,63 +526,11 @@ class InMemoryDpmRunRepository(DpmRunRepository):
 
     def get_supportability_summary(self) -> DpmSupportabilitySummaryData:
         with self._lock:
-            runs = list(self._runs.values())
-            operations = list(self._operations.values())
-            operation_status_counts: dict[str, int] = {}
-            run_status_counts: dict[str, int] = {}
-            for run in runs:
-                status = str(run.result_json.get("status", ""))
-                if status:
-                    run_status_counts[status] = run_status_counts.get(status, 0) + 1
-            for operation in operations:
-                operation_status_counts[operation.status] = (
-                    operation_status_counts.get(operation.status, 0) + 1
-                )
-            workflow_decision_count = sum(
-                len(decisions) for decisions in self._workflow_decisions.values()
-            )
-            workflow_action_counts: dict[str, int] = {}
-            workflow_reason_code_counts: dict[str, int] = {}
-            for decisions in self._workflow_decisions.values():
-                for decision in decisions:
-                    workflow_action_counts[decision.action] = (
-                        workflow_action_counts.get(decision.action, 0) + 1
-                    )
-                    workflow_reason_code_counts[decision.reason_code] = (
-                        workflow_reason_code_counts.get(decision.reason_code, 0) + 1
-                    )
-            unique_lineage_edge_keys = {
-                (
-                    edge.source_entity_id,
-                    edge.edge_type,
-                    edge.target_entity_id,
-                    edge.created_at.isoformat(),
-                    json.dumps(edge.metadata_json, sort_keys=True, separators=(",", ":")),
-                )
-                for edges in self._lineage_edges_by_entity.values()
-                for edge in edges
-            }
-            lineage_edge_count = len(unique_lineage_edge_keys)
-
-            run_created_values = [run.created_at for run in runs]
-            operation_created_values = [operation.created_at for operation in operations]
-            return DpmSupportabilitySummaryData(
-                run_count=len(runs),
-                operation_count=len(operations),
-                operation_status_counts=operation_status_counts,
-                run_status_counts=run_status_counts,
-                workflow_decision_count=workflow_decision_count,
-                workflow_action_counts=workflow_action_counts,
-                workflow_reason_code_counts=workflow_reason_code_counts,
-                lineage_edge_count=lineage_edge_count,
-                oldest_run_created_at=min(run_created_values) if run_created_values else None,
-                newest_run_created_at=max(run_created_values) if run_created_values else None,
-                oldest_operation_created_at=(
-                    min(operation_created_values) if operation_created_values else None
-                ),
-                newest_operation_created_at=(
-                    max(operation_created_values) if operation_created_values else None
-                ),
+            return _supportability_summary_data(
+                runs=list(self._runs.values()),
+                operations=list(self._operations.values()),
+                workflow_decisions=self._workflow_decisions,
+                lineage_edges_by_entity=self._lineage_edges_by_entity,
             )
 
     def purge_expired_runs(self, *, retention_days: int, now: datetime) -> int:

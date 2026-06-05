@@ -70,6 +70,13 @@ class _LookbackScopeFields:
     timezone: str | None
 
 
+@dataclass(frozen=True)
+class _FairnessPosture:
+    state: PmQualityState
+    observed_spread: Decimal | None
+    reason_codes: list[str]
+
+
 def build_pm_operating_quality_score_run(
     *,
     pm_id: str,
@@ -157,13 +164,11 @@ def build_pm_operating_quality_fairness_analysis(
 ) -> DpmPmQualityFairnessAnalysis:
     """Build bounded cross-segment fairness posture from persisted PM-quality score runs."""
 
-    if len(segments) < 2:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED")
-    if minimum_segment_score_run_count < 1:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID")
-    if maximum_average_score_spread < 0 or maximum_average_score_spread > 100:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SPREAD_THRESHOLD_INVALID")
-
+    _validate_fairness_analysis_inputs(
+        segments=segments,
+        minimum_segment_score_run_count=minimum_segment_score_run_count,
+        maximum_average_score_spread=maximum_average_score_spread,
+    )
     generated_at = datetime.now(timezone.utc)
     segment_results = [
         _fairness_segment_result(
@@ -175,47 +180,98 @@ def build_pm_operating_quality_fairness_analysis(
         )
         for segment in segments
     ]
-    ready_averages = [
-        result.average_score
-        for result in segment_results
-        if result.state == "READY" and result.average_score is not None
-    ]
-    blocked_results = [result for result in segment_results if result.state == "BLOCKED"]
-    if blocked_results:
-        observed_spread = None
-        state: PmQualityState = "BLOCKED"
-        reason_codes = sorted(
-            {reason for result in blocked_results for reason in result.reason_codes}
-            | {"PM_QUALITY_FAIRNESS_SEGMENT_BLOCKED"}
-        )
-    elif len(ready_averages) < 2:
-        observed_spread = None
-        state = "BLOCKED"
-        reason_codes = ["PM_QUALITY_FAIRNESS_COMPARABLE_SEGMENTS_REQUIRED"]
-    else:
-        observed_spread = (max(ready_averages) - min(ready_averages)).quantize(
-            Decimal("0.01"), rounding=ROUND_HALF_UP
-        )
-        if observed_spread > maximum_average_score_spread:
-            state = "PENDING_REVIEW"
-            reason_codes = ["PM_QUALITY_FAIRNESS_SPREAD_REVIEW_REQUIRED"]
-        else:
-            state = "READY"
-            reason_codes = ["PM_QUALITY_FAIRNESS_WITHIN_GOVERNED_SPREAD"]
+    posture = _fairness_analysis_posture(
+        segment_results=segment_results,
+        maximum_average_score_spread=maximum_average_score_spread,
+    )
 
     return _fairness_analysis(
         policy_id=policy_id,
         policy_version=policy_version,
         as_of_date=as_of_date,
-        state=state,
+        state=posture.state,
         segment_results=segment_results,
         minimum_segment_score_run_count=minimum_segment_score_run_count,
         maximum_average_score_spread=maximum_average_score_spread,
-        observed_average_score_spread=observed_spread,
-        reason_codes=reason_codes,
+        observed_average_score_spread=posture.observed_spread,
+        reason_codes=posture.reason_codes,
         generated_at=generated_at,
         generated_by=generated_by,
         correlation_id=correlation_id,
+    )
+
+
+def _validate_fairness_analysis_inputs(
+    *,
+    segments: list[DpmPmQualityFairnessSegmentInput],
+    minimum_segment_score_run_count: int,
+    maximum_average_score_spread: Decimal,
+) -> None:
+    if len(segments) < 2:
+        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED")
+    if minimum_segment_score_run_count < 1:
+        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID")
+    if maximum_average_score_spread < 0 or maximum_average_score_spread > 100:
+        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SPREAD_THRESHOLD_INVALID")
+
+
+def _fairness_analysis_posture(
+    *,
+    segment_results: list[DpmPmQualityFairnessSegmentResult],
+    maximum_average_score_spread: Decimal,
+) -> _FairnessPosture:
+    blocked_results = [result for result in segment_results if result.state == "BLOCKED"]
+    if blocked_results:
+        return _blocked_fairness_posture(blocked_results)
+
+    ready_averages = _ready_segment_average_scores(segment_results)
+    if len(ready_averages) < 2:
+        return _FairnessPosture(
+            state="BLOCKED",
+            observed_spread=None,
+            reason_codes=["PM_QUALITY_FAIRNESS_COMPARABLE_SEGMENTS_REQUIRED"],
+        )
+
+    observed_spread = _observed_average_score_spread(ready_averages)
+    if observed_spread > maximum_average_score_spread:
+        return _FairnessPosture(
+            state="PENDING_REVIEW",
+            observed_spread=observed_spread,
+            reason_codes=["PM_QUALITY_FAIRNESS_SPREAD_REVIEW_REQUIRED"],
+        )
+    return _FairnessPosture(
+        state="READY",
+        observed_spread=observed_spread,
+        reason_codes=["PM_QUALITY_FAIRNESS_WITHIN_GOVERNED_SPREAD"],
+    )
+
+
+def _blocked_fairness_posture(
+    blocked_results: list[DpmPmQualityFairnessSegmentResult],
+) -> _FairnessPosture:
+    return _FairnessPosture(
+        state="BLOCKED",
+        observed_spread=None,
+        reason_codes=sorted(
+            {reason for result in blocked_results for reason in result.reason_codes}
+            | {"PM_QUALITY_FAIRNESS_SEGMENT_BLOCKED"}
+        ),
+    )
+
+
+def _ready_segment_average_scores(
+    segment_results: list[DpmPmQualityFairnessSegmentResult],
+) -> list[Decimal]:
+    return [
+        result.average_score
+        for result in segment_results
+        if result.state == "READY" and result.average_score is not None
+    ]
+
+
+def _observed_average_score_spread(ready_averages: list[Decimal]) -> Decimal:
+    return (max(ready_averages) - min(ready_averages)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
 

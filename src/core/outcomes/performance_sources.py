@@ -249,7 +249,64 @@ def realized_attribution_source_from_attribution_response(
     benchmark = _read_mapping(response.get("benchmark_context"))
     benchmark_id = _read_text(benchmark.get("benchmark_id"))
     benchmark_source = _read_text(benchmark.get("return_source"))
-    source_id = f"{metadata['calculation_id']}:{period}:attribution:{measure}:{selector_token}"
+
+    return DpmRealizedSourceSnapshot(
+        dimension="PERFORMANCE",
+        source_system="lotus-performance",
+        source_type="PERFORMANCE_ATTRIBUTION",
+        source_id=_attribution_source_id(
+            calculation_id=metadata["calculation_id"],
+            period=period,
+            measure=measure,
+            selector_token=selector_token,
+        ),
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=metadata["as_of_date"],
+        content_hash=metadata["calculation_hash"],
+        reason_codes=_attribution_reason_codes(
+            source_state=source_state,
+            supportability_state=supportability_state,
+            supportability_reason=supportability_reason,
+            period=period,
+            measure=measure,
+            selector_reason=selector_reason,
+            input_mode=input_mode,
+            model=model,
+            linking=linking,
+            benchmark_id=benchmark_id,
+            benchmark_source=benchmark_source,
+        ),
+    )
+
+
+def _attribution_source_id(
+    *,
+    calculation_id: str | None,
+    period: str,
+    measure: AttributionOutcomeMeasure,
+    selector_token: str,
+) -> str:
+    return f"{calculation_id}:{period}:attribution:{measure}:{selector_token}"
+
+
+def _attribution_reason_codes(
+    *,
+    source_state: str,
+    supportability_state: str,
+    supportability_reason: str,
+    period: str,
+    measure: AttributionOutcomeMeasure,
+    selector_reason: str,
+    input_mode: str,
+    model: str,
+    linking: str,
+    benchmark_id: str | None,
+    benchmark_source: str | None,
+) -> list[str]:
     reason_codes = [
         _performance_primary_reason(source_state),
         f"PERFORMANCE_SUPPORTABILITY_{_reason_token(supportability_state)}",
@@ -262,27 +319,22 @@ def realized_attribution_source_from_attribution_response(
         f"PERFORMANCE_ATTRIBUTION_MODEL_{_reason_token(model)}",
         f"PERFORMANCE_ATTRIBUTION_LINKING_{_reason_token(linking)}",
     ]
+    reason_codes.extend(_attribution_benchmark_reason_codes(benchmark_id, benchmark_source))
+    return reason_codes
+
+
+def _attribution_benchmark_reason_codes(
+    benchmark_id: str | None,
+    benchmark_source: str | None,
+) -> list[str]:
+    reason_codes = []
     if benchmark_id is not None:
         reason_codes.append(f"PERFORMANCE_BENCHMARK_{_reason_token(benchmark_id)}")
     if benchmark_source is not None:
         reason_codes.append(
             f"PERFORMANCE_BENCHMARK_RETURN_SOURCE_{_reason_token(benchmark_source)}"
         )
-
-    return DpmRealizedSourceSnapshot(
-        dimension="PERFORMANCE",
-        source_system="lotus-performance",
-        source_type="PERFORMANCE_ATTRIBUTION",
-        source_id=source_id,
-        value=value if source_state != "NOT_SUPPORTED" else None,
-        unit="ratio",
-        source_state=source_state,
-        quality=quality,
-        observed_at=None,
-        as_of_date=metadata["as_of_date"],
-        content_hash=metadata["calculation_hash"],
-        reason_codes=reason_codes,
-    )
+    return reason_codes
 
 
 def unavailable_performance_source(

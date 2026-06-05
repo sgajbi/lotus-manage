@@ -20,6 +20,11 @@ from src.infrastructure.risk_authority.client import (
     _risk_event_cohort_from_response,
     _risk_event_reason_codes,
     _regime_context_from_scenario_response,
+    _regime_governance_date,
+    _regime_governance_text,
+    _regime_reason_codes,
+    _regime_source_product_version,
+    _regime_source_system,
     _scenario_bucket,
     _scenario_status_from_supportability,
 )
@@ -611,6 +616,39 @@ def test_lotus_risk_authority_regime_response_edges_are_fail_closed() -> None:
 
     with pytest.raises(LotusRiskAuthorityUnavailableError, match="LOTUS_RISK_INVALID_RESPONSE"):
         _regime_context_from_scenario_response({"metadata": {}})
+
+
+def test_lotus_risk_authority_regime_source_defaults_are_stable() -> None:
+    assert _regime_source_system({}) == "lotus-risk"
+    assert _regime_source_product_version({}) == "v1"
+    assert _regime_source_system({"source_service": "risk-authority"}) == "risk-authority"
+    assert _regime_source_product_version({"product_version": "v2"}) == "v2"
+
+
+def test_lotus_risk_authority_regime_governance_helpers_prefer_source_evidence() -> None:
+    governance_evidence = {
+        "cio_approval_ref": "CIO-SOURCE-APPROVAL",
+        "effective_from": "2026-04-01",
+    }
+    body = {
+        "cio_approval_ref": "CIO-BODY-APPROVAL",
+        "effective_from": "2026-05-01",
+        "approved_by": "body-approver",
+    }
+
+    assert (
+        _regime_governance_text(governance_evidence, body, "cio_approval_ref")
+        == "CIO-SOURCE-APPROVAL"
+    )
+    assert _regime_governance_text(governance_evidence, body, "approved_by") == "body-approver"
+    assert _regime_governance_date(governance_evidence, body, "effective_from") == date(2026, 4, 1)
+
+
+def test_lotus_risk_authority_regime_reason_codes_are_sorted_and_fail_closed() -> None:
+    assert _regime_reason_codes(["Z_CODE", "A_CODE", "A_CODE"]) == ["A_CODE", "Z_CODE"]
+    assert _regime_reason_codes("not-a-list") == [
+        "REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"
+    ]
 
 
 def test_lotus_risk_authority_scenario_bucket_aliases_are_stable() -> None:

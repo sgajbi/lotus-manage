@@ -29,11 +29,14 @@ from src.core.mandates import (
     MandateHealthDimension,
     MandateHealthState,
     MandateRecommendedAction,
+    _benchmark_assignment_source_lineage,
+    _benchmark_assignment_source_record_id,
     _build_digital_twin_source_lineage,
     _mandate_binding_profile_gap_codes,
     _mandate_optional_source_product_gap_codes,
     _mandate_source_schedule_gap_codes,
     _mandate_twin_field_gap_codes,
+    _optional_digital_twin_source_lineage,
     calculate_mandate_health,
     build_health_input_from_core_sources,
     compile_mandate_digital_twin_from_core,
@@ -640,6 +643,31 @@ def test_build_digital_twin_source_lineage_includes_all_core_products() -> None:
     assert lineage[-1].source_record_id == (
         "PB_SG_GLOBAL_BAL_001:BMK_PB_GLOBAL_BALANCED_60_40:2026-01-01:1"
     )
+
+
+def test_optional_digital_twin_source_lineage_skips_missing_products() -> None:
+    lineage = _optional_digital_twin_source_lineage(
+        _client_restriction_profile(),
+        None,
+        _portfolio_cashflow_projection(),
+    )
+
+    assert [entry.product_name for entry in lineage] == [
+        "ClientRestrictionProfile",
+        "PortfolioCashflowProjection",
+    ]
+
+
+def test_benchmark_assignment_source_lineage_preserves_source_identity() -> None:
+    benchmark = _benchmark_assignment()
+
+    assert _benchmark_assignment_source_record_id(benchmark) == (
+        "PB_SG_GLOBAL_BAL_001:BMK_PB_GLOBAL_BALANCED_60_40:2026-01-01:1"
+    )
+    lineage = _benchmark_assignment_source_lineage(benchmark)
+    assert lineage.product_name == benchmark.product_name
+    assert lineage.source_system == "lotus-core"
+    assert lineage.lineage == {"contract_version": benchmark.contract_version}
 
 
 def test_build_digital_twin_source_lineage_includes_only_required_products_when_optionals_missing() -> (

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal, Optional, TypeAlias
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
@@ -67,6 +67,17 @@ DIMENSION_WEIGHTS: dict[MandateHealthDimension, int] = {
     MandateHealthDimension.REVIEW_CADENCE: 5,
     MandateHealthDimension.MODEL_FRESHNESS: 5,
 }
+
+_DigitalTwinLineageSourceProduct: TypeAlias = (
+    DpmCoreMandateBindingResponse
+    | DpmCoreModelPortfolioTargetResponse
+    | DpmCoreClientRestrictionProfileResponse
+    | DpmCoreSustainabilityPreferenceProfileResponse
+    | DpmCorePortfolioCashflowProjectionResponse
+    | DpmCoreClientIncomeNeedsScheduleResponse
+    | DpmCoreLiquidityReserveRequirementResponse
+    | DpmCorePlannedWithdrawalScheduleResponse
+)
 
 
 def _bounded_ratio(value: Decimal, *, field_name: str) -> Decimal:
@@ -662,102 +673,79 @@ def _build_digital_twin_source_lineage(
     planned_withdrawal_schedule: Optional[DpmCorePlannedWithdrawalScheduleResponse] = None,
     benchmark_assignment: Optional[DpmCoreBenchmarkAssignmentResponse] = None,
 ) -> list[DpmSourceProductLineage]:
-    source_lineage = [
-        _lineage_from_core_product(
-            product_name=mandate.product_name,
-            product_version=mandate.product_version,
-            lineage=mandate.lineage,
-            data_quality_status=mandate.data_quality_status,
-            latest_evidence_timestamp=mandate.latest_evidence_timestamp,
-        ),
-        _lineage_from_core_product(
-            product_name=model_targets.product_name,
-            product_version=model_targets.product_version,
-            lineage=model_targets.lineage,
-            data_quality_status=model_targets.data_quality_status,
-            latest_evidence_timestamp=model_targets.latest_evidence_timestamp,
-        ),
-    ]
-    if client_restriction_profile is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=client_restriction_profile.product_name,
-                product_version=client_restriction_profile.product_version,
-                lineage=client_restriction_profile.lineage,
-                data_quality_status=client_restriction_profile.data_quality_status,
-                latest_evidence_timestamp=client_restriction_profile.latest_evidence_timestamp,
-            )
+    source_lineage = _required_digital_twin_source_lineage(
+        mandate=mandate,
+        model_targets=model_targets,
+    )
+    source_lineage.extend(
+        _optional_digital_twin_source_lineage(
+            client_restriction_profile,
+            sustainability_preference_profile,
+            portfolio_cashflow_projection,
+            client_income_needs_schedule,
+            liquidity_reserve_requirement,
+            planned_withdrawal_schedule,
         )
-    if sustainability_preference_profile is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=sustainability_preference_profile.product_name,
-                product_version=sustainability_preference_profile.product_version,
-                lineage=sustainability_preference_profile.lineage,
-                data_quality_status=sustainability_preference_profile.data_quality_status,
-                latest_evidence_timestamp=(
-                    sustainability_preference_profile.latest_evidence_timestamp
-                ),
-            )
-        )
-    if portfolio_cashflow_projection is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=portfolio_cashflow_projection.product_name,
-                product_version=portfolio_cashflow_projection.product_version,
-                lineage=portfolio_cashflow_projection.lineage,
-                data_quality_status=portfolio_cashflow_projection.data_quality_status,
-                latest_evidence_timestamp=portfolio_cashflow_projection.latest_evidence_timestamp,
-            )
-        )
-    if client_income_needs_schedule is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=client_income_needs_schedule.product_name,
-                product_version=client_income_needs_schedule.product_version,
-                lineage=client_income_needs_schedule.lineage,
-                data_quality_status=client_income_needs_schedule.data_quality_status,
-                latest_evidence_timestamp=client_income_needs_schedule.latest_evidence_timestamp,
-            )
-        )
-    if liquidity_reserve_requirement is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=liquidity_reserve_requirement.product_name,
-                product_version=liquidity_reserve_requirement.product_version,
-                lineage=liquidity_reserve_requirement.lineage,
-                data_quality_status=liquidity_reserve_requirement.data_quality_status,
-                latest_evidence_timestamp=liquidity_reserve_requirement.latest_evidence_timestamp,
-            )
-        )
-    if planned_withdrawal_schedule is not None:
-        source_lineage.append(
-            _lineage_from_core_product(
-                product_name=planned_withdrawal_schedule.product_name,
-                product_version=planned_withdrawal_schedule.product_version,
-                lineage=planned_withdrawal_schedule.lineage,
-                data_quality_status=planned_withdrawal_schedule.data_quality_status,
-                latest_evidence_timestamp=planned_withdrawal_schedule.latest_evidence_timestamp,
-            )
-        )
+    )
     if benchmark_assignment is not None:
-        source_lineage.append(
-            DpmSourceProductLineage(
-                product_name=benchmark_assignment.product_name,
-                product_version=benchmark_assignment.product_version,
-                source_system=benchmark_assignment.source_system or "lotus-core",
-                source_record_id=(
-                    f"{benchmark_assignment.portfolio_id}:"
-                    f"{benchmark_assignment.benchmark_id}:"
-                    f"{benchmark_assignment.effective_from.isoformat()}:"
-                    f"{benchmark_assignment.assignment_version}"
-                ),
-                data_quality_status=benchmark_assignment.data_quality_status,
-                latest_evidence_timestamp=benchmark_assignment.latest_evidence_timestamp,
-                lineage={"contract_version": benchmark_assignment.contract_version},
-            )
-        )
+        source_lineage.append(_benchmark_assignment_source_lineage(benchmark_assignment))
     return source_lineage
+
+
+def _required_digital_twin_source_lineage(
+    *,
+    mandate: DpmCoreMandateBindingResponse,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+) -> list[DpmSourceProductLineage]:
+    return [
+        _lineage_from_core_source_product(mandate),
+        _lineage_from_core_source_product(model_targets),
+    ]
+
+
+def _optional_digital_twin_source_lineage(
+    *products: _DigitalTwinLineageSourceProduct | None,
+) -> list[DpmSourceProductLineage]:
+    return [
+        _lineage_from_core_source_product(product) for product in products if product is not None
+    ]
+
+
+def _lineage_from_core_source_product(
+    product: _DigitalTwinLineageSourceProduct,
+) -> DpmSourceProductLineage:
+    return _lineage_from_core_product(
+        product_name=product.product_name,
+        product_version=product.product_version,
+        lineage=product.lineage,
+        data_quality_status=product.data_quality_status,
+        latest_evidence_timestamp=product.latest_evidence_timestamp,
+    )
+
+
+def _benchmark_assignment_source_lineage(
+    benchmark_assignment: DpmCoreBenchmarkAssignmentResponse,
+) -> DpmSourceProductLineage:
+    return DpmSourceProductLineage(
+        product_name=benchmark_assignment.product_name,
+        product_version=benchmark_assignment.product_version,
+        source_system=benchmark_assignment.source_system or "lotus-core",
+        source_record_id=_benchmark_assignment_source_record_id(benchmark_assignment),
+        data_quality_status=benchmark_assignment.data_quality_status,
+        latest_evidence_timestamp=benchmark_assignment.latest_evidence_timestamp,
+        lineage={"contract_version": benchmark_assignment.contract_version},
+    )
+
+
+def _benchmark_assignment_source_record_id(
+    benchmark_assignment: DpmCoreBenchmarkAssignmentResponse,
+) -> str:
+    return (
+        f"{benchmark_assignment.portfolio_id}:"
+        f"{benchmark_assignment.benchmark_id}:"
+        f"{benchmark_assignment.effective_from.isoformat()}:"
+        f"{benchmark_assignment.assignment_version}"
+    )
 
 
 def compile_mandate_digital_twin_from_core(

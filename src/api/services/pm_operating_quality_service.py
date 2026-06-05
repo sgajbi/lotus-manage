@@ -158,15 +158,38 @@ def resolve_pm_quality_book_scope_evidence(
     correlation_id: str,
     core_resolver_factory: Callable[[], CoreResolverProtocol],
 ) -> DpmPmQualityBookScopeEvidence:
+    as_of_date_obj = _parse_pm_book_scope_as_of_date(as_of_date)
+    membership = _resolve_pm_book_membership(
+        pm_id=pm_id,
+        as_of_date=as_of_date_obj,
+        command=command,
+        correlation_id=correlation_id,
+        core_resolver_factory=core_resolver_factory,
+    )
+    _validate_pm_book_membership(membership)
+    return _pm_book_scope_evidence_from_membership(membership)
+
+
+def _parse_pm_book_scope_as_of_date(as_of_date: str) -> date:
     try:
-        as_of_date_obj = date.fromisoformat(as_of_date)
+        return date.fromisoformat(as_of_date)
     except ValueError as exc:
         raise DpmPmOperatingQualityServiceError("INVALID_AS_OF_DATE") from exc
+
+
+def _resolve_pm_book_membership(
+    *,
+    pm_id: str,
+    as_of_date: date,
+    command: DpmPmQualityBookScopeCommand,
+    correlation_id: str,
+    core_resolver_factory: Callable[[], CoreResolverProtocol],
+) -> DpmCorePortfolioManagerBookMembershipResponse:
     try:
         resolver = core_resolver_factory()
-        membership = resolver.resolve_portfolio_manager_book_membership(
+        return resolver.resolve_portfolio_manager_book_membership(
             portfolio_manager_id=pm_id,
-            as_of_date=as_of_date_obj,
+            as_of_date=as_of_date,
             tenant_id=command.tenant_id,
             booking_center_code=command.booking_center_code,
             portfolio_types=command.portfolio_types,
@@ -178,17 +201,30 @@ def resolve_pm_quality_book_scope_evidence(
     except CoreResolverError as exc:
         raise DpmPmOperatingQualityServiceError(str(exc)) from exc
 
+
+def _validate_pm_book_membership(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> None:
     if membership.supportability.state != "READY":
         raise DpmPmOperatingQualityServiceError(membership.supportability.reason)
     if not membership.members:
         raise DpmPmOperatingQualityServiceError("DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY")
 
-    source_id = (
+
+def _pm_book_scope_source_id(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> str:
+    return (
         membership.snapshot_id
         or membership.source_batch_fingerprint
         or f"pm-book:{membership.portfolio_manager_id}:{membership.as_of_date.isoformat()}"
     )
-    member_refs = [
+
+
+def _pm_book_member_source_refs(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> list[DpmOutcomeSourceRef]:
+    return [
         DpmOutcomeSourceRef(
             source_system="lotus-core",
             source_type="PORTFOLIO_MANAGER_BOOK_MEMBER",
@@ -197,6 +233,12 @@ def resolve_pm_quality_book_scope_evidence(
         )
         for member in membership.members[:100]
     ]
+
+
+def _pm_book_scope_evidence_from_membership(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> DpmPmQualityBookScopeEvidence:
+    source_id = _pm_book_scope_source_id(membership)
     return DpmPmQualityBookScopeEvidence(
         source_id=source_id,
         product_version=membership.product_version,
@@ -216,7 +258,7 @@ def resolve_pm_quality_book_scope_evidence(
                 source_version=membership.product_version,
                 content_hash=membership.source_batch_fingerprint,
             ),
-            *member_refs,
+            *_pm_book_member_source_refs(membership),
         ],
     )
 

@@ -10,6 +10,7 @@ import httpx
 from src.core.construction.models import AuthoritativeRegimeStressContext, AuthoritativeRiskContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
+from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
 class LotusRiskAuthorityUnavailableError(RuntimeError):
@@ -183,29 +184,19 @@ def _post_with_retries(
     attempts: int,
     rejected_error: str = "LOTUS_RISK_CONCENTRATION_REJECTED",
 ) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            response = client.post(url, json=payload, headers=headers)
-        except (httpx.TimeoutException, httpx.TransportError) as exc:
-            last_error = exc
-            if attempt + 1 >= attempts:
-                raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE") from exc
-            continue
-        if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-            continue
-        if response.status_code >= 500:
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE")
-        if response.status_code >= 400:
-            raise LotusRiskAuthorityUnavailableError(rejected_error)
-        try:
-            body = response.json()
-        except ValueError as exc:
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
-        if not isinstance(body, dict):
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE")
-        return body
-    raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE") from last_error
+    try:
+        return post_json_with_retries(
+            client=client,
+            url=url,
+            payload=payload,
+            headers=headers,
+            attempts=attempts,
+            unavailable_error="LOTUS_RISK_UNAVAILABLE",
+            rejected_error=rejected_error,
+            invalid_response_error="LOTUS_RISK_INVALID_RESPONSE",
+        )
+    except AuthorityHttpError as exc:
+        raise LotusRiskAuthorityUnavailableError(exc.code) from exc
 
 
 def _concentration_payload(*, result: RebalanceResult) -> dict[str, Any]:
@@ -342,33 +333,23 @@ def _regime_context_from_scenario_response(
         metadata = _dict_section(body, "metadata")
         governance_evidence = _optional_dict_section(body, "governance_evidence")
         supportability = str(metadata.get("calculation_supportability", "degraded"))
-        reason_codes = body.get("reason_codes")
-        if not isinstance(reason_codes, list):
-            reason_codes = ["REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"]
         portfolio_id = _optional_text(body.get("portfolio_id"))
         portfolio_applicability_ref = _optional_text(
             governance_evidence.get("portfolio_applicability_ref")
         )
         return AuthoritativeRegimeStressContext(
             supportability_status=_scenario_status_from_supportability(supportability),
-            source_system=str(metadata.get("source_service") or "lotus-risk"),
-            source_product_version=str(metadata.get("product_version") or "v1"),
+            source_system=_regime_source_system(metadata),
+            source_product_version=_regime_source_product_version(metadata),
             scenario_pack_id=str(body["scenario_pack_id"]),
             worst_case_loss_pct=Decimal(str(body["worst_case_loss_pct"])),
             maximum_allowed_loss_pct=Decimal(str(body["maximum_allowed_loss_pct"])),
             cio_approval_status=_optional_text(governance_evidence.get("cio_approval_status")),
-            cio_approval_ref=_optional_text(governance_evidence.get("cio_approval_ref"))
-            or _optional_text(body.get("cio_approval_ref")),
-            approved_by=_optional_text(governance_evidence.get("approved_by"))
-            or _optional_text(body.get("approved_by")),
-            approved_at=_optional_text(governance_evidence.get("approved_at"))
-            or _optional_text(body.get("approved_at")),
-            effective_from=_optional_date(
-                governance_evidence.get("effective_from") or body.get("effective_from")
-            ),
-            effective_to=_optional_date(
-                governance_evidence.get("effective_to") or body.get("effective_to")
-            ),
+            cio_approval_ref=_regime_governance_text(governance_evidence, body, "cio_approval_ref"),
+            approved_by=_regime_governance_text(governance_evidence, body, "approved_by"),
+            approved_at=_regime_governance_text(governance_evidence, body, "approved_at"),
+            effective_from=_regime_governance_date(governance_evidence, body, "effective_from"),
+            effective_to=_regime_governance_date(governance_evidence, body, "effective_to"),
             effective_period_status=_optional_text(
                 governance_evidence.get("effective_period_status")
             ),
@@ -382,10 +363,40 @@ def _regime_context_from_scenario_response(
                 portfolio_applicability_ref=portfolio_applicability_ref,
             ),
             applicable_mandate_ids=_text_list(body.get("applicable_mandate_ids")),
-            reason_codes=sorted({str(reason_code) for reason_code in reason_codes}),
+            reason_codes=_regime_reason_codes(body.get("reason_codes")),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
+
+
+def _regime_source_system(metadata: dict[str, Any]) -> str:
+    return str(metadata.get("source_service") or "lotus-risk")
+
+
+def _regime_source_product_version(metadata: dict[str, Any]) -> str:
+    return str(metadata.get("product_version") or "v1")
+
+
+def _regime_governance_text(
+    governance_evidence: dict[str, Any],
+    body: dict[str, Any],
+    key: str,
+) -> str | None:
+    return _optional_text(governance_evidence.get(key)) or _optional_text(body.get(key))
+
+
+def _regime_governance_date(
+    governance_evidence: dict[str, Any],
+    body: dict[str, Any],
+    key: str,
+) -> date | None:
+    return _optional_date(governance_evidence.get(key) or body.get(key))
+
+
+def _regime_reason_codes(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return ["REGIME_SCENARIO_PACK_RESPONSE_REASON_CODES_MISSING"]
+    return sorted({str(reason_code) for reason_code in value})
 
 
 def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedCohort:

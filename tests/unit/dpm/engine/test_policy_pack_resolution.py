@@ -382,6 +382,35 @@ def test_policy_pack_definition_payload_normalizes_defaults():
     }
 
 
+def test_policy_pack_definition_id_helper_rejects_invalid_keys():
+    assert policy_pack_module._normalized_policy_pack_definition_id("  dpm_standard_v1  ") == (
+        "dpm_standard_v1"
+    )
+    assert policy_pack_module._normalized_policy_pack_definition_id("  ") is None
+    assert policy_pack_module._normalized_policy_pack_definition_id(123) is None
+
+
+def test_policy_pack_model_payload_helper_defaults_missing_sections():
+    payload = policy_pack_module._policy_pack_model_payload(
+        normalized_id="dpm_standard_v1",
+        definition={
+            "version": 2,
+            "workflow_policy": {"enable_workflow_gates": True},
+        },
+    )
+
+    assert payload == {
+        "policy_pack_id": "dpm_standard_v1",
+        "version": "2",
+        "turnover_policy": {},
+        "tax_policy": {},
+        "settlement_policy": {},
+        "constraint_policy": {},
+        "workflow_policy": {"enable_workflow_gates": True},
+        "idempotency_policy": {},
+    }
+
+
 def test_parse_policy_pack_definition_returns_none_for_invalid_rows():
     assert (
         policy_pack_module._parse_policy_pack_definition(
