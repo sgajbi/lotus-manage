@@ -18815,3 +18815,32 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-775: Rebalance-run list query helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/run_query.py`,
+  `src/infrastructure/rebalance_runs/sqlite.py`,
+  `src/infrastructure/rebalance_runs/postgres.py`, and
+  `tests/unit/dpm/supportability/test_run_query.py`.
+- Finding: SQLite and Postgres `list_runs` were the top current source-complexity hotspots and
+  duplicated run filter clause assembly, cursor predicates, argument ordering, and overfetch
+  paging while adjacent operation/workflow-decision list methods already used dedicated query
+  helpers.
+- Action: extracted run filter-query and overfetch page helpers, preserving backend-specific
+  placeholder syntax and JSON status expressions at the repository call sites. Added direct helper
+  tests for clause ordering, cursor argument ordering, empty filters, and next-cursor behavior;
+  preserved existing repository contract tests for in-memory, SQLite, and Postgres scaffold
+  behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/run_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py tests/unit/dpm/supportability/test_run_query.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/run_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py tests/unit/dpm/supportability/test_run_query.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/run_query.py src/infrastructure/rebalance_runs/sqlite.py src/infrastructure/rebalance_runs/postgres.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_run_query.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal repository query
+  maintainability refactoring.

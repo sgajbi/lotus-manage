@@ -19,6 +19,7 @@ from src.infrastructure.rebalance_runs.operation_query import (
     build_operation_filter_query,
     operation_page,
 )
+from src.infrastructure.rebalance_runs.run_query import build_run_filter_query, run_page
 from src.infrastructure.rebalance_runs.workflow_decision_query import (
     build_workflow_decision_filter_query,
     workflow_decision_page,
@@ -143,37 +144,16 @@ class PostgresDpmRunRepository:
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmRunRecord], Optional[str]]:
-        where_clauses = []
-        args: list[Any] = []
-        if created_from is not None:
-            where_clauses.append("created_at >= %s")
-            args.append(created_from.isoformat())
-        if created_to is not None:
-            where_clauses.append("created_at <= %s")
-            args.append(created_to.isoformat())
-        if portfolio_id is not None:
-            where_clauses.append("portfolio_id = %s")
-            args.append(portfolio_id)
-        if request_hash is not None:
-            where_clauses.append("request_hash = %s")
-            args.append(request_hash)
-        if status is not None:
-            where_clauses.append("result_json::jsonb ->> 'status' = %s")
-            args.append(status)
-        if cursor is not None:
-            where_clauses.append(
-                """
-                (
-                    created_at < (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = %s)
-                    OR (
-                        created_at = (SELECT created_at FROM dpm_runs WHERE rebalance_run_id = %s)
-                        AND rebalance_run_id < %s
-                    )
-                )
-                """
-            )
-            args.extend([cursor, cursor, cursor])
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+        filters = build_run_filter_query(
+            placeholder="%s",
+            status_expression="result_json::jsonb ->> 'status'",
+            created_from=created_from,
+            created_to=created_to,
+            status=status,
+            request_hash=request_hash,
+            portfolio_id=portfolio_id,
+            cursor=cursor,
+        )
         query = f"""
             SELECT
                 rebalance_run_id,
@@ -184,21 +164,18 @@ class PostgresDpmRunRepository:
                 created_at,
                 result_json
             FROM dpm_runs
-            {where_sql}
+            {filters.where_sql}
             ORDER BY created_at DESC, rebalance_run_id DESC
             LIMIT %s
         """
-        args.append(limit + 1)
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
+            rows = connection.execute(query, (*filters.args, limit + 1)).fetchall()
         run_candidates = [self._to_run(row) for row in rows]
         runs = cast(
             list[DpmRunRecord],
             [run for run in run_candidates if run is not None],
         )
-        page = runs[:limit]
-        next_cursor = page[-1].rebalance_run_id if len(runs) > limit else None
-        return page, next_cursor
+        return run_page(runs, limit=limit)
 
     def save_run_artifact(self, *, rebalance_run_id: str, artifact_json: dict[str, Any]) -> None:
         query = """
