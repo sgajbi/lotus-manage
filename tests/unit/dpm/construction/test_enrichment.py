@@ -51,8 +51,14 @@ from src.core.construction import (
     estimate_transaction_cost,
     summarize_enrichment_posture,
 )
-from src.core.construction.enrichment import _fx_enrichment_status, _tax_enrichment_status
-from src.core.construction.enrichment import _cost_enrichment_status
+from src.core.construction.enrichment import (
+    _cost_enrichment_status,
+    _fx_enrichment_status,
+    _liquidity_enrichment_status,
+    _optional_authoritative_status,
+    _tax_enrichment_status,
+    _turnover_enrichment_status,
+)
 from src.core.construction.repository import (
     ConstructionAlternativeSetNotFoundError,
     ConstructionIdempotencyConflictError,
@@ -224,6 +230,55 @@ def test_enrichment_summary_flags_missing_fx_and_cash_weight_sources() -> None:
     assert summary.liquidity_status == ConstructionMethodStatus.DEGRADED
     assert "FX_SOURCE_MISSING" in summary.reason_codes
     assert "CASH_WEIGHT_UNAVAILABLE" in summary.reason_codes
+
+
+def test_enrichment_status_helpers_project_liquidity_turnover_and_optional_authority() -> None:
+    reason_codes: list[str] = []
+    result = SimpleNamespace(
+        diagnostics=SimpleNamespace(dropped_intents=["intent-1"]),
+        after_simulated=SimpleNamespace(allocation_by_asset_class=[]),
+    )
+
+    assert (
+        _liquidity_enrichment_status(
+            result=result,
+            liquidity_context=None,
+            reason_codes=reason_codes,
+        )
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert (
+        _turnover_enrichment_status(
+            result=result,
+            reason_codes=reason_codes,
+        )
+        == ConstructionMethodStatus.PENDING_REVIEW
+    )
+    assert (
+        _optional_authoritative_status(
+            required=False,
+            context_status=None,
+            missing_reason="RISK_ENRICHMENT_UNAVAILABLE",
+            context_reason_codes=[],
+            reason_codes=reason_codes,
+        )
+        == ConstructionMethodStatus.READY
+    )
+    assert (
+        _optional_authoritative_status(
+            required=True,
+            context_status=None,
+            missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
+            context_reason_codes=[],
+            reason_codes=reason_codes,
+        )
+        == ConstructionMethodStatus.DEGRADED
+    )
+    assert reason_codes == [
+        "CASH_WEIGHT_UNAVAILABLE",
+        "TURNOVER_BUDGET_DROPPED_INTENTS",
+        "PERFORMANCE_CONTEXT_UNAVAILABLE",
+    ]
 
 
 def test_construction_error_mapping_and_missing_set() -> None:

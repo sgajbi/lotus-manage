@@ -73,6 +73,60 @@ def _cost_enrichment_status(
     return ConstructionMethodStatus.READY, []
 
 
+def _liquidity_enrichment_status(
+    *,
+    result: RebalanceResult,
+    liquidity_context: AuthoritativeLiquidityContext | None,
+    reason_codes: list[str],
+) -> ConstructionMethodStatus:
+    liquidity_status = ConstructionMethodStatus.READY
+    if _cash_weight(result.after_simulated) is None:
+        liquidity_status = ConstructionMethodStatus.DEGRADED
+        reason_codes.append("CASH_WEIGHT_UNAVAILABLE")
+    if liquidity_context is None:
+        return liquidity_status
+    return lowest_construction_status(
+        [
+            liquidity_status,
+            _authoritative_context_status(
+                context_status=liquidity_context.supportability_status,
+                missing_reason="LIQUIDITY_CONTEXT_UNAVAILABLE",
+                context_reason_codes=_liquidity_context_reason_codes(liquidity_context),
+                reason_codes=reason_codes,
+            ),
+        ]
+    )
+
+
+def _turnover_enrichment_status(
+    *,
+    result: RebalanceResult,
+    reason_codes: list[str],
+) -> ConstructionMethodStatus:
+    if result.diagnostics.dropped_intents:
+        reason_codes.append("TURNOVER_BUDGET_DROPPED_INTENTS")
+        return ConstructionMethodStatus.PENDING_REVIEW
+    return ConstructionMethodStatus.READY
+
+
+def _optional_authoritative_status(
+    *,
+    required: bool,
+    context_status: ConstructionMethodStatus | None,
+    missing_reason: str,
+    context_reason_codes: list[str],
+    reason_codes: list[str],
+) -> ConstructionMethodStatus:
+    if not required and context_status is None:
+        return ConstructionMethodStatus.READY
+    return _authoritative_context_status(
+        context_status=context_status,
+        missing_reason=missing_reason,
+        context_reason_codes=context_reason_codes,
+        reason_codes=reason_codes,
+    )
+
+
 def summarize_enrichment_posture(
     *,
     result: RebalanceResult,
@@ -99,22 +153,11 @@ def summarize_enrichment_posture(
     )
     reason_codes.extend(fx_reason_codes)
 
-    liquidity_status = ConstructionMethodStatus.READY
-    if _cash_weight(result.after_simulated) is None:
-        liquidity_status = ConstructionMethodStatus.DEGRADED
-        reason_codes.append("CASH_WEIGHT_UNAVAILABLE")
-    if liquidity_context is not None:
-        liquidity_status = lowest_construction_status(
-            [
-                liquidity_status,
-                _authoritative_context_status(
-                    context_status=liquidity_context.supportability_status,
-                    missing_reason="LIQUIDITY_CONTEXT_UNAVAILABLE",
-                    context_reason_codes=_liquidity_context_reason_codes(liquidity_context),
-                    reason_codes=reason_codes,
-                ),
-            ]
-        )
+    liquidity_status = _liquidity_enrichment_status(
+        result=result,
+        liquidity_context=liquidity_context,
+        reason_codes=reason_codes,
+    )
 
     cost_status, cost_reason_codes = _cost_enrichment_status(
         authoritative_cost_available=authoritative_cost_available,
@@ -122,29 +165,22 @@ def summarize_enrichment_posture(
     )
     reason_codes.extend(cost_reason_codes)
 
-    turnover_status = ConstructionMethodStatus.READY
-    if result.diagnostics.dropped_intents:
-        turnover_status = ConstructionMethodStatus.PENDING_REVIEW
-        reason_codes.append("TURNOVER_BUDGET_DROPPED_INTENTS")
+    turnover_status = _turnover_enrichment_status(result=result, reason_codes=reason_codes)
 
-    risk_status = ConstructionMethodStatus.READY
-    if risk_required or risk_context is not None:
-        risk_status = _authoritative_context_status(
-            context_status=risk_context.supportability_status if risk_context else None,
-            missing_reason="RISK_ENRICHMENT_UNAVAILABLE",
-            context_reason_codes=risk_context.reason_codes if risk_context else [],
-            reason_codes=reason_codes,
-        )
-    performance_status = ConstructionMethodStatus.READY
-    if performance_required or performance_context is not None:
-        performance_status = _authoritative_context_status(
-            context_status=(
-                performance_context.supportability_status if performance_context else None
-            ),
-            missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
-            context_reason_codes=performance_context.reason_codes if performance_context else [],
-            reason_codes=reason_codes,
-        )
+    risk_status = _optional_authoritative_status(
+        required=risk_required,
+        context_status=risk_context.supportability_status if risk_context else None,
+        missing_reason="RISK_ENRICHMENT_UNAVAILABLE",
+        context_reason_codes=risk_context.reason_codes if risk_context else [],
+        reason_codes=reason_codes,
+    )
+    performance_status = _optional_authoritative_status(
+        required=performance_required,
+        context_status=performance_context.supportability_status if performance_context else None,
+        missing_reason="PERFORMANCE_CONTEXT_UNAVAILABLE",
+        context_reason_codes=performance_context.reason_codes if performance_context else [],
+        reason_codes=reason_codes,
+    )
 
     return ConstructionEnrichmentSummary(
         tax_status=tax_status,

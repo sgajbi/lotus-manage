@@ -16297,3 +16297,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-671: Construction enrichment status helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: `summarize_enrichment_posture` became the top current source-complexity hotspot and
+  still mixed liquidity cash-weight posture, turnover dropped-intent posture, optional
+  risk/performance authority handling, and summary assembly in one function.
+- Action: introduced liquidity, turnover, and optional authoritative status helpers. Kept
+  `summarize_enrichment_posture` as the construction enrichment summary assembly boundary. Added
+  direct helper coverage for missing cash weight, dropped intents, optional authority suppression,
+  and required authority missing posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`,
+  `python -m pytest tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction enrichment
+  maintainability refactoring.
