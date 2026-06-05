@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T10:57:06+00:00`
+- Generated at: `2026-06-05T11:00:49+00:00`
 
-- Current ref: `bce1f82f`
+- Current ref: `f3df65ca`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
-| 2 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
-| 3 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
-| 4 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
-| 5 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
-| 6 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
-| 7 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
-| 8 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
-| 9 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
-| 10 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
+| 1 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 2 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
+| 3 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
+| 4 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
+| 5 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
+| 6 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
+| 7 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
+| 8 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
+| 9 | list_runs | src/infrastructure/rebalance_runs/postgres.py | 9 | 67 |
+| 10 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
 
 ### Most Complex Current Test Functions
 
