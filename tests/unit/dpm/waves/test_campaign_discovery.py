@@ -54,6 +54,9 @@ from src.core.waves.campaign_assignment_actions import (
 )
 from src.core.waves.campaign_assignment_tasks import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+    _optional_transition_replay_fields_match,
+    _required_transition_replay_fields,
+    _source_ref_payloads,
     _transition_task_fields,
     _validate_transition_allowed,
     build_bulk_review_campaign_definition_assignment_task_page,
@@ -1603,6 +1606,60 @@ def test_campaign_assignment_task_transition_validation_blocks_opened_and_closed
             task=resolved.assignment_tasks[0],
             transition_type="STARTED",
         )
+
+
+def test_campaign_assignment_transition_replay_helpers_project_comparison_fields() -> None:
+    source_refs = [
+        DpmWaveSourceRef(
+            source_system="lotus-manage",
+            source_type="CAMPAIGN_ASSIGNMENT_TASK",
+            source_id="brc-task-source-ref",
+        )
+    ]
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    acknowledged = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ACKNOWLEDGED",
+        transition_ref="BRC-TASK-2026-05-001:ack",
+        transitioned_by="pm_001",
+        transition_reason="Assigned PM acknowledged the task.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+        source_refs=source_refs,
+    )
+    transition = acknowledged.assignment_tasks[0].transitions[-1]
+
+    assert _required_transition_replay_fields(transition) == (
+        "ACKNOWLEDGED",
+        "pm_001",
+        "Assigned PM acknowledged the task.",
+        "corr-campaign-assignment-task-transition-001",
+    )
+    assert _source_ref_payloads(transition.source_refs) == _source_ref_payloads(source_refs)
+    assert _optional_transition_replay_fields_match(
+        transition=transition,
+        assigned_actor_ids=None,
+        escalation_tier=None,
+        sla_posture=None,
+        due_at=None,
+    )
+    assert not _optional_transition_replay_fields_match(
+        transition=transition,
+        assigned_actor_ids=["pm_002"],
+        escalation_tier=None,
+        sla_posture=None,
+        due_at=None,
+    )
 
 
 def test_campaign_assignment_tasks_reject_empty_reassignment_assignees() -> None:

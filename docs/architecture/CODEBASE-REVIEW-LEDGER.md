@@ -16036,3 +16036,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-660: Campaign assignment transition replay helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `_transition_matches_request` became the top current source-complexity hotspot and
+  mixed required transition replay comparison, optional field comparison, and source-reference
+  payload comparison inside one idempotency predicate.
+- Action: introduced required replay field, optional replay field, and source-reference payload
+  comparison helpers. Kept `_transition_matches_request` as the idempotency decision boundary and
+  added direct helper coverage for replay comparison projection and optional-assignee mismatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment task
+  maintainability refactoring.

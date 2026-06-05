@@ -560,14 +560,39 @@ def _transition_matches_request(
     due_at: datetime | None,
     source_refs: list[DpmWaveSourceRef],
 ) -> bool:
-    if transition.transition_type != transition_type:
-        return False
-    if transition.transitioned_by != transitioned_by:
-        return False
-    if transition.transition_reason != transition_reason:
-        return False
-    if transition.correlation_id != correlation_id:
-        return False
+    return (
+        _required_transition_replay_fields(transition)
+        == (transition_type, transitioned_by, transition_reason, correlation_id)
+        and _optional_transition_replay_fields_match(
+            transition=transition,
+            assigned_actor_ids=assigned_actor_ids,
+            escalation_tier=escalation_tier,
+            sla_posture=sla_posture,
+            due_at=due_at,
+        )
+        and _source_ref_payloads(transition.source_refs) == _source_ref_payloads(source_refs)
+    )
+
+
+def _required_transition_replay_fields(
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+) -> tuple[str, str, str, str]:
+    return (
+        transition.transition_type,
+        transition.transitioned_by,
+        transition.transition_reason,
+        transition.correlation_id,
+    )
+
+
+def _optional_transition_replay_fields_match(
+    *,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    assigned_actor_ids: list[str] | None,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+    sla_posture: CampaignAssignmentSlaPosture | None,
+    due_at: datetime | None,
+) -> bool:
     if assigned_actor_ids is not None and transition.assigned_actor_ids != _normalize_actor_ids(
         assigned_actor_ids
     ):
@@ -578,6 +603,8 @@ def _transition_matches_request(
         return False
     if due_at is not None and transition.due_at != due_at:
         return False
-    return [ref.model_dump(mode="json") for ref in transition.source_refs] == [
-        ref.model_dump(mode="json") for ref in source_refs
-    ]
+    return True
+
+
+def _source_ref_payloads(source_refs: list[DpmWaveSourceRef]) -> list[dict[str, object]]:
+    return [ref.model_dump(mode="json") for ref in source_refs]
