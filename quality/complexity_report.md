@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T06:27:19+00:00`
+- Generated at: `2026-06-05T06:35:26+00:00`
 
-- Current ref: `56978097`
+- Current ref: `efae0895`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
-| 2 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
-| 3 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
-| 4 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
-| 5 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
-| 6 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
-| 7 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 8 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 9 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 10 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 1 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
+| 2 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
+| 3 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
+| 4 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
+| 5 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
+| 6 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
+| 7 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 8 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 9 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 10 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
 
 ### Most Complex Current Test Functions
 

@@ -17966,3 +17966,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal risk-authority mapping
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-740: Risk authority regime mapping reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `56978097`, before the risk-authority
+  regime scenario mapping helper extraction, so the branch scorecard did not yet reflect the
+  latest infrastructure-client simplification and direct helper tests.
+- Action: regenerated current-state refactor reports after the risk-authority regime scenario
+  mapper extraction. Preserved `quality/baseline_report.md` so the branch baseline remains stable.
+  The refreshed complexity report shows `_regime_context_from_scenario_response` dropped out of
+  the top current source-complexity list, with `method_specific_reason_codes` now the top source
+  hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
