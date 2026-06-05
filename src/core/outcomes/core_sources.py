@@ -523,21 +523,47 @@ def _find_cash_movement_bucket(
     is_position_flow: bool,
     is_portfolio_flow: bool,
 ) -> dict[str, Any]:
-    buckets = response.get("buckets")
-    if not isinstance(buckets, list):
-        return {}
-    for bucket in buckets:
+    for bucket in _cash_movement_buckets(response):
         bucket_mapping = _read_mapping(bucket)
-        if (
-            (_read_text(bucket_mapping.get("classification")) or "").upper()
-            == classification.upper()
-            and (_read_text(bucket_mapping.get("timing")) or "").upper() == timing.upper()
-            and (_read_text(bucket_mapping.get("currency")) or "").upper() == currency.upper()
-            and bucket_mapping.get("is_position_flow") is is_position_flow
-            and bucket_mapping.get("is_portfolio_flow") is is_portfolio_flow
+        if _cash_movement_bucket_matches(
+            bucket=bucket_mapping,
+            classification=classification,
+            timing=timing,
+            currency=currency,
+            is_position_flow=is_position_flow,
+            is_portfolio_flow=is_portfolio_flow,
         ):
             return bucket_mapping
     return {}
+
+
+def _cash_movement_buckets(response: dict[str, Any]) -> list[Any]:
+    buckets = response.get("buckets")
+    if not isinstance(buckets, list):
+        return []
+    return buckets
+
+
+def _cash_movement_bucket_matches(
+    *,
+    bucket: dict[str, Any],
+    classification: str,
+    timing: str,
+    currency: str,
+    is_position_flow: bool,
+    is_portfolio_flow: bool,
+) -> bool:
+    return (
+        _cash_movement_bucket_text(bucket, "classification") == classification.upper()
+        and _cash_movement_bucket_text(bucket, "timing") == timing.upper()
+        and _cash_movement_bucket_text(bucket, "currency") == currency.upper()
+        and bucket.get("is_position_flow") is is_position_flow
+        and bucket.get("is_portfolio_flow") is is_portfolio_flow
+    )
+
+
+def _cash_movement_bucket_text(bucket: dict[str, Any], field_name: str) -> str:
+    return (_read_text(bucket.get(field_name)) or "").upper()
 
 
 def _transaction_measure_value(

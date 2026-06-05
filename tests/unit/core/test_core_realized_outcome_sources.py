@@ -13,6 +13,8 @@ from src.core.outcomes import (
     unavailable_core_cash_source,
 )
 from src.core.outcomes.core_sources import (
+    _cash_movement_bucket_matches,
+    _cash_movement_buckets,
     _transaction_cashflow_value,
     _transaction_fx_pnl_value,
 )
@@ -634,6 +636,31 @@ def test_cash_movement_summary_adapter_wraps_source_owned_bucket_total() -> None
     assert "CASH_MOVEMENT_DIRECTION_OUTFLOW" in source.reason_codes
     assert "CASH_MOVEMENT_BUCKET_CASHFLOW_COUNT_1" in source.reason_codes
     assert "CASH_MOVEMENT_TOTAL_CASHFLOW_COUNT_3" in source.reason_codes
+
+
+def test_cash_movement_bucket_helpers_extract_and_match_source_buckets() -> None:
+    response = _cash_movement_summary_response()
+
+    buckets = _cash_movement_buckets(response)
+
+    assert len(buckets) == 2
+    assert _cash_movement_bucket_matches(
+        bucket=buckets[1],
+        classification="trade_settlement",
+        timing="settled",
+        currency="usd",
+        is_position_flow=True,
+        is_portfolio_flow=False,
+    )
+    assert not _cash_movement_bucket_matches(
+        bucket=buckets[1],
+        classification="trade_settlement",
+        timing="settled",
+        currency="sgd",
+        is_position_flow=True,
+        is_portfolio_flow=False,
+    )
+    assert _cash_movement_buckets({"buckets": "not-a-list"}) == []
 
 
 def test_cash_movement_summary_source_can_make_rfc42_cash_dimension_ready() -> None:

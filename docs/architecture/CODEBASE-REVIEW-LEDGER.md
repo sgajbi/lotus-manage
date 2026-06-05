@@ -17356,3 +17356,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-715: Cash movement bucket helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/outcomes/core_sources.py` and
+  `tests/unit/core/test_core_realized_outcome_sources.py`.
+- Finding: `_find_cash_movement_bucket` became the top current source-complexity hotspot and mixed
+  bucket list extraction, source bucket mapping coercion, case-insensitive text matching, and
+  boolean flow matching in one helper.
+- Action: extracted bucket list extraction, case-insensitive bucket text normalization, and bucket
+  match predicate helpers while keeping the public cash movement source adapter behavior unchanged.
+  Added direct helper tests for bucket extraction, case-insensitive match, mismatch, and malformed
+  bucket-list handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/core_sources.py`,
+  `python -m pytest tests/unit/core/test_core_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal realized-outcome source
+  maintainability refactoring.
