@@ -17989,3 +17989,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-741: Construction method reason-code dispatcher simplified
+
+- Date: 2026-06-05
+- Scope: `src/api/services/construction_method_readiness.py` and
+  `tests/unit/dpm/construction/test_enrichment.py`.
+- Finding: `method_specific_reason_codes` became the top current source-complexity hotspot and
+  mixed method dispatch with risk-authority fail-closed handling, regime scenario fail-closed
+  handling, liquidity settlement markers, and sorted de-duplication.
+- Action: kept the public service function as the orchestration boundary and extracted pure
+  helpers for liquidity-aware reason-code assembly, risk-aware fail-closed/source reason-code
+  projection, regime-stress fail-closed/source reason-code projection, and sorted unique reason
+  projection. Added direct helper tests for missing authority contexts, source reason-code
+  preservation, and sorted de-duplication while preserving existing construction enrichment
+  behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m ruff format --check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_readiness.py`,
+  `python -m pytest tests/unit/dpm/construction/test_enrichment.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction-service
+  maintainability refactoring.

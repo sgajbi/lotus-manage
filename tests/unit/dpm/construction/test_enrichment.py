@@ -19,7 +19,12 @@ from src.api.services.construction_method_supportability import (
     liquidity_reason_codes,
     liquidity_status,
 )
-from src.api.services.construction_method_readiness import method_specific_reason_codes
+from src.api.services.construction_method_readiness import (
+    _regime_stress_reason_codes,
+    _risk_aware_reason_codes,
+    _sorted_unique_reason_codes,
+    method_specific_reason_codes,
+)
 from src.api.services.construction_request_dates import construction_as_of_date
 from src.api.services.construction_solver_supportability import solver_method_status
 from src.api.services.construction_source_product_context import (
@@ -41,6 +46,7 @@ from src.core.construction import (
     AuthoritativeLiquidityCashflowProjection,
     AuthoritativeLiquidityContext,
     AuthoritativePerformanceContext,
+    AuthoritativeRegimeStressContext,
     AuthoritativeRiskContext,
     AuthoritativeSustainabilityPreference,
     AuthoritativeSustainabilityPreferenceContext,
@@ -1235,6 +1241,41 @@ def test_method_reason_codes_preserve_missing_currency_policy_context() -> None:
     )
 
     assert "CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING" in reason_codes
+
+
+def test_method_reason_code_helpers_fail_closed_without_authority_contexts() -> None:
+    authority_context = ConstructionAuthorityContext()
+
+    assert _risk_aware_reason_codes(authority_context) == ["RISK_AUTHORITY_NOT_CONNECTED"]
+    assert _regime_stress_reason_codes(authority_context) == ["REGIME_SCENARIO_PACK_UNAVAILABLE"]
+
+
+def test_method_reason_code_helpers_preserve_source_reason_codes() -> None:
+    authority_context = ConstructionAuthorityContext(
+        risk_context=AuthoritativeRiskContext(
+            supportability_status=ConstructionMethodStatus.READY,
+            source_system="lotus-risk",
+            reason_codes=["RISK_READY", "RISK_LIMIT_CHECKED"],
+        ),
+        regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status=ConstructionMethodStatus.PENDING_REVIEW,
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_2026_Q2",
+            worst_case_loss_pct=Decimal("0.14"),
+            maximum_allowed_loss_pct=Decimal("0.12"),
+            reason_codes=["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"],
+        ),
+    )
+
+    assert _risk_aware_reason_codes(authority_context) == ["RISK_READY", "RISK_LIMIT_CHECKED"]
+    assert _regime_stress_reason_codes(authority_context) == ["REGIME_SCENARIO_LOSS_EXCEEDS_POLICY"]
+
+
+def test_method_reason_codes_are_sorted_and_unique() -> None:
+    assert _sorted_unique_reason_codes(["Z_REASON", "A_REASON", "Z_REASON"]) == [
+        "A_REASON",
+        "Z_REASON",
+    ]
 
 
 def test_regime_context_unavailable_is_kept_source_safe() -> None:
