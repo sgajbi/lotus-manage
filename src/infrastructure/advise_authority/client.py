@@ -6,6 +6,8 @@ from typing import Any, Optional
 
 import httpx
 
+from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
+
 
 class LotusAdviseAuthorityUnavailableError(RuntimeError):
     pass
@@ -110,31 +112,19 @@ def _post_with_retries(
     headers: dict[str, str],
     attempts: int,
 ) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            response = client.post(url, json=payload, headers=headers)
-        except (httpx.TimeoutException, httpx.TransportError) as exc:
-            last_error = exc
-            if attempt + 1 >= attempts:
-                raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_UNAVAILABLE") from exc
-            continue
-        if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-            continue
-        if response.status_code >= 500:
-            raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_UNAVAILABLE")
-        if response.status_code >= 400:
-            raise LotusAdviseAuthorityUnavailableError(
-                "LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED"
-            )
-        try:
-            body = response.json()
-        except ValueError as exc:
-            raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_INVALID_RESPONSE") from exc
-        if not isinstance(body, dict):
-            raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_INVALID_RESPONSE")
-        return body
-    raise LotusAdviseAuthorityUnavailableError("LOTUS_ADVISE_UNAVAILABLE") from last_error
+    try:
+        return post_json_with_retries(
+            client=client,
+            url=url,
+            payload=payload,
+            headers=headers,
+            attempts=attempts,
+            unavailable_error="LOTUS_ADVISE_UNAVAILABLE",
+            rejected_error="LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED",
+            invalid_response_error="LOTUS_ADVISE_INVALID_RESPONSE",
+        )
+    except AuthorityHttpError as exc:
+        raise LotusAdviseAuthorityUnavailableError(exc.code) from exc
 
 
 def _tactical_house_view_cohort_from_response(

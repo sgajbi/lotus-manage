@@ -18138,3 +18138,31 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-747: Authority HTTP retry helper shared
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/authority_http.py`,
+  `src/infrastructure/advise_authority/client.py`,
+  `src/infrastructure/risk_authority/client.py`, and
+  `tests/unit/dpm/infrastructure/test_authority_http.py`.
+- Finding: the advise-authority and risk-authority clients carried duplicate `_post_with_retries`
+  loops for transport retry, retryable status handling, final 4xx/5xx mapping, JSON-object
+  validation, and empty attempt-plan behavior.
+- Action: added a shared infrastructure-level `post_json_with_retries` helper with a typed
+  `AuthorityHttpError`, then reduced both client-local `_post_with_retries` functions to
+  service-specific error-code policy wrappers. Added direct helper tests for transport retry,
+  retryable HTTP status retry, terminal 4xx/5xx mapping, invalid/non-object JSON, and empty
+  attempt plans while preserving existing advise/risk authority client behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/authority_http.py src/infrastructure/advise_authority/client.py src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_authority_http.py tests/unit/dpm/infrastructure/test_advise_authority_client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/authority_http.py src/infrastructure/advise_authority/client.py src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_authority_http.py tests/unit/dpm/infrastructure/test_advise_authority_client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/authority_http.py src/infrastructure/advise_authority/client.py src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_authority_http.py tests/unit/dpm/infrastructure/test_advise_authority_client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal authority-client infrastructure
+  maintainability refactoring.

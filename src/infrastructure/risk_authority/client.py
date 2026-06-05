@@ -10,6 +10,7 @@ import httpx
 from src.core.construction.models import AuthoritativeRegimeStressContext, AuthoritativeRiskContext
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.models import RebalanceResult
+from src.infrastructure.authority_http import AuthorityHttpError, post_json_with_retries
 
 
 class LotusRiskAuthorityUnavailableError(RuntimeError):
@@ -183,29 +184,19 @@ def _post_with_retries(
     attempts: int,
     rejected_error: str = "LOTUS_RISK_CONCENTRATION_REJECTED",
 ) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            response = client.post(url, json=payload, headers=headers)
-        except (httpx.TimeoutException, httpx.TransportError) as exc:
-            last_error = exc
-            if attempt + 1 >= attempts:
-                raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE") from exc
-            continue
-        if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-            continue
-        if response.status_code >= 500:
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE")
-        if response.status_code >= 400:
-            raise LotusRiskAuthorityUnavailableError(rejected_error)
-        try:
-            body = response.json()
-        except ValueError as exc:
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
-        if not isinstance(body, dict):
-            raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE")
-        return body
-    raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_UNAVAILABLE") from last_error
+    try:
+        return post_json_with_retries(
+            client=client,
+            url=url,
+            payload=payload,
+            headers=headers,
+            attempts=attempts,
+            unavailable_error="LOTUS_RISK_UNAVAILABLE",
+            rejected_error=rejected_error,
+            invalid_response_error="LOTUS_RISK_INVALID_RESPONSE",
+        )
+    except AuthorityHttpError as exc:
+        raise LotusRiskAuthorityUnavailableError(exc.code) from exc
 
 
 def _concentration_payload(*, result: RebalanceResult) -> dict[str, Any]:
