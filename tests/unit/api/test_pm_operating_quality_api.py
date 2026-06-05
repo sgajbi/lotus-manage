@@ -12,6 +12,14 @@ from src.api.dependencies import get_pm_quality_score_run_repository
 from src.api.dependencies import get_pm_quality_summary_invocation_repository
 from src.api.main import app
 from src.api.routers import pm_operating_quality as pmq_router
+from src.api.routers.pm_operating_quality_models import (
+    _optional_summary_text,
+    _required_summary_text,
+    _validate_summary_content_hash,
+    _validate_summary_invocation_required_ids,
+    _validate_summary_invocation_required_workflow_fields,
+    _validate_summary_workflow_pack_name,
+)
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
@@ -1238,6 +1246,41 @@ def test_pm_operating_quality_api_summary_invocation_request_validation_edges(
                 **patch,
             }
         )
+
+
+def test_pm_operating_quality_summary_invocation_text_helpers_normalize_values() -> None:
+    assert _required_summary_text(" score-run-001 ") == "score-run-001"
+    assert _optional_summary_text(" workflow-run-001 ") == "workflow-run-001"
+    assert _optional_summary_text("   ") is None
+    assert _optional_summary_text(None) is None
+
+
+def test_pm_operating_quality_summary_invocation_helper_validation_edges() -> None:
+    with pytest.raises(ValueError, match="score_run_id and review_action_id must be non-empty"):
+        _validate_summary_invocation_required_ids(
+            score_run_id="score-run-001",
+            review_action_id="",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="summary_ref, workflow_pack_version, and requested_by must be non-empty",
+    ):
+        _validate_summary_invocation_required_workflow_fields(
+            summary_ref="PMQ-SUMMARY-2026-05-001",
+            workflow_pack_version="",
+            requested_by="ops",
+        )
+
+    with pytest.raises(ValueError, match="summary_content_hash must start with sha256:"):
+        _validate_summary_content_hash("not-a-hash")
+
+    with pytest.raises(ValueError, match="workflow_pack_name must be pm_quality_summary.pack"):
+        _validate_summary_workflow_pack_name("unsupported.pack")
+
+    _validate_summary_content_hash("sha256:abc")
+    _validate_summary_content_hash(None)
+    _validate_summary_workflow_pack_name("pm_quality_summary.pack")
 
 
 def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and_conflict() -> None:

@@ -17308,3 +17308,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-713: PM quality summary invocation validators extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/pm_operating_quality_models.py` and
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Finding: `validate_summary_invocation_request` became the top current source-complexity hotspot
+  and mixed text normalization, required id validation, required workflow-field validation,
+  summary hash validation, and workflow-pack identity validation inside one Pydantic model
+  validator.
+- Action: extracted summary-invocation text normalization and validation helpers while keeping the
+  Pydantic model validator as the router-model boundary. Added direct helper tests for trimming,
+  optional blank normalization, required id/workflow fields, hash prefix validation, and workflow
+  pack identity.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_models.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM operating-quality router-model
+  maintainability refactoring.
