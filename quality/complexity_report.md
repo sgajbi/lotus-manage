@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T04:57:39+00:00`
+- Generated at: `2026-06-05T05:03:24+00:00`
 
-- Current ref: `9874359d`
+- Current ref: `bdc54015`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
-| 2 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
-| 3 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
-| 4 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 5 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
-| 6 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
-| 7 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
-| 8 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
-| 9 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
-| 10 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 1 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
+| 2 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 3 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
+| 4 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 5 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 6 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
+| 7 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
+| 8 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 9 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 10 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
 
 ### Most Complex Current Test Functions
 
