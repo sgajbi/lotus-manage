@@ -17891,3 +17891,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-737: In-memory supportability summary helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py` and
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`.
+- Finding: `get_supportability_summary` became the top current source hotspot and mixed repository
+  locking with run/operation status aggregation, workflow-decision aggregation, lineage-edge
+  de-duplication, and timestamp bounds calculation.
+- Action: kept repository locking and snapshot ownership in `get_supportability_summary`, then
+  extracted pure supportability summary helpers for status counts, workflow decision counts,
+  canonical lineage-edge identity/de-duplication, datetime bounds, and summary assembly. Added
+  direct helper tests for empty summaries, non-empty aggregate counts/bounds, and duplicate
+  lineage-edge de-duplication while preserving the public repository summary contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_in_memory_summary_helpers.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_supportability_summary_contract -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-run repository
+  maintainability refactoring.
