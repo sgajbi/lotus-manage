@@ -17121,3 +17121,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-705: Construction method option builders extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/construction_method_execution.py` and
+  `tests/unit/dpm/construction/test_method_execution.py`.
+- Finding: `options_for_construction_method` became the top current source-complexity hotspot and
+  mixed construction-method dispatch with bounded option mutations for turnover, tax awareness,
+  solver comparison, liquidity cash buffers, currency overlay FX buffers, and risk-aware position
+  caps.
+- Action: extracted named option-builder helpers for each construction method and replaced inline
+  branching with a method-to-builder dispatch table. Added direct helper tests for bounded cap and
+  floor behavior, including preservation of stricter caller-provided risk caps.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m ruff format --check src/api/services/construction_method_execution.py tests/unit/dpm/construction/test_method_execution.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_execution.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_execution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction-method service
+  maintainability refactoring.

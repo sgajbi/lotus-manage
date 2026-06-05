@@ -2,6 +2,9 @@ from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_execution import (
+    _currency_overlay_options,
+    _min_turnover_options,
+    _risk_aware_options,
     construction_method_correlation_id,
     options_for_construction_method,
     run_construction_method,
@@ -32,6 +35,32 @@ def test_construction_method_options_apply_bounded_method_overrides() -> None:
     assert solver.compare_target_methods is True
     assert liquidity.enable_settlement_awareness is True
     assert liquidity.min_cash_buffer_pct >= Decimal("0.03")
+
+
+def test_construction_method_option_helpers_apply_bounded_caps_and_floors() -> None:
+    base_options = EngineOptions(
+        fx_buffer_pct=Decimal("0"),
+        max_turnover_pct=Decimal("0.05"),
+        single_position_max_weight=Decimal("0.40"),
+    )
+
+    min_turnover = _min_turnover_options(base_options)
+    currency_overlay = _currency_overlay_options(base_options)
+    risk_aware = _risk_aware_options(base_options)
+
+    assert min_turnover.max_turnover_pct == Decimal("0.05")
+    assert currency_overlay.block_on_missing_fx is True
+    assert currency_overlay.enable_settlement_awareness is True
+    assert currency_overlay.fx_buffer_pct == Decimal("0.01")
+    assert risk_aware.single_position_max_weight == Decimal("0.30")
+
+
+def test_construction_method_option_helpers_preserve_existing_stricter_risk_cap() -> None:
+    base_options = EngineOptions(single_position_max_weight=Decimal("0.20"))
+
+    risk_aware = _risk_aware_options(base_options)
+
+    assert risk_aware.single_position_max_weight == Decimal("0.20")
 
 
 def test_construction_method_correlation_id_preserves_caller_context() -> None:
