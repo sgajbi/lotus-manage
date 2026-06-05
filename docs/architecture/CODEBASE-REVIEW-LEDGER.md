@@ -17745,3 +17745,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-731: Campaign definition lifecycle event helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_definition_events.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_events.py`.
+- Finding: `build_bulk_review_campaign_definition_lifecycle_events` was the top current source
+  hotspot after the tactical house-view extraction and mixed created, launch, retirement, and
+  supersession event projection in one branch-heavy function.
+- Action: extracted event-specific helpers for created, launched, retired, and superseded campaign
+  lifecycle events while preserving the public lifecycle-event page contract. Added direct core
+  tests for each helper and for combined lifecycle event ordering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_events.py tests/unit/dpm/waves/test_campaign_definition_events.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_events.py tests/unit/dpm/waves/test_campaign_definition_events.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_events.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_events.py tests/unit/dpm/api/test_waves_api.py::test_bulk_review_campaign_definition_lifecycle_events_project_audit_posture tests/unit/dpm/api/test_waves_api.py::test_bulk_review_campaign_definition_lifecycle_events_include_supersession_lineage -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign definition lifecycle
+  event projection maintainability refactoring.
