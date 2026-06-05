@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T09:50:49+00:00`
+- Generated at: `2026-06-05T10:24:25+00:00`
 
-- Current ref: `5ebd12c9`
+- Current ref: `6c5961bb`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 2 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 3 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 4 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 5 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 6 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
-| 7 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
-| 8 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
-| 9 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
-| 10 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
+| 1 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 2 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 3 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 4 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 5 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
+| 6 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 7 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 8 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
+| 9 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
+| 10 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
 
 ### Most Complex Current Test Functions
 
