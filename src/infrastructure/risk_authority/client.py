@@ -59,6 +59,13 @@ class RiskEventAffectedCohort:
     affected_portfolios: tuple[RiskEventAffectedPortfolio, ...]
 
 
+@dataclass(frozen=True)
+class _ConcentrationBreachInputs:
+    top_position_weight_proposed: Decimal
+    top_issuer_weight_proposed: Decimal
+    hhi_proposed: Decimal
+
+
 class LotusRiskAuthorityClient:
     """Bounded client for lotus-risk authority outputs used by construction.
 
@@ -264,18 +271,12 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
     state = str(supportability.get("state", "degraded"))
     reason = str(supportability.get("reason", "calculation_supportability_missing"))
     coverage_status = issuer.get("coverage_status")
-    breaches = 0
-    if Decimal(str(single_position.get("top_position_weight_proposed", "0"))) > Decimal("0.30"):
-        breaches += 1
-    if Decimal(str(issuer.get("top_issuer_weight_proposed", "0"))) > Decimal("0.40"):
-        breaches += 1
-    if Decimal(str(risk_proxy.get("hhi_proposed", "0"))) > Decimal("2500"):
-        breaches += 1
-    reason_codes = [f"LOTUS_RISK_CONCENTRATION_{reason.upper()}"]
-    if coverage_status and coverage_status != "complete":
-        reason_codes.append(f"ISSUER_COVERAGE_{str(coverage_status).upper()}")
-    if breaches:
-        reason_codes.append("RISK_CONCENTRATION_LIMIT_BREACH")
+    breach_inputs = _concentration_breach_inputs(
+        risk_proxy=risk_proxy,
+        single_position=single_position,
+        issuer=issuer,
+    )
+    breaches = _concentration_breach_count(breach_inputs)
     return AuthoritativeRiskContext(
         supportability_status=_risk_status_from_supportability(state),
         source_system=str(body.get("source_service") or "lotus-risk"),
@@ -285,12 +286,53 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
         content_hash=request_fingerprint or None,
         concentration_breaches=breaches,
         concentration_hhi_delta=Decimal(str(risk_proxy.get("hhi_delta", "0"))),
+        top_position_weight_proposed=breach_inputs.top_position_weight_proposed,
+        issuer_coverage_status=str(coverage_status) if coverage_status is not None else None,
+        reason_codes=_concentration_reason_codes(
+            supportability_reason=reason,
+            issuer_coverage_status=coverage_status,
+            breaches=breaches,
+        ),
+    )
+
+
+def _concentration_breach_inputs(
+    *,
+    risk_proxy: dict[str, Any],
+    single_position: dict[str, Any],
+    issuer: dict[str, Any],
+) -> _ConcentrationBreachInputs:
+    return _ConcentrationBreachInputs(
         top_position_weight_proposed=Decimal(
             str(single_position.get("top_position_weight_proposed", "0"))
         ),
-        issuer_coverage_status=str(coverage_status) if coverage_status is not None else None,
-        reason_codes=sorted(set(reason_codes)),
+        top_issuer_weight_proposed=Decimal(str(issuer.get("top_issuer_weight_proposed", "0"))),
+        hhi_proposed=Decimal(str(risk_proxy.get("hhi_proposed", "0"))),
     )
+
+
+def _concentration_breach_count(inputs: _ConcentrationBreachInputs) -> int:
+    return sum(
+        (
+            inputs.top_position_weight_proposed > Decimal("0.30"),
+            inputs.top_issuer_weight_proposed > Decimal("0.40"),
+            inputs.hhi_proposed > Decimal("2500"),
+        )
+    )
+
+
+def _concentration_reason_codes(
+    *,
+    supportability_reason: str,
+    issuer_coverage_status: Any,
+    breaches: int,
+) -> list[str]:
+    reason_codes = [f"LOTUS_RISK_CONCENTRATION_{supportability_reason.upper()}"]
+    if issuer_coverage_status and issuer_coverage_status != "complete":
+        reason_codes.append(f"ISSUER_COVERAGE_{str(issuer_coverage_status).upper()}")
+    if breaches:
+        reason_codes.append("RISK_CONCENTRATION_LIMIT_BREACH")
+    return sorted(set(reason_codes))
 
 
 def _regime_context_from_scenario_response(

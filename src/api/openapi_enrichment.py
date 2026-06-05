@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 
 _EXAMPLE_BY_KEY: dict[str, Any] = {
@@ -27,6 +28,47 @@ _EXAMPLE_BY_KEY: dict[str, Any] = {
 
 _JSON_MEDIA_TYPE = "application/json"
 _PROMETHEUS_MEDIA_TYPE = "text/plain; version=0.0.4"
+
+
+@dataclass(frozen=True)
+class _DescriptionContext:
+    key: str
+    text: str
+    schema_format: Any
+
+
+@dataclass(frozen=True)
+class _SemanticDescriptionRule:
+    keyword_terms: tuple[str, ...]
+    schema_formats: tuple[Any, ...]
+    template: str
+    require_keyword_and_format: bool = False
+
+    def matches(self, context: _DescriptionContext) -> bool:
+        key_matches = any(term in context.key for term in self.keyword_terms)
+        format_matches = context.schema_format in self.schema_formats
+        if self.require_keyword_and_format:
+            return key_matches and format_matches
+        return key_matches or format_matches
+
+    def render(self, context: _DescriptionContext) -> str:
+        return self.template.format(text=context.text)
+
+
+_SEMANTIC_DESCRIPTION_RULES = (
+    _SemanticDescriptionRule(
+        ("date",),
+        ("date",),
+        "Business date for {text}.",
+        require_keyword_and_format=True,
+    ),
+    _SemanticDescriptionRule(("time",), ("date-time",), "Timestamp for {text}."),
+    _SemanticDescriptionRule(("currency",), (), "ISO currency code for {text}."),
+    _SemanticDescriptionRule(("amount", "value"), (), "Monetary value for {text}."),
+    _SemanticDescriptionRule(("quantity",), (), "Quantity value for {text}."),
+    _SemanticDescriptionRule(("rate", "price"), (), "Rate/price value for {text}."),
+    _SemanticDescriptionRule(("status",), (), "Current status for {text}."),
+)
 
 
 def _to_snake_case(value: str) -> str:
@@ -101,26 +143,30 @@ def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
 
 
 def _infer_description(model_name: str, prop_name: str, prop_schema: dict[str, Any]) -> str:
-    key = _to_snake_case(prop_name)
-    text = _humanize(prop_name)
-    if key.endswith("_id"):
-        entity = key[: -len("_id")].replace("_", " ")
+    context = _description_context(prop_name=prop_name, prop_schema=prop_schema)
+    semantic_description = _semantic_description_for_context(context)
+    if semantic_description is not None:
+        return semantic_description
+    return f"{_humanize(model_name)} field: {context.text}."
+
+
+def _description_context(prop_name: str, prop_schema: dict[str, Any]) -> _DescriptionContext:
+    return _DescriptionContext(
+        key=_to_snake_case(prop_name),
+        text=_humanize(prop_name),
+        schema_format=prop_schema.get("format"),
+    )
+
+
+def _semantic_description_for_context(context: _DescriptionContext) -> str | None:
+    if context.key.endswith("_id"):
+        entity = context.key[: -len("_id")].replace("_", " ")
         return f"Unique {entity} identifier."
-    if "date" in key and prop_schema.get("format") == "date":
-        return f"Business date for {text}."
-    if "time" in key or prop_schema.get("format") == "date-time":
-        return f"Timestamp for {text}."
-    if "currency" in key:
-        return f"ISO currency code for {text}."
-    if "amount" in key or "value" in key:
-        return f"Monetary value for {text}."
-    if "quantity" in key:
-        return f"Quantity value for {text}."
-    if "rate" in key or "price" in key:
-        return f"Rate/price value for {text}."
-    if "status" in key:
-        return f"Current status for {text}."
-    return f"{_humanize(model_name)} field: {text}."
+    matching_rule = next(
+        (rule for rule in _SEMANTIC_DESCRIPTION_RULES if rule.matches(context)),
+        None,
+    )
+    return matching_rule.render(context) if matching_rule is not None else None
 
 
 def _schema_ref_name(ref: str) -> str:
@@ -179,6 +225,45 @@ def _collection_example_from_schema(
     return False, None
 
 
+def _ref_example_from_schema(
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    schema_ref = prop_schema.get("$ref")
+    if not isinstance(schema_ref, str):
+        return False, None
+
+    model_name = _schema_ref_name(schema_ref)
+    if model_name in seen_refs:
+        return True, {"sample_key": "sample_value"}
+    resolved_schema = schemas.get(model_name)
+    if isinstance(resolved_schema, dict):
+        return True, _example_from_schema(
+            model_name,
+            resolved_schema,
+            schemas,
+            seen_refs | {model_name},
+        )
+    return False, None
+
+
+def _composite_example_from_schema(
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    for composite_key in ("allOf", "oneOf", "anyOf"):
+        options = prop_schema.get(composite_key)
+        if not isinstance(options, list):
+            continue
+        for option in options:
+            if isinstance(option, dict) and option.get("type") != "null":
+                return True, _example_from_schema(prop_name, option, schemas, seen_refs)
+    return False, None
+
+
 def _example_from_schema(
     prop_name: str,
     prop_schema: dict[str, Any],
@@ -193,27 +278,18 @@ def _example_from_schema(
     if has_declared_example:
         return declared_example
 
-    schema_ref = prop_schema.get("$ref")
-    if isinstance(schema_ref, str):
-        model_name = _schema_ref_name(schema_ref)
-        if model_name in seen_refs:
-            return {"sample_key": "sample_value"}
-        resolved_schema = schemas.get(model_name)
-        if isinstance(resolved_schema, dict):
-            return _example_from_schema(
-                model_name,
-                resolved_schema,
-                schemas,
-                seen_refs | {model_name},
-            )
+    has_ref_example, ref_example = _ref_example_from_schema(prop_schema, schemas, seen_refs)
+    if has_ref_example:
+        return ref_example
 
-    for composite_key in ("allOf", "oneOf", "anyOf"):
-        options = prop_schema.get(composite_key)
-        if not isinstance(options, list):
-            continue
-        for option in options:
-            if isinstance(option, dict) and option.get("type") != "null":
-                return _example_from_schema(prop_name, option, schemas, seen_refs)
+    has_composite_example, composite_example = _composite_example_from_schema(
+        prop_name,
+        prop_schema,
+        schemas,
+        seen_refs,
+    )
+    if has_composite_example:
+        return composite_example
 
     has_collection_example, collection_example = _collection_example_from_schema(
         prop_name=prop_name,
@@ -333,6 +409,43 @@ def _ensure_operation_examples(
             )
 
 
+def _is_http_operation_method(method: str) -> bool:
+    return method.lower() in {"get", "post", "put", "patch", "delete"}
+
+
+def _ensure_metrics_path_examples(methods: dict[str, Any]) -> None:
+    responses = methods.get("get", {}).setdefault("responses", {})
+    responses.setdefault("200", {})["content"] = {
+        _PROMETHEUS_MEDIA_TYPE: {
+            "schema": {"type": "string"},
+            "examples": {
+                "prometheus": {
+                    "summary": "Prometheus metrics exposition.",
+                    "value": (
+                        "# HELP http_requests_total Total HTTP requests.\n"
+                        "# TYPE http_requests_total counter\n"
+                        'http_requests_total{service="lotus-manage",method="GET",'
+                        'path="/health",status="200"} 1\n'
+                    ),
+                }
+            },
+        }
+    }
+    for status_code, response in responses.items():
+        if not isinstance(response, dict):
+            continue
+        normalized_status_code = str(status_code)
+        if _is_error_status_code(normalized_status_code):
+            _ensure_error_response_content(
+                response=response,
+                status_code=normalized_status_code,
+            )
+
+
+def _is_error_status_code(status_code: str) -> bool:
+    return status_code.startswith(("4", "5")) or status_code == "default"
+
+
 def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
     schemas = schema.get("components", {}).get("schemas", {})
     if not isinstance(schemas, dict):
@@ -343,37 +456,10 @@ def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
         if not isinstance(methods, dict):
             continue
         if path == "/metrics":
-            responses = methods.get("get", {}).setdefault("responses", {})
-            responses.setdefault("200", {})["content"] = {
-                _PROMETHEUS_MEDIA_TYPE: {
-                    "schema": {"type": "string"},
-                    "examples": {
-                        "prometheus": {
-                            "summary": "Prometheus metrics exposition.",
-                            "value": (
-                                "# HELP http_requests_total Total HTTP requests.\n"
-                                "# TYPE http_requests_total counter\n"
-                                'http_requests_total{service="lotus-manage",method="GET",'
-                                'path="/health",status="200"} 1\n'
-                            ),
-                        }
-                    },
-                }
-            }
-            for status_code, response in responses.items():
-                if not isinstance(response, dict):
-                    continue
-                normalized_status_code = str(status_code)
-                if normalized_status_code.startswith(("4", "5")) or (
-                    normalized_status_code == "default"
-                ):
-                    _ensure_error_response_content(
-                        response=response,
-                        status_code=normalized_status_code,
-                    )
+            _ensure_metrics_path_examples(methods)
             continue
         for method, operation in methods.items():
-            if method.lower() not in {"get", "post", "put", "patch", "delete"}:
+            if not _is_http_operation_method(method):
                 continue
             if not isinstance(operation, dict):
                 continue

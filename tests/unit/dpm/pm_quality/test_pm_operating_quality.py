@@ -20,6 +20,7 @@ from src.core.pm_quality import (
     build_pm_quality_summary_invocation,
 )
 from src.core.pm_quality import scoring
+from src.core.pm_quality import summary_history
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -356,6 +357,47 @@ def test_pm_quality_summary_invocation_records_history_without_summary_text() ->
         )
 
 
+def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai_refs() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+    caller_ref = DpmOutcomeSourceRef(
+        source_system="lotus-manage",
+        source_type="PmOperatingQualityScoreRun",
+        source_id=score_run.score_run_id,
+        source_version="duplicate",
+    )
+
+    refs = summary_history._summary_invocation_source_refs(
+        score_run=score_run,
+        review_action=review_action,
+        workflow_pack_version="v1",
+        workflow_run_id=" pmq-summary-run-001 ",
+        summary_artifact_ref=" pmq-summary-artifact-001 ",
+        summary_content_hash="sha256:pmq-summary",
+        source_refs=[caller_ref],
+    )
+
+    assert [ref.source_type for ref in refs] == [
+        "PM_QUALITY_SUMMARY_ARTIFACT",
+        "pm_quality_summary.pack",
+        "PmOperatingQualityReviewAction",
+        "PmOperatingQualityScoreRun",
+    ]
+    assert refs[0].source_id == "pmq-summary-artifact-001"
+    assert refs[1].source_id == "pmq-summary-run-001"
+    assert refs[3].source_version == "duplicate"
+
+
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:
     review = _review().model_copy(
         update={
@@ -480,6 +522,39 @@ def test_pm_operating_quality_materializes_peer_group_and_lookback_scope() -> No
         ref.source_type == "PM_QUALITY_PEER_GROUP_DEFINITION" for ref in score_run.source_refs
     )
     assert any(ref.source_type == "PM_QUALITY_LOOKBACK_WINDOW" for ref in score_run.source_refs)
+
+
+def test_pm_operating_quality_scope_projection_helpers_materialize_policy_scope() -> None:
+    policy = _scope_policy()
+    peer_group = policy.peer_group_policy
+    lookback = policy.lookback_window_policy
+
+    peer_group_fields = scoring._peer_group_scope_fields(peer_group)
+    lookback_fields = scoring._lookback_scope_fields(lookback)
+
+    assert peer_group_fields.peer_group_id == "sg_dpm_balanced"
+    assert peer_group_fields.minimum_peer_count == 3
+    assert lookback_fields.window_id == "pmq_30d_20260512"
+    assert lookback_fields.timezone == "Asia/Singapore"
+    assert scoring._scope_reason_codes(peer_group=peer_group, lookback=lookback) == [
+        "PM_QUALITY_PEER_GROUP_MATERIALIZED",
+        "PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED",
+    ]
+    assert [
+        ref.source_type for ref in scoring._scope_source_refs(peer_group=peer_group, lookback=None)
+    ] == ["PM_QUALITY_PEER_GROUP_DEFINITION"]
+
+
+def test_pm_operating_quality_scope_projection_helpers_handle_empty_scope() -> None:
+    peer_group_fields = scoring._peer_group_scope_fields(None)
+    lookback_fields = scoring._lookback_scope_fields(None)
+
+    assert peer_group_fields.peer_group_id is None
+    assert peer_group_fields.minimum_peer_count is None
+    assert lookback_fields.window_id is None
+    assert lookback_fields.timezone is None
+    assert scoring._scope_reason_codes(peer_group=None, lookback=None) == []
+    assert scoring._scope_source_refs(peer_group=None, lookback=None) == []
 
 
 def test_pm_operating_quality_lookback_window_fails_closed_for_stale_evidence() -> None:

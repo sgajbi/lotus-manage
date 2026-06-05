@@ -47,11 +47,18 @@ from src.core.waves.campaign_workflow_automation import (
 )
 from src.core.waves.campaign_assignment_actions import (
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    _assignment_action_replay_result,
+    _assignment_action_request,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
 from src.core.waves.campaign_assignment_tasks import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+    _optional_transition_replay_fields_match,
+    _required_transition_replay_fields,
+    _source_ref_payloads,
+    _transition_task_fields,
+    _validate_transition_allowed,
     build_bulk_review_campaign_definition_assignment_task_page,
     open_bulk_review_campaign_definition_assignment_task,
     transition_bulk_review_campaign_definition_assignment_task,
@@ -632,6 +639,49 @@ def test_campaign_assignment_actions_validate_conflicts_and_resolved_state() -> 
         assert str(exc) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
     else:  # pragma: no cover
         raise AssertionError("Expected duplicate assignment action ref conflict")
+
+
+def test_assignment_action_request_normalizes_actor_ids_and_text_fields() -> None:
+    request = _assignment_action_request(
+        action_type="ASSIGNED",
+        action_ref=" BRC-ASSIGN-2026-05-001 ",
+        recorded_by=" ops ",
+        action_reason=" Route ready campaign. ",
+        assigned_actor_ids=[" pm_002 ", "pm_001", "pm_001", " "],
+        escalation_tier="PM",
+        correlation_id=" corr-assignment-action ",
+    )
+
+    assert request.action_ref == "BRC-ASSIGN-2026-05-001"
+    assert request.recorded_by == "ops"
+    assert request.action_reason == "Route ready campaign."
+    assert request.assigned_actor_ids == ["pm_001", "pm_002"]
+    assert request.correlation_id == "corr-assignment-action"
+
+
+def test_assignment_action_replay_helper_returns_definition_or_rejects_conflict() -> None:
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=_definition(),
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    existing_action = assigned.assignment_actions[0]
+
+    assert _assignment_action_replay_result(definition=assigned, action=existing_action) is assigned
+    conflicting_action = existing_action.model_copy(
+        update={"content_hash": "sha256:conflicting-action"}
+    )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT",
+    ):
+        _assignment_action_replay_result(definition=assigned, action=conflicting_action)
 
 
 @pytest.mark.parametrize(
@@ -1486,6 +1536,130 @@ def test_campaign_assignment_tasks_validate_transition_edges() -> None:
     assert unblocked.assignment_tasks[0].status == "IN_PROGRESS"
     assert unblocked.assignment_tasks[0].due_at == due_at
     assert unblocked.assignment_tasks[0].sla_posture == "ON_TRACK"
+
+
+def test_campaign_assignment_task_transition_field_helper_resolves_due_date_change() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    due_at = datetime(2026, 5, 12, 8, tzinfo=timezone.utc)
+
+    fields = _transition_task_fields(
+        task=opened.assignment_tasks[0],
+        transition_type="DUE_DATE_CHANGED",
+        assigned_actor_ids=None,
+        escalation_tier=None,
+        sla_posture="ATTENTION",
+        due_at=due_at,
+    )
+
+    assert fields.next_status == "OPEN"
+    assert fields.next_assignees == ["pm_001"]
+    assert fields.next_tier == "PM"
+    assert fields.next_sla == "ATTENTION"
+    assert fields.next_due_at == due_at
+
+
+def test_campaign_assignment_task_transition_validation_blocks_opened_and_closed() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    resolved = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="RESOLVED",
+        transition_ref="BRC-TASK-2026-05-001:resolved",
+        transitioned_by="pm_001",
+        transition_reason="Campaign task completed.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_OPENED_TRANSITION_FORBIDDEN",
+    ):
+        _validate_transition_allowed(
+            task=opened.assignment_tasks[0],
+            transition_type="OPENED",
+        )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CLOSED_TRANSITION_FORBIDDEN",
+    ):
+        _validate_transition_allowed(
+            task=resolved.assignment_tasks[0],
+            transition_type="STARTED",
+        )
+
+
+def test_campaign_assignment_transition_replay_helpers_project_comparison_fields() -> None:
+    source_refs = [
+        DpmWaveSourceRef(
+            source_system="lotus-manage",
+            source_type="CAMPAIGN_ASSIGNMENT_TASK",
+            source_id="brc-task-source-ref",
+        )
+    ]
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    acknowledged = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ACKNOWLEDGED",
+        transition_ref="BRC-TASK-2026-05-001:ack",
+        transitioned_by="pm_001",
+        transition_reason="Assigned PM acknowledged the task.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+        source_refs=source_refs,
+    )
+    transition = acknowledged.assignment_tasks[0].transitions[-1]
+
+    assert _required_transition_replay_fields(transition) == (
+        "ACKNOWLEDGED",
+        "pm_001",
+        "Assigned PM acknowledged the task.",
+        "corr-campaign-assignment-task-transition-001",
+    )
+    assert _source_ref_payloads(transition.source_refs) == _source_ref_payloads(source_refs)
+    assert _optional_transition_replay_fields_match(
+        transition=transition,
+        assigned_actor_ids=None,
+        escalation_tier=None,
+        sla_posture=None,
+        due_at=None,
+    )
+    assert not _optional_transition_replay_fields_match(
+        transition=transition,
+        assigned_actor_ids=["pm_002"],
+        escalation_tier=None,
+        sla_posture=None,
+        due_at=None,
+    )
 
 
 def test_campaign_assignment_tasks_reject_empty_reassignment_assignees() -> None:

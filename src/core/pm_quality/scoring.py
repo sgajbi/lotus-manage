@@ -20,6 +20,8 @@ from src.core.pm_quality.models import (
     DpmPmQualityGovernanceEvidence,
     DpmPmQualityEvidenceItem,
     DpmPmQualityIndicatorResult,
+    DpmPmQualityLookbackWindowPolicy,
+    DpmPmQualityPeerGroupPolicy,
     DpmPmQualityScopeEvidence,
     DpmPmQualityWeight,
     PmQualityFairnessSegmentType,
@@ -50,6 +52,22 @@ class DpmPmQualityFairnessSegmentInput:
     display_name: str
     score_runs: list[DpmPmOperatingQualityScoreRun]
     source_refs: list[DpmOutcomeSourceRef]
+
+
+@dataclass(frozen=True)
+class _PeerGroupScopeFields:
+    peer_group_id: str | None
+    display_name: str | None
+    segment_type: PmQualityFairnessSegmentType | None
+    minimum_peer_count: int | None
+
+
+@dataclass(frozen=True)
+class _LookbackScopeFields:
+    window_id: str | None
+    start_date: str | None
+    end_date: str | None
+    timezone: str | None
 
 
 def build_pm_operating_quality_score_run(
@@ -351,26 +369,82 @@ def _scope_evidence_from_policy(
     lookback = policy.lookback_window_policy
     if peer_group is None and lookback is None:
         return None
+    peer_group_fields = _peer_group_scope_fields(peer_group)
+    lookback_fields = _lookback_scope_fields(lookback)
+    return DpmPmQualityScopeEvidence(
+        peer_group_id=peer_group_fields.peer_group_id,
+        peer_group_display_name=peer_group_fields.display_name,
+        peer_group_segment_type=peer_group_fields.segment_type,
+        minimum_peer_count=peer_group_fields.minimum_peer_count,
+        lookback_window_id=lookback_fields.window_id,
+        lookback_start_date=lookback_fields.start_date,
+        lookback_end_date=lookback_fields.end_date,
+        timezone=lookback_fields.timezone,
+        reason_codes=_scope_reason_codes(peer_group=peer_group, lookback=lookback),
+        source_refs=_scope_source_refs(peer_group=peer_group, lookback=lookback),
+    )
+
+
+def _peer_group_scope_fields(
+    peer_group: DpmPmQualityPeerGroupPolicy | None,
+) -> _PeerGroupScopeFields:
+    if peer_group is None:
+        return _PeerGroupScopeFields(
+            peer_group_id=None,
+            display_name=None,
+            segment_type=None,
+            minimum_peer_count=None,
+        )
+    return _PeerGroupScopeFields(
+        peer_group_id=peer_group.peer_group_id,
+        display_name=peer_group.display_name,
+        segment_type=peer_group.segment_type,
+        minimum_peer_count=peer_group.minimum_peer_count,
+    )
+
+
+def _lookback_scope_fields(
+    lookback: DpmPmQualityLookbackWindowPolicy | None,
+) -> _LookbackScopeFields:
+    if lookback is None:
+        return _LookbackScopeFields(
+            window_id=None,
+            start_date=None,
+            end_date=None,
+            timezone=None,
+        )
+    return _LookbackScopeFields(
+        window_id=lookback.window_id,
+        start_date=lookback.start_date,
+        end_date=lookback.end_date,
+        timezone=lookback.timezone,
+    )
+
+
+def _scope_reason_codes(
+    *,
+    peer_group: DpmPmQualityPeerGroupPolicy | None,
+    lookback: DpmPmQualityLookbackWindowPolicy | None,
+) -> list[str]:
     reason_codes: list[str] = []
-    source_refs: list[DpmOutcomeSourceRef] = []
     if peer_group is not None:
         reason_codes.append("PM_QUALITY_PEER_GROUP_MATERIALIZED")
-        source_refs.extend(peer_group.source_refs)
     if lookback is not None:
         reason_codes.append("PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED")
+    return reason_codes
+
+
+def _scope_source_refs(
+    *,
+    peer_group: DpmPmQualityPeerGroupPolicy | None,
+    lookback: DpmPmQualityLookbackWindowPolicy | None,
+) -> list[DpmOutcomeSourceRef]:
+    source_refs: list[DpmOutcomeSourceRef] = []
+    if peer_group is not None:
+        source_refs.extend(peer_group.source_refs)
+    if lookback is not None:
         source_refs.extend(lookback.source_refs)
-    return DpmPmQualityScopeEvidence(
-        peer_group_id=peer_group.peer_group_id if peer_group is not None else None,
-        peer_group_display_name=peer_group.display_name if peer_group is not None else None,
-        peer_group_segment_type=peer_group.segment_type if peer_group is not None else None,
-        minimum_peer_count=peer_group.minimum_peer_count if peer_group is not None else None,
-        lookback_window_id=lookback.window_id if lookback is not None else None,
-        lookback_start_date=lookback.start_date if lookback is not None else None,
-        lookback_end_date=lookback.end_date if lookback is not None else None,
-        timezone=lookback.timezone if lookback is not None else None,
-        reason_codes=reason_codes,
-        source_refs=source_refs,
-    )
+    return source_refs
 
 
 def _indicator_result(

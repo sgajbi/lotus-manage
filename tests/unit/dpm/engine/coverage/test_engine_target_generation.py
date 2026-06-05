@@ -8,6 +8,9 @@ from src.core.rebalance.targets import (
     _apply_min_cash_buffer,
     _apply_single_position_max_weight,
     _cap_tradeable_targets_to_available_weight,
+    _constraint_key_parts,
+    _group_constraint_members,
+    _redistribute_group_constraint_excess,
 )
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
@@ -100,6 +103,80 @@ class TestTargetGeneration:
 
         assert status == "PENDING_REVIEW"
         assert eligible_targets == {"BUY_A": Decimal("0.00"), "LOCKED": Decimal("1.10")}
+
+    def test_constraint_key_parts_validates_key_and_known_attribute(self):
+        diagnostics = DiagnosticsData(
+            warnings=[],
+            suppressed_intents=[],
+            data_quality={"price_missing": [], "fx_missing": [], "shelf_missing": []},
+        )
+
+        assert _constraint_key_parts(
+            "sector:TECH",
+            known_attr_keys={"sector"},
+            diagnostics=diagnostics,
+        ) == ("sector", "TECH")
+        assert (
+            _constraint_key_parts(
+                "bad_key",
+                known_attr_keys={"sector"},
+                diagnostics=diagnostics,
+            )
+            is None
+        )
+        assert (
+            _constraint_key_parts(
+                "region:EMEA",
+                known_attr_keys={"sector"},
+                diagnostics=diagnostics,
+            )
+            is None
+        )
+        assert diagnostics.warnings == [
+            "INVALID_CONSTRAINT_KEY_bad_key",
+            "UNKNOWN_CONSTRAINT_ATTRIBUTE_region",
+        ]
+
+    def test_group_constraint_members_match_shelf_attribute_value(self):
+        eligible_targets = {
+            "TECH_A": Decimal("0.40"),
+            "FI_A": Decimal("0.30"),
+            "TECH_B": Decimal("0.20"),
+        }
+        shelf_attrs_by_id = {
+            "TECH_A": {"sector": "TECH"},
+            "FI_A": {"sector": "FI"},
+            "TECH_B": {"sector": "TECH"},
+        }
+
+        assert _group_constraint_members(
+            eligible_targets=eligible_targets,
+            shelf_attrs_by_id=shelf_attrs_by_id,
+            attr_key="sector",
+            attr_val="TECH",
+        ) == ["TECH_A", "TECH_B"]
+
+    def test_redistribute_group_constraint_excess_allocates_to_buyable_non_members(self):
+        eligible_targets = {
+            "TECH_A": Decimal("0.20"),
+            "FI_A": Decimal("0.30"),
+            "FI_B": Decimal("0.10"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+        recipients = _redistribute_group_constraint_excess(
+            eligible_targets=eligible_targets,
+            buy_set={"TECH_A", "FI_A", "FI_B"},
+            group_members=["TECH_A"],
+            released_weight=Decimal("0.20"),
+        )
+
+        assert recipients == {
+            "FI_A": Decimal("0.150"),
+            "FI_B": Decimal("0.050"),
+        }
+        assert eligible_targets["FI_A"] == Decimal("0.450")
+        assert eligible_targets["FI_B"] == Decimal("0.150")
 
     def test_apply_single_position_max_weight_caps_and_redistributes_excess(self):
         eligible_targets = {

@@ -18,6 +18,12 @@ from src.infrastructure.rebalance_runs import (
     PostgresDpmRunRepository,
     SqliteDpmRunRepository,
 )
+from src.infrastructure.rebalance_runs.in_memory import (
+    _expired_run_identities,
+    _expired_runs,
+    _purge_expired_idempotency_history,
+    _purge_expired_lineage_edges,
+)
 
 
 @pytest.fixture(params=["IN_MEMORY", "SQLITE"])
@@ -792,6 +798,103 @@ def test_repository_run_retention_disabled_contract(repository):
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     removed = repository.purge_expired_runs(retention_days=0, now=now)
     assert removed == 0
+
+
+def test_in_memory_expired_run_helpers_identify_run_and_idempotency_scope() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    old_run = DpmRunRecord(
+        rebalance_run_id="rr_expired_helper_old",
+        correlation_id="corr_expired_helper_old",
+        request_hash="sha256:req-old",
+        idempotency_key="idem_expired_helper_old",
+        portfolio_id="pf_expired_helper",
+        created_at=now - timedelta(days=5),
+        result_json={"rebalance_run_id": "rr_expired_helper_old", "status": "READY"},
+    )
+    current_run = DpmRunRecord(
+        rebalance_run_id="rr_expired_helper_current",
+        correlation_id="corr_expired_helper_current",
+        request_hash="sha256:req-current",
+        idempotency_key=None,
+        portfolio_id="pf_expired_helper",
+        created_at=now,
+        result_json={"rebalance_run_id": "rr_expired_helper_current", "status": "READY"},
+    )
+
+    expired = _expired_runs(
+        runs={
+            old_run.rebalance_run_id: old_run,
+            current_run.rebalance_run_id: current_run,
+        },
+        cutoff=now - timedelta(days=2),
+    )
+    identities = _expired_run_identities(expired)
+
+    assert [run.rebalance_run_id for run in expired] == ["rr_expired_helper_old"]
+    assert identities.run_ids == {"rr_expired_helper_old"}
+    assert identities.correlation_ids == {"corr_expired_helper_old"}
+    assert identities.idempotency_keys == {"idem_expired_helper_old"}
+    assert identities.lineage_entity_ids == {
+        "rr_expired_helper_old",
+        "corr_expired_helper_old",
+        "idem_expired_helper_old",
+    }
+
+
+def test_in_memory_purge_helpers_filter_history_and_lineage_edges() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    history = {
+        "idem_retained": [
+            DpmRunIdempotencyHistoryRecord(
+                idempotency_key="idem_retained",
+                rebalance_run_id="rr_retained",
+                correlation_id="corr_retained",
+                request_hash="sha256:req-retained",
+                created_at=now,
+            )
+        ],
+        "idem_expired": [
+            DpmRunIdempotencyHistoryRecord(
+                idempotency_key="idem_expired",
+                rebalance_run_id="rr_expired",
+                correlation_id="corr_expired",
+                request_hash="sha256:req-expired",
+                created_at=now - timedelta(days=5),
+            )
+        ],
+    }
+    lineage = {
+        "rr_retained": [
+            DpmLineageEdgeRecord(
+                source_entity_id="rr_retained",
+                edge_type="CORRELATION_TO_RUN",
+                target_entity_id="artifact_retained",
+                created_at=now,
+                metadata_json={},
+            )
+        ],
+        "rr_expired": [
+            DpmLineageEdgeRecord(
+                source_entity_id="rr_expired",
+                edge_type="CORRELATION_TO_RUN",
+                target_entity_id="artifact_expired",
+                created_at=now - timedelta(days=5),
+                metadata_json={},
+            )
+        ],
+    }
+
+    _purge_expired_idempotency_history(
+        idempotency_history=history,
+        expired_run_ids={"rr_expired"},
+    )
+    _purge_expired_lineage_edges(
+        lineage_edges_by_entity=lineage,
+        expired_entities={"rr_expired"},
+    )
+
+    assert sorted(history) == ["idem_retained"]
+    assert sorted(lineage) == ["rr_retained"]
 
 
 def test_repository_run_artifact_persistence_contract(repository):

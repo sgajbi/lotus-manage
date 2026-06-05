@@ -1,13 +1,21 @@
 from src.api.openapi_enrichment import (
+    _composite_example_from_schema,
+    _description_context,
     _example_from_schema,
+    _ensure_metrics_path_examples,
     _ensure_operation_examples,
     _infer_description,
     _infer_example,
+    _is_error_status_code,
+    _is_http_operation_method,
     _number_example_for_key,
     _collection_example_from_schema,
     _operation_has_error_response,
+    _ref_example_from_schema,
     _operation_tag_for_path,
     _schema_declared_example,
+    _semantic_description_for_context,
+    _SEMANTIC_DESCRIPTION_RULES,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
@@ -54,6 +62,42 @@ def test_openapi_enrichment_number_examples_follow_domain_semantics() -> None:
     assert _number_example_for_key("fx_rate") == 1.2345
     assert _number_example_for_key("quantity") == 100.0
     assert _number_example_for_key("other_number") == 10.5
+
+
+def test_openapi_enrichment_description_helpers_follow_domain_semantics() -> None:
+    context = _description_context("portfolioId", {"format": "uuid"})
+
+    assert context.key == "portfolio_id"
+    assert context.text == "portfolio id"
+    assert context.schema_format == "uuid"
+    assert _semantic_description_for_context(context) == "Unique portfolio identifier."
+    assert (
+        _semantic_description_for_context(
+            _description_context("workflowStatus", {"type": "string"})
+        )
+        == "Current status for workflow status."
+    )
+    assert (
+        _semantic_description_for_context(_description_context("displayName", {"type": "string"}))
+        is None
+    )
+
+
+def test_openapi_enrichment_description_rules_match_and_render_schema_context() -> None:
+    rule_by_template = {rule.template: rule for rule in _SEMANTIC_DESCRIPTION_RULES}
+
+    date_rule = rule_by_template["Business date for {text}."]
+    timestamp_rule = rule_by_template["Timestamp for {text}."]
+
+    assert date_rule.matches(_description_context("asOfDate", {"format": "date"}))
+    assert date_rule.render(_description_context("asOfDate", {"format": "date"})) == (
+        "Business date for as of date."
+    )
+    assert not date_rule.matches(_description_context("effectivePeriod", {"format": "date"}))
+    assert timestamp_rule.matches(_description_context("generatedAt", {"format": "date-time"}))
+    assert timestamp_rule.render(_description_context("generatedAt", {"format": "date-time"})) == (
+        "Timestamp for generated at."
+    )
 
 
 def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -> None:
@@ -127,6 +171,55 @@ def test_openapi_enrichment_collects_object_array_and_map_examples() -> None:
         prop_schema={"type": "string"},
         schemas=schemas,
         seen_refs=set(),
+    ) == (False, None)
+
+
+def test_openapi_enrichment_ref_example_helper_resolves_and_guards_recursion() -> None:
+    schemas = {
+        "Recursive": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "child": {"$ref": "#/components/schemas/Recursive"},
+            },
+        }
+    }
+
+    assert _ref_example_from_schema(
+        {"$ref": "#/components/schemas/Recursive"},
+        schemas,
+        set(),
+    ) == (
+        True,
+        {"name": "sample_name", "child": {"sample_key": "sample_value"}},
+    )
+    assert _ref_example_from_schema(
+        {"$ref": "#/components/schemas/Recursive"},
+        schemas,
+        {"Recursive"},
+    ) == (True, {"sample_key": "sample_value"})
+    assert _ref_example_from_schema({"type": "string"}, schemas, set()) == (False, None)
+
+
+def test_openapi_enrichment_composite_example_helper_uses_first_non_null_option() -> None:
+    schemas = {
+        "Leaf": {
+            "type": "object",
+            "properties": {"currency": {"type": "string"}, "amount": {"type": "number"}},
+        }
+    }
+
+    assert _composite_example_from_schema(
+        "choice",
+        {"oneOf": [{"type": "null"}, {"$ref": "#/components/schemas/Leaf"}]},
+        schemas,
+        set(),
+    ) == (True, {"currency": "USD", "amount": 10.5})
+    assert _composite_example_from_schema(
+        "plain",
+        {"type": "string"},
+        schemas,
+        set(),
     ) == (False, None)
 
 
@@ -225,6 +318,33 @@ def test_openapi_enrichment_operation_error_response_detection() -> None:
     assert _operation_has_error_response({"200": {}, "409": {}}) is True
     assert _operation_has_error_response({"200": {}, "default": {}}) is True
     assert _operation_has_error_response({"200": {}, "302": {}}) is False
+
+
+def test_openapi_enrichment_operation_method_and_error_status_helpers() -> None:
+    assert _is_http_operation_method("GET")
+    assert _is_http_operation_method("patch")
+    assert not _is_http_operation_method("trace")
+    assert _is_error_status_code("404")
+    assert _is_error_status_code("default")
+    assert not _is_error_status_code("302")
+
+
+def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() -> None:
+    methods = {"get": {"responses": {"200": {"description": "metrics"}, "503": {}}}}
+
+    _ensure_metrics_path_examples(methods)
+
+    responses = methods["get"]["responses"]
+    metrics_content = responses["200"]["content"]
+    assert "text/plain; version=0.0.4" in metrics_content
+    assert (
+        "http_requests_total"
+        in metrics_content["text/plain; version=0.0.4"]["examples"]["prometheus"]["value"]
+    )
+    assert (
+        responses["503"]["content"]["application/json"]["examples"]["default"]["value"]["status"]
+        == 503
+    )
 
 
 def test_openapi_enrichment_adds_operation_docs_errors_and_prometheus_examples() -> None:

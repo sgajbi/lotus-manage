@@ -12,6 +12,7 @@ from src.core.outcomes import (
     unavailable_risk_source,
 )
 from src.core.outcomes.risk_sources import (
+    _absolute_drawdown_value,
     _concentration_source_posture,
     _drawdown_source_posture,
     _historical_attribution_contributor,
@@ -20,6 +21,7 @@ from src.core.outcomes.risk_sources import (
     _historical_attribution_value,
     _metric_unit,
     _primary_reason,
+    _relative_drawdown_value,
     _risk_source_posture,
     _rolling_context_reason,
     _rolling_source_posture,
@@ -780,6 +782,31 @@ def test_drawdown_response_adapter_wraps_source_owned_time_under_water() -> None
     assert source.unit == "days"
     assert "RISK_DRAWDOWN_MEASURE_TIME_UNDER_WATER_DAYS" in source.reason_codes
     assert "RISK_DRAWDOWN_TIME_UNDER_WATER" in source.reason_codes
+
+
+def test_drawdown_value_helpers_project_absolute_and_relative_measures() -> None:
+    result = _drawdown_response()["results"]["YTD"]
+    summary = result["summary"]
+
+    assert _absolute_drawdown_value(summary=summary, measure="max_drawdown") == (
+        Decimal("-0.084211"),
+        "RISK_DRAWDOWN_ABSOLUTE",
+    )
+    assert _absolute_drawdown_value(summary=summary, measure="relative_max_drawdown") is None
+    assert _relative_drawdown_value(result=result) == (
+        Decimal("-0.026414"),
+        "RISK_DRAWDOWN_RELATIVE_APPLIED",
+    )
+
+
+def test_relative_drawdown_helper_preserves_not_applied_reason() -> None:
+    result = _drawdown_response()["results"]["YTD"]
+    result["relative_to_benchmark_context"] = {"applied": False, "reason": "benchmark_unavailable"}
+
+    assert _relative_drawdown_value(result=result) == (
+        None,
+        "RISK_DRAWDOWN_RELATIVE_BENCHMARK_UNAVAILABLE",
+    )
 
 
 def test_risk_metrics_report_adapter_supports_explicit_metric() -> None:

@@ -88,6 +88,37 @@ class ProofPackSourceValidationError(ValueError):
 
 _SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
 
+_PreRunSourceAnalyticsConfig = tuple[ProofPackAnalyticsFamily, str, str]
+
+_PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
+    "risk_impact": (
+        "risk",
+        "No risk-authoritative enrichment is attached to this first-wave proof pack.",
+        "DPM_RISK_AUTHORITY_CONTEXT_MISSING",
+    ),
+    "performance_context": (
+        "performance",
+        "No performance-authoritative benchmark context is attached.",
+        "DPM_PERFORMANCE_CONTEXT_MISSING",
+    ),
+    "sustainability_controls": (
+        "sustainability_preference",
+        "Sustainability preference authority context is not attached.",
+        "DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING",
+    ),
+}
+
+_PRE_RUN_ADAPTER_SECTIONS: dict[ProofPackSectionType, tuple[str, str]] = {
+    "reporting_refs": (
+        "Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
+        "DpmProofPackReportInput",
+    ),
+    "ai_refs": (
+        "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
+        "DpmProofPackAiEvidenceInput",
+    ),
+}
+
 
 @dataclass(frozen=True)
 class _ProofPackBuildContext:
@@ -674,35 +705,64 @@ def _proof_pack_governance_section_payload(
             workflow_decisions=workflow_decisions,
         )
     if section_type == "operations_handoff":
-        return (
-            "READY" if result.status == "READY" else "PENDING_REVIEW",
-            "Operations handoff reflects current pre-trade readiness.",
-            {"run_status": result.status},
-            {},
-            [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
-        )
+        return _operations_handoff_section_payload(result=result)
     if section_type == "decision_timeline":
-        return (
-            "READY",
-            "Timeline generated from source run, selection, and proof-pack generation events.",
-            {
-                "run_created_at": run.created_at.isoformat() if run else None,
-                "selection_id": selection.selection_id if selection else None,
-            },
-            {},
-            [],
-        )
+        return _decision_timeline_section_payload(run=run, selection=selection)
     if section_type == "lineage":
-        return (
-            "READY" if run is not None else "BLOCKED",
-            "Lineage identifiers captured from source run and source artifacts.",
-            result.lineage.model_dump(mode="json") if result else {},
-            {"source_ref_count": source_ref_count},
-            [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
+        return _lineage_section_payload(
+            result=result,
+            run=run,
+            source_ref_count=source_ref_count,
         )
     if section_type == "supportability":
-        return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
+        return _supportability_section_payload()
     return None
+
+
+def _operations_handoff_section_payload(*, result: RebalanceResult) -> _SectionPayload:
+    return (
+        "READY" if result.status == "READY" else "PENDING_REVIEW",
+        "Operations handoff reflects current pre-trade readiness.",
+        {"run_status": result.status},
+        {},
+        [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
+    )
+
+
+def _decision_timeline_section_payload(
+    *,
+    run: DpmRunRecord | None,
+    selection: ConstructionAlternativeSelection | None,
+) -> _SectionPayload:
+    return (
+        "READY",
+        "Timeline generated from source run, selection, and proof-pack generation events.",
+        {
+            "run_created_at": run.created_at.isoformat() if run else None,
+            "selection_id": selection.selection_id if selection else None,
+        },
+        {},
+        [],
+    )
+
+
+def _lineage_section_payload(
+    *,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    source_ref_count: int,
+) -> _SectionPayload:
+    return (
+        "READY" if run is not None else "BLOCKED",
+        "Lineage identifiers captured from source run and source artifacts.",
+        result.lineage.model_dump(mode="json") if result else {},
+        {"source_ref_count": source_ref_count},
+        [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
+    )
+
+
+def _supportability_section_payload() -> _SectionPayload:
+    return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
 
 
 def _approval_requirements_section_payload(
@@ -939,6 +999,63 @@ def _eligibility_and_restrictions_section_payload(
     )
 
 
+def _decision_summary_section_payload(
+    *,
+    result: RebalanceResult | None,
+    selected_alternative: ConstructionAlternative | None,
+    reason: str | None,
+    created_by: str,
+) -> _SectionPayload:
+    reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
+    return (
+        "READY" if reason else "DEGRADED",
+        "Decision evidence assembled from manage run and actor rationale.",
+        {
+            "actor": created_by,
+            "reason": reason,
+            "source_run_status": result.status if result is not None else None,
+            "selected_alternative_id": (
+                selected_alternative.alternative_id if selected_alternative else None
+            ),
+        },
+        {},
+        reason_codes,
+    )
+
+
+def _pre_run_source_analytics_payload(
+    *,
+    section_type: ProofPackSectionType,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> _SectionPayload | None:
+    config = _PRE_RUN_SOURCE_ANALYTICS_SECTIONS.get(section_type)
+    if config is None:
+        return None
+
+    family, missing_summary, missing_reason_code = config
+    return _source_analytics_section_payload(
+        source_analytics=source_analytics,
+        family=family,
+        missing_summary=missing_summary,
+        missing_reason_code=missing_reason_code,
+    )
+
+
+def _pre_run_adapter_payload(
+    *,
+    section_type: ProofPackSectionType,
+) -> _SectionPayload | None:
+    config = _PRE_RUN_ADAPTER_SECTIONS.get(section_type)
+    if config is None:
+        return None
+
+    summary, adapter_contract = config
+    return _adapter_section_payload(
+        summary=summary,
+        adapter_contract=adapter_contract,
+    )
+
+
 def _pre_run_section_payload(
     *,
     section_type: ProofPackSectionType,
@@ -955,20 +1072,11 @@ def _pre_run_section_payload(
     source_analytics: dict[str, ProofPackSourceAnalytics],
 ) -> _SectionPayload | None:
     if section_type == "decision_summary":
-        reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
-        return (
-            "READY" if reason else "DEGRADED",
-            "Decision evidence assembled from manage run and actor rationale.",
-            {
-                "actor": created_by,
-                "reason": reason,
-                "source_run_status": result.status if result is not None else None,
-                "selected_alternative_id": (
-                    selected_alternative.alternative_id if selected_alternative else None
-                ),
-            },
-            {},
-            reason_codes,
+        return _decision_summary_section_payload(
+            result=result,
+            selected_alternative=selected_alternative,
+            reason=reason,
+            created_by=created_by,
         )
     if section_type == "mandate_context":
         return _mandate_context_section_payload(
@@ -987,37 +1095,17 @@ def _pre_run_section_payload(
             selected_alternative=selected_alternative,
             selection=selection,
         )
-    if section_type == "risk_impact":
-        return _source_analytics_section_payload(
-            source_analytics=source_analytics,
-            family="risk",
-            missing_summary="No risk-authoritative enrichment is attached to this first-wave proof pack.",
-            missing_reason_code="DPM_RISK_AUTHORITY_CONTEXT_MISSING",
-        )
-    if section_type == "performance_context":
-        return _source_analytics_section_payload(
-            source_analytics=source_analytics,
-            family="performance",
-            missing_summary="No performance-authoritative benchmark context is attached.",
-            missing_reason_code="DPM_PERFORMANCE_CONTEXT_MISSING",
-        )
-    if section_type == "sustainability_controls":
-        return _source_analytics_section_payload(
-            source_analytics=source_analytics,
-            family="sustainability_preference",
-            missing_summary="Sustainability preference authority context is not attached.",
-            missing_reason_code="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_MISSING",
-        )
-    if section_type == "reporting_refs":
-        return _adapter_section_payload(
-            summary="Report input adapter is available; generated refs are appended outside the immutable proof-pack body.",
-            adapter_contract="DpmProofPackReportInput",
-        )
-    if section_type == "ai_refs":
-        return _adapter_section_payload(
-            summary="AI evidence input adapter is available with forbidden-action and forbidden-field guardrails.",
-            adapter_contract="DpmProofPackAiEvidenceInput",
-        )
+    source_analytics_payload = _pre_run_source_analytics_payload(
+        section_type=section_type,
+        source_analytics=source_analytics,
+    )
+    if source_analytics_payload is not None:
+        return source_analytics_payload
+
+    adapter_payload = _pre_run_adapter_payload(section_type=section_type)
+    if adapter_payload is not None:
+        return adapter_payload
+
     return None
 
 

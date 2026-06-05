@@ -438,35 +438,38 @@ def _drawdown_value(
     measure: DrawdownOutcomeMeasure,
 ) -> tuple[Decimal | None, str]:
     summary = _read_mapping(result.get("summary"))
-    if measure == "max_drawdown":
-        return (
-            _decimal_value(summary.get("max_drawdown"))
-            if summary.get("max_drawdown") is not None
-            else None,
-            "RISK_DRAWDOWN_ABSOLUTE",
-        )
-    if measure == "average_drawdown":
-        return (
-            _decimal_value(summary.get("average_drawdown"))
-            if summary.get("average_drawdown") is not None
-            else None,
-            "RISK_DRAWDOWN_AVERAGE",
-        )
-    if measure == "ulcer_index":
-        return (
-            _decimal_value(summary.get("ulcer_index"))
-            if summary.get("ulcer_index") is not None
-            else None,
-            "RISK_DRAWDOWN_ULCER_INDEX",
-        )
-    if measure == "time_under_water_days":
-        return (
-            _decimal_value(summary.get("time_under_water_days"))
-            if summary.get("time_under_water_days") is not None
-            else None,
-            "RISK_DRAWDOWN_TIME_UNDER_WATER",
-        )
+    absolute_drawdown = _absolute_drawdown_value(summary=summary, measure=measure)
+    if absolute_drawdown is not None:
+        return absolute_drawdown
+    return _relative_drawdown_value(result=result)
 
+
+def _absolute_drawdown_value(
+    *,
+    summary: dict[str, Any],
+    measure: DrawdownOutcomeMeasure,
+) -> tuple[Decimal | None, str] | None:
+    source_field_by_measure = {
+        "max_drawdown": ("max_drawdown", "RISK_DRAWDOWN_ABSOLUTE"),
+        "average_drawdown": ("average_drawdown", "RISK_DRAWDOWN_AVERAGE"),
+        "ulcer_index": ("ulcer_index", "RISK_DRAWDOWN_ULCER_INDEX"),
+        "time_under_water_days": (
+            "time_under_water_days",
+            "RISK_DRAWDOWN_TIME_UNDER_WATER",
+        ),
+    }
+    source_field_and_reason = source_field_by_measure.get(measure)
+    if source_field_and_reason is None:
+        return None
+    source_field, reason = source_field_and_reason
+    raw_value = summary.get(source_field)
+    return _decimal_value(raw_value) if raw_value is not None else None, reason
+
+
+def _relative_drawdown_value(
+    *,
+    result: dict[str, Any],
+) -> tuple[Decimal | None, str]:
     relative_context = _read_mapping(result.get("relative_to_benchmark_context"))
     applied = relative_context.get("applied") is True
     reason = _read_text(relative_context.get("reason")) or "UNKNOWN"

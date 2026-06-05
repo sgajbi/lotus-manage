@@ -10,7 +10,10 @@ from pydantic import BaseModel, Field
 from src.core.waves.campaign_definition_events import (
     build_bulk_review_campaign_definition_lifecycle_events,
 )
-from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionGovernance,
+)
 
 
 CampaignDefinitionReadinessState = Literal["READY", "BLOCKED"]
@@ -170,44 +173,75 @@ def _governance_readiness(
         return "NOT_SUPPLIED", "NOT_SUPPLIED", "NOT_SUPPLIED", 0
 
     source_ref_count = len(governance.source_refs)
+    governance_status = _approval_governance_status(
+        governance=governance,
+        reason_codes=reason_codes,
+    )
+    expiry_state = _expiry_readiness_state(
+        governance=governance,
+        requested_date=requested_date,
+        reason_codes=reason_codes,
+    )
+    actor_entitlement_state = _actor_entitlement_state(
+        governance=governance,
+        actor_id=actor_id,
+        reason_codes=reason_codes,
+    )
+    return governance_status, expiry_state, actor_entitlement_state, source_ref_count
+
+
+def _approval_governance_status(
+    *,
+    governance: DpmBulkReviewCampaignDefinitionGovernance,
+    reason_codes: list[str],
+) -> CampaignDefinitionGovernanceState:
     approval_fields = [governance.approval_ref, governance.approved_by, governance.approved_at]
     supplied_approval_fields = [value for value in approval_fields if value]
-    governance_status: CampaignDefinitionGovernanceState = "NOT_SUPPLIED"
-    if supplied_approval_fields:
-        if len(supplied_approval_fields) == len(approval_fields):
-            governance_status = "APPROVED"
-        else:
-            governance_status = "INCOMPLETE"
-            reason_codes.append("BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE")
+    if not supplied_approval_fields:
+        return "NOT_SUPPLIED"
+    if len(supplied_approval_fields) == len(approval_fields):
+        return "APPROVED"
+    reason_codes.append("BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE")
+    return "INCOMPLETE"
 
-    expiry_state: CampaignDefinitionExpiryState = "NOT_SUPPLIED"
-    if governance.expires_on:
-        expires_on = _parse_date(
-            value=governance.expires_on,
-            reason_codes=reason_codes,
-            invalid_code="BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
-        )
-        if expires_on is None:
-            expiry_state = "INVALID"
-        elif requested_date is not None and expires_on < requested_date:
-            expiry_state = "EXPIRED"
-            reason_codes.append("BULK_REVIEW_CAMPAIGN_EXPIRED")
-        else:
-            expiry_state = "ACTIVE"
 
+def _expiry_readiness_state(
+    *,
+    governance: DpmBulkReviewCampaignDefinitionGovernance,
+    requested_date: date | None,
+    reason_codes: list[str],
+) -> CampaignDefinitionExpiryState:
+    if not governance.expires_on:
+        return "NOT_SUPPLIED"
+    expires_on = _parse_date(
+        value=governance.expires_on,
+        reason_codes=reason_codes,
+        invalid_code="BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
+    )
+    if expires_on is None:
+        return "INVALID"
+    if requested_date is not None and expires_on < requested_date:
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_EXPIRED")
+        return "EXPIRED"
+    return "ACTIVE"
+
+
+def _actor_entitlement_state(
+    *,
+    governance: DpmBulkReviewCampaignDefinitionGovernance,
+    actor_id: str | None,
+    reason_codes: list[str],
+) -> CampaignDefinitionActorEntitlementState:
     entitled_actor_ids = {actor.strip() for actor in governance.entitled_actor_ids if actor.strip()}
-    actor_entitlement_state: CampaignDefinitionActorEntitlementState = "NOT_SUPPLIED"
-    if entitled_actor_ids:
-        if not (actor_id or "").strip():
-            actor_entitlement_state = "ACTOR_REQUIRED"
-            reason_codes.append("BULK_REVIEW_CAMPAIGN_ACTOR_REQUIRED_FOR_ENTITLEMENT")
-        elif actor_id in entitled_actor_ids:
-            actor_entitlement_state = "AUTHORIZED"
-        else:
-            actor_entitlement_state = "UNAUTHORIZED"
-            reason_codes.append("BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED")
-
-    return governance_status, expiry_state, actor_entitlement_state, source_ref_count
+    if not entitled_actor_ids:
+        return "NOT_SUPPLIED"
+    if not (actor_id or "").strip():
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_ACTOR_REQUIRED_FOR_ENTITLEMENT")
+        return "ACTOR_REQUIRED"
+    if actor_id in entitled_actor_ids:
+        return "AUTHORIZED"
+    reason_codes.append("BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED")
+    return "UNAUTHORIZED"
 
 
 def _parse_date(

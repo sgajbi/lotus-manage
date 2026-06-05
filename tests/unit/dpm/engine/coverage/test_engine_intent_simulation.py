@@ -1,16 +1,23 @@
 from decimal import Decimal
 
 from src.core.rebalance.execution import (
+    _after_simulation_options,
+    _apply_execution_intents,
     _append_projected_cash_fx_intents,
     _fx_intent_for_projected_cash_balance,
     _link_execution_dependencies,
     _project_cash_after_security_trades,
+    _settlement_blocked_simulation_result,
     build_settlement_ladder,
 )
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.models import (
+    CashLadderBreach,
     EngineOptions,
+    FxSpotIntent,
+    IntentRationale,
     SecurityTradeIntent,
+    ValuationMode,
 )
 from tests.shared.assertions import security_intents
 from tests.shared.factories import (
@@ -217,6 +224,81 @@ class TestIntentDependenciesAndSimulation:
         assert fx_map == {}
         assert intents == []
         assert diagnostics.data_quality == {"fx_missing": ["EUR/USD"]}
+
+    def test_settlement_blocked_simulation_result_builds_rule_and_warning(self):
+        portfolio = portfolio_snapshot(
+            portfolio_id="pf_settlement_block_helper",
+            base_currency="USD",
+            cash_balances=[cash("USD", "100")],
+        )
+        diagnostics = empty_diagnostics()
+        diagnostics.cash_ladder_breaches.append(
+            CashLadderBreach(
+                date_offset=1,
+                currency="USD",
+                projected_balance=Decimal("-25"),
+                allowed_floor=Decimal("0"),
+                reason_code="OVERDRAFT_ON_T_PLUS_1",
+            )
+        )
+
+        _, blocked_state, rules, status, recon = _settlement_blocked_simulation_result(
+            portfolio=portfolio,
+            market_data=market_data_snapshot(),
+            shelf=[],
+            intents=[],
+            options=EngineOptions(),
+            diagnostics=diagnostics,
+        )
+
+        assert blocked_state.cash_balances[0].currency == "USD"
+        assert blocked_state.cash_balances[0].amount == Decimal("100")
+        assert status == "BLOCKED"
+        assert recon is None
+        assert diagnostics.warnings == ["OVERDRAFT_ON_T_PLUS_1"]
+        assert rules[0].rule_id == "SETTLEMENT_CASH_LADDER"
+        assert rules[0].measured == Decimal("25")
+
+    def test_apply_execution_intents_returns_mutated_copy_for_fx_intent(self):
+        portfolio = portfolio_snapshot(
+            portfolio_id="pf_apply_execution_intents",
+            base_currency="USD",
+            cash_balances=[cash("USD", "100"), cash("EUR", "0")],
+        )
+
+        after = _apply_execution_intents(
+            portfolio=portfolio,
+            intents=[
+                FxSpotIntent(
+                    intent_id="oi_fx_eur",
+                    pair="EUR/USD",
+                    buy_currency="EUR",
+                    buy_amount=Decimal("10"),
+                    sell_currency="USD",
+                    sell_amount_estimated=Decimal("12"),
+                    rationale=IntentRationale(code="FUNDING", message="Fund EUR"),
+                )
+            ],
+        )
+
+        assert portfolio.cash_balances[0].amount == Decimal("100")
+        assert {cash_balance.currency: cash_balance.amount for cash_balance in after.cash_balances}[
+            "USD"
+        ] == Decimal("88")
+        assert {cash_balance.currency: cash_balance.amount for cash_balance in after.cash_balances}[
+            "EUR"
+        ] == Decimal("10")
+
+    def test_after_simulation_options_preserves_trust_snapshot_or_calculates_result(self):
+        trust_options = EngineOptions(valuation_mode=ValuationMode.TRUST_SNAPSHOT)
+        calculated_options = EngineOptions(valuation_mode=ValuationMode.CALCULATED)
+
+        assert (
+            _after_simulation_options(trust_options).valuation_mode == ValuationMode.TRUST_SNAPSHOT
+        )
+        assert (
+            _after_simulation_options(calculated_options).valuation_mode == ValuationMode.CALCULATED
+        )
 
     def test_dependency_linking_explicit(self):
         pf = usd_cash_portfolio("dep_test")

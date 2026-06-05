@@ -10,6 +10,10 @@ from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityUnavailableError,
 )
 from src.infrastructure.advise_authority.client import (
+    _dict_list_section,
+    _supportability_reason_codes,
+    _tactical_affected_portfolio_from_payload,
+    _tactical_affected_portfolios_from_response,
     _tactical_house_view_cohort_from_response,
 )
 
@@ -366,3 +370,41 @@ def test_tactical_house_view_response_parser_defaults_optional_source_fields() -
     )
     assert cohort.affected_portfolios[0].mandate_id is None
     assert cohort.affected_portfolios[0].inclusion_reason_codes == ()
+
+
+def test_tactical_house_view_response_parser_helpers_project_source_backed_portfolios() -> None:
+    body = _cohort_response()
+
+    affected = _tactical_affected_portfolios_from_response(body)
+    portfolio = affected[0]
+
+    assert portfolio.portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert portfolio.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
+    assert portfolio.inclusion_reason_codes == (
+        "TACTICAL_HOUSE_VIEW_PORTFOLIO_AFFECTED",
+        "TACTICAL_HOUSE_VIEW_UNDERWEIGHT",
+    )
+    assert portfolio.source_refs[0]["source_system"] == "lotus-core"
+
+
+def test_tactical_house_view_response_parser_helpers_validate_lists_and_defaults() -> None:
+    assert _dict_list_section({"items": [{"ok": True}]}, "items") == [{"ok": True}]
+    assert _supportability_reason_codes({}) == [
+        "TACTICAL_HOUSE_VIEW_SUPPORTABILITY_REASON_CODES_MISSING"
+    ]
+    assert (
+        _tactical_affected_portfolio_from_payload(
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "mandate_id": None,
+                "source_refs": [],
+            }
+        ).mandate_id
+        is None
+    )
+
+    with pytest.raises(ValueError, match="items must be a list"):
+        _dict_list_section({"items": "bad"}, "items")
+
+    with pytest.raises(ValueError, match="items entries must be objects"):
+        _dict_list_section({"items": ["bad"]}, "items")

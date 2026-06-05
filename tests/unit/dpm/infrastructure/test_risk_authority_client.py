@@ -12,6 +12,9 @@ from src.infrastructure.risk_authority import (
     LotusRiskAuthorityUnavailableError,
 )
 from src.infrastructure.risk_authority.client import (
+    _concentration_breach_count,
+    _concentration_breach_inputs,
+    _concentration_reason_codes,
     _post_with_retries,
     _risk_event_cohort_from_response,
     _regime_context_from_scenario_response,
@@ -177,6 +180,37 @@ def test_lotus_risk_authority_client_maps_concentration_supportability() -> None
     assert context.concentration_hhi_delta == 100
     assert context.concentration_breaches == 0
     assert context.reason_codes == ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"]
+
+
+def test_concentration_breach_helpers_count_source_threshold_breaches() -> None:
+    inputs = _concentration_breach_inputs(
+        risk_proxy={"hhi_proposed": "2600"},
+        single_position={"top_position_weight_proposed": "0.31"},
+        issuer={"top_issuer_weight_proposed": "0.41"},
+    )
+
+    assert inputs.top_position_weight_proposed == Decimal("0.31")
+    assert inputs.top_issuer_weight_proposed == Decimal("0.41")
+    assert inputs.hhi_proposed == Decimal("2600")
+    assert _concentration_breach_count(inputs) == 3
+
+
+def test_concentration_reason_codes_project_supportability_coverage_and_breaches() -> None:
+    assert _concentration_reason_codes(
+        supportability_reason="calculation_complete",
+        issuer_coverage_status="complete",
+        breaches=0,
+    ) == ["LOTUS_RISK_CONCENTRATION_CALCULATION_COMPLETE"]
+
+    assert _concentration_reason_codes(
+        supportability_reason="calculation_stale",
+        issuer_coverage_status="partial",
+        breaches=1,
+    ) == [
+        "ISSUER_COVERAGE_PARTIAL",
+        "LOTUS_RISK_CONCENTRATION_CALCULATION_STALE",
+        "RISK_CONCENTRATION_LIMIT_BREACH",
+    ]
 
 
 def test_lotus_risk_authority_client_maps_regime_scenario_pack_evaluation() -> None:

@@ -14,6 +14,7 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemorySearchAppliedFilters,
     DpmPortfolioMemorySearchItem,
     DpmPortfolioMemorySearchPage,
+    PortfolioMemoryEventType,
     PortfolioMemorySupportabilityState,
 )
 from src.core.portfolio_memory.search_facets import build_search_facet_counts
@@ -40,6 +41,24 @@ class PortfolioMemorySearchFilters:
 
 
 SearchRow = tuple[DpmPortfolioMemorySearchItem, list[DpmPortfolioMemoryEvent]]
+
+
+@dataclass(frozen=True)
+class _LatestEventMetadata:
+    latest_event_time: str | None
+    latest_event_type: PortfolioMemoryEventType | None
+
+
+@dataclass(frozen=True)
+class _LatestMatchingEventMetadata:
+    latest_matching_event_time: str | None
+    latest_matching_event_type: PortfolioMemoryEventType | None
+    latest_matching_event_id: str | None
+    latest_matching_event_identity: str | None
+    latest_matching_event_source_system: str | None
+    latest_matching_event_source_type: str | None
+    latest_matching_event_source_id: str | None
+    latest_matching_event_content_hash: str | None
 
 
 def _memory_passes_search_summary_filters(
@@ -75,23 +94,19 @@ def _filters_require_matching_events(filters: PortfolioMemorySearchFilters) -> b
     )
 
 
-def _portfolio_memory_search_item(
-    *,
-    memory: DpmPortfolioMemory,
-    matching_events: list[DpmPortfolioMemoryEvent],
-) -> DpmPortfolioMemorySearchItem:
+def _latest_event_metadata(memory: DpmPortfolioMemory) -> _LatestEventMetadata:
     latest_event = memory.events[0] if memory.events else None
-    latest_matching_event = matching_events[0] if matching_events else None
-    return DpmPortfolioMemorySearchItem(
-        portfolio_id=memory.portfolio_id,
-        event_count=memory.event_count,
-        supportability_state=memory.supportability_state,
-        event_type_counts=memory.event_type_counts,
-        source_systems=memory.source_systems,
-        reason_codes=memory.reason_codes,
+    return _LatestEventMetadata(
         latest_event_time=latest_event.event_time if latest_event else None,
         latest_event_type=latest_event.event_type if latest_event else None,
-        matching_event_count=len(matching_events),
+    )
+
+
+def _latest_matching_event_metadata(
+    matching_events: list[DpmPortfolioMemoryEvent],
+) -> _LatestMatchingEventMetadata:
+    latest_matching_event = matching_events[0] if matching_events else None
+    return _LatestMatchingEventMetadata(
         latest_matching_event_time=(
             latest_matching_event.event_time if latest_matching_event else None
         ),
@@ -115,6 +130,38 @@ def _portfolio_memory_search_item(
         ),
         latest_matching_event_content_hash=(
             latest_matching_event.content_hash if latest_matching_event else None
+        ),
+    )
+
+
+def _portfolio_memory_search_item(
+    *,
+    memory: DpmPortfolioMemory,
+    matching_events: list[DpmPortfolioMemoryEvent],
+) -> DpmPortfolioMemorySearchItem:
+    latest_event_metadata = _latest_event_metadata(memory)
+    latest_matching_metadata = _latest_matching_event_metadata(matching_events)
+    return DpmPortfolioMemorySearchItem(
+        portfolio_id=memory.portfolio_id,
+        event_count=memory.event_count,
+        supportability_state=memory.supportability_state,
+        event_type_counts=memory.event_type_counts,
+        source_systems=memory.source_systems,
+        reason_codes=memory.reason_codes,
+        latest_event_time=latest_event_metadata.latest_event_time,
+        latest_event_type=latest_event_metadata.latest_event_type,
+        matching_event_count=len(matching_events),
+        latest_matching_event_time=latest_matching_metadata.latest_matching_event_time,
+        latest_matching_event_type=latest_matching_metadata.latest_matching_event_type,
+        latest_matching_event_id=latest_matching_metadata.latest_matching_event_id,
+        latest_matching_event_identity=latest_matching_metadata.latest_matching_event_identity,
+        latest_matching_event_source_system=(
+            latest_matching_metadata.latest_matching_event_source_system
+        ),
+        latest_matching_event_source_type=latest_matching_metadata.latest_matching_event_source_type,
+        latest_matching_event_source_id=latest_matching_metadata.latest_matching_event_source_id,
+        latest_matching_event_content_hash=(
+            latest_matching_metadata.latest_matching_event_content_hash
         ),
         content_hash=memory.content_hash,
     )

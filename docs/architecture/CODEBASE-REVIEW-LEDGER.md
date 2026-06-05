@@ -15461,3 +15461,1228 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-636: Execution simulation helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Finding: `generate_fx_and_simulate` remained the top current source-complexity hotspot and still
+  mixed execution orchestration with settlement-blocked result assembly, intent application, and
+  post-simulation valuation-mode selection.
+- Action: introduced explicit execution simulation result/status aliases plus focused helpers for
+  settlement-blocked result construction, immutable intent application over a portfolio copy, and
+  after-simulation valuation options. Kept `generate_fx_and_simulate` as the orchestration boundary
+  over FX generation, settlement awareness, simulation, rules, reconciliation, and readiness
+  status. Added direct helper tests for settlement-blocked rule/warning projection, FX intent
+  application without mutating the source portfolio, and trust-snapshot valuation preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal execution simulation
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-637: Execution simulation refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `5561b776`, before the execution
+  simulation helper extraction, so the latest source-complexity improvement was not represented in
+  the branch scorecard.
+- Action: regenerated current-state refactor reports after the execution simulation helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `generate_fx_and_simulate` dropped out of the top current
+  source-complexity list, with `apply_group_constraints` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-638: Group constraint helper boundaries extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/targets.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`.
+- Finding: `apply_group_constraints` became the top current source-complexity hotspot after the
+  execution simulation extraction and still combined constraint-key parsing, shelf attribute
+  membership mapping, cap scaling, released-weight redistribution, and diagnostics event
+  recording in one function.
+- Action: extracted focused helpers for constraint-key validation, group membership resolution,
+  group cap scaling, redistribution to eligible non-member buy targets, and diagnostics event
+  recording. Kept `apply_group_constraints` as the orchestration boundary over sorted constraints
+  and blocked-status propagation. Added direct helper tests for invalid/unknown constraint keys,
+  shelf-attribute membership selection, and proportional redistribution to eligible non-members.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_target_generation.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-639: Group constraint refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `37b619f0`, before the group constraint
+  helper extraction, so the latest source-complexity improvement was not represented in the branch
+  scorecard.
+- Action: regenerated current-state refactor reports after the group constraint helper extraction.
+  Preserved `quality/baseline_report.md` so the original baseline remains stable. The refreshed
+  complexity report shows `apply_group_constraints` dropped out of the top current source-complexity
+  list, with `_pre_run_section_payload` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-640: Proof-pack pre-run dispatcher helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_pre_run_section_payload` became the top current source-complexity hotspot and still
+  mixed decision-summary projection with mandate/source-readiness/selected-alternative routing,
+  source-analytics family dispatch, and adapter-section dispatch.
+- Action: introduced explicit pre-run source-analytics and adapter section configuration maps plus
+  focused helpers for decision-summary payload construction, source-analytics dispatch, and adapter
+  dispatch. Kept `_pre_run_section_payload` as the orchestration boundary for pre-run proof-pack
+  sections. Added direct helper tests for decision-summary facts, configured risk analytics
+  dispatch, and configured AI adapter dispatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-641: Proof-pack pre-run refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `92082623`, before the proof-pack
+  pre-run dispatcher helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the proof-pack pre-run helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_pre_run_section_payload` dropped out of the top current
+  source-complexity list, with `build_universe` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-642: Rebalance universe eligibility helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/universe.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`.
+- Finding: `build_universe` became the top current source-complexity hotspot and still mixed model
+  target shelf eligibility, sell-only excess handling, current-position locking, missing-shelf data
+  quality logging, and residual sell-list construction.
+- Action: introduced helpers for shelf indexing, model-target exclusion reason resolution, model
+  target universe admission, current-position weight lookup, locked-position reason resolution, and
+  portfolio-position universe admission. Kept `build_universe` as the orchestration boundary over
+  model targets and current holdings. Added direct helper tests for sell-only target handling and
+  suspended-position current-weight locking.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/universe.py tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python -m ruff format --check src/core/rebalance/universe.py tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/universe.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance universe
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-643: Rebalance universe refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `f207cc62`, before the rebalance universe
+  helper extraction, so the latest source-complexity improvement was not represented in the branch
+  scorecard.
+- Action: regenerated current-state refactor reports after the rebalance universe helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `build_universe` dropped out of the top current
+  source-complexity list, with `_regime_stress_evidence_posture` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-644: Regime-stress evidence posture helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_regime_stress_evidence_posture` became the top current source-complexity hotspot and
+  still mixed source-governance evidence projection, missing-evidence classification, source
+  reason-code posture classification, and final proof-pack section state aggregation.
+- Action: introduced focused helpers for regime-stress governance posture facts, missing governance
+  evidence classification, and source reason-code posture classification. Kept
+  `_regime_stress_evidence_posture` as the aggregation boundary for final section state, facts, and
+  reason codes. Added direct tests for governance posture projection, missing evidence detection,
+  and source reason-code posture classification.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-645: Regime-stress refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `19e54837`, before the regime-stress
+  evidence posture helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the regime-stress evidence posture
+  helper extraction. Preserved `quality/baseline_report.md` so the original baseline remains
+  stable. The refreshed complexity report shows `_regime_stress_evidence_posture` dropped out of
+  the top current source-complexity list, with `_transitioned_task` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-646: Campaign assignment task transition helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `_transitioned_task` became the top current source-complexity hotspot and still mixed
+  transition-edge validation, next task field resolution, transition ledger construction, and
+  content-hash refresh.
+- Action: introduced `_validate_transition_allowed` and `_transition_task_fields` so
+  `_transitioned_task` remains the orchestration boundary for building the transition event and
+  refreshed task. Added direct helper tests for due-date field resolution and forbidden opened or
+  closed task transitions while preserving the public transition API tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment task
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-647: Campaign task transition refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `e52f99be`, before the campaign
+  assignment task transition helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign task transition helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_transitioned_task` dropped out of the top current
+  source-complexity list, with `record_bulk_review_campaign_definition_assignment_action` now the
+  top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-648: Campaign assignment action helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_actions.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `record_bulk_review_campaign_definition_assignment_action` became the top current
+  source-complexity hotspot and still mixed active-definition validation, required text
+  normalization, actor normalization, resolved-state validation, idempotent replay detection, and
+  append-only action recording.
+- Action: introduced focused helpers for active-definition validation, normalized assignment action
+  request construction, actor normalization, required text validation, and assignment action
+  replay/conflict handling. Kept the public recorder as the orchestration boundary for action
+  construction and immutable definition update. Added direct helper tests for normalized action
+  request fields and replay/conflict handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_actions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment action
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-649: Campaign assignment action reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `8d45458a`, before the campaign
+  assignment action helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign assignment action helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `record_bulk_review_campaign_definition_assignment_action`
+  dropped out of the top current source-complexity list, with `purge_expired_runs` now the top
+  source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-650: In-memory run retention purge helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py` and
+  `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`.
+- Finding: `purge_expired_runs` became the top current source-complexity hotspot and still mixed
+  retention cutoff selection with cleanup across run records, artifacts, correlation indexes,
+  idempotency mappings, idempotency history, workflow decisions, and lineage edges.
+- Action: introduced focused helpers for expired-run selection, expired identity aggregation, run
+  record/artifact/correlation cleanup, idempotency mapping cleanup, idempotency history cleanup,
+  and lineage edge cleanup. Kept `purge_expired_runs` as the locked orchestration boundary. Added
+  direct helper tests for expiry identity scope and history/lineage filtering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_run_repository_backends.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal in-memory repository
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-651: In-memory retention refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `fa729949`, before the in-memory run
+  retention helper extraction, so the latest source-complexity improvement was not represented in
+  the branch scorecard.
+- Action: regenerated current-state refactor reports after the in-memory retention helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `purge_expired_runs` dropped out of the top current
+  source-complexity list, with `_example_from_schema` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-652: OpenAPI schema example helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: `_example_from_schema` became the top current source-complexity hotspot and still mixed
+  declared examples, `$ref` resolution, recursion guarding, composite schema option selection,
+  collection/map examples, and fallback semantic inference.
+- Action: introduced focused helpers for `$ref` example resolution and composite schema example
+  selection. Kept `_example_from_schema` as the orchestration boundary over declared, referenced,
+  composite, collection, and inferred examples. Added direct tests for recursive `$ref` handling and
+  first non-null composite option selection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-653: OpenAPI example refactor reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `3e222fa1`, before the OpenAPI schema
+  example helper extraction, so the latest API-governance source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the OpenAPI schema example helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_example_from_schema` dropped out of the top current
+  source-complexity list, with `_proof_pack_governance_section_payload` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-654: Proof-pack governance payload helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_proof_pack_governance_section_payload` became the top current source-complexity
+  hotspot and still mixed governance section dispatch with operations handoff, decision timeline,
+  lineage, and supportability payload construction.
+- Action: introduced focused payload builders for operations handoff, decision timeline, lineage,
+  and supportability sections. Kept `_proof_pack_governance_section_payload` as the routing
+  boundary across proof-pack governance section types. Added direct helper tests for non-ready
+  operations handoff, decision timeline run projection, and supportability payload output.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-655: Proof-pack governance reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `16434456`, before the proof-pack
+  governance payload helper extraction, so the latest source-complexity improvement was not
+  represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the proof-pack governance helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_proof_pack_governance_section_payload` dropped out of the top
+  current source-complexity list, with `_portfolio_memory_search_item` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-656: Portfolio-memory search item metadata helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/search_page.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `_portfolio_memory_search_item` became the top current source-complexity hotspot and
+  still mixed search-item construction with latest-event and latest-matching-event metadata
+  projection.
+- Action: introduced typed metadata helpers for latest memory event projection and latest matching
+  event source-identity projection. Kept `_portfolio_memory_search_item` as the search item
+  assembly boundary. Added direct helper tests for empty and populated latest-event metadata and
+  matching-event source identity projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_page.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-657: Portfolio-memory search reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `cfef6594`, before the portfolio-memory
+  search metadata helper extraction, so the latest source-complexity improvement and added helper
+  tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the portfolio-memory search metadata
+  helper extraction. Preserved `quality/baseline_report.md` so the original baseline remains
+  stable. The refreshed complexity report shows `_portfolio_memory_search_item` dropped out of the
+  top current source-complexity list, with `_risk_context_from_concentration_response` now the top
+  source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-658: Risk concentration breach helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Finding: `_risk_context_from_concentration_response` became the top current source-complexity
+  hotspot and mixed concentration response mapping with breach threshold classification and reason
+  code assembly.
+- Action: introduced typed concentration breach inputs, breach-count classification, and
+  concentration reason-code helpers. Kept the client mapper as the source-owned response boundary
+  and added direct helper tests for risk concentration threshold breaches and reason-code posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal risk-authority client
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-659: Risk concentration reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `f2631d4c`, before the risk
+  concentration breach helper extraction, so the latest source-complexity improvement and added
+  helper tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the risk concentration helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_risk_context_from_concentration_response` dropped out of the
+  top current source-complexity list, with `_transition_matches_request` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-660: Campaign assignment transition replay helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Finding: `_transition_matches_request` became the top current source-complexity hotspot and
+  mixed required transition replay comparison, optional field comparison, and source-reference
+  payload comparison inside one idempotency predicate.
+- Action: introduced required replay field, optional replay field, and source-reference payload
+  comparison helpers. Kept `_transition_matches_request` as the idempotency decision boundary and
+  added direct helper coverage for replay comparison projection and optional-assignee mismatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment task
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-661: Campaign transition replay reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `dc5f0fcd`, before the campaign
+  transition replay helper extraction, so the latest source-complexity improvement and direct
+  helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign transition replay helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_transition_matches_request` dropped out of the top current
+  source-complexity list, with `_scope_evidence_from_policy` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-662: PM-quality scope evidence helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Finding: `_scope_evidence_from_policy` became the top current source-complexity hotspot and
+  mixed peer-group field projection, lookback-window field projection, reason-code assembly, and
+  source-reference assembly inside one mapper.
+- Action: introduced typed peer-group and lookback scope field projections plus dedicated
+  reason-code and source-reference helpers. Kept `_scope_evidence_from_policy` as the policy-to
+  scope-evidence assembly boundary and added direct helper tests for populated and empty scope
+  projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-663: PM-quality scope reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `65f83212`, before the PM-quality scope
+  evidence helper extraction, so the latest source-complexity improvement and direct helper tests
+  were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the PM-quality scope helper extraction.
+  Preserved `quality/baseline_report.md` so the original baseline remains stable. The refreshed
+  complexity report shows `_scope_evidence_from_policy` dropped out of the top current
+  source-complexity list, with `_infer_description` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-664: OpenAPI description inference helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: `_infer_description` became the top current source-complexity hotspot and mixed
+  property normalization, schema-format capture, semantic description matching, and fallback text
+  assembly inside one OpenAPI enrichment helper.
+- Action: introduced a typed description context plus a semantic description helper. Kept
+  `_infer_description` as the fallback description assembly boundary and added direct helper tests
+  for domain-specific id/status descriptions and non-semantic fallback behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-665: OpenAPI semantic description rules extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: the first OpenAPI description extraction moved branch complexity into
+  `_semantic_description_for_context`, and a broader date-format rule briefly caused API
+  vocabulary drift before commit.
+- Action: introduced typed semantic description rules with explicit match/render behavior and a
+  strict `date` rule that preserves the prior requirement for both a date-like key and
+  `format: date`. Added direct rule tests, including the `effectivePeriod` edge that verifies
+  date-format fields without date-like names do not change generated descriptions.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-666: OpenAPI description reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `8ca11f88`, before the OpenAPI
+  description inference and semantic rule extractions, so the latest source-complexity improvement
+  and direct helper tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the OpenAPI description helper and
+  semantic rule extractions. Preserved `quality/baseline_report.md` so the original baseline
+  remains stable. The refreshed complexity report shows `_infer_description` and
+  `_semantic_description_for_context` both dropped out of the top current source-complexity list,
+  with `build_pm_quality_summary_invocation` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-667: PM-quality summary source-ref helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/pm_quality/summary_history.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Finding: `build_pm_quality_summary_invocation` became the top current source-complexity hotspot
+  and mixed input validation, managed score-run/review source refs, AI workflow/artifact source
+  refs, and caller source-ref dedupe into one summary invocation builder.
+- Action: introduced validation, managed summary source-ref, AI summary source-ref, and combined
+  source-ref helpers. Kept `build_pm_quality_summary_invocation` as the append-only invocation
+  assembly boundary. Added direct helper coverage for managed refs, AI refs, source id trimming,
+  and the existing duplicate-key precedence from `_dedupe_refs`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/summary_history.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality summary history
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-668: PM-quality summary reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `9c216286`, before the PM-quality
+  summary source-ref helper extraction, so the latest source-complexity improvement and direct
+  helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the PM-quality summary helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `build_pm_quality_summary_invocation` dropped out of the top
+  current source-complexity list, with `generate_targets_solver` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-669: Target-generation solver support helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: `generate_targets_solver` became the top current source-complexity hotspot and still
+  mixed model-weight vector construction, group constraint appending, solved-weight application,
+  and solver orchestration in one function.
+- Action: introduced helpers for solver model weight arrays, group-constraint appending, single
+  group-constraint handling, and solved-weight application. Kept `generate_targets_solver` as the
+  orchestration boundary. Added direct helper tests for model-weight vector construction and
+  solved-weight quantization/fail-closed behavior while preserving the existing fake-solver group
+  constraint coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation solver
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-670: Target-generation solver reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `4b171627`, before the target-generation
+  solver support helper extraction, so the latest source-complexity improvement and direct helper
+  tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the target-generation solver helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `generate_targets_solver` dropped out of the top current
+  source-complexity list, with `summarize_enrichment_posture` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-671: Construction enrichment status helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/construction/enrichment.py`,
+  `tests/unit/dpm/construction/test_enrichment.py`, and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Finding: `summarize_enrichment_posture` became the top current source-complexity hotspot and
+  still mixed liquidity cash-weight posture, turnover dropped-intent posture, optional
+  risk/performance authority handling, and summary assembly in one function.
+- Action: introduced liquidity, turnover, and optional authoritative status helpers. Kept
+  `summarize_enrichment_posture` as the construction enrichment summary assembly boundary. Added
+  direct helper coverage for missing cash weight, dropped intents, optional authority suppression,
+  and required authority missing posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/core/construction/enrichment.py tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/enrichment.py`,
+  `python -m pytest tests/unit/dpm/construction/test_enrichment.py tests/unit/dpm/construction/test_supportability_application.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal construction enrichment
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-672: Construction enrichment reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `a7288c36`, before the construction
+  enrichment status helper extraction, so the latest source-complexity improvement and direct
+  helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the construction enrichment helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `summarize_enrichment_posture` dropped out of the top current
+  source-complexity list, with `request_with_campaign_definition` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-673: Campaign-definition request resolution helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/routers/wave_campaign_definition_resolution.py` and
+  `tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`.
+- Finding: `request_with_campaign_definition` became the top current source-complexity hotspot and
+  mixed campaign-definition reference validation, repository lookup narrowing, lifecycle/as-of
+  rejection, source-ref creation, candidate portfolio projection, governance DTO projection, and
+  final request copying in one router helper.
+- Action: extracted router-local helpers for campaign-definition reference validation, availability
+  validation, definition source-ref projection, candidate portfolio projection, and governance input
+  projection. Kept API DTO construction and `DpmWaveValidationError` translation at the router
+  boundary. Added direct helper coverage for definition source lineage, candidate evidence ordering,
+  governance override/fallback behavior, successful request projection, and retired-definition
+  rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_campaign_definition_resolution.py tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_campaign_definition_resolution.py tests/unit/dpm/api/test_wave_campaign_definition_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_campaign_definition_resolution.py`,
+  `python -m pytest tests/unit/dpm/api/test_wave_campaign_definition_resolution.py -q`,
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py -k bulk_review_campaign_definition_reference_validation -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign-definition request
+  resolution maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-674: Campaign-definition request resolution reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `eea4b6e5`, before the
+  campaign-definition request resolution helper extraction, so the latest source-complexity
+  improvement and direct helper tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign-definition request
+  resolution helper extraction. Preserved `quality/baseline_report.md` so the original baseline
+  remains stable. The refreshed complexity report shows `request_with_campaign_definition` dropped
+  out of the top current source-complexity list, with `validate_search_page_metadata` now the top
+  source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-675: Portfolio-memory search page metadata helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/models.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `validate_search_page_metadata` became the top current source-complexity hotspot and
+  combined pagination validation, count-map non-negative checks, total count reconciliation,
+  returned item coverage, source-system aggregation, and complete-page matching-event
+  reconciliation inside one model validator.
+- Action: extracted page count-map validation, returned supportability/source-system aggregation,
+  returned-count coverage validation, and complete-page aggregate reconciliation into direct domain
+  helpers. Added focused helper tests for negative counts, mismatched totals, source-system
+  projection, underreported page counts, and complete-page matching-event count mismatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search page
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-676: Portfolio-memory search page reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `bf530991`, before the portfolio-memory
+  search page metadata helper extraction, so the latest source-complexity improvement and helper
+  tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the portfolio-memory search page helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `validate_search_page_metadata` dropped out of the top current
+  source-complexity list, with `_governance_readiness` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-677: Campaign-definition governance readiness helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_definition_readiness.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: `_governance_readiness` became the top current source-complexity hotspot and combined
+  governance source-ref counting, approval-evidence completeness, expiry-date readiness, actor
+  entitlement readiness, and fail-closed reason-code mutation in one helper.
+- Action: extracted approval governance status, expiry readiness state, and actor entitlement state
+  helpers. Kept `_governance_readiness` as the small orchestration boundary that returns the
+  readiness tuple and governance source-ref count. Added direct helper coverage for incomplete
+  approval evidence, expired governance, and unauthorized actor entitlement.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_readiness.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign-definition readiness
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-678: Campaign-definition readiness reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `55fbf762`, before the
+  campaign-definition governance readiness helper extraction, so the latest source-complexity
+  improvement and direct helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the campaign-definition governance
+  readiness helper extraction. Preserved `quality/baseline_report.md` so the original baseline
+  remains stable. The refreshed complexity report shows `_governance_readiness` dropped out of the
+  top current source-complexity list, with `_ensure_request_and_response_examples` now the top
+  source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-679: OpenAPI metrics example helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: `_ensure_request_and_response_examples` became the top current source-complexity hotspot
+  and mixed schema extraction, path iteration, metrics-route Prometheus example injection,
+  error-response enrichment, HTTP method filtering, and operation example enrichment in one helper.
+- Action: extracted HTTP operation method classification, error-status classification, and
+  metrics-path Prometheus/error example enrichment helpers. Kept
+  `_ensure_request_and_response_examples` as the schema traversal boundary. Added direct helper
+  coverage for method classification, error-status classification, Prometheus content injection,
+  and metrics error example enrichment.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-680: OpenAPI metrics example reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `9cf033bd`, before the OpenAPI metrics
+  example helper extraction, so the latest source-complexity improvement and direct helper tests
+  were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the OpenAPI metrics helper extraction.
+  Preserved `quality/baseline_report.md` so the original baseline remains stable. The refreshed
+  complexity report shows `_ensure_request_and_response_examples` dropped out of the top current
+  source-complexity list, with `_tactical_house_view_cohort_from_response` now the top source
+  hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-681: Advise tactical cohort response helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/advise_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_advise_authority_client.py`.
+- Finding: `_tactical_house_view_cohort_from_response` became the top current source-complexity
+  hotspot and mixed response list-shape validation, supportability reason-code defaulting,
+  affected-portfolio projection, source-ref copying, and cohort dataclass assembly in one
+  infrastructure parser.
+- Action: extracted list-section validation, supportability reason-code normalization,
+  affected-portfolio item projection, and affected-portfolio collection projection helpers. Kept
+  `_tactical_house_view_cohort_from_response` as the cohort assembly and invalid-response
+  translation boundary. Added direct helper tests for source-backed portfolio projection, optional
+  mandate defaulting, reason-code defaulting, and invalid list shapes.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/advise_authority/client.py tests/unit/dpm/infrastructure/test_advise_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/advise_authority/client.py tests/unit/dpm/infrastructure/test_advise_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/advise_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_advise_authority_client.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal Advise authority client
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-682: Advise tactical cohort reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `f74b55eb`, before the Advise tactical
+  cohort response helper extraction, so the latest infrastructure parser maintainability
+  improvement and direct helper tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the Advise response helper extraction.
+  Preserved `quality/baseline_report.md` so the original baseline remains stable. The refreshed
+  complexity report shows `_tactical_house_view_cohort_from_response` dropped out of the top
+  current source-complexity list, with `_drawdown_value` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-683: Drawdown outcome value helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/outcomes/risk_sources.py` and
+  `tests/unit/core/test_risk_realized_outcome_sources.py`.
+- Finding: `_drawdown_value` became the top current source-complexity hotspot and combined
+  absolute summary field selection, decimal conversion, drawdown reason-code selection, relative
+  benchmark context handling, and relative benchmark value extraction in one helper.
+- Action: extracted absolute drawdown summary lookup and relative benchmark drawdown lookup helpers.
+  Kept `_drawdown_value` as the public internal dispatch boundary used by the realized drawdown
+  adapter. Added direct helper coverage for maximum drawdown, relative measure dispatch,
+  benchmark-applied relative drawdown, and benchmark-not-applied reason preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal risk realized-source
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-684: Drawdown outcome reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `d479d8fb`, before the drawdown outcome
+  value helper extraction, so the latest realized-risk source maintainability improvement and
+  direct helper tests were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the drawdown outcome value helper
+  extraction. Preserved `quality/baseline_report.md` so the original baseline remains stable. The
+  refreshed complexity report shows `_drawdown_value` dropped out of the top current
+  source-complexity list, with `_collect_infeasibility_hints` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-685: Target-generation infeasibility capacity helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: `_collect_infeasibility_hints` became the top current source-complexity hotspot and
+  combined cash-band contradiction detection, single-position capacity detection, shelf attribute
+  indexing, group-member scanning, and locked group-weight hint projection in one helper.
+- Action: extracted cash-band and single-position capacity hint projection into
+  `_infeasibility_capacity_hints` and reused the existing `_solver_group_members` helper for
+  group-constraint scanning. Added direct helper coverage for cash-band contradiction,
+  single-position capacity shortfall, and feasible capacity posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation solver
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-686: Target-generation infeasibility reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `ed254d67`, before the target-generation
+  infeasibility capacity helper extraction, so the latest solver supportability maintainability
+  improvement and direct helper test were not represented in the branch scorecard.
+- Action: regenerated current-state refactor reports after the target-generation infeasibility
+  helper extraction. Preserved `quality/baseline_report.md` so the original baseline remains
+  stable. The refreshed complexity report shows `_collect_infeasibility_hints` dropped out of the
+  top current source-complexity list, with `_post_source_product` now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
