@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T05:11:39+00:00`
+- Generated at: `2026-06-05T05:15:51+00:00`
 
-- Current ref: `5b82db66`
+- Current ref: `f0ed05f9`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
-| 2 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 3 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
-| 4 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
-| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
-| 6 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
-| 7 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
-| 8 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
-| 9 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
-| 10 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
+| 1 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
+| 2 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 3 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 4 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
+| 5 | _section_payload | src/core/proof_packs/builder.py | 10 | 82 |
+| 6 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
+| 7 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 8 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
+| 9 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
+| 10 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
 
 ### Most Complex Current Test Functions
 
