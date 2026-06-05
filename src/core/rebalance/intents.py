@@ -174,6 +174,12 @@ class _TaxBudgetLotAllowance:
     realized_base: Decimal
 
 
+@dataclass(frozen=True)
+class _SellQuantityDecision:
+    quantity: Decimal
+    sell_quantity_before_tax: Decimal | None
+
+
 def _target_trade_delta(
     *,
     target_instrument_value: Decimal,
@@ -331,6 +337,95 @@ def _current_instrument_value_and_unit_value(
     return current_value, price.price
 
 
+def _target_weight_by_instrument(targets: list[Any]) -> dict[str, Decimal]:
+    return {target.instrument_id: target.final_weight for target in targets}
+
+
+def _sell_quantity_after_safety_limits(
+    *,
+    instrument_id: str,
+    side: Literal["BUY", "SELL"],
+    requested_quantity: Decimal,
+    position: Position | None,
+    options: EngineOptions,
+    sell_price: Decimal,
+    price_currency: str,
+    base_rate: Decimal,
+    market_data: MarketDataSnapshot,
+    dq_log: dict[str, list[str]],
+    tax_budget: _TaxBudgetAccumulator,
+    diagnostics: DiagnosticsData,
+) -> _SellQuantityDecision:
+    if side != "SELL" or requested_quantity <= Decimal("0"):
+        return _SellQuantityDecision(
+            quantity=requested_quantity,
+            sell_quantity_before_tax=None,
+        )
+
+    sell_quantity_before_tax = _clamped_sell_quantity(
+        requested_qty=requested_quantity,
+        position=position,
+        diagnostics=diagnostics,
+    )
+    quantity = _tax_budget_limited_sell_quantity(
+        options=options,
+        position=position,
+        requested_qty=sell_quantity_before_tax,
+        sell_price=sell_price,
+        price_ccy=price_currency,
+        base_rate=base_rate,
+        market_data=market_data,
+        dq_log=dq_log,
+        tax_budget=tax_budget,
+    )
+    if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
+        _record_tax_budget_limit_reached(
+            instrument_id=instrument_id,
+            requested_quantity=sell_quantity_before_tax,
+            allowed_quantity=quantity,
+            diagnostics=diagnostics,
+        )
+    return _SellQuantityDecision(
+        quantity=quantity,
+        sell_quantity_before_tax=sell_quantity_before_tax,
+    )
+
+
+def _security_trade_intent(
+    *,
+    intent_id: str,
+    side: Literal["BUY", "SELL"],
+    instrument_id: str,
+    quantity: Decimal,
+    unit_value: Decimal,
+    base_rate: Decimal,
+    price_currency: str,
+    portfolio_base_currency: str,
+    threshold: Money | None,
+    requested_quantity: Decimal,
+    sell_quantity_before_tax: Decimal | None,
+    tax_awareness_enabled: bool,
+) -> SecurityTradeIntent:
+    notional = quantity * unit_value
+    return SecurityTradeIntent(
+        intent_id=intent_id,
+        side=side,
+        instrument_id=instrument_id,
+        quantity=quantity,
+        notional=Money(amount=notional, currency=price_currency),
+        notional_base=Money(amount=notional * base_rate, currency=portfolio_base_currency),
+        rationale=IntentRationale(code="DRIFT_REBALANCE", message="Align"),
+        constraints_applied=_security_intent_constraints(
+            threshold=threshold,
+            side=side,
+            quantity=quantity,
+            requested_quantity=requested_quantity,
+            sell_quantity_before_tax=sell_quantity_before_tax,
+            tax_awareness_enabled=tax_awareness_enabled,
+        ),
+    )
+
+
 def _tax_impact_from_budget(
     *,
     tax_budget: _TaxBudgetAccumulator,
@@ -388,7 +483,7 @@ def generate_intents(
         tax_budget_limit_base=options.max_realized_capital_gains,
     )
 
-    target_dict = {t.instrument_id: t.final_weight for t in targets}
+    target_dict = _target_weight_by_instrument(targets)
     for i_id, target_w in target_dict.items():
         market_context = _intent_market_context(
             instrument_id=i_id,
@@ -414,37 +509,23 @@ def generate_intents(
         )
         side = trade_delta.side
         requested_quantity = trade_delta.raw_quantity
-        quantity = requested_quantity
-
-        sell_quantity_before_tax: Decimal | None = None
-        if side == "SELL" and requested_quantity > 0:
-            quantity = _clamped_sell_quantity(
-                requested_qty=requested_quantity,
-                position=curr,
-                diagnostics=diagnostics,
-            )
-            sell_quantity_before_tax = quantity
-            quantity = _tax_budget_limited_sell_quantity(
-                options=options,
-                position=curr,
-                requested_qty=sell_quantity_before_tax,
-                sell_price=unit_value,
-                price_ccy=price_ent.currency,
-                base_rate=rate,
-                market_data=market_data,
-                dq_log=dq_log,
-                tax_budget=tax_budget,
-            )
-            if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
-                _record_tax_budget_limit_reached(
-                    instrument_id=i_id,
-                    requested_quantity=sell_quantity_before_tax,
-                    allowed_quantity=quantity,
-                    diagnostics=diagnostics,
-                )
+        sell_quantity = _sell_quantity_after_safety_limits(
+            instrument_id=i_id,
+            side=side,
+            requested_quantity=requested_quantity,
+            position=curr,
+            options=options,
+            sell_price=unit_value,
+            price_currency=price_ent.currency,
+            base_rate=rate,
+            market_data=market_data,
+            dq_log=dq_log,
+            tax_budget=tax_budget,
+            diagnostics=diagnostics,
+        )
+        quantity = sell_quantity.quantity
 
         notional = quantity * unit_value
-        notional_base = notional * rate
 
         shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)
         threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
@@ -460,24 +541,20 @@ def generate_intents(
             continue
 
         if quantity > 0:
-            applied_constraints = _security_intent_constraints(
-                threshold=threshold,
-                side=side,
-                quantity=quantity,
-                requested_quantity=requested_quantity,
-                sell_quantity_before_tax=sell_quantity_before_tax,
-                tax_awareness_enabled=options.enable_tax_awareness,
-            )
             intents.append(
-                SecurityTradeIntent(
+                _security_trade_intent(
                     intent_id=f"oi_{len(intents) + 1}",
                     side=side,
                     instrument_id=i_id,
                     quantity=quantity,
-                    notional=Money(amount=notional, currency=price_ent.currency),
-                    notional_base=Money(amount=notional_base, currency=portfolio.base_currency),
-                    rationale=IntentRationale(code="DRIFT_REBALANCE", message="Align"),
-                    constraints_applied=applied_constraints,
+                    unit_value=unit_value,
+                    base_rate=rate,
+                    price_currency=price_ent.currency,
+                    portfolio_base_currency=portfolio.base_currency,
+                    threshold=threshold,
+                    requested_quantity=requested_quantity,
+                    sell_quantity_before_tax=sell_quantity.sell_quantity_before_tax,
+                    tax_awareness_enabled=options.enable_tax_awareness,
                 )
             )
 

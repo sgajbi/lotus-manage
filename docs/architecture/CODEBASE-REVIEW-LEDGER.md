@@ -17498,3 +17498,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-721: Rebalance intent assembly helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Finding: `generate_intents` became the top current source-complexity hotspot and mixed target
+  mapping, sell safety limiting, tax-budget limiting, tax constraint diagnostics, dust-trade
+  suppression, and final `SecurityTradeIntent` payload construction in one loop.
+- Action: extracted target-weight mapping, sell quantity safety/tax limiting, and security trade
+  intent construction helpers while keeping `generate_intents` as the orchestration boundary. Added
+  direct tests for duplicate target projection, non-sell bypass, tax-budget limit diagnostics, and
+  money/constraint projection for generated security intents.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_tax_awareness.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py tests/unit/dpm/engine/test_engine_core_flows.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-intent
+  maintainability refactoring.
