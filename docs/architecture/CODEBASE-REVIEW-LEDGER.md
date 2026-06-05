@@ -16397,3 +16397,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-675: Portfolio-memory search page metadata helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/models.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `validate_search_page_metadata` became the top current source-complexity hotspot and
+  combined pagination validation, count-map non-negative checks, total count reconciliation,
+  returned item coverage, source-system aggregation, and complete-page matching-event
+  reconciliation inside one model validator.
+- Action: extracted page count-map validation, returned supportability/source-system aggregation,
+  returned-count coverage validation, and complete-page aggregate reconciliation into direct domain
+  helpers. Added focused helper tests for negative counts, mismatched totals, source-system
+  projection, underreported page counts, and complete-page matching-event count mismatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search page
+  maintainability refactoring.

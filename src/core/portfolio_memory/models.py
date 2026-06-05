@@ -876,64 +876,41 @@ class DpmPortfolioMemorySearchPage(BaseModel):
             has_more=self.has_more,
             next_offset=self.next_offset,
         )
-
-        _validate_non_negative_counts(
-            label="supportability_state_counts", counts=self.supportability_state_counts
+        _validate_search_page_count_maps(
+            total_count=self.total_count,
+            supportability_state_counts=self.supportability_state_counts,
+            event_type_counts=self.event_type_counts,
+            matching_event_supportability_state_counts=(
+                self.matching_event_supportability_state_counts
+            ),
+            matching_event_source_system_counts=self.matching_event_source_system_counts,
+            matching_event_source_type_counts=self.matching_event_source_type_counts,
+            source_system_counts=self.source_system_counts,
         )
-        _validate_non_negative_counts(label="event_type_counts", counts=self.event_type_counts)
-        _validate_non_negative_counts(
-            label="matching_event_supportability_state_counts",
-            counts=self.matching_event_supportability_state_counts,
+        page_supportability_counts = _search_page_supportability_counts(self.items)
+        page_source_system_counts = _search_page_source_system_counts(self.items)
+        _validate_search_page_returned_counts_covered(
+            reported_counts=self.supportability_state_counts,
+            page_counts=page_supportability_counts,
+            message="supportability_state_counts must cover returned page item states.",
         )
-        _validate_non_negative_counts(
-            label="matching_event_source_system_counts",
-            counts=self.matching_event_source_system_counts,
+        _validate_search_page_returned_counts_covered(
+            reported_counts=self.source_system_counts,
+            page_counts=page_source_system_counts,
+            message="source_system_counts must cover returned page item sources.",
         )
-        _validate_non_negative_counts(
-            label="matching_event_source_type_counts",
-            counts=self.matching_event_source_type_counts,
+        _validate_complete_search_page_counts(
+            total_count=self.total_count,
+            returned_count=self.returned_count,
+            supportability_state_counts=self.supportability_state_counts,
+            page_supportability_counts=page_supportability_counts,
+            source_system_counts=self.source_system_counts,
+            page_source_system_counts=page_source_system_counts,
+            matching_event_supportability_state_counts=(
+                self.matching_event_supportability_state_counts
+            ),
+            expected_matching_event_count=sum(item.matching_event_count for item in self.items),
         )
-        _validate_non_negative_counts(
-            label="source_system_counts", counts=self.source_system_counts
-        )
-
-        if sum(self.supportability_state_counts.values()) != self.total_count:
-            raise ValueError("supportability_state_counts must sum to total_count.")
-
-        page_supportability_counts = _counts(item.supportability_state for item in self.items)
-        for state, count in page_supportability_counts.items():
-            if self.supportability_state_counts.get(state, 0) < count:
-                raise ValueError(
-                    "supportability_state_counts must cover returned page item states."
-                )
-
-        page_source_system_counts: dict[str, int] = {}
-        for item in self.items:
-            for source_system in item.source_systems:
-                page_source_system_counts[source_system] = (
-                    page_source_system_counts.get(source_system, 0) + 1
-                )
-        for source_system, count in page_source_system_counts.items():
-            if self.source_system_counts.get(source_system, 0) < count:
-                raise ValueError("source_system_counts must cover returned page item sources.")
-
-        if self.total_count == self.returned_count:
-            if self.supportability_state_counts != page_supportability_counts:
-                raise ValueError(
-                    "supportability_state_counts must match returned items when the page is complete."
-                )
-            if self.source_system_counts != page_source_system_counts:
-                raise ValueError(
-                    "source_system_counts must match returned items when the page is complete."
-                )
-            expected_matching_event_count = sum(item.matching_event_count for item in self.items)
-            if (
-                sum(self.matching_event_supportability_state_counts.values())
-                != expected_matching_event_count
-            ):
-                raise ValueError(
-                    "matching_event_supportability_state_counts must sum to matching events when the page is complete."
-                )
 
         return self
 
@@ -965,6 +942,80 @@ def _validate_search_page_pagination(
             raise ValueError("next_offset must advance when has_more is true.")
     elif next_offset is not None:
         raise ValueError("next_offset must be null when has_more is false.")
+
+
+def _validate_search_page_count_maps(
+    *,
+    total_count: int,
+    supportability_state_counts: dict[str, int],
+    event_type_counts: dict[str, int],
+    matching_event_supportability_state_counts: dict[str, int],
+    matching_event_source_system_counts: dict[str, int],
+    matching_event_source_type_counts: dict[str, int],
+    source_system_counts: dict[str, int],
+) -> None:
+    count_maps = {
+        "supportability_state_counts": supportability_state_counts,
+        "event_type_counts": event_type_counts,
+        "matching_event_supportability_state_counts": matching_event_supportability_state_counts,
+        "matching_event_source_system_counts": matching_event_source_system_counts,
+        "matching_event_source_type_counts": matching_event_source_type_counts,
+        "source_system_counts": source_system_counts,
+    }
+    for label, counts in count_maps.items():
+        _validate_non_negative_counts(label=label, counts=counts)
+    if sum(supportability_state_counts.values()) != total_count:
+        raise ValueError("supportability_state_counts must sum to total_count.")
+
+
+def _search_page_supportability_counts(
+    items: list[DpmPortfolioMemorySearchItem],
+) -> dict[str, int]:
+    return _counts(item.supportability_state for item in items)
+
+
+def _search_page_source_system_counts(
+    items: list[DpmPortfolioMemorySearchItem],
+) -> dict[str, int]:
+    return _counts(source_system for item in items for source_system in item.source_systems)
+
+
+def _validate_search_page_returned_counts_covered(
+    *,
+    reported_counts: dict[str, int],
+    page_counts: dict[str, int],
+    message: str,
+) -> None:
+    for key, count in page_counts.items():
+        if reported_counts.get(key, 0) < count:
+            raise ValueError(message)
+
+
+def _validate_complete_search_page_counts(
+    *,
+    total_count: int,
+    returned_count: int,
+    supportability_state_counts: dict[str, int],
+    page_supportability_counts: dict[str, int],
+    source_system_counts: dict[str, int],
+    page_source_system_counts: dict[str, int],
+    matching_event_supportability_state_counts: dict[str, int],
+    expected_matching_event_count: int,
+) -> None:
+    if total_count != returned_count:
+        return
+    if supportability_state_counts != page_supportability_counts:
+        raise ValueError(
+            "supportability_state_counts must match returned items when the page is complete."
+        )
+    if source_system_counts != page_source_system_counts:
+        raise ValueError(
+            "source_system_counts must match returned items when the page is complete."
+        )
+    if sum(matching_event_supportability_state_counts.values()) != expected_matching_event_count:
+        raise ValueError(
+            "matching_event_supportability_state_counts must sum to matching events when the page is complete."
+        )
 
 
 def _counts(values: Iterable[str]) -> dict[str, int]:

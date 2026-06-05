@@ -10,12 +10,16 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    _search_page_source_system_counts,
     _validate_search_item_counts,
     _validate_search_item_latest_event_metadata,
     _validate_search_item_latest_matching_event_metadata,
     _validate_search_item_metadata,
     _validate_search_item_sorted_aggregates,
+    _validate_complete_search_page_counts,
+    _validate_search_page_count_maps,
     _validate_search_page_pagination,
+    _validate_search_page_returned_counts_covered,
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
@@ -191,6 +195,72 @@ def test_validate_search_page_pagination_rejects_terminal_next_offset() -> None:
             offset=0,
             has_more=False,
             next_offset=2,
+        )
+
+
+def test_validate_search_page_count_maps_rejects_negative_and_mismatched_totals() -> None:
+    with pytest.raises(ValueError, match="event_type_counts values must be non-negative"):
+        _validate_search_page_count_maps(
+            total_count=1,
+            supportability_state_counts={"READY": 1},
+            event_type_counts={"WAVE_HANDOFF_READY": -1},
+            matching_event_supportability_state_counts={},
+            matching_event_source_system_counts={},
+            matching_event_source_type_counts={},
+            source_system_counts={"lotus-manage": 1},
+        )
+
+    with pytest.raises(ValueError, match="supportability_state_counts must sum"):
+        _validate_search_page_count_maps(
+            total_count=2,
+            supportability_state_counts={"READY": 1},
+            event_type_counts={},
+            matching_event_supportability_state_counts={},
+            matching_event_source_system_counts={},
+            matching_event_source_type_counts={},
+            source_system_counts={"lotus-manage": 1},
+        )
+
+
+def test_search_page_source_system_counts_projects_returned_item_sources() -> None:
+    event = _event(
+        event_id="memory:search:handoff",
+        event_type="WAVE_HANDOFF_READY",
+        event_time="2026-05-31T10:00:00+00:00",
+        source_id="handoff-001",
+        content_hash="sha256:handoff",
+    )
+    item = _portfolio_memory_search_item(
+        memory=_memory(portfolio_id="PB_SEARCH_001", events=[event]),
+        matching_events=[event],
+    )
+
+    assert _search_page_source_system_counts([item]) == {
+        "lotus-core": 1,
+        "lotus-manage": 1,
+    }
+
+
+def test_validate_search_page_returned_counts_covered_rejects_underreported_page_counts() -> None:
+    with pytest.raises(ValueError, match="reported counts must cover page counts"):
+        _validate_search_page_returned_counts_covered(
+            reported_counts={"READY": 1},
+            page_counts={"READY": 2},
+            message="reported counts must cover page counts",
+        )
+
+
+def test_validate_complete_search_page_counts_rejects_matching_event_count_mismatch() -> None:
+    with pytest.raises(ValueError, match="matching_event_supportability_state_counts must sum"):
+        _validate_complete_search_page_counts(
+            total_count=1,
+            returned_count=1,
+            supportability_state_counts={"READY": 1},
+            page_supportability_counts={"READY": 1},
+            source_system_counts={"lotus-manage": 1},
+            page_source_system_counts={"lotus-manage": 1},
+            matching_event_supportability_state_counts={"READY": 0},
+            expected_matching_event_count=1,
         )
 
 
