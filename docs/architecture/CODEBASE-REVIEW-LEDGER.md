@@ -18547,3 +18547,25 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal workflow-gate maintainability
   refactoring.
+
+## BACKEND-REVIEW-20260605-764: Workflow gate decision reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `09d356da`, before the workflow-gate
+  decision helper extraction, so the branch scorecard did not yet reflect the route/sort helper
+  simplification and direct helper tests.
+- Action: regenerated current-state refactor reports after the workflow-gate helper extraction.
+  Preserved `quality/baseline_report.md` so the branch baseline remains stable. The refreshed
+  complexity report shows `evaluate_gate_decision` dropped out of the top current
+  source-complexity list, with PM-quality fairness scoring now the top source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
