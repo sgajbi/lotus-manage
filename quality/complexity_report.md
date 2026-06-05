@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T01:30:32+00:00`
+- Generated at: `2026-06-05T01:49:52+00:00`
 
-- Current ref: `94b46d6e`
+- Current ref: `1356b8b0`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 2 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 3 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
-| 4 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
-| 5 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
-| 6 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
-| 7 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
-| 8 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
-| 9 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
-| 10 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
+| 1 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
+| 2 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
+| 3 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
+| 4 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
+| 5 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
+| 6 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
+| 7 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
+| 8 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
+| 9 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
+| 10 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
 
 ### Most Complex Current Test Functions
 
