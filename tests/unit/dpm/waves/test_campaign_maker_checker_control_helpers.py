@@ -1,6 +1,48 @@
 import pytest
 
-from src.core.waves.campaign_maker_checker_controls import _validate_control_action
+from src.core.waves.campaign_maker_checker_controls import (
+    _normalize_control_request,
+    _validate_control_action,
+    _validate_required_control_fields,
+)
+
+
+def test_normalize_control_request_trims_required_and_optional_fields() -> None:
+    normalized = _normalize_control_request(
+        control_ref=" BRC-MC-001 ",
+        recorded_by=" ops ",
+        control_reason=" Submitted for review. ",
+        correlation_id=" corr-001 ",
+        submitter_actor_id=" maker-1 ",
+        reviewer_actor_id=" ",
+        required_reviewer_role=None,
+    )
+
+    assert normalized.control_ref == "BRC-MC-001"
+    assert normalized.recorded_by == "ops"
+    assert normalized.control_reason == "Submitted for review."
+    assert normalized.correlation_id == "corr-001"
+    assert normalized.submitter_actor_id == "maker-1"
+    assert normalized.reviewer_actor_id is None
+    assert normalized.required_reviewer_role is None
+
+
+def test_validate_required_control_fields_rejects_blank_core_fields() -> None:
+    normalized = _normalize_control_request(
+        control_ref=" ",
+        recorded_by="ops",
+        control_reason="reason",
+        correlation_id="corr-001",
+        submitter_actor_id=None,
+        reviewer_actor_id=None,
+        required_reviewer_role=None,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_REQUIRED",
+    ):
+        _validate_required_control_fields(normalized)
 
 
 @pytest.mark.parametrize(

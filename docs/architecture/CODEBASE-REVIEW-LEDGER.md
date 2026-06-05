@@ -18666,3 +18666,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-769: Campaign maker-checker control helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_maker_checker_controls.py` and
+  `tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py`.
+- Finding: `record_bulk_review_campaign_definition_maker_checker_control` became the top current
+  source-complexity hotspot and mixed active-definition validation, request normalization,
+  required-field checks, action/outcome validation, idempotent replay detection, conflict
+  detection, and append-only definition rebuilding in one function.
+- Action: kept append-only public behavior unchanged and extracted helpers for request
+  normalization, required-field validation, existing-control lookup, and appending a new control
+  through definition revalidation. Added direct helper tests for trimming optional and required
+  fields plus blank control-ref rejection while preserving existing append-only behavior coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_maker_checker_controls.py tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py`,
+  `python -m ruff format --check src/core/waves/campaign_maker_checker_controls.py tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_maker_checker_controls.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_maker_checker_control_helpers.py tests/unit/dpm/waves/test_campaign_definition_repository.py::test_campaign_definition_maker_checker_controls_are_append_only -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign maker-checker
+  maintainability refactoring.
