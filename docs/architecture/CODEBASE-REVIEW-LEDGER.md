@@ -16248,3 +16248,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-669: Target-generation solver support helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Finding: `generate_targets_solver` became the top current source-complexity hotspot and still
+  mixed model-weight vector construction, group constraint appending, solved-weight application,
+  and solver orchestration in one function.
+- Action: introduced helpers for solver model weight arrays, group-constraint appending, single
+  group-constraint handling, and solved-weight application. Kept `generate_targets_solver` as the
+  orchestration boundary. Added direct helper tests for model-weight vector construction and
+  solved-weight quantization/fail-closed behavior while preserving the existing fake-solver group
+  constraint coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal target-generation solver
+  maintainability refactoring.

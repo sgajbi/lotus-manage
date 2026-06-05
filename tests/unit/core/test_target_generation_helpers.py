@@ -1,9 +1,18 @@
 from decimal import Decimal
 
-from src.core.models import EngineOptions, GroupConstraint, ShelfEntry
+from src.core.models import (
+    DiagnosticsData,
+    EngineOptions,
+    GroupConstraint,
+    ModelPortfolio,
+    ModelTarget,
+    ShelfEntry,
+)
 from src.core.target_generation import (
+    _apply_solver_values,
     _build_solver_attempts,
     _collect_infeasibility_hints,
+    _solver_model_weight_array,
     _solver_group_members,
     _solver_invested_bounds,
     _solver_failure_reason,
@@ -14,6 +23,12 @@ from src.core.target_generation import (
 class _CpStub:
     OSQP = "OSQP"
     SCS = "SCS"
+
+
+class _NpStub:
+    @staticmethod
+    def array(values):
+        return list(values)
 
 
 def test_build_solver_attempts_order_and_profiles() -> None:
@@ -81,6 +96,43 @@ def test_solver_group_members_splits_tradeable_members_from_locked_weight() -> N
 
     assert members.tradeable_ids == ["TRADEABLE_1", "TRADEABLE_2"]
     assert members.locked_weight == Decimal("0.35")
+
+
+def test_solver_model_weight_array_projects_tradeable_model_weights() -> None:
+    weights = _solver_model_weight_array(
+        np=_NpStub,
+        model=ModelPortfolio(
+            targets=[
+                ModelTarget(instrument_id="BUY_1", weight=Decimal("0.25")),
+                ModelTarget(instrument_id="LOCKED", weight=Decimal("0.35")),
+            ]
+        ),
+        tradeable_ids=["BUY_1", "BUY_2"],
+    )
+
+    assert weights == [0.25, 0.0]
+
+
+def test_apply_solver_values_quantizes_and_fails_closed_without_values() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+    eligible_targets = {"BUY_1": Decimal("0.0"), "BUY_2": Decimal("0.0")}
+
+    assert _apply_solver_values(
+        values=[0.123456, -0.01],
+        tradeable_ids=["BUY_1", "BUY_2"],
+        eligible_targets=eligible_targets,
+        diagnostics=diagnostics,
+    )
+    assert eligible_targets == {"BUY_1": Decimal("0.1235"), "BUY_2": Decimal("0.0000")}
+    assert diagnostics.warnings == []
+
+    assert not _apply_solver_values(
+        values=None,
+        tradeable_ids=["BUY_1"],
+        eligible_targets=eligible_targets,
+        diagnostics=diagnostics,
+    )
+    assert diagnostics.warnings == ["SOLVER_ERROR"]
 
 
 def test_collect_infeasibility_hints_reports_capacity_and_group_lock() -> None:
