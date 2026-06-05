@@ -20,6 +20,7 @@ from src.core.pm_quality import (
     build_pm_quality_summary_invocation,
 )
 from src.core.pm_quality import scoring
+from src.core.pm_quality import summary_history
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
@@ -354,6 +355,47 @@ def test_pm_quality_summary_invocation_records_history_without_summary_text() ->
             source_refs=[],
             correlation_id="corr-summary-invalid-hash",
         )
+
+
+def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai_refs() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+    caller_ref = DpmOutcomeSourceRef(
+        source_system="lotus-manage",
+        source_type="PmOperatingQualityScoreRun",
+        source_id=score_run.score_run_id,
+        source_version="duplicate",
+    )
+
+    refs = summary_history._summary_invocation_source_refs(
+        score_run=score_run,
+        review_action=review_action,
+        workflow_pack_version="v1",
+        workflow_run_id=" pmq-summary-run-001 ",
+        summary_artifact_ref=" pmq-summary-artifact-001 ",
+        summary_content_hash="sha256:pmq-summary",
+        source_refs=[caller_ref],
+    )
+
+    assert [ref.source_type for ref in refs] == [
+        "PM_QUALITY_SUMMARY_ARTIFACT",
+        "pm_quality_summary.pack",
+        "PmOperatingQualityReviewAction",
+        "PmOperatingQualityScoreRun",
+    ]
+    assert refs[0].source_id == "pmq-summary-artifact-001"
+    assert refs[1].source_id == "pmq-summary-run-001"
+    assert refs[3].source_version == "duplicate"
 
 
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:

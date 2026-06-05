@@ -16201,3 +16201,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-667: PM-quality summary source-ref helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/pm_quality/summary_history.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Finding: `build_pm_quality_summary_invocation` became the top current source-complexity hotspot
+  and mixed input validation, managed score-run/review source refs, AI workflow/artifact source
+  refs, and caller source-ref dedupe into one summary invocation builder.
+- Action: introduced validation, managed summary source-ref, AI summary source-ref, and combined
+  source-ref helpers. Kept `build_pm_quality_summary_invocation` as the append-only invocation
+  assembly boundary. Added direct helper coverage for managed refs, AI refs, source id trimming,
+  and the existing duplicate-key precedence from `_dedupe_refs`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/summary_history.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality summary history
+  maintainability refactoring.
