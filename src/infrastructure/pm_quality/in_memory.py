@@ -28,6 +28,24 @@ from src.core.pm_quality.repository import (
 
 
 @dataclass(frozen=True)
+class _ScoreRunFilters:
+    pm_id: str | None
+    book_id: str | None
+    policy_id: str | None
+    as_of_date: str | None
+    state: str | None
+
+
+@dataclass(frozen=True)
+class _ReviewActionFilters:
+    target_type: str | None
+    target_id: str | None
+    policy_id: str | None
+    as_of_date: str | None
+    action_state: str | None
+
+
+@dataclass(frozen=True)
 class _SummaryInvocationFilters:
     score_run_id: str | None
     review_action_id: str | None
@@ -116,20 +134,19 @@ class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
         offset: int = 0,
     ) -> list[DpmPmOperatingQualityScoreRun]:
         with self._lock:
-            score_runs = [
-                score_run
-                for score_run in self._score_runs.values()
-                if (pm_id is None or score_run.pm_id == pm_id)
-                and (book_id is None or score_run.book_id == book_id)
-                and (policy_id is None or score_run.policy_id == policy_id)
-                and (as_of_date is None or score_run.as_of_date == as_of_date)
-                and (state is None or score_run.state == state)
-            ]
-            score_runs.sort(
-                key=lambda score_run: (score_run.generated_at, score_run.score_run_id),
-                reverse=True,
+            page = _list_score_runs(
+                score_runs=list(self._score_runs.values()),
+                filters=_ScoreRunFilters(
+                    pm_id=pm_id,
+                    book_id=book_id,
+                    policy_id=policy_id,
+                    as_of_date=as_of_date,
+                    state=state,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(score_runs[offset : offset + limit])
+            return deepcopy(page)
 
 
 class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysisRepository):
@@ -216,20 +233,19 @@ class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionReposit
         offset: int = 0,
     ) -> list[DpmPmQualityReviewAction]:
         with self._lock:
-            actions = [
-                action
-                for action in self._actions.values()
-                if (target_type is None or action.target_type == target_type)
-                and (target_id is None or action.target_id == target_id)
-                and (policy_id is None or action.policy_id == policy_id)
-                and (as_of_date is None or action.as_of_date == as_of_date)
-                and (action_state is None or action.action_state == action_state)
-            ]
-            actions.sort(
-                key=lambda action: (action.generated_at, action.review_action_id),
-                reverse=True,
+            page = _list_review_actions(
+                actions=list(self._actions.values()),
+                filters=_ReviewActionFilters(
+                    target_type=target_type,
+                    target_id=target_id,
+                    policy_id=policy_id,
+                    as_of_date=as_of_date,
+                    action_state=action_state,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(actions[offset : offset + limit])
+            return deepcopy(page)
 
 
 class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocationRepository):
@@ -282,6 +298,80 @@ class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocat
             return deepcopy(page)
 
 
+def _score_run_matches_filters(
+    score_run: DpmPmOperatingQualityScoreRun,
+    filters: _ScoreRunFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(score_run.pm_id, filters.pm_id),
+            _optional_value_matches(score_run.book_id, filters.book_id),
+            _optional_value_matches(score_run.policy_id, filters.policy_id),
+            _optional_value_matches(score_run.as_of_date, filters.as_of_date),
+            _optional_value_matches(score_run.state, filters.state),
+        )
+    )
+
+
+def _sort_score_runs(
+    score_runs: list[DpmPmOperatingQualityScoreRun],
+) -> list[DpmPmOperatingQualityScoreRun]:
+    return sorted(
+        score_runs,
+        key=lambda score_run: (score_run.generated_at, score_run.score_run_id),
+        reverse=True,
+    )
+
+
+def _list_score_runs(
+    *,
+    score_runs: list[DpmPmOperatingQualityScoreRun],
+    filters: _ScoreRunFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPmOperatingQualityScoreRun]:
+    filtered = [
+        score_run for score_run in score_runs if _score_run_matches_filters(score_run, filters)
+    ]
+    return _sort_score_runs(filtered)[offset : offset + limit]
+
+
+def _review_action_matches_filters(
+    action: DpmPmQualityReviewAction,
+    filters: _ReviewActionFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(action.target_type, filters.target_type),
+            _optional_value_matches(action.target_id, filters.target_id),
+            _optional_value_matches(action.policy_id, filters.policy_id),
+            _optional_value_matches(action.as_of_date, filters.as_of_date),
+            _optional_value_matches(action.action_state, filters.action_state),
+        )
+    )
+
+
+def _sort_review_actions(
+    actions: list[DpmPmQualityReviewAction],
+) -> list[DpmPmQualityReviewAction]:
+    return sorted(
+        actions,
+        key=lambda action: (action.generated_at, action.review_action_id),
+        reverse=True,
+    )
+
+
+def _list_review_actions(
+    *,
+    actions: list[DpmPmQualityReviewAction],
+    filters: _ReviewActionFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPmQualityReviewAction]:
+    filtered = [action for action in actions if _review_action_matches_filters(action, filters)]
+    return _sort_review_actions(filtered)[offset : offset + limit]
+
+
 def _summary_invocation_matches_filters(
     invocation: DpmPmQualitySummaryInvocation,
     filters: _SummaryInvocationFilters,
@@ -297,7 +387,7 @@ def _summary_invocation_matches_filters(
     )
 
 
-def _optional_value_matches(actual: str, expected: str | None) -> bool:
+def _optional_value_matches(actual: str | None, expected: str | None) -> bool:
     return expected is None or actual == expected
 
 

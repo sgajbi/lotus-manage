@@ -32,8 +32,16 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.pm_quality.in_memory import (
+    _ReviewActionFilters,
+    _ScoreRunFilters,
     _SummaryInvocationFilters,
+    _list_review_actions,
+    _list_score_runs,
     _list_summary_invocations,
+    _review_action_matches_filters,
+    _score_run_matches_filters,
+    _sort_review_actions,
+    _sort_score_runs,
     _sort_summary_invocations,
     _summary_invocation_matches_filters,
 )
@@ -761,6 +769,122 @@ def test_in_memory_pm_quality_repository_lists_review_actions() -> None:
     assert repository.list_review_actions(as_of_date="missing") == []
     assert repository.list_review_actions(action_state=action.action_state) == [action]
     assert repository.list_review_actions(limit=1, offset=1) == []
+
+
+def test_score_run_filter_helper_matches_all_optional_fields() -> None:
+    score_run = _score_run()
+
+    assert _score_run_matches_filters(
+        score_run,
+        _ScoreRunFilters(
+            pm_id=score_run.pm_id,
+            book_id=score_run.book_id,
+            policy_id=score_run.policy_id,
+            as_of_date=score_run.as_of_date,
+            state=score_run.state,
+        ),
+    )
+    assert not _score_run_matches_filters(
+        score_run,
+        _ScoreRunFilters(
+            pm_id="missing",
+            book_id=None,
+            policy_id=None,
+            as_of_date=None,
+            state=None,
+        ),
+    )
+
+
+def test_score_run_list_helper_filters_sorts_and_pages() -> None:
+    older = _score_run(pm_id="pm_001", policy_id="pmq_sg_dpm")
+    newer = older.model_copy(
+        update={
+            "score_run_id": "pmq_score_newer",
+            "pm_id": "pm_002",
+            "generated_at": older.generated_at + timedelta(minutes=1),
+            "content_hash": "sha256:score-newer",
+        }
+    )
+    filters = _ScoreRunFilters(
+        pm_id=None,
+        book_id=older.book_id,
+        policy_id=older.policy_id,
+        as_of_date=older.as_of_date,
+        state=older.state,
+    )
+
+    assert _sort_score_runs([older, newer]) == [newer, older]
+    assert _list_score_runs(
+        score_runs=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [newer]
+    assert _list_score_runs(
+        score_runs=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [older]
+
+
+def test_review_action_filter_helper_matches_all_optional_fields() -> None:
+    action = _review_action()
+
+    assert _review_action_matches_filters(
+        action,
+        _ReviewActionFilters(
+            target_type=action.target_type,
+            target_id=action.target_id,
+            policy_id=action.policy_id,
+            as_of_date=action.as_of_date,
+            action_state=action.action_state,
+        ),
+    )
+    assert not _review_action_matches_filters(
+        action,
+        _ReviewActionFilters(
+            target_type="MISSING",
+            target_id=None,
+            policy_id=None,
+            as_of_date=None,
+            action_state=None,
+        ),
+    )
+
+
+def test_review_action_list_helper_filters_sorts_and_pages() -> None:
+    older = _review_action()
+    newer = older.model_copy(
+        update={
+            "review_action_id": "pmq_review_action_newer",
+            "target_id": "pmq_score_newer",
+            "generated_at": older.generated_at + timedelta(minutes=1),
+            "content_hash": "sha256:review-action-newer",
+        }
+    )
+    filters = _ReviewActionFilters(
+        target_type=older.target_type,
+        target_id=None,
+        policy_id=older.policy_id,
+        as_of_date=older.as_of_date,
+        action_state=older.action_state,
+    )
+
+    assert _sort_review_actions([older, newer]) == [newer, older]
+    assert _list_review_actions(
+        actions=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [newer]
+    assert _list_review_actions(
+        actions=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [older]
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_summary_invocations() -> None:
