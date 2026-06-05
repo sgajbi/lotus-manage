@@ -16153,3 +16153,28 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-665: OpenAPI semantic description rules extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Finding: the first OpenAPI description extraction moved branch complexity into
+  `_semantic_description_for_context`, and a broader date-format rule briefly caused API
+  vocabulary drift before commit.
+- Action: introduced typed semantic description rules with explicit match/render behavior and a
+  strict `date` rule that preserves the prior requirement for both a date-like key and
+  `format: date`. Added direct rule tests, including the `effectivePeriod` edge that verifies
+  date-format fields without date-like names do not change generated descriptions.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring.

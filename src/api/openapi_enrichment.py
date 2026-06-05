@@ -37,6 +37,40 @@ class _DescriptionContext:
     schema_format: Any
 
 
+@dataclass(frozen=True)
+class _SemanticDescriptionRule:
+    keyword_terms: tuple[str, ...]
+    schema_formats: tuple[Any, ...]
+    template: str
+    require_keyword_and_format: bool = False
+
+    def matches(self, context: _DescriptionContext) -> bool:
+        key_matches = any(term in context.key for term in self.keyword_terms)
+        format_matches = context.schema_format in self.schema_formats
+        if self.require_keyword_and_format:
+            return key_matches and format_matches
+        return key_matches or format_matches
+
+    def render(self, context: _DescriptionContext) -> str:
+        return self.template.format(text=context.text)
+
+
+_SEMANTIC_DESCRIPTION_RULES = (
+    _SemanticDescriptionRule(
+        ("date",),
+        ("date",),
+        "Business date for {text}.",
+        require_keyword_and_format=True,
+    ),
+    _SemanticDescriptionRule(("time",), ("date-time",), "Timestamp for {text}."),
+    _SemanticDescriptionRule(("currency",), (), "ISO currency code for {text}."),
+    _SemanticDescriptionRule(("amount", "value"), (), "Monetary value for {text}."),
+    _SemanticDescriptionRule(("quantity",), (), "Quantity value for {text}."),
+    _SemanticDescriptionRule(("rate", "price"), (), "Rate/price value for {text}."),
+    _SemanticDescriptionRule(("status",), (), "Current status for {text}."),
+)
+
+
 def _to_snake_case(value: str) -> str:
     transformed = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", value)
     transformed = transformed.replace("-", "_").replace(" ", "_")
@@ -128,21 +162,11 @@ def _semantic_description_for_context(context: _DescriptionContext) -> str | Non
     if context.key.endswith("_id"):
         entity = context.key[: -len("_id")].replace("_", " ")
         return f"Unique {entity} identifier."
-    if "date" in context.key and context.schema_format == "date":
-        return f"Business date for {context.text}."
-    if "time" in context.key or context.schema_format == "date-time":
-        return f"Timestamp for {context.text}."
-    if "currency" in context.key:
-        return f"ISO currency code for {context.text}."
-    if "amount" in context.key or "value" in context.key:
-        return f"Monetary value for {context.text}."
-    if "quantity" in context.key:
-        return f"Quantity value for {context.text}."
-    if "rate" in context.key or "price" in context.key:
-        return f"Rate/price value for {context.text}."
-    if "status" in context.key:
-        return f"Current status for {context.text}."
-    return None
+    matching_rule = next(
+        (rule for rule in _SEMANTIC_DESCRIPTION_RULES if rule.matches(context)),
+        None,
+    )
+    return matching_rule.render(context) if matching_rule is not None else None
 
 
 def _schema_ref_name(ref: str) -> str:

@@ -12,6 +12,7 @@ from src.api.openapi_enrichment import (
     _operation_tag_for_path,
     _schema_declared_example,
     _semantic_description_for_context,
+    _SEMANTIC_DESCRIPTION_RULES,
     _semantic_string_example_for_key,
     enrich_openapi_schema,
 )
@@ -76,6 +77,23 @@ def test_openapi_enrichment_description_helpers_follow_domain_semantics() -> Non
     assert (
         _semantic_description_for_context(_description_context("displayName", {"type": "string"}))
         is None
+    )
+
+
+def test_openapi_enrichment_description_rules_match_and_render_schema_context() -> None:
+    rule_by_template = {rule.template: rule for rule in _SEMANTIC_DESCRIPTION_RULES}
+
+    date_rule = rule_by_template["Business date for {text}."]
+    timestamp_rule = rule_by_template["Timestamp for {text}."]
+
+    assert date_rule.matches(_description_context("asOfDate", {"format": "date"}))
+    assert date_rule.render(_description_context("asOfDate", {"format": "date"})) == (
+        "Business date for as of date."
+    )
+    assert not date_rule.matches(_description_context("effectivePeriod", {"format": "date"}))
+    assert timestamp_rule.matches(_description_context("generatedAt", {"format": "date-time"}))
+    assert timestamp_rule.render(_description_context("generatedAt", {"format": "date-time"})) == (
+        "Timestamp for generated at."
     )
 
 
