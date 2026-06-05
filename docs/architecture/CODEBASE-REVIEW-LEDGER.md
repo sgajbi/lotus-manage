@@ -18088,3 +18088,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-745: Liquidity cashflow projection reason helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Finding: `cashflow_projection_reason_codes` became the top current source-complexity hotspot and
+  mixed cashflow projection presence, source data-quality posture, projected-row inclusion,
+  currency guardrails, post-trade valuation guardrails, projected cash-weight calculation, and
+  liquidity-policy threshold reason-code selection.
+- Action: kept liquidity reason-code orchestration in the service function and extracted pure
+  helpers for projection usability reason codes, projection usability state, currency mismatch
+  detection, and unavailable post-trade total-value detection. Added direct helper tests using the
+  existing source-to-authoritative liquidity context conversion path, preserving public
+  liquidity-status and reason-code behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal liquidity supportability
+  maintainability refactoring.
