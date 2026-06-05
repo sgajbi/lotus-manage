@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T10:49:00+00:00`
+- Generated at: `2026-06-05T10:53:28+00:00`
 
-- Current ref: `0e18cd08`
+- Current ref: `e5ad6396`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 2 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 3 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
-| 4 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
-| 5 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
-| 6 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
-| 7 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
-| 8 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
-| 9 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
-| 10 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
+| 1 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
+| 2 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 3 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
+| 4 | evaluate_gate_decision | src/core/common/workflow_gates.py | 9 | 75 |
+| 5 | build_pm_operating_quality_fairness_analysis | src/core/pm_quality/scoring.py | 9 | 73 |
+| 6 | resolve_pm_quality_book_scope_evidence | src/api/services/pm_operating_quality_service.py | 9 | 69 |
+| 7 | record_bulk_review_campaign_definition_maker_checker_control | src/core/waves/campaign_maker_checker_controls.py | 9 | 69 |
+| 8 | resolve_pm_book_scope_evidence | src/api/routers/pm_operating_quality_book_scope_builder.py | 9 | 68 |
+| 9 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 9 | 68 |
+| 10 | list_runs | src/infrastructure/rebalance_runs/sqlite.py | 9 | 68 |
 
 ### Most Complex Current Test Functions
 

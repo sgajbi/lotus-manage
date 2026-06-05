@@ -18356,3 +18356,26 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal PM-quality repository
   maintainability refactoring.
+
+## BACKEND-REVIEW-20260605-756: PM quality score-run and review-action reports refreshed
+
+- Date: 2026-06-05
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at `c1898891`, before the PM-quality
+  score-run and review-action list helper extraction, so the branch scorecard did not yet reflect
+  the duplicated in-memory repository list-shaping reduction and direct helper tests.
+- Action: regenerated current-state refactor reports after the PM-quality score/action helper
+  extraction. Preserved `quality/baseline_report.md` so the branch baseline remains stable. The
+  refreshed complexity report shows `list_score_runs` and `list_review_actions` dropped out of the
+  top current source-complexity list, with core rebalance policy-pack and portfolio-memory summary
+  filter helpers now the top source hotspots.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
