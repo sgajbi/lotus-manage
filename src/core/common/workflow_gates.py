@@ -13,6 +13,23 @@ from src.core.models import (
 
 _SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
 
+_GateName = Literal[
+    "BLOCKED",
+    "RISK_REVIEW_REQUIRED",
+    "COMPLIANCE_REVIEW_REQUIRED",
+    "MANDATE_APPROVAL_REQUIRED",
+    "EXECUTION_READY",
+    "NONE",
+]
+_NextStep = Literal[
+    "FIX_INPUT",
+    "RISK_REVIEW",
+    "COMPLIANCE_REVIEW",
+    "REQUEST_MANDATE_APPROVAL",
+    "EXECUTE",
+    "NONE",
+]
+
 
 def _dq_reasons(diagnostics: DiagnosticsData | None) -> list[GateReason]:
     dq = (
@@ -125,51 +142,16 @@ def evaluate_gate_decision(
         options.workflow_requires_mandate_approval or default_requires_mandate_approval
     )
 
-    gate: Literal[
-        "BLOCKED",
-        "RISK_REVIEW_REQUIRED",
-        "COMPLIANCE_REVIEW_REQUIRED",
-        "MANDATE_APPROVAL_REQUIRED",
-        "EXECUTION_READY",
-        "NONE",
-    ]
-    next_step: Literal[
-        "FIX_INPUT",
-        "RISK_REVIEW",
-        "COMPLIANCE_REVIEW",
-        "REQUEST_MANDATE_APPROVAL",
-        "EXECUTE",
-        "NONE",
-    ]
-
-    if status == "BLOCKED" or hard_fail_count > 0:
-        gate = "BLOCKED"
-        next_step = "FIX_INPUT"
-    elif new_high > 0:
-        gate = "COMPLIANCE_REVIEW_REQUIRED"
-        next_step = "COMPLIANCE_REVIEW"
-    elif soft_fail_count > 0 or new_medium > 0:
-        gate = "RISK_REVIEW_REQUIRED"
-        next_step = "RISK_REVIEW"
-    elif options.mandate_approval_already_obtained:
-        gate = "EXECUTION_READY"
-        next_step = "EXECUTE"
-    elif requires_mandate_approval:
-        gate = "MANDATE_APPROVAL_REQUIRED"
-        next_step = "REQUEST_MANDATE_APPROVAL"
-    else:
-        gate = "EXECUTION_READY"
-        next_step = "EXECUTE"
-
-    reasons = sorted(
-        reasons,
-        key=lambda reason: (
-            _SEVERITY_ORDER[reason.severity],
-            reason.source,
-            reason.reason_code,
-            reason.details.get("issue_key", reason.details.get("reason_code", "")),
-        ),
+    gate, next_step = _select_gate_route(
+        status=status,
+        hard_fail_count=hard_fail_count,
+        soft_fail_count=soft_fail_count,
+        new_high=new_high,
+        new_medium=new_medium,
+        options=options,
+        requires_mandate_approval=requires_mandate_approval,
     )
+    reasons = _sorted_gate_reasons(reasons)
     return GateDecision(
         gate=gate,
         recommended_next_step=next_step,
@@ -179,5 +161,40 @@ def evaluate_gate_decision(
             soft_fail_count=soft_fail_count,
             new_high_suitability_count=new_high,
             new_medium_suitability_count=new_medium,
+        ),
+    )
+
+
+def _select_gate_route(
+    *,
+    status: Literal["READY", "BLOCKED", "PENDING_REVIEW"],
+    hard_fail_count: int,
+    soft_fail_count: int,
+    new_high: int,
+    new_medium: int,
+    options: EngineOptions,
+    requires_mandate_approval: bool,
+) -> tuple[_GateName, _NextStep]:
+    if status == "BLOCKED" or hard_fail_count > 0:
+        return "BLOCKED", "FIX_INPUT"
+    if new_high > 0:
+        return "COMPLIANCE_REVIEW_REQUIRED", "COMPLIANCE_REVIEW"
+    if soft_fail_count > 0 or new_medium > 0:
+        return "RISK_REVIEW_REQUIRED", "RISK_REVIEW"
+    if options.mandate_approval_already_obtained:
+        return "EXECUTION_READY", "EXECUTE"
+    if requires_mandate_approval:
+        return "MANDATE_APPROVAL_REQUIRED", "REQUEST_MANDATE_APPROVAL"
+    return "EXECUTION_READY", "EXECUTE"
+
+
+def _sorted_gate_reasons(reasons: list[GateReason]) -> list[GateReason]:
+    return sorted(
+        reasons,
+        key=lambda reason: (
+            _SEVERITY_ORDER[reason.severity],
+            reason.source,
+            reason.reason_code,
+            reason.details.get("issue_key", reason.details.get("reason_code", "")),
         ),
     )

@@ -18522,3 +18522,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-763: Workflow gate route and reason-sort helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/common/workflow_gates.py` and
+  `tests/unit/dpm/engine/test_engine_workflow_gates.py`.
+- Finding: `evaluate_gate_decision` became the top current source-complexity hotspot and mixed
+  reason aggregation, decision-route precedence, deterministic reason sorting, and response
+  assembly in one function.
+- Action: kept public gate-decision behavior unchanged and extracted pure helpers for route
+  selection and deterministic reason sorting. Added direct helper tests for blocked/high
+  suitability/mandate approval precedence and severity/source/code/detail reason ordering while
+  preserving existing public workflow-gate behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m ruff format --check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/workflow_gates.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_workflow_gates.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal workflow-gate maintainability
+  refactoring.
