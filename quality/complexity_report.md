@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T06:49:28+00:00`
+- Generated at: `2026-06-05T06:56:18+00:00`
 
-- Current ref: `338709ba`
+- Current ref: `50e263c0`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
-| 2 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
-| 3 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
-| 4 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
-| 5 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
-| 6 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
-| 7 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 8 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
-| 9 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
-| 10 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 1 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
+| 2 | _post_with_retries | src/infrastructure/risk_authority/client.py | 10 | 32 |
+| 3 | _latest_matching_event_metadata | src/core/portfolio_memory/search_page.py | 10 | 30 |
+| 4 | list_summary_invocations | src/infrastructure/pm_quality/in_memory.py | 10 | 29 |
+| 5 | list_outcome_reviews | src/infrastructure/outcomes/in_memory.py | 10 | 26 |
+| 6 | list_score_runs | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 7 | list_review_actions | src/infrastructure/pm_quality/in_memory.py | 10 | 26 |
+| 8 | _policy_pack_definition_payload | src/core/rebalance/policy_packs.py | 10 | 25 |
+| 9 | _memory_passes_search_summary_filters | src/core/portfolio_memory/search_page.py | 10 | 22 |
+| 10 | _build_digital_twin_source_lineage | src/core/mandates.py | 9 | 110 |
 
 ### Most Complex Current Test Functions
 
