@@ -1,3 +1,4 @@
+import json
 from decimal import Decimal
 
 import httpx
@@ -133,6 +134,54 @@ def test_core_resolver_shared_post_helper_retries_transport_then_succeeds() -> N
 
     assert response == {"ok": True}
     assert calls["count"] == 2
+
+
+def test_core_resolver_source_product_helpers_preserve_selector_transport_shape() -> None:
+    seen: dict[str, dict[str, str | dict[str, object]]] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST":
+            seen["post"] = {
+                "correlation_id": request.headers["X-Correlation-Id"],
+                "json": json.loads(request.content),
+            }
+        else:
+            seen["get"] = {
+                "correlation_id": request.headers["X-Correlation-Id"],
+                "portfolio_id": request.url.params["portfolio_id"],
+            }
+        return httpx.Response(200, json={"ok": True})
+
+    resolver = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert resolver._post_source_product(
+        url="https://core.example.test/integration/test",
+        payload={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        correlation_id="corr-post",
+        unavailable_code="UNAVAILABLE",
+        incomplete_code="INCOMPLETE",
+    ) == {"ok": True}
+    assert resolver._get_source_product(
+        url="https://core.example.test/integration/test",
+        params={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        correlation_id="corr-get",
+        unavailable_code="UNAVAILABLE",
+        incomplete_code="INCOMPLETE",
+    ) == {"ok": True}
+
+    assert seen == {
+        "post": {
+            "correlation_id": "corr-post",
+            "json": {"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        },
+        "get": {
+            "correlation_id": "corr-get",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        },
+    }
 
 
 @pytest.mark.parametrize(

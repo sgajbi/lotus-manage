@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional, cast
 
 import httpx
 
@@ -51,6 +51,48 @@ class DpmCoreResolverUnavailableError(DpmCoreResolverError):
 
 
 LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
+_SourceProductMethod = Literal["get", "post"]
+_TRANSIENT_SOURCE_STATUS_CODES = frozenset({502, 503, 504})
+
+
+def _source_product_headers(correlation_id: Optional[str]) -> dict[str, str]:
+    return {"X-Correlation-Id": correlation_id} if correlation_id else {}
+
+
+def _source_product_response_payload(
+    response: httpx.Response,
+    *,
+    incomplete_code: str,
+) -> dict[str, Any]:
+    response_payload = response.json()
+    if not isinstance(response_payload, dict):
+        raise DpmCoreResolverError(incomplete_code)
+    return response_payload
+
+
+def _raise_for_source_product_status(
+    response: httpx.Response,
+    *,
+    unavailable_code: str,
+    incomplete_code: str,
+) -> None:
+    if response.status_code >= 500:
+        raise DpmCoreResolverUnavailableError(unavailable_code)
+    if response.status_code >= 400:
+        raise DpmCoreResolverError(incomplete_code)
+
+
+def _source_product_request(
+    client: Any,
+    *,
+    method: _SourceProductMethod,
+    url: str,
+    selector: dict[str, Any],
+    headers: dict[str, str],
+) -> httpx.Response:
+    if method == "post":
+        return cast(httpx.Response, client.post(url, json=selector, headers=headers))
+    return cast(httpx.Response, client.get(url, params=selector, headers=headers))
 
 
 @dataclass(frozen=True)
@@ -350,33 +392,14 @@ class DpmCoreResolverClient:
         unavailable_code: str,
         incomplete_code: str,
     ) -> dict[str, Any]:
-        attempts = max(self._config.max_attempts, 1)
-        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
-        client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
-        try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = client.post(url, json=payload, headers=headers)
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(unavailable_code) from exc
-                    continue
-                if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
-                    continue
-                if response.status_code >= 500:
-                    raise DpmCoreResolverUnavailableError(unavailable_code)
-                if response.status_code >= 400:
-                    raise DpmCoreResolverError(incomplete_code)
-                response_payload = response.json()
-                if not isinstance(response_payload, dict):
-                    raise DpmCoreResolverError(incomplete_code)
-                return response_payload
-            raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
-        finally:
-            if self._owns_client:
-                client.close()
+        return self._request_source_product(
+            method="post",
+            url=url,
+            selector=payload,
+            correlation_id=correlation_id,
+            unavailable_code=unavailable_code,
+            incomplete_code=incomplete_code,
+        )
 
     def _get_source_product(
         self,
@@ -387,29 +410,55 @@ class DpmCoreResolverClient:
         unavailable_code: str,
         incomplete_code: str,
     ) -> dict[str, Any]:
+        return self._request_source_product(
+            method="get",
+            url=url,
+            selector=params,
+            correlation_id=correlation_id,
+            unavailable_code=unavailable_code,
+            incomplete_code=incomplete_code,
+        )
+
+    def _request_source_product(
+        self,
+        *,
+        method: _SourceProductMethod,
+        url: str,
+        selector: dict[str, Any],
+        correlation_id: Optional[str],
+        unavailable_code: str,
+        incomplete_code: str,
+    ) -> dict[str, Any]:
         attempts = max(self._config.max_attempts, 1)
-        headers = {"X-Correlation-Id": correlation_id} if correlation_id else {}
+        headers = _source_product_headers(correlation_id)
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
             last_error: Exception | None = None
             for attempt in range(attempts):
                 try:
-                    response = client.get(url, params=params, headers=headers)
+                    response = _source_product_request(
+                        client,
+                        method=method,
+                        url=url,
+                        selector=selector,
+                        headers=headers,
+                    )
                 except (httpx.TimeoutException, httpx.TransportError) as exc:
                     last_error = exc
                     if attempt + 1 >= attempts:
                         raise DpmCoreResolverUnavailableError(unavailable_code) from exc
                     continue
-                if response.status_code in {502, 503, 504} and attempt + 1 < attempts:
+                if (
+                    response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
+                    and attempt + 1 < attempts
+                ):
                     continue
-                if response.status_code >= 500:
-                    raise DpmCoreResolverUnavailableError(unavailable_code)
-                if response.status_code >= 400:
-                    raise DpmCoreResolverError(incomplete_code)
-                response_payload = response.json()
-                if not isinstance(response_payload, dict):
-                    raise DpmCoreResolverError(incomplete_code)
-                return response_payload
+                _raise_for_source_product_status(
+                    response,
+                    unavailable_code=unavailable_code,
+                    incomplete_code=incomplete_code,
+                )
+                return _source_product_response_payload(response, incomplete_code=incomplete_code)
             raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
         finally:
             if self._owns_client:

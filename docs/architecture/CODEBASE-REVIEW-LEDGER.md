@@ -16686,3 +16686,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-687: Core source-product request executor extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Finding: `_post_source_product` and `_get_source_product` were the top current
+  source-complexity hotspots and duplicated retry handling, transient status mapping,
+  source-object validation, correlation headers, and owned-client cleanup across POST and GET
+  source-product access paths.
+- Action: extracted shared source-product request helpers for correlation headers, HTTP method
+  dispatch, terminal status mapping, response payload validation, and retry execution. Kept
+  `_post_source_product` and `_get_source_product` as narrow stable call sites for existing
+  source-product resolvers. Added direct test coverage proving POST selectors remain JSON payloads,
+  GET selectors remain query parameters, and correlation IDs propagate through both paths.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  and
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py -q`.
+- Wiki decision: no wiki source change required; this is internal Core source-product client
+  maintainability refactoring.
