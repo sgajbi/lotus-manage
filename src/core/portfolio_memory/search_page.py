@@ -106,31 +106,36 @@ def _latest_matching_event_metadata(
     matching_events: list[DpmPortfolioMemoryEvent],
 ) -> _LatestMatchingEventMetadata:
     latest_matching_event = matching_events[0] if matching_events else None
+    if latest_matching_event is None:
+        return _empty_latest_matching_event_metadata()
+    return _latest_matching_event_metadata_from_event(latest_matching_event)
+
+
+def _empty_latest_matching_event_metadata() -> _LatestMatchingEventMetadata:
     return _LatestMatchingEventMetadata(
-        latest_matching_event_time=(
-            latest_matching_event.event_time if latest_matching_event else None
-        ),
-        latest_matching_event_type=(
-            latest_matching_event.event_type if latest_matching_event else None
-        ),
-        latest_matching_event_id=(
-            latest_matching_event.event_id if latest_matching_event else None
-        ),
-        latest_matching_event_identity=(
-            latest_matching_event.event_identity if latest_matching_event else None
-        ),
-        latest_matching_event_source_system=(
-            latest_matching_event.source_system if latest_matching_event else None
-        ),
-        latest_matching_event_source_type=(
-            latest_matching_event.source_type if latest_matching_event else None
-        ),
-        latest_matching_event_source_id=(
-            latest_matching_event.source_id if latest_matching_event else None
-        ),
-        latest_matching_event_content_hash=(
-            latest_matching_event.content_hash if latest_matching_event else None
-        ),
+        latest_matching_event_time=None,
+        latest_matching_event_type=None,
+        latest_matching_event_id=None,
+        latest_matching_event_identity=None,
+        latest_matching_event_source_system=None,
+        latest_matching_event_source_type=None,
+        latest_matching_event_source_id=None,
+        latest_matching_event_content_hash=None,
+    )
+
+
+def _latest_matching_event_metadata_from_event(
+    event: DpmPortfolioMemoryEvent,
+) -> _LatestMatchingEventMetadata:
+    return _LatestMatchingEventMetadata(
+        latest_matching_event_time=event.event_time,
+        latest_matching_event_type=event.event_type,
+        latest_matching_event_id=event.event_id,
+        latest_matching_event_identity=event.event_identity,
+        latest_matching_event_source_system=event.source_system,
+        latest_matching_event_source_type=event.source_type,
+        latest_matching_event_source_id=event.source_id,
+        latest_matching_event_content_hash=event.content_hash,
     )
 
 
