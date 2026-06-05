@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T05:46:04+00:00`
+- Generated at: `2026-06-05T05:55:20+00:00`
 
-- Current ref: `1049ac79`
+- Current ref: `f8687e52`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 10 | 79 |
-| 2 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
-| 3 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
-| 4 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
-| 5 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
-| 6 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
-| 7 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
-| 8 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
-| 9 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
-| 10 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
+| 1 | build_bulk_review_campaign_definition_lifecycle_events | src/core/waves/campaign_definition_events.py | 10 | 71 |
+| 2 | list_operations | src/infrastructure/rebalance_runs/sqlite.py | 10 | 64 |
+| 3 | list_operations | src/infrastructure/rebalance_runs/postgres.py | 10 | 63 |
+| 4 | validate_aggregate_metadata | src/core/portfolio_memory/models.py | 10 | 61 |
+| 5 | get_supportability_summary | src/infrastructure/rebalance_runs/in_memory.py | 10 | 60 |
+| 6 | _regime_context_from_scenario_response | src/infrastructure/risk_authority/client.py | 10 | 51 |
+| 7 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 10 | 49 |
+| 8 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/in_memory.py | 10 | 42 |
+| 9 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 10 | 33 |
+| 10 | _post_with_retries | src/infrastructure/advise_authority/client.py | 10 | 33 |
 
 ### Most Complex Current Test Functions
 
