@@ -17843,3 +17843,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-735: Portfolio memory aggregate validation helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/models.py` and
+  `tests/unit/dpm/portfolio_memory/test_models.py`.
+- Finding: `validate_aggregate_metadata` became the top current source hotspot and mixed portfolio
+  memory event aggregate validation, governance-policy completeness checks, blank-value checks,
+  and per-event governance consistency checks inside one Pydantic model validator.
+- Action: extracted portfolio-memory aggregate metadata validation into focused helper functions
+  for event aggregates, expected source systems/reason codes, governance-policy completeness, and
+  event governance consistency while keeping the Pydantic model contract and error messages stable.
+  Added direct helper tests for valid metadata, mismatched event count, missing governance keys,
+  blank governance values, and event governance drift.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_models.py`,
+  `python -m ruff format --check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_models.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_models.py tests/unit/dpm/api/test_portfolio_memory_api.py::test_portfolio_memory_rejects_inconsistent_aggregate_metadata -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory model
+  maintainability refactoring.
