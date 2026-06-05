@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from copy import deepcopy
+from dataclasses import dataclass
 from threading import Lock
 
 from src.core.pm_quality.models import (
@@ -24,6 +25,15 @@ from src.core.pm_quality.repository import (
     DpmPmQualitySummaryInvocationConflictError,
     DpmPmQualitySummaryInvocationRepository,
 )
+
+
+@dataclass(frozen=True)
+class _SummaryInvocationFilters:
+    score_run_id: str | None
+    review_action_id: str | None
+    policy_id: str | None
+    as_of_date: str | None
+    invocation_state: str | None
 
 
 class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
@@ -257,23 +267,63 @@ class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocat
         offset: int = 0,
     ) -> list[DpmPmQualitySummaryInvocation]:
         with self._lock:
-            invocations = [
-                invocation
-                for invocation in self._invocations.values()
-                if (score_run_id is None or invocation.score_run_id == score_run_id)
-                and (review_action_id is None or invocation.review_action_id == review_action_id)
-                and (policy_id is None or invocation.policy_id == policy_id)
-                and (as_of_date is None or invocation.as_of_date == as_of_date)
-                and (invocation_state is None or invocation.invocation_state == invocation_state)
-            ]
-            invocations.sort(
-                key=lambda invocation: (
-                    invocation.generated_at,
-                    invocation.summary_invocation_id,
+            page = _list_summary_invocations(
+                invocations=list(self._invocations.values()),
+                filters=_SummaryInvocationFilters(
+                    score_run_id=score_run_id,
+                    review_action_id=review_action_id,
+                    policy_id=policy_id,
+                    as_of_date=as_of_date,
+                    invocation_state=invocation_state,
                 ),
-                reverse=True,
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(invocations[offset : offset + limit])
+            return deepcopy(page)
+
+
+def _summary_invocation_matches_filters(
+    invocation: DpmPmQualitySummaryInvocation,
+    filters: _SummaryInvocationFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(invocation.score_run_id, filters.score_run_id),
+            _optional_value_matches(invocation.review_action_id, filters.review_action_id),
+            _optional_value_matches(invocation.policy_id, filters.policy_id),
+            _optional_value_matches(invocation.as_of_date, filters.as_of_date),
+            _optional_value_matches(invocation.invocation_state, filters.invocation_state),
+        )
+    )
+
+
+def _optional_value_matches(actual: str, expected: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _sort_summary_invocations(
+    invocations: list[DpmPmQualitySummaryInvocation],
+) -> list[DpmPmQualitySummaryInvocation]:
+    return sorted(
+        invocations,
+        key=lambda invocation: (invocation.generated_at, invocation.summary_invocation_id),
+        reverse=True,
+    )
+
+
+def _list_summary_invocations(
+    *,
+    invocations: list[DpmPmQualitySummaryInvocation],
+    filters: _SummaryInvocationFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPmQualitySummaryInvocation]:
+    filtered = [
+        invocation
+        for invocation in invocations
+        if _summary_invocation_matches_filters(invocation, filters)
+    ]
+    return _sort_summary_invocations(filtered)[offset : offset + limit]
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:

@@ -18235,3 +18235,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-751: PM quality summary invocation list helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/pm_quality/in_memory.py` and
+  `tests/unit/dpm/pm_quality/test_pm_quality_repository.py`.
+- Finding: `list_summary_invocations` became the top current source-complexity hotspot and mixed
+  repository locking with optional field filters, generated-at ordering, pagination, and defensive
+  cloning.
+- Action: kept locking and defensive copying in the repository method and extracted pure helpers
+  for summary-invocation filter criteria, optional value matching, descending generated-at/id
+  sorting, and filtered page assembly. Added direct helper tests for optional field matching,
+  descending sort order, and offset/limit pagination while preserving in-memory and Postgres
+  repository behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/pm_quality/in_memory.py tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `python -m ruff format --check src/infrastructure/pm_quality/in_memory.py tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/pm_quality/in_memory.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_quality_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality repository
+  maintainability refactoring.

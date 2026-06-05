@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 import json
@@ -29,6 +30,12 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityScoreRunRepository,
     InMemoryDpmPmQualitySummaryInvocationRepository,
+)
+from src.infrastructure.pm_quality.in_memory import (
+    _SummaryInvocationFilters,
+    _list_summary_invocations,
+    _sort_summary_invocations,
+    _summary_invocation_matches_filters,
 )
 from src.infrastructure.pm_quality import postgres as postgres_module
 from src.infrastructure.pm_quality.postgres import (
@@ -788,6 +795,64 @@ def test_in_memory_pm_quality_repository_lists_summary_invocations() -> None:
         invocation
     ]
     assert repository.list_summary_invocations(limit=1, offset=1) == []
+
+
+def test_summary_invocation_filter_helper_matches_all_optional_fields() -> None:
+    invocation = _summary_invocation()
+
+    assert _summary_invocation_matches_filters(
+        invocation,
+        _SummaryInvocationFilters(
+            score_run_id=invocation.score_run_id,
+            review_action_id=invocation.review_action_id,
+            policy_id=invocation.policy_id,
+            as_of_date=invocation.as_of_date,
+            invocation_state=invocation.invocation_state,
+        ),
+    )
+    assert not _summary_invocation_matches_filters(
+        invocation,
+        _SummaryInvocationFilters(
+            score_run_id="missing",
+            review_action_id=None,
+            policy_id=None,
+            as_of_date=None,
+            invocation_state=None,
+        ),
+    )
+
+
+def test_summary_invocation_list_helper_filters_sorts_and_pages() -> None:
+    older = _summary_invocation()
+    newer = older.model_copy(
+        update={
+            "summary_invocation_id": "pmq_summary_newer",
+            "score_run_id": "score_run_other",
+            "generated_at": older.generated_at + timedelta(minutes=1),
+            "content_hash": "sha256:summary-newer",
+        }
+    )
+    filters = _SummaryInvocationFilters(
+        score_run_id=None,
+        review_action_id=None,
+        policy_id=older.policy_id,
+        as_of_date=older.as_of_date,
+        invocation_state=older.invocation_state,
+    )
+
+    assert _sort_summary_invocations([older, newer]) == [newer, older]
+    assert _list_summary_invocations(
+        invocations=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [newer]
+    assert _list_summary_invocations(
+        invocations=[older, newer],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [older]
 
 
 def test_postgres_pm_quality_review_action_repository_round_trips_actions(
