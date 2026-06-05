@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T00:54:19+00:00`
+- Generated at: `2026-06-05T01:03:24+00:00`
 
-- Current ref: `eea4b6e5`
+- Current ref: `bf530991`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
-| 2 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
-| 3 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
-| 4 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
-| 5 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
-| 6 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
-| 7 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
-| 8 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 9 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
-| 10 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
+| 1 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
+| 2 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
+| 3 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
+| 4 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
+| 5 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
+| 6 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
+| 7 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 8 | _get_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
+| 9 | _infer_example | src/api/openapi_enrichment.py | 12 | 32 |
+| 10 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
 
 ### Most Complex Current Test Functions
 
