@@ -28,6 +28,16 @@ class _ExpiredRunIdentities:
         return self.run_ids | self.correlation_ids | self.idempotency_keys
 
 
+@dataclass(frozen=True)
+class _WorkflowDecisionFilters:
+    rebalance_run_id: str | None
+    action: str | None
+    actor_id: str | None
+    reason_code: str | None
+    decided_from: datetime | None
+    decided_to: datetime | None
+
+
 def _expired_runs(
     *,
     runs: dict[str, DpmRunRecord],
@@ -178,6 +188,90 @@ def _supportability_summary_data(
         oldest_operation_created_at=oldest_operation_created_at,
         newest_operation_created_at=newest_operation_created_at,
     )
+
+
+def _all_workflow_decisions(
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return [decision for decisions in workflow_decisions.values() for decision in decisions]
+
+
+def _workflow_decision_matches_filters(
+    decision: DpmRunWorkflowDecisionRecord,
+    filters: _WorkflowDecisionFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(decision.run_id, filters.rebalance_run_id),
+            _optional_value_matches(decision.action, filters.action),
+            _optional_value_matches(decision.actor_id, filters.actor_id),
+            _optional_value_matches(decision.reason_code, filters.reason_code),
+            _decided_at_is_on_or_after(decision.decided_at, filters.decided_from),
+            _decided_at_is_on_or_before(decision.decided_at, filters.decided_to),
+        )
+    )
+
+
+def _optional_value_matches(actual: str, expected: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _decided_at_is_on_or_after(decided_at: datetime, lower_bound: datetime | None) -> bool:
+    return lower_bound is None or decided_at >= lower_bound
+
+
+def _decided_at_is_on_or_before(decided_at: datetime, upper_bound: datetime | None) -> bool:
+    return upper_bound is None or decided_at <= upper_bound
+
+
+def _filter_workflow_decisions(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+    filters: _WorkflowDecisionFilters,
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return [
+        decision for decision in decisions if _workflow_decision_matches_filters(decision, filters)
+    ]
+
+
+def _sorted_workflow_decisions(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+) -> list[DpmRunWorkflowDecisionRecord]:
+    return sorted(
+        decisions, key=lambda decision: (decision.decided_at, decision.decision_id), reverse=True
+    )
+
+
+def _workflow_decision_page(
+    decisions: list[DpmRunWorkflowDecisionRecord],
+    *,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmRunWorkflowDecisionRecord], str | None]:
+    rows = decisions
+    if cursor is not None:
+        cursor_index = next(
+            (index for index, decision in enumerate(rows) if decision.decision_id == cursor),
+            None,
+        )
+        if cursor_index is None:
+            return [], None
+        rows = rows[cursor_index + 1 :]
+    page = rows[:limit]
+    next_cursor = page[-1].decision_id if len(rows) > limit else None
+    return page, next_cursor
+
+
+def _list_workflow_decisions_filtered(
+    *,
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+    filters: _WorkflowDecisionFilters,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmRunWorkflowDecisionRecord], str | None]:
+    decisions = _all_workflow_decisions(workflow_decisions)
+    filtered = _filter_workflow_decisions(decisions, filters)
+    sorted_decisions = _sorted_workflow_decisions(filtered)
+    return _workflow_decision_page(sorted_decisions, limit=limit, cursor=cursor)
 
 
 class InMemoryDpmRunRepository(DpmRunRepository):
@@ -402,34 +496,19 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmRunWorkflowDecisionRecord], Optional[str]]:
         with self._lock:
-            rows = [
-                decision
-                for decisions in self._workflow_decisions.values()
-                for decision in decisions
-            ]
-            if rebalance_run_id is not None:
-                rows = [row for row in rows if row.run_id == rebalance_run_id]
-            if action is not None:
-                rows = [row for row in rows if row.action == action]
-            if actor_id is not None:
-                rows = [row for row in rows if row.actor_id == actor_id]
-            if reason_code is not None:
-                rows = [row for row in rows if row.reason_code == reason_code]
-            if decided_from is not None:
-                rows = [row for row in rows if row.decided_at >= decided_from]
-            if decided_to is not None:
-                rows = [row for row in rows if row.decided_at <= decided_to]
-            rows = sorted(rows, key=lambda row: (row.decided_at, row.decision_id), reverse=True)
-            if cursor is not None:
-                cursor_index = next(
-                    (index for index, row in enumerate(rows) if row.decision_id == cursor),
-                    None,
-                )
-                if cursor_index is None:
-                    return [], None
-                rows = rows[cursor_index + 1 :]
-            page = rows[:limit]
-            next_cursor = page[-1].decision_id if len(rows) > limit else None
+            page, next_cursor = _list_workflow_decisions_filtered(
+                workflow_decisions=self._workflow_decisions,
+                filters=_WorkflowDecisionFilters(
+                    rebalance_run_id=rebalance_run_id,
+                    action=action,
+                    actor_id=actor_id,
+                    reason_code=reason_code,
+                    decided_from=decided_from,
+                    decided_to=decided_to,
+                ),
+                limit=limit,
+                cursor=cursor,
+            )
             return [deepcopy(row) for row in page], next_cursor
 
     def append_lineage_edge(self, edge: DpmLineageEdgeRecord) -> None:

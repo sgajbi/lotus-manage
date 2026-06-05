@@ -18039,3 +18039,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-743: In-memory workflow decision filter helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py` and
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`.
+- Finding: `list_workflow_decisions_filtered` became the top current source-complexity hotspot and
+  mixed repository locking with bucket flattening, field/date filtering, descending sort order,
+  cursor handling, and defensive cloning.
+- Action: kept locking and clone-on-read behavior in the repository method and extracted pure
+  helpers for workflow-decision filter criteria, bucket flattening, predicate matching, descending
+  ordering, cursor paging, and filtered-list assembly. Added direct helper tests for bucket
+  flattening, combined filters, descending order, cursor pagination, and invalid cursors while
+  preserving the cross-backend repository contract test.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_in_memory_summary_helpers.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_list_workflow_decisions_filtered_contract -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-run repository
+  maintainability refactoring.

@@ -9,6 +9,9 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowDecisionRecord,
 )
 from src.infrastructure.rebalance_runs.in_memory import (
+    _WorkflowDecisionFilters,
+    _all_workflow_decisions,
+    _list_workflow_decisions_filtered,
     _supportability_summary_data,
     _unique_lineage_edge_count,
 )
@@ -84,6 +87,101 @@ def test_unique_lineage_edge_count_uses_canonical_edge_identity() -> None:
     )
 
 
+def test_all_workflow_decisions_flattens_repository_buckets() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    decision_one = _decision("dwd-summary-1", "APPROVE", "REVIEW_APPROVED", now)
+    decision_two = _decision(
+        "dwd-summary-2",
+        "REQUEST_CHANGES",
+        "NEEDS_DETAIL",
+        now + timedelta(seconds=1),
+        run_id="rr-summary-2",
+    )
+
+    assert _all_workflow_decisions(
+        {
+            "rr-summary-1": [decision_one],
+            "rr-summary-2": [decision_two],
+        }
+    ) == [decision_one, decision_two]
+
+
+def test_list_workflow_decisions_filtered_applies_filters_and_descending_order() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    older = _decision("dwd-summary-1", "APPROVE", "REVIEW_APPROVED", now)
+    newer = _decision(
+        "dwd-summary-2",
+        "APPROVE",
+        "REVIEW_APPROVED",
+        now + timedelta(seconds=1),
+        actor_id="ops-target",
+    )
+    ignored = _decision(
+        "dwd-summary-3",
+        "REQUEST_CHANGES",
+        "NEEDS_DETAIL",
+        now + timedelta(seconds=2),
+        actor_id="ops-target",
+    )
+
+    rows, cursor = _list_workflow_decisions_filtered(
+        workflow_decisions={"rr-summary-1": [older, newer, ignored]},
+        filters=_WorkflowDecisionFilters(
+            rebalance_run_id="rr-summary-1",
+            action="APPROVE",
+            actor_id="ops-target",
+            reason_code="REVIEW_APPROVED",
+            decided_from=now,
+            decided_to=now + timedelta(seconds=2),
+        ),
+        limit=10,
+        cursor=None,
+    )
+
+    assert [decision.decision_id for decision in rows] == ["dwd-summary-2"]
+    assert cursor is None
+
+
+def test_list_workflow_decisions_filtered_pages_by_decision_cursor() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    older = _decision("dwd-summary-1", "APPROVE", "REVIEW_APPROVED", now)
+    newer = _decision("dwd-summary-2", "APPROVE", "REVIEW_APPROVED", now + timedelta(seconds=1))
+    filters = _WorkflowDecisionFilters(
+        rebalance_run_id=None,
+        action=None,
+        actor_id=None,
+        reason_code=None,
+        decided_from=None,
+        decided_to=None,
+    )
+
+    page_one, cursor = _list_workflow_decisions_filtered(
+        workflow_decisions={"rr-summary-1": [older, newer]},
+        filters=filters,
+        limit=1,
+        cursor=None,
+    )
+    page_two, cursor_two = _list_workflow_decisions_filtered(
+        workflow_decisions={"rr-summary-1": [older, newer]},
+        filters=filters,
+        limit=1,
+        cursor=cursor,
+    )
+    invalid_rows, invalid_cursor = _list_workflow_decisions_filtered(
+        workflow_decisions={"rr-summary-1": [older, newer]},
+        filters=filters,
+        limit=10,
+        cursor="dwd-missing",
+    )
+
+    assert [decision.decision_id for decision in page_one] == ["dwd-summary-2"]
+    assert cursor == "dwd-summary-2"
+    assert [decision.decision_id for decision in page_two] == ["dwd-summary-1"]
+    assert cursor_two is None
+    assert invalid_rows == []
+    assert invalid_cursor is None
+
+
 def _run(run_id: str, status: str, created_at: datetime) -> DpmRunRecord:
     return DpmRunRecord(
         rebalance_run_id=run_id,
@@ -120,14 +218,17 @@ def _decision(
     action: str,
     reason_code: str,
     decided_at: datetime,
+    *,
+    run_id: str = "rr-summary-1",
+    actor_id: str = "ops-summary",
 ) -> DpmRunWorkflowDecisionRecord:
     return DpmRunWorkflowDecisionRecord(
         decision_id=decision_id,
-        run_id="rr-summary-1",
+        run_id=run_id,
         action=action,
         reason_code=reason_code,
         comment=None,
-        actor_id="ops-summary",
+        actor_id=actor_id,
         decided_at=decided_at,
         correlation_id=f"corr-{decision_id}",
     )
