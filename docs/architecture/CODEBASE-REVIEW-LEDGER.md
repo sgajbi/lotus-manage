@@ -18427,3 +18427,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-759: Portfolio-memory search summary predicates extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/portfolio_memory/search_page.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`.
+- Finding: `_memory_passes_search_summary_filters` became the top current source-complexity
+  hotspot and mixed empty-memory eligibility with optional event-type, supportability-state, and
+  source-system summary predicates.
+- Action: extracted pure predicate helpers for explicit empty-memory eligibility, event-type count
+  membership, supportability-state matching, and source-system membership. Preserved source-type
+  behavior at the event-matching layer because summary rows do not carry source-type counts. Added
+  direct helper tests while preserving existing search-row behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/search_page.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_page.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search
+  maintainability refactoring.

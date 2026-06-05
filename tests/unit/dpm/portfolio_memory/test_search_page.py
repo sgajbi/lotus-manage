@@ -26,12 +26,16 @@ from src.core.portfolio_memory.search_page import (
     _LatestEventMetadata,
     _LatestMatchingEventMetadata,
     _empty_latest_matching_event_metadata,
+    _empty_memory_matches_search_summary_filters,
+    _event_type_matches_search_summary,
     _filters_require_matching_events,
     _latest_event_metadata,
     _latest_matching_event_metadata,
     _latest_matching_event_metadata_from_event,
     _memory_passes_search_summary_filters,
     _portfolio_memory_search_item,
+    _source_system_matches_search_summary,
+    _supportability_matches_search_summary,
     build_search_page,
     build_search_row,
 )
@@ -131,6 +135,98 @@ def test_memory_passes_search_summary_filters_rejects_unmatched_summary_fields()
             source_type=None,
         ),
         explicit_candidate_ids=set(),
+    )
+
+
+def test_empty_memory_summary_filter_helper_requires_empty_filter_and_explicit_id() -> None:
+    memory = _memory(portfolio_id="PB_EMPTY_001", events=[])
+    filters = PortfolioMemorySearchFilters(
+        event_type=None,
+        supportability_state="EMPTY",
+        source_system=None,
+        source_type=None,
+    )
+
+    assert _empty_memory_matches_search_summary_filters(
+        memory=memory,
+        filters=filters,
+        explicit_candidate_ids={"PB_EMPTY_001"},
+    )
+    assert not _empty_memory_matches_search_summary_filters(
+        memory=memory,
+        filters=filters,
+        explicit_candidate_ids=set(),
+    )
+    assert not _empty_memory_matches_search_summary_filters(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        ),
+        explicit_candidate_ids={"PB_EMPTY_001"},
+    )
+
+
+def test_search_summary_predicate_helpers_match_optional_summary_fields() -> None:
+    memory = _memory(
+        portfolio_id="PB_SEARCH_001",
+        events=[
+            _event(
+                event_id="memory:search:handoff",
+                event_type="WAVE_HANDOFF_READY",
+                event_time="2026-05-31T10:00:00+00:00",
+                source_id="handoff-001",
+                content_hash="sha256:handoff",
+            )
+        ],
+    )
+
+    assert _event_type_matches_search_summary(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type="WAVE_HANDOFF_READY",
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        ),
+    )
+    assert not _event_type_matches_search_summary(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type="OUTCOME_REVIEW_CREATED",
+            supportability_state=None,
+            source_system=None,
+            source_type=None,
+        ),
+    )
+    assert _supportability_matches_search_summary(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=memory.supportability_state,
+            source_system=None,
+            source_type=None,
+        ),
+    )
+    assert _source_system_matches_search_summary(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system="lotus-core",
+            source_type=None,
+        ),
+    )
+    assert not _source_system_matches_search_summary(
+        memory=memory,
+        filters=PortfolioMemorySearchFilters(
+            event_type=None,
+            supportability_state=None,
+            source_system="lotus-risk",
+            source_type=None,
+        ),
     )
 
 

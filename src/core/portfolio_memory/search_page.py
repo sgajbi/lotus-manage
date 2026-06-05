@@ -67,22 +67,55 @@ def _memory_passes_search_summary_filters(
     filters: PortfolioMemorySearchFilters,
     explicit_candidate_ids: set[str],
 ) -> bool:
-    if memory.event_count == 0:
-        if (
-            filters.supportability_state != "EMPTY"
-            or memory.portfolio_id not in explicit_candidate_ids
-        ):
-            return False
-    if filters.event_type is not None and filters.event_type not in memory.event_type_counts:
-        return False
-    if (
-        filters.supportability_state is not None
-        and memory.supportability_state != filters.supportability_state
+    if memory.event_count == 0 and not _empty_memory_matches_search_summary_filters(
+        memory=memory,
+        filters=filters,
+        explicit_candidate_ids=explicit_candidate_ids,
     ):
         return False
-    if filters.source_system is not None and filters.source_system not in memory.source_systems:
-        return False
-    return True
+    return all(
+        (
+            _event_type_matches_search_summary(memory=memory, filters=filters),
+            _supportability_matches_search_summary(memory=memory, filters=filters),
+            _source_system_matches_search_summary(memory=memory, filters=filters),
+        )
+    )
+
+
+def _empty_memory_matches_search_summary_filters(
+    *,
+    memory: DpmPortfolioMemory,
+    filters: PortfolioMemorySearchFilters,
+    explicit_candidate_ids: set[str],
+) -> bool:
+    return filters.supportability_state == "EMPTY" and memory.portfolio_id in explicit_candidate_ids
+
+
+def _event_type_matches_search_summary(
+    *,
+    memory: DpmPortfolioMemory,
+    filters: PortfolioMemorySearchFilters,
+) -> bool:
+    return filters.event_type is None or filters.event_type in memory.event_type_counts
+
+
+def _supportability_matches_search_summary(
+    *,
+    memory: DpmPortfolioMemory,
+    filters: PortfolioMemorySearchFilters,
+) -> bool:
+    return (
+        filters.supportability_state is None
+        or memory.supportability_state == filters.supportability_state
+    )
+
+
+def _source_system_matches_search_summary(
+    *,
+    memory: DpmPortfolioMemory,
+    filters: PortfolioMemorySearchFilters,
+) -> bool:
+    return filters.source_system is None or filters.source_system in memory.source_systems
 
 
 def _filters_require_matching_events(filters: PortfolioMemorySearchFilters) -> bool:
