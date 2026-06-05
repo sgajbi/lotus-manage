@@ -18767,3 +18767,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-773: Performance attribution source helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/outcomes/performance_sources.py` and
+  `tests/unit/core/test_performance_realized_outcome_sources.py`.
+- Finding: `realized_attribution_source_from_attribution_response` became the top current
+  source-complexity hotspot and mixed source-owned attribution value selection with source-id
+  assembly, attribution reason-code construction, and optional benchmark reason-code enrichment.
+- Action: preserved source-owned value adaptation and extracted pure helpers for attribution
+  source-id assembly, attribution reason-code construction, and optional benchmark reason-code
+  projection. Added direct helper tests for source-id construction and ordered reason-code output
+  while preserving existing attribution adapter behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/performance_sources.py`,
+  `python -m pytest tests/unit/core/test_performance_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal performance-source adapter
+  maintainability refactoring.

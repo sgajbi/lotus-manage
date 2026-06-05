@@ -1,5 +1,6 @@
 import pytest
 
+from src.core.outcomes import performance_sources as perf_sources
 from src.core.outcomes import (
     PerformanceOutcomeSourceError,
     assemble_realized_outcome_snapshot,
@@ -280,6 +281,45 @@ def test_attribution_adapter_wraps_source_owned_active_return_reconciliation() -
         "PERFORMANCE_MEASURE_FAMILY_ATTRIBUTION",
         "PERFORMANCE_ATTRIBUTION_MEASURE_RECONCILIATION_TOTAL_ACTIVE_RETURN",
         "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION",
+        "PERFORMANCE_INPUT_MODE_STATEFUL",
+        "PERFORMANCE_ATTRIBUTION_MODEL_BRINSON_FACHLER",
+        "PERFORMANCE_ATTRIBUTION_LINKING_CARINO",
+        "PERFORMANCE_BENCHMARK_BMK_GLOBAL_60_40",
+        "PERFORMANCE_BENCHMARK_RETURN_SOURCE_CALCULATED",
+    ]
+
+
+def test_attribution_source_helper_builds_source_id_and_reason_codes() -> None:
+    assert (
+        perf_sources._attribution_source_id(
+            calculation_id="calc-001",
+            period="YTD",
+            measure="reconciliation_total_active_return",
+            selector_token="reconciliation",
+        )
+        == "calc-001:YTD:attribution:reconciliation_total_active_return:reconciliation"
+    )
+
+    assert perf_sources._attribution_reason_codes(
+        source_state="READY",
+        supportability_state="ready",
+        supportability_reason="calculation_complete",
+        period="YTD",
+        measure="currency_total_effect",
+        selector_reason="PERFORMANCE_ATTRIBUTION_CURRENCY_USD",
+        input_mode="stateful",
+        model="brinson_fachler",
+        linking="carino",
+        benchmark_id="BMK_GLOBAL_60_40",
+        benchmark_source="calculated",
+    ) == [
+        "PERFORMANCE_SOURCE_READY",
+        "PERFORMANCE_SUPPORTABILITY_READY",
+        "PERFORMANCE_REASON_CALCULATION_COMPLETE",
+        "PERFORMANCE_PERIOD_YTD",
+        "PERFORMANCE_MEASURE_FAMILY_ATTRIBUTION",
+        "PERFORMANCE_ATTRIBUTION_MEASURE_CURRENCY_TOTAL_EFFECT",
+        "PERFORMANCE_ATTRIBUTION_CURRENCY_USD",
         "PERFORMANCE_INPUT_MODE_STATEFUL",
         "PERFORMANCE_ATTRIBUTION_MODEL_BRINSON_FACHLER",
         "PERFORMANCE_ATTRIBUTION_LINKING_CARINO",
