@@ -1,4 +1,5 @@
 import json
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any, Literal, Optional
 
@@ -7,6 +8,15 @@ from pydantic import BaseModel, Field, ValidationError
 from src.core.models import EngineOptions, GroupConstraint
 
 DpmPolicyPackSource = Literal["DISABLED", "REQUEST", "TENANT_DEFAULT", "GLOBAL_DEFAULT", "NONE"]
+
+_POLICY_PACK_SECTION_KEYS = (
+    "turnover_policy",
+    "tax_policy",
+    "settlement_policy",
+    "constraint_policy",
+    "workflow_policy",
+    "idempotency_policy",
+)
 
 
 class DpmEffectivePolicyPackResolution(BaseModel):
@@ -305,26 +315,38 @@ def _policy_pack_definition_payload(
     policy_pack_id: Any,
     definition: Any,
 ) -> tuple[str, dict[str, object]] | None:
+    normalized_id = _normalized_policy_pack_definition_id(policy_pack_id)
+    if normalized_id is None or not isinstance(definition, Mapping):
+        return None
+    return normalized_id, _policy_pack_model_payload(
+        normalized_id=normalized_id,
+        definition=definition,
+    )
+
+
+def _normalized_policy_pack_definition_id(policy_pack_id: Any) -> str | None:
     if not isinstance(policy_pack_id, str):
         return None
-    if not isinstance(definition, dict):
-        return None
     normalized_id = policy_pack_id.strip()
-    if not normalized_id:
-        return None
-    return (
-        normalized_id,
+    return normalized_id or None
+
+
+def _policy_pack_model_payload(
+    *,
+    normalized_id: str,
+    definition: Mapping[str, Any],
+) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "policy_pack_id": normalized_id,
+        "version": str(definition.get("version", "1")),
+    }
+    payload.update(
         {
-            "policy_pack_id": normalized_id,
-            "version": str(definition.get("version", "1")),
-            "turnover_policy": definition.get("turnover_policy") or {},
-            "tax_policy": definition.get("tax_policy") or {},
-            "settlement_policy": definition.get("settlement_policy") or {},
-            "constraint_policy": definition.get("constraint_policy") or {},
-            "workflow_policy": definition.get("workflow_policy") or {},
-            "idempotency_policy": definition.get("idempotency_policy") or {},
-        },
+            section_key: definition.get(section_key) or {}
+            for section_key in _POLICY_PACK_SECTION_KEYS
+        }
     )
+    return payload
 
 
 def _parse_policy_pack_definition(

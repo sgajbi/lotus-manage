@@ -18379,3 +18379,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-757: Policy-pack definition payload helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/policy_packs.py` and
+  `tests/unit/dpm/engine/test_policy_pack_resolution.py`.
+- Finding: `_policy_pack_definition_payload` became the top current source-complexity hotspot and
+  mixed policy-pack key validation, whitespace normalization, version coercion, and default section
+  payload assembly in one parser helper.
+- Action: extracted pure helpers for normalized policy-pack definition ids and policy-pack model
+  payload assembly, preserving parse behavior for invalid keys, invalid rows, and missing policy
+  sections. Added direct helper tests for invalid id rejection, whitespace trimming, version
+  coercion, and default section maps.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m ruff format --check src/core/rebalance/policy_packs.py tests/unit/dpm/engine/test_policy_pack_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/policy_packs.py`,
+  `python -m pytest tests/unit/dpm/engine/test_policy_pack_resolution.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal policy-pack parser
+  maintainability refactoring.
