@@ -8,6 +8,9 @@ from src.core.waves import DpmWaveSourceRef
 from src.core.waves.campaign_definition_readiness import (
     _actor_entitlement_state,
     _approval_governance_status,
+    _candidate_readiness,
+    _definition_status_reason_codes,
+    _eligible_portfolio_types,
     _expiry_readiness_state,
     build_bulk_review_campaign_definition_preview_readiness,
 )
@@ -690,6 +693,35 @@ def test_campaign_definition_governance_readiness_helpers_fail_closed() -> None:
     assert "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE" in reason_codes
     assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in reason_codes
     assert "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED" in reason_codes
+
+
+def test_campaign_definition_candidate_readiness_helpers_fail_closed() -> None:
+    definition = _definition()
+    reason_codes: list[str] = []
+
+    assert _eligible_portfolio_types(
+        definition.model_copy(update={"eligible_portfolio_types": [" dpm ", "DPM"]})
+    ) == ["DPM"]
+
+    readiness = _candidate_readiness(
+        definition=definition.model_copy(update={"eligible_portfolio_types": ["ADVISORY"]}),
+        reason_codes=reason_codes,
+    )
+
+    assert readiness.eligible_portfolio_types == ["ADVISORY"]
+    assert readiness.eligible_candidate_count == 0
+    assert readiness.excluded_candidate_count == len(definition.candidates)
+    assert "BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY" in reason_codes
+
+    reason_codes = []
+    _definition_status_reason_codes(
+        definition=definition.model_copy(update={"status": "SUPERSEDED"}),
+        requested_as_of_date="2026-05-11",
+        reason_codes=reason_codes,
+    )
+
+    assert "BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED" in reason_codes
+    assert "BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH" in reason_codes
 
 
 def test_campaign_definition_assignment_actions_are_append_only() -> None:

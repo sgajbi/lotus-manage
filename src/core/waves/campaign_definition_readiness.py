@@ -24,6 +24,13 @@ CampaignDefinitionActorEntitlementState = Literal[
 ]
 
 
+class _CampaignDefinitionCandidateReadiness(BaseModel):
+    eligible_portfolio_types: list[str]
+    eligible_candidate_count: int
+    excluded_candidate_count: int
+    source_ref_count: int
+
+
 class DpmBulkReviewCampaignDefinitionPreviewReadiness(BaseModel):
     """Fail-closed preview/create readiness for one persisted campaign definition."""
 
@@ -93,29 +100,12 @@ def build_bulk_review_campaign_definition_preview_readiness(
         reason_codes=reason_codes,
         invalid_code="BULK_REVIEW_CAMPAIGN_DEFINITION_REQUESTED_AS_OF_DATE_INVALID",
     )
-    if definition.status == "RETIRED":
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED")
-    if definition.status == "SUPERSEDED":
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED")
-    if definition.as_of_date != requested_as_of_date:
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH")
-
-    eligible_types = sorted(
-        {portfolio_type.strip().upper() for portfolio_type in definition.eligible_portfolio_types}
+    _definition_status_reason_codes(
+        definition=definition,
+        requested_as_of_date=requested_as_of_date,
+        reason_codes=reason_codes,
     )
-    if not eligible_types:
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
-    eligible_type_set = set(eligible_types)
-    eligible_candidate_count = 0
-    source_ref_count = len(definition.source_refs)
-    for candidate in definition.candidates:
-        source_ref_count += len(candidate.source_refs)
-        if candidate.portfolio_type.strip().upper() in eligible_type_set:
-            eligible_candidate_count += 1
-    if not definition.candidates:
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED")
-    if definition.candidates and eligible_candidate_count == 0:
-        reason_codes.append("BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY")
+    candidate_readiness = _candidate_readiness(definition=definition, reason_codes=reason_codes)
 
     governance_status, expiry_state, actor_entitlement_state, governance_source_ref_count = (
         _governance_readiness(
@@ -125,7 +115,7 @@ def build_bulk_review_campaign_definition_preview_readiness(
             reason_codes=reason_codes,
         )
     )
-    source_ref_count += governance_source_ref_count
+    source_ref_count = candidate_readiness.source_ref_count + governance_source_ref_count
     lifecycle_event_count = build_bulk_review_campaign_definition_lifecycle_events(
         definition=definition
     ).count
@@ -142,9 +132,9 @@ def build_bulk_review_campaign_definition_preview_readiness(
         "supportability_state": "READY" if not reason_codes else "BLOCKED",
         "reason_codes": sorted(set(reason_codes)),
         "candidate_count": len(definition.candidates),
-        "eligible_candidate_count": eligible_candidate_count,
-        "excluded_candidate_count": len(definition.candidates) - eligible_candidate_count,
-        "eligible_portfolio_types": eligible_types,
+        "eligible_candidate_count": candidate_readiness.eligible_candidate_count,
+        "excluded_candidate_count": candidate_readiness.excluded_candidate_count,
+        "eligible_portfolio_types": candidate_readiness.eligible_portfolio_types,
         "governance_status": governance_status,
         "expiry_state": expiry_state,
         "actor_entitlement_state": actor_entitlement_state,
@@ -154,6 +144,55 @@ def build_bulk_review_campaign_definition_preview_readiness(
     }
     payload["content_hash"] = _hash_payload(payload)
     return DpmBulkReviewCampaignDefinitionPreviewReadiness.model_validate(payload)
+
+
+def _definition_status_reason_codes(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    requested_as_of_date: str,
+    reason_codes: list[str],
+) -> None:
+    if definition.status == "RETIRED":
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED")
+    if definition.status == "SUPERSEDED":
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_SUPERSEDED")
+    if definition.as_of_date != requested_as_of_date:
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_DEFINITION_AS_OF_DATE_MISMATCH")
+
+
+def _eligible_portfolio_types(definition: DpmBulkReviewCampaignDefinition) -> list[str]:
+    return sorted(
+        {portfolio_type.strip().upper() for portfolio_type in definition.eligible_portfolio_types}
+    )
+
+
+def _candidate_readiness(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    reason_codes: list[str],
+) -> _CampaignDefinitionCandidateReadiness:
+    eligible_types = _eligible_portfolio_types(definition)
+    if not eligible_types:
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
+    eligible_type_set = set(eligible_types)
+    eligible_candidate_count = sum(
+        1
+        for candidate in definition.candidates
+        if candidate.portfolio_type.strip().upper() in eligible_type_set
+    )
+    if not definition.candidates:
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED")
+    if definition.candidates and eligible_candidate_count == 0:
+        reason_codes.append("BULK_REVIEW_CAMPAIGN_MEMBERSHIP_EMPTY")
+    source_ref_count = len(definition.source_refs) + sum(
+        len(candidate.source_refs) for candidate in definition.candidates
+    )
+    return _CampaignDefinitionCandidateReadiness(
+        eligible_portfolio_types=eligible_types,
+        eligible_candidate_count=eligible_candidate_count,
+        excluded_candidate_count=len(definition.candidates) - eligible_candidate_count,
+        source_ref_count=source_ref_count,
+    )
 
 
 def _governance_readiness(

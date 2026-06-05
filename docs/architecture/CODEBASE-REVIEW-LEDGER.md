@@ -16828,3 +16828,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-693: Campaign definition candidate readiness helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/waves/campaign_definition_readiness.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: `build_bulk_review_campaign_definition_preview_readiness` became the top current
+  source-complexity hotspot and mixed requested-date validation, definition status/as-of checks,
+  eligible portfolio-type normalization, candidate eligibility counting, candidate source-ref
+  counting, governance readiness, lifecycle event counting, and payload assembly in one builder.
+- Action: extracted definition status reason-code handling, eligible portfolio-type normalization,
+  and candidate readiness/source-ref summary assembly. Kept governance, lifecycle, and final payload
+  assembly in the existing builder boundary. Added direct tests for portfolio-type normalization,
+  empty-membership reason codes, candidate exclusion counts, superseded definition status, and
+  as-of-date mismatch reason codes.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_readiness.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_readiness.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign definition readiness
+  maintainability refactoring.
