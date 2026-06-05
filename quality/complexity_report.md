@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T01:53:42+00:00`
+- Generated at: `2026-06-05T01:57:25+00:00`
 
-- Current ref: `4abc0230`
+- Current ref: `fb58cb0b`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | restriction_matches_intent | src/api/services/construction_client_restriction_supportability.py | 12 | 24 |
-| 2 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
-| 3 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
-| 4 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
-| 5 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
-| 6 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
-| 7 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
-| 8 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
-| 9 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
-| 10 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 1 | build_bulk_review_campaign_definition_preview_readiness | src/core/waves/campaign_definition_readiness.py | 11 | 73 |
+| 2 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/postgres.py | 11 | 73 |
+| 3 | list_workflow_decisions_filtered | src/infrastructure/rebalance_runs/sqlite.py | 11 | 73 |
+| 4 | run_once | src/api/routers/monitoring_run_once_routes.py | 11 | 62 |
+| 5 | _transaction_measure_value | src/core/outcomes/core_sources.py | 11 | 56 |
+| 6 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 11 | 40 |
+| 7 | build_market_data_snapshot_from_core_coverage | src/core/dpm_source_context.py | 11 | 39 |
+| 8 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
+| 9 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 10 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
 
 ### Most Complex Current Test Functions
 
