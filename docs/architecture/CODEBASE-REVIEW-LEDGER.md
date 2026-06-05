@@ -16591,3 +16591,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-683: Drawdown outcome value helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/outcomes/risk_sources.py` and
+  `tests/unit/core/test_risk_realized_outcome_sources.py`.
+- Finding: `_drawdown_value` became the top current source-complexity hotspot and combined
+  absolute summary field selection, decimal conversion, drawdown reason-code selection, relative
+  benchmark context handling, and relative benchmark value extraction in one helper.
+- Action: extracted absolute drawdown summary lookup and relative benchmark drawdown lookup helpers.
+  Kept `_drawdown_value` as the public internal dispatch boundary used by the realized drawdown
+  adapter. Added direct helper coverage for maximum drawdown, relative measure dispatch,
+  benchmark-applied relative drawdown, and benchmark-not-applied reason preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal risk realized-source
+  maintainability refactoring.
