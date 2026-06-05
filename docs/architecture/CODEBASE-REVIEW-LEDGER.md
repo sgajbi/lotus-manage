@@ -17450,3 +17450,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-719: Rebalance target-method comparison helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/rebalance/engine.py` and
+  `tests/unit/dpm/engine/test_engine_wrapper_helpers.py`.
+- Finding: `run_simulation` became the top current source-complexity hotspot and mixed target
+  generation orchestration with optional target-method comparison execution and comparison warning
+  projection.
+- Action: extracted target-method comparison execution and divergence-warning projection into
+  focused helpers while keeping `run_simulation` as the orchestration boundary. Added direct tests
+  for disabled comparison, delegated comparison inputs, status divergence warning, and weight
+  divergence warning behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py`,
+  `python -m ruff format --check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/engine.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_wrapper_helpers.py -q`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_core_flows.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance-engine
+  maintainability refactoring.
