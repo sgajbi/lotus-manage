@@ -391,29 +391,7 @@ def _regime_context_from_scenario_response(
 def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedCohort:
     try:
         metadata = _dict_section(body, "metadata")
-        affected_payload = body.get("affected_portfolios")
-        if not isinstance(affected_payload, list):
-            raise ValueError("affected_portfolios must be a list")
-        reason_codes = body.get("reason_codes")
-        if not isinstance(reason_codes, list):
-            reason_codes = ["RISK_EVENT_COHORT_REASON_CODES_MISSING"]
-        if not all(isinstance(portfolio, dict) for portfolio in affected_payload):
-            raise ValueError("affected_portfolios entries must be objects")
-        affected = tuple(
-            RiskEventAffectedPortfolio(
-                portfolio_id=str(portfolio["portfolio_id"]),
-                mandate_id=(
-                    str(portfolio["mandate_id"])
-                    if portfolio.get("mandate_id") is not None
-                    else None
-                ),
-                source_ref=str(portfolio["source_ref"]),
-                reason_codes=tuple(str(code) for code in portfolio.get("reason_codes", [])),
-                impact_score=Decimal(str(portfolio["impact_score"])),
-                dominant_bucket=str(portfolio["dominant_bucket"]),
-            )
-            for portfolio in affected_payload
-        )
+        affected = _risk_event_affected_portfolios(body.get("affected_portfolios"))
         return RiskEventAffectedCohort(
             cohort_id=str(body["cohort_id"]),
             risk_event_id=str(body["risk_event_id"]),
@@ -423,11 +401,38 @@ def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedC
             source_service=str(metadata.get("source_service") or "lotus-risk"),
             request_fingerprint=str(metadata.get("request_fingerprint") or ""),
             calculation_supportability=str(metadata.get("calculation_supportability") or "blocked"),
-            reason_codes=tuple(str(code) for code in reason_codes),
+            reason_codes=_risk_event_reason_codes(body.get("reason_codes")),
             affected_portfolios=affected,
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
+
+
+def _risk_event_reason_codes(reason_codes: Any) -> tuple[str, ...]:
+    if not isinstance(reason_codes, list):
+        return ("RISK_EVENT_COHORT_REASON_CODES_MISSING",)
+    return tuple(str(code) for code in reason_codes)
+
+
+def _risk_event_affected_portfolios(value: Any) -> tuple[RiskEventAffectedPortfolio, ...]:
+    if not isinstance(value, list):
+        raise ValueError("affected_portfolios must be a list")
+    if not all(isinstance(portfolio, dict) for portfolio in value):
+        raise ValueError("affected_portfolios entries must be objects")
+    return tuple(_risk_event_affected_portfolio(portfolio) for portfolio in value)
+
+
+def _risk_event_affected_portfolio(portfolio: dict[str, Any]) -> RiskEventAffectedPortfolio:
+    return RiskEventAffectedPortfolio(
+        portfolio_id=str(portfolio["portfolio_id"]),
+        mandate_id=str(portfolio["mandate_id"])
+        if portfolio.get("mandate_id") is not None
+        else None,
+        source_ref=str(portfolio["source_ref"]),
+        reason_codes=tuple(str(code) for code in portfolio.get("reason_codes", [])),
+        impact_score=Decimal(str(portfolio["impact_score"])),
+        dominant_bucket=str(portfolio["dominant_bucket"]),
+    )
 
 
 def _risk_status_from_supportability(state: str) -> ConstructionMethodStatus:
