@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T04:35:11+00:00`
+- Generated at: `2026-06-05T04:39:43+00:00`
 
-- Current ref: `c1f82002`
+- Current ref: `aab2812f`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | options_for_construction_method | src/api/services/construction_method_execution.py | 11 | 37 |
-| 2 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
-| 3 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
-| 4 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
-| 5 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
-| 6 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
-| 7 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
-| 8 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
-| 9 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
-| 10 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 1 | policy_pack_engine_option_updates | src/core/rebalance/policy_packs.py | 11 | 34 |
+| 2 | _mandate_twin_field_gap_codes | src/core/mandates.py | 11 | 31 |
+| 3 | _transition_task_fields | src/core/waves/campaign_assignment_tasks.py | 11 | 29 |
+| 4 | validate_summary_invocation_request | src/api/routers/pm_operating_quality_models.py | 11 | 24 |
+| 5 | _find_cash_movement_bucket | src/core/outcomes/core_sources.py | 11 | 24 |
+| 6 | _ensure_operation_documentation | src/api/openapi_enrichment.py | 11 | 22 |
+| 7 | run_simulation | src/core/rebalance/engine.py | 10 | 151 |
+| 8 | generate_intents | src/core/rebalance/intents.py | 10 | 120 |
+| 9 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 10 | 116 |
+| 10 | generate_fx_and_simulate | src/core/rebalance/execution.py | 10 | 90 |
 
 ### Most Complex Current Test Functions
 
