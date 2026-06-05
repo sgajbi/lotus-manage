@@ -16082,3 +16082,28 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-662: PM-quality scope evidence helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Finding: `_scope_evidence_from_policy` became the top current source-complexity hotspot and
+  mixed peer-group field projection, lookback-window field projection, reason-code assembly, and
+  source-reference assembly inside one mapper.
+- Action: introduced typed peer-group and lookback scope field projections plus dedicated
+  reason-code and source-reference helpers. Kept `_scope_evidence_from_policy` as the policy-to
+  scope-evidence assembly boundary and added direct helper tests for populated and empty scope
+  projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability refactoring.

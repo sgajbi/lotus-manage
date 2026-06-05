@@ -482,6 +482,39 @@ def test_pm_operating_quality_materializes_peer_group_and_lookback_scope() -> No
     assert any(ref.source_type == "PM_QUALITY_LOOKBACK_WINDOW" for ref in score_run.source_refs)
 
 
+def test_pm_operating_quality_scope_projection_helpers_materialize_policy_scope() -> None:
+    policy = _scope_policy()
+    peer_group = policy.peer_group_policy
+    lookback = policy.lookback_window_policy
+
+    peer_group_fields = scoring._peer_group_scope_fields(peer_group)
+    lookback_fields = scoring._lookback_scope_fields(lookback)
+
+    assert peer_group_fields.peer_group_id == "sg_dpm_balanced"
+    assert peer_group_fields.minimum_peer_count == 3
+    assert lookback_fields.window_id == "pmq_30d_20260512"
+    assert lookback_fields.timezone == "Asia/Singapore"
+    assert scoring._scope_reason_codes(peer_group=peer_group, lookback=lookback) == [
+        "PM_QUALITY_PEER_GROUP_MATERIALIZED",
+        "PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED",
+    ]
+    assert [
+        ref.source_type for ref in scoring._scope_source_refs(peer_group=peer_group, lookback=None)
+    ] == ["PM_QUALITY_PEER_GROUP_DEFINITION"]
+
+
+def test_pm_operating_quality_scope_projection_helpers_handle_empty_scope() -> None:
+    peer_group_fields = scoring._peer_group_scope_fields(None)
+    lookback_fields = scoring._lookback_scope_fields(None)
+
+    assert peer_group_fields.peer_group_id is None
+    assert peer_group_fields.minimum_peer_count is None
+    assert lookback_fields.window_id is None
+    assert lookback_fields.timezone is None
+    assert scoring._scope_reason_codes(peer_group=None, lookback=None) == []
+    assert scoring._scope_source_refs(peer_group=None, lookback=None) == []
+
+
 def test_pm_operating_quality_lookback_window_fails_closed_for_stale_evidence() -> None:
     with pytest.raises(
         scoring.DpmPmQualityValidationError, match="PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW"
