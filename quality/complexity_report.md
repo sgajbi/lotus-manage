@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T00:34:39+00:00`
+- Generated at: `2026-06-05T00:42:17+00:00`
 
-- Current ref: `9c216286`
+- Current ref: `4b171627`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_pm_quality_summary_invocation | src/core/pm_quality/summary_history.py | 12 | 124 |
-| 2 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
-| 3 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
-| 4 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
-| 5 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
-| 6 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
-| 7 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
-| 8 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
-| 9 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
-| 10 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
+| 1 | generate_targets_solver | src/core/target_generation.py | 12 | 104 |
+| 2 | summarize_enrichment_posture | src/core/construction/enrichment.py | 12 | 83 |
+| 3 | request_with_campaign_definition | src/api/routers/wave_campaign_definition_resolution.py | 12 | 81 |
+| 4 | validate_search_page_metadata | src/core/portfolio_memory/models.py | 12 | 69 |
+| 5 | _governance_readiness | src/core/waves/campaign_definition_readiness.py | 12 | 55 |
+| 6 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 12 | 51 |
+| 7 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 12 | 51 |
+| 8 | _drawdown_value | src/core/outcomes/risk_sources.py | 12 | 47 |
+| 9 | _collect_infeasibility_hints | src/core/target_generation.py | 12 | 42 |
+| 10 | _post_source_product | src/infrastructure/core_sourcing/client.py | 12 | 36 |
 
 ### Most Complex Current Test Functions
 
