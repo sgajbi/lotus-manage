@@ -18475,3 +18475,27 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-761: Mandate digital-twin source-lineage helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/mandates.py` and `tests/unit/dpm/core/test_mandate_health.py`.
+- Finding: `_build_digital_twin_source_lineage` became the top current source-complexity hotspot
+  and repeated Core source-product lineage projection across required products, optional mandate
+  source products, and the benchmark-assignment special case.
+- Action: extracted helpers for required digital-twin lineage, optional Core source-product
+  lineage, generic Core source-product projection, benchmark-assignment source lineage, and
+  benchmark-assignment source-record identity. Preserved lineage ordering and benchmark identity
+  behavior. Added direct helper tests for optional-product filtering and benchmark source identity.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m ruff format --check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`,
+  `python -m pytest tests/unit/dpm/core/test_mandate_health.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate digital-twin
+  maintainability refactoring.
