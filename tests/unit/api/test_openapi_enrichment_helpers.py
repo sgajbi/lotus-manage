@@ -1,6 +1,7 @@
 from src.api.openapi_enrichment import (
     _composite_example_from_schema,
     _description_context,
+    _enum_example,
     _example_from_schema,
     _ensure_metrics_path_examples,
     _ensure_operation_examples,
@@ -14,6 +15,8 @@ from src.api.openapi_enrichment import (
     _ref_example_from_schema,
     _operation_tag_for_path,
     _schema_declared_example,
+    _schema_format_example,
+    _schema_type_example,
     _semantic_description_for_context,
     _SEMANTIC_DESCRIPTION_RULES,
     _semantic_string_example_for_key,
@@ -111,6 +114,37 @@ def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -
     assert _semantic_string_example_for_key("workflow_status", "string") == "READY"
     assert _semantic_string_example_for_key("display_name", "string") == "sample_display_name"
     assert _semantic_string_example_for_key("unknown", None) is None
+
+
+def test_openapi_enrichment_infer_example_helpers_separate_schema_concerns() -> None:
+    assert _enum_example({"enum": ["READY", "BLOCKED"]}) == (True, "READY")
+    assert _enum_example({"enum": []}) == (False, None)
+    assert _schema_type_example(
+        "allocations",
+        key="allocations",
+        prop_schema={"type": "array", "items": {"type": "integer"}},
+    ) == (True, [10])
+    assert _schema_type_example(
+        "metadata",
+        key="metadata",
+        prop_schema={"type": "object"},
+    ) == (True, {"sample_key": "sample_value"})
+    assert _schema_type_example(
+        "targetWeight",
+        key="target_weight",
+        prop_schema={"type": "number"},
+    ) == (True, 0.125)
+    assert _schema_type_example(
+        "displayName",
+        key="display_name",
+        prop_schema={"type": "string"},
+    ) == (False, None)
+    assert _schema_format_example({"format": "date"}) == (True, "2026-03-02")
+    assert _schema_format_example({"format": "date-time"}) == (
+        True,
+        "2026-03-02T10:30:00Z",
+    )
+    assert _schema_format_example({"format": "uuid"}) == (False, None)
 
 
 def test_openapi_enrichment_prefers_declared_schema_examples() -> None:

@@ -108,34 +108,57 @@ def _semantic_string_example_for_key(key: str, schema_type: Any) -> str | None:
     return None
 
 
+def _enum_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:
+    enum_values = prop_schema.get("enum")
+    if isinstance(enum_values, list) and enum_values:
+        return True, enum_values[0]
+    return False, None
+
+
+def _schema_type_example(
+    prop_name: str,
+    *,
+    key: str,
+    prop_schema: dict[str, Any],
+) -> tuple[bool, Any]:
+    schema_type = prop_schema.get("type")
+    if schema_type == "array":
+        item_schema = prop_schema.get("items", {})
+        return True, [_infer_example(f"{prop_name}_item", item_schema)]
+    if schema_type == "object":
+        return True, {"sample_key": "sample_value"}
+    if schema_type == "boolean":
+        return True, True
+    if schema_type == "integer":
+        return True, 10
+    if schema_type == "number":
+        return True, _number_example_for_key(key)
+    return False, None
+
+
+def _schema_format_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:
+    schema_format = prop_schema.get("format")
+    if schema_format == "date":
+        return True, "2026-03-02"
+    if schema_format == "date-time":
+        return True, "2026-03-02T10:30:00Z"
+    return False, None
+
+
 def _infer_example(prop_name: str, prop_schema: dict[str, Any]) -> Any:
     key = _to_snake_case(prop_name)
     if key in _EXAMPLE_BY_KEY:
         return _EXAMPLE_BY_KEY[key]
 
-    enum_values = prop_schema.get("enum")
-    if isinstance(enum_values, list) and enum_values:
-        return enum_values[0]
+    for matched, example in (
+        _enum_example(prop_schema),
+        _schema_type_example(prop_name, key=key, prop_schema=prop_schema),
+        _schema_format_example(prop_schema),
+    ):
+        if matched:
+            return example
 
     schema_type = prop_schema.get("type")
-    schema_format = prop_schema.get("format")
-    if schema_type == "array":
-        item_schema = prop_schema.get("items", {})
-        return [_infer_example(f"{prop_name}_item", item_schema)]
-    if schema_type == "object":
-        return {"sample_key": "sample_value"}
-    if schema_type == "boolean":
-        return True
-    if schema_type == "integer":
-        return 10
-    if schema_type == "number":
-        return _number_example_for_key(key)
-
-    if schema_format == "date":
-        return "2026-03-02"
-    if schema_format == "date-time":
-        return "2026-03-02T10:30:00Z"
-
     semantic_string = _semantic_string_example_for_key(key, schema_type)
     if semantic_string is not None:
         return semantic_string
