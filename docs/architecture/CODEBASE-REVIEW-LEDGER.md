@@ -17646,3 +17646,29 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260605-727: Proof-pack section dispatch helpers extracted
+
+- Date: 2026-06-05
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_section_payload` became the top current source-complexity hotspot and mixed the
+  top-level proof-pack section sequence with run-bound section routing, source-context section
+  routing, governance routing, and missing-run fallback handling.
+- Action: extracted run-bound section dispatch and source-context section dispatch into focused
+  helpers while keeping `_section_payload` as the top-level proof-pack section coordinator. Added
+  direct tests for run state/policy/diagnostics dispatch, unhandled run-bound sections,
+  scenario/regime source-context fallback, eligibility/restrictions routing, and unhandled
+  source-context sections.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring.

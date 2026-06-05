@@ -389,6 +389,58 @@ def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None
     assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
 
 
+def test_run_bound_section_payload_dispatches_state_policy_and_diagnostics() -> None:
+    result = _ready_rebalance_result().model_copy(update={"intents": []})
+
+    trade_state, _trade_summary, _trade_facts, trade_metrics, trade_reasons = (
+        builder_module._run_bound_section_payload(
+            section_type="trade_intents",
+            result=result,
+            selected_alternative=None,
+            source_analytics={},
+        )
+    )
+    tax_state, tax_summary, _tax_facts, _tax_metrics, tax_reasons = (
+        builder_module._run_bound_section_payload(
+            section_type="tax_impact",
+            result=result,
+            selected_alternative=None,
+            source_analytics={},
+        )
+    )
+    liquidity_state, liquidity_summary, _facts, liquidity_metrics, liquidity_reasons = (
+        builder_module._run_bound_section_payload(
+            section_type="liquidity_and_cash",
+            result=result,
+            selected_alternative=None,
+            source_analytics={},
+        )
+    )
+
+    assert trade_state == "BLOCKED"
+    assert trade_metrics == {"trade_count": 0}
+    assert trade_reasons == ["DPM_TRADE_INTENTS_MISSING"]
+    assert tax_state == "DEGRADED"
+    assert tax_summary == "Tax impact is not available for this run."
+    assert tax_reasons == ["DPM_TAX_IMPACT_MISSING"]
+    assert liquidity_state == "READY"
+    assert liquidity_summary == "Liquidity and cash posture captured from run diagnostics."
+    assert liquidity_metrics == {"breach_count": 0}
+    assert liquidity_reasons == []
+
+
+def test_run_bound_section_payload_ignores_unhandled_sections() -> None:
+    assert (
+        builder_module._run_bound_section_payload(
+            section_type="lineage",
+            result=_ready_rebalance_result(),
+            selected_alternative=None,
+            source_analytics={},
+        )
+        is None
+    )
+
+
 def test_approval_requirements_section_payload_orders_workflow_decisions() -> None:
     result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
     later = DpmRunWorkflowDecisionRecord(
@@ -850,6 +902,49 @@ def test_eligibility_and_restrictions_section_payload_merges_restriction_context
         "CLIENT_RESTRICTION_PROFILE_READY",
         "DPM_UNIVERSE_EXCLUSIONS_PRESENT",
     ]
+
+
+def test_run_source_context_section_payload_dispatches_source_context_sections() -> None:
+    result = _ready_rebalance_result()
+
+    scenario_state, scenario_summary, _facts, scenario_metrics, scenario_reasons = (
+        builder_module._run_source_context_section_payload(
+            section_type="scenario_and_regime_evidence",
+            result=result,
+            source_analytics={},
+        )
+    )
+    eligibility_state, eligibility_summary, eligibility_facts, eligibility_metrics, reasons = (
+        builder_module._run_source_context_section_payload(
+            section_type="eligibility_and_restrictions",
+            result=result,
+            source_analytics={},
+        )
+    )
+
+    assert scenario_state == "DEGRADED"
+    assert scenario_summary == "Scenario/regime authority context is not attached."
+    assert scenario_metrics == {}
+    assert scenario_reasons == ["DPM_SCENARIO_CONTEXT_MISSING"]
+    assert eligibility_state == "READY"
+    assert (
+        eligibility_summary
+        == "Eligibility and restriction evidence captured from source run universe."
+    )
+    assert eligibility_facts == {"excluded": []}
+    assert eligibility_metrics == {"excluded_count": 0}
+    assert reasons == []
+
+
+def test_run_source_context_section_payload_ignores_unhandled_sections() -> None:
+    assert (
+        builder_module._run_source_context_section_payload(
+            section_type="lineage",
+            result=_ready_rebalance_result(),
+            source_analytics={},
+        )
+        is None
+    )
 
 
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
