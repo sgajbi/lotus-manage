@@ -20460,3 +20460,34 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal mandate diff service
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-831: OpenAPI example enrichment traversal helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_ensure_request_and_response_examples` was the top current source-complexity hotspot
+  after the mandate diff slice and duplicated schema-component fallback, path validation, metrics
+  special handling, HTTP-method filtering, operation validation, and operation example dispatch in
+  one OpenAPI enrichment coordinator.
+- Action: extracted deterministic example schema normalization, metrics path enrichment, and
+  non-metrics HTTP-operation traversal helpers while preserving metrics examples, malformed
+  fragment tolerance, and request/response example generation. Added direct helper tests for
+  non-metrics operation selection, invalid component-schema fallback, and metrics-only schema
+  enrichment alongside the existing full OpenAPI enrichment coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring and repo-local quality evidence.

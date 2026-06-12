@@ -8,6 +8,7 @@ from src.api.openapi_enrichment import (
     _ensure_operation_default_docs,
     _ensure_operation_default_error_response,
     _ensure_operation_examples,
+    _ensure_metrics_paths_examples,
     _ensure_property_documentation,
     _infer_description,
     _infer_example,
@@ -18,12 +19,14 @@ from src.api.openapi_enrichment import (
     _operation_has_error_response,
     _operation_tag_for_path,
     _path_http_operations,
+    _schema_example_schemas,
     _ref_example_from_schema,
     _schema_component_schemas,
     _schema_declared_example,
     _schema_documentable_properties,
     _schema_format_example,
     _schema_http_operations,
+    _schema_non_metrics_http_operations,
     _schema_path_methods,
     _schema_type_example,
     _SEMANTIC_DESCRIPTION_RULES,
@@ -447,6 +450,33 @@ def test_openapi_enrichment_path_http_operations_filters_methods() -> None:
     ]
 
 
+def test_openapi_enrichment_example_operation_iterator_excludes_metrics() -> None:
+    metrics_operation = {"responses": {"200": {"description": "metrics"}}}
+    post_operation = {"responses": {"200": {"description": "ok"}}}
+    schema = {
+        "paths": {
+            "/metrics": {"get": metrics_operation},
+            "/api/v1/custom": {"post": post_operation, "trace": {"responses": {}}},
+            "/bad-operation": {"post": []},
+        }
+    }
+
+    assert list(_schema_non_metrics_http_operations(schema)) == [
+        ("/api/v1/custom", "post", post_operation)
+    ]
+    assert list(_schema_non_metrics_http_operations({"paths": []})) == []
+
+
+def test_openapi_enrichment_example_schema_helper_defaults_invalid_components() -> None:
+    component_schemas = {"Payload": {"type": "object"}}
+
+    assert _schema_example_schemas({"components": {"schemas": component_schemas}}) == (
+        component_schemas
+    )
+    assert _schema_example_schemas({"components": {"schemas": []}}) == {}
+    assert _schema_example_schemas({"components": []}) == {}
+
+
 def test_openapi_enrichment_schema_documentable_properties_filters_fragments() -> None:
     good_property = {"type": "string"}
     schema = {
@@ -522,6 +552,23 @@ def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() 
         responses["503"]["content"]["application/json"]["examples"]["default"]["value"]["status"]
         == 503
     )
+
+
+def test_openapi_enrichment_metrics_schema_helper_targets_metrics_only() -> None:
+    schema = {
+        "paths": {
+            "/metrics": {"get": {"responses": {"200": {"description": "metrics"}}}},
+            "/api/v1/custom": {"get": {"responses": {"200": {"description": "ok"}}}},
+        }
+    }
+
+    _ensure_metrics_paths_examples(schema)
+
+    assert (
+        "text/plain; version=0.0.4"
+        in schema["paths"]["/metrics"]["get"]["responses"]["200"]["content"]
+    )
+    assert "content" not in schema["paths"]["/api/v1/custom"]["get"]["responses"]["200"]
 
 
 def test_openapi_enrichment_adds_operation_docs_errors_and_prometheus_examples() -> None:
