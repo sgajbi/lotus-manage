@@ -693,35 +693,26 @@ def _score_run(
     generated_by: str,
     correlation_id: str,
 ) -> DpmPmOperatingQualityScoreRun:
-    scope_refs = book_scope_evidence.source_refs if book_scope_evidence is not None else []
-    pm_scope_refs = scope_evidence.source_refs if scope_evidence is not None else []
-    governance_refs = governance_evidence.source_refs if governance_evidence is not None else []
-    source_refs = _dedupe_refs(
-        [ref for result in indicator_results for ref in result.source_refs]
-        + scope_refs
-        + pm_scope_refs
-        + governance_refs
+    source_refs = _score_run_source_refs(
+        indicator_results=indicator_results,
+        book_scope_evidence=book_scope_evidence,
+        scope_evidence=scope_evidence,
+        governance_evidence=governance_evidence,
     )
-    hash_payload = {
-        "pm_id": pm_id,
-        "book_id": book_id,
-        "as_of_date": as_of_date,
-        "policy": policy.model_dump(mode="json"),
-        "state": state,
-        "score": str(score) if score is not None else None,
-        "indicator_results": [result.model_dump(mode="json") for result in indicator_results],
-        "book_scope_evidence": (
-            book_scope_evidence.model_dump(mode="json") if book_scope_evidence is not None else None
-        ),
-        "scope_evidence": (
-            scope_evidence.model_dump(mode="json") if scope_evidence is not None else None
-        ),
-        "governance_evidence": (
-            governance_evidence.model_dump(mode="json") if governance_evidence is not None else None
-        ),
-        "reason_codes": reason_codes,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
-    }
+    hash_payload = _score_run_hash_payload(
+        pm_id=pm_id,
+        book_id=book_id,
+        as_of_date=as_of_date,
+        policy=policy,
+        state=state,
+        score=score,
+        indicator_results=indicator_results,
+        book_scope_evidence=book_scope_evidence,
+        scope_evidence=scope_evidence,
+        governance_evidence=governance_evidence,
+        reason_codes=reason_codes,
+        source_refs=source_refs,
+    )
     content_hash = _content_hash(hash_payload)
     return DpmPmOperatingQualityScoreRun(
         score_run_id=f"pmq_{uuid5(NAMESPACE_URL, content_hash).hex[:16]}",
@@ -743,6 +734,59 @@ def _score_run(
         generated_by=generated_by,
         correlation_id=correlation_id,
     )
+
+
+def _score_run_source_refs(
+    *,
+    indicator_results: list[DpmPmQualityIndicatorResult],
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
+    scope_evidence: DpmPmQualityScopeEvidence | None,
+    governance_evidence: DpmPmQualityGovernanceEvidence | None,
+) -> list[DpmOutcomeSourceRef]:
+    scope_refs = book_scope_evidence.source_refs if book_scope_evidence is not None else []
+    pm_scope_refs = scope_evidence.source_refs if scope_evidence is not None else []
+    governance_refs = governance_evidence.source_refs if governance_evidence is not None else []
+    return _dedupe_refs(
+        [ref for result in indicator_results for ref in result.source_refs]
+        + scope_refs
+        + pm_scope_refs
+        + governance_refs
+    )
+
+
+def _score_run_hash_payload(
+    *,
+    pm_id: str,
+    book_id: str | None,
+    as_of_date: str,
+    policy: DpmPmOperatingQualityPolicy,
+    state: PmQualityState,
+    score: Decimal | None,
+    indicator_results: list[DpmPmQualityIndicatorResult],
+    book_scope_evidence: DpmPmQualityBookScopeEvidence | None,
+    scope_evidence: DpmPmQualityScopeEvidence | None,
+    governance_evidence: DpmPmQualityGovernanceEvidence | None,
+    reason_codes: list[str],
+    source_refs: list[DpmOutcomeSourceRef],
+) -> dict[str, Any]:
+    return {
+        "pm_id": pm_id,
+        "book_id": book_id,
+        "as_of_date": as_of_date,
+        "policy": policy.model_dump(mode="json"),
+        "state": state,
+        "score": str(score) if score is not None else None,
+        "indicator_results": [result.model_dump(mode="json") for result in indicator_results],
+        "book_scope_evidence": _optional_model_dump(book_scope_evidence),
+        "scope_evidence": _optional_model_dump(scope_evidence),
+        "governance_evidence": _optional_model_dump(governance_evidence),
+        "reason_codes": reason_codes,
+        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
+    }
+
+
+def _optional_model_dump(model: Any | None) -> dict[str, Any] | None:
+    return model.model_dump(mode="json") if model is not None else None
 
 
 def _fairness_analysis(

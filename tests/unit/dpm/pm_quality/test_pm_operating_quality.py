@@ -5,6 +5,7 @@ import pytest
 from src.core.outcomes import DpmOutcomeSourceRef
 from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
+    DpmPmQualityBookScopeEvidence,
     DpmPmQualityFairnessSegmentInput,
     DpmPmQualityFairnessSegmentResult,
     DpmPmOperatingQualityPolicy,
@@ -448,6 +449,101 @@ def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs()
     ]
     assert any(ref.source_type == "PostTradeOutcomeReview" for ref in score_run.source_refs)
     assert any(ref.source_type == "DPM_OUTCOME_REPORT_INPUT" for ref in score_run.source_refs)
+
+
+def test_pm_quality_score_run_source_ref_helper_collects_scope_and_governance_refs() -> None:
+    indicator_ref = DpmOutcomeSourceRef(
+        source_system="lotus-risk",
+        source_type="PM_SOURCE_QUALITY",
+        source_id="risk-source-001",
+    )
+    book_ref = DpmOutcomeSourceRef(
+        source_system="lotus-core",
+        source_type="PortfolioManagerBookMembership",
+        source_id="book-scope-001",
+    )
+    governance_ref = DpmOutcomeSourceRef(
+        source_system="bank-governance",
+        source_type="PM_QUALITY_POLICY_APPROVAL",
+        source_id="PMQ-APPROVAL-2026-05",
+    )
+    indicator_result = DpmPmQualityIndicatorResult(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("91"),
+        weight=Decimal("100"),
+        state="READY",
+        evidence_count=1,
+        reason_codes=["SOURCE_READY"],
+        source_refs=[indicator_ref, book_ref],
+    )
+    book_scope = DpmPmQualityBookScopeEvidence(
+        source_id="book-scope-001",
+        product_version="v1",
+        supportability_state="READY",
+        returned_portfolio_count=1,
+        source_refs=[book_ref],
+    )
+    scope_evidence = scoring._scope_evidence_from_policy(_scope_policy())
+    governance_evidence = scoring._governance_evidence(
+        policy=_enabled_policy(),
+        as_of_date="2026-05-12",
+        generated_by="ops",
+    ).model_copy(update={"source_refs": [governance_ref]})
+
+    refs = scoring._score_run_source_refs(
+        indicator_results=[indicator_result],
+        book_scope_evidence=book_scope,
+        scope_evidence=scope_evidence,
+        governance_evidence=governance_evidence,
+    )
+
+    assert [ref.source_type for ref in refs] == [
+        "PM_QUALITY_LOOKBACK_WINDOW",
+        "PM_QUALITY_POLICY_APPROVAL",
+        "PM_QUALITY_PEER_GROUP_DEFINITION",
+        "PortfolioManagerBookMembership",
+        "PM_SOURCE_QUALITY",
+    ]
+    assert len([ref for ref in refs if ref.source_id == "book-scope-001"]) == 1
+
+
+def test_pm_quality_score_run_hash_payload_serializes_optional_materialization() -> None:
+    indicator_ref = DpmOutcomeSourceRef(
+        source_system="lotus-risk",
+        source_type="PM_SOURCE_QUALITY",
+        source_id="risk-source-001",
+    )
+    indicator_result = DpmPmQualityIndicatorResult(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("91"),
+        weight=Decimal("100"),
+        state="READY",
+        evidence_count=1,
+        reason_codes=["SOURCE_READY"],
+        source_refs=[indicator_ref],
+    )
+
+    payload = scoring._score_run_hash_payload(
+        pm_id="pm_001",
+        book_id="sg_dpm_book",
+        as_of_date="2026-05-12",
+        policy=_enabled_policy(),
+        state="READY",
+        score=Decimal("91.00"),
+        indicator_results=[indicator_result],
+        book_scope_evidence=None,
+        scope_evidence=None,
+        governance_evidence=None,
+        reason_codes=["PM_QUALITY_WITHIN_POLICY"],
+        source_refs=[indicator_ref],
+    )
+
+    assert payload["score"] == "91.00"
+    assert payload["book_scope_evidence"] is None
+    assert payload["scope_evidence"] is None
+    assert payload["governance_evidence"] is None
+    assert payload["indicator_results"][0]["score"] == "91"
+    assert payload["source_refs"] == [indicator_ref.model_dump(mode="json")]
 
 
 def test_pm_operating_quality_materializes_peer_group_and_lookback_scope() -> None:
