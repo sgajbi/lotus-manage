@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T16:37:17+00:00`
+- Generated at: `2026-06-12T16:40:14+00:00`
 
-- Current ref: `7c1b447a`
+- Current ref: `fb64f3d0`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
-| 2 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
-| 3 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
-| 4 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
-| 5 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
-| 6 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
-| 7 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
-| 8 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
-| 9 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
-| 10 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 1 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
+| 2 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
+| 3 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
+| 4 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
+| 5 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
+| 6 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
+| 7 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
+| 8 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
+| 9 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 10 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
 
 ### Most Complex Current Test Functions
 

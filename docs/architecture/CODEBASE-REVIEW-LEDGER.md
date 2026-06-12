@@ -20382,3 +20382,29 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal in-memory repository
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-828: Buy intent dependency selector helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/common/intent_dependencies.py`,
+  `tests/unit/core/test_intent_dependencies.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `link_buy_intent_dependencies` was the next current source-complexity hotspot and mixed
+  security-intent type/side selection, notional presence checks, FX dependency lookup,
+  same-currency sell dependency lookup, optional sell-link policy, and duplicate-safe append
+  behavior in one core helper.
+- Action: extracted typed BUY/SELL security-intent selectors and a deterministic buy dependency-id
+  builder while preserving in-place dependency mutation, FX-before-sell ordering, latest
+  same-currency sell selection, missing-notional exclusion, and duplicate-safe appends. Added
+  direct helper tests for selector filtering and dependency ordering alongside existing public
+  linking and common edge coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m ruff format --check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/intent_dependencies.py`,
+  `python -m pytest tests/unit/core/test_intent_dependencies.py tests/unit/core/test_common_edge_coverage.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance intent dependency
+  maintainability refactoring and repo-local quality evidence.
