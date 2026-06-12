@@ -6,6 +6,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 import src.core.waves.campaign_approval_inbox as approval_inbox_module
+import src.core.waves.campaign_workflow_board as workflow_board_module
 from src.core.waves import DpmWaveSourceRef
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_definitions import (
@@ -481,6 +482,65 @@ def test_campaign_workflow_board_derives_actor_next_actions() -> None:
     assert unauthorized.board_status == "ATTENTION_FOR_ACTOR"
     assert unauthorized.next_action == "REVIEW_ACTOR_ENTITLEMENT"
     assert unauthorized.assigned_actor_ids == ["ops"]
+
+
+def test_campaign_workflow_board_action_helpers_prioritize_approval_attention() -> None:
+    operating_queue = build_bulk_review_campaign_operating_queue_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    approval_inbox = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    assert workflow_board_module._approval_inbox_workflow_action(approval_inbox) == (
+        "ATTENTION_FOR_ACTOR",
+        "RECORD_APPROVAL_DECISION",
+        ["BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_NOT_SUPPLIED"],
+    )
+    assert workflow_board_module._classify_workflow_board_posture(
+        operating_queue=operating_queue,
+        approval_inbox=approval_inbox,
+    ) == (
+        "ATTENTION_FOR_ACTOR",
+        "RECORD_APPROVAL_DECISION",
+        ["BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_NOT_SUPPLIED"],
+    )
+
+
+def test_campaign_workflow_board_action_helpers_fall_back_to_operating_queue() -> None:
+    operating_queue = build_bulk_review_campaign_operating_queue_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    approval_inbox = build_bulk_review_campaign_approval_inbox_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    assert workflow_board_module._approval_inbox_workflow_action(approval_inbox) is None
+    assert workflow_board_module._operating_queue_workflow_action(operating_queue) == (
+        "READY_FOR_ACTOR",
+        "LAUNCH_CAMPAIGN",
+        operating_queue.queue_reason_codes,
+    )
+    assert workflow_board_module._classify_workflow_board_posture(
+        operating_queue=operating_queue,
+        approval_inbox=approval_inbox,
+    ) == (
+        "READY_FOR_ACTOR",
+        "LAUNCH_CAMPAIGN",
+        operating_queue.queue_reason_codes,
+    )
 
 
 def test_campaign_workflow_board_page_filters_next_action_and_counts() -> None:
