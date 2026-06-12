@@ -20408,3 +20408,86 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal rebalance intent dependency
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-829: Enterprise write authorization policy helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `authorize_write_request` was the top current source-complexity hotspot and mixed write
+  method gating, environment enforcement, header normalization, required header validation,
+  service-identity validation, capability parsing, and capability denial in one API-layer security
+  helper.
+- Action: extracted deterministic write-authorization policy helpers for enforcement gating,
+  normalized headers, required-header detection, service identity, and capability parsing while
+  preserving existing deny reasons and authorization behavior. Added direct helper tests for
+  normalized required-header detection, service-identity detection, capability parsing, and
+  read-method bypass behavior alongside existing authorization and middleware coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m ruff format --check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/api/enterprise_readiness.py`,
+  `python -m pytest tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal API-layer authorization
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-830: Mandate diff version-pair selection helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `build_mandate_diff_for_versions` was the top current source-complexity hotspot after
+  the enterprise authorization slice and mixed version indexing, explicit version-pair validation,
+  missing-version errors, latest-two fallback selection, insufficient-version errors, and diff
+  construction in one service helper.
+- Action: extracted deterministic mandate diff version-index, requested-pair, latest-pair, and
+  pair-routing helpers while preserving explicit version selection, default latest-two ordering,
+  and existing `DPM_MANDATE_DIFF_*` error codes. Added direct helper tests for explicit/latest
+  selection and validation errors alongside existing public diff builder coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_diff.py tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python -m ruff format --check src/api/services/mandate_diff.py tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_diff.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal mandate diff service
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-831: OpenAPI example enrichment traversal helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_ensure_request_and_response_examples` was the top current source-complexity hotspot
+  after the mandate diff slice and duplicated schema-component fallback, path validation, metrics
+  special handling, HTTP-method filtering, operation validation, and operation example dispatch in
+  one OpenAPI enrichment coordinator.
+- Action: extracted deterministic example schema normalization, metrics path enrichment, and
+  non-metrics HTTP-operation traversal helpers while preserving metrics examples, malformed
+  fragment tolerance, and request/response example generation. Added direct helper tests for
+  non-metrics operation selection, invalid component-schema fallback, and metrics-only schema
+  enrichment alongside the existing full OpenAPI enrichment coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring and repo-local quality evidence.

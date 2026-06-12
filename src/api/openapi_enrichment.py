@@ -472,29 +472,35 @@ def _is_error_status_code(status_code: str) -> bool:
 
 
 def _ensure_request_and_response_examples(schema: dict[str, Any]) -> None:
-    schemas = schema.get("components", {}).get("schemas", {})
-    if not isinstance(schemas, dict):
-        schemas = {}
+    schemas = _schema_example_schemas(schema)
+    _ensure_metrics_paths_examples(schema)
 
-    paths = schema.get("paths", {})
-    for path, methods in paths.items():
-        if not isinstance(methods, dict):
-            continue
+    for path, method, operation in _schema_non_metrics_http_operations(schema):
+        _ensure_operation_examples(
+            method=method,
+            path=path,
+            operation=operation,
+            schemas=schemas,
+        )
+
+
+def _schema_example_schemas(schema: dict[str, Any]) -> dict[str, Any]:
+    return _schema_component_schemas(schema) or {}
+
+
+def _ensure_metrics_paths_examples(schema: dict[str, Any]) -> None:
+    for path, methods in _schema_path_methods(schema):
         if path == "/metrics":
             _ensure_metrics_path_examples(methods)
-            continue
-        for method, operation in methods.items():
-            if not _is_http_operation_method(method):
-                continue
-            if not isinstance(operation, dict):
-                continue
 
-            _ensure_operation_examples(
-                method=method,
-                path=path,
-                operation=operation,
-                schemas=schemas,
-            )
+
+def _schema_non_metrics_http_operations(
+    schema: dict[str, Any],
+) -> Iterator[tuple[str, str, dict[str, Any]]]:
+    for path, methods in _schema_path_methods(schema):
+        if path == "/metrics":
+            continue
+        yield from _path_http_operations(path=path, methods=methods)
 
 
 def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -> None:
