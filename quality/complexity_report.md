@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T15:55:22+00:00`
+- Generated at: `2026-06-12T16:03:15+00:00`
 
-- Current ref: `d2df18f8`
+- Current ref: `0bd590cc`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
-| 2 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
-| 3 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
-| 4 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
-| 5 | method_specific_status | src/api/services/construction_method_readiness.py | 8 | 34 |
-| 6 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
-| 7 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
-| 8 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
-| 9 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
-| 10 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
+| 1 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
+| 2 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
+| 3 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
+| 4 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
+| 5 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
+| 6 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
+| 7 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
+| 8 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
+| 9 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
+| 10 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
 
 ### Most Complex Current Test Functions
 

@@ -20223,3 +20223,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal campaign candidate-selection
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-822: Construction method readiness dispatch helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `method_specific_reason_codes` and `method_specific_status` were adjacent current
+  source-complexity hotspots and encoded method dispatch, status fallback behavior, delegated
+  supportability checks, reason-code normalization, and currency-overlay missing-FX fallback in
+  branch-heavy public functions.
+- Action: extracted typed method readiness context objects, dispatch tables, and focused builder
+  helpers while preserving solver, liquidity, risk, cost, ESG, currency-overlay, and regime-stress
+  reason-code/status behavior. Added direct helper tests for currency-overlay missing-FX status
+  fallback and solver reason-code builder routing alongside existing public method-readiness
+  behavior coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m ruff format --check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_readiness.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_readiness.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal construction method-readiness
+  maintainability refactoring and repo-local quality evidence.

@@ -1,3 +1,6 @@
+from collections.abc import Callable
+from dataclasses import dataclass
+
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_esg_supportability import (
     esg_restriction_reason_codes,
@@ -22,6 +25,25 @@ from src.core.construction.vocabulary import ConstructionMethod, ConstructionMet
 from src.core.models import RebalanceResult
 
 
+@dataclass(frozen=True)
+class _MethodStatusContext:
+    request: RebalanceRequest
+    result: RebalanceResult
+    enrichment: ConstructionEnrichmentSummary
+    authority_context: ConstructionAuthorityContext
+
+
+@dataclass(frozen=True)
+class _MethodReasonCodeContext:
+    request: RebalanceRequest
+    result: RebalanceResult
+    authority_context: ConstructionAuthorityContext
+
+
+_MethodStatusBuilder = Callable[[_MethodStatusContext], ConstructionMethodStatus]
+_MethodReasonCodeBuilder = Callable[[_MethodReasonCodeContext], list[str]]
+
+
 def method_specific_status(
     *,
     request: RebalanceRequest,
@@ -30,32 +52,17 @@ def method_specific_status(
     enrichment: ConstructionEnrichmentSummary,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus:
-    if method == ConstructionMethod.ESG_AWARE:
-        return esg_restriction_status(
+    builder = _status_builder_for_method(method=method, result=result)
+    if builder is None:
+        return ConstructionMethodStatus.READY
+    return builder(
+        _MethodStatusContext(
             request=request,
             result=result,
+            enrichment=enrichment,
             authority_context=authority_context,
         )
-    if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        return regime_stress_status(authority_context.regime_stress_context)
-    if method == ConstructionMethod.CURRENCY_OVERLAY and not result.diagnostics.missing_fx_pairs:
-        return currency_overlay_status(
-            request=request,
-            context=authority_context.currency_overlay_context,
-        )
-    if method == ConstructionMethod.RISK_AWARE:
-        return enrichment.risk_status
-    if method == ConstructionMethod.COST_AWARE:
-        return transaction_cost_status(
-            result=result,
-            context=authority_context.transaction_cost_context,
-        )
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        return liquidity_status(
-            result=result,
-            context=authority_context.liquidity_context,
-        )
-    return ConstructionMethodStatus.READY
+    )
 
 
 def method_specific_reason_codes(
@@ -65,40 +72,113 @@ def method_specific_reason_codes(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
-    if method == ConstructionMethod.SOLVER_CONSTRAINED:
-        return _sorted_unique_reason_codes(solver_reason_codes(result=result))
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        return _sorted_unique_reason_codes(
-            _liquidity_aware_reason_codes(result=result, authority_context=authority_context)
-        )
-    if method == ConstructionMethod.RISK_AWARE:
-        return _sorted_unique_reason_codes(_risk_aware_reason_codes(authority_context))
-    if method == ConstructionMethod.COST_AWARE:
-        return _sorted_unique_reason_codes(
-            transaction_cost_reason_codes(
-                result=result,
-                context=authority_context.transaction_cost_context,
-            )
-        )
-    if method == ConstructionMethod.ESG_AWARE:
-        return _sorted_unique_reason_codes(
-            esg_restriction_reason_codes(
+    builder = _reason_code_builder_for_method(method)
+    if builder is None:
+        return []
+    return _sorted_unique_reason_codes(
+        builder(
+            _MethodReasonCodeContext(
                 request=request,
                 result=result,
                 authority_context=authority_context,
             )
         )
-    if method == ConstructionMethod.CURRENCY_OVERLAY:
-        return _sorted_unique_reason_codes(
-            currency_overlay_reason_codes(
-                request=request,
-                result=result,
-                authority_context=authority_context,
-            )
-        )
-    if method == ConstructionMethod.REGIME_STRESS_AWARE:
-        return _sorted_unique_reason_codes(_regime_stress_reason_codes(authority_context))
-    return []
+    )
+
+
+def _status_builder_for_method(
+    *,
+    method: ConstructionMethod,
+    result: RebalanceResult,
+) -> _MethodStatusBuilder | None:
+    if method == ConstructionMethod.CURRENCY_OVERLAY and result.diagnostics.missing_fx_pairs:
+        return None
+    return _METHOD_STATUS_BUILDERS.get(method)
+
+
+def _reason_code_builder_for_method(
+    method: ConstructionMethod,
+) -> _MethodReasonCodeBuilder | None:
+    return _METHOD_REASON_CODE_BUILDERS.get(method)
+
+
+def _esg_aware_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return esg_restriction_status(
+        request=context.request,
+        result=context.result,
+        authority_context=context.authority_context,
+    )
+
+
+def _regime_stress_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return regime_stress_status(context.authority_context.regime_stress_context)
+
+
+def _currency_overlay_method_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return currency_overlay_status(
+        request=context.request,
+        context=context.authority_context.currency_overlay_context,
+    )
+
+
+def _risk_aware_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return context.enrichment.risk_status
+
+
+def _cost_aware_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return transaction_cost_status(
+        result=context.result,
+        context=context.authority_context.transaction_cost_context,
+    )
+
+
+def _liquidity_aware_status(context: _MethodStatusContext) -> ConstructionMethodStatus:
+    return liquidity_status(
+        result=context.result,
+        context=context.authority_context.liquidity_context,
+    )
+
+
+def _solver_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return solver_reason_codes(result=context.result)
+
+
+def _liquidity_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return _liquidity_aware_reason_codes(
+        result=context.result,
+        authority_context=context.authority_context,
+    )
+
+
+def _risk_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return _risk_aware_reason_codes(context.authority_context)
+
+
+def _cost_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return transaction_cost_reason_codes(
+        result=context.result,
+        context=context.authority_context.transaction_cost_context,
+    )
+
+
+def _esg_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return esg_restriction_reason_codes(
+        request=context.request,
+        result=context.result,
+        authority_context=context.authority_context,
+    )
+
+
+def _currency_overlay_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return currency_overlay_reason_codes(
+        request=context.request,
+        result=context.result,
+        authority_context=context.authority_context,
+    )
+
+
+def _regime_stress_method_reason_codes(context: _MethodReasonCodeContext) -> list[str]:
+    return _regime_stress_reason_codes(context.authority_context)
 
 
 def _liquidity_aware_reason_codes(
@@ -164,6 +244,26 @@ def currency_overlay_reason_codes(
     else:
         reason_codes.extend(authority_context.currency_overlay_context.reason_codes)
     return reason_codes
+
+
+_METHOD_STATUS_BUILDERS: dict[ConstructionMethod, _MethodStatusBuilder] = {
+    ConstructionMethod.ESG_AWARE: _esg_aware_status,
+    ConstructionMethod.REGIME_STRESS_AWARE: _regime_stress_status,
+    ConstructionMethod.CURRENCY_OVERLAY: _currency_overlay_method_status,
+    ConstructionMethod.RISK_AWARE: _risk_aware_status,
+    ConstructionMethod.COST_AWARE: _cost_aware_status,
+    ConstructionMethod.LIQUIDITY_AWARE: _liquidity_aware_status,
+}
+
+_METHOD_REASON_CODE_BUILDERS: dict[ConstructionMethod, _MethodReasonCodeBuilder] = {
+    ConstructionMethod.SOLVER_CONSTRAINED: _solver_method_reason_codes,
+    ConstructionMethod.LIQUIDITY_AWARE: _liquidity_method_reason_codes,
+    ConstructionMethod.RISK_AWARE: _risk_method_reason_codes,
+    ConstructionMethod.COST_AWARE: _cost_method_reason_codes,
+    ConstructionMethod.ESG_AWARE: _esg_method_reason_codes,
+    ConstructionMethod.CURRENCY_OVERLAY: _currency_overlay_method_reason_codes,
+    ConstructionMethod.REGIME_STRESS_AWARE: _regime_stress_method_reason_codes,
+}
 
 
 __all__ = [

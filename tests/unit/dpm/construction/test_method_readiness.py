@@ -2,6 +2,9 @@ from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_readiness import (
+    _MethodReasonCodeContext,
+    _reason_code_builder_for_method,
+    _status_builder_for_method,
     currency_overlay_reason_codes,
     method_specific_reason_codes,
     method_specific_status,
@@ -108,6 +111,42 @@ def test_currency_overlay_reason_codes_preserve_missing_policy_context() -> None
         "CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE",
         "CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING",
     ]
+
+
+def test_method_status_builder_preserves_currency_overlay_missing_fx_fallback() -> None:
+    result = _trade_result().model_copy(deep=True)
+    result.diagnostics.missing_fx_pairs.append("USD/EUR")
+
+    assert (
+        _status_builder_for_method(method=ConstructionMethod.CURRENCY_OVERLAY, result=result)
+        is None
+    )
+    assert (
+        method_specific_status(
+            request=_request(),
+            method=ConstructionMethod.CURRENCY_OVERLAY,
+            result=result,
+            enrichment=_enrichment(),
+            authority_context=ConstructionAuthorityContext(),
+        )
+        == ConstructionMethodStatus.READY
+    )
+
+
+def test_reason_code_builder_routes_solver_reason_codes() -> None:
+    result = _trade_result().model_copy(deep=True)
+    result.diagnostics.warnings.extend(["SOLVER_NON_OPTIMAL_USER_LIMIT", "TURNOVER_WARNING"])
+
+    builder = _reason_code_builder_for_method(ConstructionMethod.SOLVER_CONSTRAINED)
+
+    assert builder is not None
+    assert builder(
+        _MethodReasonCodeContext(
+            request=_request(),
+            result=result,
+            authority_context=ConstructionAuthorityContext(),
+        )
+    ) == ["SOLVER_NON_OPTIMAL_USER_LIMIT"]
 
 
 def test_risk_method_status_uses_enrichment_and_records_missing_authority() -> None:
