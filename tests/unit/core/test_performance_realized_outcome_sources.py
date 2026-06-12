@@ -352,6 +352,53 @@ def test_attribution_adapter_wraps_source_owned_currency_effect() -> None:
     assert "PERFORMANCE_ATTRIBUTION_CURRENCY_USD" in source.reason_codes
 
 
+def test_selected_attribution_entry_matches_requested_selector() -> None:
+    asset_class = {"dimension": "asset_class", "total_effect_pct": 0.47}
+    sector = {"dimension": "sector", "total_effect_pct": 0.21}
+
+    entry, selector = perf_sources._selected_attribution_entry(
+        entries=[asset_class, sector],
+        selector_field="dimension",
+        requested_selector="sector",
+    )
+
+    assert entry == sector
+    assert selector == "sector"
+
+
+def test_selected_attribution_entry_uses_fallback_for_malformed_payloads() -> None:
+    assert perf_sources._selected_attribution_entry(
+        entries={"dimension": "asset_class"},
+        selector_field="dimension",
+        requested_selector="asset_class",
+    ) == ({}, "asset_class")
+    assert perf_sources._selected_attribution_entry(
+        entries=[{"dimension": ""}],
+        selector_field="dimension",
+        requested_selector=None,
+    ) == ({"dimension": ""}, "unknown")
+    assert perf_sources._selected_attribution_entry(
+        entries=[{"dimension": "asset_class"}],
+        selector_field="dimension",
+        requested_selector="sector",
+    ) == ({}, "sector")
+    assert perf_sources._attribution_selector_matches(
+        selector="sector",
+        requested_selector="sector",
+    )
+    assert not perf_sources._attribution_selector_matches(
+        selector="asset_class",
+        requested_selector="sector",
+    )
+    assert (
+        perf_sources._resolved_attribution_selector(
+            selector=None,
+            requested_selector=None,
+        )
+        == "unknown"
+    )
+
+
 def test_source_owned_attribution_can_make_rfc42_performance_dimension_ready() -> None:
     source = realized_attribution_source_from_attribution_response(_attribution_response())
 
