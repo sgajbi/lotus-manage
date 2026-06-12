@@ -34,7 +34,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import RebalanceResult
+from src.core.models import GateDecision, RebalanceResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -771,25 +771,46 @@ def _approval_requirements_section_payload(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> _SectionPayload:
     gate = result.gate_decision
-    workflow_facts = [
-        decision.model_dump(mode="json")
-        for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
-    ]
-    approval_state: ProofPackSectionState = "READY"
-    if result.status == "PENDING_REVIEW" or (gate and gate.gate.endswith("REQUIRED")):
-        approval_state = "PENDING_REVIEW"
-    if result.status == "BLOCKED" or (gate and gate.gate == "BLOCKED"):
-        approval_state = "BLOCKED"
+    workflow_facts = _approval_workflow_decision_facts(workflow_decisions)
     return (
-        approval_state,
+        _approval_section_state(result=result, gate=gate),
         "Approval posture captured from run status and gate decision.",
         {
-            "gate_decision": gate.model_dump(mode="json") if gate else None,
+            "gate_decision": _approval_gate_fact(gate),
             "workflow_decisions": workflow_facts,
         },
         {"workflow_decision_count": len(workflow_facts)},
-        [reason.reason_code for reason in gate.reasons] if gate else [],
+        _approval_reason_codes(gate),
     )
+
+
+def _approval_workflow_decision_facts(
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> list[dict[str, Any]]:
+    return [
+        decision.model_dump(mode="json")
+        for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
+    ]
+
+
+def _approval_section_state(
+    *, result: RebalanceResult, gate: GateDecision | None
+) -> ProofPackSectionState:
+    if result.status == "BLOCKED" or (gate is not None and gate.gate == "BLOCKED"):
+        return "BLOCKED"
+    if result.status == "PENDING_REVIEW" or (gate is not None and gate.gate.endswith("REQUIRED")):
+        return "PENDING_REVIEW"
+    return "READY"
+
+
+def _approval_gate_fact(gate: GateDecision | None) -> dict[str, Any] | None:
+    return gate.model_dump(mode="json") if gate is not None else None
+
+
+def _approval_reason_codes(gate: GateDecision | None) -> list[str]:
+    if gate is None:
+        return []
+    return [reason.reason_code for reason in gate.reasons]
 
 
 def _mandate_context_section_payload(

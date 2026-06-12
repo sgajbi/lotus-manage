@@ -23,11 +23,14 @@ from src.core.outcomes.risk_sources import (
     _historical_attribution_value,
     _metric_unit,
     _primary_reason,
+    _quality_for_degraded_value,
     _relative_drawdown_value,
     _risk_source_posture,
+    _rolling_context_unavailable,
     _rolling_context_reason,
     _rolling_source_posture,
     _rolling_window_result,
+    _supportability_source_posture,
     _decimal_value,
 )
 from tests.unit.core.test_realized_outcome_sources import _window
@@ -1408,6 +1411,18 @@ def test_concentration_drawdown_and_rolling_posture_edges_are_source_safe() -> N
         value=Decimal("1"),
         context_reason="RISK_ROLLING_BENCHMARK_UNAVAILABLE",
     ) == ("DEGRADED", "UNAVAILABLE")
+    assert _supportability_source_posture("unsupported") == (
+        "NOT_SUPPORTED",
+        "NOT_SUPPORTED",
+    )
+    assert _supportability_source_posture("permission_blocked") == ("BLOCKED", "MISSING")
+    assert _supportability_source_posture("stale") == ("DEGRADED", "STALE")
+    assert _supportability_source_posture("stale", include_stale=False) is None
+    assert _supportability_source_posture("ready") is None
+    assert _rolling_context_unavailable("RISK_ROLLING_NO_ALIGNED_OBSERVATIONS")
+    assert not _rolling_context_unavailable("RISK_ROLLING_CONTEXT_NOT_REQUIRED")
+    assert _quality_for_degraded_value(Decimal("1")) == "PARTIAL"
+    assert _quality_for_degraded_value(None) == "UNAVAILABLE"
 
 
 def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
@@ -1472,6 +1487,12 @@ def test_historical_attribution_posture_and_decimal_errors_are_fail_closed() -> 
         period_error=None,
         quality_flags=[],
     ) == ("DEGRADED", "STALE")
+    assert _historical_attribution_source_posture(
+        supportability_state="stale",
+        value=Decimal("1"),
+        period_error="period unavailable",
+        quality_flags=[],
+    ) == ("BLOCKED", "MISSING")
     assert _historical_attribution_source_posture(
         supportability_state="degraded",
         value=None,

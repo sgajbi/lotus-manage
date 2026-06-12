@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T09:32:43+00:00`
+- Generated at: `2026-06-12T09:49:04+00:00`
 
-- Current ref: `187aca72`
+- Current ref: `8c5ffc6e`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
-| 2 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
-| 3 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
-| 4 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
-| 5 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
-| 6 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
-| 7 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
-| 8 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
-| 9 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
-| 10 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 1 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
+| 2 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
+| 3 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
+| 4 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
+| 5 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
+| 6 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 7 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 8 | _remediation_routes | src/api/routers/outcome_review_supportability_routes.py | 9 | 12 |
+| 9 | source_supportability_state | src/core/portfolio_memory/supportability.py | 9 | 9 |
+| 10 | setup_observability | src/api/observability.py | 8 | 98 |
 
 ### Most Complex Current Test Functions
 
