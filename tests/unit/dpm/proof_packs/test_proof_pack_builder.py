@@ -35,9 +35,15 @@ from src.core.proof_packs.models import DpmProofPackSourceRef
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     ProofPackSourceAnalytics,
+    _authority_reason_codes,
+    _authority_source_ref,
     _missing_regime_stress_governance_evidence,
+    _performance_source_facts,
+    _performance_source_metrics,
     _regime_source_reason_posture,
     _regime_stress_governance_posture_facts,
+    _risk_source_facts,
+    _risk_source_metrics,
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
@@ -1846,6 +1852,81 @@ def test_source_analytics_degraded_and_blocked_context_fallbacks() -> None:
         "REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING",
         "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
     ]
+
+
+def test_risk_source_analytics_helpers_project_facts_metrics_and_degraded_reason() -> None:
+    context = AuthoritativeRiskContext(
+        supportability_status="DEGRADED",
+        source_system="lotus-risk",
+        source_product_name="RiskMetricsReport",
+        source_product_version="v1",
+        source_id="risk-context-001",
+        issuer_coverage_status="partial",
+        tracking_error=Decimal("0.034"),
+        maximum_drawdown=Decimal("-0.070"),
+    )
+
+    assert _risk_source_facts(context) == {
+        "source_system": "lotus-risk",
+        "source_product_name": "RiskMetricsReport",
+        "source_product_version": "v1",
+        "source_id": "risk-context-001",
+        "issuer_coverage_status": "partial",
+    }
+    assert _risk_source_metrics(context) == {
+        "tracking_error": Decimal("0.034"),
+        "maximum_drawdown": Decimal("-0.070"),
+    }
+    assert _authority_reason_codes(
+        context=context,
+        degraded_reason="DPM_RISK_AUTHORITY_CONTEXT_DEGRADED",
+    ) == ["DPM_RISK_AUTHORITY_CONTEXT_DEGRADED"]
+
+
+def test_performance_source_analytics_helpers_project_facts_metrics_and_source_ref() -> None:
+    context = AuthoritativePerformanceContext(
+        supportability_status="READY",
+        source_system="lotus-performance",
+        source_product_name="PerformanceBenchmarkContext",
+        source_product_version="v1",
+        source_id="performance-context-001",
+        content_hash="sha256:performance-context",
+        benchmark_id="MSCI_ACWI",
+        active_return=Decimal("0.011"),
+        underperformance_flag=True,
+        reason_codes=["PERFORMANCE_CONTEXT_READY"],
+    )
+
+    assert _performance_source_facts(context) == {
+        "source_system": "lotus-performance",
+        "source_product_name": "PerformanceBenchmarkContext",
+        "source_product_version": "v1",
+        "source_id": "performance-context-001",
+        "benchmark_id": "MSCI_ACWI",
+    }
+    assert _performance_source_metrics(context) == {
+        "active_return": Decimal("0.011"),
+        "underperformance_flag": True,
+    }
+    assert _authority_reason_codes(
+        context=context,
+        degraded_reason="DPM_PERFORMANCE_CONTEXT_DEGRADED",
+    ) == ["PERFORMANCE_CONTEXT_READY"]
+
+    source_ref = _authority_source_ref(
+        family="performance",
+        source_system=context.source_system,
+        source_type=context.source_product_name or "PerformanceBenchmarkContext",
+        source_id=context.source_id,
+        supportability_status=context.supportability_status,
+        content_hash=context.content_hash,
+        fallback_hash="sha256:fallback",
+    )
+
+    assert source_ref.source_system == "lotus-performance"
+    assert source_ref.source_type == "PerformanceBenchmarkContext"
+    assert source_ref.source_id == "performance-context-001"
+    assert source_ref.content_hash == "sha256:performance-context"
 
 
 def test_regime_scenario_pack_missing_governance_evidence_is_pending_review() -> None:

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T08:32:38+00:00`
+- Generated at: `2026-06-12T08:36:49+00:00`
 
-- Current ref: `f688bb15`
+- Current ref: `8b87deca`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
-| 2 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
-| 3 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
-| 4 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
-| 5 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
-| 6 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
-| 7 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
-| 8 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
-| 9 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
-| 10 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
+| 1 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
+| 2 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
+| 3 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
+| 4 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
+| 5 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
+| 6 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
+| 7 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
+| 8 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
+| 9 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
+| 10 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
 
 ### Most Complex Current Test Functions
 
