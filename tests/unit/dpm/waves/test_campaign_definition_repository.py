@@ -16,6 +16,9 @@ from src.core.waves.campaign_definition_readiness import (
 )
 from src.core.waves.campaign_definition_lifecycle import (
     DpmBulkReviewCampaignDefinitionLifecycleError,
+    _superseded_campaign_definition,
+    _validated_active_replacement,
+    _validated_replacement_version,
     retire_bulk_review_campaign_definition,
     supersede_bulk_review_campaign_definition,
 )
@@ -28,6 +31,11 @@ from src.core.waves.campaign_definition_launch_execution import (
     build_bulk_review_campaign_definition_launch_command,
 )
 from src.core.waves.campaign_definition_approval_decisions import (
+    _append_approval_decision,
+    _approval_decision_input,
+    _build_decision,
+    _existing_approval_decision,
+    _validate_active_campaign_definition,
     build_bulk_review_campaign_definition_approval_decision_page,
     record_bulk_review_campaign_definition_approval_decision,
 )
@@ -573,6 +581,73 @@ def test_campaign_definition_approval_decision_validation_edges() -> None:
         }
         with pytest.raises(ValueError, match=reason_code):
             record_bulk_review_campaign_definition_approval_decision(**request)
+
+
+def test_campaign_approval_decision_helpers_normalize_request_fields() -> None:
+    source_ref = DpmWaveSourceRef(
+        source_system="lotus-manage",
+        source_type="BulkReviewCampaignApprovalMinutes",
+        source_id="minutes-001",
+    )
+    decision_input = _approval_decision_input(
+        decision_ref=" BRC-APPROVAL-2026-05-001 ",
+        decided_by=" cio_ops_committee ",
+        decision_reason=" Approved for bounded DPM campaign launch. ",
+        correlation_id=" corr-campaign-approval-decision-001 ",
+        source_refs=[source_ref],
+    )
+
+    assert decision_input.decision_ref == "BRC-APPROVAL-2026-05-001"
+    assert decision_input.decided_by == "cio_ops_committee"
+    assert decision_input.decision_reason == "Approved for bounded DPM campaign launch."
+    assert decision_input.correlation_id == "corr-campaign-approval-decision-001"
+    assert decision_input.source_refs == [source_ref]
+
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_REQUIRED"):
+        _approval_decision_input(
+            decision_ref=" ",
+            decided_by="cio_ops_committee",
+            decision_reason="Approved for bounded DPM campaign launch.",
+            correlation_id="corr-campaign-approval-decision-001",
+            source_refs=None,
+        )
+
+
+def test_campaign_approval_decision_helpers_detect_active_and_existing_posture() -> None:
+    definition = _definition()
+    _validate_active_campaign_definition(definition)
+    decision = _build_decision(
+        definition=definition,
+        decision_type="APPROVED",
+        decision_ref="BRC-APPROVAL-2026-05-001",
+        decided_by="cio_ops_committee",
+        decision_reason="Approved for bounded DPM campaign launch.",
+        correlation_id="corr-campaign-approval-decision-001",
+        source_refs=[],
+    )
+
+    updated = _append_approval_decision(definition=definition, decision=decision)
+
+    assert _existing_approval_decision(definition=updated, decision=decision) == decision
+    assert updated.approval_decisions == [decision]
+    assert updated.content_hash != definition.content_hash
+
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **definition.model_dump(mode="python"),
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-001",
+            "content_hash": "",
+        }
+    )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTIVE_REQUIRED",
+    ):
+        _validate_active_campaign_definition(retired)
 
 
 def test_campaign_definition_preview_readiness_records_ineligible_and_entitlement_edges() -> None:
@@ -1367,6 +1442,83 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
             supersession_reason="Replacement not active.",
             correlation_id="corr-supersede-not-active-replacement",
         )
+
+
+def test_campaign_supersession_helpers_validate_replacement_version() -> None:
+    assert (
+        _validated_replacement_version(
+            replacement_version=" 2026.06 ",
+            current_version="2026.05",
+        )
+        == "2026.06"
+    )
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID",
+    ):
+        _validated_replacement_version(
+            replacement_version="2026.05",
+            current_version="2026.05",
+        )
+
+
+def test_campaign_supersession_helpers_require_active_replacement() -> None:
+    active = _definition()
+    assert _validated_active_replacement(active) == active
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND",
+    ):
+        _validated_active_replacement(None)
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_ACTIVE",
+    ):
+        _validated_active_replacement(
+            DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **active.model_dump(mode="python"),
+                    "status": "RETIRED",
+                    "retired_at": "2026-05-11T08:00:00Z",
+                    "retired_by": "ops",
+                    "retirement_reason": "Retired replacement.",
+                    "retirement_correlation_id": "corr-retired-replacement",
+                    "content_hash": "",
+                }
+            )
+        )
+
+
+def test_campaign_supersession_helper_builds_superseded_definition_lineage() -> None:
+    existing = _definition()
+    replacement = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition(display_name="Refreshed Apple and Tesla holdings review").model_dump(
+                mode="python"
+            ),
+            "campaign_version": "2026.06",
+            "content_hash": "",
+        }
+    )
+
+    superseded = _superseded_campaign_definition(
+        existing=existing,
+        replacement=replacement,
+        superseded_by="ops",
+        supersession_reason="Campaign candidate set refreshed.",
+        correlation_id="corr-supersede-original",
+        superseded_at=datetime(2026, 5, 12, tzinfo=timezone.utc),
+    )
+
+    assert superseded.status == "SUPERSEDED"
+    assert superseded.superseded_by == "ops"
+    assert superseded.superseded_by_campaign_id == replacement.campaign_id
+    assert superseded.superseded_by_campaign_version == "2026.06"
+    assert superseded.superseded_by_content_hash == replacement.content_hash
+    assert superseded.supersession_correlation_id == "corr-supersede-original"
 
 
 def test_in_memory_campaign_definition_repository_rejects_direct_invalid_lifecycle_state() -> None:

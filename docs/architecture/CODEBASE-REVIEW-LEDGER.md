@@ -18867,3 +18867,136 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-777: Source hotspot helper extractions continued
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_definition_lifecycle.py`,
+  `src/core/outcomes/risk_sources.py`, `src/core/portfolio_memory/handoffs.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and
+  `tests/unit/dpm/portfolio_memory/test_handoffs.py`.
+- Finding: the next source-complexity hotspots mixed pure validation and projection logic into
+  orchestration methods: campaign supersession replacement validation and lineage payload
+  rebuilding, concentration realized-source reason-code/snapshot projection, and portfolio-memory
+  report-context count/rank/governance validation.
+- Action: kept repository orchestration and source-owned value selection in their existing owners
+  while extracting focused helpers for campaign supersession validation, concentration source
+  snapshot assembly, and portfolio-memory handoff consistency checks. Added direct helper tests for
+  replacement-version normalization, active replacement validation, supersession lineage payloads,
+  concentration reason-code coverage, not-supported concentration value suppression, and
+  portfolio-memory event-ref count/rank/governance policy validation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py -q`
+  (107 passed),
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal core helper and validation
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260612-778: Source hotspot reports refreshed
+
+- Date: 2026-06-12
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at the pre-slice source hotspot posture, so
+  they did not reflect the campaign lifecycle, concentration source, and portfolio-memory handoff
+  helper extractions.
+- Action: regenerated current-state refactor reports after the helper extractions. Preserved
+  `quality/baseline_report.md`, `quality/architecture_rules.md`, and
+  `quality/api_governance_rules.md` so the branch baseline and rule docs remain stable. The
+  refreshed complexity report shows the three targeted hotspots dropped out of the top current
+  source-complexity list, with proof-pack source analytics now the next source hotspot family.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-779: Proof-pack source analytics helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Finding: `_risk_source_analytics` and `_performance_source_analytics` were the next current
+  source-complexity hotspots and duplicated inline reason-code fallback, source-ref assembly,
+  source fact projection, and optional metric filtering.
+- Action: extracted shared authority reason-code and source-ref helpers plus focused risk and
+  performance facts/metrics projectors. Preserved source-owned analytics behavior and added direct
+  helper tests for degraded reason fallback, metric filtering, fact projection, and source-ref
+  construction.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  and `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q` (72 passed).
+- Wiki decision: no wiki source change required; this is internal proof-pack source analytics
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260612-780: Proof-pack source analytics reports refreshed
+
+- Date: 2026-06-12
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports needed to reflect the proof-pack source analytics helper
+  extraction after `BACKEND-REVIEW-20260612-779`.
+- Action: regenerated current-state refactor reports and restored stable baseline/rule artifacts.
+  The refreshed complexity report shows `_performance_source_analytics` and
+  `_risk_source_analytics` dropped out of the top current source-complexity list; campaign approval
+  decision recording is now the next source hotspot.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py` and
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-781: Campaign approval-decision helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_definition_approval_decisions.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: `record_bulk_review_campaign_definition_approval_decision` was the next current
+  source-complexity hotspot and mixed active-definition checks, request-field normalization,
+  required-field validation, decision construction, idempotent replay detection, conflict
+  detection, and append-only definition rebuilding in one function.
+- Action: extracted private helpers for active-definition validation, normalized approval-decision
+  input, required text validation, existing decision lookup, and append-only rebuilding. Added
+  direct helper tests for trimmed request fields, blank decision-ref rejection, active-definition
+  validation, existing decision lookup, and append behavior while preserving existing append-only
+  behavior coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_approval_decisions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_approval_decisions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_approval_decisions.py`,
+  and `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q` (51 passed).
+- Wiki decision: no wiki source change required; this is internal campaign approval-decision
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260612-782: Campaign approval-decision reports refreshed
+
+- Date: 2026-06-12
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports needed to reflect the campaign approval-decision helper
+  extraction after `BACKEND-REVIEW-20260612-781`.
+- Action: regenerated current-state refactor reports and restored stable baseline/rule artifacts.
+  The refreshed complexity report shows `record_bulk_review_campaign_definition_approval_decision`
+  dropped out of the top current source-complexity list; in-memory rebalance-run listing helpers
+  are now the next source hotspot family.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py` and
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

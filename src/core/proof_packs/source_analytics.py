@@ -93,45 +93,25 @@ def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAna
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_RISK_AUTHORITY_CONTEXT_DEGRADED")
-    source_ref = _source_ref(
-        family="risk",
-        source_system=context.source_system,
-        source_type=context.source_product_name or "RiskMetricsReport",
-        source_id=context.source_id or content_hash,
-        supportability_state=str(context.supportability_status),
-        content_hash=context.content_hash or content_hash,
-    )
     return ProofPackSourceAnalytics(
         family="risk",
         state=_section_state(context.supportability_status),
         summary="Risk impact is attached from source-owned risk authority context.",
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name or "RiskMetricsReport",
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "issuer_coverage_status": context.issuer_coverage_status,
-        },
-        metrics={
-            key: value
-            for key, value in {
-                "tracking_error": context.tracking_error,
-                "maximum_drawdown": context.maximum_drawdown,
-                "average_drawdown": context.average_drawdown,
-                "stress_loss_pct": context.stress_loss_pct,
-                "stress_contribution_count": context.stress_contribution_count,
-                "attribution_contributor_count": context.attribution_contributor_count,
-                "concentration_breaches": context.concentration_breaches,
-                "concentration_hhi_delta": context.concentration_hhi_delta,
-                "top_position_weight_proposed": context.top_position_weight_proposed,
-            }.items()
-            if value is not None
-        },
-        reason_codes=reason_codes,
-        source_ref=source_ref,
+        facts=_risk_source_facts(context),
+        metrics=_risk_source_metrics(context),
+        reason_codes=_authority_reason_codes(
+            context=context,
+            degraded_reason="DPM_RISK_AUTHORITY_CONTEXT_DEGRADED",
+        ),
+        source_ref=_authority_source_ref(
+            family="risk",
+            source_system=context.source_system,
+            source_type=context.source_product_name or "RiskMetricsReport",
+            source_id=context.source_id,
+            supportability_status=context.supportability_status,
+            content_hash=context.content_hash,
+            fallback_hash=content_hash,
+        ),
         source_hash_key="risk_context",
         content_hash=context.content_hash or content_hash,
     )
@@ -146,47 +126,114 @@ def _performance_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_PERFORMANCE_CONTEXT_DEGRADED")
-    source_ref = _source_ref(
-        family="performance",
-        source_system=context.source_system,
-        source_type=context.source_product_name or "PerformanceBenchmarkContext",
-        source_id=context.source_id or content_hash,
-        supportability_state=str(context.supportability_status),
-        content_hash=context.content_hash or content_hash,
-    )
     return ProofPackSourceAnalytics(
         family="performance",
         state=_section_state(context.supportability_status),
         summary="Performance context is attached from source-owned performance authority context.",
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name or "PerformanceBenchmarkContext",
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "benchmark_id": context.benchmark_id,
-        },
-        metrics={
-            key: value
-            for key, value in {
-                "active_return": context.active_return,
-                "benchmark_relative_return": context.benchmark_relative_return,
-                "contribution_total_return": context.contribution_total_return,
-                "attribution_allocation": context.attribution_allocation,
-                "attribution_selection": context.attribution_selection,
-                "attribution_interaction": context.attribution_interaction,
-                "currency_attribution_total": context.currency_attribution_total,
-                "underperformance_flag": context.underperformance_flag,
-            }.items()
-            if value is not None
-        },
-        reason_codes=reason_codes,
-        source_ref=source_ref,
+        facts=_performance_source_facts(context),
+        metrics=_performance_source_metrics(context),
+        reason_codes=_authority_reason_codes(
+            context=context,
+            degraded_reason="DPM_PERFORMANCE_CONTEXT_DEGRADED",
+        ),
+        source_ref=_authority_source_ref(
+            family="performance",
+            source_system=context.source_system,
+            source_type=context.source_product_name or "PerformanceBenchmarkContext",
+            source_id=context.source_id,
+            supportability_status=context.supportability_status,
+            content_hash=context.content_hash,
+            fallback_hash=content_hash,
+        ),
         source_hash_key="performance_context",
         content_hash=context.content_hash or content_hash,
     )
+
+
+def _authority_reason_codes(
+    *,
+    context: AuthoritativeRiskContext | AuthoritativePerformanceContext,
+    degraded_reason: str,
+) -> list[str]:
+    reason_codes = list(context.reason_codes)
+    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
+        reason_codes.append(degraded_reason)
+    return reason_codes
+
+
+def _authority_source_ref(
+    *,
+    family: ProofPackAnalyticsFamily,
+    source_system: str,
+    source_type: str,
+    source_id: str | None,
+    supportability_status: ConstructionMethodStatus,
+    content_hash: str | None,
+    fallback_hash: str,
+) -> DpmProofPackSourceRef:
+    return _source_ref(
+        family=family,
+        source_system=source_system,
+        source_type=source_type,
+        source_id=source_id or fallback_hash,
+        supportability_state=str(supportability_status),
+        content_hash=content_hash or fallback_hash,
+    )
+
+
+def _risk_source_facts(context: AuthoritativeRiskContext) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": context.source_product_name or "RiskMetricsReport",
+        "source_product_version": context.source_product_version,
+        "source_id": context.source_id,
+        "issuer_coverage_status": context.issuer_coverage_status,
+    }
+
+
+def _risk_source_metrics(context: AuthoritativeRiskContext) -> dict[str, Any]:
+    return _present_metrics(
+        {
+            "tracking_error": context.tracking_error,
+            "maximum_drawdown": context.maximum_drawdown,
+            "average_drawdown": context.average_drawdown,
+            "stress_loss_pct": context.stress_loss_pct,
+            "stress_contribution_count": context.stress_contribution_count,
+            "attribution_contributor_count": context.attribution_contributor_count,
+            "concentration_breaches": context.concentration_breaches,
+            "concentration_hhi_delta": context.concentration_hhi_delta,
+            "top_position_weight_proposed": context.top_position_weight_proposed,
+        }
+    )
+
+
+def _performance_source_facts(context: AuthoritativePerformanceContext) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": context.source_product_name or "PerformanceBenchmarkContext",
+        "source_product_version": context.source_product_version,
+        "source_id": context.source_id,
+        "benchmark_id": context.benchmark_id,
+    }
+
+
+def _performance_source_metrics(context: AuthoritativePerformanceContext) -> dict[str, Any]:
+    return _present_metrics(
+        {
+            "active_return": context.active_return,
+            "benchmark_relative_return": context.benchmark_relative_return,
+            "contribution_total_return": context.contribution_total_return,
+            "attribution_allocation": context.attribution_allocation,
+            "attribution_selection": context.attribution_selection,
+            "attribution_interaction": context.attribution_interaction,
+            "currency_attribution_total": context.currency_attribution_total,
+            "underperformance_flag": context.underperformance_flag,
+        }
+    )
+
+
+def _present_metrics(metrics: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in metrics.items() if value is not None}
 
 
 def _transaction_cost_source_analytics(

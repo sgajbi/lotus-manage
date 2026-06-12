@@ -208,32 +208,17 @@ def realized_concentration_source_from_concentration_response(
             f"lotus-risk concentration response is missing a numeric {measure} value"
         )
 
-    reason_codes = [
-        _primary_reason(source_state),
-        f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
-        f"RISK_REASON_{supportability_reason.upper()}",
-        f"RISK_CONCENTRATION_MEASURE_{measure.upper()}",
-        "RISK_CONCENTRATION_INPUT_MODE_"
-        f"{(_read_text(response.get('input_mode')) or 'UNKNOWN').upper()}",
-    ]
-    if issuer_coverage_status is not None or _is_issuer_concentration_measure(measure):
-        reason_codes.append(
-            f"RISK_CONCENTRATION_ISSUER_COVERAGE_{(issuer_coverage_status or 'unknown').upper()}"
-        )
-
-    return DpmRealizedSourceSnapshot(
-        dimension="RISK_REDUCTION",
-        source_system="lotus-risk",
-        source_type="CONCENTRATION_RESPONSE",
-        source_id=f"{request_fingerprint}:{measure}",
-        value=value if source_state != "NOT_SUPPORTED" else None,
-        unit=_concentration_unit(measure),
+    return _concentration_source_snapshot(
+        request_fingerprint=request_fingerprint,
+        measure=measure,
+        value=value,
         source_state=source_state,
         quality=quality,
-        observed_at=None,
         as_of_date=_read_text(metadata.get("as_of_date")),
-        content_hash=request_fingerprint,
-        reason_codes=reason_codes,
+        supportability_state=supportability_state,
+        supportability_reason=supportability_reason,
+        input_mode=_read_text(response.get("input_mode")),
+        issuer_coverage_status=issuer_coverage_status,
     )
 
 
@@ -512,6 +497,72 @@ def _concentration_value(
         "issuer_coverage_ratio_proposed": issuer.get("coverage_ratio_proposed"),
     }[measure]
     return _decimal_value(value_by_measure) if value_by_measure is not None else None
+
+
+def _concentration_source_snapshot(
+    *,
+    request_fingerprint: str,
+    measure: ConcentrationOutcomeMeasure,
+    value: Decimal | None,
+    source_state: Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
+    quality: Literal[
+        "COMPLETE",
+        "STALE",
+        "UNAVAILABLE",
+        "PARTIAL",
+        "MISSING",
+        "NOT_SUPPORTED",
+    ],
+    as_of_date: str | None,
+    supportability_state: str,
+    supportability_reason: str,
+    input_mode: str | None,
+    issuer_coverage_status: str | None,
+) -> DpmRealizedSourceSnapshot:
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="CONCENTRATION_RESPONSE",
+        source_id=f"{request_fingerprint}:{measure}",
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit=_concentration_unit(measure),
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=as_of_date,
+        content_hash=request_fingerprint,
+        reason_codes=_concentration_reason_codes(
+            source_state=source_state,
+            supportability_state=supportability_state,
+            supportability_reason=supportability_reason,
+            measure=measure,
+            input_mode=input_mode,
+            issuer_coverage_status=issuer_coverage_status,
+        ),
+    )
+
+
+def _concentration_reason_codes(
+    *,
+    source_state: str,
+    supportability_state: str,
+    supportability_reason: str,
+    measure: ConcentrationOutcomeMeasure,
+    input_mode: str | None,
+    issuer_coverage_status: str | None,
+) -> list[str]:
+    reason_codes = [
+        _primary_reason(source_state),
+        f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+        f"RISK_REASON_{supportability_reason.upper()}",
+        f"RISK_CONCENTRATION_MEASURE_{measure.upper()}",
+        f"RISK_CONCENTRATION_INPUT_MODE_{(input_mode or 'UNKNOWN').upper()}",
+    ]
+    if issuer_coverage_status is not None or _is_issuer_concentration_measure(measure):
+        reason_codes.append(
+            f"RISK_CONCENTRATION_ISSUER_COVERAGE_{(issuer_coverage_status or 'unknown').upper()}"
+        )
+    return reason_codes
 
 
 def _rolling_window_result(

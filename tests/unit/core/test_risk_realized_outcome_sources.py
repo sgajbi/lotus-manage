@@ -13,6 +13,8 @@ from src.core.outcomes import (
 )
 from src.core.outcomes.risk_sources import (
     _absolute_drawdown_value,
+    _concentration_reason_codes,
+    _concentration_source_snapshot,
     _concentration_source_posture,
     _drawdown_source_posture,
     _historical_attribution_contributor,
@@ -672,6 +674,71 @@ def test_concentration_adapter_degrades_issuer_measure_when_coverage_is_partial(
     assert str(source.value) == "3200.0"
     assert snapshot.supportability.state == "DEGRADED"
     assert "RISK_CONCENTRATION_ISSUER_COVERAGE_PARTIAL" in source.reason_codes
+
+
+def test_concentration_reason_codes_include_issuer_coverage_when_source_supplies_status() -> None:
+    assert _concentration_reason_codes(
+        source_state="READY",
+        supportability_state="ready",
+        supportability_reason="calculation_complete",
+        measure="hhi_current",
+        input_mode="stateful",
+        issuer_coverage_status="complete",
+    ) == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_CONCENTRATION_MEASURE_HHI_CURRENT",
+        "RISK_CONCENTRATION_INPUT_MODE_STATEFUL",
+        "RISK_CONCENTRATION_ISSUER_COVERAGE_COMPLETE",
+    ]
+
+
+def test_concentration_reason_codes_project_unknown_coverage_for_issuer_measure() -> None:
+    reason_codes = _concentration_reason_codes(
+        source_state="DEGRADED",
+        supportability_state="ready",
+        supportability_reason="calculation_complete",
+        measure="issuer_coverage_ratio_current",
+        input_mode=None,
+        issuer_coverage_status=None,
+    )
+
+    assert reason_codes == [
+        "RISK_SOURCE_DEGRADED",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_CONCENTRATION_MEASURE_ISSUER_COVERAGE_RATIO_CURRENT",
+        "RISK_CONCENTRATION_INPUT_MODE_UNKNOWN",
+        "RISK_CONCENTRATION_ISSUER_COVERAGE_UNKNOWN",
+    ]
+
+
+def test_concentration_source_snapshot_suppresses_value_for_not_supported_posture() -> None:
+    source = _concentration_source_snapshot(
+        request_fingerprint="sha256:concentration-request",
+        measure="hhi_current",
+        value=Decimal("1345.677131"),
+        source_state="NOT_SUPPORTED",
+        quality="NOT_SUPPORTED",
+        as_of_date="2026-05-06",
+        supportability_state="unsupported",
+        supportability_reason="method_not_supported",
+        input_mode="stateful",
+        issuer_coverage_status=None,
+    )
+
+    assert source.source_id == "sha256:concentration-request:hhi_current"
+    assert source.value is None
+    assert source.unit == "hhi"
+    assert source.as_of_date == "2026-05-06"
+    assert source.reason_codes == [
+        "RISK_SOURCE_NOT_SUPPORTED",
+        "RISK_SUPPORTABILITY_UNSUPPORTED",
+        "RISK_REASON_METHOD_NOT_SUPPORTED",
+        "RISK_CONCENTRATION_MEASURE_HHI_CURRENT",
+        "RISK_CONCENTRATION_INPUT_MODE_STATEFUL",
+    ]
 
 
 def test_concentration_adapter_degrades_issuer_measure_when_coverage_is_missing() -> None:
