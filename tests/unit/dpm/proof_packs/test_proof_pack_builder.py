@@ -1502,6 +1502,66 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
     ]
 
 
+def test_selected_alternative_for_proof_pack_resolves_selected_alternative() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_proof_pack_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_proof_pack_1",
+        alternative_set_id=alternative_set.alternative_set_id,
+        alternative_id=alternative.alternative_id,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+    )
+
+    selected = builder_module._selected_alternative_for_proof_pack(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        selection=selection,
+    )
+
+    assert selected == alternative
+
+
+def test_validate_selected_alternative_selection_rejects_mismatched_ids() -> None:
+    with pytest.raises(
+        ProofPackSourceValidationError,
+        match="DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH",
+    ):
+        builder_module._validate_selected_alternative_selection(
+            alternative_set_id="cas_proof_pack_1",
+            selected_alternative_id="ca_selected",
+            selection=ConstructionAlternativeSelection(
+                selection_id="sel_proof_pack_1",
+                alternative_set_id="cas_proof_pack_1",
+                alternative_id="ca_different",
+                actor_id="pm_001",
+                reason_code="MODEL_DRIFT_REVIEW",
+            ),
+        )
+
+    with pytest.raises(
+        ProofPackSourceValidationError,
+        match="DPM_SELECTED_ALTERNATIVE_SET_MISMATCH",
+    ):
+        builder_module._validate_selected_alternative_selection(
+            alternative_set_id="cas_proof_pack_1",
+            selected_alternative_id="ca_selected",
+            selection=ConstructionAlternativeSelection(
+                selection_id="sel_proof_pack_2",
+                alternative_set_id="cas_different",
+                alternative_id="ca_selected",
+                actor_id="pm_001",
+                reason_code="MODEL_DRIFT_REVIEW",
+            ),
+        )
+
+
 def test_selected_alternative_proof_pack_attaches_source_owned_risk_and_performance() -> None:
     result = _ready_rebalance_result()
     authority_context = ConstructionAuthorityContext(

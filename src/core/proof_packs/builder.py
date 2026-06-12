@@ -184,21 +184,11 @@ def build_proof_pack_from_selected_alternative(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
-    selected = next(
-        (
-            alternative
-            for alternative in alternative_set.alternatives
-            if alternative.alternative_id == selected_alternative_id
-        ),
-        None,
+    selected = _selected_alternative_for_proof_pack(
+        alternative_set=alternative_set,
+        selected_alternative_id=selected_alternative_id,
+        selection=selection,
     )
-    if selected is None:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
-    if selection is not None and selection.alternative_id != selected_alternative_id:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH")
-    if selection is not None and selection.alternative_set_id != alternative_set.alternative_set_id:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SET_MISMATCH")
-
     return _build_proof_pack(
         source_type="SELECTED_ALTERNATIVE",
         run=run,
@@ -216,6 +206,43 @@ def build_proof_pack_from_selected_alternative(
         workflow_decisions=workflow_decisions or [],
         direct_regime_stress_context=direct_regime_stress_context,
     )
+
+
+def _selected_alternative_for_proof_pack(
+    *,
+    alternative_set: ConstructionAlternativeSet,
+    selected_alternative_id: str,
+    selection: ConstructionAlternativeSelection | None,
+) -> ConstructionAlternative:
+    selected = next(
+        (
+            alternative
+            for alternative in alternative_set.alternatives
+            if alternative.alternative_id == selected_alternative_id
+        ),
+        None,
+    )
+    if selected is None:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
+    if selection is not None:
+        _validate_selected_alternative_selection(
+            alternative_set_id=alternative_set.alternative_set_id,
+            selected_alternative_id=selected_alternative_id,
+            selection=selection,
+        )
+    return selected
+
+
+def _validate_selected_alternative_selection(
+    *,
+    alternative_set_id: str,
+    selected_alternative_id: str,
+    selection: ConstructionAlternativeSelection,
+) -> None:
+    if selection.alternative_id != selected_alternative_id:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH")
+    if selection.alternative_set_id != alternative_set_id:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SET_MISMATCH")
 
 
 def _build_proof_pack(
