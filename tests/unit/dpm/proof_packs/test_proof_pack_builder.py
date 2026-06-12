@@ -19,8 +19,10 @@ from src.core.construction import (
     build_rebalance_result_alternative,
 )
 from src.core.models import (
+    CashLadderBreach,
     EngineOptions,
     ExcludedInstrument,
+    FundingPlanEntry,
     GateDecision,
     GateDecisionSummary,
     GateReason,
@@ -414,6 +416,69 @@ def test_run_diagnostics_section_payload_returns_currency_overlay_fallback() -> 
     assert facts == {}
     assert metrics == {}
     assert reason_codes == ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"]
+
+
+def test_liquidity_and_cash_section_payload_marks_cash_breaches() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "diagnostics": result.diagnostics.model_copy(
+                update={
+                    "cash_ladder_breaches": [
+                        CashLadderBreach(
+                            date_offset=2,
+                            currency="USD",
+                            projected_balance=Decimal("-25"),
+                            allowed_floor=Decimal("0"),
+                            reason_code="OVERDRAFT_ON_T_PLUS_2",
+                        )
+                    ]
+                }
+            )
+        }
+    )
+
+    state, _summary, facts, metrics, reason_codes = (
+        builder_module._liquidity_and_cash_section_payload(result)
+    )
+
+    assert state == "BLOCKED"
+    assert facts["cash_ladder_breaches"][0]["reason_code"] == "OVERDRAFT_ON_T_PLUS_2"
+    assert metrics == {"breach_count": 1}
+    assert reason_codes == ["DPM_CASH_LADDER_BREACH"]
+
+
+def test_fx_funding_plan_section_payload_marks_missing_pairs() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "diagnostics": result.diagnostics.model_copy(
+                update={
+                    "missing_fx_pairs": ["USD/SGD"],
+                    "funding_plan": [
+                        FundingPlanEntry(
+                            target_currency="SGD",
+                            required=Decimal("100"),
+                            available_before_fx=Decimal("25"),
+                            fx_needed=Decimal("75"),
+                            fx_pair=None,
+                            funding_currency=None,
+                        )
+                    ],
+                }
+            )
+        }
+    )
+
+    state, _summary, facts, metrics, reason_codes = builder_module._fx_funding_plan_section_payload(
+        result
+    )
+
+    assert state == "BLOCKED"
+    assert facts["missing_fx_pairs"] == ["USD/SGD"]
+    assert facts["funding_plan"][0]["target_currency"] == "SGD"
+    assert metrics == {"missing_fx_pair_count": 1}
+    assert reason_codes == ["DPM_REQUIRED_FX_PAIR_MISSING"]
 
 
 def test_run_policy_section_payload_returns_direct_run_drift_fallback() -> None:

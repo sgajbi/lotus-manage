@@ -13,6 +13,7 @@ from src.infrastructure.core_sourcing.client import (
     _portfolio_snapshot_from_core_snapshot,
     _portfolio_positions_and_cash_from_core_rows,
     _required_currency_pairs,
+    _source_product_payload_with_retries,
 )
 
 
@@ -133,6 +134,52 @@ def test_core_resolver_shared_post_helper_retries_transport_then_succeeds() -> N
     )
 
     assert response == {"ok": True}
+    assert calls["count"] == 2
+
+
+def test_source_product_retry_helper_maps_transient_status_then_payload() -> None:
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            return httpx.Response(503, json={"detail": "retry"})
+        return httpx.Response(200, json={"source": "ready"})
+
+    payload = _source_product_payload_with_retries(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        attempts=2,
+        method="get",
+        url="https://core.example.test/integration/source",
+        selector={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        headers={"X-Correlation-Id": "corr-source"},
+        unavailable_code="UNAVAILABLE",
+        incomplete_code="INCOMPLETE",
+    )
+
+    assert payload == {"source": "ready"}
+    assert calls["count"] == 2
+
+
+def test_source_product_retry_helper_exhausts_transient_status_safely() -> None:
+    calls = {"count": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        return httpx.Response(503, json={"detail": "still unavailable"})
+
+    with pytest.raises(DpmCoreResolverUnavailableError, match="UNAVAILABLE"):
+        _source_product_payload_with_retries(
+            httpx.Client(transport=httpx.MockTransport(handler)),
+            attempts=2,
+            method="post",
+            url="https://core.example.test/integration/source",
+            selector={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+            headers={},
+            unavailable_code="UNAVAILABLE",
+            incomplete_code="INCOMPLETE",
+        )
+
     assert calls["count"] == 2
 
 

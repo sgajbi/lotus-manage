@@ -20094,3 +20094,82 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack section payload
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-817: Core sourcing source-product retry helper
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_request_source_product` was the top current source-complexity hotspot and mixed
+  retry attempt counting, transient HTTP status retry behavior, transport exception retry
+  behavior, source-safe error mapping, response payload validation, and owned-client cleanup in
+  one resolver method.
+- Action: extracted `_source_product_payload_with_retries` as a deterministic helper while
+  preserving request dispatch, correlation headers, transient 502/503/504 retry semantics,
+  timeout/transport unavailable mapping, non-object payload rejection, and owned-client cleanup in
+  the resolver method. Added direct helper tests for transient retry success and exhausted
+  transient failure alongside the existing resolver helper coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal core-sourcing client
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-818: Proof-pack run diagnostics section helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_run_diagnostics_section_payload` was the top current source-complexity hotspot after
+  the core-sourcing slice and mixed liquidity/cash projection, FX funding projection,
+  currency-overlay fallback evidence, reason-code selection, metrics, and dispatcher behavior in
+  one function.
+- Action: extracted deterministic liquidity/cash, FX funding, and currency-overlay diagnostics
+  section helpers while preserving section dispatcher semantics, ready/blocked/degraded states,
+  breach and missing-FX metrics, reason codes, and JSON payload shapes. Added direct helper tests
+  for blocked cash-ladder breaches and missing FX pairs alongside existing dispatcher/fallback
+  coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal proof-pack diagnostics
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-819: Target trace row projection helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `build_target_trace` was the top current source-complexity hotspot after the
+  proof-pack diagnostics slice and mixed model-target row construction, capped/redistributed tag
+  derivation, non-model eligible position row construction, sell-to-zero/locked classification,
+  and final trace ordering in one mapper.
+- Action: extracted deterministic model-target, non-model target, and non-model tag helpers while
+  preserving trace ordering, target weights, final values, capped/redistributed tags, sell-to-zero
+  tags, and locked-position tags. Added direct helper tests for capped and redistributed target
+  rows plus non-model sell-to-zero and locked rows alongside existing public trace coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal target-generation mapper
+  maintainability refactoring and repo-local quality evidence.
