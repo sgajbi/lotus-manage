@@ -19032,3 +19032,34 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal in-memory repository
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-784: Realized outcome metric source helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/realized_sources.py`,
+  `tests/unit/core/test_realized_outcome_sources.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_metric_from_sources` was the next current source-complexity hotspot and mixed missing
+  source handling, conflicting source-owner value detection, source-state mapping, blocked/not
+  supported value suppression, missing ready-value blocking, and metric construction in one helper.
+- Action: extracted source-value conflict detection, single-source metric construction,
+  state-aware value selection, and missing-ready-value detection into direct pure helpers. Added
+  focused tests for conflict detection, blocked/not-supported value suppression, and state-specific
+  missing-value behavior while preserving existing realized outcome snapshot contract tests.
+  Refreshed current-state quality reports and preserved stable baseline/rule artifacts; the
+  refreshed complexity report shows `_metric_from_sources` dropped out of the top current
+  source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/realized_sources.py`,
+  `python -m pytest tests/unit/core/test_realized_outcome_sources.py -q` (14 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal realized-source mapping
+  maintainability refactoring and repo-local quality evidence.

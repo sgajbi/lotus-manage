@@ -1,6 +1,7 @@
 """Realized source snapshot adapter for RFC-0042."""
 
 from collections import Counter
+from decimal import Decimal
 
 from src.core.outcomes.models import (
     DpmOutcomeMetricValue,
@@ -78,15 +79,29 @@ def _metric_from_sources(
 ) -> DpmOutcomeMetricValue:
     if not snapshots:
         return _missing_metric(dimension=dimension, review_window=review_window)
-    if len(snapshots) > 1:
-        values = {snapshot.value for snapshot in snapshots}
-        if len(values) > 1:
-            return _conflicting_metric(dimension=dimension, snapshots=snapshots)
-    snapshot = snapshots[0]
+    if _has_conflicting_source_values(snapshots):
+        return _conflicting_metric(dimension=dimension, snapshots=snapshots)
+    return _single_source_metric(
+        dimension=dimension,
+        review_window=review_window,
+        snapshot=snapshots[0],
+    )
+
+
+def _has_conflicting_source_values(snapshots: list[DpmRealizedSourceSnapshot]) -> bool:
+    return len({snapshot.value for snapshot in snapshots}) > 1
+
+
+def _single_source_metric(
+    *,
+    dimension: OutcomeDimension,
+    review_window: DpmOutcomeReviewWindow,
+    snapshot: DpmRealizedSourceSnapshot,
+) -> DpmOutcomeMetricValue:
     state = _state_from_source(snapshot)
     reason_code = _reason_code(dimension=dimension, snapshot=snapshot, state=state)
-    value = snapshot.value if state not in {"BLOCKED", "NOT_SUPPORTED"} else None
-    if state == "READY" and value is None:
+    value = _source_value_for_state(snapshot=snapshot, state=state)
+    if _ready_source_value_is_missing(state=state, value=value):
         state = "BLOCKED"
         reason_code = _blocked_reason(dimension)
     return DpmOutcomeMetricValue(
@@ -105,6 +120,24 @@ def _metric_from_sources(
             explanation=_supportability_explanation(snapshot=snapshot, state=state),
         ),
     )
+
+
+def _source_value_for_state(
+    *,
+    snapshot: DpmRealizedSourceSnapshot,
+    state: OutcomeDimensionState,
+) -> Decimal | None:
+    if state in {"BLOCKED", "NOT_SUPPORTED"}:
+        return None
+    return snapshot.value
+
+
+def _ready_source_value_is_missing(
+    *,
+    state: OutcomeDimensionState,
+    value: Decimal | None,
+) -> bool:
+    return state == "READY" and value is None
 
 
 def _missing_metric(

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T08:55:09+00:00`
+- Generated at: `2026-06-12T08:58:03+00:00`
 
-- Current ref: `cb77ef64`
+- Current ref: `c6d5c5c9`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
-| 2 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
-| 3 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
-| 4 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
-| 5 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
-| 6 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
-| 7 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
-| 8 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
-| 9 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
-| 10 | _validate_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 9 | 23 |
+| 1 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
+| 2 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
+| 3 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
+| 4 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
+| 5 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
+| 6 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
+| 7 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
+| 8 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
+| 9 | _validate_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 9 | 23 |
+| 10 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
 
 ### Most Complex Current Test Functions
 
