@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T16:57:19+00:00`
+- Generated at: `2026-06-12T17:09:01+00:00`
 
-- Current ref: `bfe4cb53`
+- Current ref: `62b61115`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
-| 2 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
-| 3 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
-| 4 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
-| 5 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
-| 6 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
-| 7 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
-| 8 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
-| 9 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
-| 10 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 1 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
+| 2 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
+| 3 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
+| 4 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
+| 5 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 6 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
+| 7 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
+| 8 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
+| 9 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 10 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
 
 ### Most Complex Current Test Functions
 
