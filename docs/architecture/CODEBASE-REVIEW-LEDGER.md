@@ -19769,3 +19769,37 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack Markdown
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-807: Outcome dimension comparison helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/comparison.py`,
+  `tests/unit/core/test_outcome_comparison.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `compare_outcome_dimension` was the top current source-complexity hotspot after the
+  proof-pack Markdown slice and mixed source-reference collection, source-supportability
+  short-circuiting, mandatory-value validation, variance-pressure calculation, threshold
+  state/reason selection, and result assembly in one function.
+- Action: extracted pure source-reference, mandatory-value, and variance-pressure state/reason
+  helpers while preserving the public comparison contract, source-supportability fail-closed
+  behavior, tolerance semantics, degraded-source handling, supportability payloads, and
+  calculation trace. Added direct helper tests for source-ref ordering, missing expected/realized
+  values, hard breaches, and degraded evidence classification. Refreshed current-state quality
+  reports and preserved the stable baseline artifact; the refreshed complexity report shows
+  `compare_outcome_dimension` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m ruff format --check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/comparison.py`,
+  `python -m pytest tests/unit/core/test_outcome_comparison.py -q` (13 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal outcome comparison
+  maintainability refactoring and repo-local quality evidence.

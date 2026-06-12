@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
+import src.core.outcomes.comparison as outcome_comparison
 from src.core.outcomes import (
     DpmOutcomeDimensionInput,
     DpmOutcomeMetricValue,
@@ -149,6 +150,46 @@ def test_not_supported_dimension_cannot_become_ready_even_when_values_exist() ->
     assert result.state == "NOT_SUPPORTED"
     assert result.reason_code == "RISK_OUTCOME_NOT_SUPPORTED"
     assert result.variance is None
+
+
+def test_dimension_source_refs_combine_expected_and_realized_refs() -> None:
+    refs = outcome_comparison._dimension_source_refs(
+        _dimension(expected="0.1200", realized="0.1180")
+    )
+
+    assert [ref.source_system for ref in refs] == ["lotus-manage", "lotus-performance"]
+
+
+def test_dimension_values_missing_detects_expected_or_realized_gaps() -> None:
+    assert outcome_comparison._dimension_values_missing(_dimension(expected=None)) is True
+    assert outcome_comparison._dimension_values_missing(_dimension(realized=None)) is True
+    assert (
+        outcome_comparison._dimension_values_missing(
+            _dimension(expected="0.1200", realized="0.1180")
+        )
+        is False
+    )
+
+
+def test_dimension_state_and_reason_classifies_pressure_and_degraded_sources() -> None:
+    breached_state, breached_reason = outcome_comparison._dimension_state_and_reason(
+        dimension_input=_dimension(dimension="COST", expected="100.00", realized="111.00"),
+        supportability_state="READY",
+        pressure=Decimal("11.00"),
+    )
+    degraded_state, degraded_reason = outcome_comparison._dimension_state_and_reason(
+        dimension_input=_dimension(
+            dimension="DRIFT_REDUCTION",
+            expected="0.1200",
+            realized="0.1190",
+            realized_state="DEGRADED",
+        ),
+        supportability_state="DEGRADED",
+        pressure=Decimal("0"),
+    )
+
+    assert (breached_state, breached_reason) == ("BREACHED", "COST_ABOVE_ESTIMATE")
+    assert (degraded_state, degraded_reason) == ("DEGRADED", "SOURCE_EVIDENCE_INCOMPLETE")
 
 
 def test_review_rollup_prioritizes_blocked_then_breached_then_degraded() -> None:
