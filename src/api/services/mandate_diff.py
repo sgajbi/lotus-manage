@@ -90,24 +90,60 @@ def build_mandate_diff_for_versions(
     from_version: str | None,
     to_version: str | None,
 ) -> DpmMandateDiff:
-    by_version = {version.mandate_version: version for version in versions}
-    if from_version is not None or to_version is not None:
-        if from_version is None or to_version is None:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
-        if from_version not in by_version or to_version not in by_version:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_VERSION_NOT_FOUND")
-        previous = by_version[from_version]
-        current = by_version[to_version]
-    else:
-        if len(versions) < 2:
-            raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
-        current, previous = versions[0], versions[1]
-
+    previous, current = _mandate_diff_version_pair(
+        versions=versions,
+        from_version=from_version,
+        to_version=to_version,
+    )
     return build_mandate_diff(
         mandate_id=mandate_id,
         previous=previous,
         current=current,
     )
+
+
+def _mandate_diff_version_pair(
+    *,
+    versions: list[DpmMandateDigitalTwin],
+    from_version: str | None,
+    to_version: str | None,
+) -> tuple[DpmMandateDigitalTwin, DpmMandateDigitalTwin]:
+    if from_version is not None or to_version is not None:
+        return _requested_mandate_diff_version_pair(
+            versions=versions,
+            from_version=from_version,
+            to_version=to_version,
+        )
+    return _latest_mandate_diff_version_pair(versions)
+
+
+def _requested_mandate_diff_version_pair(
+    *,
+    versions: list[DpmMandateDigitalTwin],
+    from_version: str | None,
+    to_version: str | None,
+) -> tuple[DpmMandateDigitalTwin, DpmMandateDigitalTwin]:
+    if from_version is None or to_version is None:
+        raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
+    by_version = _mandate_version_index(versions)
+    try:
+        return by_version[from_version], by_version[to_version]
+    except KeyError as exc:
+        raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_VERSION_NOT_FOUND") from exc
+
+
+def _latest_mandate_diff_version_pair(
+    versions: list[DpmMandateDigitalTwin],
+) -> tuple[DpmMandateDigitalTwin, DpmMandateDigitalTwin]:
+    if len(versions) < 2:
+        raise DpmMandateDiffUnavailableError("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS")
+    return versions[1], versions[0]
+
+
+def _mandate_version_index(
+    versions: list[DpmMandateDigitalTwin],
+) -> dict[str, DpmMandateDigitalTwin]:
+    return {version.mandate_version: version for version in versions}
 
 
 def iter_changed_fields(

@@ -20435,3 +20435,28 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal API-layer authorization
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-830: Mandate diff version-pair selection helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `build_mandate_diff_for_versions` was the top current source-complexity hotspot after
+  the enterprise authorization slice and mixed version indexing, explicit version-pair validation,
+  missing-version errors, latest-two fallback selection, insufficient-version errors, and diff
+  construction in one service helper.
+- Action: extracted deterministic mandate diff version-index, requested-pair, latest-pair, and
+  pair-routing helpers while preserving explicit version selection, default latest-two ordering,
+  and existing `DPM_MANDATE_DIFF_*` error codes. Added direct helper tests for explicit/latest
+  selection and validation errors alongside existing public diff builder coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_diff.py tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python -m ruff format --check src/api/services/mandate_diff.py tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_diff.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_diff.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal mandate diff service
+  maintainability refactoring and repo-local quality evidence.

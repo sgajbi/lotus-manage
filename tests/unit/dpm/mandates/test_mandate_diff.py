@@ -6,6 +6,9 @@ from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.api.services.mandate_diff import (
     DpmMandateDiff,
     DpmMandateFieldChange,
+    _latest_mandate_diff_version_pair,
+    _mandate_version_index,
+    _requested_mandate_diff_version_pair,
     build_mandate_diff,
     build_mandate_diff_for_versions,
     diff_payloads,
@@ -133,6 +136,50 @@ def test_build_mandate_diff_for_versions_defaults_to_latest_two_versions() -> No
 
     assert diff.from_version == "2"
     assert diff.to_version == "3"
+
+
+def test_mandate_diff_version_helpers_select_explicit_and_latest_pairs() -> None:
+    versions = [
+        _twin(version="3", turnover_budget=Decimal("0.15")),
+        _twin(version="2", turnover_budget=Decimal("0.10")),
+        _twin(version="1", turnover_budget=Decimal("0.08")),
+    ]
+
+    by_version = _mandate_version_index(versions)
+    requested_previous, requested_current = _requested_mandate_diff_version_pair(
+        versions=versions,
+        from_version="1",
+        to_version="3",
+    )
+    latest_previous, latest_current = _latest_mandate_diff_version_pair(versions)
+
+    assert set(by_version) == {"1", "2", "3"}
+    assert requested_previous.mandate_version == "1"
+    assert requested_current.mandate_version == "3"
+    assert latest_previous.mandate_version == "2"
+    assert latest_current.mandate_version == "3"
+
+
+def test_mandate_diff_version_helpers_preserve_validation_errors() -> None:
+    versions = [_twin(version="3")]
+
+    try:
+        _requested_mandate_diff_version_pair(
+            versions=versions,
+            from_version="2",
+            to_version=None,
+        )
+    except DpmMandateDiffUnavailableError as exc:
+        assert exc.args == ("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS",)
+    else:
+        raise AssertionError("Expected requested mandate diff version-pair validation error.")
+
+    try:
+        _latest_mandate_diff_version_pair(versions)
+    except DpmMandateDiffUnavailableError as exc:
+        assert exc.args == ("DPM_MANDATE_DIFF_REQUIRES_TWO_VERSIONS",)
+    else:
+        raise AssertionError("Expected latest mandate diff version-pair validation error.")
 
 
 def test_build_mandate_diff_for_versions_requires_complete_version_pair() -> None:
