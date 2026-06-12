@@ -43,6 +43,11 @@ _PROOF_PACK_OUTCOME_STATES: dict[str, OutcomeDimensionState] = {
     "DEGRADED": "DEGRADED",
     "BLOCKED": "BLOCKED",
 }
+_CONSTRUCTION_OUTCOME_STATE_PRECEDENCE: tuple[OutcomeDimensionState, ...] = (
+    "BLOCKED",
+    "PENDING_REVIEW",
+    "DEGRADED",
+)
 
 
 def assemble_expected_outcome_snapshot(
@@ -538,24 +543,24 @@ def _construction_state(
     alternative_set: ConstructionAlternativeSet,
     selected_alternative: ConstructionAlternative,
 ) -> OutcomeDimensionState:
-    if (
-        str(alternative_set.status) == "BLOCKED"
-        or str(selected_alternative.method_status) == "BLOCKED"
-    ):
-        return "BLOCKED"
-    if (
-        str(alternative_set.status) == "PENDING_REVIEW"
-        or str(selected_alternative.method_status) == "PENDING_REVIEW"
-    ):
-        return "PENDING_REVIEW"
-    if (
-        str(alternative_set.status) == "DEGRADED"
-        or str(selected_alternative.method_status) == "DEGRADED"
-    ):
-        return "DEGRADED"
-    if alternative_set.source_supportability_state == "DEGRADED":
-        return "DEGRADED"
-    return "READY"
+    return (
+        _highest_construction_outcome_state(
+            str(alternative_set.status),
+            str(selected_alternative.method_status),
+            alternative_set.source_supportability_state,
+        )
+        or "READY"
+    )
+
+
+def _highest_construction_outcome_state(
+    *states: str | None,
+) -> OutcomeDimensionState | None:
+    observed_states = {state for state in states if state}
+    for outcome_state in _CONSTRUCTION_OUTCOME_STATE_PRECEDENCE:
+        if outcome_state in observed_states:
+            return outcome_state
+    return None
 
 
 def _proof_pack_state(status: str) -> OutcomeDimensionState:

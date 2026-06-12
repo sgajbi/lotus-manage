@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T17:25:18+00:00`
+- Generated at: `2026-06-12T17:29:14+00:00`
 
-- Current ref: `64ce6b0e`
+- Current ref: `f4624a23`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
-| 2 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
-| 3 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
-| 4 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
-| 5 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
-| 6 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
-| 7 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
-| 8 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
-| 9 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
-| 10 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
+| 1 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 2 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
+| 3 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
+| 4 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
+| 5 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 6 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
+| 7 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
+| 8 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
+| 9 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
+| 10 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
 
 ### Most Complex Current Test Functions
 

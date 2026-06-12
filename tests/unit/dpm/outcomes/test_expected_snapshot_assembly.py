@@ -14,6 +14,7 @@ from src.core.models import Money
 from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
     _find_wave_item,
+    _highest_construction_outcome_state,
     _proof_pack_state,
     _wave_item_lookup_required,
     assemble_expected_outcome_snapshot,
@@ -294,6 +295,22 @@ def test_expected_snapshot_calculation_trace_helper_records_source_posture() -> 
         "handoff_reason_code": "READY_FOR_OPERATIONS_REVIEW",
         "defaulted_expected_values": [],
     }
+
+
+@pytest.mark.parametrize(
+    ("states", "expected"),
+    [
+        (("READY", "DEGRADED"), "DEGRADED"),
+        (("DEGRADED", "PENDING_REVIEW"), "PENDING_REVIEW"),
+        (("PENDING_REVIEW", "BLOCKED"), "BLOCKED"),
+        (("READY", None), None),
+    ],
+)
+def test_highest_construction_outcome_state_applies_supportability_precedence(
+    states: tuple[str | None, ...],
+    expected: str | None,
+) -> None:
+    assert _highest_construction_outcome_state(*states) == expected
 
 
 def test_expected_snapshot_preserves_construction_proof_pack_wave_and_handoff_lineage() -> None:
