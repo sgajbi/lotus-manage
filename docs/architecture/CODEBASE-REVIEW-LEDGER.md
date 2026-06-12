@@ -19970,3 +19970,34 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal tax-budget sell quantity
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-813: Mandate monitoring-exception Postgres query helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/mandates/postgres.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `list_monitoring_exceptions` was the top current source-complexity hotspot after the
+  tax-budget slice and mixed optional filter assembly, cursor predicate assembly, SQL rendering,
+  overfetch limit binding, Postgres execution, payload loading, page slicing, and next-cursor
+  selection in one repository method.
+- Action: extracted deterministic monitoring-exception list-query and page/cursor helpers while
+  preserving repository filter semantics, cursor predicate ordering, overfetch behavior, loaded
+  exception ordering, selected-run filtering before pagination, and public repository contract.
+  Added direct helper tests for combined filter/cursor query assembly and overfetch cursor
+  selection alongside the existing fake-Postgres repository behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/postgres.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/postgres.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/postgres.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate monitoring-exception
+  repository maintainability refactoring and repo-local quality evidence.

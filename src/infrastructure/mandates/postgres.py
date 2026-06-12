@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from contextlib import closing
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, Optional
 
@@ -14,6 +15,12 @@ from src.core.mandates import (
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
+
+
+@dataclass(frozen=True)
+class _MonitoringExceptionListQuery:
+    sql: str
+    args: tuple[Any, ...]
 
 
 class PostgresDpmMandateRepository:
@@ -345,48 +352,18 @@ class PostgresDpmMandateRepository:
         limit: int,
         cursor: Optional[str],
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
-        where_clauses: list[str] = []
-        args: list[Any] = []
-        if monitoring_run_id is not None:
-            where_clauses.append("monitoring_run_id = %s")
-            args.append(monitoring_run_id)
-        if mandate_id is not None:
-            where_clauses.append("mandate_id = %s")
-            args.append(mandate_id)
-        if portfolio_id is not None:
-            where_clauses.append("portfolio_id = %s")
-            args.append(portfolio_id)
-        if state is not None:
-            where_clauses.append("state = %s")
-            args.append(state)
-        if cursor is not None:
-            where_clauses.append(
-                """
-                (
-                    detected_at < (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
-                    OR (
-                        detected_at = (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
-                        AND exception_id < %s
-                    )
-                )
-                """
-            )
-            args.extend([cursor, cursor, cursor])
-        where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-        query = f"""
-            SELECT payload_json, exception_id
-            FROM dpm_monitoring_exceptions
-            {where_sql}
-            ORDER BY detected_at DESC, exception_id DESC
-            LIMIT %s
-        """
-        args.append(limit + 1)
+        query = _monitoring_exception_list_query(
+            monitoring_run_id=monitoring_run_id,
+            mandate_id=mandate_id,
+            portfolio_id=portfolio_id,
+            state=state,
+            limit=limit,
+            cursor=cursor,
+        )
         with closing(self._connect()) as connection:
-            rows = connection.execute(query, tuple(args)).fetchall()
+            rows = connection.execute(query.sql, query.args).fetchall()
         exceptions = [load_model_json(DpmMonitoringException, _payload(row)) for row in rows]
-        page = exceptions[:limit]
-        next_cursor = page[-1].exception_id if len(exceptions) > limit else None
-        return page, next_cursor
+        return _monitoring_exception_page(exceptions, limit=limit)
 
     def resolve_monitoring_exception(
         self,
@@ -445,6 +422,63 @@ def _to_twin(row: Any) -> Optional[DpmMandateDigitalTwin]:
     if row is None:
         return None
     return load_model_json(DpmMandateDigitalTwin, _payload(row))
+
+
+def _monitoring_exception_list_query(
+    *,
+    monitoring_run_id: Optional[str],
+    mandate_id: Optional[str],
+    portfolio_id: Optional[str],
+    state: Optional[str],
+    limit: int,
+    cursor: Optional[str],
+) -> _MonitoringExceptionListQuery:
+    where_clauses: list[str] = []
+    args: list[Any] = []
+    for column, value in (
+        ("monitoring_run_id", monitoring_run_id),
+        ("mandate_id", mandate_id),
+        ("portfolio_id", portfolio_id),
+        ("state", state),
+    ):
+        if value is not None:
+            where_clauses.append(f"{column} = %s")
+            args.append(value)
+    if cursor is not None:
+        where_clauses.append(
+            """
+            (
+                detected_at < (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
+                OR (
+                    detected_at = (SELECT detected_at FROM dpm_monitoring_exceptions WHERE exception_id = %s)
+                    AND exception_id < %s
+                )
+            )
+            """
+        )
+        args.extend([cursor, cursor, cursor])
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
+    args.append(limit + 1)
+    return _MonitoringExceptionListQuery(
+        sql=f"""
+            SELECT payload_json, exception_id
+            FROM dpm_monitoring_exceptions
+            {where_sql}
+            ORDER BY detected_at DESC, exception_id DESC
+            LIMIT %s
+        """,
+        args=tuple(args),
+    )
+
+
+def _monitoring_exception_page(
+    exceptions: list[DpmMonitoringException],
+    *,
+    limit: int,
+) -> tuple[list[DpmMonitoringException], Optional[str]]:
+    page = exceptions[:limit]
+    next_cursor = page[-1].exception_id if len(exceptions) > limit else None
+    return page, next_cursor
 
 
 def _payload(row: Any) -> str | dict[str, Any]:

@@ -244,6 +244,58 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
     assert cursor is None
 
 
+def test_postgres_monitoring_exception_query_combines_filters_and_cursor() -> None:
+    query = mandate_postgres._monitoring_exception_list_query(
+        monitoring_run_id="dmr_selected",
+        mandate_id="MANDATE_PB_SG_GLOBAL_BAL_001",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        state="ACTIVE",
+        limit=25,
+        cursor="me_cursor",
+    )
+
+    assert "FROM dpm_monitoring_exceptions" in query.sql
+    assert "monitoring_run_id = %s" in query.sql
+    assert "mandate_id = %s" in query.sql
+    assert "portfolio_id = %s" in query.sql
+    assert "state = %s" in query.sql
+    assert "exception_id < %s" in query.sql
+    assert "ORDER BY detected_at DESC, exception_id DESC" in query.sql
+    assert query.args == (
+        "dmr_selected",
+        "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "PB_SG_GLOBAL_BAL_001",
+        "ACTIVE",
+        "me_cursor",
+        "me_cursor",
+        "me_cursor",
+        26,
+    )
+
+
+def test_postgres_monitoring_exception_page_returns_overfetch_cursor() -> None:
+    twin = _twin()
+    snapshot = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"EQ_US_AAPL": Decimal("0.60")},
+            target_weights={"EQ_US_AAPL": Decimal("0.60")},
+            cash_weight=Decimal("0.50"),
+        )
+    )
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    first = exception.model_copy(update={"exception_id": "me_first"})
+    second = exception.model_copy(update={"exception_id": "me_second"})
+
+    page, cursor = mandate_postgres._monitoring_exception_page(
+        [first, second],
+        limit=1,
+    )
+
+    assert page == [first]
+    assert cursor == "me_first"
+
+
 def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_records() -> None:
     repository = InMemoryDpmMandateRepository()
     old_twin = _twin(as_of=date(2024, 1, 1))
