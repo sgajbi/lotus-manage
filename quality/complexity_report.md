@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T15:17:16+00:00`
+- Generated at: `2026-06-12T15:20:04+00:00`
 
-- Current ref: `cdd1c8ff`
+- Current ref: `0c25ed9a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
-| 2 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
-| 3 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
-| 4 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
-| 5 | build_target_trace | src/core/target_generation.py | 8 | 42 |
-| 6 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
-| 7 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
-| 8 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
-| 9 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
-| 10 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
+| 1 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
+| 2 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
+| 3 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
+| 4 | build_target_trace | src/core/target_generation.py | 8 | 42 |
+| 5 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
+| 6 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
+| 7 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
+| 8 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
+| 9 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
+| 10 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
 
 ### Most Complex Current Test Functions
 

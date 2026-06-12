@@ -11,7 +11,10 @@ from src.core.waves.campaign_definition_readiness import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     build_bulk_review_campaign_definition_preview_readiness,
 )
-from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionGovernance,
+)
 from src.core.waves.campaign_discovery import (
     DpmBulkReviewCampaignDiscoveryItem,
     build_bulk_review_campaign_discovery_item,
@@ -127,7 +130,6 @@ def build_bulk_review_campaign_approval_inbox_item(
         discovery=discovery,
         readiness=readiness,
     )
-    governance = definition.governance
     payload: dict[str, object] = {
         "product_name": "BulkReviewCampaignApprovalInboxItem",
         "product_version": "v1",
@@ -140,18 +142,36 @@ def build_bulk_review_campaign_approval_inbox_item(
         "inbox_reason_codes": reason_codes,
         "discovery": discovery.model_dump(mode="json"),
         "preview_readiness": readiness.model_dump(mode="json"),
-        "approval_ref": governance.approval_ref if governance else None,
-        "approved_by": governance.approved_by if governance else None,
-        "approved_at": governance.approved_at if governance else None,
-        "expires_on": governance.expires_on if governance else None,
-        "access_purpose": governance.access_purpose if governance else None,
-        "entitled_actor_count": len(governance.entitled_actor_ids) if governance else 0,
-        "approval_source_ref_count": len(governance.source_refs) if governance else 0,
+        **_approval_inbox_governance_payload(definition.governance),
         "operating_boundaries": list(CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
     return DpmBulkReviewCampaignApprovalInboxItem.model_validate(payload)
+
+
+def _approval_inbox_governance_payload(
+    governance: DpmBulkReviewCampaignDefinitionGovernance | None,
+) -> dict[str, object]:
+    if governance is None:
+        return {
+            "approval_ref": None,
+            "approved_by": None,
+            "approved_at": None,
+            "expires_on": None,
+            "access_purpose": None,
+            "entitled_actor_count": 0,
+            "approval_source_ref_count": 0,
+        }
+    return {
+        "approval_ref": governance.approval_ref,
+        "approved_by": governance.approved_by,
+        "approved_at": governance.approved_at,
+        "expires_on": governance.expires_on,
+        "access_purpose": governance.access_purpose,
+        "entitled_actor_count": len(governance.entitled_actor_ids),
+        "approval_source_ref_count": len(governance.source_refs),
+    }
 
 
 def build_bulk_review_campaign_approval_inbox_page(

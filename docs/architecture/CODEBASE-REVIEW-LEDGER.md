@@ -20032,3 +20032,34 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack builder
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-815: Campaign approval-inbox governance projection helper
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_approval_inbox.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `build_bulk_review_campaign_approval_inbox_item` was the top current
+  source-complexity hotspot after the proof-pack slice and mixed discovery/readiness derivation,
+  posture classification, governance field projection, governance count projection,
+  operating-boundary projection, content hashing, and final model validation in one builder.
+- Action: extracted a deterministic approval-inbox governance payload helper while preserving
+  approval metadata projection, missing-governance defaults, entitled actor counts, source-ref
+  counts, operating boundaries, content hashing, and public item/page behavior. Added direct helper
+  tests for populated governance and missing-governance payloads alongside existing inbox posture
+  tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_approval_inbox.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign approval-inbox
+  maintainability refactoring and repo-local quality evidence.
