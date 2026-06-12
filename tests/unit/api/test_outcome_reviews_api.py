@@ -9,6 +9,10 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.main import app
+from src.api.routers.outcome_review_supportability_routes import (
+    _is_realized_source_remediation_reason,
+    _remediation_route_for_reason,
+)
 from src.core.outcomes import (
     DpmOutcomeDimensionInput,
     DpmOutcomeMetricValue,
@@ -424,6 +428,25 @@ def test_outcome_review_supportability_routes_source_owner_remediation() -> None
         ]
     finally:
         app.dependency_overrides.clear()
+
+
+def test_outcome_review_remediation_reason_mapper_returns_operator_routes() -> None:
+    assert _remediation_route_for_reason("RISK_SOURCE_UNAVAILABLE") == (
+        "lotus-risk:refresh-post-trade-risk-source"
+    )
+    assert _remediation_route_for_reason("PERFORMANCE_SOURCE_UNAVAILABLE") == (
+        "lotus-performance:refresh-post-trade-performance-source"
+    )
+    assert _remediation_route_for_reason("EXECUTION_EVIDENCE_BLOCKED") == (
+        "execution-owner:certify-fill-and-order-evidence"
+    )
+    assert _remediation_route_for_reason("FX_SOURCE_STALE") == (
+        "source-owner:refresh-realized-outcome-source"
+    )
+    assert _remediation_route_for_reason("OUTCOME_REVIEW_READY") is None
+    assert _is_realized_source_remediation_reason("CASH_RECONCILIATION_STALE")
+    assert _is_realized_source_remediation_reason("TAX_SOURCE_UNAVAILABLE")
+    assert not _is_realized_source_remediation_reason("OUTCOME_REVIEW_READY")
 
 
 def test_outcome_review_supportability_exposes_external_execution_boundary() -> None:

@@ -102,12 +102,23 @@ def _supportability_response(
 def _remediation_routes(review: DpmPostTradeOutcomeReview) -> list[str]:
     routes: set[str] = set()
     for reason in review.supportability.reason_codes:
-        if "RISK" in reason:
-            routes.add("lotus-risk:refresh-post-trade-risk-source")
-        elif "PERFORMANCE" in reason:
-            routes.add("lotus-performance:refresh-post-trade-performance-source")
-        elif "EXECUTION" in reason:
-            routes.add("execution-owner:certify-fill-and-order-evidence")
-        elif "SOURCE" in reason or "CASH" in reason or "FX" in reason or "TAX" in reason:
-            routes.add("source-owner:refresh-realized-outcome-source")
+        route = _remediation_route_for_reason(reason)
+        if route is not None:
+            routes.add(route)
     return sorted(routes)
+
+
+def _remediation_route_for_reason(reason: str) -> str | None:
+    if "RISK" in reason:
+        return "lotus-risk:refresh-post-trade-risk-source"
+    if "PERFORMANCE" in reason:
+        return "lotus-performance:refresh-post-trade-performance-source"
+    if "EXECUTION" in reason:
+        return "execution-owner:certify-fill-and-order-evidence"
+    if _is_realized_source_remediation_reason(reason):
+        return "source-owner:refresh-realized-outcome-source"
+    return None
+
+
+def _is_realized_source_remediation_reason(reason: str) -> bool:
+    return "SOURCE" in reason or "CASH" in reason or "FX" in reason or "TAX" in reason

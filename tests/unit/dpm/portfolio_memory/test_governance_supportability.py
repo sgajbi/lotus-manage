@@ -6,6 +6,9 @@ from src.core.portfolio_memory.governance import (
 )
 from src.core.portfolio_memory.models import DpmPortfolioMemoryEvent
 from src.core.portfolio_memory.supportability import (
+    _source_state_is_blocked,
+    _source_state_is_degraded,
+    _source_state_requires_review,
     assignment_sla_state,
     assignment_task_state,
     maker_checker_state,
@@ -84,3 +87,17 @@ def test_portfolio_memory_supportability_mapping_is_fail_closed() -> None:
     assert assignment_task_state("CANCELLED", "ON_TRACK") == "BLOCKED"
     assert assignment_task_state("OPEN", "ON_TRACK") == "PENDING_REVIEW"
     assert maker_checker_state("EXCEPTION_OPEN") == "DEGRADED"
+
+
+def test_source_supportability_state_predicates_classify_source_posture() -> None:
+    assert _source_state_is_blocked("PERMISSION_BLOCKED")
+    assert _source_state_is_blocked("FAILED")
+    assert not _source_state_is_blocked("READY")
+
+    assert _source_state_is_degraded("SLA_BREACHED")
+    assert _source_state_is_degraded("PARTIAL")
+    assert not _source_state_is_degraded("READY")
+
+    assert _source_state_requires_review("REVIEW_REQUIRED")
+    assert _source_state_requires_review("DRAFT")
+    assert not _source_state_requires_review("READY")

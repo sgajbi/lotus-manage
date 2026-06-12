@@ -19479,3 +19479,64 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal performance attribution source
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-798: Portfolio-memory source supportability predicates
+
+- Date: 2026-06-12
+- Scope: `src/core/portfolio_memory/supportability.py`,
+  `tests/unit/dpm/portfolio_memory/test_governance_supportability.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `source_supportability_state` was a top current source-complexity hotspot and combined
+  blocked, degraded, and pending-review source-state classification rules in one portfolio-memory
+  supportability mapper.
+- Action: extracted explicit blocked, degraded, and pending-review source-state predicates while
+  preserving the existing fail-closed portfolio-memory supportability mapping. Added direct tests
+  for each predicate classification and non-match behavior. Refreshed current-state quality reports
+  and preserved the stable baseline artifact; the refreshed complexity report shows
+  `source_supportability_state` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/supportability.py tests/unit/dpm/portfolio_memory/test_governance_supportability.py`,
+  `python -m ruff format --check src/core/portfolio_memory/supportability.py tests/unit/dpm/portfolio_memory/test_governance_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/supportability.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_governance_supportability.py -q` (5 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory supportability
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-799: Outcome-review remediation route mapper
+
+- Date: 2026-06-12
+- Scope: `src/api/routers/outcome_review_supportability_routes.py`,
+  `tests/unit/api/test_outcome_reviews_api.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_remediation_routes` was the top current source-complexity hotspot and combined
+  reason-code classification, remediation-route selection, deduplication, and sorting inside one
+  outcome-review supportability router helper.
+- Action: extracted a reason-code-to-remediation-route mapper and a source-owner remediation
+  predicate while preserving the existing sorted unique remediation route response. Added direct
+  tests for risk, performance, execution, realized source, cash/tax source-owner, and no-route
+  reason behavior. Refreshed current-state quality reports and preserved the stable baseline
+  artifact; the refreshed complexity report shows `_remediation_routes` dropped out of the top
+  current source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/outcome_review_supportability_routes.py tests/unit/api/test_outcome_reviews_api.py`,
+  `python -m ruff format --check src/api/routers/outcome_review_supportability_routes.py tests/unit/api/test_outcome_reviews_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/outcome_review_supportability_routes.py`,
+  `python -m pytest tests/unit/api/test_outcome_reviews_api.py -q` (6 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal outcome-review supportability
+  route-mapping maintainability refactoring and repo-local quality evidence.
