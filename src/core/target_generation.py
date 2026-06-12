@@ -359,37 +359,74 @@ def build_target_trace(
     buy_set = set(buy_list)
     model_target_ids = {t.instrument_id for t in model.targets}
     for t in model.targets:
-        final_w = eligible_targets.get(t.instrument_id, Decimal("0.0"))
-        tags = ["CAPPED_BY_MAX_WEIGHT"] if t.weight > final_w else []
-
-        if final_w > t.weight:
-            tags.append("REDISTRIBUTED_RECIPIENT")
         trace.append(
-            TargetInstrument(
-                instrument_id=t.instrument_id,
-                model_weight=t.weight,
-                final_weight=final_w,
-                final_value=Money(amount=total_val * final_w, currency=base_ccy),
-                tags=tags,
+            _model_target_trace_row(
+                target=t,
+                final_weight=eligible_targets.get(t.instrument_id, Decimal("0.0")),
+                total_val=total_val,
+                base_ccy=base_ccy,
             )
         )
 
     for i_id, final_w in eligible_targets.items():
         if i_id not in model_target_ids:
-            tag = (
-                "IMPLICIT_SELL_TO_ZERO" if (i_id in buy_set or final_w == 0) else "LOCKED_POSITION"
-            )
             trace.append(
-                TargetInstrument(
+                _non_model_target_trace_row(
                     instrument_id=i_id,
-                    model_weight=Decimal("0.0"),
                     final_weight=final_w,
-                    final_value=Money(amount=total_val * final_w, currency=base_ccy),
-                    tags=[tag],
+                    buy_set=buy_set,
+                    total_val=total_val,
+                    base_ccy=base_ccy,
                 )
             )
 
     return trace
+
+
+def _model_target_trace_row(
+    *,
+    target: Any,
+    final_weight: Decimal,
+    total_val: Decimal,
+    base_ccy: str,
+) -> TargetInstrument:
+    tags = ["CAPPED_BY_MAX_WEIGHT"] if target.weight > final_weight else []
+    if final_weight > target.weight:
+        tags.append("REDISTRIBUTED_RECIPIENT")
+    return TargetInstrument(
+        instrument_id=target.instrument_id,
+        model_weight=target.weight,
+        final_weight=final_weight,
+        final_value=Money(amount=total_val * final_weight, currency=base_ccy),
+        tags=tags,
+    )
+
+
+def _non_model_target_trace_row(
+    *,
+    instrument_id: str,
+    final_weight: Decimal,
+    buy_set: set[str],
+    total_val: Decimal,
+    base_ccy: str,
+) -> TargetInstrument:
+    return TargetInstrument(
+        instrument_id=instrument_id,
+        model_weight=Decimal("0.0"),
+        final_weight=final_weight,
+        final_value=Money(amount=total_val * final_weight, currency=base_ccy),
+        tags=[_non_model_target_trace_tag(instrument_id, final_weight, buy_set)],
+    )
+
+
+def _non_model_target_trace_tag(
+    instrument_id: str,
+    final_weight: Decimal,
+    buy_set: set[str],
+) -> str:
+    if instrument_id in buy_set or final_weight == 0:
+        return "IMPLICIT_SELL_TO_ZERO"
+    return "LOCKED_POSITION"
 
 
 def generate_targets_solver(

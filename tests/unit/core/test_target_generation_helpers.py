@@ -13,6 +13,9 @@ from src.core.target_generation import (
     _build_solver_attempts,
     _collect_infeasibility_hints,
     _infeasibility_capacity_hints,
+    _model_target_trace_row,
+    _non_model_target_trace_row,
+    _non_model_target_trace_tag,
     _solver_model_weight_array,
     _solver_group_members,
     _solver_invested_bounds,
@@ -134,6 +137,51 @@ def test_apply_solver_values_quantizes_and_fails_closed_without_values() -> None
         diagnostics=diagnostics,
     )
     assert diagnostics.warnings == ["SOLVER_ERROR"]
+
+
+def test_model_target_trace_row_marks_capped_and_redistributed_targets() -> None:
+    capped = _model_target_trace_row(
+        target=ModelTarget(instrument_id="EQ_CAPPED", weight=Decimal("0.30")),
+        final_weight=Decimal("0.20"),
+        total_val=Decimal("1000"),
+        base_ccy="USD",
+    )
+    redistributed = _model_target_trace_row(
+        target=ModelTarget(instrument_id="EQ_REDISTRIBUTED", weight=Decimal("0.20")),
+        final_weight=Decimal("0.30"),
+        total_val=Decimal("1000"),
+        base_ccy="USD",
+    )
+
+    assert capped.final_value.amount == Decimal("200")
+    assert capped.tags == ["CAPPED_BY_MAX_WEIGHT"]
+    assert redistributed.final_value.amount == Decimal("300")
+    assert redistributed.tags == ["REDISTRIBUTED_RECIPIENT"]
+
+
+def test_non_model_target_trace_row_classifies_sell_to_zero_and_locked_positions() -> None:
+    sell_to_zero = _non_model_target_trace_row(
+        instrument_id="EQ_SELL",
+        final_weight=Decimal("0"),
+        buy_set=set(),
+        total_val=Decimal("1000"),
+        base_ccy="USD",
+    )
+    locked = _non_model_target_trace_row(
+        instrument_id="EQ_LOCKED",
+        final_weight=Decimal("0.15"),
+        buy_set=set(),
+        total_val=Decimal("1000"),
+        base_ccy="USD",
+    )
+
+    assert sell_to_zero.tags == ["IMPLICIT_SELL_TO_ZERO"]
+    assert sell_to_zero.final_value.amount == Decimal("0")
+    assert locked.tags == ["LOCKED_POSITION"]
+    assert locked.final_value.amount == Decimal("150.00")
+    assert _non_model_target_trace_tag("EQ_BUY", Decimal("0.10"), {"EQ_BUY"}) == (
+        "IMPLICIT_SELL_TO_ZERO"
+    )
 
 
 def test_collect_infeasibility_hints_reports_capacity_and_group_lock() -> None:

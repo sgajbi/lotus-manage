@@ -20148,3 +20148,28 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal proof-pack diagnostics
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-819: Target trace row projection helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `build_target_trace` was the top current source-complexity hotspot after the
+  proof-pack diagnostics slice and mixed model-target row construction, capped/redistributed tag
+  derivation, non-model eligible position row construction, sell-to-zero/locked classification,
+  and final trace ordering in one mapper.
+- Action: extracted deterministic model-target, non-model target, and non-model tag helpers while
+  preserving trace ordering, target weights, final values, capped/redistributed tags, sell-to-zero
+  tags, and locked-position tags. Added direct helper tests for capped and redistributed target
+  rows plus non-model sell-to-zero and locked rows alongside existing public trace coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal target-generation mapper
+  maintainability refactoring and repo-local quality evidence.
