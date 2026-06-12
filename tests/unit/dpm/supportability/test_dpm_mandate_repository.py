@@ -17,6 +17,7 @@ from src.core.mandates import (
     monitoring_exceptions_from_health,
 )
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
+import src.infrastructure.mandates.in_memory as mandate_in_memory
 import src.infrastructure.mandates.postgres as mandate_postgres
 from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
@@ -242,6 +243,71 @@ def test_repository_filters_monitoring_exceptions_by_run_before_pagination() -> 
 
     assert [row.exception_id for row in rows] == ["me_selected_run"]
     assert cursor is None
+
+
+def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
+    twin = _twin()
+    snapshot = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"EQ_US_AAPL": Decimal("0.60")},
+            target_weights={"EQ_US_AAPL": Decimal("0.60")},
+            cash_weight=Decimal("0.50"),
+        )
+    )
+    exception = monitoring_exceptions_from_health(snapshot, source_lineage=[])[0]
+    selected_old = exception.model_copy(
+        update={
+            "exception_id": "me_selected_old",
+            "monitoring_run_id": "dmr_selected",
+            "detected_at": datetime(2026, 5, 3, 8, 0, tzinfo=timezone.utc),
+        }
+    )
+    selected_new = exception.model_copy(
+        update={
+            "exception_id": "me_selected_new",
+            "monitoring_run_id": "dmr_selected",
+            "detected_at": datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+        }
+    )
+    unrelated = exception.model_copy(
+        update={
+            "exception_id": "me_unrelated",
+            "monitoring_run_id": "dmr_unrelated",
+            "detected_at": datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        }
+    )
+
+    filtered = mandate_in_memory._filtered_monitoring_exceptions(
+        [selected_old, unrelated, selected_new],
+        monitoring_run_id="dmr_selected",
+        mandate_id=twin.mandate_id,
+        portfolio_id=twin.portfolio_id,
+        state="ACTIVE",
+    )
+    page, next_cursor = mandate_in_memory._monitoring_exception_page(
+        filtered,
+        limit=1,
+        cursor=None,
+    )
+    cursor_page, cursor_page_next = mandate_in_memory._monitoring_exception_page(
+        filtered,
+        limit=1,
+        cursor=next_cursor,
+    )
+    missing_page, missing_cursor = mandate_in_memory._monitoring_exception_page(
+        filtered,
+        limit=1,
+        cursor="UNKNOWN_CURSOR",
+    )
+
+    assert [row.exception_id for row in filtered] == ["me_selected_new", "me_selected_old"]
+    assert [row.exception_id for row in page] == ["me_selected_new"]
+    assert next_cursor == "me_selected_new"
+    assert [row.exception_id for row in cursor_page] == ["me_selected_old"]
+    assert cursor_page_next is None
+    assert missing_page == []
+    assert missing_cursor is None
 
 
 def test_postgres_monitoring_exception_query_combines_filters_and_cursor() -> None:

@@ -20355,3 +20355,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal construction liquidity
   supportability maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-827: In-memory monitoring exception query helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `list_monitoring_exceptions` was the top current source-complexity hotspot after the
+  liquidity supportability slice and mixed filter selection, ordering, cursor lookup,
+  missing-cursor handling, page slicing, next-cursor derivation, and defensive copying in one
+  repository method.
+- Action: extracted deterministic in-memory monitoring-exception filter, match, cursor lookup, and
+  page helpers while preserving run/mandate/portfolio/state filter semantics, newest-first ordering,
+  missing-cursor empty page behavior, and defensive-copy repository returns. Added direct helper
+  tests for filter-before-sort and cursor pagination alongside existing repository and PostgreSQL
+  query-shape coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal in-memory repository
+  maintainability refactoring and repo-local quality evidence.

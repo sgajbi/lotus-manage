@@ -134,26 +134,18 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmMonitoringException], Optional[str]]:
         with self._lock:
-            rows = list(self._exceptions.values())
-            if monitoring_run_id is not None:
-                rows = [row for row in rows if row.monitoring_run_id == monitoring_run_id]
-            if mandate_id is not None:
-                rows = [row for row in rows if row.mandate_id == mandate_id]
-            if portfolio_id is not None:
-                rows = [row for row in rows if row.portfolio_id == portfolio_id]
-            if state is not None:
-                rows = [row for row in rows if row.state == state]
-            rows = sorted(rows, key=lambda row: (row.detected_at, row.exception_id), reverse=True)
-            if cursor is not None:
-                cursor_index = next(
-                    (index for index, row in enumerate(rows) if row.exception_id == cursor),
-                    None,
-                )
-                if cursor_index is None:
-                    return [], None
-                rows = rows[cursor_index + 1 :]
-            page = rows[:limit]
-            next_cursor = page[-1].exception_id if len(rows) > limit else None
+            rows = _filtered_monitoring_exceptions(
+                list(self._exceptions.values()),
+                monitoring_run_id=monitoring_run_id,
+                mandate_id=mandate_id,
+                portfolio_id=portfolio_id,
+                state=state,
+            )
+            page, next_cursor = _monitoring_exception_page(
+                rows,
+                limit=limit,
+                cursor=cursor,
+            )
             return [deepcopy(row) for row in page], next_cursor
 
     def resolve_monitoring_exception(
@@ -212,3 +204,71 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
 
 def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> DpmMandateDigitalTwin:
     return max(rows, key=lambda row: (row.as_of_date, row.mandate_version))
+
+
+def _filtered_monitoring_exceptions(
+    rows: list[DpmMonitoringException],
+    *,
+    monitoring_run_id: Optional[str],
+    mandate_id: Optional[str],
+    portfolio_id: Optional[str],
+    state: Optional[str],
+) -> list[DpmMonitoringException]:
+    filtered = [
+        row
+        for row in rows
+        if _monitoring_exception_matches(
+            row,
+            monitoring_run_id=monitoring_run_id,
+            mandate_id=mandate_id,
+            portfolio_id=portfolio_id,
+            state=state,
+        )
+    ]
+    return sorted(
+        filtered,
+        key=lambda row: (row.detected_at, row.exception_id),
+        reverse=True,
+    )
+
+
+def _monitoring_exception_matches(
+    row: DpmMonitoringException,
+    *,
+    monitoring_run_id: Optional[str],
+    mandate_id: Optional[str],
+    portfolio_id: Optional[str],
+    state: Optional[str],
+) -> bool:
+    return (
+        (monitoring_run_id is None or row.monitoring_run_id == monitoring_run_id)
+        and (mandate_id is None or row.mandate_id == mandate_id)
+        and (portfolio_id is None or row.portfolio_id == portfolio_id)
+        and (state is None or row.state == state)
+    )
+
+
+def _monitoring_exception_page(
+    rows: list[DpmMonitoringException],
+    *,
+    limit: int,
+    cursor: Optional[str],
+) -> tuple[list[DpmMonitoringException], Optional[str]]:
+    if cursor is not None:
+        cursor_index = _monitoring_exception_cursor_index(rows, cursor)
+        if cursor_index is None:
+            return [], None
+        rows = rows[cursor_index + 1 :]
+    page = rows[:limit]
+    next_cursor = page[-1].exception_id if len(rows) > limit else None
+    return page, next_cursor
+
+
+def _monitoring_exception_cursor_index(
+    rows: list[DpmMonitoringException],
+    cursor: str,
+) -> Optional[int]:
+    return next(
+        (index for index, row in enumerate(rows) if row.exception_id == cursor),
+        None,
+    )
