@@ -19257,3 +19257,37 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack payload
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-791: Risk source posture supportability helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_rolling_source_posture` and `_historical_attribution_source_posture` were the top
+  current source-complexity hotspots and duplicated supportability-state precedence, degraded-value
+  quality selection, and rolling-context unavailable checks inside source-owned risk outcome
+  adapters.
+- Action: introduced shared risk source posture type aliases, extracted supportability posture,
+  rolling context availability, and degraded-value quality helpers, and kept the historical
+  attribution fail-closed ordering where period errors block before stale supportability posture.
+  Added direct helper tests for unsupported, permission-blocked, stale, ready, rolling context
+  unavailable, partial/unavailable degraded values, and the stale-plus-period-error precedence
+  boundary. Refreshed current-state quality reports and preserved the stable baseline artifact; the
+  refreshed complexity report shows both targeted risk-source posture helpers dropped out of the top
+  current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q` (53 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal risk outcome source
+  maintainability refactoring and repo-local quality evidence.

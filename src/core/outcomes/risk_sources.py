@@ -73,6 +73,18 @@ class RiskOutcomeSourceError(ValueError):
     """Raised when a lotus-risk response cannot produce bounded outcome evidence."""
 
 
+_RiskSourceState = Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"]
+_RiskSourceQuality = Literal[
+    "COMPLETE",
+    "STALE",
+    "UNAVAILABLE",
+    "PARTIAL",
+    "MISSING",
+    "NOT_SUPPORTED",
+]
+_RiskSourcePosture = tuple[_RiskSourceState, _RiskSourceQuality]
+
+
 def realized_risk_source_from_risk_metrics_report(
     response: dict[str, Any],
     *,
@@ -718,24 +730,14 @@ def _rolling_source_posture(
     supportability_state: str,
     value: Decimal | None,
     context_reason: str,
-) -> tuple[
-    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
-    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
-]:
-    if supportability_state == "unsupported":
-        return "NOT_SUPPORTED", "NOT_SUPPORTED"
-    if supportability_state == "permission_blocked":
-        return "BLOCKED", "MISSING"
-    if supportability_state == "stale":
-        return "DEGRADED", "STALE"
-    if (
-        context_reason.endswith("_BENCHMARK_UNAVAILABLE")
-        or context_reason.endswith("_RISK_FREE_UNAVAILABLE")
-        or context_reason.endswith("_NO_ALIGNED_OBSERVATIONS")
-    ):
+) -> _RiskSourcePosture:
+    supportability_posture = _supportability_source_posture(supportability_state)
+    if supportability_posture is not None:
+        return supportability_posture
+    if _rolling_context_unavailable(context_reason):
         return "DEGRADED", "UNAVAILABLE"
     if supportability_state != "ready":
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+        return "DEGRADED", _quality_for_degraded_value(value)
     return "READY", "COMPLETE"
 
 
@@ -745,23 +747,46 @@ def _historical_attribution_source_posture(
     value: Decimal | None,
     period_error: str | None,
     quality_flags: list[Any],
-) -> tuple[
-    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
-    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
-]:
+) -> _RiskSourcePosture:
+    supportability_posture = _supportability_source_posture(
+        supportability_state, include_stale=False
+    )
+    if supportability_posture is not None:
+        return supportability_posture
+    if period_error is not None:
+        return "BLOCKED", "MISSING"
+    supportability_posture = _supportability_source_posture(supportability_state)
+    if supportability_posture is not None:
+        return supportability_posture
+    if supportability_state != "ready":
+        return "DEGRADED", _quality_for_degraded_value(value)
+    if quality_flags:
+        return "DEGRADED", _quality_for_degraded_value(value)
+    return "READY", "COMPLETE"
+
+
+def _supportability_source_posture(
+    supportability_state: str, *, include_stale: bool = True
+) -> _RiskSourcePosture | None:
     if supportability_state == "unsupported":
         return "NOT_SUPPORTED", "NOT_SUPPORTED"
     if supportability_state == "permission_blocked":
         return "BLOCKED", "MISSING"
-    if period_error is not None:
-        return "BLOCKED", "MISSING"
-    if supportability_state == "stale":
+    if include_stale and supportability_state == "stale":
         return "DEGRADED", "STALE"
-    if supportability_state != "ready":
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
-    if quality_flags:
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
-    return "READY", "COMPLETE"
+    return None
+
+
+def _rolling_context_unavailable(context_reason: str) -> bool:
+    return (
+        context_reason.endswith("_BENCHMARK_UNAVAILABLE")
+        or context_reason.endswith("_RISK_FREE_UNAVAILABLE")
+        or context_reason.endswith("_NO_ALIGNED_OBSERVATIONS")
+    )
+
+
+def _quality_for_degraded_value(value: Decimal | None) -> _RiskSourceQuality:
+    return "PARTIAL" if value is not None else "UNAVAILABLE"
 
 
 def _is_issuer_concentration_measure(measure: ConcentrationOutcomeMeasure) -> bool:
