@@ -20408,3 +20408,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal rebalance intent dependency
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-829: Enterprise write authorization policy helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `authorize_write_request` was the top current source-complexity hotspot and mixed write
+  method gating, environment enforcement, header normalization, required header validation,
+  service-identity validation, capability parsing, and capability denial in one API-layer security
+  helper.
+- Action: extracted deterministic write-authorization policy helpers for enforcement gating,
+  normalized headers, required-header detection, service identity, and capability parsing while
+  preserving existing deny reasons and authorization behavior. Added direct helper tests for
+  normalized required-header detection, service-identity detection, capability parsing, and
+  read-method bypass behavior alongside existing authorization and middleware coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m ruff format --check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/api/enterprise_readiness.py`,
+  `python -m pytest tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal API-layer authorization
+  maintainability refactoring and repo-local quality evidence.

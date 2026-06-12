@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T16:40:14+00:00`
+- Generated at: `2026-06-12T16:50:28+00:00`
 
-- Current ref: `fb64f3d0`
+- Current ref: `f3422309`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
-| 2 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
-| 3 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
-| 4 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
-| 5 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
-| 6 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
-| 7 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
-| 8 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
-| 9 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
-| 10 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
+| 1 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
+| 2 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
+| 3 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
+| 4 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
+| 5 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
+| 6 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
+| 7 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
+| 8 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 9 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
+| 10 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
 
 ### Most Complex Current Test Functions
 

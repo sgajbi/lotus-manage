@@ -3,6 +3,11 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src.api.enterprise_readiness import (
+    _has_service_identity,
+    _missing_required_headers,
+    _normalized_headers,
+    _provided_capabilities,
+    _write_authorization_required,
     authorize_write_request,
     build_enterprise_audit_middleware,
     is_feature_enabled,
@@ -48,6 +53,39 @@ def test_capability_rule_ignores_non_matching_method(monkeypatch) -> None:
     }
 
     assert authorize_write_request("POST", "/write", headers) == (True, None)
+
+
+def test_write_authorization_policy_helpers_normalize_required_headers(monkeypatch) -> None:
+    monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
+    headers = _normalized_headers(
+        {
+            "X-Actor-Id": "actor",
+            "X-Tenant-Id": "tenant",
+            "X-Capabilities": " rebalance.read, rebalance.write ,, ",
+            "Authorization": "Bearer service-token",
+        }
+    )
+
+    assert _write_authorization_required("POST")
+    assert not _write_authorization_required("GET")
+    assert _missing_required_headers(headers) == ["x-correlation-id", "x-role"]
+    assert _has_service_identity(headers)
+    assert _provided_capabilities(headers) == {"rebalance.read", "rebalance.write"}
+
+
+def test_write_authorization_policy_helpers_detect_missing_service_identity() -> None:
+    headers = _normalized_headers(
+        {
+            "X-Actor-Id": "actor",
+            "X-Tenant-Id": "tenant",
+            "X-Role": "operator",
+            "X-Correlation-Id": "corr",
+        }
+    )
+
+    assert _missing_required_headers(headers) == []
+    assert not _has_service_identity(headers)
+    assert _provided_capabilities(headers) == set()
 
 
 def test_enterprise_runtime_enforcement_reports_missing_identity(monkeypatch) -> None:

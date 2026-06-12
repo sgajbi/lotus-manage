@@ -104,28 +104,45 @@ def _required_capability(method: str, path: str) -> str | None:
 def authorize_write_request(
     method: str, path: str, headers: dict[str, str]
 ) -> tuple[bool, str | None]:
-    if method.upper() not in _WRITE_METHODS or not _env_enabled(
-        "ENTERPRISE_ENFORCE_AUTHZ", "false"
-    ):
+    if not _write_authorization_required(method):
         return True, None
 
-    normalized = {str(k).lower(): str(v) for k, v in headers.items()}
-    missing = sorted(header for header in _REQUIRED_HEADERS if not normalized.get(header))
+    normalized = _normalized_headers(headers)
+    missing = _missing_required_headers(normalized)
     if missing:
         return False, f"missing_headers:{','.join(missing)}"
 
-    if not (normalized.get("x-service-identity") or normalized.get("authorization")):
+    if not _has_service_identity(normalized):
         return False, "missing_service_identity"
 
     required_capability = _required_capability(method, path)
-    if required_capability:
-        capabilities = {
-            part.strip() for part in normalized.get("x-capabilities", "").split(",") if part.strip()
-        }
-        if required_capability not in capabilities:
-            return False, f"missing_capability:{required_capability}"
+    if required_capability and required_capability not in _provided_capabilities(normalized):
+        return False, f"missing_capability:{required_capability}"
 
     return True, None
+
+
+def _write_authorization_required(method: str) -> bool:
+    return method.upper() in _WRITE_METHODS and _env_enabled(
+        "ENTERPRISE_ENFORCE_AUTHZ",
+        "false",
+    )
+
+
+def _normalized_headers(headers: dict[str, str]) -> dict[str, str]:
+    return {str(key).lower(): str(value) for key, value in headers.items()}
+
+
+def _missing_required_headers(headers: dict[str, str]) -> list[str]:
+    return sorted(header for header in _REQUIRED_HEADERS if not headers.get(header))
+
+
+def _has_service_identity(headers: dict[str, str]) -> bool:
+    return bool(headers.get("x-service-identity") or headers.get("authorization"))
+
+
+def _provided_capabilities(headers: dict[str, str]) -> set[str]:
+    return {part.strip() for part in headers.get("x-capabilities", "").split(",") if part.strip()}
 
 
 def redact_sensitive(value: Any) -> Any:
