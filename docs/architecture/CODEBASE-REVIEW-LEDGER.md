@@ -19705,3 +19705,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal rebalance batch execution
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-805: Expected outcome snapshot assembly helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/snapshots.py`,
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `assemble_expected_outcome_snapshot` was the top current source-complexity hotspot after
+  the rebalance batch slice and still mixed validated artifact orchestration with final snapshot
+  identity field projection and calculation-trace payload construction.
+- Action: extracted pure expected-snapshot identity and calculation-trace helpers while preserving
+  proof-pack linkage validation, wave/handoff validation, source-lineage assembly, supportability
+  roll-up, expected-value construction, source hashes, and section hashes. Added direct tests for
+  artifact identifier projection and calculation-trace source posture. Refreshed current-state
+  quality reports and preserved the stable baseline artifact; the refreshed complexity report
+  shows `assemble_expected_outcome_snapshot` dropped out of the top current source-complexity list
+  without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q` (17 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal expected outcome snapshot
+  maintainability refactoring and repo-local quality evidence.

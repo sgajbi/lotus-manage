@@ -15,6 +15,8 @@ from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
     _proof_pack_state,
     assemble_expected_outcome_snapshot,
+    build_expected_snapshot_calculation_trace,
+    build_expected_snapshot_identity,
 )
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -237,6 +239,59 @@ def _wave(
         ),
         handoff_refs=[handoff],
     )
+
+
+def test_expected_snapshot_identity_helper_resolves_artifact_ids() -> None:
+    alternative_set = _alternative_set()
+    selection = _selection()
+    selected_alternative = alternative_set.alternatives[0]
+    proof_pack = _proof_pack()
+    wave = _wave()
+    wave_item = wave.items[0]
+    handoff = wave.handoff_refs[0]
+
+    identity = build_expected_snapshot_identity(
+        alternative_set=alternative_set,
+        selection=selection,
+        selected_alternative=selected_alternative,
+        proof_pack=proof_pack,
+        wave=wave,
+        wave_item=wave_item,
+        handoff=handoff,
+    )
+
+    assert identity.portfolio_id == "PB_SG_GLOBAL_BAL_001"
+    assert identity.mandate_id == "MANDATE_PB_SG_GLOBAL_BAL_001"
+    assert identity.rebalance_run_id == "rr_outcome_001"
+    assert identity.alternative_set_id == "cas_outcome_001"
+    assert identity.selected_alternative_id == "alt_selected"
+    assert identity.proof_pack_id == "dpp_outcome_001"
+    assert identity.wave_id == "dwv_outcome_001"
+    assert identity.wave_item_id == "dwi_outcome_001"
+    assert identity.operations_handoff_ref_id == "dwh_outcome_001"
+
+
+def test_expected_snapshot_calculation_trace_helper_records_source_posture() -> None:
+    alternative_set = _alternative_set(method_status=ConstructionMethodStatus.PENDING_REVIEW)
+    proof_pack = _proof_pack(status="PENDING_REVIEW")
+    wave = _wave(item_state="REVIEW_REQUIRED")
+
+    trace = build_expected_snapshot_calculation_trace(
+        selected_alternative=alternative_set.alternatives[0],
+        proof_pack=proof_pack,
+        wave_item=wave.items[0],
+        handoff=wave.handoff_refs[0],
+    )
+
+    assert trace == {
+        "source": "RFC-0039_SELECTED_ALTERNATIVE_WITH_RFC-0040_PROOF_PACK",
+        "selected_method": str(ConstructionMethod.HEURISTIC_EXPLAINABLE),
+        "selected_method_status": str(ConstructionMethodStatus.PENDING_REVIEW),
+        "proof_pack_status": "PENDING_REVIEW",
+        "wave_item_state": "REVIEW_REQUIRED",
+        "handoff_reason_code": "READY_FOR_OPERATIONS_REVIEW",
+        "defaulted_expected_values": [],
+    }
 
 
 def test_expected_snapshot_preserves_construction_proof_pack_wave_and_handoff_lineage() -> None:

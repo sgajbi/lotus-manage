@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T14:08:25+00:00`
+- Generated at: `2026-06-12T14:11:53+00:00`
 
-- Current ref: `8877c92e`
+- Current ref: `6276a5dc`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
-| 2 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
-| 3 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
-| 4 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
-| 5 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
-| 6 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
-| 7 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
-| 8 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
-| 9 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
-| 10 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
+| 1 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
+| 2 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
+| 3 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
+| 4 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
+| 5 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
+| 6 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
+| 7 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
+| 8 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
+| 9 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
+| 10 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
 
 ### Most Complex Current Test Functions
 
