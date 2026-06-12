@@ -19573,3 +19573,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal API observability setup
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-801: Mandate digital twin source projection helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `compile_mandate_digital_twin_from_core` was a top current source-complexity hotspot
+  and mixed mandate twin orchestration with cash-band constraint mapping, active restriction
+  filtering, sustainability strategy selection, active preference-note projection, lineage
+  assembly, and final model construction.
+- Action: extracted pure mandate twin constraint and preference projection helpers while preserving
+  the compile function as the orchestration boundary. Added direct tests that pin cash reserve band
+  behavior, active-only restricted-instrument projection, sustainability strategy selection, and
+  active-only preference notes. Refreshed current-state quality reports and preserved the stable
+  baseline artifact; the refreshed complexity report shows `compile_mandate_digital_twin_from_core`
+  dropped out of the top current source-complexity list without introducing a replacement hotspot
+  from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m ruff format --check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`,
+  `python -m pytest tests/unit/dpm/core/test_mandate_health.py -q` (38 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate twin projection
+  maintainability refactoring and repo-local quality evidence.
