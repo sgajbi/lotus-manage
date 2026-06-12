@@ -18960,3 +18960,43 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/engineering_health_report.py` and
   `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-781: Campaign approval-decision helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_definition_approval_decisions.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Finding: `record_bulk_review_campaign_definition_approval_decision` was the next current
+  source-complexity hotspot and mixed active-definition checks, request-field normalization,
+  required-field validation, decision construction, idempotent replay detection, conflict
+  detection, and append-only definition rebuilding in one function.
+- Action: extracted private helpers for active-definition validation, normalized approval-decision
+  input, required text validation, existing decision lookup, and append-only rebuilding. Added
+  direct helper tests for trimmed request fields, blank decision-ref rejection, active-definition
+  validation, existing decision lookup, and append behavior while preserving existing append-only
+  behavior coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_approval_decisions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_approval_decisions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_approval_decisions.py`,
+  and `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q` (51 passed).
+- Wiki decision: no wiki source change required; this is internal campaign approval-decision
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260612-782: Campaign approval-decision reports refreshed
+
+- Date: 2026-06-12
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports needed to reflect the campaign approval-decision helper
+  extraction after `BACKEND-REVIEW-20260612-781`.
+- Action: regenerated current-state refactor reports and restored stable baseline/rule artifacts.
+  The refreshed complexity report shows `record_bulk_review_campaign_definition_approval_decision`
+  dropped out of the top current source-complexity list; in-memory rebalance-run listing helpers
+  are now the next source hotspot family.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py` and
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

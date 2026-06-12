@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-12T08:36:49+00:00`
+- Generated at: `2026-06-12T08:40:21+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `8b87deca`
+- Current ref: `74f189dc`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 811 | 812 | +1 |
-| Total Python LOC | 163248 | 163741 | +493 |
-| Test functions | 2307 | 2320 | +13 |
+| Total Python LOC | 163248 | 163878 | +630 |
+| Test functions | 2307 | 2322 | +15 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -55,7 +55,7 @@
 | 3 | tests/unit/test_documentation_current_state.py | 2721 |
 | 4 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2600 |
 | 5 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2461 |
-| 6 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2305 |
+| 6 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2377 |
 | 7 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 2152 |
 | 8 | tests/unit/dpm/waves/test_campaign_discovery.py | 2114 |
 | 9 | src/core/dpm_source_context.py | 1886 |

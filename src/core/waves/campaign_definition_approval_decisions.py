@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -15,6 +16,15 @@ from src.core.waves.models import DpmWaveSourceRef
 from src.core.waves.campaign_page_validation import validate_page_count
 
 CampaignApprovalDecisionType = Literal["APPROVED", "REJECTED", "REQUIRES_REMEDIATION"]
+
+
+@dataclass(frozen=True)
+class _ApprovalDecisionInput:
+    decision_ref: str
+    decided_by: str
+    decision_reason: str
+    correlation_id: str
+    source_refs: list[DpmWaveSourceRef]
 
 
 class DpmBulkReviewCampaignDefinitionApprovalDecisionPage(BaseModel):
@@ -50,33 +60,88 @@ def record_bulk_review_campaign_definition_approval_decision(
     correlation_id: str,
     source_refs: list[DpmWaveSourceRef] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
-    if definition.status != "ACTIVE":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTIVE_REQUIRED")
-    if not decision_ref.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_REQUIRED")
-    if not decided_by.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTOR_REQUIRED")
-    if not decision_reason.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REASON_REQUIRED")
-    if not correlation_id.strip():
-        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_CORRELATION_REQUIRED")
+    _validate_active_campaign_definition(definition)
+    decision_input = _approval_decision_input(
+        decision_ref=decision_ref,
+        decided_by=decided_by,
+        decision_reason=decision_reason,
+        correlation_id=correlation_id,
+        source_refs=source_refs,
+    )
 
     decision = _build_decision(
         definition=definition,
         decision_type=decision_type,
-        decision_ref=decision_ref.strip(),
-        decided_by=decided_by.strip(),
-        decision_reason=decision_reason.strip(),
-        correlation_id=correlation_id.strip(),
-        source_refs=source_refs or [],
+        decision_ref=decision_input.decision_ref,
+        decided_by=decision_input.decided_by,
+        decision_reason=decision_input.decision_reason,
+        correlation_id=decision_input.correlation_id,
+        source_refs=decision_input.source_refs,
     )
-    existing_refs = {existing.decision_ref: existing for existing in definition.approval_decisions}
-    existing = existing_refs.get(decision.decision_ref)
+    existing = _existing_approval_decision(definition=definition, decision=decision)
     if existing is not None:
         if existing.content_hash == decision.content_hash:
             return definition
         raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT")
 
+    return _append_approval_decision(definition=definition, decision=decision)
+
+
+def _validate_active_campaign_definition(definition: DpmBulkReviewCampaignDefinition) -> None:
+    if definition.status != "ACTIVE":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTIVE_REQUIRED")
+
+
+def _approval_decision_input(
+    *,
+    decision_ref: str,
+    decided_by: str,
+    decision_reason: str,
+    correlation_id: str,
+    source_refs: list[DpmWaveSourceRef] | None,
+) -> _ApprovalDecisionInput:
+    return _ApprovalDecisionInput(
+        decision_ref=_required_approval_decision_text(
+            decision_ref,
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_REQUIRED",
+        ),
+        decided_by=_required_approval_decision_text(
+            decided_by,
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_ACTOR_REQUIRED",
+        ),
+        decision_reason=_required_approval_decision_text(
+            decision_reason,
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REASON_REQUIRED",
+        ),
+        correlation_id=_required_approval_decision_text(
+            correlation_id,
+            "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_CORRELATION_REQUIRED",
+        ),
+        source_refs=source_refs or [],
+    )
+
+
+def _required_approval_decision_text(value: str, error_code: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(error_code)
+    return normalized
+
+
+def _existing_approval_decision(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    decision: DpmBulkReviewCampaignDefinitionApprovalDecision,
+) -> DpmBulkReviewCampaignDefinitionApprovalDecision | None:
+    existing_refs = {existing.decision_ref: existing for existing in definition.approval_decisions}
+    return existing_refs.get(decision.decision_ref)
+
+
+def _append_approval_decision(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    decision: DpmBulkReviewCampaignDefinitionApprovalDecision,
+) -> DpmBulkReviewCampaignDefinition:
     updated = definition.model_copy(
         update={
             "approval_decisions": [*definition.approval_decisions, decision],
