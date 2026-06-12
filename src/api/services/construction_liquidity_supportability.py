@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 
 from src.core.construction.models import (
@@ -38,33 +39,15 @@ def cashflow_projection_status(
     context: AuthoritativeLiquidityContext,
     cash_weight: Decimal | None,
 ) -> ConstructionMethodStatus | None:
-    if context.cashflow_projection is None:
+    assessment = _cashflow_projection_policy_assessment(
+        result=result,
+        context=context,
+        cash_weight=cash_weight,
+        derive_cash_weight=False,
+    )
+    if assessment is None:
         return None
-    cashflow_status = context.cashflow_projection.data_quality_status
-    if not context.cashflow_projection.include_projected:
-        cashflow_status = lowest_construction_status(
-            [cashflow_status, ConstructionMethodStatus.DEGRADED]
-        )
-    if (
-        context.cashflow_projection.total_net_cashflow.currency
-        != result.after_simulated.total_value.currency
-    ):
-        cashflow_status = lowest_construction_status(
-            [cashflow_status, ConstructionMethodStatus.DEGRADED]
-        )
-    elif result.after_simulated.total_value.amount <= Decimal("0"):
-        cashflow_status = lowest_construction_status(
-            [cashflow_status, ConstructionMethodStatus.DEGRADED]
-        )
-    elif cash_weight is not None:
-        projected_cash_weight = projected_cashflow_weight(result=result, context=context)
-        if projected_cash_weight is None:
-            return cashflow_status
-        if cash_weight + projected_cash_weight < context.minimum_cash_weight:
-            cashflow_status = lowest_construction_status(
-                [cashflow_status, ConstructionMethodStatus.PENDING_REVIEW]
-            )
-    return cashflow_status
+    return assessment.status
 
 
 def liquidity_reason_codes(
@@ -95,25 +78,136 @@ def cashflow_projection_reason_codes(
     projection = context.cashflow_projection
     if projection is None:
         return []
+    assessment = _cashflow_projection_policy_assessment(
+        result=result,
+        context=context,
+        cash_weight=None,
+        derive_cash_weight=True,
+    )
+    assert assessment is not None
     reason_codes = ["CASHFLOW_PROJECTION_CONTEXT_PRESENT", *projection.reason_codes]
     reason_codes.extend(_cashflow_projection_usability_reason_codes(projection))
-    if _cashflow_projection_currency_mismatch(result=result, projection=projection):
-        reason_codes.append("CASHFLOW_PROJECTION_CURRENCY_MISMATCH")
+    blocking_reason = _cashflow_projection_blocking_reason_code(assessment)
+    if blocking_reason is not None:
+        reason_codes.append(blocking_reason)
         return reason_codes
-    if _post_trade_total_value_unavailable(result=result):
-        reason_codes.append("CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE")
-        return reason_codes
-    cash_weight = post_trade_cash_weight(result=result)
-    if cash_weight is None:
-        return reason_codes
-    projected_cash_weight = projected_cashflow_weight(result=result, context=context)
-    if projected_cash_weight is None:
-        return reason_codes
-    if cash_weight + projected_cash_weight < context.minimum_cash_weight:
-        reason_codes.append("CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY")
-    elif _cashflow_projection_is_usable(projection):
-        reason_codes.append("CASHFLOW_PROJECTION_READY")
+    policy_reason = _cashflow_projection_policy_reason_code(
+        assessment=assessment,
+        projection=projection,
+    )
+    if policy_reason is not None:
+        reason_codes.append(policy_reason)
     return reason_codes
+
+
+@dataclass(frozen=True)
+class _CashflowProjectionPolicyAssessment:
+    status: ConstructionMethodStatus
+    currency_mismatch: bool
+    post_trade_total_value_unavailable: bool
+    projected_cash_weight: Decimal | None
+    adjusted_cash_below_policy: bool
+
+
+def _cashflow_projection_policy_assessment(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext,
+    cash_weight: Decimal | None,
+    derive_cash_weight: bool,
+) -> _CashflowProjectionPolicyAssessment | None:
+    projection = context.cashflow_projection
+    if projection is None:
+        return None
+    currency_mismatch = _cashflow_projection_currency_mismatch(
+        result=result,
+        projection=projection,
+    )
+    total_value_unavailable = (
+        False if currency_mismatch else _post_trade_total_value_unavailable(result=result)
+    )
+    effective_cash_weight = (
+        post_trade_cash_weight(result=result)
+        if derive_cash_weight and cash_weight is None
+        else cash_weight
+    )
+    projected_weight = _policy_projected_cashflow_weight(
+        result=result,
+        context=context,
+        cash_weight=effective_cash_weight,
+        currency_mismatch=currency_mismatch,
+        total_value_unavailable=total_value_unavailable,
+    )
+    below_policy = (
+        effective_cash_weight is not None
+        and projected_weight is not None
+        and effective_cash_weight + projected_weight < context.minimum_cash_weight
+    )
+    status = _cashflow_projection_assessed_status(
+        projection=projection,
+        currency_mismatch=currency_mismatch,
+        total_value_unavailable=total_value_unavailable,
+        below_policy=below_policy,
+    )
+    return _CashflowProjectionPolicyAssessment(
+        status=status,
+        currency_mismatch=currency_mismatch,
+        post_trade_total_value_unavailable=total_value_unavailable,
+        projected_cash_weight=projected_weight,
+        adjusted_cash_below_policy=below_policy,
+    )
+
+
+def _cashflow_projection_blocking_reason_code(
+    assessment: _CashflowProjectionPolicyAssessment,
+) -> str | None:
+    if assessment.currency_mismatch:
+        return "CASHFLOW_PROJECTION_CURRENCY_MISMATCH"
+    if assessment.post_trade_total_value_unavailable:
+        return "CASHFLOW_PROJECTION_TOTAL_VALUE_UNAVAILABLE"
+    return None
+
+
+def _cashflow_projection_policy_reason_code(
+    *,
+    assessment: _CashflowProjectionPolicyAssessment,
+    projection: AuthoritativeLiquidityCashflowProjection,
+) -> str | None:
+    if assessment.projected_cash_weight is None:
+        return None
+    if assessment.adjusted_cash_below_policy:
+        return "CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY"
+    if _cashflow_projection_is_usable(projection):
+        return "CASHFLOW_PROJECTION_READY"
+    return None
+
+
+def _cashflow_projection_assessed_status(
+    *,
+    projection: AuthoritativeLiquidityCashflowProjection,
+    currency_mismatch: bool,
+    total_value_unavailable: bool,
+    below_policy: bool,
+) -> ConstructionMethodStatus:
+    status = projection.data_quality_status
+    if not projection.include_projected or currency_mismatch or total_value_unavailable:
+        status = lowest_construction_status([status, ConstructionMethodStatus.DEGRADED])
+    if below_policy:
+        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+    return status
+
+
+def _policy_projected_cashflow_weight(
+    *,
+    result: RebalanceResult,
+    context: AuthoritativeLiquidityContext,
+    cash_weight: Decimal | None,
+    currency_mismatch: bool,
+    total_value_unavailable: bool,
+) -> Decimal | None:
+    if cash_weight is None or currency_mismatch or total_value_unavailable:
+        return None
+    return projected_cashflow_weight(result=result, context=context)
 
 
 def _cashflow_projection_usability_reason_codes(

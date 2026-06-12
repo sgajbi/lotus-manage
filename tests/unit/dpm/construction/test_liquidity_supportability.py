@@ -1,10 +1,12 @@
 from decimal import Decimal
 
 from src.api.services.construction_liquidity_supportability import (
+    _cashflow_projection_policy_assessment,
     _cashflow_projection_currency_mismatch,
     _cashflow_projection_is_usable,
     _cashflow_projection_usability_reason_codes,
     _post_trade_total_value_unavailable,
+    cashflow_projection_reason_codes,
     cashflow_projection_status,
     derive_liquidity_context,
     liquidity_reason_codes,
@@ -131,6 +133,62 @@ def test_projected_cashflow_weight_absent_for_missing_projection() -> None:
             context=derive_liquidity_context(result=result),
         )
         is None
+    )
+
+
+def test_cashflow_projection_policy_assessment_preserves_source_posture() -> None:
+    result = _trade_result()
+    source_context = source_liquidity_context(
+        cashflow_projection=cashflow_projection_response(),
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert source_context is not None
+    assessment = _cashflow_projection_policy_assessment(
+        result=result,
+        context=source_context,
+        cash_weight=post_trade_cash_weight(result=result),
+        derive_cash_weight=False,
+    )
+
+    assert assessment is not None
+    assert assessment.status == ConstructionMethodStatus.DEGRADED
+    assert not assessment.currency_mismatch
+    assert not assessment.post_trade_total_value_unavailable
+    assert assessment.projected_cash_weight == Decimal("1.2505")
+    assert not assessment.adjusted_cash_below_policy
+
+
+def test_cashflow_projection_policy_assessment_flags_projected_policy_pressure() -> None:
+    result = _trade_result()
+    source_context = source_liquidity_context(
+        cashflow_projection=cashflow_projection_response().model_copy(
+            update={
+                "data_quality_status": "READY",
+                "total_net_cashflow": Decimal("-10"),
+            }
+        ),
+        income_needs=None,
+        reserve_requirement=None,
+        planned_withdrawals=None,
+    )
+
+    assert source_context is not None
+    assessment = _cashflow_projection_policy_assessment(
+        result=result,
+        context=source_context,
+        cash_weight=post_trade_cash_weight(result=result),
+        derive_cash_weight=False,
+    )
+
+    assert assessment is not None
+    assert assessment.status == ConstructionMethodStatus.PENDING_REVIEW
+    assert assessment.projected_cash_weight == Decimal("-0.01")
+    assert assessment.adjusted_cash_below_policy
+    assert "CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY" in (
+        cashflow_projection_reason_codes(result=result, context=source_context)
     )
 
 

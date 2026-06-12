@@ -20329,3 +20329,29 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal expected-outcome snapshot
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-826: Liquidity cashflow projection assessment helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `cashflow_projection_status` and `cashflow_projection_reason_codes` were both current
+  source-complexity hotspots and duplicated cashflow projection usability, currency, total-value,
+  projected-weight, and policy-threshold branching.
+- Action: extracted a deterministic cashflow projection policy assessment with named blocking and
+  policy reason-code helpers while preserving source-owned projection posture, projected cashflow
+  weighting, degraded currency/total-value handling, and below-policy pending-review behavior.
+  Added direct helper tests for degraded source posture preservation and projected cash-pressure
+  policy review alongside existing public liquidity supportability coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction liquidity
+  supportability maintainability refactoring and repo-local quality evidence.
