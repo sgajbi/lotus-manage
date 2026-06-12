@@ -782,6 +782,96 @@ def test_selected_alternative_section_payload_projects_method_trace() -> None:
     assert reason_codes == []
 
 
+def test_decision_timeline_orders_source_workflow_and_generated_events() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_timeline_order",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_timeline_order",
+        alternative_set_id=alternative_set.alternative_set_id,
+        alternative_id=alternative.alternative_id,
+        selected_at=CREATED_AT,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+    )
+    decision = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_timeline_order",
+        run_id=run.rebalance_run_id,
+        action="APPROVE",
+        reason_code="REVIEW_APPROVED",
+        comment="Evidence reviewed.",
+        actor_id="reviewer_001",
+        decided_at=CREATED_AT,
+        correlation_id="corr-timeline-order",
+    )
+
+    timeline = builder_module._decision_timeline(
+        proof_pack_id="dpp_timeline_order",
+        generated_at=CREATED_AT.isoformat(),
+        source_type="SELECTED_ALTERNATIVE",
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=alternative,
+        selection=selection,
+        workflow_decisions=[decision],
+        created_by="pm_001",
+    )
+
+    assert [event.event_type for event in timeline.events] == [
+        "REBALANCE_RUN_CREATED",
+        "ALTERNATIVE_SET_GENERATED",
+        "SELECTED_ALTERNATIVE",
+        "WORKFLOW_DECISION",
+        "PROOF_PACK_GENERATED",
+    ]
+
+
+def test_selected_alternative_timeline_event_falls_back_to_creator_without_selection() -> None:
+    alternative = build_rebalance_result_alternative(result=_ready_rebalance_result())
+
+    event = builder_module._selected_alternative_timeline_event(
+        selected_alternative=alternative,
+        selection=None,
+        generated_at=CREATED_AT.isoformat(),
+        created_by="pm_fallback",
+    )
+
+    assert event.event_id == f"{alternative.alternative_id}:selected"
+    assert event.event_time == CREATED_AT.isoformat()
+    assert event.actor == "pm_fallback"
+    assert event.status == alternative.method_status
+    assert event.reason_codes == []
+
+
+def test_workflow_decision_timeline_events_project_review_evidence() -> None:
+    decision = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_timeline_review",
+        run_id="rr_timeline_review",
+        action="REJECT",
+        reason_code="REMEDIATION_REQUIRED",
+        comment="Fix source evidence.",
+        actor_id="reviewer_002",
+        decided_at=CREATED_AT,
+        correlation_id="corr-timeline-review",
+    )
+
+    events = builder_module._workflow_decision_timeline_events([decision])
+
+    assert len(events) == 1
+    assert events[0].event_id == "dwd_timeline_review:workflow_decision"
+    assert events[0].event_type == "WORKFLOW_DECISION"
+    assert events[0].event_time == CREATED_AT.isoformat()
+    assert events[0].actor == "reviewer_002"
+    assert events[0].status == "REJECT"
+    assert events[0].reason_codes == ["REMEDIATION_REQUIRED"]
+
+
 def test_source_readiness_section_payload_blocks_missing_run() -> None:
     state, summary, facts, metrics, reason_codes = builder_module._source_readiness_section_payload(
         result=None

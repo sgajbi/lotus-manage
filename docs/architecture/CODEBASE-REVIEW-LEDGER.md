@@ -19605,3 +19605,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal mandate twin projection
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-802: Proof-pack decision timeline event helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_decision_timeline` was the top current source-complexity hotspot and combined
+  source-event projection, selected-alternative fallback handling, workflow-decision event mapping,
+  proof-pack generated event creation, event ranking, and chronological sorting in one helper.
+- Action: extracted pure decision timeline event helpers for source events, run creation,
+  alternative-set generation, selected alternatives, workflow decisions, proof-pack generation, and
+  event sorting while preserving the public proof-pack timeline output. Added direct tests for
+  same-timestamp event ordering, selected-alternative fallback actor/time behavior, and workflow
+  review evidence projection. Refreshed current-state quality reports and preserved the stable
+  baseline artifact; the refreshed complexity report shows `_decision_timeline` dropped out of the
+  top current source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q` (77 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack timeline
+  maintainability refactoring and repo-local quality evidence.
