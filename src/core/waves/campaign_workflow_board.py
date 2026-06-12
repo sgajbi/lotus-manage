@@ -218,6 +218,15 @@ def _classify_workflow_board_posture(
 ) -> tuple[CampaignWorkflowBoardStatus, CampaignWorkflowNextAction, list[str]]:
     if operating_queue.queue_status == "CLOSED" or approval_inbox.inbox_status == "CLOSED":
         return "CLOSED", "NO_ACTION_CLOSED", ["CAMPAIGN_DEFINITION_CLOSED"]
+    approval_action = _approval_inbox_workflow_action(approval_inbox)
+    if approval_action is not None:
+        return approval_action
+    return _operating_queue_workflow_action(operating_queue)
+
+
+def _approval_inbox_workflow_action(
+    approval_inbox: DpmBulkReviewCampaignApprovalInboxItem,
+) -> tuple[CampaignWorkflowBoardStatus, CampaignWorkflowNextAction, list[str]] | None:
     if approval_inbox.inbox_status == "ENTITLEMENT_ATTENTION":
         return (
             "ATTENTION_FOR_ACTOR",
@@ -242,6 +251,12 @@ def _classify_workflow_board_posture(
             "REFRESH_EXPIRY_OR_AS_OF_DATE",
             approval_inbox.inbox_reason_codes,
         )
+    return None
+
+
+def _operating_queue_workflow_action(
+    operating_queue: DpmBulkReviewCampaignOperatingQueueItem,
+) -> tuple[CampaignWorkflowBoardStatus, CampaignWorkflowNextAction, list[str]]:
     if operating_queue.queue_status == "READY_TO_LAUNCH":
         return (
             "READY_FOR_ACTOR",

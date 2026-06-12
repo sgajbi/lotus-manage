@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 import pytest
 
 from src.api.routers.wave_campaign_candidate_selection import (
+    _candidate_portfolio_type,
+    _candidate_source_refs,
     select_bulk_review_campaign_candidates,
 )
 from src.api.services import wave_service
@@ -90,4 +92,36 @@ def test_select_bulk_review_campaign_candidates_requires_source_refs() -> None:
     assert exc_info.value.code == "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED"
     assert (
         exc_info.value.message == "BULK_REVIEW_CAMPAIGN candidate portfolios require source_refs."
+    )
+
+
+def test_candidate_portfolio_type_helper_rejects_non_string_values() -> None:
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
+        _candidate_portfolio_type(
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "portfolio_type": 123,
+                "source_refs": [{"source_id": "candidate-source"}],
+            }
+        )
+
+    assert exc_info.value.code == "BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_INVALID"
+    assert (
+        exc_info.value.message == "BULK_REVIEW_CAMPAIGN candidate portfolio_type must be a string."
+    )
+
+
+def test_candidate_source_refs_helper_rejects_non_sequence_values() -> None:
+    with pytest.raises(wave_service.DpmWaveValidationError) as exc_info:
+        _candidate_source_refs(
+            {
+                "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+                "portfolio_type": "DISCRETIONARY",
+                "source_refs": object(),
+            }
+        )
+
+    assert exc_info.value.code == "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_INVALID"
+    assert (
+        exc_info.value.message == "BULK_REVIEW_CAMPAIGN candidate source_refs must be a sequence."
     )

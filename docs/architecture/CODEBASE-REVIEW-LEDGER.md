@@ -20173,3 +20173,80 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal target-generation mapper
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-820: Campaign workflow-board action helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_workflow_board.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_classify_workflow_board_posture` was the top current source-complexity hotspot and
+  mixed closed-campaign detection, approval-inbox action precedence, entitlement/approval/expiry
+  action mapping, operating-queue ready mapping, and fallback attention mapping in one classifier.
+- Action: extracted deterministic approval-inbox and operating-queue workflow-action helpers while
+  preserving closed posture, approval-inbox precedence, board status, next-action values, and
+  reason-code propagation. Added direct helper tests for approval attention precedence and
+  operating-queue fallback alongside existing workflow-board page and assignment-plan coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_workflow_board.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_workflow_board.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_workflow_board.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal workflow-board maintainability
+  refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-821: Campaign candidate selection validation helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/routers/wave_campaign_candidate_selection.py`,
+  `tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `select_bulk_review_campaign_candidates` was the top current source-complexity hotspot
+  after the workflow-board slice and mixed candidate iteration, portfolio-type extraction and
+  normalization, ineligible-candidate counting, source-ref shape validation, missing-source-ref
+  validation, and selection result construction in one loop.
+- Action: extracted deterministic candidate portfolio-type and source-ref validation helpers while
+  preserving eligible-candidate ordering, excluded-count semantics, validation error codes, and
+  source-owned candidate evidence requirements. Added direct helper tests for non-string
+  portfolio types and non-sequence source refs alongside existing selection behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_campaign_candidate_selection.py tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `python -m ruff format --check src/api/routers/wave_campaign_candidate_selection.py tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_campaign_candidate_selection.py`,
+  `python -m pytest tests/unit/api/test_wave_campaign_candidate_selection.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal campaign candidate-selection
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-822: Construction method readiness dispatch helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `method_specific_reason_codes` and `method_specific_status` were adjacent current
+  source-complexity hotspots and encoded method dispatch, status fallback behavior, delegated
+  supportability checks, reason-code normalization, and currency-overlay missing-FX fallback in
+  branch-heavy public functions.
+- Action: extracted typed method readiness context objects, dispatch tables, and focused builder
+  helpers while preserving solver, liquidity, risk, cost, ESG, currency-overlay, and regime-stress
+  reason-code/status behavior. Added direct helper tests for currency-overlay missing-FX status
+  fallback and solver reason-code builder routing alongside existing public method-readiness
+  behavior coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m ruff format --check src/api/services/construction_method_readiness.py tests/unit/dpm/construction/test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_method_readiness.py`,
+  `python -m pytest tests/unit/dpm/construction/test_method_readiness.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal construction method-readiness
+  maintainability refactoring and repo-local quality evidence.
