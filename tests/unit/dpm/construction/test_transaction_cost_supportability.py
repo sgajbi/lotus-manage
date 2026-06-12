@@ -1,6 +1,9 @@
 from decimal import Decimal
 
 from src.api.services.construction_transaction_cost_supportability import (
+    _observed_transaction_cost_money,
+    _observed_transaction_cost_term,
+    _observed_transaction_cost_terms,
     covered_transaction_cost_security_ids,
     observed_transaction_cost_estimate,
     transaction_cost_curve_points_by_key,
@@ -129,6 +132,32 @@ def test_transaction_cost_curve_points_by_key_indexes_security_and_transaction_t
 
     assert sorted(points_by_key) == [("EQ_A", "SELL"), ("EQ_B", "BUY")]
     assert points_by_key[("EQ_A", "SELL")].average_cost_bps == Decimal("10")
+
+
+def test_observed_transaction_cost_term_helpers_match_supported_trade_terms() -> None:
+    result = _trade_result()
+    context = _transaction_cost_context(security_ids=["EQ_A", "EQ_B"])
+    points_by_key = transaction_cost_curve_points_by_key(context=context)
+
+    assert _observed_transaction_cost_term(
+        intent=result.intents[0],
+        point_by_key=points_by_key,
+    ) == Decimal("0.5")
+    assert _observed_transaction_cost_terms(
+        result=result,
+        point_by_key=points_by_key,
+    ) == [Decimal("0.5"), Decimal("0.5")]
+
+
+def test_observed_transaction_cost_money_requires_matched_cost_terms() -> None:
+    assert _observed_transaction_cost_money(cost_terms=[], currency="USD") is None
+    money = _observed_transaction_cost_money(
+        cost_terms=[Decimal("0.12345"), Decimal("0.87655")],
+        currency="USD",
+    )
+
+    assert money is not None
+    assert money.amount == Decimal("1.0000")
 
 
 def test_transaction_cost_supportability_degrades_missing_traded_security_coverage() -> None:

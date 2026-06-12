@@ -20580,3 +20580,92 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM-quality scoring
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-835: Transaction-cost observed estimate helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `observed_transaction_cost_estimate` was the top current source-complexity hotspot and
+  mixed context readiness gating, transaction-cost curve lookup, security-trade filtering,
+  base-notional checks, matched-state tracking, per-intent observed cost calculation, and Money
+  construction in one construction supportability helper.
+- Action: extracted deterministic observed-cost term derivation and Money materialization helpers
+  while preserving READY-only application, base-notional-only behavior, curve key matching by
+  security and transaction side, no-match `None` posture, and quantized cost output. Added direct
+  helper tests for matched trade terms and no-match/matched Money creation alongside existing
+  enrichment and supportability coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction transaction-cost
+  supportability maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-836: Outcome construction-state precedence helper
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/snapshots.py`,
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_construction_state` was the top current source-complexity hotspot after the
+  transaction-cost supportability slice and encoded construction-set status, selected-method
+  status, source-supportability degradation, and precedence ordering through repeated branch
+  checks.
+- Action: extracted a deterministic construction outcome-state precedence helper while preserving
+  blocked-over-pending-review-over-degraded ordering, READY fallback, and source degradation
+  behavior. Added direct helper tests for mixed-state precedence and ready-only fallback alongside
+  existing expected snapshot assembly coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal expected outcome snapshot
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-837: PM quality lookback-window date helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_validate_lookback_window` was the top current source-complexity hotspot after the
+  outcome snapshot slice and combined optional policy handling, policy date parsing, required
+  dated-evidence detection, signal date parsing, and inclusive date-window checks in one validator.
+- Action: extracted deterministic lookback-window date parsing, signal business-date parsing, and
+  inclusive range helpers while preserving fail-closed validation error codes and stale-evidence
+  behavior. Added direct helper tests for parsed source dates and inclusive boundary handling
+  alongside existing PM-quality scoring guard coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM-quality lookback-window
+  maintainability refactoring and repo-local quality evidence.

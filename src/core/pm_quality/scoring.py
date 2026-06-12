@@ -409,23 +409,46 @@ def _validate_lookback_window(
     policy: DpmPmOperatingQualityPolicy,
     signals: list[_PmQualitySignal],
 ) -> None:
-    if policy.lookback_window_policy is None:
+    window_dates = _lookback_window_dates(policy.lookback_window_policy)
+    if window_dates is None:
         return
-    try:
-        start_date = date.fromisoformat(policy.lookback_window_policy.start_date)
-        end_date = date.fromisoformat(policy.lookback_window_policy.end_date)
-    except ValueError as exc:
-        raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID") from exc
+    start_date, end_date = window_dates
     dated_signals = [signal for signal in signals if signal.as_of_date is not None]
     if not dated_signals:
         raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED")
     for signal in dated_signals:
-        try:
-            signal_date = date.fromisoformat(str(signal.as_of_date))
-        except ValueError as exc:
-            raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID") from exc
-        if signal_date < start_date or signal_date > end_date:
+        signal_date = _signal_as_of_business_date(signal)
+        if not _date_in_inclusive_window(signal_date, start_date, end_date):
             raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW")
+
+
+def _lookback_window_dates(
+    lookback: DpmPmQualityLookbackWindowPolicy | None,
+) -> tuple[date, date] | None:
+    if lookback is None:
+        return None
+    try:
+        return (
+            date.fromisoformat(lookback.start_date),
+            date.fromisoformat(lookback.end_date),
+        )
+    except ValueError as exc:
+        raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID") from exc
+
+
+def _signal_as_of_business_date(signal: _PmQualitySignal) -> date:
+    try:
+        return date.fromisoformat(str(signal.as_of_date))
+    except ValueError as exc:
+        raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID") from exc
+
+
+def _date_in_inclusive_window(
+    observed_date: date,
+    start_date: date,
+    end_date: date,
+) -> bool:
+    return start_date <= observed_date <= end_date
 
 
 def _signal_as_of_date(source_refs: list[DpmOutcomeSourceRef]) -> str | None:

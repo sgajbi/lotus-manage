@@ -72,19 +72,47 @@ def observed_transaction_cost_estimate(
     if context is None or context.supportability_status != ConstructionMethodStatus.READY:
         return None
     point_by_key = transaction_cost_curve_points_by_key(context=context)
-    total = Decimal("0")
-    currency = result.before.total_value.currency
-    matched = False
+    cost_terms = _observed_transaction_cost_terms(result=result, point_by_key=point_by_key)
+    return _observed_transaction_cost_money(
+        cost_terms=cost_terms,
+        currency=result.before.total_value.currency,
+    )
+
+
+def _observed_transaction_cost_terms(
+    *,
+    result: RebalanceResult,
+    point_by_key: dict[tuple[str, str], AuthoritativeTransactionCostPoint],
+) -> list[Decimal]:
+    cost_terms: list[Decimal] = []
     for intent in result.intents:
-        if not isinstance(intent, SecurityTradeIntent) or intent.notional_base is None:
-            continue
-        point = point_by_key.get((intent.instrument_id, intent.side))
-        if point is None:
-            continue
-        matched = True
-        total += abs(intent.notional_base.amount) * point.average_cost_bps / Decimal("10000")
-    if not matched:
+        term = _observed_transaction_cost_term(intent=intent, point_by_key=point_by_key)
+        if term is not None:
+            cost_terms.append(term)
+    return cost_terms
+
+
+def _observed_transaction_cost_term(
+    *,
+    intent: object,
+    point_by_key: dict[tuple[str, str], AuthoritativeTransactionCostPoint],
+) -> Decimal | None:
+    if not isinstance(intent, SecurityTradeIntent) or intent.notional_base is None:
         return None
+    point = point_by_key.get((intent.instrument_id, intent.side))
+    if point is None:
+        return None
+    return abs(intent.notional_base.amount) * point.average_cost_bps / Decimal("10000")
+
+
+def _observed_transaction_cost_money(
+    *,
+    cost_terms: list[Decimal],
+    currency: str,
+) -> Money | None:
+    if not cost_terms:
+        return None
+    total = sum(cost_terms, Decimal("0"))
     return Money(amount=total.quantize(_MONEY_QUANT), currency=currency)
 
 
