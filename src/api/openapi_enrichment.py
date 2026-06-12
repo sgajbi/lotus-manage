@@ -563,23 +563,52 @@ def _operation_has_error_response(responses: dict[str, Any]) -> bool:
 
 
 def _ensure_schema_documentation(schema: dict[str, Any]) -> None:
-    components = schema.get("components", {})
-    schemas = components.get("schemas", {})
-    if not isinstance(schemas, dict):
+    for model_name, prop_name, prop_schema in _schema_documentable_properties(schema):
+        _ensure_property_documentation(
+            model_name=model_name,
+            prop_name=prop_name,
+            prop_schema=prop_schema,
+        )
+
+
+def _schema_documentable_properties(
+    schema: dict[str, Any],
+) -> Iterator[tuple[str, str, dict[str, Any]]]:
+    schemas = _schema_component_schemas(schema)
+    if schemas is None:
         return
     for model_name, model_schema in schemas.items():
-        if not isinstance(model_schema, dict):
-            continue
-        properties = model_schema.get("properties", {})
-        if not isinstance(properties, dict):
-            continue
-        for prop_name, prop_schema in properties.items():
-            if not isinstance(prop_schema, dict):
-                continue
-            if not prop_schema.get("description"):
-                prop_schema["description"] = _infer_description(model_name, prop_name, prop_schema)
-            if "example" not in prop_schema:
-                prop_schema["example"] = _infer_example(prop_name, prop_schema)
+        yield from _model_documentable_properties(model_name=model_name, model_schema=model_schema)
+
+
+def _schema_component_schemas(schema: dict[str, Any]) -> dict[str, Any] | None:
+    components = schema.get("components", {})
+    if not isinstance(components, dict):
+        return None
+    schemas = components.get("schemas", {})
+    return schemas if isinstance(schemas, dict) else None
+
+
+def _model_documentable_properties(
+    *, model_name: Any, model_schema: Any
+) -> Iterator[tuple[str, str, dict[str, Any]]]:
+    if not isinstance(model_name, str) or not isinstance(model_schema, dict):
+        return
+    properties = model_schema.get("properties", {})
+    if not isinstance(properties, dict):
+        return
+    for prop_name, prop_schema in properties.items():
+        if isinstance(prop_name, str) and isinstance(prop_schema, dict):
+            yield model_name, prop_name, prop_schema
+
+
+def _ensure_property_documentation(
+    *, model_name: str, prop_name: str, prop_schema: dict[str, Any]
+) -> None:
+    if not prop_schema.get("description"):
+        prop_schema["description"] = _infer_description(model_name, prop_name, prop_schema)
+    if "example" not in prop_schema:
+        prop_schema["example"] = _infer_example(prop_name, prop_schema)
 
 
 def enrich_openapi_schema(schema: dict[str, Any], *, service_name: str) -> dict[str, Any]:

@@ -8,6 +8,10 @@ from src.core.portfolio_memory.search_filters import (
     event_matches_search_filters,
     event_source_systems,
     event_source_types,
+    _event_source_system_matches,
+    _event_source_type_matches,
+    _event_supportability_matches,
+    _event_type_matches,
     normalize_portfolio_memory_search_filter,
 )
 
@@ -73,6 +77,23 @@ def test_event_matches_search_filters_across_source_facets() -> None:
         source_system="lotus-report",
         source_type="REPORT_INPUT",
     )
+
+
+def test_event_search_filter_predicates_match_optional_fields_and_facets() -> None:
+    event = _event()
+
+    assert _event_type_matches(event=event, event_type=None)
+    assert _event_type_matches(event=event, event_type="WAVE_EVENT")
+    assert not _event_type_matches(event=event, event_type="OUTCOME_REVIEW_CREATED")
+    assert _event_supportability_matches(event=event, supportability_state=None)
+    assert _event_supportability_matches(event=event, supportability_state="READY")
+    assert not _event_supportability_matches(event=event, supportability_state="BLOCKED")
+    assert _event_source_system_matches(event=event, source_system=None)
+    assert _event_source_system_matches(event=event, source_system="lotus-core")
+    assert not _event_source_system_matches(event=event, source_system="lotus-risk")
+    assert _event_source_type_matches(event=event, source_type=None)
+    assert _event_source_type_matches(event=event, source_type="REPORT_INPUT")
+    assert not _event_source_type_matches(event=event, source_type="RiskMetricsReport")
     assert not event_matches_search_filters(
         event=event,
         event_type="OUTCOME_REVIEW_CREATED",
