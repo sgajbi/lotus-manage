@@ -596,30 +596,43 @@ def _run_state_section_payload(
             [],
         )
     if section_type == "trade_intents":
-        if not result.intents:
-            return (
-                "BLOCKED",
-                "No trade intents are available for pre-trade proof.",
-                {"intent_ids": []},
-                {"trade_count": 0},
-                ["DPM_TRADE_INTENTS_MISSING"],
-            )
-        return (
-            "READY",
-            "Trade intents captured from source run.",
-            {"intent_ids": [intent.intent_id for intent in result.intents]},
-            {"trade_count": len(result.intents)},
-            [],
-        )
+        return _trade_intents_section_payload(result)
     if section_type == "after_state":
-        return (
-            "READY" if result.status != "BLOCKED" else "BLOCKED",
-            "After-state simulation summary captured from source run.",
-            {"after_summary": result.after_simulated.model_dump(mode="json")},
-            {"position_count": len(result.after_simulated.positions)},
-            [] if result.status != "BLOCKED" else ["DPM_AFTER_STATE_BLOCKED"],
-        )
+        return _after_state_section_payload(result)
     return None
+
+
+def _trade_intents_section_payload(
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if not result.intents:
+        return (
+            "BLOCKED",
+            "No trade intents are available for pre-trade proof.",
+            {"intent_ids": []},
+            {"trade_count": 0},
+            ["DPM_TRADE_INTENTS_MISSING"],
+        )
+    return (
+        "READY",
+        "Trade intents captured from source run.",
+        {"intent_ids": [intent.intent_id for intent in result.intents]},
+        {"trade_count": len(result.intents)},
+        [],
+    )
+
+
+def _after_state_section_payload(
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    blocked = result.status == "BLOCKED"
+    return (
+        "BLOCKED" if blocked else "READY",
+        "After-state simulation summary captured from source run.",
+        {"after_summary": result.after_simulated.model_dump(mode="json")},
+        {"position_count": len(result.after_simulated.positions)},
+        ["DPM_AFTER_STATE_BLOCKED"] if blocked else [],
+    )
 
 
 def _run_diagnostics_section_payload(

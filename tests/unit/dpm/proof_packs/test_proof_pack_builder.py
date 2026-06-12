@@ -340,6 +340,46 @@ def test_run_state_section_payload_blocks_missing_trade_intents() -> None:
     assert reason_codes == ["DPM_TRADE_INTENTS_MISSING"]
 
 
+def test_trade_intents_section_payload_projects_ready_and_blocked_states() -> None:
+    ready = _ready_rebalance_result()
+    blocked = ready.model_copy(update={"intents": []})
+
+    ready_state, _summary, ready_facts, ready_metrics, ready_reasons = (
+        builder_module._trade_intents_section_payload(ready)
+    )
+    blocked_state, _summary, blocked_facts, blocked_metrics, blocked_reasons = (
+        builder_module._trade_intents_section_payload(blocked)
+    )
+
+    assert ready_state == "READY"
+    assert ready_facts["intent_ids"] == [intent.intent_id for intent in ready.intents]
+    assert ready_metrics == {"trade_count": len(ready.intents)}
+    assert ready_reasons == []
+    assert blocked_state == "BLOCKED"
+    assert blocked_facts == {"intent_ids": []}
+    assert blocked_metrics == {"trade_count": 0}
+    assert blocked_reasons == ["DPM_TRADE_INTENTS_MISSING"]
+
+
+def test_after_state_section_payload_marks_blocked_runs() -> None:
+    ready = _ready_rebalance_result()
+    blocked = ready.model_copy(update={"status": "BLOCKED"})
+
+    ready_state, _summary, _facts, ready_metrics, ready_reasons = (
+        builder_module._after_state_section_payload(ready)
+    )
+    blocked_state, _summary, _facts, blocked_metrics, blocked_reasons = (
+        builder_module._after_state_section_payload(blocked)
+    )
+
+    assert ready_state == "READY"
+    assert ready_metrics == {"position_count": len(ready.after_simulated.positions)}
+    assert ready_reasons == []
+    assert blocked_state == "BLOCKED"
+    assert blocked_metrics == {"position_count": len(blocked.after_simulated.positions)}
+    assert blocked_reasons == ["DPM_AFTER_STATE_BLOCKED"]
+
+
 def test_run_state_section_payload_ignores_unrelated_sections() -> None:
     assert (
         builder_module._run_state_section_payload(
