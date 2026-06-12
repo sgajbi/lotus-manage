@@ -95,6 +95,43 @@ def _source_product_request(
     return cast(httpx.Response, client.get(url, params=selector, headers=headers))
 
 
+def _source_product_payload_with_retries(
+    client: Any,
+    *,
+    attempts: int,
+    method: _SourceProductMethod,
+    url: str,
+    selector: dict[str, Any],
+    headers: dict[str, str],
+    unavailable_code: str,
+    incomplete_code: str,
+) -> dict[str, Any]:
+    last_error: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            response = _source_product_request(
+                client,
+                method=method,
+                url=url,
+                selector=selector,
+                headers=headers,
+            )
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            last_error = exc
+            if attempt + 1 >= attempts:
+                raise DpmCoreResolverUnavailableError(unavailable_code) from exc
+            continue
+        if response.status_code in _TRANSIENT_SOURCE_STATUS_CODES and attempt + 1 < attempts:
+            continue
+        _raise_for_source_product_status(
+            response,
+            unavailable_code=unavailable_code,
+            incomplete_code=incomplete_code,
+        )
+        return _source_product_response_payload(response, incomplete_code=incomplete_code)
+    raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+
+
 @dataclass(frozen=True)
 class _CoreSnapshotMappedRow:
     position: Position | None = None
@@ -433,33 +470,16 @@ class DpmCoreResolverClient:
         headers = _source_product_headers(correlation_id)
         client = self._client or httpx.Client(timeout=self._config.timeout_seconds)
         try:
-            last_error: Exception | None = None
-            for attempt in range(attempts):
-                try:
-                    response = _source_product_request(
-                        client,
-                        method=method,
-                        url=url,
-                        selector=selector,
-                        headers=headers,
-                    )
-                except (httpx.TimeoutException, httpx.TransportError) as exc:
-                    last_error = exc
-                    if attempt + 1 >= attempts:
-                        raise DpmCoreResolverUnavailableError(unavailable_code) from exc
-                    continue
-                if (
-                    response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
-                    and attempt + 1 < attempts
-                ):
-                    continue
-                _raise_for_source_product_status(
-                    response,
-                    unavailable_code=unavailable_code,
-                    incomplete_code=incomplete_code,
-                )
-                return _source_product_response_payload(response, incomplete_code=incomplete_code)
-            raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+            return _source_product_payload_with_retries(
+                client,
+                attempts=attempts,
+                method=method,
+                url=url,
+                selector=selector,
+                headers=headers,
+                unavailable_code=unavailable_code,
+                incomplete_code=incomplete_code,
+            )
         finally:
             if self._owns_client:
                 client.close()

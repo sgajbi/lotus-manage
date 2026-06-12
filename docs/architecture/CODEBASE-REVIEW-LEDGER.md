@@ -20094,3 +20094,30 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack section payload
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-817: Core sourcing source-product retry helper
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_request_source_product` was the top current source-complexity hotspot and mixed
+  retry attempt counting, transient HTTP status retry behavior, transport exception retry
+  behavior, source-safe error mapping, response payload validation, and owned-client cleanup in
+  one resolver method.
+- Action: extracted `_source_product_payload_with_retries` as a deterministic helper while
+  preserving request dispatch, correlation headers, transient 502/503/504 retry semantics,
+  timeout/transport unavailable mapping, non-object payload rejection, and owned-client cleanup in
+  the resolver method. Added direct helper tests for transient retry success and exhausted
+  transient failure alongside the existing resolver helper coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal core-sourcing client
+  maintainability refactoring and repo-local quality evidence.
