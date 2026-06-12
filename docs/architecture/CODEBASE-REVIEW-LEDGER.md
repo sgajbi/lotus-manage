@@ -20580,3 +20580,33 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM-quality scoring
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-835: Transaction-cost observed estimate helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_transaction_cost_supportability.py`,
+  `tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `observed_transaction_cost_estimate` was the top current source-complexity hotspot and
+  mixed context readiness gating, transaction-cost curve lookup, security-trade filtering,
+  base-notional checks, matched-state tracking, per-intent observed cost calculation, and Money
+  construction in one construction supportability helper.
+- Action: extracted deterministic observed-cost term derivation and Money materialization helpers
+  while preserving READY-only application, base-notional-only behavior, curve key matching by
+  security and transaction side, no-match `None` posture, and quantized cost output. Added direct
+  helper tests for matched trade terms and no-match/matched Money creation alongside existing
+  enrichment and supportability coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_transaction_cost_supportability.py tests/unit/dpm/construction/test_transaction_cost_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_transaction_cost_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_transaction_cost_supportability.py tests/unit/dpm/construction/test_enrichment.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction transaction-cost
+  supportability maintainability refactoring and repo-local quality evidence.
