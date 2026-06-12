@@ -1,5 +1,7 @@
 """Expected outcome snapshot assembly for RFC-0042."""
 
+from dataclasses import dataclass
+
 from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionAlternativeSelection,
@@ -20,6 +22,19 @@ from src.core.waves.models import DpmRebalanceWave, DpmRebalanceWaveItem, DpmWav
 
 class DpmExpectedSnapshotAssemblyError(ValueError):
     """Raised when expected outcome evidence is missing or inconsistent."""
+
+
+@dataclass(frozen=True)
+class DpmExpectedSnapshotIdentity:
+    portfolio_id: str
+    mandate_id: str | None
+    rebalance_run_id: str | None
+    alternative_set_id: str
+    selected_alternative_id: str
+    proof_pack_id: str
+    wave_id: str | None
+    wave_item_id: str | None
+    operations_handoff_ref_id: str | None
 
 
 _PROOF_PACK_OUTCOME_STATES: dict[str, OutcomeDimensionState] = {
@@ -76,16 +91,25 @@ def assemble_expected_outcome_snapshot(
         wave_item=wave_item,
         handoff=handoff,
     )
+    identity = build_expected_snapshot_identity(
+        alternative_set=alternative_set,
+        selection=selection,
+        selected_alternative=selected_alternative,
+        proof_pack=proof_pack,
+        wave=wave,
+        wave_item=wave_item,
+        handoff=handoff,
+    )
     return DpmExpectedOutcomeSnapshot(
-        portfolio_id=alternative_set.portfolio_id,
-        mandate_id=proof_pack.mandate_id,
-        rebalance_run_id=selected_alternative.rebalance_run_id or proof_pack.rebalance_run_id,
-        alternative_set_id=alternative_set.alternative_set_id,
-        selected_alternative_id=selection.alternative_id,
-        proof_pack_id=proof_pack.proof_pack_id,
-        wave_id=wave.wave_id if wave else None,
-        wave_item_id=wave_item.wave_item_id if wave_item else None,
-        operations_handoff_ref_id=handoff.handoff_ref_id if handoff else None,
+        portfolio_id=identity.portfolio_id,
+        mandate_id=identity.mandate_id,
+        rebalance_run_id=identity.rebalance_run_id,
+        alternative_set_id=identity.alternative_set_id,
+        selected_alternative_id=identity.selected_alternative_id,
+        proof_pack_id=identity.proof_pack_id,
+        wave_id=identity.wave_id,
+        wave_item_id=identity.wave_item_id,
+        operations_handoff_ref_id=identity.operations_handoff_ref_id,
         expected_values=expected_values,
         supportability=supportability,
         source_lineage=_source_lineage(
@@ -98,16 +122,54 @@ def assemble_expected_outcome_snapshot(
         ),
         source_hashes=proof_pack.source_hashes,
         section_hashes=_section_hashes(proof_pack),
-        calculation_trace={
-            "source": "RFC-0039_SELECTED_ALTERNATIVE_WITH_RFC-0040_PROOF_PACK",
-            "selected_method": str(selected_alternative.method),
-            "selected_method_status": str(selected_alternative.method_status),
-            "proof_pack_status": proof_pack.status,
-            "wave_item_state": wave_item.state if wave_item else None,
-            "handoff_reason_code": handoff.reason_code if handoff else None,
-            "defaulted_expected_values": [],
-        },
+        calculation_trace=build_expected_snapshot_calculation_trace(
+            selected_alternative=selected_alternative,
+            proof_pack=proof_pack,
+            wave_item=wave_item,
+            handoff=handoff,
+        ),
     )
+
+
+def build_expected_snapshot_identity(
+    *,
+    alternative_set: ConstructionAlternativeSet,
+    selection: ConstructionAlternativeSelection,
+    selected_alternative: ConstructionAlternative,
+    proof_pack: DpmPreTradeProofPack,
+    wave: DpmRebalanceWave | None,
+    wave_item: DpmRebalanceWaveItem | None,
+    handoff: DpmWaveHandoffRef | None,
+) -> DpmExpectedSnapshotIdentity:
+    return DpmExpectedSnapshotIdentity(
+        portfolio_id=alternative_set.portfolio_id,
+        mandate_id=proof_pack.mandate_id,
+        rebalance_run_id=selected_alternative.rebalance_run_id or proof_pack.rebalance_run_id,
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=selection.alternative_id,
+        proof_pack_id=proof_pack.proof_pack_id,
+        wave_id=wave.wave_id if wave else None,
+        wave_item_id=wave_item.wave_item_id if wave_item else None,
+        operations_handoff_ref_id=handoff.handoff_ref_id if handoff else None,
+    )
+
+
+def build_expected_snapshot_calculation_trace(
+    *,
+    selected_alternative: ConstructionAlternative,
+    proof_pack: DpmPreTradeProofPack,
+    wave_item: DpmRebalanceWaveItem | None,
+    handoff: DpmWaveHandoffRef | None,
+) -> dict[str, object]:
+    return {
+        "source": "RFC-0039_SELECTED_ALTERNATIVE_WITH_RFC-0040_PROOF_PACK",
+        "selected_method": str(selected_alternative.method),
+        "selected_method_status": str(selected_alternative.method_status),
+        "proof_pack_status": proof_pack.status,
+        "wave_item_state": wave_item.state if wave_item else None,
+        "handoff_reason_code": handoff.reason_code if handoff else None,
+        "defaulted_expected_values": [],
+    }
 
 
 def _select_alternative(
