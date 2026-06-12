@@ -19902,3 +19902,37 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal turnover-limit maintainability
   refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-811: Mandate command-center summary projection helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `build_command_center_summary` was the top current source-complexity hotspot and mixed
+  health-distribution selection, partial-readiness reason collection, completeness classification,
+  supportability state/reason derivation, default field projection, attention bucket projection,
+  recommended-action projection, and final summary model construction in one service helper.
+- Action: extracted deterministic command-center read-model and field projection helpers while
+  preserving the public summary builder, supportability/completeness semantics, selected
+  health-state filtering, latest-run defaults, attention bucket ordering, recommended-action
+  ordering, and exported helper surface. Added direct helper tests for read-model derivation,
+  projection defaults, and non-exported private helper posture. Refreshed current-state quality
+  reports and preserved the stable baseline artifact; the refreshed complexity report shows
+  `build_command_center_summary` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py -q` (13 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate command-center
+  maintainability refactoring and repo-local quality evidence.

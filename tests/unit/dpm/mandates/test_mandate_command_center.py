@@ -12,6 +12,7 @@ from src.api.services.mandate_command_center import (
     run_matches_command_center_filters,
     severity_rank,
 )
+from src.api.services import mandate_command_center
 from src.core.mandates import (
     DpmMonitoringException,
     DpmMonitoringRun,
@@ -286,6 +287,45 @@ def test_build_command_center_summary_projects_empty_state_without_run() -> None
     assert summary.supportability.reason == "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
 
 
+def test_command_center_read_model_collects_projection_state_without_exporting_it() -> None:
+    read_model = mandate_command_center._command_center_read_model(
+        health_state="PENDING_REVIEW",
+        latest_run=_run(),
+        portfolio_manager_id=None,
+        book_id=None,
+        active_exception_count=50,
+        limit=50,
+    )
+
+    assert read_model.health_distribution == {"PENDING_REVIEW": 1}
+    assert read_model.partial_reasons == [
+        "PM_BOOK_DISCOVERY_NOT_YET_SOURCED",
+        "ATTENTION_QUEUE_LIMIT_REACHED",
+    ]
+    assert read_model.completeness == "PARTIAL"
+    assert read_model.supportability_state == "PARTIAL"
+    assert read_model.supportability_reason == "PM_BOOK_DISCOVERY_NOT_YET_SOURCED"
+    assert "_command_center_read_model" not in mandate_command_center.__all__
+
+
+def test_command_center_projection_helpers_preserve_empty_and_latest_run_defaults() -> None:
+    run = _run()
+
+    assert mandate_command_center._command_center_as_of_date(
+        as_of_date=date(2026, 5, 4),
+        latest_run=run,
+    ) == date(2026, 5, 4)
+    assert mandate_command_center._command_center_as_of_date(
+        as_of_date=None,
+        latest_run=run,
+    ) == date(2026, 5, 3)
+    assert mandate_command_center._selected_health_state("READY").value == "READY"
+    assert mandate_command_center._selected_health_state(None) is None
+    assert mandate_command_center._evaluated_mandates(None) == 0
+    assert mandate_command_center._monitored_mandate_ids(run) == ["MANDATE_1", "MANDATE_2"]
+    assert mandate_command_center._source_readiness_summary(None) == {}
+
+
 def test_command_center_health_distribution_filters_selected_state() -> None:
     assert command_center_health_distribution(
         latest_run=_run(),
@@ -324,8 +364,6 @@ def test_command_center_completeness_classifies_empty_partial_and_complete() -> 
 
 
 def test_mandate_command_center_exports_only_projection_helpers() -> None:
-    from src.api.services import mandate_command_center
-
     assert severity_rank("CRITICAL") == 3
     assert mandate_command_center.__all__ == [
         "attention_buckets",
