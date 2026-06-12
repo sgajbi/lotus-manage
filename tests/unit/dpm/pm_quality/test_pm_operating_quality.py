@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -903,6 +904,40 @@ def test_pm_quality_lookback_window_requires_dated_valid_evidence() -> None:
                 )
             ],
         )
+
+
+def test_pm_quality_lookback_window_helpers_parse_source_dates_and_boundaries() -> None:
+    lookback = DpmPmQualityLookbackWindowPolicy(
+        window_id="pmq_30d_20260512",
+        start_date="2026-04-13",
+        end_date="2026-05-12",
+        timezone="UTC",
+        source_refs=[_source_ref()],
+    )
+    signal = scoring._PmQualitySignal(
+        indicator="OUTCOME_DISCIPLINE",
+        score=Decimal("92"),
+        state="READY",
+        reason_codes=["PM_OUTCOME_DISCIPLINE_SOURCE_SIGNAL"],
+        source_refs=[_source_ref()],
+        as_of_date="2026-05-12",
+    )
+
+    assert scoring._lookback_window_dates(lookback) == (
+        date(2026, 4, 13),
+        date(2026, 5, 12),
+    )
+    assert scoring._signal_as_of_business_date(signal) == date(2026, 5, 12)
+    assert scoring._date_in_inclusive_window(
+        date(2026, 4, 13),
+        date(2026, 4, 13),
+        date(2026, 5, 12),
+    )
+    assert not scoring._date_in_inclusive_window(
+        date(2026, 5, 13),
+        date(2026, 4, 13),
+        date(2026, 5, 12),
+    )
 
 
 def test_pm_quality_scoring_guard_edges_are_source_safe() -> None:

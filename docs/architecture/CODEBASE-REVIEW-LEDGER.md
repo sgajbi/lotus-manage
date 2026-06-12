@@ -20640,3 +20640,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal expected outcome snapshot
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-837: PM quality lookback-window date helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_validate_lookback_window` was the top current source-complexity hotspot after the
+  outcome snapshot slice and combined optional policy handling, policy date parsing, required
+  dated-evidence detection, signal date parsing, and inclusive date-window checks in one validator.
+- Action: extracted deterministic lookback-window date parsing, signal business-date parsing, and
+  inclusive range helpers while preserving fail-closed validation error codes and stale-evidence
+  behavior. Added direct helper tests for parsed source dates and inclusive boundary handling
+  alongside existing PM-quality scoring guard coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM-quality lookback-window
+  maintainability refactoring and repo-local quality evidence.
