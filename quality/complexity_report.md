@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T14:46:07+00:00`
+- Generated at: `2026-06-12T15:06:08+00:00`
 
-- Current ref: `14eee44f`
+- Current ref: `24a6a6de`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
-| 2 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
-| 3 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
-| 4 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
-| 5 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
-| 6 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
-| 7 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
-| 8 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
-| 9 | build_target_trace | src/core/target_generation.py | 8 | 42 |
-| 10 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
+| 1 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
+| 2 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
+| 3 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
+| 4 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
+| 5 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
+| 6 | build_target_trace | src/core/target_generation.py | 8 | 42 |
+| 7 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
+| 8 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
+| 9 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
+| 10 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
 
 ### Most Complex Current Test Functions
 

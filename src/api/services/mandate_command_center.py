@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal
 
@@ -13,6 +14,15 @@ from src.core.mandates import (
     MandateRecommendedAction,
     MonitoringSeverity,
 )
+
+
+@dataclass(frozen=True)
+class _CommandCenterReadModel:
+    health_distribution: dict[str, int]
+    partial_reasons: list[str]
+    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"]
+    supportability_state: Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"]
+    supportability_reason: str
 
 
 def command_center_supportability_state(
@@ -131,6 +141,49 @@ def build_command_center_summary(
     limit: int,
     generated_at: datetime,
 ) -> DpmCommandCenterSummary:
+    read_model = _command_center_read_model(
+        health_state=health_state,
+        latest_run=latest_run,
+        portfolio_manager_id=portfolio_manager_id,
+        book_id=book_id,
+        active_exception_count=len(active_exceptions),
+        limit=limit,
+    )
+
+    return DpmCommandCenterSummary(
+        tenant_id=tenant_id,
+        portfolio_manager_id=portfolio_manager_id,
+        book_id=book_id,
+        as_of_date=_command_center_as_of_date(as_of_date=as_of_date, latest_run=latest_run),
+        selected_health_state=_selected_health_state(health_state),
+        evaluated_mandates=_evaluated_mandates(latest_run),
+        monitored_mandate_ids=_monitored_mandate_ids(latest_run),
+        health_distribution=read_model.health_distribution,
+        source_readiness_summary=_source_readiness_summary(latest_run),
+        active_exception_count=len(active_exceptions),
+        attention_buckets=attention_buckets(active_exceptions),
+        recommended_actions=recommended_actions(active_exceptions),
+        latest_monitoring_run=latest_run,
+        supportability=DpmCommandCenterSupportability(
+            state=read_model.supportability_state,
+            data_completeness_state=read_model.completeness,
+            reason=read_model.supportability_reason,
+            generated_at=generated_at,
+            source_run_id=latest_run.monitoring_run_id if latest_run else None,
+            partial_readiness_reasons=read_model.partial_reasons,
+        ),
+    )
+
+
+def _command_center_read_model(
+    *,
+    health_state: str | None,
+    latest_run: DpmMonitoringRun | None,
+    portfolio_manager_id: str | None,
+    book_id: str | None,
+    active_exception_count: int,
+    limit: int,
+) -> _CommandCenterReadModel:
     health_distribution = command_center_health_distribution(
         latest_run=latest_run,
         health_state=health_state,
@@ -139,7 +192,7 @@ def build_command_center_summary(
         latest_run=latest_run,
         portfolio_manager_id=portfolio_manager_id,
         book_id=book_id,
-        active_exception_count=len(active_exceptions),
+        active_exception_count=active_exception_count,
         limit=limit,
     )
     completeness = command_center_completeness(
@@ -151,32 +204,37 @@ def build_command_center_summary(
         completeness=completeness,
         partial_reasons=partial_reasons,
     )
-
-    return DpmCommandCenterSummary(
-        tenant_id=tenant_id,
-        portfolio_manager_id=portfolio_manager_id,
-        book_id=book_id,
-        as_of_date=as_of_date or (latest_run.as_of_date if latest_run else None),
-        selected_health_state=MandateHealthState(health_state)
-        if health_state is not None
-        else None,
-        evaluated_mandates=latest_run.total_mandates if latest_run else 0,
-        monitored_mandate_ids=list(latest_run.mandate_ids) if latest_run else [],
+    return _CommandCenterReadModel(
         health_distribution=health_distribution,
-        source_readiness_summary=dict(latest_run.source_readiness_summary) if latest_run else {},
-        active_exception_count=len(active_exceptions),
-        attention_buckets=attention_buckets(active_exceptions),
-        recommended_actions=recommended_actions(active_exceptions),
-        latest_monitoring_run=latest_run,
-        supportability=DpmCommandCenterSupportability(
-            state=supportability_state,
-            data_completeness_state=completeness,
-            reason=supportability_reason,
-            generated_at=generated_at,
-            source_run_id=latest_run.monitoring_run_id if latest_run else None,
-            partial_readiness_reasons=partial_reasons,
-        ),
+        partial_reasons=partial_reasons,
+        completeness=completeness,
+        supportability_state=supportability_state,
+        supportability_reason=supportability_reason,
     )
+
+
+def _command_center_as_of_date(
+    *,
+    as_of_date: date | None,
+    latest_run: DpmMonitoringRun | None,
+) -> date | None:
+    return as_of_date or (latest_run.as_of_date if latest_run else None)
+
+
+def _selected_health_state(health_state: str | None) -> MandateHealthState | None:
+    return MandateHealthState(health_state) if health_state is not None else None
+
+
+def _evaluated_mandates(latest_run: DpmMonitoringRun | None) -> int:
+    return latest_run.total_mandates if latest_run else 0
+
+
+def _monitored_mandate_ids(latest_run: DpmMonitoringRun | None) -> list[str]:
+    return list(latest_run.mandate_ids) if latest_run else []
+
+
+def _source_readiness_summary(latest_run: DpmMonitoringRun | None) -> dict[str, int]:
+    return dict(latest_run.source_readiness_summary) if latest_run else {}
 
 
 def attention_buckets(

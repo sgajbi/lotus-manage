@@ -18,7 +18,9 @@ from src.core.rebalance.intents import (
     _target_weight_by_instrument,
     _tax_impact_from_budget,
     _tax_budget_lot_allowance,
+    _tax_budget_limited_quantity_from_lots,
     _tax_budget_limited_sell_quantity,
+    _tax_budget_sale_allowance,
     _trade_notional_threshold,
     generate_intents,
 )
@@ -463,6 +465,81 @@ def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None
     assert allowed_quantity == Decimal("5")
     assert tax_budget.total_realized_gain_base == Decimal("50")
     assert tax_budget.total_realized_loss_base == Decimal("0")
+    assert tax_budget.tax_budget_used_base == Decimal("50")
+
+
+def test_tax_budget_sale_allowance_skips_depleted_sale_and_zero_lot_quantity() -> None:
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("50"),
+    )
+
+    assert (
+        _tax_budget_sale_allowance(
+            remaining_quantity=Decimal("0"),
+            lot_quantity=Decimal("10"),
+            lot_unit_cost=Decimal("90"),
+            sell_price=Decimal("100"),
+            base_rate=Decimal("1"),
+            tax_budget=tax_budget,
+        )
+        is None
+    )
+    assert (
+        _tax_budget_sale_allowance(
+            remaining_quantity=Decimal("10"),
+            lot_quantity=Decimal("0"),
+            lot_unit_cost=Decimal("90"),
+            sell_price=Decimal("100"),
+            base_rate=Decimal("1"),
+            tax_budget=tax_budget,
+        )
+        is None
+    )
+
+
+def test_tax_budget_limited_quantity_from_lots_skips_empty_lots_and_stops_on_partial() -> None:
+    empty_lot = TaxLot(
+        lot_id="LOT_EMPTY",
+        quantity=Decimal("0"),
+        unit_cost=Money(amount=Decimal("95"), currency="SGD"),
+        purchase_date="2024-01-01",
+    )
+    gain_lot = TaxLot(
+        lot_id="LOT_GAIN",
+        quantity=Decimal("10"),
+        unit_cost=Money(amount=Decimal("90"), currency="SGD"),
+        purchase_date="2024-02-01",
+    )
+    later_lot = TaxLot(
+        lot_id="LOT_LATER",
+        quantity=Decimal("10"),
+        unit_cost=Money(amount=Decimal("80"), currency="SGD"),
+        purchase_date="2024-03-01",
+    )
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=Decimal("50"),
+    )
+
+    allowed_quantity = _tax_budget_limited_quantity_from_lots(
+        sorted_lots=[
+            (empty_lot, Decimal("95")),
+            (gain_lot, Decimal("90")),
+            (later_lot, Decimal("80")),
+        ],
+        requested_qty=Decimal("10"),
+        sell_price=Decimal("100"),
+        base_rate=Decimal("1"),
+        tax_budget=tax_budget,
+    )
+
+    assert allowed_quantity == Decimal("5")
+    assert tax_budget.total_realized_gain_base == Decimal("50")
     assert tax_budget.tax_budget_used_base == Decimal("50")
 
 

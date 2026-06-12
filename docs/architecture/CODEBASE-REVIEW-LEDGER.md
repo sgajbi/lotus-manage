@@ -19902,3 +19902,102 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal turnover-limit maintainability
   refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-811: Mandate command-center summary projection helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `build_command_center_summary` was the top current source-complexity hotspot and mixed
+  health-distribution selection, partial-readiness reason collection, completeness classification,
+  supportability state/reason derivation, default field projection, attention bucket projection,
+  recommended-action projection, and final summary model construction in one service helper.
+- Action: extracted deterministic command-center read-model and field projection helpers while
+  preserving the public summary builder, supportability/completeness semantics, selected
+  health-state filtering, latest-run defaults, attention bucket ordering, recommended-action
+  ordering, and exported helper surface. Added direct helper tests for read-model derivation,
+  projection defaults, and non-exported private helper posture. Refreshed current-state quality
+  reports and preserved the stable baseline artifact; the refreshed complexity report shows
+  `build_command_center_summary` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py -q` (13 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate command-center
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-812: Tax-budget sell quantity lot-iteration helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_tax_budget_limited_sell_quantity` was the top current source-complexity hotspot after
+  the command-center slice and mixed tax-awareness gating, HIFO lot sourcing, remaining quantity
+  tracking, zero-lot skipping, lot allowance calculation, tax-budget mutation, allowed-quantity
+  accumulation, and early-stop conditions in one function.
+- Action: extracted deterministic tax-budget sale-allowance and lot-sequence helpers while
+  preserving HIFO lot order, missing-lot fallback behavior, zero-quantity lot skipping, realized
+  gain/loss accounting, budget exhaustion behavior, partial-allowance stop semantics, and public
+  intent-generation behavior. Added direct helper tests for depleted-sale/zero-lot skips and
+  partial budget-stop behavior. Refreshed current-state quality reports and preserved the stable
+  baseline artifact; the refreshed complexity report shows `_tax_budget_limited_sell_quantity`
+  dropped out of the top current source-complexity list without introducing a replacement hotspot
+  from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py tests/unit/dpm/engine/test_engine_tax_awareness.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py -q` (47 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal tax-budget sell quantity
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-813: Mandate monitoring-exception Postgres query helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/mandates/postgres.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `list_monitoring_exceptions` was the top current source-complexity hotspot after the
+  tax-budget slice and mixed optional filter assembly, cursor predicate assembly, SQL rendering,
+  overfetch limit binding, Postgres execution, payload loading, page slicing, and next-cursor
+  selection in one repository method.
+- Action: extracted deterministic monitoring-exception list-query and page/cursor helpers while
+  preserving repository filter semantics, cursor predicate ordering, overfetch behavior, loaded
+  exception ordering, selected-run filtering before pagination, and public repository contract.
+  Added direct helper tests for combined filter/cursor query assembly and overfetch cursor
+  selection alongside the existing fake-Postgres repository behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/postgres.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/postgres.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/postgres.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal mandate monitoring-exception
+  repository maintainability refactoring and repo-local quality evidence.
