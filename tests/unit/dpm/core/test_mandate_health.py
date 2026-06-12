@@ -32,7 +32,9 @@ from src.core.mandates import (
     _benchmark_assignment_source_lineage,
     _benchmark_assignment_source_record_id,
     _build_digital_twin_source_lineage,
+    _mandate_twin_constraint_set,
     _mandate_binding_profile_gap_codes,
+    _mandate_twin_preferences,
     _mandate_optional_source_product_gap_codes,
     _mandate_source_schedule_gap_codes,
     _mandate_twin_field_gap_codes,
@@ -178,78 +180,82 @@ def _market_data_coverage(**overrides: object) -> DpmCoreMarketDataCoverageWindo
     return DpmCoreMarketDataCoverageWindowResponse.model_validate(payload)
 
 
-def _client_restriction_profile() -> DpmCoreClientRestrictionProfileResponse:
-    return DpmCoreClientRestrictionProfileResponse.model_validate(
-        {
-            "product_name": "ClientRestrictionProfile",
-            "product_version": "v1",
-            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
-            "client_id": "CIF_SG_000184",
-            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
-            "as_of_date": "2026-05-03",
-            "restrictions": [
-                {
-                    "restriction_scope": "INSTRUMENT",
-                    "restriction_code": "CLIENT_RESTRICTED_SECURITY",
-                    "restriction_status": "ACTIVE",
-                    "restriction_source": "CLIENT_PROFILE",
-                    "applies_to_buy": True,
-                    "applies_to_sell": False,
-                    "instrument_ids": ["EQ_US_AAPL"],
-                    "asset_classes": [],
-                    "issuer_ids": [],
-                    "country_codes": [],
-                    "effective_from": "2026-04-01",
-                    "restriction_version": 1,
-                }
-            ],
-            "supportability": {
-                "state": "READY",
-                "reason": "CLIENT_RESTRICTION_PROFILE_READY",
-                "restriction_count": 1,
-                "missing_data_families": [],
-            },
-            "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
-            "data_quality_status": "READY",
-            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
-        }
-    )
+def _client_restriction_profile(
+    **overrides: object,
+) -> DpmCoreClientRestrictionProfileResponse:
+    payload: dict[str, object] = {
+        "product_name": "ClientRestrictionProfile",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-05-03",
+        "restrictions": [
+            {
+                "restriction_scope": "INSTRUMENT",
+                "restriction_code": "CLIENT_RESTRICTED_SECURITY",
+                "restriction_status": "ACTIVE",
+                "restriction_source": "CLIENT_PROFILE",
+                "applies_to_buy": True,
+                "applies_to_sell": False,
+                "instrument_ids": ["EQ_US_AAPL"],
+                "asset_classes": [],
+                "issuer_ids": [],
+                "country_codes": [],
+                "effective_from": "2026-04-01",
+                "restriction_version": 1,
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "CLIENT_RESTRICTION_PROFILE_READY",
+            "restriction_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "ClientRestrictionProfile:v1"},
+        "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+    }
+    payload.update(overrides)
+    return DpmCoreClientRestrictionProfileResponse.model_validate(payload)
 
 
-def _sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfileResponse:
-    return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(
-        {
-            "product_name": "SustainabilityPreferenceProfile",
-            "product_version": "v1",
-            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
-            "client_id": "CIF_SG_000184",
-            "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
-            "as_of_date": "2026-05-03",
-            "preferences": [
-                {
-                    "preference_framework": "BANK_SUSTAINABILITY",
-                    "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
-                    "preference_status": "ACTIVE",
-                    "preference_source": "CLIENT_PROFILE",
-                    "minimum_allocation": "0.20",
-                    "applies_to_asset_classes": ["EQUITY"],
-                    "exclusion_codes": ["THERMAL_COAL"],
-                    "positive_tilt_codes": [],
-                    "effective_from": "2026-04-01",
-                    "preference_version": 1,
-                }
-            ],
-            "supportability": {
-                "state": "READY",
-                "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
-                "preference_count": 1,
-                "missing_data_families": [],
-            },
-            "lineage": {"contract_version": "SustainabilityPreferenceProfile:v1"},
-            "data_quality_status": "READY",
-            "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
-        }
-    )
+def _sustainability_preference_profile(
+    **overrides: object,
+) -> DpmCoreSustainabilityPreferenceProfileResponse:
+    payload: dict[str, object] = {
+        "product_name": "SustainabilityPreferenceProfile",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "client_id": "CIF_SG_000184",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-05-03",
+        "preferences": [
+            {
+                "preference_framework": "BANK_SUSTAINABILITY",
+                "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                "preference_status": "ACTIVE",
+                "preference_source": "CLIENT_PROFILE",
+                "minimum_allocation": "0.20",
+                "applies_to_asset_classes": ["EQUITY"],
+                "exclusion_codes": ["THERMAL_COAL"],
+                "positive_tilt_codes": [],
+                "effective_from": "2026-04-01",
+                "preference_version": 1,
+            }
+        ],
+        "supportability": {
+            "state": "READY",
+            "reason": "SUSTAINABILITY_PREFERENCE_PROFILE_READY",
+            "preference_count": 1,
+            "missing_data_families": [],
+        },
+        "lineage": {"contract_version": "SustainabilityPreferenceProfile:v1"},
+        "data_quality_status": "READY",
+        "latest_evidence_timestamp": "2026-05-03T01:05:00Z",
+    }
+    payload.update(overrides)
+    return DpmCoreSustainabilityPreferenceProfileResponse.model_validate(payload)
 
 
 def _inactive_sustainability_preference_profile() -> DpmCoreSustainabilityPreferenceProfileResponse:
@@ -613,6 +619,96 @@ def test_mandate_twin_field_gap_codes_clear_when_core_products_are_sourced() -> 
         )
         == []
     )
+
+
+def test_mandate_twin_constraint_set_projects_cash_band_and_active_restrictions() -> None:
+    constraints = _mandate_twin_constraint_set(
+        mandate=_mandate_binding(
+            rebalance_bands={
+                "default_band": "0.0250000000",
+                "cash_reserve_weight": "0.1200000000",
+            }
+        ),
+        client_restriction_profile=_client_restriction_profile(
+            restrictions=[
+                {
+                    "restriction_scope": "instrument",
+                    "restriction_code": "NO_SINGLE_NAME_EQUITY",
+                    "restriction_status": "ACTIVE",
+                    "restriction_source": "client_mandate",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["EQ_US_MSFT", "EQ_US_AAPL"],
+                    "asset_classes": [],
+                    "issuer_ids": [],
+                    "country_codes": [],
+                    "effective_from": "2026-04-01",
+                    "restriction_version": 1,
+                    "source_record_id": "restriction-active",
+                },
+                {
+                    "restriction_scope": "instrument",
+                    "restriction_code": "LEGACY_RESTRICTION",
+                    "restriction_status": "INACTIVE",
+                    "restriction_source": "client_mandate",
+                    "applies_to_buy": True,
+                    "applies_to_sell": False,
+                    "instrument_ids": ["EQ_US_TSLA"],
+                    "asset_classes": [],
+                    "issuer_ids": [],
+                    "country_codes": [],
+                    "effective_from": "2025-01-01",
+                    "effective_to": "2026-01-01",
+                    "restriction_version": 1,
+                    "source_record_id": "restriction-inactive",
+                },
+            ]
+        ),
+    )
+
+    assert constraints.cash_band_min_weight == Decimal("0.1200000000")
+    assert constraints.cash_band_max_weight == Decimal("0.1200000000")
+    assert constraints.turnover_budget == Decimal("0.15")
+    assert constraints.restricted_instruments == ["EQ_US_AAPL", "EQ_US_MSFT"]
+
+
+def test_mandate_twin_preferences_project_active_sustainability_preferences() -> None:
+    preferences = _mandate_twin_preferences(
+        _sustainability_preference_profile(
+            preferences=[
+                {
+                    "preference_framework": "BANK_SUSTAINABILITY",
+                    "preference_code": "MIN_SUSTAINABLE_ALLOCATION",
+                    "preference_status": "ACTIVE",
+                    "preference_source": "CLIENT_PROFILE",
+                    "minimum_allocation": "0.3000000000",
+                    "applies_to_asset_classes": ["EQUITY"],
+                    "exclusion_codes": [],
+                    "positive_tilt_codes": [],
+                    "effective_from": "2026-04-01",
+                    "preference_version": 1,
+                    "source_record_id": "sustainability-active",
+                },
+                {
+                    "preference_framework": "BANK_SUSTAINABILITY",
+                    "preference_code": "LEGACY_EXCLUSION",
+                    "preference_status": "INACTIVE",
+                    "preference_source": "CLIENT_PROFILE",
+                    "minimum_allocation": "0.1000000000",
+                    "applies_to_asset_classes": ["EQUITY"],
+                    "exclusion_codes": [],
+                    "positive_tilt_codes": [],
+                    "effective_from": "2025-01-01",
+                    "effective_to": "2026-01-01",
+                    "preference_version": 1,
+                    "source_record_id": "sustainability-inactive",
+                },
+            ]
+        )
+    )
+
+    assert preferences.sustainability_strategy == "BANK_SUSTAINABILITY"
+    assert preferences.bespoke_notes == ["MIN_SUSTAINABLE_ALLOCATION"]
 
 
 def test_build_digital_twin_source_lineage_includes_all_core_products() -> None:

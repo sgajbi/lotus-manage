@@ -748,6 +748,53 @@ def _benchmark_assignment_source_record_id(
     )
 
 
+def _mandate_twin_constraint_set(
+    *,
+    mandate: DpmCoreMandateBindingResponse,
+    client_restriction_profile: Optional[DpmCoreClientRestrictionProfileResponse],
+) -> DpmMandateConstraintSet:
+    cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
+    constraints = DpmMandateConstraintSet(
+        cash_band_min_weight=cash_reserve_weight,
+        cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
+        turnover_budget=Decimal("0.15"),
+    )
+    if client_restriction_profile is not None:
+        constraints.restricted_instruments = _active_restricted_instruments(
+            client_restriction_profile
+        )
+    return constraints
+
+
+def _active_restricted_instruments(
+    client_restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> list[str]:
+    return sorted(
+        {
+            instrument_id
+            for restriction in client_restriction_profile.restrictions
+            if restriction.restriction_status.upper() == "ACTIVE"
+            for instrument_id in restriction.instrument_ids
+        }
+    )
+
+
+def _mandate_twin_preferences(
+    sustainability_preference_profile: Optional[DpmCoreSustainabilityPreferenceProfileResponse],
+) -> DpmMandatePreferences:
+    preferences = DpmMandatePreferences()
+    if sustainability_preference_profile is not None:
+        preferences.sustainability_strategy = _sustainability_strategy(
+            sustainability_preference_profile
+        )
+        preferences.bespoke_notes = [
+            preference.preference_code
+            for preference in sustainability_preference_profile.preferences
+            if preference.preference_status.upper() == "ACTIVE"
+        ]
+    return preferences
+
+
 def compile_mandate_digital_twin_from_core(
     *,
     mandate: DpmCoreMandateBindingResponse,
@@ -776,31 +823,11 @@ def compile_mandate_digital_twin_from_core(
         planned_withdrawal_schedule=planned_withdrawal_schedule,
         benchmark_assignment=benchmark_assignment,
     )
-    cash_reserve_weight = mandate.rebalance_bands.cash_reserve_weight or Decimal("0")
-    constraints = DpmMandateConstraintSet(
-        cash_band_min_weight=cash_reserve_weight,
-        cash_band_max_weight=max(cash_reserve_weight, Decimal("0.10")),
-        turnover_budget=Decimal("0.15"),
+    constraints = _mandate_twin_constraint_set(
+        mandate=mandate,
+        client_restriction_profile=client_restriction_profile,
     )
-    if client_restriction_profile is not None:
-        constraints.restricted_instruments = sorted(
-            {
-                instrument_id
-                for restriction in client_restriction_profile.restrictions
-                if restriction.restriction_status.upper() == "ACTIVE"
-                for instrument_id in restriction.instrument_ids
-            }
-        )
-    preferences = DpmMandatePreferences()
-    if sustainability_preference_profile is not None:
-        preferences.sustainability_strategy = _sustainability_strategy(
-            sustainability_preference_profile
-        )
-        preferences.bespoke_notes = [
-            preference.preference_code
-            for preference in sustainability_preference_profile.preferences
-            if preference.preference_status.upper() == "ACTIVE"
-        ]
+    preferences = _mandate_twin_preferences(sustainability_preference_profile)
     source_lineage = _build_digital_twin_source_lineage(
         mandate=mandate,
         model_targets=model_targets,

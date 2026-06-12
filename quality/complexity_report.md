@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T10:49:00+00:00`
+- Generated at: `2026-06-12T11:05:42+00:00`
 
-- Current ref: `78e4a966`
+- Current ref: `ff0487d6`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | setup_observability | src/api/observability.py | 8 | 98 |
-| 2 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 8 | 89 |
-| 3 | _decision_timeline | src/core/proof_packs/builder.py | 8 | 89 |
-| 4 | save_proof_pack | src/infrastructure/proof_packs/postgres.py | 8 | 89 |
-| 5 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
-| 6 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
-| 7 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
-| 8 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
-| 9 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
-| 10 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
+| 1 | _decision_timeline | src/core/proof_packs/builder.py | 8 | 89 |
+| 2 | save_proof_pack | src/infrastructure/proof_packs/postgres.py | 8 | 89 |
+| 3 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
+| 4 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
+| 5 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
+| 6 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
+| 7 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
+| 8 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
+| 9 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
+| 10 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
 
 ### Most Complex Current Test Functions
 
