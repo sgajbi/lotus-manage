@@ -5,6 +5,7 @@ from src.core.rebalance.engine import (
     _calculate_turnover_score,
     run_simulation,
 )
+from src.core.rebalance import turnover as turnover_module
 from src.core.models import DiagnosticsData, EngineOptions, Money, SecurityTradeIntent
 from tests.shared.assertions import assert_status, security_intents
 from tests.shared.factories import (
@@ -24,6 +25,24 @@ def _diag():
         warnings=[],
         suppressed_intents=[],
         data_quality={"price_missing": [], "fx_missing": [], "shelf_missing": []},
+    )
+
+
+def _security_intent(
+    *,
+    intent_id: str,
+    instrument_id: str,
+    notional_base: Decimal | None,
+) -> SecurityTradeIntent:
+    return SecurityTradeIntent(
+        intent_id=intent_id,
+        instrument_id=instrument_id,
+        side="BUY",
+        quantity=Decimal("1"),
+        notional=Money(amount=Decimal("100"), currency="USD"),
+        notional_base=(
+            Money(amount=notional_base, currency="USD") if notional_base is not None else None
+        ),
     )
 
 
@@ -49,6 +68,59 @@ def test_calculate_turnover_score_returns_zero_when_notional_base_missing():
         notional_base=None,
     )
     assert _calculate_turnover_score(intent, Decimal("1000")) == Decimal("0")
+
+
+def test_turnover_helper_calculates_budget_proposed_and_rank_key():
+    high_score = _security_intent(
+        intent_id="oi_high",
+        instrument_id="B",
+        notional_base=Decimal("200"),
+    )
+    low_notional = _security_intent(
+        intent_id="oi_low",
+        instrument_id="A",
+        notional_base=Decimal("100"),
+    )
+    missing_notional = _security_intent(
+        intent_id="oi_missing",
+        instrument_id="C",
+        notional_base=None,
+    )
+
+    assert turnover_module._turnover_budget(
+        portfolio_value_base=Decimal("1000"),
+        max_turnover_pct=Decimal("0.15"),
+    ) == Decimal("150.00")
+    assert turnover_module._proposed_turnover(
+        [high_score, low_notional, missing_notional]
+    ) == Decimal("300")
+    assert sorted(
+        [low_notional, high_score, missing_notional],
+        key=lambda intent: turnover_module._turnover_rank_key(
+            intent=intent,
+            portfolio_value_base=Decimal("1000"),
+        ),
+    ) == [high_score, low_notional, missing_notional]
+
+
+def test_turnover_drop_helper_records_governed_diagnostic_payload():
+    intent = _security_intent(
+        intent_id="oi_drop",
+        instrument_id="B",
+        notional_base=Decimal("-125"),
+    )
+
+    dropped = turnover_module._dropped_turnover_intent(
+        intent=intent,
+        notional_abs=Decimal("125"),
+        portfolio_value_base=Decimal("1000"),
+        base_currency="USD",
+    )
+
+    assert dropped.instrument_id == "B"
+    assert dropped.reason == "TURNOVER_LIMIT"
+    assert dropped.potential_notional == Money(amount=Decimal("125"), currency="USD")
+    assert dropped.score == Decimal("0.125")
 
 
 def test_apply_turnover_limit_keeps_all_intents_when_within_budget():

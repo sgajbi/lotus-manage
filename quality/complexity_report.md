@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T14:26:08+00:00`
+- Generated at: `2026-06-12T14:46:07+00:00`
 
-- Current ref: `5ee0517c`
+- Current ref: `14eee44f`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
-| 2 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
-| 3 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
-| 4 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
-| 5 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
-| 6 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
-| 7 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
-| 8 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
-| 9 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
-| 10 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
+| 1 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
+| 2 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
+| 3 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
+| 4 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
+| 5 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
+| 6 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
+| 7 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
+| 8 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
+| 9 | build_target_trace | src/core/target_generation.py | 8 | 42 |
+| 10 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
 
 ### Most Complex Current Test Functions
 
