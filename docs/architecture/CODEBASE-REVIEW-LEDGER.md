@@ -20329,3 +20329,82 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal expected-outcome snapshot
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-826: Liquidity cashflow projection assessment helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py`,
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `cashflow_projection_status` and `cashflow_projection_reason_codes` were both current
+  source-complexity hotspots and duplicated cashflow projection usability, currency, total-value,
+  projected-weight, and policy-threshold branching.
+- Action: extracted a deterministic cashflow projection policy assessment with named blocking and
+  policy reason-code helpers while preserving source-owned projection posture, projected cashflow
+  weighting, degraded currency/total-value handling, and below-policy pending-review behavior.
+  Added direct helper tests for degraded source posture preservation and projected cash-pressure
+  policy review alongside existing public liquidity supportability coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction liquidity
+  supportability maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-827: In-memory monitoring exception query helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `list_monitoring_exceptions` was the top current source-complexity hotspot after the
+  liquidity supportability slice and mixed filter selection, ordering, cursor lookup,
+  missing-cursor handling, page slicing, next-cursor derivation, and defensive copying in one
+  repository method.
+- Action: extracted deterministic in-memory monitoring-exception filter, match, cursor lookup, and
+  page helpers while preserving run/mandate/portfolio/state filter semantics, newest-first ordering,
+  missing-cursor empty page behavior, and defensive-copy repository returns. Added direct helper
+  tests for filter-before-sort and cursor pagination alongside existing repository and PostgreSQL
+  query-shape coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal in-memory repository
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-828: Buy intent dependency selector helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/common/intent_dependencies.py`,
+  `tests/unit/core/test_intent_dependencies.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `link_buy_intent_dependencies` was the next current source-complexity hotspot and mixed
+  security-intent type/side selection, notional presence checks, FX dependency lookup,
+  same-currency sell dependency lookup, optional sell-link policy, and duplicate-safe append
+  behavior in one core helper.
+- Action: extracted typed BUY/SELL security-intent selectors and a deterministic buy dependency-id
+  builder while preserving in-place dependency mutation, FX-before-sell ordering, latest
+  same-currency sell selection, missing-notional exclusion, and duplicate-safe appends. Added
+  direct helper tests for selector filtering and dependency ordering alongside existing public
+  linking and common edge coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m ruff format --check src/core/common/intent_dependencies.py tests/unit/core/test_intent_dependencies.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/intent_dependencies.py`,
+  `python -m pytest tests/unit/core/test_intent_dependencies.py tests/unit/core/test_common_edge_coverage.py`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance intent dependency
+  maintainability refactoring and repo-local quality evidence.
