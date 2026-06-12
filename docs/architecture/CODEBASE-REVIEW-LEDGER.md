@@ -20277,3 +20277,29 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal Core source-context mapper
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-824: Campaign approval inbox posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_approval_inbox.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_classify_approval_inbox_posture` was the top current source-complexity hotspot after
+  the Core tax-lot slice and mixed closed-campaign classification, entitlement attention,
+  expiry attention, governance evidence posture, reason-code filtering, and expiry fallback
+  reason construction in one classifier.
+- Action: extracted deterministic approval-inbox posture helpers for closed, entitlement, expiry,
+  and governance approval states while preserving precedence, bounded status values, reason-code
+  filtering, and expiry fallback semantics. Added direct helper tests for entitlement reason
+  filtering and expiry fallback reason construction alongside existing approval inbox page and
+  item coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_approval_inbox.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal campaign approval-inbox
+  maintainability refactoring and repo-local quality evidence.

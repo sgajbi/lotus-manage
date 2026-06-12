@@ -22,6 +22,9 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_definition_workflow_overview import (
     build_bulk_review_campaign_definition_workflow_overview,
 )
+from src.core.waves.campaign_definition_readiness import (
+    build_bulk_review_campaign_definition_preview_readiness,
+)
 from src.core.waves.campaign_operating_queue import (
     DpmBulkReviewCampaignOperatingQueuePage,
     build_bulk_review_campaign_operating_queue_item,
@@ -417,6 +420,38 @@ def test_campaign_approval_inbox_governance_payload_handles_missing_governance()
         "entitled_actor_count": 0,
         "approval_source_ref_count": 0,
     }
+
+
+def test_campaign_approval_inbox_entitlement_helper_filters_attention_reasons() -> None:
+    readiness = build_bulk_review_campaign_definition_preview_readiness(
+        definition=_definition(entitled_actor_ids=["ops"]),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+    )
+
+    assert approval_inbox_module._entitlement_attention_posture(readiness) == (
+        "ENTITLEMENT_ATTENTION",
+        ["BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"],
+    )
+
+
+def test_campaign_approval_inbox_expiry_helper_falls_back_to_discovery_state() -> None:
+    definition = _definition(expires_on="invalid-date")
+    discovery = build_bulk_review_campaign_discovery_item(
+        definition=definition,
+        active_on=date(2026, 5, 16),
+    )
+    readiness = build_bulk_review_campaign_definition_preview_readiness(
+        definition=definition,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+    )
+    readiness = readiness.model_copy(update={"reason_codes": []})
+
+    assert approval_inbox_module._expiry_attention_posture(
+        discovery=discovery,
+        readiness=readiness,
+    ) == ("EXPIRY_ATTENTION", ["CAMPAIGN_DEFINITION_EXPIRY_INVALID"])
 
 
 def test_campaign_approval_inbox_page_filters_closed_and_status() -> None:

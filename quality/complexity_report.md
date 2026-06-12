@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T16:14:07+00:00`
+- Generated at: `2026-06-12T16:17:03+00:00`
 
-- Current ref: `6f085243`
+- Current ref: `30d78bb5`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
-| 2 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
-| 3 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
-| 4 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
-| 5 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
-| 6 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
-| 7 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
-| 8 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
-| 9 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
-| 10 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
+| 1 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
+| 2 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
+| 3 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
+| 4 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
+| 5 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
+| 6 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
+| 7 | build_mandate_diff_for_versions | src/api/services/mandate_diff.py | 8 | 25 |
+| 8 | _ensure_request_and_response_examples | src/api/openapi_enrichment.py | 8 | 24 |
+| 9 | list_fairness_analyses | src/infrastructure/pm_quality/in_memory.py | 8 | 24 |
+| 10 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
 
 ### Most Complex Current Test Functions
 
