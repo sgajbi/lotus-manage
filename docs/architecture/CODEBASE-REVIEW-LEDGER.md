@@ -20121,3 +20121,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal core-sourcing client
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-818: Proof-pack run diagnostics section helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_run_diagnostics_section_payload` was the top current source-complexity hotspot after
+  the core-sourcing slice and mixed liquidity/cash projection, FX funding projection,
+  currency-overlay fallback evidence, reason-code selection, metrics, and dispatcher behavior in
+  one function.
+- Action: extracted deterministic liquidity/cash, FX funding, and currency-overlay diagnostics
+  section helpers while preserving section dispatcher semantics, ready/blocked/degraded states,
+  breach and missing-FX metrics, reason codes, and JSON payload shapes. Added direct helper tests
+  for blocked cash-ladder breaches and missing FX pairs alongside existing dispatcher/fallback
+  coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal proof-pack diagnostics
+  maintainability refactoring and repo-local quality evidence.

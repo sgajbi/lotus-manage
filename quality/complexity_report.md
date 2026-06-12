@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T15:35:12+00:00`
+- Generated at: `2026-06-12T15:38:19+00:00`
 
-- Current ref: `959d574e`
+- Current ref: `eb4be547`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
-| 2 | build_target_trace | src/core/target_generation.py | 8 | 42 |
-| 3 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
-| 4 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
-| 5 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
-| 6 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
-| 7 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
-| 8 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
-| 9 | method_specific_status | src/api/services/construction_method_readiness.py | 8 | 34 |
-| 10 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
+| 1 | build_target_trace | src/core/target_generation.py | 8 | 42 |
+| 2 | _classify_workflow_board_posture | src/core/waves/campaign_workflow_board.py | 8 | 42 |
+| 3 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
+| 4 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
+| 5 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
+| 6 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
+| 7 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
+| 8 | method_specific_status | src/api/services/construction_method_readiness.py | 8 | 34 |
+| 9 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
+| 10 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
 
 ### Most Complex Current Test Functions
 

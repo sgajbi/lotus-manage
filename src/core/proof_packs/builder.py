@@ -641,42 +641,54 @@ def _run_diagnostics_section_payload(
     result: RebalanceResult,
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "liquidity_and_cash":
-        breaches = result.diagnostics.cash_ladder_breaches
-        return (
-            "BLOCKED" if breaches else "READY",
-            "Liquidity and cash posture captured from run diagnostics.",
-            {
-                "cash_ladder": [
-                    item.model_dump(mode="json") for item in result.diagnostics.cash_ladder
-                ],
-                "cash_ladder_breaches": [item.model_dump(mode="json") for item in breaches],
-            },
-            {"breach_count": len(breaches)},
-            ["DPM_CASH_LADDER_BREACH"] if breaches else [],
-        )
+        return _liquidity_and_cash_section_payload(result)
     if section_type == "fx_funding_plan":
-        missing_pairs = result.diagnostics.missing_fx_pairs
-        return (
-            "BLOCKED" if missing_pairs else "READY",
-            "FX funding posture captured from run diagnostics.",
-            {
-                "funding_plan": [
-                    item.model_dump(mode="json") for item in result.diagnostics.funding_plan
-                ],
-                "missing_fx_pairs": missing_pairs,
-            },
-            {"missing_fx_pair_count": len(missing_pairs)},
-            ["DPM_REQUIRED_FX_PAIR_MISSING"] if missing_pairs else [],
-        )
+        return _fx_funding_plan_section_payload(result)
     if section_type == "currency_overlay_evidence":
-        return (
-            "DEGRADED",
-            "Currency-overlay authority context is not attached.",
-            {},
-            {},
-            ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"],
-        )
+        return _currency_overlay_evidence_section_payload()
     return None
+
+
+def _liquidity_and_cash_section_payload(result: RebalanceResult) -> _SectionPayload:
+    breaches = result.diagnostics.cash_ladder_breaches
+    return (
+        "BLOCKED" if breaches else "READY",
+        "Liquidity and cash posture captured from run diagnostics.",
+        {
+            "cash_ladder": [
+                item.model_dump(mode="json") for item in result.diagnostics.cash_ladder
+            ],
+            "cash_ladder_breaches": [item.model_dump(mode="json") for item in breaches],
+        },
+        {"breach_count": len(breaches)},
+        ["DPM_CASH_LADDER_BREACH"] if breaches else [],
+    )
+
+
+def _fx_funding_plan_section_payload(result: RebalanceResult) -> _SectionPayload:
+    missing_pairs = result.diagnostics.missing_fx_pairs
+    return (
+        "BLOCKED" if missing_pairs else "READY",
+        "FX funding posture captured from run diagnostics.",
+        {
+            "funding_plan": [
+                item.model_dump(mode="json") for item in result.diagnostics.funding_plan
+            ],
+            "missing_fx_pairs": missing_pairs,
+        },
+        {"missing_fx_pair_count": len(missing_pairs)},
+        ["DPM_REQUIRED_FX_PAIR_MISSING"] if missing_pairs else [],
+    )
+
+
+def _currency_overlay_evidence_section_payload() -> _SectionPayload:
+    return (
+        "DEGRADED",
+        "Currency-overlay authority context is not attached.",
+        {},
+        {},
+        ["DPM_CURRENCY_OVERLAY_CONTEXT_MISSING"],
+    )
 
 
 def _run_policy_section_payload(
