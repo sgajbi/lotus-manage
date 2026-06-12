@@ -241,6 +241,20 @@ class JsonFormatter(logging.Formatter):
 
 
 def setup_observability(app: FastAPI) -> None:
+    _configure_root_json_logging()
+    _initialize_http_metrics_baseline()
+    app.get(
+        "/metrics",
+        tags=["Monitoring"],
+        summary="Metrics",
+        operation_id="metrics_metrics_get",
+        responses={503: {"description": "Metrics exposition unavailable."}},
+        response_description="Prometheus text exposition for lotus-manage metrics.",
+    )(_metrics_endpoint)
+    app.middleware("http")(_request_observability_middleware)
+
+
+def _configure_root_json_logging() -> None:
     root_logger = logging.getLogger()
     if root_logger.hasHandlers():
         root_logger.handlers.clear()
@@ -248,72 +262,46 @@ def setup_observability(app: FastAPI) -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(JsonFormatter())
     root_logger.addHandler(handler)
+
+
+def _initialize_http_metrics_baseline() -> None:
     HTTP_REQUESTS_TOTAL.labels(method="GET", endpoint="/metrics", status_family="2xx")
 
-    @app.get(
-        "/metrics",
-        tags=["Monitoring"],
-        summary="Metrics",
-        operation_id="metrics_metrics_get",
-        responses={503: {"description": "Metrics exposition unavailable."}},
-        response_description="Prometheus text exposition for lotus-manage metrics.",
-    )
-    def _metrics() -> Response:
-        return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-    @app.middleware("http")
-    async def _request_observability_middleware(
-        request: Request, call_next: Callable[[Request], Awaitable[Response]]
-    ) -> Response:
-        logger = logging.getLogger("http.access")
-        started = time.perf_counter()
+def _metrics_endpoint() -> Response:
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
-        correlation_id = request.headers.get("X-Correlation-Id") or f"corr_{uuid4().hex[:12]}"
-        request_id = request.headers.get("X-Request-Id") or f"req_{uuid4().hex[:12]}"
-        traceparent = request.headers.get("traceparent", "")
-        trace_id = uuid4().hex
-        if traceparent:
-            parts = traceparent.split("-")
-            if len(parts) >= 4 and len(parts[1]) == 32:
-                trace_id = parts[1]
 
-        correlation_token = correlation_id_var.set(correlation_id)
-        request_token = request_id_var.set(request_id)
-        trace_token = trace_id_var.set(trace_id)
-        try:
-            response = await call_next(request)
-        except Exception:
-            latency_ms = round((time.perf_counter() - started) * 1000, 2)
-            endpoint = _route_template(request)
-            HTTP_REQUESTS_TOTAL.labels(
-                method=request.method,
-                endpoint=endpoint,
-                status_family="5xx",
-            ).inc()
-            logger.info(
-                "request.completed",
-                extra={
-                    "extra_fields": {
-                        "http_method": request.method,
-                        "endpoint": endpoint,
-                        "status_code": 500,
-                        "status_family": "5xx",
-                        "latency_bucket_ms": _latency_bucket_ms(latency_ms),
-                    }
-                },
-            )
-            correlation_id_var.reset(correlation_token)
-            request_id_var.reset(request_token)
-            trace_id_var.reset(trace_token)
-            raise
+def _trace_id_from_traceparent(traceparent: str) -> str:
+    if traceparent:
+        parts = traceparent.split("-")
+        if len(parts) >= 4 and len(parts[1]) == 32:
+            return parts[1]
+    return uuid4().hex
 
+
+async def _request_observability_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    logger = logging.getLogger("http.access")
+    started = time.perf_counter()
+
+    correlation_id = request.headers.get("X-Correlation-Id") or f"corr_{uuid4().hex[:12]}"
+    request_id = request.headers.get("X-Request-Id") or f"req_{uuid4().hex[:12]}"
+    trace_id = _trace_id_from_traceparent(request.headers.get("traceparent", ""))
+
+    correlation_token = correlation_id_var.set(correlation_id)
+    request_token = request_id_var.set(request_id)
+    trace_token = trace_id_var.set(trace_id)
+    try:
+        response = await call_next(request)
+    except Exception:
         latency_ms = round((time.perf_counter() - started) * 1000, 2)
         endpoint = _route_template(request)
-        status_family = _status_family(response.status_code)
         HTTP_REQUESTS_TOTAL.labels(
             method=request.method,
             endpoint=endpoint,
-            status_family=status_family,
+            status_family="5xx",
         ).inc()
         logger.info(
             "request.completed",
@@ -321,8 +309,8 @@ def setup_observability(app: FastAPI) -> None:
                 "extra_fields": {
                     "http_method": request.method,
                     "endpoint": endpoint,
-                    "status_code": response.status_code,
-                    "status_family": status_family,
+                    "status_code": 500,
+                    "status_family": "5xx",
                     "latency_bucket_ms": _latency_bucket_ms(latency_ms),
                 }
             },
@@ -330,14 +318,39 @@ def setup_observability(app: FastAPI) -> None:
         correlation_id_var.reset(correlation_token)
         request_id_var.reset(request_token)
         trace_id_var.reset(trace_token)
+        raise
 
-        response_correlation_id = response.headers.get("X-Correlation-Id", correlation_id)
-        response.headers["X-Correlation-Id"] = response_correlation_id
-        response.headers["X-Request-Id"] = request_id
-        response.headers["X-Trace-Id"] = trace_id
-        apply_observability_headers(response)
-        response.headers["traceparent"] = f"00-{trace_id}-0000000000000001-01"
-        return response
+    latency_ms = round((time.perf_counter() - started) * 1000, 2)
+    endpoint = _route_template(request)
+    status_family = _status_family(response.status_code)
+    HTTP_REQUESTS_TOTAL.labels(
+        method=request.method,
+        endpoint=endpoint,
+        status_family=status_family,
+    ).inc()
+    logger.info(
+        "request.completed",
+        extra={
+            "extra_fields": {
+                "http_method": request.method,
+                "endpoint": endpoint,
+                "status_code": response.status_code,
+                "status_family": status_family,
+                "latency_bucket_ms": _latency_bucket_ms(latency_ms),
+            }
+        },
+    )
+    correlation_id_var.reset(correlation_token)
+    request_id_var.reset(request_token)
+    trace_id_var.reset(trace_token)
+
+    response_correlation_id = response.headers.get("X-Correlation-Id", correlation_id)
+    response.headers["X-Correlation-Id"] = response_correlation_id
+    response.headers["X-Request-Id"] = request_id
+    response.headers["X-Trace-Id"] = trace_id
+    apply_observability_headers(response)
+    response.headers["traceparent"] = f"00-{trace_id}-0000000000000001-01"
+    return response
 
 
 def record_action_register_supportability(

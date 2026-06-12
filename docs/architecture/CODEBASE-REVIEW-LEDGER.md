@@ -19540,3 +19540,36 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal outcome-review supportability
   route-mapping maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-800: Observability setup orchestration helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/observability.py`,
+  `tests/unit/app/middleware/test_observability.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `setup_observability` was the top current source-complexity hotspot and combined root
+  logger setup, Prometheus metrics route registration, request trace-id parsing, request
+  middleware implementation, metric recording, structured access logging, context reset, and
+  response header enrichment inside one registration function.
+- Action: extracted root JSON logging setup, HTTP metrics baseline initialization, the metrics
+  endpoint, W3C traceparent trace-id parsing, and the request observability middleware while
+  preserving existing correlation/request/trace response headers, security headers, metrics
+  exposition, access logging, and exception reraising behavior. Added direct tests for valid
+  traceparent preservation, malformed traceparent replacement, and metrics endpoint response
+  content. Refreshed current-state quality reports and preserved the stable baseline artifact; the
+  refreshed complexity report shows `setup_observability` dropped out of the top current
+  source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/observability.py tests/unit/app/middleware/test_observability.py tests/unit/api/test_observability_exception_path.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m ruff format --check src/api/observability.py tests/unit/app/middleware/test_observability.py tests/unit/api/test_observability_exception_path.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/observability.py`,
+  `python -m pytest tests/unit/app/middleware/test_observability.py tests/unit/api/test_observability_exception_path.py tests/unit/dpm/api/test_observability_api.py -q` (21 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal API observability setup
+  maintainability refactoring and repo-local quality evidence.
