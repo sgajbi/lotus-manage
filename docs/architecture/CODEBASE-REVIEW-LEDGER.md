@@ -20197,3 +20197,29 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal workflow-board maintainability
   refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-821: Campaign candidate selection validation helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/routers/wave_campaign_candidate_selection.py`,
+  `tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `select_bulk_review_campaign_candidates` was the top current source-complexity hotspot
+  after the workflow-board slice and mixed candidate iteration, portfolio-type extraction and
+  normalization, ineligible-candidate counting, source-ref shape validation, missing-source-ref
+  validation, and selection result construction in one loop.
+- Action: extracted deterministic candidate portfolio-type and source-ref validation helpers while
+  preserving eligible-candidate ordering, excluded-count semantics, validation error codes, and
+  source-owned candidate evidence requirements. Added direct helper tests for non-string
+  portfolio types and non-sequence source refs alongside existing selection behavior tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_campaign_candidate_selection.py tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `python -m ruff format --check src/api/routers/wave_campaign_candidate_selection.py tests/unit/api/test_wave_campaign_candidate_selection.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_campaign_candidate_selection.py`,
+  `python -m pytest tests/unit/api/test_wave_campaign_candidate_selection.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal campaign candidate-selection
+  maintainability refactoring and repo-local quality evidence.

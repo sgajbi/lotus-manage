@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T15:52:32+00:00`
+- Generated at: `2026-06-12T15:55:22+00:00`
 
-- Current ref: `3d8199ec`
+- Current ref: `d2df18f8`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | select_bulk_review_campaign_candidates | src/api/routers/wave_campaign_candidate_selection.py | 8 | 41 |
-| 2 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
-| 3 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
-| 4 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
-| 5 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
-| 6 | method_specific_status | src/api/services/construction_method_readiness.py | 8 | 34 |
-| 7 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
-| 8 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
-| 9 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
-| 10 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
+| 1 | method_specific_reason_codes | src/api/services/construction_method_readiness.py | 8 | 41 |
+| 2 | build_portfolio_snapshot_with_core_tax_lots | src/core/dpm_source_context.py | 8 | 36 |
+| 3 | _classify_approval_inbox_posture | src/core/waves/campaign_approval_inbox.py | 8 | 36 |
+| 4 | _resolve_wave_item | src/core/outcomes/snapshots.py | 8 | 35 |
+| 5 | method_specific_status | src/api/services/construction_method_readiness.py | 8 | 34 |
+| 6 | cashflow_projection_status | src/api/services/construction_liquidity_supportability.py | 8 | 33 |
+| 7 | list_monitoring_exceptions | src/infrastructure/mandates/in_memory.py | 8 | 32 |
+| 8 | cashflow_projection_reason_codes | src/api/services/construction_liquidity_supportability.py | 8 | 27 |
+| 9 | link_buy_intent_dependencies | src/core/common/intent_dependencies.py | 8 | 26 |
+| 10 | authorize_write_request | src/api/enterprise_readiness.py | 8 | 25 |
 
 ### Most Complex Current Test Functions
 
