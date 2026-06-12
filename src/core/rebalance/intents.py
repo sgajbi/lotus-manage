@@ -243,6 +243,65 @@ def _apply_tax_budget_lot_allowance(
         tax_budget.total_realized_loss_base += abs(allowance.realized_base)
 
 
+def _tax_budget_sale_allowance(
+    *,
+    remaining_quantity: Decimal,
+    lot_quantity: Decimal,
+    lot_unit_cost: Decimal,
+    sell_price: Decimal,
+    base_rate: Decimal,
+    tax_budget: _TaxBudgetAccumulator,
+) -> _TaxBudgetLotAllowance | None:
+    if remaining_quantity <= Decimal("0"):
+        return None
+    if lot_quantity <= Decimal("0"):
+        return None
+    return _tax_budget_lot_allowance(
+        remaining_quantity=remaining_quantity,
+        lot_quantity=lot_quantity,
+        lot_unit_cost=lot_unit_cost,
+        sell_price=sell_price,
+        base_rate=base_rate,
+        tax_budget=tax_budget,
+    )
+
+
+def _tax_budget_limited_quantity_from_lots(
+    *,
+    sorted_lots: list[tuple[Any, Decimal]],
+    requested_qty: Decimal,
+    sell_price: Decimal,
+    base_rate: Decimal,
+    tax_budget: _TaxBudgetAccumulator,
+) -> Decimal:
+    remaining = requested_qty
+    allowed_qty = Decimal("0")
+    for lot, lot_unit_cost in sorted_lots:
+        allowance = _tax_budget_sale_allowance(
+            remaining_quantity=remaining,
+            lot_quantity=lot.quantity,
+            lot_unit_cost=lot_unit_cost,
+            sell_price=sell_price,
+            base_rate=base_rate,
+            tax_budget=tax_budget,
+        )
+        if allowance is None:
+            if remaining <= Decimal("0"):
+                break
+            continue
+        if allowance.allowed_quantity <= Decimal("0"):
+            break
+
+        _apply_tax_budget_lot_allowance(allowance=allowance, tax_budget=tax_budget)
+        allowed_qty += allowance.allowed_quantity
+        remaining -= allowance.allowed_quantity
+
+        if allowance.allowed_quantity < allowance.requested_quantity:
+            break
+
+    return allowed_qty
+
+
 def _tax_budget_limited_sell_quantity(
     *,
     options: EngineOptions,
@@ -267,34 +326,13 @@ def _tax_budget_limited_sell_quantity(
     if not sorted_lots:
         return requested_qty
 
-    remaining = requested_qty
-    allowed_qty = Decimal("0")
-    for lot, lot_unit_cost in sorted_lots:
-        if remaining <= Decimal("0"):
-            break
-        if lot.quantity <= Decimal("0"):
-            continue
-
-        allowance = _tax_budget_lot_allowance(
-            remaining_quantity=remaining,
-            lot_quantity=lot.quantity,
-            lot_unit_cost=lot_unit_cost,
-            sell_price=sell_price,
-            base_rate=base_rate,
-            tax_budget=tax_budget,
-        )
-        if allowance.allowed_quantity <= Decimal("0"):
-            break
-
-        _apply_tax_budget_lot_allowance(allowance=allowance, tax_budget=tax_budget)
-
-        allowed_qty += allowance.allowed_quantity
-        remaining -= allowance.allowed_quantity
-
-        if allowance.allowed_quantity < allowance.requested_quantity:
-            break
-
-    return allowed_qty
+    return _tax_budget_limited_quantity_from_lots(
+        sorted_lots=sorted_lots,
+        requested_qty=requested_qty,
+        sell_price=sell_price,
+        base_rate=base_rate,
+        tax_budget=tax_budget,
+    )
 
 
 def _intent_market_context(
