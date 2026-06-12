@@ -340,6 +340,46 @@ def test_run_state_section_payload_blocks_missing_trade_intents() -> None:
     assert reason_codes == ["DPM_TRADE_INTENTS_MISSING"]
 
 
+def test_trade_intents_section_payload_projects_ready_and_blocked_states() -> None:
+    ready = _ready_rebalance_result()
+    blocked = ready.model_copy(update={"intents": []})
+
+    ready_state, _summary, ready_facts, ready_metrics, ready_reasons = (
+        builder_module._trade_intents_section_payload(ready)
+    )
+    blocked_state, _summary, blocked_facts, blocked_metrics, blocked_reasons = (
+        builder_module._trade_intents_section_payload(blocked)
+    )
+
+    assert ready_state == "READY"
+    assert ready_facts["intent_ids"] == [intent.intent_id for intent in ready.intents]
+    assert ready_metrics == {"trade_count": len(ready.intents)}
+    assert ready_reasons == []
+    assert blocked_state == "BLOCKED"
+    assert blocked_facts == {"intent_ids": []}
+    assert blocked_metrics == {"trade_count": 0}
+    assert blocked_reasons == ["DPM_TRADE_INTENTS_MISSING"]
+
+
+def test_after_state_section_payload_marks_blocked_runs() -> None:
+    ready = _ready_rebalance_result()
+    blocked = ready.model_copy(update={"status": "BLOCKED"})
+
+    ready_state, _summary, _facts, ready_metrics, ready_reasons = (
+        builder_module._after_state_section_payload(ready)
+    )
+    blocked_state, _summary, _facts, blocked_metrics, blocked_reasons = (
+        builder_module._after_state_section_payload(blocked)
+    )
+
+    assert ready_state == "READY"
+    assert ready_metrics == {"position_count": len(ready.after_simulated.positions)}
+    assert ready_reasons == []
+    assert blocked_state == "BLOCKED"
+    assert blocked_metrics == {"position_count": len(blocked.after_simulated.positions)}
+    assert blocked_reasons == ["DPM_AFTER_STATE_BLOCKED"]
+
+
 def test_run_state_section_payload_ignores_unrelated_sections() -> None:
     assert (
         builder_module._run_state_section_payload(
@@ -1500,6 +1540,66 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
         "SELECTED_ALTERNATIVE",
         "PROOF_PACK_GENERATED",
     ]
+
+
+def test_selected_alternative_for_proof_pack_resolves_selected_alternative() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_proof_pack_1",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_proof_pack_1",
+        alternative_set_id=alternative_set.alternative_set_id,
+        alternative_id=alternative.alternative_id,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+    )
+
+    selected = builder_module._selected_alternative_for_proof_pack(
+        alternative_set=alternative_set,
+        selected_alternative_id=alternative.alternative_id,
+        selection=selection,
+    )
+
+    assert selected == alternative
+
+
+def test_validate_selected_alternative_selection_rejects_mismatched_ids() -> None:
+    with pytest.raises(
+        ProofPackSourceValidationError,
+        match="DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH",
+    ):
+        builder_module._validate_selected_alternative_selection(
+            alternative_set_id="cas_proof_pack_1",
+            selected_alternative_id="ca_selected",
+            selection=ConstructionAlternativeSelection(
+                selection_id="sel_proof_pack_1",
+                alternative_set_id="cas_proof_pack_1",
+                alternative_id="ca_different",
+                actor_id="pm_001",
+                reason_code="MODEL_DRIFT_REVIEW",
+            ),
+        )
+
+    with pytest.raises(
+        ProofPackSourceValidationError,
+        match="DPM_SELECTED_ALTERNATIVE_SET_MISMATCH",
+    ):
+        builder_module._validate_selected_alternative_selection(
+            alternative_set_id="cas_proof_pack_1",
+            selected_alternative_id="ca_selected",
+            selection=ConstructionAlternativeSelection(
+                selection_id="sel_proof_pack_2",
+                alternative_set_id="cas_different",
+                alternative_id="ca_selected",
+                actor_id="pm_001",
+                reason_code="MODEL_DRIFT_REVIEW",
+            ),
+        )
 
 
 def test_selected_alternative_proof_pack_attaches_source_owned_risk_and_performance() -> None:

@@ -184,21 +184,11 @@ def build_proof_pack_from_selected_alternative(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord] | None = None,
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None = None,
 ) -> DpmPreTradeProofPack:
-    selected = next(
-        (
-            alternative
-            for alternative in alternative_set.alternatives
-            if alternative.alternative_id == selected_alternative_id
-        ),
-        None,
+    selected = _selected_alternative_for_proof_pack(
+        alternative_set=alternative_set,
+        selected_alternative_id=selected_alternative_id,
+        selection=selection,
     )
-    if selected is None:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
-    if selection is not None and selection.alternative_id != selected_alternative_id:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH")
-    if selection is not None and selection.alternative_set_id != alternative_set.alternative_set_id:
-        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SET_MISMATCH")
-
     return _build_proof_pack(
         source_type="SELECTED_ALTERNATIVE",
         run=run,
@@ -216,6 +206,43 @@ def build_proof_pack_from_selected_alternative(
         workflow_decisions=workflow_decisions or [],
         direct_regime_stress_context=direct_regime_stress_context,
     )
+
+
+def _selected_alternative_for_proof_pack(
+    *,
+    alternative_set: ConstructionAlternativeSet,
+    selected_alternative_id: str,
+    selection: ConstructionAlternativeSelection | None,
+) -> ConstructionAlternative:
+    selected = next(
+        (
+            alternative
+            for alternative in alternative_set.alternatives
+            if alternative.alternative_id == selected_alternative_id
+        ),
+        None,
+    )
+    if selected is None:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_NOT_FOUND")
+    if selection is not None:
+        _validate_selected_alternative_selection(
+            alternative_set_id=alternative_set.alternative_set_id,
+            selected_alternative_id=selected_alternative_id,
+            selection=selection,
+        )
+    return selected
+
+
+def _validate_selected_alternative_selection(
+    *,
+    alternative_set_id: str,
+    selected_alternative_id: str,
+    selection: ConstructionAlternativeSelection,
+) -> None:
+    if selection.alternative_id != selected_alternative_id:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SELECTION_MISMATCH")
+    if selection.alternative_set_id != alternative_set_id:
+        raise ProofPackSourceValidationError("DPM_SELECTED_ALTERNATIVE_SET_MISMATCH")
 
 
 def _build_proof_pack(
@@ -569,30 +596,43 @@ def _run_state_section_payload(
             [],
         )
     if section_type == "trade_intents":
-        if not result.intents:
-            return (
-                "BLOCKED",
-                "No trade intents are available for pre-trade proof.",
-                {"intent_ids": []},
-                {"trade_count": 0},
-                ["DPM_TRADE_INTENTS_MISSING"],
-            )
-        return (
-            "READY",
-            "Trade intents captured from source run.",
-            {"intent_ids": [intent.intent_id for intent in result.intents]},
-            {"trade_count": len(result.intents)},
-            [],
-        )
+        return _trade_intents_section_payload(result)
     if section_type == "after_state":
-        return (
-            "READY" if result.status != "BLOCKED" else "BLOCKED",
-            "After-state simulation summary captured from source run.",
-            {"after_summary": result.after_simulated.model_dump(mode="json")},
-            {"position_count": len(result.after_simulated.positions)},
-            [] if result.status != "BLOCKED" else ["DPM_AFTER_STATE_BLOCKED"],
-        )
+        return _after_state_section_payload(result)
     return None
+
+
+def _trade_intents_section_payload(
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    if not result.intents:
+        return (
+            "BLOCKED",
+            "No trade intents are available for pre-trade proof.",
+            {"intent_ids": []},
+            {"trade_count": 0},
+            ["DPM_TRADE_INTENTS_MISSING"],
+        )
+    return (
+        "READY",
+        "Trade intents captured from source run.",
+        {"intent_ids": [intent.intent_id for intent in result.intents]},
+        {"trade_count": len(result.intents)},
+        [],
+    )
+
+
+def _after_state_section_payload(
+    result: RebalanceResult,
+) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+    blocked = result.status == "BLOCKED"
+    return (
+        "BLOCKED" if blocked else "READY",
+        "After-state simulation summary captured from source run.",
+        {"after_summary": result.after_simulated.model_dump(mode="json")},
+        {"position_count": len(result.after_simulated.positions)},
+        ["DPM_AFTER_STATE_BLOCKED"] if blocked else [],
+    )
 
 
 def _run_diagnostics_section_payload(

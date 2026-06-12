@@ -20001,3 +20001,96 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal mandate monitoring-exception
   repository maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-814: Proof-pack selected-alternative resolution helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `build_proof_pack_from_selected_alternative` was the top current source-complexity
+  hotspot and mixed selected-alternative lookup, missing-alternative error handling,
+  selection-record alternative-id validation, selection-record alternative-set validation, and
+  proof-pack construction delegation in one public builder.
+- Action: extracted deterministic selected-alternative resolution and selection-record validation
+  helpers while preserving public builder behavior, existing error codes, selected alternative set
+  identity checks, selected alternative identity checks, and downstream proof-pack construction
+  semantics. Added direct helper tests for successful resolution and both selection mismatch
+  failures alongside the existing public builder tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-815: Campaign approval-inbox governance projection helper
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_approval_inbox.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `build_bulk_review_campaign_approval_inbox_item` was the top current
+  source-complexity hotspot after the proof-pack slice and mixed discovery/readiness derivation,
+  posture classification, governance field projection, governance count projection,
+  operating-boundary projection, content hashing, and final model validation in one builder.
+- Action: extracted a deterministic approval-inbox governance payload helper while preserving
+  approval metadata projection, missing-governance defaults, entitled actor counts, source-ref
+  counts, operating boundaries, content hashing, and public item/page behavior. Added direct helper
+  tests for populated governance and missing-governance payloads alongside existing inbox posture
+  tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_approval_inbox.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_approval_inbox.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign approval-inbox
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-816: Proof-pack run-state section payload helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_run_state_section_payload` was the top current source-complexity hotspot after the
+  approval-inbox slice and mixed section dispatch with trade-intent empty-state handling,
+  trade-intent id/metric projection, after-state blocked status classification, after-state
+  summary projection, and blocked reason-code selection.
+- Action: extracted deterministic trade-intent and after-state section payload helpers while
+  preserving the public section dispatcher, ready/blocked state semantics, reason codes, intent id
+  ordering, trade counts, after-state summaries, and after-state position counts. Added direct
+  helper tests for ready and blocked trade-intent/after-state projections alongside existing
+  dispatcher coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack section payload
+  maintainability refactoring and repo-local quality evidence.

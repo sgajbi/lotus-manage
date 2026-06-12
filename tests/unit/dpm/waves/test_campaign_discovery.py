@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 import pytest
 from pydantic import BaseModel, ValidationError
 
+import src.core.waves.campaign_approval_inbox as approval_inbox_module
 from src.core.waves import DpmWaveSourceRef
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.waves.campaign_definitions import (
@@ -385,6 +386,36 @@ def test_campaign_approval_inbox_classifies_governance_attention() -> None:
     assert expired.inbox_status == "EXPIRY_ATTENTION"
     assert unauthorized.inbox_status == "ENTITLEMENT_ATTENTION"
     assert "NO_APPROVAL_STATE_MUTATION" in unauthorized.operating_boundaries
+
+
+def test_campaign_approval_inbox_governance_payload_projects_counts() -> None:
+    governance = _definition(entitled_actor_ids=["pm_001", "ops"]).governance
+
+    payload = approval_inbox_module._approval_inbox_governance_payload(governance)
+
+    assert payload == {
+        "approval_ref": "BRC-APPROVAL-2026-05",
+        "approved_by": "cio_ops_committee",
+        "approved_at": "2026-05-14T08:30:00+08:00",
+        "expires_on": "2026-06-30",
+        "access_purpose": "DPM_BULK_REVIEW_CAMPAIGN",
+        "entitled_actor_count": 2,
+        "approval_source_ref_count": 1,
+    }
+
+
+def test_campaign_approval_inbox_governance_payload_handles_missing_governance() -> None:
+    payload = approval_inbox_module._approval_inbox_governance_payload(None)
+
+    assert payload == {
+        "approval_ref": None,
+        "approved_by": None,
+        "approved_at": None,
+        "expires_on": None,
+        "access_purpose": None,
+        "entitled_actor_count": 0,
+        "approval_source_ref_count": 0,
+    }
 
 
 def test_campaign_approval_inbox_page_filters_closed_and_status() -> None:
