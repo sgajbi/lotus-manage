@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T17:09:01+00:00`
+- Generated at: `2026-06-12T17:11:30+00:00`
 
-- Current ref: `62b61115`
+- Current ref: `330643ef`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _proposed_changes | src/core/construction/alternative_engine.py | 8 | 23 |
-| 2 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
-| 3 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
-| 4 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
-| 5 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
-| 6 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
-| 7 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
-| 8 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
-| 9 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
-| 10 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
+| 1 | _worst_state | src/core/pm_quality/scoring.py | 8 | 23 |
+| 2 | observed_transaction_cost_estimate | src/api/services/construction_transaction_cost_supportability.py | 8 | 22 |
+| 3 | _construction_state | src/core/outcomes/snapshots.py | 8 | 22 |
+| 4 | _validate_lookback_window | src/core/pm_quality/scoring.py | 8 | 22 |
+| 5 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
+| 6 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
+| 7 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
+| 8 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 9 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
+| 10 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
 
 ### Most Complex Current Test Functions
 

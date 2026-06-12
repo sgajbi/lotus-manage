@@ -20520,3 +20520,34 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM-quality repository
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-833: Construction proposed-change row helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/construction/alternative_engine.py`,
+  `tests/unit/dpm/construction/test_alternative_engine.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_proposed_changes` was the top current source-complexity hotspot after the
+  PM-quality repository slice and mixed security-trade filtering, base/notional fallback,
+  diagnostic row construction, optional quantity/value/rationale fields, constraint evidence, and
+  list assembly in one construction diagnostic helper.
+- Action: extracted deterministic security-trade notional fallback and row mapping helpers while
+  preserving public alternative diagnostic payloads, base-currency notional precedence, rationale
+  fields, absolute quantity/value formatting, and constraint-label evidence. Added direct helper
+  tests for notional fallback and row mapping alongside existing public alternative diagnostics
+  coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/construction/alternative_engine.py tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python -m ruff format --check src/core/construction/alternative_engine.py tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/alternative_engine.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction diagnostic
+  maintainability refactoring and repo-local quality evidence.
