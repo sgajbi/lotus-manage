@@ -11,6 +11,8 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioTaxLotWindowResponse,
     _core_coverage_fx_rates,
     _core_coverage_prices,
+    _core_tax_lot_to_engine_lot,
+    _portfolio_position_with_tax_lots,
     build_batch_rebalance_request_from_core_context,
     build_core_resolver_payload,
     build_market_data_snapshot_from_core_coverage,
@@ -593,6 +595,45 @@ def test_core_tax_lots_skip_closed_or_depleted_lots_without_blocking_snapshot():
     )
 
     assert enriched.positions[0].lots == []
+
+
+def test_core_tax_lot_helper_uses_base_currency_when_local_currency_missing():
+    lot_payload = _core_tax_lot_payload()
+    lot_payload["lots"][0]["local_currency"] = None
+    lot_payload["lots"][0]["cost_basis_base"] = "7800.0000000000"
+    lot_payload["lots"][0]["cost_basis_local"] = "0.0000000000"
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(lot_payload)
+
+    tax_lot = _core_tax_lot_to_engine_lot(
+        lot=response.lots[0],
+        base_currency="SGD",
+    )
+
+    assert tax_lot.lot_id == "LOT-AAPL-001"
+    assert tax_lot.unit_cost.amount == Decimal("130.0000000000")
+    assert tax_lot.unit_cost.currency == "SGD"
+
+
+def test_portfolio_position_tax_lot_helper_attaches_grouped_lots_by_instrument():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [{"instrument_id": "EQ_US_AAPL", "quantity": "60.0000000000"}],
+        }
+    )
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(_core_tax_lot_payload())
+    tax_lot = _core_tax_lot_to_engine_lot(
+        lot=response.lots[0],
+        base_currency=portfolio.base_currency,
+    )
+
+    position = _portfolio_position_with_tax_lots(
+        position=portfolio.positions[0],
+        lots_by_instrument={"EQ_US_AAPL": [tax_lot]},
+    )
+
+    assert [lot.lot_id for lot in position.lots] == ["LOT-AAPL-001"]
+    assert position.lots[0].quantity == Decimal("60.0000000000")
 
 
 def test_core_tax_lots_reject_partial_or_wrong_portfolio_context():

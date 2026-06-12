@@ -20250,3 +20250,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal construction method-readiness
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-823: Core tax-lot snapshot mapping helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/dpm_source_context.py`,
+  `tests/unit/dpm/core/test_dpm_source_context.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `build_portfolio_snapshot_with_core_tax_lots` was the top current source-complexity
+  hotspot and mixed source supportability validation, portfolio identity validation, open-lot
+  filtering, unit-cost currency selection, tax-lot grouping, position reconstruction, and snapshot
+  rebuilding in one mapper.
+- Action: extracted deterministic helpers for Core open tax-lot grouping, Core tax-lot to engine
+  tax-lot conversion, and position-level tax-lot attachment while preserving READY-only
+  supportability, portfolio mismatch rejection, closed/depleted lot skipping, base-currency
+  fallback, local-currency unit cost, and portfolio snapshot reconstruction. Added direct helper
+  tests for base-currency fallback and grouped-lot position attachment alongside existing public
+  builder coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m ruff format --check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/core/dpm_source_context.py`,
+  `python -m pytest tests/unit/dpm/core/test_dpm_source_context.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal Core source-context mapper
+  maintainability refactoring and repo-local quality evidence.

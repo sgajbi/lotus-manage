@@ -13,6 +13,7 @@ from src.core.models import (
     ModelPortfolio,
     ModelTarget,
     PortfolioSnapshot,
+    Position,
     Price,
     ShelfEntry,
     SimulationScenario,
@@ -1759,32 +1760,63 @@ def build_portfolio_snapshot_with_core_tax_lots(
     if response.portfolio_id != portfolio_snapshot.portfolio_id:
         raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_PORTFOLIO_MISMATCH")
 
+    lots_by_instrument = _open_core_tax_lots_by_instrument(
+        response=response,
+        base_currency=portfolio_snapshot.base_currency,
+    )
+    positions = [
+        _portfolio_position_with_tax_lots(
+            position=position,
+            lots_by_instrument=lots_by_instrument,
+        )
+        for position in portfolio_snapshot.positions
+    ]
+    return PortfolioSnapshot.model_validate(
+        {**portfolio_snapshot.model_dump(mode="python"), "positions": positions}
+    )
+
+
+def _open_core_tax_lots_by_instrument(
+    *,
+    response: DpmCorePortfolioTaxLotWindowResponse,
+    base_currency: str,
+) -> dict[str, list[TaxLot]]:
     lots_by_instrument: dict[str, list[TaxLot]] = {}
     for lot in response.lots:
         if lot.tax_lot_status != "OPEN" or lot.open_quantity <= Decimal("0"):
             continue
-        unit_cost_amount = lot.cost_basis_base / lot.open_quantity
-        unit_cost_currency = portfolio_snapshot.base_currency
-        if lot.local_currency:
-            unit_cost_amount = lot.cost_basis_local / lot.open_quantity
-            unit_cost_currency = lot.local_currency
         lots_by_instrument.setdefault(lot.instrument_id, []).append(
-            TaxLot(
-                lot_id=lot.lot_id,
-                quantity=lot.open_quantity,
-                unit_cost=Money(amount=unit_cost_amount, currency=unit_cost_currency),
-                purchase_date=lot.acquisition_date.isoformat(),
-            )
+            _core_tax_lot_to_engine_lot(lot=lot, base_currency=base_currency)
         )
+    return lots_by_instrument
 
-    positions = []
-    for position in portfolio_snapshot.positions:
-        position_payload = position.model_dump(mode="python")
-        position_payload["lots"] = lots_by_instrument.get(position.instrument_id, [])
-        positions.append(type(position).model_validate(position_payload))
-    return PortfolioSnapshot.model_validate(
-        {**portfolio_snapshot.model_dump(mode="python"), "positions": positions}
+
+def _core_tax_lot_to_engine_lot(
+    *,
+    lot: DpmCorePortfolioTaxLotRecord,
+    base_currency: str,
+) -> TaxLot:
+    unit_cost_amount = lot.cost_basis_base / lot.open_quantity
+    unit_cost_currency = base_currency
+    if lot.local_currency:
+        unit_cost_amount = lot.cost_basis_local / lot.open_quantity
+        unit_cost_currency = lot.local_currency
+    return TaxLot(
+        lot_id=lot.lot_id,
+        quantity=lot.open_quantity,
+        unit_cost=Money(amount=unit_cost_amount, currency=unit_cost_currency),
+        purchase_date=lot.acquisition_date.isoformat(),
     )
+
+
+def _portfolio_position_with_tax_lots(
+    *,
+    position: Position,
+    lots_by_instrument: dict[str, list[TaxLot]],
+) -> Position:
+    position_payload = position.model_dump(mode="python")
+    position_payload["lots"] = lots_by_instrument.get(position.instrument_id, [])
+    return type(position).model_validate(position_payload)
 
 
 def build_market_data_snapshot_from_core_coverage(
