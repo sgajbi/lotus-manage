@@ -19,8 +19,12 @@ from src.infrastructure.rebalance_runs import (
     SqliteDpmRunRepository,
 )
 from src.infrastructure.rebalance_runs.in_memory import (
+    _OperationListFilters,
+    _RunListFilters,
     _expired_run_identities,
     _expired_runs,
+    _list_operations_filtered,
+    _list_runs_filtered,
     _purge_expired_idempotency_history,
     _purge_expired_lineage_edges,
 )
@@ -336,6 +340,83 @@ def test_repository_list_runs_request_hash_filter_contract(repository):
     assert matching_cursor is None
 
 
+def test_in_memory_run_list_helper_filters_sorts_and_pages() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    runs = [
+        DpmRunRecord(
+            rebalance_run_id="rr_in_memory_list_1",
+            correlation_id="corr_in_memory_list_1",
+            request_hash="sha256:req-list-1",
+            idempotency_key=None,
+            portfolio_id="pf_in_memory_list_1",
+            created_at=now,
+            result_json={"rebalance_run_id": "rr_in_memory_list_1", "status": "READY"},
+        ),
+        DpmRunRecord(
+            rebalance_run_id="rr_in_memory_list_2",
+            correlation_id="corr_in_memory_list_2",
+            request_hash="sha256:req-list-2",
+            idempotency_key=None,
+            portfolio_id="pf_in_memory_list_2",
+            created_at=now + timedelta(minutes=1),
+            result_json={"rebalance_run_id": "rr_in_memory_list_2", "status": "BLOCKED"},
+        ),
+        DpmRunRecord(
+            rebalance_run_id="rr_in_memory_list_3",
+            correlation_id="corr_in_memory_list_3",
+            request_hash="sha256:req-list-3",
+            idempotency_key=None,
+            portfolio_id="pf_in_memory_list_2",
+            created_at=now + timedelta(minutes=2),
+            result_json={"rebalance_run_id": "rr_in_memory_list_3", "status": "BLOCKED"},
+        ),
+    ]
+
+    page, cursor = _list_runs_filtered(
+        runs=runs,
+        filters=_RunListFilters(
+            created_from=now + timedelta(seconds=30),
+            created_to=None,
+            status="BLOCKED",
+            request_hash=None,
+            portfolio_id="pf_in_memory_list_2",
+        ),
+        limit=1,
+        cursor=None,
+    )
+    page_two, cursor_two = _list_runs_filtered(
+        runs=runs,
+        filters=_RunListFilters(
+            created_from=now + timedelta(seconds=30),
+            created_to=None,
+            status="BLOCKED",
+            request_hash=None,
+            portfolio_id="pf_in_memory_list_2",
+        ),
+        limit=1,
+        cursor=cursor,
+    )
+    missing_page, missing_cursor = _list_runs_filtered(
+        runs=runs,
+        filters=_RunListFilters(
+            created_from=None,
+            created_to=None,
+            status=None,
+            request_hash=None,
+            portfolio_id=None,
+        ),
+        limit=10,
+        cursor="rr_missing",
+    )
+
+    assert [run.rebalance_run_id for run in page] == ["rr_in_memory_list_3"]
+    assert cursor == "rr_in_memory_list_3"
+    assert [run.rebalance_run_id for run in page_two] == ["rr_in_memory_list_2"]
+    assert cursor_two is None
+    assert missing_page == []
+    assert missing_cursor is None
+
+
 def test_repository_list_operations_filter_and_cursor_contract(repository):
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     repository.create_operation(
@@ -402,6 +483,92 @@ def test_repository_list_operations_filter_and_cursor_contract(repository):
     )
     assert [operation.operation_id for operation in page_two] == ["dop_repo_list_1"]
     assert cursor_two is None
+
+
+def test_in_memory_operation_list_helper_filters_sorts_and_pages() -> None:
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    operations = [
+        DpmAsyncOperationRecord(
+            operation_id="dop_in_memory_list_1",
+            operation_type="ANALYZE_SCENARIOS",
+            status="SUCCEEDED",
+            correlation_id="corr_in_memory_list_1",
+            created_at=now,
+            started_at=now,
+            finished_at=now + timedelta(seconds=1),
+            result_json={"ok": True},
+            error_json=None,
+            request_json=None,
+        ),
+        DpmAsyncOperationRecord(
+            operation_id="dop_in_memory_list_2",
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id="corr_in_memory_list_2",
+            created_at=now + timedelta(minutes=1),
+            started_at=None,
+            finished_at=None,
+            result_json=None,
+            error_json=None,
+            request_json={"scenarios": {}},
+        ),
+        DpmAsyncOperationRecord(
+            operation_id="dop_in_memory_list_3",
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id="corr_in_memory_list_3",
+            created_at=now + timedelta(minutes=2),
+            started_at=None,
+            finished_at=None,
+            result_json=None,
+            error_json=None,
+            request_json={"scenarios": {}},
+        ),
+    ]
+
+    page, cursor = _list_operations_filtered(
+        operations=operations,
+        filters=_OperationListFilters(
+            created_from=now + timedelta(seconds=30),
+            created_to=None,
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id=None,
+        ),
+        limit=1,
+        cursor=None,
+    )
+    page_two, cursor_two = _list_operations_filtered(
+        operations=operations,
+        filters=_OperationListFilters(
+            created_from=now + timedelta(seconds=30),
+            created_to=None,
+            operation_type="ANALYZE_SCENARIOS",
+            status="PENDING",
+            correlation_id=None,
+        ),
+        limit=1,
+        cursor=cursor,
+    )
+    missing_page, missing_cursor = _list_operations_filtered(
+        operations=operations,
+        filters=_OperationListFilters(
+            created_from=None,
+            created_to=None,
+            operation_type=None,
+            status=None,
+            correlation_id=None,
+        ),
+        limit=10,
+        cursor="dop_missing",
+    )
+
+    assert [operation.operation_id for operation in page] == ["dop_in_memory_list_3"]
+    assert cursor == "dop_in_memory_list_3"
+    assert [operation.operation_id for operation in page_two] == ["dop_in_memory_list_2"]
+    assert cursor_two is None
+    assert missing_page == []
+    assert missing_cursor is None
 
 
 def test_repository_list_operations_time_window_and_invalid_cursor_contract(repository):
