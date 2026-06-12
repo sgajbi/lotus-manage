@@ -163,6 +163,74 @@ def test_postgres_proof_pack_payload_normalizes_dict_and_non_string_rows() -> No
     assert postgres_module._payload({"payload_json": 3}) == "3"
 
 
+def test_postgres_proof_pack_insert_params_preserve_storage_contract() -> None:
+    proof_pack = _proof_pack()
+
+    params = postgres_module._proof_pack_insert_params(
+        proof_pack=proof_pack,
+        idempotency_key="idem-proof-pack-postgres",
+        retention_expires_at=RETENTION_EXPIRES_AT,
+    )
+
+    assert params[:9] == (
+        proof_pack.proof_pack_id,
+        proof_pack.portfolio_id,
+        proof_pack.mandate_id,
+        proof_pack.source_type,
+        proof_pack.status,
+        proof_pack.content_hash,
+        "idem-proof-pack-postgres",
+        RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
+        RETENTION_EXPIRES_AT.isoformat(),
+    )
+    assert json.loads(str(params[9]))["proof_pack_id"] == proof_pack.proof_pack_id
+    assert params[10] == proof_pack.created_at.isoformat()
+
+
+def test_postgres_proof_pack_section_insert_params_preserve_section_contract() -> None:
+    proof_pack = _proof_pack()
+    section = proof_pack.sections[0]
+
+    params = postgres_module._proof_pack_section_insert_params(
+        proof_pack=proof_pack,
+        section=section,
+    )
+
+    assert params[:5] == (
+        proof_pack.proof_pack_id,
+        section.section_id,
+        section.section_type,
+        section.state,
+        section.content_hash,
+    )
+    assert json.loads(str(params[5]))["section_id"] == section.section_id
+    assert params[6] == section.generated_at
+
+
+def test_postgres_proof_pack_conflict_helpers_preserve_error_codes() -> None:
+    proof_pack = _proof_pack(reason="Initial rationale.")
+    mutated = _proof_pack(reason="Changed rationale.")
+
+    postgres_module._raise_on_existing_proof_pack_conflict(
+        existing={"content_hash": proof_pack.content_hash},
+        proof_pack=proof_pack,
+    )
+    postgres_module._raise_on_idempotency_conflict(
+        existing_idempotency={"proof_pack_id": proof_pack.proof_pack_id},
+        proof_pack=proof_pack,
+    )
+    with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IMMUTABLE_CONFLICT"):
+        postgres_module._raise_on_existing_proof_pack_conflict(
+            existing={"content_hash": proof_pack.content_hash},
+            proof_pack=mutated,
+        )
+    with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT"):
+        postgres_module._raise_on_idempotency_conflict(
+            existing_idempotency={"proof_pack_id": proof_pack.proof_pack_id},
+            proof_pack=proof_pack.model_copy(update={"proof_pack_id": "dpp_other"}),
+        )
+
+
 def test_postgres_proof_pack_repository_conflict_paths(
     fake_repository: tuple[PostgresDpmProofPackRepository, _FakeConnection],
 ) -> None:

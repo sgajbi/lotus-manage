@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T11:18:33+00:00`
+- Generated at: `2026-06-12T11:21:33+00:00`
 
-- Current ref: `01c1b462`
+- Current ref: `cf901a3c`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | save_proof_pack | src/infrastructure/proof_packs/postgres.py | 8 | 89 |
-| 2 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
-| 3 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
-| 4 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
-| 5 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
-| 6 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
-| 7 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
-| 8 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
-| 9 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
-| 10 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
+| 1 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
+| 2 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
+| 3 | render_proof_pack_markdown | src/core/proof_packs/markdown.py | 8 | 72 |
+| 4 | compare_outcome_dimension | src/core/outcomes/comparison.py | 8 | 69 |
+| 5 | _score_run | src/core/pm_quality/scoring.py | 8 | 67 |
+| 6 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
+| 7 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
+| 8 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
+| 9 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
+| 10 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
 
 ### Most Complex Current Test Functions
 

@@ -8,6 +8,7 @@ from typing import Any
 from src.core.common.capabilities import has_psycopg
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
+    DpmProofPackSection,
     DpmProofPackRetentionMetadata,
     DpmProofPackStoredRef,
 )
@@ -42,8 +43,10 @@ class PostgresDpmProofPackRepository:
                 """,
                 (proof_pack.proof_pack_id,),
             ).fetchone()
-            if existing is not None and existing["content_hash"] != proof_pack.content_hash:
-                raise DpmProofPackConflictError("DPM_PROOF_PACK_IMMUTABLE_CONFLICT")
+            _raise_on_existing_proof_pack_conflict(
+                existing=existing,
+                proof_pack=proof_pack,
+            )
             if idempotency_key is not None:
                 existing_idempotency = connection.execute(
                     """
@@ -53,11 +56,10 @@ class PostgresDpmProofPackRepository:
                     """,
                     (idempotency_key,),
                 ).fetchone()
-                if (
-                    existing_idempotency is not None
-                    and existing_idempotency["proof_pack_id"] != proof_pack.proof_pack_id
-                ):
-                    raise DpmProofPackConflictError("DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT")
+                _raise_on_idempotency_conflict(
+                    existing_idempotency=existing_idempotency,
+                    proof_pack=proof_pack,
+                )
 
             connection.execute(
                 """
@@ -76,18 +78,10 @@ class PostgresDpmProofPackRepository:
                 ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (proof_pack_id) DO NOTHING
                 """,
-                (
-                    proof_pack.proof_pack_id,
-                    proof_pack.portfolio_id,
-                    proof_pack.mandate_id,
-                    proof_pack.source_type,
-                    proof_pack.status,
-                    proof_pack.content_hash,
-                    idempotency_key,
-                    RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
-                    retention_expires_at.isoformat() if retention_expires_at else None,
-                    dump_model_json(proof_pack),
-                    proof_pack.created_at.isoformat(),
+                _proof_pack_insert_params(
+                    proof_pack=proof_pack,
+                    idempotency_key=idempotency_key,
+                    retention_expires_at=retention_expires_at,
                 ),
             )
             for section in proof_pack.sections:
@@ -104,14 +98,9 @@ class PostgresDpmProofPackRepository:
                     ) VALUES (%s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (proof_pack_id, section_id) DO NOTHING
                     """,
-                    (
-                        proof_pack.proof_pack_id,
-                        section.section_id,
-                        section.section_type,
-                        section.state,
-                        section.content_hash,
-                        dump_model_json(section),
-                        section.generated_at,
+                    _proof_pack_section_insert_params(
+                        proof_pack=proof_pack,
+                        section=section,
                     ),
                 )
             connection.commit()
@@ -262,6 +251,64 @@ def _payload(row: Any) -> str | dict[str, Any]:
     if not isinstance(payload, str):
         return json.dumps(payload, default=str)
     return payload
+
+
+def _raise_on_existing_proof_pack_conflict(
+    *,
+    existing: Any,
+    proof_pack: DpmPreTradeProofPack,
+) -> None:
+    if existing is not None and existing["content_hash"] != proof_pack.content_hash:
+        raise DpmProofPackConflictError("DPM_PROOF_PACK_IMMUTABLE_CONFLICT")
+
+
+def _raise_on_idempotency_conflict(
+    *,
+    existing_idempotency: Any,
+    proof_pack: DpmPreTradeProofPack,
+) -> None:
+    if (
+        existing_idempotency is not None
+        and existing_idempotency["proof_pack_id"] != proof_pack.proof_pack_id
+    ):
+        raise DpmProofPackConflictError("DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT")
+
+
+def _proof_pack_insert_params(
+    *,
+    proof_pack: DpmPreTradeProofPack,
+    idempotency_key: str | None,
+    retention_expires_at: datetime | None,
+) -> tuple[Any, ...]:
+    return (
+        proof_pack.proof_pack_id,
+        proof_pack.portfolio_id,
+        proof_pack.mandate_id,
+        proof_pack.source_type,
+        proof_pack.status,
+        proof_pack.content_hash,
+        idempotency_key,
+        RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
+        retention_expires_at.isoformat() if retention_expires_at else None,
+        dump_model_json(proof_pack),
+        proof_pack.created_at.isoformat(),
+    )
+
+
+def _proof_pack_section_insert_params(
+    *,
+    proof_pack: DpmPreTradeProofPack,
+    section: DpmProofPackSection,
+) -> tuple[Any, ...]:
+    return (
+        proof_pack.proof_pack_id,
+        section.section_id,
+        section.section_type,
+        section.state,
+        section.content_hash,
+        dump_model_json(section),
+        section.generated_at,
+    )
 
 
 def _import_psycopg() -> tuple[Any, Any]:
