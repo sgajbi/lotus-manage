@@ -25,13 +25,38 @@ def portfolio_memory_state(
 
 def source_supportability_state(source_state: str | None) -> PortfolioMemorySupportabilityState:
     normalized = (source_state or "").upper()
-    if "BLOCK" in normalized or normalized in {"FAILED", "REJECTED", "CANCELLED"}:
+    if _source_state_is_blocked(normalized):
         return "BLOCKED"
-    if "DEGRADED" in normalized or "BREACHED" in normalized or "PARTIAL" in normalized:
+    if _source_state_is_degraded(normalized):
         return "DEGRADED"
-    if "REVIEW" in normalized or normalized in {"CREATED", "DRAFT", "PREVIEWED", "CANDIDATE"}:
+    if _source_state_requires_review(normalized):
         return "PENDING_REVIEW"
     return "READY"
+
+
+def _source_state_is_blocked(normalized_source_state: str) -> bool:
+    return "BLOCK" in normalized_source_state or normalized_source_state in {
+        "FAILED",
+        "REJECTED",
+        "CANCELLED",
+    }
+
+
+def _source_state_is_degraded(normalized_source_state: str) -> bool:
+    return (
+        "DEGRADED" in normalized_source_state
+        or "BREACHED" in normalized_source_state
+        or "PARTIAL" in normalized_source_state
+    )
+
+
+def _source_state_requires_review(normalized_source_state: str) -> bool:
+    return "REVIEW" in normalized_source_state or normalized_source_state in {
+        "CREATED",
+        "DRAFT",
+        "PREVIEWED",
+        "CANDIDATE",
+    }
 
 
 def monitoring_exception_state(
