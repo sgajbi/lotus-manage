@@ -19605,3 +19605,68 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal mandate twin projection
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-802: Proof-pack decision timeline event helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_decision_timeline` was the top current source-complexity hotspot and combined
+  source-event projection, selected-alternative fallback handling, workflow-decision event mapping,
+  proof-pack generated event creation, event ranking, and chronological sorting in one helper.
+- Action: extracted pure decision timeline event helpers for source events, run creation,
+  alternative-set generation, selected alternatives, workflow decisions, proof-pack generation, and
+  event sorting while preserving the public proof-pack timeline output. Added direct tests for
+  same-timestamp event ordering, selected-alternative fallback actor/time behavior, and workflow
+  review evidence projection. Refreshed current-state quality reports and preserved the stable
+  baseline artifact; the refreshed complexity report shows `_decision_timeline` dropped out of the
+  top current source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q` (77 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack timeline
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-803: Proof-pack Postgres persistence row helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/proof_packs/postgres.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_postgres_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `save_proof_pack` was the top current source-complexity hotspot and combined immutable
+  content-hash conflict checks, idempotency conflict checks, proof-pack row serialization,
+  section-row serialization, SQL execution, and transaction commit behavior inside one persistence
+  method.
+- Action: extracted pure conflict guard helpers plus proof-pack and section insert-parameter
+  builders while preserving the existing SQL statements, `ON CONFLICT` behavior, fake-Postgres
+  round-trip behavior, and transaction commit boundary. Added direct tests for insert-parameter
+  storage contracts and conflict error-code preservation. Refreshed current-state quality reports
+  and preserved the stable baseline artifact; the refreshed complexity report shows
+  `save_proof_pack` dropped out of the top current source-complexity list without introducing a
+  replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/proof_packs/postgres.py tests/unit/dpm/proof_packs/test_proof_pack_postgres_repository.py`,
+  `python -m ruff format --check src/infrastructure/proof_packs/postgres.py tests/unit/dpm/proof_packs/test_proof_pack_postgres_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/proof_packs/postgres.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_postgres_repository.py -q` (8 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack persistence
+  maintainability refactoring and repo-local quality evidence.

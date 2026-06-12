@@ -1306,82 +1306,151 @@ def _decision_timeline(
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
     created_by: str,
 ) -> DpmProofPackDecisionTimeline:
-    events: list[DpmProofPackDecisionTimelineEvent] = []
-    if run is not None:
-        events.append(
-            DpmProofPackDecisionTimelineEvent(
-                event_id=f"{run.rebalance_run_id}:run_created",
-                event_type="REBALANCE_RUN_CREATED",
-                event_time=run.created_at.isoformat(),
-                actor="lotus-manage",
-                source_system="lotus-manage",
-                status=str(run.result_json.get("status", "UNKNOWN")),
-                reason_codes=[],
-            )
-        )
-    if alternative_set is not None:
-        events.append(
-            DpmProofPackDecisionTimelineEvent(
-                event_id=f"{alternative_set.alternative_set_id}:generated",
-                event_type="ALTERNATIVE_SET_GENERATED",
-                event_time=alternative_set.generated_at.isoformat(),
-                actor="lotus-manage",
-                source_system="lotus-manage",
-                status=str(alternative_set.status),
-                reason_codes=[],
-            )
-        )
-    if selected_alternative is not None:
-        events.append(
-            DpmProofPackDecisionTimelineEvent(
-                event_id=f"{selected_alternative.alternative_id}:selected",
-                event_type="SELECTED_ALTERNATIVE",
-                event_time=selection.selected_at.isoformat() if selection else generated_at,
-                actor=selection.actor_id if selection else created_by,
-                source_system="lotus-manage",
-                status=str(selected_alternative.method_status),
-                reason_codes=[selection.reason_code] if selection else [],
-            )
-        )
-    for decision in workflow_decisions:
-        events.append(
-            DpmProofPackDecisionTimelineEvent(
-                event_id=f"{decision.decision_id}:workflow_decision",
-                event_type="WORKFLOW_DECISION",
-                event_time=decision.decided_at.isoformat(),
-                actor=decision.actor_id,
-                source_system="lotus-manage",
-                status=str(decision.action),
-                reason_codes=[decision.reason_code],
-            )
-        )
+    events = _source_decision_timeline_events(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        generated_at=generated_at,
+        created_by=created_by,
+    )
+    events.extend(_workflow_decision_timeline_events(workflow_decisions))
     events.append(
-        DpmProofPackDecisionTimelineEvent(
-            event_id=f"{proof_pack_id}:generated",
-            event_type="PROOF_PACK_GENERATED",
-            event_time=generated_at,
-            actor=created_by,
-            source_system="lotus-manage",
-            status=source_type,
-            reason_codes=[],
+        _proof_pack_generated_timeline_event(
+            proof_pack_id=proof_pack_id,
+            generated_at=generated_at,
+            source_type=source_type,
+            created_by=created_by,
         )
     )
-    event_rank = {
-        "REBALANCE_RUN_CREATED": 0,
-        "ALTERNATIVE_SET_GENERATED": 1,
-        "SELECTED_ALTERNATIVE": 2,
-        "WORKFLOW_DECISION": 3,
-        "PROOF_PACK_GENERATED": 4,
-    }
     return DpmProofPackDecisionTimeline(
-        events=sorted(
-            events,
-            key=lambda event: (
-                event.event_time,
-                event_rank.get(event.event_type, 99),
-                event.event_id,
-            ),
+        events=sorted(events, key=_decision_timeline_event_sort_key)
+    )
+
+
+def _source_decision_timeline_events(
+    *,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    generated_at: str,
+    created_by: str,
+) -> list[DpmProofPackDecisionTimelineEvent]:
+    events: list[DpmProofPackDecisionTimelineEvent] = []
+    if run is not None:
+        events.append(_run_created_timeline_event(run))
+    if alternative_set is not None:
+        events.append(_alternative_set_generated_timeline_event(alternative_set))
+    if selected_alternative is not None:
+        events.append(
+            _selected_alternative_timeline_event(
+                selected_alternative=selected_alternative,
+                selection=selection,
+                generated_at=generated_at,
+                created_by=created_by,
+            )
         )
+    return events
+
+
+def _run_created_timeline_event(
+    run: DpmRunRecord,
+) -> DpmProofPackDecisionTimelineEvent:
+    return DpmProofPackDecisionTimelineEvent(
+        event_id=f"{run.rebalance_run_id}:run_created",
+        event_type="REBALANCE_RUN_CREATED",
+        event_time=run.created_at.isoformat(),
+        actor="lotus-manage",
+        source_system="lotus-manage",
+        status=str(run.result_json.get("status", "UNKNOWN")),
+        reason_codes=[],
+    )
+
+
+def _alternative_set_generated_timeline_event(
+    alternative_set: ConstructionAlternativeSet,
+) -> DpmProofPackDecisionTimelineEvent:
+    return DpmProofPackDecisionTimelineEvent(
+        event_id=f"{alternative_set.alternative_set_id}:generated",
+        event_type="ALTERNATIVE_SET_GENERATED",
+        event_time=alternative_set.generated_at.isoformat(),
+        actor="lotus-manage",
+        source_system="lotus-manage",
+        status=str(alternative_set.status),
+        reason_codes=[],
+    )
+
+
+def _selected_alternative_timeline_event(
+    *,
+    selected_alternative: ConstructionAlternative,
+    selection: ConstructionAlternativeSelection | None,
+    generated_at: str,
+    created_by: str,
+) -> DpmProofPackDecisionTimelineEvent:
+    return DpmProofPackDecisionTimelineEvent(
+        event_id=f"{selected_alternative.alternative_id}:selected",
+        event_type="SELECTED_ALTERNATIVE",
+        event_time=selection.selected_at.isoformat() if selection else generated_at,
+        actor=selection.actor_id if selection else created_by,
+        source_system="lotus-manage",
+        status=str(selected_alternative.method_status),
+        reason_codes=[selection.reason_code] if selection else [],
+    )
+
+
+def _workflow_decision_timeline_events(
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> list[DpmProofPackDecisionTimelineEvent]:
+    return [
+        DpmProofPackDecisionTimelineEvent(
+            event_id=f"{decision.decision_id}:workflow_decision",
+            event_type="WORKFLOW_DECISION",
+            event_time=decision.decided_at.isoformat(),
+            actor=decision.actor_id,
+            source_system="lotus-manage",
+            status=str(decision.action),
+            reason_codes=[decision.reason_code],
+        )
+        for decision in workflow_decisions
+    ]
+
+
+def _proof_pack_generated_timeline_event(
+    *,
+    proof_pack_id: str,
+    generated_at: str,
+    source_type: ProofPackSourceType,
+    created_by: str,
+) -> DpmProofPackDecisionTimelineEvent:
+    return DpmProofPackDecisionTimelineEvent(
+        event_id=f"{proof_pack_id}:generated",
+        event_type="PROOF_PACK_GENERATED",
+        event_time=generated_at,
+        actor=created_by,
+        source_system="lotus-manage",
+        status=source_type,
+        reason_codes=[],
+    )
+
+
+_DECISION_TIMELINE_EVENT_RANK = {
+    "REBALANCE_RUN_CREATED": 0,
+    "ALTERNATIVE_SET_GENERATED": 1,
+    "SELECTED_ALTERNATIVE": 2,
+    "WORKFLOW_DECISION": 3,
+    "PROOF_PACK_GENERATED": 4,
+}
+
+
+def _decision_timeline_event_sort_key(
+    event: DpmProofPackDecisionTimelineEvent,
+) -> tuple[str, int, str]:
+    return (
+        event.event_time,
+        _DECISION_TIMELINE_EVENT_RANK.get(event.event_type, 99),
+        event.event_id,
     )
 
 
