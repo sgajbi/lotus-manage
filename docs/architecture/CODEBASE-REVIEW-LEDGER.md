@@ -19416,3 +19416,66 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal portfolio-memory search
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-796: OpenAPI HTTP operation iteration helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_schema_http_operations` was the top current source-complexity hotspot and combined
+  OpenAPI path-map validation, path-method filtering, HTTP method filtering, and operation-shape
+  filtering in one iterator.
+- Action: extracted schema path-method iteration and per-path HTTP operation filtering helpers
+  while preserving the existing OpenAPI enrichment behavior for non-dict paths, non-string path
+  keys, non-HTTP methods, and non-dict operation fragments. Added direct helper tests for
+  path-method filtering and operation-method filtering. Refreshed current-state quality reports
+  and preserved the stable baseline artifact; the refreshed complexity report shows
+  `_schema_http_operations` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q` (24 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-797: Performance attribution selector helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/performance_sources.py`,
+  `tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_attribution_level` and `_attribution_currency` were the top current
+  source-complexity hotspots and duplicated source-owned attribution entry selection, malformed
+  payload tolerance, selector matching, and fallback selector normalization.
+- Action: extracted a shared attribution-entry selector with focused selector-match and
+  selector-resolution helpers while preserving existing level and currency attribution behavior.
+  Added direct helper tests for requested selector matching, malformed/non-list attribution
+  payloads, no-match fallbacks, selector-match truth, and unknown selector fallback. Refreshed
+  current-state quality reports and preserved the stable baseline artifact; the refreshed
+  complexity report shows `_attribution_level`, `_attribution_currency`, and the extracted
+  selector helpers are out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/performance_sources.py`,
+  `python -m pytest tests/unit/core/test_performance_realized_outcome_sources.py -q` (29 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal performance attribution source
+  maintainability refactoring and repo-local quality evidence.

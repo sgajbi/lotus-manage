@@ -505,15 +505,11 @@ def _attribution_level(
     period_result: dict[str, Any],
     level_dimension: str | None,
 ) -> tuple[dict[str, Any], str]:
-    levels = period_result.get("levels")
-    if not isinstance(levels, list):
-        return {}, level_dimension or "unknown"
-    for level in levels:
-        level_mapping = _read_mapping(level)
-        dimension = _read_text(level_mapping.get("dimension"))
-        if level_dimension is None or dimension == level_dimension:
-            return level_mapping, dimension or level_dimension or "unknown"
-    return {}, level_dimension or "unknown"
+    return _selected_attribution_entry(
+        entries=period_result.get("levels"),
+        selector_field="dimension",
+        requested_selector=level_dimension,
+    )
 
 
 def _attribution_currency(
@@ -521,15 +517,38 @@ def _attribution_currency(
     period_result: dict[str, Any],
     currency: str | None,
 ) -> tuple[dict[str, Any], str]:
-    currency_results = period_result.get("currency_attribution")
-    if not isinstance(currency_results, list):
-        return {}, currency or "unknown"
-    for currency_result in currency_results:
-        result_mapping = _read_mapping(currency_result)
-        currency_code = _read_text(result_mapping.get("currency"))
-        if currency is None or currency_code == currency:
-            return result_mapping, currency_code or currency or "unknown"
-    return {}, currency or "unknown"
+    return _selected_attribution_entry(
+        entries=period_result.get("currency_attribution"),
+        selector_field="currency",
+        requested_selector=currency,
+    )
+
+
+def _selected_attribution_entry(
+    *,
+    entries: Any,
+    selector_field: str,
+    requested_selector: str | None,
+) -> tuple[dict[str, Any], str]:
+    if not isinstance(entries, list):
+        return {}, requested_selector or "unknown"
+    for entry in entries:
+        entry_mapping = _read_mapping(entry)
+        selector = _read_text(entry_mapping.get(selector_field))
+        if _attribution_selector_matches(selector=selector, requested_selector=requested_selector):
+            return entry_mapping, _resolved_attribution_selector(
+                selector=selector,
+                requested_selector=requested_selector,
+            )
+    return {}, _resolved_attribution_selector(selector=None, requested_selector=requested_selector)
+
+
+def _attribution_selector_matches(*, selector: str | None, requested_selector: str | None) -> bool:
+    return requested_selector is None or selector == requested_selector
+
+
+def _resolved_attribution_selector(*, selector: str | None, requested_selector: str | None) -> str:
+    return selector or requested_selector or "unknown"
 
 
 def _performance_source_posture(
