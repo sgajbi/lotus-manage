@@ -19000,3 +19000,99 @@ and improves internal transaction-cost source posture maintainability only.
   `python scripts/engineering_health_report.py` and
   `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-783: In-memory rebalance-run listing helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: in-memory `list_runs` and `list_operations` were the top current source-complexity
+  hotspots and duplicated optional filter checks, descending ordering, cursor lookup, unknown-cursor
+  handling, and next-cursor calculation inside repository methods.
+- Action: extracted private run and operation filter dataclasses, shared cursor-page logic, and
+  focused list helpers while leaving repository locking and deepcopy boundaries in
+  `InMemoryDpmRunRepository`. Added direct helper tests for filter combinations, newest-first
+  ordering, cursor pagination, and unknown-cursor empty-page behavior. Refreshed current-state
+  quality reports and preserved stable baseline/rule artifacts; the refreshed complexity report
+  shows `list_runs` and `list_operations` dropped out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/in_memory.py tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_run_repository_backends.py -q`
+  (41 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal in-memory repository
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-784: Realized outcome metric source helpers extracted
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/realized_sources.py`,
+  `tests/unit/core/test_realized_outcome_sources.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_metric_from_sources` was the next current source-complexity hotspot and mixed missing
+  source handling, conflicting source-owner value detection, source-state mapping, blocked/not
+  supported value suppression, missing ready-value blocking, and metric construction in one helper.
+- Action: extracted source-value conflict detection, single-source metric construction,
+  state-aware value selection, and missing-ready-value detection into direct pure helpers. Added
+  focused tests for conflict detection, blocked/not-supported value suppression, and state-specific
+  missing-value behavior while preserving existing realized outcome snapshot contract tests.
+  Refreshed current-state quality reports and preserved stable baseline/rule artifacts; the
+  refreshed complexity report shows `_metric_from_sources` dropped out of the top current
+  source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/realized_sources.py`,
+  `python -m pytest tests/unit/core/test_realized_outcome_sources.py -q` (14 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal realized-source mapping
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-785: Solver fallback helper extraction
+
+- Date: 2026-06-12
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_solve_with_fallbacks` was the next current source-complexity hotspot and combined
+  installed-solver discovery, solver availability filtering, solve invocation, compatibility
+  fallback exception handling, status normalization, and optimal-status detection in one loop.
+- Action: extracted installed-solver discovery, availability checks, individual solve-attempt
+  status handling, and optimal-status detection into focused helpers while preserving solver order,
+  compatibility fallback behavior, and latest-status reporting. Added direct helper tests for
+  unavailable installed-solver discovery, try-all availability semantics, compatibility kwarg
+  rejection, successful status normalization, and optimal-status classification. Refreshed
+  current-state quality reports and preserved stable baseline/rule artifacts; the refreshed
+  complexity report shows `_solve_with_fallbacks` dropped out of the top current source-complexity
+  list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_solver_fallbacks.py -q` (15 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal solver fallback maintainability
+  refactoring and repo-local quality evidence.

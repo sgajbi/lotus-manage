@@ -5,8 +5,12 @@ import pytest
 
 from src.core.models import DiagnosticsData, EngineOptions, ModelPortfolio, ModelTarget, ShelfEntry
 from src.core.target_generation import (
+    _installed_solver_names,
     _load_solver_modules,
+    _solve_attempt_status,
     _solve_with_fallbacks,
+    _solver_is_available,
+    _solver_status_is_optimal,
     build_target_trace,
     generate_targets_solver,
 )
@@ -166,6 +170,41 @@ def test_solve_with_fallbacks_skips_uninstalled_solver_and_tries_compatibility_k
     assert solved is True
     assert latest_status == "optimal"
     assert [solver for solver, _ in problem.calls] == ["SCS", "SCS"]
+
+
+def test_installed_solver_helper_returns_empty_set_when_discovery_is_unavailable() -> None:
+    class _CpWithoutInstalledSolvers:
+        pass
+
+    assert _installed_solver_names(_CpFallbackStub) == {"SCS"}
+    assert _installed_solver_names(_CpWithoutInstalledSolvers) == set()
+
+
+def test_solver_availability_helper_treats_empty_installed_set_as_try_all() -> None:
+    assert _solver_is_available(solver_name="OSQP", installed=set())
+    assert _solver_is_available(solver_name="SCS", installed={"SCS"})
+    assert _solver_is_available(solver_name="OSQP", installed={"SCS"}) is False
+
+
+def test_solve_attempt_status_handles_success_and_compatibility_failures() -> None:
+    problem = _ProblemStub()
+
+    rejected = _solve_attempt_status(
+        prob=problem,
+        cp=_CpFallbackStub,
+        solver_name="SCS",
+        solve_kwargs={"time_limit_secs": 0.5},
+    )
+    solved = _solve_attempt_status(
+        prob=problem,
+        cp=_CpFallbackStub,
+        solver_name="SCS",
+        solve_kwargs={},
+    )
+
+    assert rejected is None
+    assert solved == "optimal"
+    assert _solver_status_is_optimal(solved)
 
 
 def test_load_solver_modules_records_error_when_dependencies_are_absent(monkeypatch) -> None:

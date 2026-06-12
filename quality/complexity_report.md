@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T08:40:21+00:00`
+- Generated at: `2026-06-12T09:00:33+00:00`
 
-- Current ref: `74f189dc`
+- Current ref: `6adb7e7a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
-| 2 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
-| 3 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
-| 4 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
-| 5 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
-| 6 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
-| 7 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
-| 8 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
-| 9 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
-| 10 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
+| 1 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
+| 2 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
+| 3 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
+| 4 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
+| 5 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
+| 6 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
+| 7 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
+| 8 | _validate_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 9 | 23 |
+| 9 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
+| 10 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
 
 ### Most Complex Current Test Functions
 

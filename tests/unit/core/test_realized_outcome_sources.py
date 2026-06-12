@@ -5,6 +5,7 @@ from src.core.outcomes import (
     DpmRealizedSourceSnapshot,
     assemble_realized_outcome_snapshot,
 )
+from src.core.outcomes import realized_sources as realized_source_helpers
 
 
 def _window() -> DpmOutcomeReviewWindow:
@@ -148,6 +149,20 @@ def test_conflicting_source_owner_values_block_dimension() -> None:
     assert {ref.source_id for ref in cost.source_refs} == {"core_cost_001", "core_cost_002"}
 
 
+def test_realized_source_conflict_helper_detects_value_disagreement_only() -> None:
+    matching = [
+        _source(dimension="COST", source_id="core_cost_001", value="126.50"),
+        _source(dimension="COST", source_id="core_cost_002", value="126.50"),
+    ]
+    conflicting = [
+        _source(dimension="COST", source_id="core_cost_001", value="126.50"),
+        _source(dimension="COST", source_id="core_cost_002", value="127.10"),
+    ]
+
+    assert realized_source_helpers._has_conflicting_source_values(matching) is False
+    assert realized_source_helpers._has_conflicting_source_values(conflicting) is True
+
+
 def test_malformed_source_blocks_without_using_partial_value() -> None:
     snapshot = assemble_realized_outcome_snapshot(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -170,6 +185,24 @@ def test_malformed_source_blocks_without_using_partial_value() -> None:
     assert drift.supportability.reason_codes[0] == "SOURCE_EVIDENCE_INCOMPLETE"
 
 
+def test_realized_source_value_helper_suppresses_blocked_and_not_supported_values() -> None:
+    source = _source(dimension="RISK_REDUCTION", value="0.0100")
+
+    assert (
+        str(realized_source_helpers._source_value_for_state(snapshot=source, state="READY"))
+        == "0.0100"
+    )
+    assert (
+        realized_source_helpers._source_value_for_state(snapshot=source, state="DEGRADED")
+        == source.value
+    )
+    assert realized_source_helpers._source_value_for_state(snapshot=source, state="BLOCKED") is None
+    assert (
+        realized_source_helpers._source_value_for_state(snapshot=source, state="NOT_SUPPORTED")
+        is None
+    )
+
+
 def test_ready_source_without_value_blocks_dimension() -> None:
     snapshot = assemble_realized_outcome_snapshot(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
@@ -188,6 +221,27 @@ def test_ready_source_without_value_blocks_dimension() -> None:
     assert snapshot.supportability.state == "BLOCKED"
     assert drift.supportability.state == "BLOCKED"
     assert drift.supportability.reason_codes[0] == "SOURCE_EVIDENCE_INCOMPLETE"
+
+
+def test_realized_source_missing_ready_value_helper_is_state_specific() -> None:
+    assert realized_source_helpers._ready_source_value_is_missing(
+        state="READY",
+        value=None,
+    )
+    assert (
+        realized_source_helpers._ready_source_value_is_missing(
+            state="DEGRADED",
+            value=None,
+        )
+        is False
+    )
+    assert (
+        realized_source_helpers._ready_source_value_is_missing(
+            state="READY",
+            value=_source(dimension="COST").value,
+        )
+        is False
+    )
 
 
 def test_source_owner_not_supported_degrades_mixed_snapshot_without_value() -> None:

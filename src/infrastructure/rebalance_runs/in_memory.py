@@ -1,9 +1,10 @@
 import json
+from collections.abc import Callable, Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from threading import Lock
-from typing import Any, Optional
+from typing import Any, Optional, TypeVar
 
 from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
@@ -15,6 +16,8 @@ from src.core.rebalance_runs.models import (
     DpmSupportabilitySummaryData,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
+
+_T = TypeVar("_T")
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,140 @@ class _WorkflowDecisionFilters:
     reason_code: str | None
     decided_from: datetime | None
     decided_to: datetime | None
+
+
+@dataclass(frozen=True)
+class _RunListFilters:
+    created_from: datetime | None
+    created_to: datetime | None
+    status: str | None
+    request_hash: str | None
+    portfolio_id: str | None
+
+
+@dataclass(frozen=True)
+class _OperationListFilters:
+    created_from: datetime | None
+    created_to: datetime | None
+    operation_type: str | None
+    status: str | None
+    correlation_id: str | None
+
+
+def _optional_datetime_is_on_or_after(
+    actual: datetime,
+    lower_bound: datetime | None,
+) -> bool:
+    return lower_bound is None or actual >= lower_bound
+
+
+def _optional_datetime_is_on_or_before(
+    actual: datetime,
+    upper_bound: datetime | None,
+) -> bool:
+    return upper_bound is None or actual <= upper_bound
+
+
+def _run_matches_filters(run: DpmRunRecord, filters: _RunListFilters) -> bool:
+    return all(
+        (
+            _optional_datetime_is_on_or_after(run.created_at, filters.created_from),
+            _optional_datetime_is_on_or_before(run.created_at, filters.created_to),
+            _optional_value_matches(str(run.result_json.get("status", "")), filters.status),
+            _optional_value_matches(run.request_hash, filters.request_hash),
+            _optional_value_matches(run.portfolio_id, filters.portfolio_id),
+        )
+    )
+
+
+def _operation_matches_filters(
+    operation: DpmAsyncOperationRecord,
+    filters: _OperationListFilters,
+) -> bool:
+    return all(
+        (
+            _optional_datetime_is_on_or_after(operation.created_at, filters.created_from),
+            _optional_datetime_is_on_or_before(operation.created_at, filters.created_to),
+            _optional_value_matches(operation.operation_type, filters.operation_type),
+            _optional_value_matches(operation.status, filters.status),
+            _optional_value_matches(operation.correlation_id, filters.correlation_id),
+        )
+    )
+
+
+def _sorted_filtered_runs(
+    runs: Sequence[DpmRunRecord],
+    filters: _RunListFilters,
+) -> list[DpmRunRecord]:
+    return sorted(
+        (run for run in runs if _run_matches_filters(run, filters)),
+        key=lambda item: (item.created_at, item.rebalance_run_id),
+        reverse=True,
+    )
+
+
+def _sorted_filtered_operations(
+    operations: Sequence[DpmAsyncOperationRecord],
+    filters: _OperationListFilters,
+) -> list[DpmAsyncOperationRecord]:
+    return sorted(
+        (operation for operation in operations if _operation_matches_filters(operation, filters)),
+        key=lambda item: (item.created_at, item.operation_id),
+        reverse=True,
+    )
+
+
+def _cursor_page(
+    rows: Sequence[_T],
+    *,
+    limit: int,
+    cursor: str | None,
+    identity: Callable[[_T], str],
+) -> tuple[list[_T], str | None]:
+    page_source = list(rows)
+    if cursor is not None:
+        cursor_index = next(
+            (index for index, row in enumerate(page_source) if identity(row) == cursor),
+            None,
+        )
+        if cursor_index is None:
+            return [], None
+        page_source = page_source[cursor_index + 1 :]
+    page = page_source[:limit]
+    next_cursor = identity(page[-1]) if len(page_source) > limit else None
+    return page, next_cursor
+
+
+def _list_runs_filtered(
+    *,
+    runs: Sequence[DpmRunRecord],
+    filters: _RunListFilters,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmRunRecord], str | None]:
+    rows = _sorted_filtered_runs(runs, filters)
+    return _cursor_page(
+        rows,
+        limit=limit,
+        cursor=cursor,
+        identity=lambda row: row.rebalance_run_id,
+    )
+
+
+def _list_operations_filtered(
+    *,
+    operations: Sequence[DpmAsyncOperationRecord],
+    filters: _OperationListFilters,
+    limit: int,
+    cursor: str | None,
+) -> tuple[list[DpmAsyncOperationRecord], str | None]:
+    rows = _sorted_filtered_operations(operations, filters)
+    return _cursor_page(
+        rows,
+        limit=limit,
+        cursor=cursor,
+        identity=lambda row: row.operation_id,
+    )
 
 
 def _expired_runs(
@@ -325,30 +462,18 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmRunRecord], Optional[str]]:
         with self._lock:
-            rows = list(self._runs.values())
-            if created_from is not None:
-                rows = [row for row in rows if row.created_at >= created_from]
-            if created_to is not None:
-                rows = [row for row in rows if row.created_at <= created_to]
-            if status is not None:
-                rows = [row for row in rows if str(row.result_json.get("status", "")) == status]
-            if request_hash is not None:
-                rows = [row for row in rows if row.request_hash == request_hash]
-            if portfolio_id is not None:
-                rows = [row for row in rows if row.portfolio_id == portfolio_id]
-            rows = sorted(
-                rows, key=lambda item: (item.created_at, item.rebalance_run_id), reverse=True
+            page, next_cursor = _list_runs_filtered(
+                runs=list(self._runs.values()),
+                filters=_RunListFilters(
+                    created_from=created_from,
+                    created_to=created_to,
+                    status=status,
+                    request_hash=request_hash,
+                    portfolio_id=portfolio_id,
+                ),
+                limit=limit,
+                cursor=cursor,
             )
-            if cursor is not None:
-                cursor_index = next(
-                    (index for index, row in enumerate(rows) if row.rebalance_run_id == cursor),
-                    None,
-                )
-                if cursor_index is None:
-                    return [], None
-                rows = rows[cursor_index + 1 :]
-            page = rows[:limit]
-            next_cursor = page[-1].rebalance_run_id if len(rows) > limit else None
             return [deepcopy(row) for row in page], next_cursor
 
     def save_run_artifact(self, *, rebalance_run_id: str, artifact_json: dict[str, Any]) -> None:
@@ -430,32 +555,18 @@ class InMemoryDpmRunRepository(DpmRunRepository):
         cursor: Optional[str],
     ) -> tuple[list[DpmAsyncOperationRecord], Optional[str]]:
         with self._lock:
-            rows = list(self._operations.values())
-            if created_from is not None:
-                rows = [row for row in rows if row.created_at >= created_from]
-            if created_to is not None:
-                rows = [row for row in rows if row.created_at <= created_to]
-            if operation_type is not None:
-                rows = [row for row in rows if row.operation_type == operation_type]
-            if status is not None:
-                rows = [row for row in rows if row.status == status]
-            if correlation_id is not None:
-                rows = [row for row in rows if row.correlation_id == correlation_id]
-            rows = sorted(
-                rows,
-                key=lambda item: (item.created_at, item.operation_id),
-                reverse=True,
+            page, next_cursor = _list_operations_filtered(
+                operations=list(self._operations.values()),
+                filters=_OperationListFilters(
+                    created_from=created_from,
+                    created_to=created_to,
+                    operation_type=operation_type,
+                    status=status,
+                    correlation_id=correlation_id,
+                ),
+                limit=limit,
+                cursor=cursor,
             )
-            if cursor is not None:
-                cursor_index = next(
-                    (index for index, row in enumerate(rows) if row.operation_id == cursor),
-                    None,
-                )
-                if cursor_index is None:
-                    return [], None
-                rows = rows[cursor_index + 1 :]
-            page = rows[:limit]
-            next_cursor = page[-1].operation_id if len(rows) > limit else None
             return [deepcopy(row) for row in page], next_cursor
 
     def purge_expired_operations(self, *, ttl_seconds: int, now: datetime) -> int:
