@@ -19063,3 +19063,36 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal realized-source mapping
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-785: Solver fallback helper extraction
+
+- Date: 2026-06-12
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_solve_with_fallbacks` was the next current source-complexity hotspot and combined
+  installed-solver discovery, solver availability filtering, solve invocation, compatibility
+  fallback exception handling, status normalization, and optimal-status detection in one loop.
+- Action: extracted installed-solver discovery, availability checks, individual solve-attempt
+  status handling, and optimal-status detection into focused helpers while preserving solver order,
+  compatibility fallback behavior, and latest-status reporting. Added direct helper tests for
+  unavailable installed-solver discovery, try-all availability semantics, compatibility kwarg
+  rejection, successful status normalization, and optimal-status classification. Refreshed
+  current-state quality reports and preserved stable baseline/rule artifacts; the refreshed
+  complexity report shows `_solve_with_fallbacks` dropped out of the top current source-complexity
+  list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_solver_fallbacks.py -q` (15 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal solver fallback maintainability
+  refactoring and repo-local quality evidence.
