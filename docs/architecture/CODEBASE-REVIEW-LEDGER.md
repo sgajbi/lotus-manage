@@ -19096,3 +19096,66 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal solver fallback maintainability
   refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-786: In-memory outcome review persistence helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/outcomes/in_memory.py`,
+  `tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: in-memory `save_outcome_review` was the next current source-complexity hotspot and
+  mixed immutable content-hash conflict checks, idempotency-key registration, retention metadata
+  projection, review persistence, and append-only event de-duplication in one repository method.
+- Action: extracted focused helper rules for review identity conflicts, idempotency registration,
+  retention metadata construction, and missing-event appends while preserving repository locking,
+  deepcopy boundaries, and storage ownership. Added direct helper tests for immutable conflict
+  rejection, idempotency conflict rejection, retention expiry serialization, and append-only event
+  copying. Refreshed current-state quality reports and preserved stable baseline/rule artifacts;
+  the refreshed complexity report shows `save_outcome_review` dropped out of the top current
+  source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m ruff format --check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/outcomes/in_memory.py`,
+  `python -m pytest tests/unit/infrastructure/test_outcome_review_repository.py` (19 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal in-memory outcome review
+  repository maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-787: Core realized-tax currency total helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_select_currency_total` was the next current source-complexity hotspot and mixed
+  response-shape validation, currency normalization, per-row mapping, case-insensitive matching,
+  missing-currency errors, and ambiguous multi-currency errors in one helper.
+- Action: extracted currency-filter normalization, source-row loading, row matching, and selection
+  validation helpers while preserving the realized-tax adapter contract and source-owned lotus-core
+  evidence semantics. Added direct helper tests for case-insensitive matching, no-filter behavior,
+  missing requested currency errors, and ambiguous multi-currency errors. Refreshed current-state
+  quality reports and preserved stable baseline/rule artifacts; the refreshed complexity report
+  shows `_select_currency_total` dropped out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/core_sources.py`,
+  `python -m pytest tests/unit/core/test_core_realized_outcome_sources.py` (46 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal realized-tax source mapping
+  maintainability refactoring and repo-local quality evidence.

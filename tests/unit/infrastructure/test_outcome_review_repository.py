@@ -20,9 +20,13 @@ from src.core.outcomes.models import DpmOutcomeDimensionInput
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 from src.infrastructure.outcomes.in_memory import (
+    _OutcomeReviewFilters,
+    _append_missing_outcome_events,
     _list_outcome_reviews,
     _outcome_review_matches_filters,
-    _OutcomeReviewFilters,
+    _raise_on_outcome_review_identity_conflict,
+    _register_outcome_review_idempotency,
+    _retention_metadata_for_review,
 )
 from src.infrastructure.outcomes.postgres import (
     PostgresDpmOutcomeReviewRepository,
@@ -339,6 +343,65 @@ def test_outcome_review_list_helper_filters_sorts_and_pages() -> None:
     )
 
     assert [review.outcome_review_id for review in listed] == ["dor_newer"]
+
+
+def test_outcome_review_identity_helper_rejects_content_hash_change() -> None:
+    review = _review()
+
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IMMUTABLE"):
+        _raise_on_outcome_review_identity_conflict(
+            {review.outcome_review_id: review},
+            review.model_copy(update={"content_hash": "sha256:different"}),
+        )
+
+
+def test_outcome_review_idempotency_helper_registers_once_per_review() -> None:
+    review = _review()
+    idempotency_index: dict[str, str] = {}
+
+    _register_outcome_review_idempotency(idempotency_index, review)
+    _register_outcome_review_idempotency(idempotency_index, review)
+
+    assert idempotency_index == {"idem_001": "dor_001"}
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IDEMPOTENCY"):
+        _register_outcome_review_idempotency(
+            idempotency_index,
+            _review(outcome_review_id="dor_002", content_hash="sha256:review-2"),
+        )
+
+
+def test_outcome_review_retention_helper_serializes_expiry() -> None:
+    retention = _retention_metadata_for_review(
+        review=_review(),
+        retention_expires_at=datetime(2033, 5, 6, tzinfo=timezone.utc),
+    )
+
+    assert retention.outcome_review_id == "dor_001"
+    assert retention.retention_policy == "DPM_OUTCOME_REVIEW_7Y"
+    assert retention.retention_expires_at == "2033-05-06T00:00:00+00:00"
+    assert retention.legal_hold_state == "NONE"
+
+
+def test_outcome_review_event_helper_appends_missing_events_once() -> None:
+    review = _review()
+    existing_events = [review.events[0]]
+    refreshed = DpmOutcomeEvent(
+        event_id="dor_001_refreshed",
+        event_type="OUTCOME_REVIEW_SOURCE_REFRESHED",
+        event_time="2026-05-06T01:30:00Z",
+        actor="system",
+        outcome_review_id="dor_001",
+        state="READY",
+        reason_codes=["SOURCE_REFRESHED"],
+    )
+
+    _append_missing_outcome_events(existing_events, [review.events[0], refreshed])
+
+    assert [event.event_id for event in existing_events] == [
+        "dor_001_created",
+        "dor_001_refreshed",
+    ]
+    assert existing_events[1] is not refreshed
 
 
 def test_in_memory_outcome_repository_returns_deep_copies() -> None:

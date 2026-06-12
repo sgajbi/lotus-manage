@@ -490,28 +490,57 @@ def _select_currency_total(
     response: dict[str, Any],
     currency: str | None,
 ) -> dict[str, Any]:
+    normalized_currency = _normalized_currency_filter(currency)
+    matches = [
+        total
+        for total in _currency_total_rows(response)
+        if _currency_total_matches(total, normalized_currency)
+    ]
+    _raise_on_invalid_currency_total_selection(
+        matches=matches,
+        normalized_currency=normalized_currency,
+        requested_currency=currency,
+    )
+    return matches[0]
+
+
+def _normalized_currency_filter(currency: str | None) -> str | None:
+    return currency.upper() if isinstance(currency, str) else None
+
+
+def _currency_total_rows(response: dict[str, Any]) -> list[dict[str, Any]]:
     totals = response.get("currency_totals")
     if not isinstance(totals, list) or not totals:
         raise CoreOutcomeSourceError(
             "lotus-core realized-tax summary response is missing currency_totals"
         )
-    normalized_currency = currency.upper() if isinstance(currency, str) else None
-    matches = [
-        _read_mapping(total)
-        for total in totals
-        if normalized_currency is None
-        or (_read_text(_read_mapping(total).get("currency")) or "").upper() == normalized_currency
-    ]
+    return [_read_mapping(total) for total in totals]
+
+
+def _currency_total_matches(
+    total: dict[str, Any],
+    normalized_currency: str | None,
+) -> bool:
+    if normalized_currency is None:
+        return True
+    return (_read_text(total.get("currency")) or "").upper() == normalized_currency
+
+
+def _raise_on_invalid_currency_total_selection(
+    *,
+    matches: list[dict[str, Any]],
+    normalized_currency: str | None,
+    requested_currency: str | None,
+) -> None:
     if not matches:
         raise CoreOutcomeSourceError(
-            f"lotus-core realized-tax summary response is missing currency {currency}"
+            f"lotus-core realized-tax summary response is missing currency {requested_currency}"
         )
     if normalized_currency is None and len(matches) != 1:
         raise CoreOutcomeSourceError(
             "lotus-core realized-tax summary response has multiple currencies; "
             "currency must be supplied"
         )
-    return matches[0]
 
 
 def _find_cash_movement_bucket(
