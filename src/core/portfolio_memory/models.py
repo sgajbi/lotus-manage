@@ -589,19 +589,73 @@ def _validate_search_item_latest_event_metadata(
     latest_event_time: str | None,
     latest_event_type: PortfolioMemoryEventType | None,
 ) -> None:
-    latest_event_fields = [latest_event_time, latest_event_type]
     if event_count == 0:
-        if supportability_state != "EMPTY":
-            raise ValueError("empty search items must use EMPTY supportability_state.")
-        if event_type_counts or source_systems or reason_codes:
-            raise ValueError("empty search items must not carry aggregate event metadata.")
-        if any(value is not None for value in latest_event_fields):
-            raise ValueError("empty search items must not carry latest event metadata.")
-    else:
-        if supportability_state == "EMPTY":
-            raise ValueError("non-empty search items must not use EMPTY supportability_state.")
-        if any(value is None for value in latest_event_fields):
-            raise ValueError("non-empty search items must carry latest event metadata.")
+        _validate_empty_search_item_latest_event_metadata(
+            supportability_state=supportability_state,
+            event_type_counts=event_type_counts,
+            source_systems=source_systems,
+            reason_codes=reason_codes,
+            latest_event_time=latest_event_time,
+            latest_event_type=latest_event_type,
+        )
+        return
+
+    _validate_populated_search_item_latest_event_metadata(
+        supportability_state=supportability_state,
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    )
+
+
+def _validate_empty_search_item_latest_event_metadata(
+    *,
+    supportability_state: PortfolioMemorySupportabilityState,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> None:
+    if supportability_state != "EMPTY":
+        raise ValueError("empty search items must use EMPTY supportability_state.")
+    if event_type_counts or source_systems or reason_codes:
+        raise ValueError("empty search items must not carry aggregate event metadata.")
+    if _latest_event_metadata_is_present(
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    ):
+        raise ValueError("empty search items must not carry latest event metadata.")
+
+
+def _validate_populated_search_item_latest_event_metadata(
+    *,
+    supportability_state: PortfolioMemorySupportabilityState,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> None:
+    if supportability_state == "EMPTY":
+        raise ValueError("non-empty search items must not use EMPTY supportability_state.")
+    if not _latest_event_metadata_is_complete(
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    ):
+        raise ValueError("non-empty search items must carry latest event metadata.")
+
+
+def _latest_event_metadata_is_present(
+    *,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> bool:
+    return latest_event_time is not None or latest_event_type is not None
+
+
+def _latest_event_metadata_is_complete(
+    *,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> bool:
+    return latest_event_time is not None and latest_event_type is not None
 
 
 def _validate_search_item_latest_matching_event_metadata(
@@ -880,18 +934,62 @@ def _validate_search_page_pagination(
     if returned_count > total_count:
         raise ValueError("returned_count must not exceed total_count.")
 
-    expected_has_more = offset + returned_count < total_count
+    expected_has_more = _page_has_more(
+        offset=offset,
+        returned_count=returned_count,
+        total_count=total_count,
+    )
     if has_more != expected_has_more:
         raise ValueError("has_more must match pagination posture.")
 
+    _validate_search_page_next_offset(
+        offset=offset,
+        returned_count=returned_count,
+        has_more=has_more,
+        next_offset=next_offset,
+    )
+
+
+def _page_has_more(
+    *,
+    offset: int,
+    returned_count: int,
+    total_count: int,
+) -> bool:
+    return offset + returned_count < total_count
+
+
+def _expected_search_page_next_offset(
+    *,
+    offset: int,
+    returned_count: int,
+    has_more: bool,
+) -> int | None:
     if has_more:
-        expected_next_offset = offset + returned_count
-        if next_offset is None or next_offset != expected_next_offset:
-            raise ValueError("next_offset must equal offset plus returned_count.")
-        if next_offset <= offset:
-            raise ValueError("next_offset must advance when has_more is true.")
-    elif next_offset is not None:
-        raise ValueError("next_offset must be null when has_more is false.")
+        return offset + returned_count
+    return None
+
+
+def _validate_search_page_next_offset(
+    *,
+    offset: int,
+    returned_count: int,
+    has_more: bool,
+    next_offset: int | None,
+) -> None:
+    expected_next_offset = _expected_search_page_next_offset(
+        offset=offset,
+        returned_count=returned_count,
+        has_more=has_more,
+    )
+    if not has_more:
+        if next_offset is not None:
+            raise ValueError("next_offset must be null when has_more is false.")
+        return
+    if next_offset is None or next_offset != expected_next_offset:
+        raise ValueError("next_offset must equal offset plus returned_count.")
+    if next_offset <= offset:
+        raise ValueError("next_offset must advance when has_more is true.")
 
 
 def _validate_search_page_count_maps(

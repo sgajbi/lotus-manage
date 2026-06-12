@@ -19159,3 +19159,37 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal realized-tax source mapping
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-788: Portfolio-memory search validator helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_validate_search_page_pagination` and
+  `_validate_search_item_latest_event_metadata` were current source-complexity hotspots and mixed
+  page-count consistency, has-more calculation, next-offset validation, empty item aggregate
+  validation, and populated latest-event metadata requirements inside broader model validators.
+- Action: extracted pagination posture, expected next-offset projection, next-offset validation,
+  latest-event metadata presence/completeness predicates, and split empty/populated latest-event
+  validators while preserving the `DpmPortfolioMemorySearchPage` and search item model validation
+  contracts. Added direct helper tests for advancing/non-advancing pagination, terminal pages,
+  partial latest-event metadata, empty aggregate metadata rejection, and populated item metadata
+  requirements. Refreshed current-state quality reports and preserved stable baseline/rule
+  artifacts; the refreshed complexity report shows both targeted portfolio-memory validators
+  dropped out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m ruff format --check src/core/portfolio_memory/models.py tests/unit/dpm/portfolio_memory/test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/models.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_page.py` (33 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory validator
+  maintainability refactoring and repo-local quality evidence.
