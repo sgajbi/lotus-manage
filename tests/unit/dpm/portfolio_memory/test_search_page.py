@@ -10,7 +10,13 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemory,
     DpmPortfolioMemoryEvent,
     DpmPortfolioMemorySourceRef,
+    _expected_search_page_next_offset,
+    _latest_event_metadata_is_complete,
+    _latest_event_metadata_is_present,
+    _page_has_more,
     _search_page_source_system_counts,
+    _validate_empty_search_item_latest_event_metadata,
+    _validate_populated_search_item_latest_event_metadata,
     _validate_search_item_counts,
     _validate_search_item_latest_event_metadata,
     _validate_search_item_latest_matching_event_metadata,
@@ -18,6 +24,7 @@ from src.core.portfolio_memory.models import (
     _validate_search_item_sorted_aggregates,
     _validate_complete_search_page_counts,
     _validate_search_page_count_maps,
+    _validate_search_page_next_offset,
     _validate_search_page_pagination,
     _validate_search_page_returned_counts_covered,
 )
@@ -296,6 +303,23 @@ def test_validate_search_page_pagination_rejects_terminal_next_offset() -> None:
         )
 
 
+def test_search_page_pagination_helpers_project_has_more_and_next_offset() -> None:
+    assert _page_has_more(offset=0, returned_count=2, total_count=5)
+    assert not _page_has_more(offset=3, returned_count=2, total_count=5)
+    assert _expected_search_page_next_offset(offset=10, returned_count=25, has_more=True) == 35
+    assert _expected_search_page_next_offset(offset=10, returned_count=25, has_more=False) is None
+
+
+def test_search_page_next_offset_helper_rejects_non_advancing_offset() -> None:
+    with pytest.raises(ValueError, match="next_offset must advance"):
+        _validate_search_page_next_offset(
+            offset=2,
+            returned_count=0,
+            has_more=True,
+            next_offset=2,
+        )
+
+
 def test_validate_search_page_count_maps_rejects_negative_and_mismatched_totals() -> None:
     with pytest.raises(ValueError, match="event_type_counts values must be non-negative"):
         _validate_search_page_count_maps(
@@ -408,6 +432,46 @@ def test_validate_search_item_latest_event_helper_rejects_empty_item_with_latest
             event_type_counts={},
             source_systems=[],
             reason_codes=[],
+            latest_event_time="2026-05-31T10:00:00+00:00",
+            latest_event_type=None,
+        )
+
+
+def test_latest_event_metadata_presence_helpers_track_partial_and_complete_metadata() -> None:
+    assert not _latest_event_metadata_is_present(
+        latest_event_time=None,
+        latest_event_type=None,
+    )
+    assert _latest_event_metadata_is_present(
+        latest_event_time="2026-05-31T10:00:00+00:00",
+        latest_event_type=None,
+    )
+    assert not _latest_event_metadata_is_complete(
+        latest_event_time="2026-05-31T10:00:00+00:00",
+        latest_event_type=None,
+    )
+    assert _latest_event_metadata_is_complete(
+        latest_event_time="2026-05-31T10:00:00+00:00",
+        latest_event_type="WAVE_HANDOFF_READY",
+    )
+
+
+def test_empty_search_item_latest_event_helper_rejects_aggregate_metadata() -> None:
+    with pytest.raises(ValueError, match="aggregate event metadata"):
+        _validate_empty_search_item_latest_event_metadata(
+            supportability_state="EMPTY",
+            event_type_counts={"WAVE_HANDOFF_READY": 1},
+            source_systems=[],
+            reason_codes=[],
+            latest_event_time=None,
+            latest_event_type=None,
+        )
+
+
+def test_populated_search_item_latest_event_helper_requires_complete_metadata() -> None:
+    with pytest.raises(ValueError, match="must carry latest event metadata"):
+        _validate_populated_search_item_latest_event_metadata(
+            supportability_state="READY",
             latest_event_time="2026-05-31T10:00:00+00:00",
             latest_event_type=None,
         )
