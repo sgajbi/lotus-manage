@@ -223,31 +223,81 @@ def _classify_approval_inbox_posture(
     discovery: DpmBulkReviewCampaignDiscoveryItem,
     readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
 ) -> tuple[CampaignApprovalInboxStatus, list[str]]:
-    if definition.status in {"RETIRED", "SUPERSEDED"}:
-        return "CLOSED", [f"CAMPAIGN_DEFINITION_{definition.status}"]
-    if readiness.actor_entitlement_state in {"ACTOR_REQUIRED", "UNAUTHORIZED"}:
-        return "ENTITLEMENT_ATTENTION", [
-            reason
-            for reason in readiness.reason_codes
-            if reason
-            in {
-                "BULK_REVIEW_CAMPAIGN_ACTOR_REQUIRED_FOR_ENTITLEMENT",
-                "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
-            }
-        ]
-    if discovery.expiry_state in {"EXPIRED", "INVALID"} or readiness.expiry_state in {
+    for posture in (
+        _closed_approval_inbox_posture(definition),
+        _entitlement_attention_posture(readiness),
+        _expiry_attention_posture(discovery=discovery, readiness=readiness),
+    ):
+        if posture is not None:
+            return posture
+    return _governance_approval_posture(discovery)
+
+
+def _closed_approval_inbox_posture(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> tuple[CampaignApprovalInboxStatus, list[str]] | None:
+    if definition.status not in {"RETIRED", "SUPERSEDED"}:
+        return None
+    return "CLOSED", [f"CAMPAIGN_DEFINITION_{definition.status}"]
+
+
+def _entitlement_attention_posture(
+    readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
+) -> tuple[CampaignApprovalInboxStatus, list[str]] | None:
+    if readiness.actor_entitlement_state not in {"ACTOR_REQUIRED", "UNAUTHORIZED"}:
+        return None
+    return "ENTITLEMENT_ATTENTION", _entitlement_attention_reason_codes(readiness)
+
+
+def _entitlement_attention_reason_codes(
+    readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
+) -> list[str]:
+    return [
+        reason
+        for reason in readiness.reason_codes
+        if reason
+        in {
+            "BULK_REVIEW_CAMPAIGN_ACTOR_REQUIRED_FOR_ENTITLEMENT",
+            "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
+        }
+    ]
+
+
+def _expiry_attention_posture(
+    *,
+    discovery: DpmBulkReviewCampaignDiscoveryItem,
+    readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
+) -> tuple[CampaignApprovalInboxStatus, list[str]] | None:
+    if discovery.expiry_state not in {"EXPIRED", "INVALID"} and readiness.expiry_state not in {
         "EXPIRED",
         "INVALID",
     }:
-        return "EXPIRY_ATTENTION", [
-            reason
-            for reason in readiness.reason_codes
-            if reason
-            in {
-                "BULK_REVIEW_CAMPAIGN_EXPIRED",
-                "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
-            }
-        ] or [f"CAMPAIGN_DEFINITION_EXPIRY_{discovery.expiry_state}"]
+        return None
+    return "EXPIRY_ATTENTION", _expiry_attention_reason_codes(
+        discovery=discovery,
+        readiness=readiness,
+    )
+
+
+def _expiry_attention_reason_codes(
+    *,
+    discovery: DpmBulkReviewCampaignDiscoveryItem,
+    readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
+) -> list[str]:
+    return [
+        reason
+        for reason in readiness.reason_codes
+        if reason
+        in {
+            "BULK_REVIEW_CAMPAIGN_EXPIRED",
+            "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
+        }
+    ] or [f"CAMPAIGN_DEFINITION_EXPIRY_{discovery.expiry_state}"]
+
+
+def _governance_approval_posture(
+    discovery: DpmBulkReviewCampaignDiscoveryItem,
+) -> tuple[CampaignApprovalInboxStatus, list[str]]:
     if discovery.governance_status == "INCOMPLETE":
         return "APPROVAL_INCOMPLETE", ["BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE"]
     if discovery.governance_status == "NOT_SUPPLIED":

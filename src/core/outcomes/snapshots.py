@@ -220,18 +220,55 @@ def _resolve_wave_item(
     selection: ConstructionAlternativeSelection,
     proof_pack: DpmPreTradeProofPack,
 ) -> DpmRebalanceWaveItem | None:
+    if not _wave_item_lookup_required(wave=wave, wave_item_id=wave_item_id):
+        return None
+    assert wave is not None
+    assert wave_item_id is not None
+    wave_item = _find_wave_item(wave=wave, wave_item_id=wave_item_id)
+    _validate_wave_item_linkage(
+        wave_item=wave_item,
+        alternative_set=alternative_set,
+        selection=selection,
+        proof_pack=proof_pack,
+    )
+    return wave_item
+
+
+def _wave_item_lookup_required(
+    *,
+    wave: DpmRebalanceWave | None,
+    wave_item_id: str | None,
+) -> bool:
     if not wave and wave_item_id:
         msg = "wave_item_id cannot be supplied without wave"
         raise DpmExpectedSnapshotAssemblyError(msg)
     if not wave:
-        return None
+        return False
     if not wave_item_id:
         msg = "wave_item_id is required when wave evidence is supplied"
         raise DpmExpectedSnapshotAssemblyError(msg)
-    wave_item = next((item for item in wave.items if item.wave_item_id == wave_item_id), None)
-    if wave_item is None:
-        msg = "wave_item_id does not exist in wave"
-        raise DpmExpectedSnapshotAssemblyError(msg)
+    return True
+
+
+def _find_wave_item(
+    *,
+    wave: DpmRebalanceWave,
+    wave_item_id: str,
+) -> DpmRebalanceWaveItem:
+    for item in wave.items:
+        if item.wave_item_id == wave_item_id:
+            return item
+    msg = "wave_item_id does not exist in wave"
+    raise DpmExpectedSnapshotAssemblyError(msg)
+
+
+def _validate_wave_item_linkage(
+    *,
+    wave_item: DpmRebalanceWaveItem,
+    alternative_set: ConstructionAlternativeSet,
+    selection: ConstructionAlternativeSelection,
+    proof_pack: DpmPreTradeProofPack,
+) -> None:
     _require_equal("wave_item.portfolio_id", wave_item.portfolio_id, alternative_set.portfolio_id)
     if proof_pack.mandate_id and wave_item.mandate_id:
         _require_equal("wave_item.mandate_id", wave_item.mandate_id, proof_pack.mandate_id)
@@ -246,7 +283,6 @@ def _resolve_wave_item(
         selection.alternative_id,
     )
     _require_equal("wave_item.proof_pack_id", wave_item.proof_pack_id, proof_pack.proof_pack_id)
-    return wave_item
 
 
 def _resolve_handoff(

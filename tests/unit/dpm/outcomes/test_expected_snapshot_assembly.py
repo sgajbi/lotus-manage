@@ -13,7 +13,9 @@ from src.core.construction.vocabulary import ConstructionMethod, ConstructionMet
 from src.core.models import Money
 from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
+    _find_wave_item,
     _proof_pack_state,
+    _wave_item_lookup_required,
     assemble_expected_outcome_snapshot,
     build_expected_snapshot_calculation_trace,
     build_expected_snapshot_identity,
@@ -441,6 +443,31 @@ def test_expected_snapshot_requires_complete_wave_item_context() -> None:
             proof_pack=_proof_pack(),
             wave=_wave(),
         )
+
+
+def test_wave_item_lookup_required_helper_validates_lookup_inputs() -> None:
+    assert _wave_item_lookup_required(wave=None, wave_item_id=None) is False
+    assert _wave_item_lookup_required(wave=_wave(), wave_item_id="dwi_outcome_001") is True
+
+    with pytest.raises(
+        DpmExpectedSnapshotAssemblyError,
+        match="wave_item_id cannot be supplied without wave",
+    ):
+        _wave_item_lookup_required(wave=None, wave_item_id="dwi_outcome_001")
+
+    with pytest.raises(
+        DpmExpectedSnapshotAssemblyError,
+        match="wave_item_id is required when wave evidence is supplied",
+    ):
+        _wave_item_lookup_required(wave=_wave(), wave_item_id=None)
+
+
+def test_find_wave_item_helper_returns_matching_wave_item_or_fails_closed() -> None:
+    wave = _wave()
+
+    assert _find_wave_item(wave=wave, wave_item_id="dwi_outcome_001") == wave.items[0]
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="wave_item_id does not exist"):
+        _find_wave_item(wave=wave, wave_item_id="dwi_missing")
 
 
 @pytest.mark.parametrize(
