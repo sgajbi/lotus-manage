@@ -19869,3 +19869,36 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal outcome-review Postgres
   persistence maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-810: Turnover-limit selection helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/rebalance/turnover.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `apply_turnover_limit` was the top current source-complexity hotspot after the
+  outcome-review persistence slice and mixed turnover budget calculation, proposed turnover
+  aggregation, ranking-key construction, selected-intent accumulation, dropped-intent diagnostics,
+  and warning emission in one function.
+- Action: extracted deterministic turnover budget, proposed-turnover, rank-key, and dropped-intent
+  diagnostic helpers while preserving public engine behavior, score ordering, exact-fit selection,
+  notional-base skip behavior, dropped-intent payloads, and warning emission. Added direct helper
+  tests for budget/proposed turnover, ranking order, and dropped diagnostic materialization.
+  Refreshed current-state quality reports and preserved the stable baseline artifact; the refreshed
+  complexity report shows `apply_turnover_limit` dropped out of the top current source-complexity
+  list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py tests/unit/dpm/engine/test_engine_turnover_control.py`,
+  `python -m ruff format --check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py tests/unit/dpm/engine/test_engine_turnover_control.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/turnover.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_turnover_control.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py -q` (17 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal turnover-limit maintainability
+  refactoring and repo-local quality evidence.
