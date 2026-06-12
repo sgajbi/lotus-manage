@@ -8,15 +8,19 @@ from src.api.openapi_enrichment import (
     _ensure_operation_default_docs,
     _ensure_operation_default_error_response,
     _ensure_operation_examples,
+    _ensure_property_documentation,
     _infer_description,
     _infer_example,
     _is_error_status_code,
     _is_http_operation_method,
+    _model_documentable_properties,
     _number_example_for_key,
     _operation_has_error_response,
     _operation_tag_for_path,
     _ref_example_from_schema,
+    _schema_component_schemas,
     _schema_declared_example,
+    _schema_documentable_properties,
     _schema_format_example,
     _schema_http_operations,
     _schema_type_example,
@@ -417,6 +421,65 @@ def test_openapi_enrichment_schema_http_operations_filters_schema_fragments() ->
 
     assert list(_schema_http_operations(schema)) == [("/api/v1/custom", "get", operation)]
     assert list(_schema_http_operations({"paths": []})) == []
+
+
+def test_openapi_enrichment_schema_documentable_properties_filters_fragments() -> None:
+    good_property = {"type": "string"}
+    schema = {
+        "components": {
+            "schemas": {
+                "Payload": {"properties": {"customId": good_property, 42: {"type": "string"}}},
+                "Broken": [],
+                99: {"properties": {"ignored": {"type": "string"}}},
+                "NoProperties": {"properties": []},
+                "MixedProperties": {"properties": {"bad": []}},
+            }
+        }
+    }
+
+    assert list(_schema_documentable_properties(schema)) == [("Payload", "customId", good_property)]
+    assert list(_schema_documentable_properties({"components": []})) == []
+    assert _schema_component_schemas(schema) == schema["components"]["schemas"]
+    assert _schema_component_schemas({"components": []}) is None
+    assert list(
+        _model_documentable_properties(
+            model_name="Payload",
+            model_schema={"properties": {"customId": good_property, 42: {}}},
+        )
+    ) == [("Payload", "customId", good_property)]
+    assert list(_model_documentable_properties(model_name=42, model_schema={})) == []
+    assert (
+        list(_model_documentable_properties(model_name="Payload", model_schema={"properties": []}))
+        == []
+    )
+
+
+def test_openapi_enrichment_property_documentation_preserves_existing_values() -> None:
+    existing = {
+        "type": "string",
+        "description": "Existing description.",
+        "example": "existing-example",
+    }
+    generated = {"type": "string"}
+
+    _ensure_property_documentation(
+        model_name="Payload",
+        prop_name="customId",
+        prop_schema=existing,
+    )
+    _ensure_property_documentation(
+        model_name="Payload",
+        prop_name="customId",
+        prop_schema=generated,
+    )
+
+    assert existing == {
+        "type": "string",
+        "description": "Existing description.",
+        "example": "existing-example",
+    }
+    assert generated["description"] == "Unique custom identifier."
+    assert generated["example"] == "CUSTOM_001"
 
 
 def test_openapi_enrichment_metrics_helper_adds_prometheus_and_error_examples() -> None:

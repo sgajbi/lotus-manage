@@ -19353,3 +19353,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal campaign assignment task
   idempotency helper maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-794: OpenAPI schema documentation helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_ensure_schema_documentation` was the top current source-complexity hotspot and mixed
+  component/schema/property filtering with description and example mutation for OpenAPI schema
+  enrichment.
+- Action: extracted documentable schema-property iteration, component schema extraction, model
+  property filtering, and property documentation mutation helpers while preserving the existing
+  enrichment behavior for non-standard schema fragments, declared descriptions, and declared
+  examples. Added direct helper tests for fragment filtering, component-schema extraction,
+  model-property filtering, generated descriptions/examples, and preserving existing property
+  documentation. Refreshed current-state quality reports and preserved the stable baseline
+  artifact; the refreshed complexity report shows `_ensure_schema_documentation` dropped out of the
+  top current source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q` (23 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
+  maintainability refactoring and repo-local quality evidence.
