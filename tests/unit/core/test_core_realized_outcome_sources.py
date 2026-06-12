@@ -15,6 +15,10 @@ from src.core.outcomes import (
 from src.core.outcomes.core_sources import (
     _cash_movement_bucket_matches,
     _cash_movement_buckets,
+    _currency_total_matches,
+    _currency_total_rows,
+    _normalized_currency_filter,
+    _raise_on_invalid_currency_total_selection,
     _transaction_cashflow_value,
     _transaction_fx_pnl_value,
 )
@@ -1022,6 +1026,33 @@ def test_realized_tax_summary_adapter_rejects_ambiguous_currency_totals() -> Non
 
     with pytest.raises(CoreOutcomeSourceError, match="currency must be supplied"):
         realized_tax_summary_source_from_realized_tax_summary_response(response)
+
+
+def test_realized_tax_summary_currency_total_helpers_match_requested_currency() -> None:
+    rows = _currency_total_rows(_realized_tax_summary_response())
+
+    assert _normalized_currency_filter("usd") == "USD"
+    assert _normalized_currency_filter(None) is None
+    assert _currency_total_matches(rows[0], "USD")
+    assert not _currency_total_matches(rows[0], "SGD")
+
+
+def test_realized_tax_summary_currency_total_helper_rejects_invalid_selection() -> None:
+    with pytest.raises(CoreOutcomeSourceError, match="missing currency SGD"):
+        _raise_on_invalid_currency_total_selection(
+            matches=[],
+            normalized_currency="SGD",
+            requested_currency="SGD",
+        )
+    with pytest.raises(CoreOutcomeSourceError, match="currency must be supplied"):
+        _raise_on_invalid_currency_total_selection(
+            matches=[
+                {"currency": "USD", "total_tax_amount": "1"},
+                {"currency": "SGD", "total_tax_amount": "2"},
+            ],
+            normalized_currency=None,
+            requested_currency=None,
+        )
 
 
 def test_realized_tax_summary_adapter_rejects_missing_reporting_total() -> None:
