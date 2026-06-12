@@ -19096,3 +19096,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal solver fallback maintainability
   refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-786: In-memory outcome review persistence helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/outcomes/in_memory.py`,
+  `tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: in-memory `save_outcome_review` was the next current source-complexity hotspot and
+  mixed immutable content-hash conflict checks, idempotency-key registration, retention metadata
+  projection, review persistence, and append-only event de-duplication in one repository method.
+- Action: extracted focused helper rules for review identity conflicts, idempotency registration,
+  retention metadata construction, and missing-event appends while preserving repository locking,
+  deepcopy boundaries, and storage ownership. Added direct helper tests for immutable conflict
+  rejection, idempotency conflict rejection, retention expiry serialization, and append-only event
+  copying. Refreshed current-state quality reports and preserved stable baseline/rule artifacts;
+  the refreshed complexity report shows `save_outcome_review` dropped out of the top current
+  source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m ruff format --check src/infrastructure/outcomes/in_memory.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/outcomes/in_memory.py`,
+  `python -m pytest tests/unit/infrastructure/test_outcome_review_repository.py` (19 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal in-memory outcome review
+  repository maintainability refactoring and repo-local quality evidence.

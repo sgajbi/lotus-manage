@@ -41,27 +41,17 @@ class InMemoryDpmOutcomeReviewRepository(DpmOutcomeReviewRepository):
         retention_expires_at: datetime | None,
     ) -> None:
         with self._lock:
-            existing = self._reviews.get(review.outcome_review_id)
-            if existing is not None and existing.content_hash != review.content_hash:
-                raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IMMUTABLE_CONFLICT")
-            if review.idempotency_key:
-                existing_id = self._idempotency_index.get(review.idempotency_key)
-                if existing_id is not None and existing_id != review.outcome_review_id:
-                    raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT")
-                self._idempotency_index[review.idempotency_key] = review.outcome_review_id
+            _raise_on_outcome_review_identity_conflict(self._reviews, review)
+            _register_outcome_review_idempotency(self._idempotency_index, review)
             self._reviews[review.outcome_review_id] = deepcopy(review)
-            self._retention[review.outcome_review_id] = DpmOutcomeRetentionMetadata(
-                outcome_review_id=review.outcome_review_id,
-                retention_policy=review.retention_policy,
-                retention_expires_at=retention_expires_at.isoformat()
-                if retention_expires_at
-                else None,
-                legal_hold_state=review.legal_hold_state,
+            self._retention[review.outcome_review_id] = _retention_metadata_for_review(
+                review=review,
+                retention_expires_at=retention_expires_at,
             )
-            events = self._events.setdefault(review.outcome_review_id, [])
-            for event in review.events:
-                if not any(existing_event.event_id == event.event_id for existing_event in events):
-                    events.append(deepcopy(event))
+            _append_missing_outcome_events(
+                self._events.setdefault(review.outcome_review_id, []),
+                review.events,
+            )
 
     def get_outcome_review(
         self,
@@ -129,6 +119,52 @@ class InMemoryDpmOutcomeReviewRepository(DpmOutcomeReviewRepository):
         with self._lock:
             events = self._events.get(outcome_review_id, [])
             return deepcopy(sorted(events, key=lambda event: (event.event_time, event.event_id)))
+
+
+def _raise_on_outcome_review_identity_conflict(
+    reviews: dict[str, DpmPostTradeOutcomeReview],
+    review: DpmPostTradeOutcomeReview,
+) -> None:
+    existing = reviews.get(review.outcome_review_id)
+    if existing is not None and existing.content_hash != review.content_hash:
+        raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IMMUTABLE_CONFLICT")
+
+
+def _register_outcome_review_idempotency(
+    idempotency_index: dict[str, str],
+    review: DpmPostTradeOutcomeReview,
+) -> None:
+    if review.idempotency_key is None:
+        return
+    existing_id = idempotency_index.get(review.idempotency_key)
+    if existing_id is not None and existing_id != review.outcome_review_id:
+        raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT")
+    idempotency_index[review.idempotency_key] = review.outcome_review_id
+
+
+def _retention_metadata_for_review(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    retention_expires_at: datetime | None,
+) -> DpmOutcomeRetentionMetadata:
+    return DpmOutcomeRetentionMetadata(
+        outcome_review_id=review.outcome_review_id,
+        retention_policy=review.retention_policy,
+        retention_expires_at=retention_expires_at.isoformat() if retention_expires_at else None,
+        legal_hold_state=review.legal_hold_state,
+    )
+
+
+def _append_missing_outcome_events(
+    existing_events: list[DpmOutcomeEvent],
+    candidate_events: Iterable[DpmOutcomeEvent],
+) -> None:
+    existing_event_ids = {event.event_id for event in existing_events}
+    for event in candidate_events:
+        if event.event_id in existing_event_ids:
+            continue
+        existing_events.append(deepcopy(event))
+        existing_event_ids.add(event.event_id)
 
 
 def _outcome_review_matches_filters(
