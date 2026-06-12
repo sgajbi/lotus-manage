@@ -1,5 +1,4 @@
 import logging
-from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -7,25 +6,22 @@ from pydantic import ValidationError
 
 from src.api.observability import record_execution_call
 from src.api.services.rebalance_batch_analysis import (
-    build_comparison_metric,
     resolve_base_snapshot_ids,
     to_invalid_options_error,
 )
-from src.api.services.rebalance_source_lineage import apply_source_lineage, source_input_mode
+from src.api.services.rebalance_batch_scenario_execution import (
+    RecordForSupportFn,
+    RunSimulationFn,
+    execute_valid_batch_scenario,
+    validate_batch_scenario_options,
+)
+from src.api.services.rebalance_source_lineage import source_input_mode
 from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import (
     BatchRebalanceRequest,
     BatchRebalanceResult,
-    EngineOptions,
-    RebalanceResult,
 )
-from src.core.rebalance.policy_packs import (
-    DpmPolicyPackDefinition,
-    apply_policy_pack_to_engine_options,
-)
-
-RunSimulationFn = Callable[..., RebalanceResult]
-RecordForSupportFn = Callable[..., object]
+from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
 
 
 def execute_batch_scenarios(
@@ -47,46 +43,25 @@ def execute_batch_scenarios(
     for scenario_name in sorted(request.scenarios.keys()):
         scenario = request.scenarios[scenario_name]
         try:
-            options = EngineOptions.model_validate(scenario.options)
+            options = validate_batch_scenario_options(scenario)
         except ValidationError as exc:
             failed_scenarios[scenario_name] = to_invalid_options_error(exc)
             continue
 
         try:
-            effective_options = apply_policy_pack_to_engine_options(
+            scenario_result, scenario_metric = execute_valid_batch_scenario(
+                request=request,
+                scenario_name=scenario_name,
                 options=options,
-                policy_pack=policy_definition,
-            )
-            scenario_correlation_id = (
-                f"{correlation_id}:{scenario_name}"
-                if correlation_id
-                else f"{batch_id}:{scenario_name}"
-            )
-            request_hash = f"{batch_id}:{scenario_name}"
-            scenario_result = run_simulation_fn(
-                portfolio=request.portfolio_snapshot,
-                market_data=request.market_data_snapshot,
-                model=request.model_portfolio,
-                shelf=request.shelf_entries,
-                options=effective_options,
-                request_hash=request_hash,
-                correlation_id=scenario_correlation_id,
-            )
-            scenario_result = apply_source_lineage(
-                result=scenario_result,
+                batch_id=batch_id,
+                correlation_id=correlation_id,
+                policy_definition=policy_definition,
                 source_context=source_context,
-            )
-            record_for_support(
-                result=scenario_result,
-                request_hash=request_hash,
-                portfolio_id=request.portfolio_snapshot.portfolio_id,
-                idempotency_key=None,
+                run_simulation_fn=run_simulation_fn,
+                record_for_support=record_for_support,
             )
             results[scenario_name] = scenario_result
-            comparison_metrics[scenario_name] = build_comparison_metric(
-                scenario_result=scenario_result,
-                base_currency=request.portfolio_snapshot.base_currency,
-            )
+            comparison_metrics[scenario_name] = scenario_metric
         except (ValidationError, RuntimeError, ValueError) as exc:
             current_logger.exception("Scenario execution failed")
             failed_scenarios[scenario_name] = f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}"

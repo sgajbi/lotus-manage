@@ -19670,3 +19670,38 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal proof-pack persistence
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-804: Rebalance batch scenario execution helpers
+
+- Date: 2026-06-12
+- Scope: `src/api/services/rebalance_batch_execution.py`,
+  `src/api/services/rebalance_batch_scenario_execution.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `execute_batch_scenarios` was the top current source-complexity hotspot and combined
+  batch iteration, scenario option validation, policy-pack application, deterministic request and
+  correlation identity, engine invocation, source-lineage enrichment, supportability recording,
+  comparison metrics, failure mapping, and observability in one service function.
+- Action: extracted deterministic scenario execution identifiers, scenario option validation, and
+  valid-scenario execution into a focused service helper while preserving the public batch
+  orchestration contract, failure semantics, supportability write inputs, source-lineage handling,
+  and comparison metrics. Added direct tests for deterministic scenario identities and the
+  successful scenario execution/supportability path. Refreshed current-state quality reports and
+  preserved the stable baseline artifact; the refreshed complexity report shows
+  `execute_batch_scenarios` dropped out of the top current source-complexity list without
+  introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/rebalance_batch_execution.py src/api/services/rebalance_batch_scenario_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format --check src/api/services/rebalance_batch_execution.py src/api/services/rebalance_batch_scenario_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_batch_execution.py src/api/services/rebalance_batch_scenario_execution.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -q` (41
+  passed), `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal rebalance batch execution
+  maintainability refactoring and repo-local quality evidence.

@@ -15,6 +15,7 @@ import src.api.services.rebalance_async_operation_runner as async_runner
 import src.api.services.rebalance_async_submission as async_submission
 import src.api.services.rebalance_async_submission_payload as async_submission_payload
 import src.api.services.rebalance_batch_execution as batch_execution
+import src.api.services.rebalance_batch_scenario_execution as batch_scenario_execution
 import src.api.services.rebalance_idempotency_replay as idempotency_replay
 import src.api.services.rebalance_policy_pack_execution as policy_pack_execution
 import src.api.services.rebalance_request_envelope_resolution as envelope_resolution
@@ -819,6 +820,56 @@ def test_rebalance_batch_execution_reports_invalid_options_without_running_engin
     assert set(result.failed_scenarios) == {"invalid_case"}
     assert result.failed_scenarios["invalid_case"].startswith("INVALID_OPTIONS:")
     assert result.warnings == ["PARTIAL_BATCH_FAILURE"]
+
+
+def test_batch_scenario_execution_ids_are_deterministic() -> None:
+    assert batch_scenario_execution.build_batch_scenario_execution_ids(
+        batch_id="batch_test",
+        scenario_name="baseline",
+        correlation_id="corr_batch",
+    ) == batch_scenario_execution.BatchScenarioExecutionIds(
+        request_hash="batch_test:baseline",
+        correlation_id="corr_batch:baseline",
+    )
+    assert batch_scenario_execution.build_batch_scenario_execution_ids(
+        batch_id="batch_test",
+        scenario_name="baseline",
+        correlation_id=None,
+    ) == batch_scenario_execution.BatchScenarioExecutionIds(
+        request_hash="batch_test:baseline",
+        correlation_id="batch_test:baseline",
+    )
+
+
+def test_batch_scenario_execution_runs_engine_and_records_supportability() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+    support_calls: list[dict] = []
+
+    scenario_result, metric = batch_scenario_execution.execute_valid_batch_scenario(
+        request=request,
+        scenario_name="baseline",
+        options=batch_scenario_execution.validate_batch_scenario_options(
+            request.scenarios["baseline"]
+        ),
+        batch_id="batch_test",
+        correlation_id="corr_batch",
+        policy_definition=None,
+        source_context=None,
+        run_simulation_fn=run_simulation,
+        record_for_support=lambda **kwargs: support_calls.append(kwargs),
+    )
+
+    assert scenario_result.correlation_id == "corr_batch:baseline"
+    assert scenario_result.lineage.request_hash == "batch_test:baseline"
+    assert scenario_result.lineage.input_mode == "stateless"
+    assert metric.status == scenario_result.status
+    assert metric.gross_turnover_notional_base.currency == request.portfolio_snapshot.base_currency
+    assert support_calls[0]["request_hash"] == "batch_test:baseline"
+    assert support_calls[0]["portfolio_id"] == request.portfolio_snapshot.portfolio_id
+    assert support_calls[0]["idempotency_key"] is None
 
 
 def test_rebalance_sync_execution_runs_engine_and_records_supportability() -> None:
