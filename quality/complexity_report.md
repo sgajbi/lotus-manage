@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T14:38:53+00:00`
+- Generated at: `2026-06-12T14:41:49+00:00`
 
-- Current ref: `c3d40200`
+- Current ref: `eab940bf`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | save_outcome_review | src/infrastructure/outcomes/postgres.py | 8 | 67 |
-| 2 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
-| 3 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
-| 4 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
-| 5 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
-| 6 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
-| 7 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
-| 8 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
-| 9 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
-| 10 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
+| 1 | apply_turnover_limit | src/core/rebalance/turnover.py | 8 | 62 |
+| 2 | build_command_center_summary | src/api/services/mandate_command_center.py | 8 | 58 |
+| 3 | _tax_budget_limited_sell_quantity | src/core/rebalance/intents.py | 8 | 52 |
+| 4 | list_monitoring_exceptions | src/infrastructure/mandates/postgres.py | 8 | 52 |
+| 5 | build_proof_pack_from_selected_alternative | src/core/proof_packs/builder.py | 8 | 49 |
+| 6 | build_bulk_review_campaign_approval_inbox_item | src/core/waves/campaign_approval_inbox.py | 8 | 48 |
+| 7 | _run_state_section_payload | src/core/proof_packs/builder.py | 8 | 46 |
+| 8 | _request_source_product | src/infrastructure/core_sourcing/client.py | 8 | 44 |
+| 9 | _run_diagnostics_section_payload | src/core/proof_packs/builder.py | 8 | 42 |
+| 10 | build_target_trace | src/core/target_generation.py | 8 | 42 |
 
 ### Most Complex Current Test Functions
 

@@ -19836,3 +19836,36 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal PM quality score-run
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-809: Outcome-review Postgres persistence helpers
+
+- Date: 2026-06-12
+- Scope: `src/infrastructure/outcomes/postgres.py`,
+  `tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `save_outcome_review` was the top current source-complexity hotspot after the
+  PM-quality score-run slice and mixed immutable content-hash checks, idempotency conflict checks,
+  SQL insert parameter assembly, review insert execution, event insertion, and commit handling in
+  one repository method.
+- Action: extracted deterministic immutable-conflict, idempotency-conflict, review insert, and
+  insert-parameter helpers while preserving the repository API, SQL shape, idempotency semantics,
+  retention expiry serialization, event insertion, and commit behavior. Added direct helper tests
+  for insert parameter serialization and fail-closed conflict handling. Refreshed current-state
+  quality reports and preserved the stable baseline artifact; the refreshed complexity report shows
+  `save_outcome_review` dropped out of the top current source-complexity list without introducing a
+  replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/outcomes/postgres.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m ruff format --check src/infrastructure/outcomes/postgres.py tests/unit/infrastructure/test_outcome_review_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/outcomes/postgres.py`,
+  `python -m pytest tests/unit/infrastructure/test_outcome_review_repository.py -q` (21 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal outcome-review Postgres
+  persistence maintainability refactoring and repo-local quality evidence.

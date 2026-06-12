@@ -32,62 +32,12 @@ class PostgresDpmOutcomeReviewRepository:
         retention_expires_at: datetime | None,
     ) -> None:
         with closing(self._connect()) as connection:
-            existing = connection.execute(
-                """
-                SELECT content_hash
-                FROM dpm_post_trade_outcome_reviews
-                WHERE outcome_review_id = %s
-                """,
-                (review.outcome_review_id,),
-            ).fetchone()
-            if existing is not None and existing["content_hash"] != review.content_hash:
-                raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IMMUTABLE_CONFLICT")
-            if review.idempotency_key:
-                existing_idempotency = connection.execute(
-                    """
-                    SELECT outcome_review_id
-                    FROM dpm_post_trade_outcome_reviews
-                    WHERE idempotency_key = %s
-                    """,
-                    (review.idempotency_key,),
-                ).fetchone()
-                if (
-                    existing_idempotency is not None
-                    and existing_idempotency["outcome_review_id"] != review.outcome_review_id
-                ):
-                    raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT")
-            connection.execute(
-                """
-                INSERT INTO dpm_post_trade_outcome_reviews (
-                    outcome_review_id, portfolio_id, mandate_id, rebalance_run_id,
-                    alternative_set_id, selected_alternative_id, proof_pack_id,
-                    wave_id, wave_item_id, state, content_hash, idempotency_key,
-                    retention_policy, retention_expires_at, legal_hold_state, payload_json,
-                    created_at, created_by, correlation_id
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (outcome_review_id) DO NOTHING
-                """,
-                (
-                    review.outcome_review_id,
-                    review.portfolio_id,
-                    review.mandate_id,
-                    review.rebalance_run_id,
-                    review.alternative_set_id,
-                    review.selected_alternative_id,
-                    review.proof_pack_id,
-                    review.wave_id,
-                    review.wave_item_id,
-                    review.state,
-                    review.content_hash,
-                    review.idempotency_key,
-                    review.retention_policy,
-                    retention_expires_at.isoformat() if retention_expires_at else None,
-                    review.legal_hold_state,
-                    dump_model_json(review),
-                    review.created_at.isoformat(),
-                    review.created_by,
-                    review.correlation_id,
-                ),
+            _raise_on_existing_review_conflict(connection=connection, review=review)
+            _raise_on_idempotency_conflict(connection=connection, review=review)
+            _insert_outcome_review(
+                connection=connection,
+                review=review,
+                retention_expires_at=retention_expires_at,
             )
             for event in review.events:
                 _insert_event(connection=connection, event=event)
@@ -218,6 +168,97 @@ class PostgresDpmOutcomeReviewRepository:
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
             apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
+def _raise_on_existing_review_conflict(
+    *,
+    connection: Any,
+    review: DpmPostTradeOutcomeReview,
+) -> None:
+    existing = connection.execute(
+        """
+        SELECT content_hash
+        FROM dpm_post_trade_outcome_reviews
+        WHERE outcome_review_id = %s
+        """,
+        (review.outcome_review_id,),
+    ).fetchone()
+    if existing is not None and existing["content_hash"] != review.content_hash:
+        raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IMMUTABLE_CONFLICT")
+
+
+def _raise_on_idempotency_conflict(
+    *,
+    connection: Any,
+    review: DpmPostTradeOutcomeReview,
+) -> None:
+    if not review.idempotency_key:
+        return
+    existing_idempotency = connection.execute(
+        """
+        SELECT outcome_review_id
+        FROM dpm_post_trade_outcome_reviews
+        WHERE idempotency_key = %s
+        """,
+        (review.idempotency_key,),
+    ).fetchone()
+    if (
+        existing_idempotency is not None
+        and existing_idempotency["outcome_review_id"] != review.outcome_review_id
+    ):
+        raise DpmOutcomeReviewConflictError("DPM_OUTCOME_REVIEW_IDEMPOTENCY_CONFLICT")
+
+
+def _insert_outcome_review(
+    *,
+    connection: Any,
+    review: DpmPostTradeOutcomeReview,
+    retention_expires_at: datetime | None,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO dpm_post_trade_outcome_reviews (
+            outcome_review_id, portfolio_id, mandate_id, rebalance_run_id,
+            alternative_set_id, selected_alternative_id, proof_pack_id,
+            wave_id, wave_item_id, state, content_hash, idempotency_key,
+            retention_policy, retention_expires_at, legal_hold_state, payload_json,
+            created_at, created_by, correlation_id
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (outcome_review_id) DO NOTHING
+        """,
+        _outcome_review_insert_params(
+            review=review,
+            retention_expires_at=retention_expires_at,
+        ),
+    )
+
+
+def _outcome_review_insert_params(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    retention_expires_at: datetime | None,
+) -> tuple[object, ...]:
+    return (
+        review.outcome_review_id,
+        review.portfolio_id,
+        review.mandate_id,
+        review.rebalance_run_id,
+        review.alternative_set_id,
+        review.selected_alternative_id,
+        review.proof_pack_id,
+        review.wave_id,
+        review.wave_item_id,
+        review.state,
+        review.content_hash,
+        review.idempotency_key,
+        review.retention_policy,
+        retention_expires_at.isoformat() if retention_expires_at else None,
+        review.legal_hold_state,
+        dump_model_json(review),
+        review.created_at.isoformat(),
+        review.created_by,
+        review.correlation_id,
+    )
 
 
 def _insert_event(*, connection: Any, event: DpmOutcomeEvent) -> None:

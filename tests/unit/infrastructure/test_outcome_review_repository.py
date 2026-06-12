@@ -31,9 +31,13 @@ from src.infrastructure.outcomes.in_memory import (
 from src.infrastructure.outcomes.postgres import (
     PostgresDpmOutcomeReviewRepository,
     _insert_event,
+    _outcome_review_insert_params,
     _import_psycopg,
     _payload,
+    _raise_on_existing_review_conflict,
+    _raise_on_idempotency_conflict,
 )
+from src.infrastructure.mandates.serialization import dump_model_json
 
 
 class _Cursor:
@@ -463,6 +467,65 @@ def test_postgres_outcome_repository_saves_review_events_and_retention() -> None
         "dor_001",
         "OUTCOME_REVIEW_CREATED",
     )
+
+
+def test_postgres_outcome_review_insert_params_preserve_review_and_retention_fields() -> None:
+    review = _review()
+    retention_expires_at = datetime(2033, 5, 6, tzinfo=timezone.utc)
+
+    params = _outcome_review_insert_params(
+        review=review,
+        retention_expires_at=retention_expires_at,
+    )
+
+    assert params[:12] == (
+        "dor_001",
+        "PB_SG_GLOBAL_BAL_001",
+        "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "rr_001",
+        "cas_001",
+        "alt_min_turnover",
+        "dpp_001",
+        "dwv_001",
+        "dwi_001",
+        "READY",
+        "sha256:review",
+        "idem_001",
+    )
+    assert params[13] == "2033-05-06T00:00:00+00:00"
+    assert params[15] == dump_model_json(review)
+    assert params[16] == "2026-05-06T01:20:00+00:00"
+    assert params[17:] == ("pm_001", "corr_dor_001")
+
+
+def test_postgres_outcome_review_conflict_helpers_fail_closed() -> None:
+    review = _review()
+    immutable_connection = _FakeConnection(
+        cursors=[_Cursor(row={"content_hash": "sha256:different"})]
+    )
+    idempotency_connection = _FakeConnection(
+        cursors=[_Cursor(row={"outcome_review_id": "dor_other"})]
+    )
+    matching_connection = _FakeConnection(
+        cursors=[
+            _Cursor(row={"content_hash": review.content_hash}),
+            _Cursor(row={"outcome_review_id": review.outcome_review_id}),
+        ]
+    )
+
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IMMUTABLE"):
+        _raise_on_existing_review_conflict(
+            connection=immutable_connection,
+            review=review,
+        )
+    with pytest.raises(DpmOutcomeReviewConflictError, match="IDEMPOTENCY"):
+        _raise_on_idempotency_conflict(
+            connection=idempotency_connection,
+            review=review,
+        )
+
+    _raise_on_existing_review_conflict(connection=matching_connection, review=review)
+    _raise_on_idempotency_conflict(connection=matching_connection, review=review)
 
 
 def test_postgres_outcome_repository_rejects_immutable_and_idempotency_conflicts() -> None:
