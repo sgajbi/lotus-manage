@@ -57,23 +57,53 @@ def apply_security_trade_to_portfolio(
     cash_balance = ensure_cash_balance(portfolio, intent.notional.currency)
 
     if intent.side == "BUY":
-        position.quantity += intent.quantity
-        if position.market_value and position.market_value.currency == intent.notional.currency:
-            position.market_value.amount += intent.notional.amount
-        elif position.market_value is None:
-            position.market_value = Money(
-                amount=intent.notional.amount,
-                currency=intent.notional.currency,
-            )
-        cash_balance.amount -= intent.notional.amount
-    else:
-        position.quantity -= intent.quantity
-        if position.market_value and position.market_value.currency == intent.notional.currency:
-            position.market_value.amount = max(
-                Decimal("0"),
-                position.market_value.amount - intent.notional.amount,
-            )
-        cash_balance.amount += intent.notional.amount
+        _apply_security_buy(position=position, cash_balance=cash_balance, intent=intent)
+        return
+    _apply_security_sell(position=position, cash_balance=cash_balance, intent=intent)
+
+
+def _apply_security_buy(
+    *,
+    position: Position,
+    cash_balance: CashBalance,
+    intent: SecurityTradeIntent,
+) -> None:
+    if intent.notional is None or intent.quantity is None:
+        return
+    position.quantity += intent.quantity
+    _increase_matching_market_value(position=position, notional=intent.notional)
+    cash_balance.amount -= intent.notional.amount
+
+
+def _apply_security_sell(
+    *,
+    position: Position,
+    cash_balance: CashBalance,
+    intent: SecurityTradeIntent,
+) -> None:
+    if intent.notional is None or intent.quantity is None:
+        return
+    position.quantity -= intent.quantity
+    _decrease_matching_market_value(position=position, notional=intent.notional)
+    cash_balance.amount += intent.notional.amount
+
+
+def _increase_matching_market_value(*, position: Position, notional: Money) -> None:
+    if position.market_value and position.market_value.currency == notional.currency:
+        position.market_value.amount += notional.amount
+    elif position.market_value is None:
+        position.market_value = Money(
+            amount=notional.amount,
+            currency=notional.currency,
+        )
+
+
+def _decrease_matching_market_value(*, position: Position, notional: Money) -> None:
+    if position.market_value and position.market_value.currency == notional.currency:
+        position.market_value.amount = max(
+            Decimal("0"),
+            position.market_value.amount - notional.amount,
+        )
 
 
 def apply_fx_spot_to_portfolio(portfolio: PortfolioSnapshot, intent: FxSpotIntent) -> None:

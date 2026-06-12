@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T09:30:03+00:00`
+- Generated at: `2026-06-12T09:32:43+00:00`
 
-- Current ref: `2b007f8d`
+- Current ref: `187aca72`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | apply_security_trade_to_portfolio | src/core/common/simulation_shared.py | 9 | 26 |
-| 2 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
-| 3 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
-| 4 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
-| 5 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
-| 6 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
-| 7 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
-| 8 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
-| 9 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
-| 10 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 1 | _approval_requirements_section_payload | src/core/proof_packs/builder.py | 9 | 25 |
+| 2 | _rolling_source_posture | src/core/outcomes/risk_sources.py | 9 | 24 |
+| 3 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 9 | 23 |
+| 4 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
+| 5 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
+| 6 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
+| 7 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
+| 8 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
+| 9 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 10 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
 
 ### Most Complex Current Test Functions
 

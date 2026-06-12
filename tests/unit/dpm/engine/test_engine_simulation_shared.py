@@ -1,6 +1,8 @@
 from decimal import Decimal
 
 from src.core.common.simulation_shared import (
+    _apply_security_buy,
+    _apply_security_sell,
     apply_fx_spot_to_portfolio,
     apply_security_trade_to_portfolio,
     build_reconciliation,
@@ -10,7 +12,14 @@ from src.core.common.simulation_shared import (
     sort_execution_intents,
 )
 from src.core.compliance import RuleEngine
-from src.core.models import EngineOptions, FxSpotIntent, SecurityTradeIntent
+from src.core.models import (
+    CashBalance,
+    EngineOptions,
+    FxSpotIntent,
+    Money,
+    Position,
+    SecurityTradeIntent,
+)
 from src.core.valuation import build_simulated_state
 from tests.shared.factories import cash, market_data_snapshot, portfolio_snapshot
 from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics
@@ -46,6 +55,78 @@ def test_apply_security_trade_to_portfolio_mutates_position_and_cash():
     assert portfolio.positions[0].instrument_id == "EQ_1"
     assert portfolio.positions[0].quantity == Decimal("2")
     assert portfolio.cash_balances[0].amount == Decimal("800")
+
+
+def test_security_trade_buy_helper_increases_matching_market_value_and_reduces_cash() -> None:
+    position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("3"),
+        market_value=Money(amount=Decimal("300"), currency="USD"),
+    )
+    cash_balance = CashBalance(currency="USD", amount=Decimal("1000"))
+    intent = SecurityTradeIntent(
+        intent_id="oi_buy_helper",
+        instrument_id="EQ_1",
+        side="BUY",
+        quantity=Decimal("2"),
+        notional=Money(amount=Decimal("200"), currency="USD"),
+        notional_base=Money(amount=Decimal("200"), currency="USD"),
+    )
+
+    _apply_security_buy(position=position, cash_balance=cash_balance, intent=intent)
+
+    assert position.quantity == Decimal("5")
+    assert position.market_value is not None
+    assert position.market_value.amount == Decimal("500")
+    assert cash_balance.amount == Decimal("800")
+
+
+def test_security_trade_sell_helper_floors_matching_market_value_and_adds_cash() -> None:
+    position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("3"),
+        market_value=Money(amount=Decimal("100"), currency="USD"),
+    )
+    cash_balance = CashBalance(currency="USD", amount=Decimal("50"))
+    intent = SecurityTradeIntent(
+        intent_id="oi_sell_helper",
+        instrument_id="EQ_1",
+        side="SELL",
+        quantity=Decimal("2"),
+        notional=Money(amount=Decimal("200"), currency="USD"),
+        notional_base=Money(amount=Decimal("200"), currency="USD"),
+    )
+
+    _apply_security_sell(position=position, cash_balance=cash_balance, intent=intent)
+
+    assert position.quantity == Decimal("1")
+    assert position.market_value is not None
+    assert position.market_value.amount == Decimal("0")
+    assert cash_balance.amount == Decimal("250")
+
+
+def test_security_trade_helpers_preserve_mismatched_market_value_currency() -> None:
+    position = Position(
+        instrument_id="EQ_1",
+        quantity=Decimal("1"),
+        market_value=Money(amount=Decimal("300"), currency="EUR"),
+    )
+    cash_balance = CashBalance(currency="USD", amount=Decimal("1000"))
+    intent = SecurityTradeIntent(
+        intent_id="oi_buy_currency_mismatch",
+        instrument_id="EQ_1",
+        side="BUY",
+        quantity=Decimal("1"),
+        notional=Money(amount=Decimal("100"), currency="USD"),
+        notional_base=Money(amount=Decimal("100"), currency="USD"),
+    )
+
+    _apply_security_buy(position=position, cash_balance=cash_balance, intent=intent)
+
+    assert position.market_value is not None
+    assert position.market_value.amount == Decimal("300")
+    assert position.market_value.currency == "EUR"
+    assert cash_balance.amount == Decimal("900")
 
 
 def test_derive_status_from_rules_matches_ready_outcome():

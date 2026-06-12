@@ -19193,3 +19193,36 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal portfolio-memory validator
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-789: Security trade simulation mutation helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/common/simulation_shared.py`,
+  `tests/unit/dpm/engine/test_engine_simulation_shared.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `apply_security_trade_to_portfolio` was the next current source-complexity hotspot and
+  mixed incomplete-intent guarding, position/cash lookup, buy quantity and cash mutation, market
+  value creation/increase, sell quantity and cash mutation, and market value floor handling in one
+  shared simulation helper.
+- Action: extracted focused BUY/SELL mutation helpers plus matching-currency market value
+  increase/decrease helpers while preserving the public simulation helper and existing engine
+  behavior. Added direct helper tests for buy market-value increments, sell market-value floor
+  behavior, cash mutation, and mismatched market-value currency preservation. Refreshed
+  current-state quality reports and preserved stable baseline/rule artifacts; the refreshed
+  complexity report shows `apply_security_trade_to_portfolio` dropped out of the top current
+  source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/simulation_shared.py tests/unit/dpm/engine/test_engine_simulation_shared.py`,
+  `python -m ruff format --check src/core/common/simulation_shared.py tests/unit/dpm/engine/test_engine_simulation_shared.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/simulation_shared.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_simulation_shared.py` (11 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal shared simulation helper
+  maintainability refactoring and repo-local quality evidence.
