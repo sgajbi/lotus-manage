@@ -19510,3 +19510,33 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal portfolio-memory supportability
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-799: Outcome-review remediation route mapper
+
+- Date: 2026-06-12
+- Scope: `src/api/routers/outcome_review_supportability_routes.py`,
+  `tests/unit/api/test_outcome_reviews_api.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_remediation_routes` was the top current source-complexity hotspot and combined
+  reason-code classification, remediation-route selection, deduplication, and sorting inside one
+  outcome-review supportability router helper.
+- Action: extracted a reason-code-to-remediation-route mapper and a source-owner remediation
+  predicate while preserving the existing sorted unique remediation route response. Added direct
+  tests for risk, performance, execution, realized source, cash/tax source-owner, and no-route
+  reason behavior. Refreshed current-state quality reports and preserved the stable baseline
+  artifact; the refreshed complexity report shows `_remediation_routes` dropped out of the top
+  current source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/outcome_review_supportability_routes.py tests/unit/api/test_outcome_reviews_api.py`,
+  `python -m ruff format --check src/api/routers/outcome_review_supportability_routes.py tests/unit/api/test_outcome_reviews_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/outcome_review_supportability_routes.py`,
+  `python -m pytest tests/unit/api/test_outcome_reviews_api.py -q` (6 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal outcome-review supportability
+  route-mapping maintainability refactoring and repo-local quality evidence.
