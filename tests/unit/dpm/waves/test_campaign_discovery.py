@@ -57,7 +57,11 @@ from src.core.waves.campaign_assignment_tasks import (
     _optional_transition_replay_fields_match,
     _required_transition_replay_fields,
     _source_ref_payloads,
+    _transition_assignees_replay_match,
+    _transition_due_at_replay_match,
+    _transition_escalation_tier_replay_match,
     _transition_next_assignees,
+    _transition_sla_posture_replay_match,
     _transition_task_fields,
     _validate_transition_field_requirements,
     _validate_transition_allowed,
@@ -1712,6 +1716,25 @@ def test_campaign_assignment_transition_replay_helpers_project_comparison_fields
         escalation_tier=None,
         sla_posture=None,
         due_at=None,
+    )
+    assert _transition_assignees_replay_match(
+        transition=transition,
+        assigned_actor_ids=[" pm_001 ", "pm_001"],
+    )
+    assert not _transition_assignees_replay_match(
+        transition=transition,
+        assigned_actor_ids=["pm_002"],
+    )
+    assert _transition_escalation_tier_replay_match(transition=transition, escalation_tier=None)
+    assert not _transition_escalation_tier_replay_match(
+        transition=transition, escalation_tier="OPS"
+    )
+    assert _transition_sla_posture_replay_match(transition=transition, sla_posture=None)
+    assert not _transition_sla_posture_replay_match(transition=transition, sla_posture="ATTENTION")
+    assert _transition_due_at_replay_match(transition=transition, due_at=None)
+    assert not _transition_due_at_replay_match(
+        transition=transition,
+        due_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
     )
 
 
