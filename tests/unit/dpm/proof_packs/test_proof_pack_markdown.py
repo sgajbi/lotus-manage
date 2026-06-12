@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from src.core.models import EngineOptions, RebalanceResult
+from src.core.proof_packs import markdown as proof_pack_markdown
 from src.core.proof_packs import build_proof_pack_from_run, render_proof_pack_markdown
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord
@@ -92,3 +93,37 @@ def test_markdown_summary_has_stable_section_order() -> None:
     ai_index = markdown.index("| `ai_refs` |")
 
     assert decision_index < mandate_index < ai_index
+
+
+def test_markdown_supportability_lines_are_sorted() -> None:
+    lines = proof_pack_markdown._supportability_lines(_proof_pack())
+
+    assert lines[:5] == [
+        "",
+        "## Supportability",
+        "",
+        "| State | Count |",
+        "| --- | ---: |",
+    ]
+    assert lines[5:] == sorted(lines[5:])
+
+
+def test_markdown_evidence_gap_lines_are_omitted_when_no_reason_codes() -> None:
+    proof_pack = _proof_pack().model_copy(
+        update={
+            "supportability": _proof_pack().supportability.model_copy(update={"reason_codes": []})
+        }
+    )
+
+    assert proof_pack_markdown._evidence_gap_lines(proof_pack) == []
+
+
+def test_markdown_integrity_lines_sort_source_hashes() -> None:
+    proof_pack = _proof_pack().model_copy(
+        update={"source_hashes": {"zeta": "sha256:z", "alpha": "sha256:a"}}
+    )
+
+    assert proof_pack_markdown._integrity_lines(proof_pack)[-2:] == [
+        "  - `alpha`: `sha256:a`",
+        "  - `zeta`: `sha256:z`",
+    ]

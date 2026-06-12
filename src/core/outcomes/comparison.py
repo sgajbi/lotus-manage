@@ -67,33 +67,28 @@ def compare_outcome_dimension(
 ) -> DpmOutcomeDimensionResult:
     """Compare one outcome dimension without source clients or persistence."""
 
-    source_refs = [
-        *dimension_input.expected.source_refs,
-        *dimension_input.realized.source_refs,
-    ]
+    source_refs = _dimension_source_refs(dimension_input)
     supportability_state = _source_supportability_state(dimension_input)
     if supportability_state == "NOT_SUPPORTED":
-        reason = _not_supported_reason(dimension_input.dimension)
         return _result(
             dimension_input,
             state="NOT_SUPPORTED",
-            reason_code=reason,
+            reason_code=_not_supported_reason(dimension_input.dimension),
             source_refs=source_refs,
             explanation="No certified source-owner contract supports this outcome dimension.",
         )
     if supportability_state == "BLOCKED":
-        reason = _blocked_reason(dimension_input.dimension)
         return _result(
             dimension_input,
             state="BLOCKED",
-            reason_code=reason,
+            reason_code=_blocked_reason(dimension_input.dimension),
             source_refs=source_refs,
             explanation="Mandatory source evidence is missing, conflicting, or invalid.",
         )
 
     expected = dimension_input.expected.value
     realized = dimension_input.realized.value
-    if expected is None or realized is None:
+    if _dimension_values_missing(dimension_input):
         return _result(
             dimension_input,
             state="BLOCKED",
@@ -101,6 +96,8 @@ def compare_outcome_dimension(
             source_refs=source_refs,
             explanation="Expected and realized values are mandatory for deterministic comparison.",
         )
+    assert expected is not None
+    assert realized is not None
 
     variance = realized - expected
     pressure = _variance_pressure(
@@ -109,18 +106,11 @@ def compare_outcome_dimension(
         variance=variance,
         dimension_input=dimension_input,
     )
-    if pressure > dimension_input.tolerance.hard:
-        state: OutcomeDimensionState = "BREACHED"
-        reason_code = _pending_reason(dimension_input.dimension)
-    elif pressure > dimension_input.tolerance.soft:
-        state = "PENDING_REVIEW"
-        reason_code = _pending_reason(dimension_input.dimension)
-    elif supportability_state == "DEGRADED":
-        state = "DEGRADED"
-        reason_code = "SOURCE_EVIDENCE_INCOMPLETE"
-    else:
-        state = "READY"
-        reason_code = _ready_reason(dimension_input.dimension)
+    state, reason_code = _dimension_state_and_reason(
+        dimension_input=dimension_input,
+        supportability_state=supportability_state,
+        pressure=pressure,
+    )
 
     return _result(
         dimension_input,
@@ -131,6 +121,34 @@ def compare_outcome_dimension(
         pressure=pressure,
         explanation=_dimension_explanation(state, reason_code, pressure),
     )
+
+
+def _dimension_source_refs(
+    dimension_input: DpmOutcomeDimensionInput,
+) -> list[DpmOutcomeSourceRef]:
+    return [
+        *dimension_input.expected.source_refs,
+        *dimension_input.realized.source_refs,
+    ]
+
+
+def _dimension_values_missing(dimension_input: DpmOutcomeDimensionInput) -> bool:
+    return dimension_input.expected.value is None or dimension_input.realized.value is None
+
+
+def _dimension_state_and_reason(
+    *,
+    dimension_input: DpmOutcomeDimensionInput,
+    supportability_state: OutcomeDimensionState,
+    pressure: Decimal,
+) -> tuple[OutcomeDimensionState, str]:
+    if pressure > dimension_input.tolerance.hard:
+        return "BREACHED", _pending_reason(dimension_input.dimension)
+    if pressure > dimension_input.tolerance.soft:
+        return "PENDING_REVIEW", _pending_reason(dimension_input.dimension)
+    if supportability_state == "DEGRADED":
+        return "DEGRADED", "SOURCE_EVIDENCE_INCOMPLETE"
+    return "READY", _ready_reason(dimension_input.dimension)
 
 
 def _variance_pressure(
