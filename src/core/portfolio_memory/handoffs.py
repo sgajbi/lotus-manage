@@ -123,56 +123,19 @@ class DpmPortfolioMemoryReportContext(BaseModel):
 
     @model_validator(mode="after")
     def validate_bounded_event_ref_metadata(self) -> "DpmPortfolioMemoryReportContext":
-        expected_returned = len(self.event_refs)
-        if self.event_refs_returned != expected_returned:
-            raise ValueError("event_refs_returned must equal the number of event_refs.")
-
-        expected_omitted = max(0, self.event_count - self.event_refs_returned)
-        if self.event_refs_omitted != expected_omitted:
-            raise ValueError("event_refs_omitted must equal event_count minus event_refs_returned.")
-
-        if self.event_refs_truncated != (self.event_refs_omitted > 0):
-            raise ValueError("event_refs_truncated must match event_refs_omitted posture.")
-
-        expected_ranks = list(range(1, expected_returned + 1))
-        observed_ranks = [event_ref.event_ref_selection_rank for event_ref in self.event_refs]
-        if observed_ranks != expected_ranks:
-            raise ValueError("event_ref_selection_rank values must be contiguous one-based ranks.")
-
-        missing_governance_keys = (
-            PORTFOLIO_MEMORY_REPORT_CONTEXT_REQUIRED_GOVERNANCE_KEYS - self.governance_policy.keys()
+        _validate_event_ref_counts(
+            event_count=self.event_count,
+            event_refs_returned=self.event_refs_returned,
+            event_refs_omitted=self.event_refs_omitted,
+            event_refs_truncated=self.event_refs_truncated,
+            event_ref_count=len(self.event_refs),
         )
-        if missing_governance_keys:
-            raise ValueError(
-                "governance_policy missing required keys: "
-                f"{', '.join(sorted(missing_governance_keys))}."
-            )
-
-        blank_governance_keys = [
-            key for key, value in self.governance_policy.items() if not value.strip()
-        ]
-        if blank_governance_keys:
-            raise ValueError(
-                "governance_policy values must be non-blank for keys: "
-                f"{', '.join(sorted(blank_governance_keys))}."
-            )
-
-        for (
-            event_ref_field,
-            governance_key,
-        ) in PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_GOVERNANCE_FIELDS.items():
-            expected_value = self.governance_policy[governance_key]
-            mismatched_refs = [
-                event_ref.event_identity
-                for event_ref in self.event_refs
-                if getattr(event_ref, event_ref_field) != expected_value
-            ]
-            if mismatched_refs:
-                raise ValueError(
-                    "event_refs must match governance_policy."
-                    f"{governance_key} for {event_ref_field}: "
-                    f"{', '.join(mismatched_refs)}."
-                )
+        _validate_event_ref_ranks(self.event_refs)
+        _validate_governance_policy(self.governance_policy)
+        _validate_event_ref_governance(
+            governance_policy=self.governance_policy,
+            event_refs=self.event_refs,
+        )
 
         return self
 
@@ -231,3 +194,70 @@ def _event_ref(
         audit_policy=event.audit_policy,
         access_classification=event.access_classification,
     )
+
+
+def _validate_event_ref_counts(
+    *,
+    event_count: int,
+    event_refs_returned: int,
+    event_refs_omitted: int,
+    event_refs_truncated: bool,
+    event_ref_count: int,
+) -> None:
+    if event_refs_returned != event_ref_count:
+        raise ValueError("event_refs_returned must equal the number of event_refs.")
+
+    expected_omitted = max(0, event_count - event_refs_returned)
+    if event_refs_omitted != expected_omitted:
+        raise ValueError("event_refs_omitted must equal event_count minus event_refs_returned.")
+
+    if event_refs_truncated != (event_refs_omitted > 0):
+        raise ValueError("event_refs_truncated must match event_refs_omitted posture.")
+
+
+def _validate_event_ref_ranks(event_refs: list[DpmPortfolioMemoryReportEventRef]) -> None:
+    expected_ranks = list(range(1, len(event_refs) + 1))
+    observed_ranks = [event_ref.event_ref_selection_rank for event_ref in event_refs]
+    if observed_ranks != expected_ranks:
+        raise ValueError("event_ref_selection_rank values must be contiguous one-based ranks.")
+
+
+def _validate_governance_policy(governance_policy: dict[str, str]) -> None:
+    missing_governance_keys = (
+        PORTFOLIO_MEMORY_REPORT_CONTEXT_REQUIRED_GOVERNANCE_KEYS - governance_policy.keys()
+    )
+    if missing_governance_keys:
+        raise ValueError(
+            "governance_policy missing required keys: "
+            f"{', '.join(sorted(missing_governance_keys))}."
+        )
+
+    blank_governance_keys = [key for key, value in governance_policy.items() if not value.strip()]
+    if blank_governance_keys:
+        raise ValueError(
+            "governance_policy values must be non-blank for keys: "
+            f"{', '.join(sorted(blank_governance_keys))}."
+        )
+
+
+def _validate_event_ref_governance(
+    *,
+    governance_policy: dict[str, str],
+    event_refs: list[DpmPortfolioMemoryReportEventRef],
+) -> None:
+    for (
+        event_ref_field,
+        governance_key,
+    ) in PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_GOVERNANCE_FIELDS.items():
+        expected_value = governance_policy[governance_key]
+        mismatched_refs = [
+            event_ref.event_identity
+            for event_ref in event_refs
+            if getattr(event_ref, event_ref_field) != expected_value
+        ]
+        if mismatched_refs:
+            raise ValueError(
+                "event_refs must match governance_policy."
+                f"{governance_key} for {event_ref_field}: "
+                f"{', '.join(mismatched_refs)}."
+            )

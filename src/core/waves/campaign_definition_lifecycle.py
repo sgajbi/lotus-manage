@@ -75,16 +75,43 @@ def supersede_bulk_review_campaign_definition(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
             "Only active campaign definitions can be superseded.",
         )
-    replacement_version = replacement_version.strip()
-    if not replacement_version or replacement_version == campaign_version:
-        raise DpmBulkReviewCampaignDefinitionLifecycleError(
-            "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID",
-            "superseded_by_campaign_version must identify a different version.",
-        )
+    replacement_version = _validated_replacement_version(
+        replacement_version=replacement_version,
+        current_version=campaign_version,
+    )
     replacement = repository.get_definition(
         campaign_id=campaign_id,
         campaign_version=replacement_version,
     )
+    replacement = _validated_active_replacement(replacement)
+    superseded_definition = _superseded_campaign_definition(
+        existing=existing,
+        replacement=replacement,
+        superseded_by=superseded_by,
+        supersession_reason=supersession_reason,
+        correlation_id=correlation_id,
+        superseded_at=superseded_at,
+    )
+    return repository.supersede_definition(definition=superseded_definition)
+
+
+def _validated_replacement_version(
+    *,
+    replacement_version: str,
+    current_version: str,
+) -> str:
+    normalized = replacement_version.strip()
+    if not normalized or normalized == current_version:
+        raise DpmBulkReviewCampaignDefinitionLifecycleError(
+            "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID",
+            "superseded_by_campaign_version must identify a different version.",
+        )
+    return normalized
+
+
+def _validated_active_replacement(
+    replacement: DpmBulkReviewCampaignDefinition | None,
+) -> DpmBulkReviewCampaignDefinition:
     if replacement is None:
         raise DpmBulkReviewCampaignDefinitionLifecycleError(
             "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND",
@@ -95,6 +122,18 @@ def supersede_bulk_review_campaign_definition(
             "BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_ACTIVE",
             "Replacement bulk-review campaign definition must be active.",
         )
+    return replacement
+
+
+def _superseded_campaign_definition(
+    *,
+    existing: DpmBulkReviewCampaignDefinition,
+    replacement: DpmBulkReviewCampaignDefinition,
+    superseded_by: str,
+    supersession_reason: str,
+    correlation_id: str,
+    superseded_at: datetime | None,
+) -> DpmBulkReviewCampaignDefinition:
     superseded_payload = existing.model_dump(mode="python")
     superseded_payload.update(
         {
@@ -109,5 +148,4 @@ def supersede_bulk_review_campaign_definition(
             "content_hash": "",
         }
     )
-    superseded_definition = DpmBulkReviewCampaignDefinition.model_validate(superseded_payload)
-    return repository.supersede_definition(definition=superseded_definition)
+    return DpmBulkReviewCampaignDefinition.model_validate(superseded_payload)

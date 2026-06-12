@@ -16,6 +16,9 @@ from src.core.waves.campaign_definition_readiness import (
 )
 from src.core.waves.campaign_definition_lifecycle import (
     DpmBulkReviewCampaignDefinitionLifecycleError,
+    _superseded_campaign_definition,
+    _validated_active_replacement,
+    _validated_replacement_version,
     retire_bulk_review_campaign_definition,
     supersede_bulk_review_campaign_definition,
 )
@@ -1367,6 +1370,83 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
             supersession_reason="Replacement not active.",
             correlation_id="corr-supersede-not-active-replacement",
         )
+
+
+def test_campaign_supersession_helpers_validate_replacement_version() -> None:
+    assert (
+        _validated_replacement_version(
+            replacement_version=" 2026.06 ",
+            current_version="2026.05",
+        )
+        == "2026.06"
+    )
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_VERSION_INVALID",
+    ):
+        _validated_replacement_version(
+            replacement_version="2026.05",
+            current_version="2026.05",
+        )
+
+
+def test_campaign_supersession_helpers_require_active_replacement() -> None:
+    active = _definition()
+    assert _validated_active_replacement(active) == active
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_FOUND",
+    ):
+        _validated_active_replacement(None)
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionLifecycleError,
+        match="BULK_REVIEW_CAMPAIGN_SUPERSESSION_REPLACEMENT_NOT_ACTIVE",
+    ):
+        _validated_active_replacement(
+            DpmBulkReviewCampaignDefinition.model_validate(
+                {
+                    **active.model_dump(mode="python"),
+                    "status": "RETIRED",
+                    "retired_at": "2026-05-11T08:00:00Z",
+                    "retired_by": "ops",
+                    "retirement_reason": "Retired replacement.",
+                    "retirement_correlation_id": "corr-retired-replacement",
+                    "content_hash": "",
+                }
+            )
+        )
+
+
+def test_campaign_supersession_helper_builds_superseded_definition_lineage() -> None:
+    existing = _definition()
+    replacement = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition(display_name="Refreshed Apple and Tesla holdings review").model_dump(
+                mode="python"
+            ),
+            "campaign_version": "2026.06",
+            "content_hash": "",
+        }
+    )
+
+    superseded = _superseded_campaign_definition(
+        existing=existing,
+        replacement=replacement,
+        superseded_by="ops",
+        supersession_reason="Campaign candidate set refreshed.",
+        correlation_id="corr-supersede-original",
+        superseded_at=datetime(2026, 5, 12, tzinfo=timezone.utc),
+    )
+
+    assert superseded.status == "SUPERSEDED"
+    assert superseded.superseded_by == "ops"
+    assert superseded.superseded_by_campaign_id == replacement.campaign_id
+    assert superseded.superseded_by_campaign_version == "2026.06"
+    assert superseded.superseded_by_content_hash == replacement.content_hash
+    assert superseded.supersession_correlation_id == "corr-supersede-original"
 
 
 def test_in_memory_campaign_definition_repository_rejects_direct_invalid_lifecycle_state() -> None:

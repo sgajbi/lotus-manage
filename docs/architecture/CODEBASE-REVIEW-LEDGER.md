@@ -18867,3 +18867,58 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.
+
+## BACKEND-REVIEW-20260612-777: Source hotspot helper extractions continued
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_definition_lifecycle.py`,
+  `src/core/outcomes/risk_sources.py`, `src/core/portfolio_memory/handoffs.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and
+  `tests/unit/dpm/portfolio_memory/test_handoffs.py`.
+- Finding: the next source-complexity hotspots mixed pure validation and projection logic into
+  orchestration methods: campaign supersession replacement validation and lineage payload
+  rebuilding, concentration realized-source reason-code/snapshot projection, and portfolio-memory
+  report-context count/rank/governance validation.
+- Action: kept repository orchestration and source-owned value selection in their existing owners
+  while extracting focused helpers for campaign supersession validation, concentration source
+  snapshot assembly, and portfolio-memory handoff consistency checks. Added direct helper tests for
+  replacement-version normalization, active replacement validation, supersession lineage payloads,
+  concentration reason-code coverage, not-supported concentration value suppression, and
+  portfolio-memory event-ref count/rank/governance policy validation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py`,
+  `python -m ruff format --check src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definition_lifecycle.py src/core/outcomes/risk_sources.py src/core/portfolio_memory/handoffs.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py tests/unit/core/test_risk_realized_outcome_sources.py tests/unit/dpm/portfolio_memory/test_handoffs.py -q`
+  (107 passed),
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal core helper and validation
+  maintainability refactoring.
+
+## BACKEND-REVIEW-20260612-778: Source hotspot reports refreshed
+
+- Date: 2026-06-12
+- Scope: `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: current-state quality reports still pointed at the pre-slice source hotspot posture, so
+  they did not reflect the campaign lifecycle, concentration source, and portfolio-memory handoff
+  helper extractions.
+- Action: regenerated current-state refactor reports after the helper extractions. Preserved
+  `quality/baseline_report.md`, `quality/architecture_rules.md`, and
+  `quality/api_governance_rules.md` so the branch baseline and rule docs remain stable. The
+  refreshed complexity report shows the three targeted hotspots dropped out of the top current
+  source-complexity list, with proof-pack source analytics now the next source hotspot family.
+- Status: hardened.
+- Evidence:
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this updates repo-local refactor evidence only.

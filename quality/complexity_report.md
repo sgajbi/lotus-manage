@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-05T11:41:04+00:00`
+- Generated at: `2026-06-12T08:32:38+00:00`
 
-- Current ref: `e204b141`
+- Current ref: `f688bb15`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | supersede_bulk_review_campaign_definition | src/core/waves/campaign_definition_lifecycle.py | 9 | 60 |
-| 2 | realized_concentration_source_from_concentration_response | src/core/outcomes/risk_sources.py | 9 | 55 |
-| 3 | validate_bounded_event_ref_metadata | src/core/portfolio_memory/handoffs.py | 9 | 53 |
-| 4 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
-| 5 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
-| 6 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
-| 7 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
-| 8 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
-| 9 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
-| 10 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
+| 1 | _performance_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 50 |
+| 2 | _risk_source_analytics | src/core/proof_packs/source_analytics.py | 9 | 49 |
+| 3 | record_bulk_review_campaign_definition_approval_decision | src/core/waves/campaign_definition_approval_decisions.py | 9 | 44 |
+| 4 | list_operations | src/infrastructure/rebalance_runs/in_memory.py | 9 | 39 |
+| 5 | list_runs | src/infrastructure/rebalance_runs/in_memory.py | 9 | 37 |
+| 6 | _metric_from_sources | src/core/outcomes/realized_sources.py | 9 | 35 |
+| 7 | _solve_with_fallbacks | src/core/target_generation.py | 9 | 32 |
+| 8 | save_outcome_review | src/infrastructure/outcomes/in_memory.py | 9 | 28 |
+| 9 | _select_currency_total | src/core/outcomes/core_sources.py | 9 | 27 |
+| 10 | _validate_search_page_pagination | src/core/portfolio_memory/models.py | 9 | 27 |
 
 ### Most Complex Current Test Functions
 
