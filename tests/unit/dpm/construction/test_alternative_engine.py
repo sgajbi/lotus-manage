@@ -8,6 +8,10 @@ from src.core.construction import (
     build_do_nothing_baseline,
     build_rebalance_result_alternative,
 )
+from src.core.construction.alternative_engine import (
+    _security_trade_change_notional,
+    _security_trade_change_row,
+)
 from src.core.models import EngineOptions, RebalanceResult
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import (
@@ -127,6 +131,34 @@ def test_rebalance_result_proposed_changes_preserve_constraint_labels() -> None:
 
     proposed_changes = alternative.diagnostics["proposed_changes"]
     assert proposed_changes[0]["constraints_applied"] == ["MIN_LOT_SIZE"]
+
+
+def test_security_trade_change_notional_prefers_base_notional() -> None:
+    intent = _ready_rebalance_result().intents[0]
+    assert _security_trade_change_notional(intent) == intent.notional_base
+
+    without_base = intent.model_copy(update={"notional_base": None})
+    assert _security_trade_change_notional(without_base) == intent.notional
+
+
+def test_security_trade_change_row_maps_optional_trade_evidence() -> None:
+    intent = (
+        _ready_rebalance_result()
+        .intents[0]
+        .model_copy(update={"constraints_applied": ["MIN_LOT_SIZE"]})
+    )
+
+    assert _security_trade_change_row(intent) == {
+        "intent_id": "oi_1",
+        "security_id": "EQ_A",
+        "action": "SELL",
+        "quantity": "5",
+        "estimated_value": "500.0",
+        "currency": "USD",
+        "reason": "Align",
+        "reason_code": "DRIFT_REBALANCE",
+        "constraints_applied": ["MIN_LOT_SIZE"],
+    }
 
 
 def test_alternative_set_rolls_up_conservative_status() -> None:

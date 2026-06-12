@@ -37,6 +37,14 @@ class _ScoreRunFilters:
 
 
 @dataclass(frozen=True)
+class _FairnessAnalysisFilters:
+    policy_id: str | None
+    policy_version: str | None
+    as_of_date: str | None
+    state: str | None
+
+
+@dataclass(frozen=True)
 class _ReviewActionFilters:
     target_type: str | None
     target_id: str | None
@@ -183,19 +191,18 @@ class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysi
         offset: int = 0,
     ) -> list[DpmPmQualityFairnessAnalysis]:
         with self._lock:
-            analyses = [
-                analysis
-                for analysis in self._analyses.values()
-                if (policy_id is None or analysis.policy_id == policy_id)
-                and (policy_version is None or analysis.policy_version == policy_version)
-                and (as_of_date is None or analysis.as_of_date == as_of_date)
-                and (state is None or analysis.state == state)
-            ]
-            analyses.sort(
-                key=lambda analysis: (analysis.generated_at, analysis.fairness_analysis_id),
-                reverse=True,
+            page = _list_fairness_analyses(
+                analyses=list(self._analyses.values()),
+                filters=_FairnessAnalysisFilters(
+                    policy_id=policy_id,
+                    policy_version=policy_version,
+                    as_of_date=as_of_date,
+                    state=state,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(analyses[offset : offset + limit])
+            return deepcopy(page)
 
 
 class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionRepository):
@@ -334,6 +341,43 @@ def _list_score_runs(
         score_run for score_run in score_runs if _score_run_matches_filters(score_run, filters)
     ]
     return _sort_score_runs(filtered)[offset : offset + limit]
+
+
+def _fairness_analysis_matches_filters(
+    analysis: DpmPmQualityFairnessAnalysis,
+    filters: _FairnessAnalysisFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(analysis.policy_id, filters.policy_id),
+            _optional_value_matches(analysis.policy_version, filters.policy_version),
+            _optional_value_matches(analysis.as_of_date, filters.as_of_date),
+            _optional_value_matches(analysis.state, filters.state),
+        )
+    )
+
+
+def _sort_fairness_analyses(
+    analyses: list[DpmPmQualityFairnessAnalysis],
+) -> list[DpmPmQualityFairnessAnalysis]:
+    return sorted(
+        analyses,
+        key=lambda analysis: (analysis.generated_at, analysis.fairness_analysis_id),
+        reverse=True,
+    )
+
+
+def _list_fairness_analyses(
+    *,
+    analyses: list[DpmPmQualityFairnessAnalysis],
+    filters: _FairnessAnalysisFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPmQualityFairnessAnalysis]:
+    filtered = [
+        analysis for analysis in analyses if _fairness_analysis_matches_filters(analysis, filters)
+    ]
+    return _sort_fairness_analyses(filtered)[offset : offset + limit]
 
 
 def _review_action_matches_filters(

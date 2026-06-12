@@ -32,14 +32,18 @@ from src.infrastructure.pm_quality import (
     InMemoryDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.pm_quality.in_memory import (
+    _FairnessAnalysisFilters,
     _ReviewActionFilters,
     _ScoreRunFilters,
     _SummaryInvocationFilters,
+    _fairness_analysis_matches_filters,
+    _list_fairness_analyses,
     _list_review_actions,
     _list_score_runs,
     _list_summary_invocations,
     _review_action_matches_filters,
     _score_run_matches_filters,
+    _sort_fairness_analyses,
     _sort_review_actions,
     _sort_score_runs,
     _sort_summary_invocations,
@@ -694,6 +698,68 @@ def test_in_memory_pm_quality_repository_lists_fairness_analyses() -> None:
     assert repository.list_fairness_analyses(as_of_date="missing") == []
     assert repository.list_fairness_analyses(state=analysis.state) == [analysis]
     assert repository.list_fairness_analyses(limit=1, offset=1) == []
+
+
+def test_fairness_analysis_filter_helper_matches_all_optional_fields() -> None:
+    analysis = _fairness_analysis()
+
+    assert _fairness_analysis_matches_filters(
+        analysis,
+        _FairnessAnalysisFilters(
+            policy_id=analysis.policy_id,
+            policy_version=analysis.policy_version,
+            as_of_date=analysis.as_of_date,
+            state=analysis.state,
+        ),
+    )
+    assert not _fairness_analysis_matches_filters(
+        analysis,
+        _FairnessAnalysisFilters(
+            policy_id=None,
+            policy_version="missing",
+            as_of_date=None,
+            state=None,
+        ),
+    )
+
+
+def test_fairness_analysis_list_helper_filters_sorts_and_pages() -> None:
+    older = _fairness_analysis()
+    newer = older.model_copy(
+        update={
+            "fairness_analysis_id": "pmq_fairness_newer",
+            "generated_at": older.generated_at + timedelta(minutes=1),
+            "content_hash": "sha256:fairness-newer",
+        }
+    )
+    unrelated = older.model_copy(
+        update={
+            "fairness_analysis_id": "pmq_fairness_unrelated",
+            "policy_version": "2026.04",
+            "generated_at": older.generated_at + timedelta(minutes=2),
+            "content_hash": "sha256:fairness-unrelated",
+        }
+    )
+    filters = _FairnessAnalysisFilters(
+        policy_id=older.policy_id,
+        policy_version=older.policy_version,
+        as_of_date=older.as_of_date,
+        state=older.state,
+    )
+
+    assert _sort_fairness_analyses([older, newer]) == [newer, older]
+    assert _list_fairness_analyses(
+        analyses=[older, newer, unrelated],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [newer]
+    assert _list_fairness_analyses(
+        analyses=[older, newer, unrelated],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [older]
 
 
 def test_postgres_pm_quality_fairness_analysis_repository_round_trips_analyses(

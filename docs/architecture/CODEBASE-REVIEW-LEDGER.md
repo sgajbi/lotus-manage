@@ -20491,3 +20491,92 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-832: PM quality fairness analysis list helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/pm_quality/in_memory.py`,
+  `tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `list_fairness_analyses` was the top current source-complexity hotspot and mixed
+  policy/version/date/state filtering, generated-time/id ordering, pagination, and defensive copy
+  behavior inline while neighboring PM-quality in-memory list methods already used direct pure
+  helper boundaries.
+- Action: extracted deterministic fairness-analysis filter, sort, and list-page helpers matching
+  the existing score-run, review-action, and summary-invocation repository pattern. Added direct
+  helper tests for optional filter matching, unrelated policy-version exclusion, ordering, and
+  pagination while preserving immutable in-memory repository behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/pm_quality/in_memory.py tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `python -m ruff format --check src/infrastructure/pm_quality/in_memory.py tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/pm_quality/in_memory.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_quality_repository.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM-quality repository
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-833: Construction proposed-change row helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/construction/alternative_engine.py`,
+  `tests/unit/dpm/construction/test_alternative_engine.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_proposed_changes` was the top current source-complexity hotspot after the
+  PM-quality repository slice and mixed security-trade filtering, base/notional fallback,
+  diagnostic row construction, optional quantity/value/rationale fields, constraint evidence, and
+  list assembly in one construction diagnostic helper.
+- Action: extracted deterministic security-trade notional fallback and row mapping helpers while
+  preserving public alternative diagnostic payloads, base-currency notional precedence, rationale
+  fields, absolute quantity/value formatting, and constraint-label evidence. Added direct helper
+  tests for notional fallback and row mapping alongside existing public alternative diagnostics
+  coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/construction/alternative_engine.py tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python -m ruff format --check src/core/construction/alternative_engine.py tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python -m mypy --config-file mypy.ini src/core/construction/alternative_engine.py`,
+  `python -m pytest tests/unit/dpm/construction/test_alternative_engine.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction diagnostic
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-834: PM quality worst-state policy maps
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_worst_state` was the top current source-complexity hotspot after the construction
+  diagnostic slice and encoded severity ranking, `NOT_SUPPORTED` normalization, known-state
+  returns, and unknown fallback through a local map plus branch chain.
+- Action: extracted explicit module-level PM-quality state ranking and normalization maps while
+  preserving state precedence, `NOT_SUPPORTED` fallback to `DEGRADED`, and unknown-state
+  conservative degradation. Added direct guard-edge assertions for mixed-state precedence and
+  unsupported/unknown fallback behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability refactoring and repo-local quality evidence.

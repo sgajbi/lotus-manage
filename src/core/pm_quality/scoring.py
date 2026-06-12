@@ -77,6 +77,26 @@ class _FairnessPosture:
     reason_codes: list[str]
 
 
+_PM_QUALITY_STATE_RANK: dict[str, int] = {
+    "BLOCKED": 6,
+    "BREACHED": 5,
+    "DEGRADED": 4,
+    "PENDING_REVIEW": 3,
+    "READY": 2,
+    "DISABLED": 1,
+}
+
+_NORMALIZED_WORST_STATE: dict[str, PmQualityState] = {
+    "BLOCKED": "BLOCKED",
+    "BREACHED": "BREACHED",
+    "DEGRADED": "DEGRADED",
+    "NOT_SUPPORTED": "DEGRADED",
+    "PENDING_REVIEW": "PENDING_REVIEW",
+    "READY": "READY",
+    "DISABLED": "DISABLED",
+}
+
+
 def build_pm_operating_quality_score_run(
     *,
     pm_id: str,
@@ -902,28 +922,8 @@ def _state_score(state: str) -> Decimal:
 
 
 def _worst_state(states: list[str]) -> PmQualityState:
-    rank = {
-        "BLOCKED": 6,
-        "BREACHED": 5,
-        "DEGRADED": 4,
-        "PENDING_REVIEW": 3,
-        "READY": 2,
-        "DISABLED": 1,
-    }
-    worst = max(states, key=lambda state: rank.get(state, 0))
-    if worst == "BLOCKED":
-        return "BLOCKED"
-    if worst == "BREACHED":
-        return "BREACHED"
-    if worst == "DEGRADED" or worst == "NOT_SUPPORTED":
-        return "DEGRADED"
-    if worst == "PENDING_REVIEW":
-        return "PENDING_REVIEW"
-    if worst == "READY":
-        return "READY"
-    if worst == "DISABLED":
-        return "DISABLED"
-    return "DEGRADED"
+    worst = max(states, key=lambda state: _PM_QUALITY_STATE_RANK.get(state, 0))
+    return _NORMALIZED_WORST_STATE.get(worst, "DEGRADED")
 
 
 def _mean(values: list[Decimal]) -> Decimal:

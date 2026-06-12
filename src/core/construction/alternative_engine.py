@@ -17,7 +17,7 @@ from src.core.construction.vocabulary import (
     ConstructionSourceFamily,
     ConstructionTraceTerm,
 )
-from src.core.models import RebalanceResult, SecurityTradeIntent
+from src.core.models import Money, RebalanceResult, SecurityTradeIntent
 
 _RATIO_QUANT = Decimal("0.0001")
 
@@ -250,25 +250,32 @@ def _diagnostic_summary(result: RebalanceResult) -> dict[str, object]:
 
 
 def _proposed_changes(result: RebalanceResult) -> list[dict[str, object]]:
-    changes: list[dict[str, object]] = []
-    for intent in result.intents:
-        if not isinstance(intent, SecurityTradeIntent):
-            continue
-        notional = intent.notional_base or intent.notional
-        row: dict[str, object] = {
-            "intent_id": intent.intent_id,
-            "security_id": intent.instrument_id,
-            "action": intent.side.upper(),
-        }
-        if intent.quantity is not None:
-            row["quantity"] = str(abs(intent.quantity))
-        if notional is not None:
-            row["estimated_value"] = str(abs(notional.amount))
-            row["currency"] = notional.currency
-        if intent.rationale is not None:
-            row["reason"] = intent.rationale.message
-            row["reason_code"] = intent.rationale.code
-        if intent.constraints_applied:
-            row["constraints_applied"] = list(intent.constraints_applied)
-        changes.append(row)
-    return changes
+    return [
+        _security_trade_change_row(intent)
+        for intent in result.intents
+        if isinstance(intent, SecurityTradeIntent)
+    ]
+
+
+def _security_trade_change_notional(intent: SecurityTradeIntent) -> Money | None:
+    return intent.notional_base or intent.notional
+
+
+def _security_trade_change_row(intent: SecurityTradeIntent) -> dict[str, object]:
+    notional = _security_trade_change_notional(intent)
+    row: dict[str, object] = {
+        "intent_id": intent.intent_id,
+        "security_id": intent.instrument_id,
+        "action": intent.side.upper(),
+    }
+    if intent.quantity is not None:
+        row["quantity"] = str(abs(intent.quantity))
+    if notional is not None:
+        row["estimated_value"] = str(abs(notional.amount))
+        row["currency"] = notional.currency
+    if intent.rationale is not None:
+        row["reason"] = intent.rationale.message
+        row["reason_code"] = intent.rationale.code
+    if intent.constraints_applied:
+        row["constraints_applied"] = list(intent.constraints_applied)
+    return row
