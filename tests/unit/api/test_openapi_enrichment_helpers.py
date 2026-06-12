@@ -17,12 +17,14 @@ from src.api.openapi_enrichment import (
     _number_example_for_key,
     _operation_has_error_response,
     _operation_tag_for_path,
+    _path_http_operations,
     _ref_example_from_schema,
     _schema_component_schemas,
     _schema_declared_example,
     _schema_documentable_properties,
     _schema_format_example,
     _schema_http_operations,
+    _schema_path_methods,
     _schema_type_example,
     _SEMANTIC_DESCRIPTION_RULES,
     _semantic_description_for_context,
@@ -421,6 +423,28 @@ def test_openapi_enrichment_schema_http_operations_filters_schema_fragments() ->
 
     assert list(_schema_http_operations(schema)) == [("/api/v1/custom", "get", operation)]
     assert list(_schema_http_operations({"paths": []})) == []
+    assert list(_schema_path_methods(schema)) == [
+        ("/api/v1/custom", {"get": operation, "trace": {"responses": {}}}),
+        ("/bad-operation", {"post": []}),
+    ]
+    assert list(_schema_path_methods({"paths": []})) == []
+
+
+def test_openapi_enrichment_path_http_operations_filters_methods() -> None:
+    get_operation = {"responses": {"200": {"description": "ok"}}}
+    post_operation = {"responses": {"201": {"description": "created"}}}
+    methods = {
+        "get": get_operation,
+        "post": post_operation,
+        "trace": {"responses": {}},
+        42: {"responses": {}},
+        "delete": [],
+    }
+
+    assert list(_path_http_operations(path="/api/v1/custom", methods=methods)) == [
+        ("/api/v1/custom", "get", get_operation),
+        ("/api/v1/custom", "post", post_operation),
+    ]
 
 
 def test_openapi_enrichment_schema_documentable_properties_filters_fragments() -> None:

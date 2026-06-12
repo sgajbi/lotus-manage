@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T10:20:02+00:00`
+- Generated at: `2026-06-12T10:30:45+00:00`
 
-- Current ref: `bc8534ec`
+- Current ref: `b54aeffd`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
-| 2 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
-| 3 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
-| 4 | _remediation_routes | src/api/routers/outcome_review_supportability_routes.py | 9 | 12 |
-| 5 | source_supportability_state | src/core/portfolio_memory/supportability.py | 9 | 9 |
-| 6 | setup_observability | src/api/observability.py | 8 | 98 |
-| 7 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 8 | 89 |
-| 8 | _decision_timeline | src/core/proof_packs/builder.py | 8 | 89 |
-| 9 | save_proof_pack | src/infrastructure/proof_packs/postgres.py | 8 | 89 |
-| 10 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
+| 1 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 2 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 3 | _remediation_routes | src/api/routers/outcome_review_supportability_routes.py | 9 | 12 |
+| 4 | source_supportability_state | src/core/portfolio_memory/supportability.py | 9 | 9 |
+| 5 | setup_observability | src/api/observability.py | 8 | 98 |
+| 6 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 8 | 89 |
+| 7 | _decision_timeline | src/core/proof_packs/builder.py | 8 | 89 |
+| 8 | save_proof_pack | src/infrastructure/proof_packs/postgres.py | 8 | 89 |
+| 9 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 8 | 81 |
+| 10 | assemble_expected_outcome_snapshot | src/core/outcomes/snapshots.py | 8 | 78 |
 
 ### Most Complex Current Test Functions
 

@@ -511,19 +511,30 @@ def _ensure_operation_documentation(schema: dict[str, Any], service_name: str) -
 def _schema_http_operations(
     schema: dict[str, Any],
 ) -> Iterator[tuple[str, str, dict[str, Any]]]:
+    for path, methods in _schema_path_methods(schema):
+        yield from _path_http_operations(path=path, methods=methods)
+
+
+def _schema_path_methods(schema: dict[str, Any]) -> Iterator[tuple[str, dict[str, Any]]]:
     paths = schema.get("paths", {})
     if not isinstance(paths, dict):
         return
     for path, methods in paths.items():
         if not isinstance(path, str) or not isinstance(methods, dict):
             continue
-        for method, operation in methods.items():
-            if (
-                isinstance(method, str)
-                and _is_http_operation_method(method)
-                and isinstance(operation, dict)
-            ):
-                yield path, method, operation
+        yield path, methods
+
+
+def _path_http_operations(
+    *, path: str, methods: dict[str, Any]
+) -> Iterator[tuple[str, str, dict[str, Any]]]:
+    for method, operation in methods.items():
+        if (
+            isinstance(method, str)
+            and _is_http_operation_method(method)
+            and isinstance(operation, dict)
+        ):
+            yield path, method, operation
 
 
 def _ensure_operation_default_docs(
