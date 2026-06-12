@@ -19737,3 +19737,35 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal expected outcome snapshot
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-806: Proof-pack Markdown renderer helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/markdown.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_markdown.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `render_proof_pack_markdown` was the top current source-complexity hotspot and mixed
+  decision summary rendering, supportability counts, section matrix rows, timeline rows,
+  evidence-gap output, and integrity/source-hash output in one function.
+- Action: extracted deterministic Markdown section helpers while preserving the public renderer,
+  human-readable output shape, stable section ordering, sorted supportability/source-hash output,
+  evidence-gap omission behavior, and table escaping. Added direct helper tests for sorted
+  supportability lines, omitted empty evidence gaps, and sorted integrity source hashes. Refreshed
+  current-state quality reports and preserved the stable baseline artifact; the refreshed
+  complexity report shows `render_proof_pack_markdown` dropped out of the top current
+  source-complexity list without introducing a replacement hotspot from this slice.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/markdown.py tests/unit/dpm/proof_packs/test_proof_pack_markdown.py`,
+  `python -m ruff format --check src/core/proof_packs/markdown.py tests/unit/dpm/proof_packs/test_proof_pack_markdown.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/markdown.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_markdown.py -q` (5 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack Markdown
+  maintainability refactoring and repo-local quality evidence.

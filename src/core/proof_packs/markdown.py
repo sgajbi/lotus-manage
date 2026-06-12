@@ -6,7 +6,17 @@ from src.core.proof_packs.models import DpmPreTradeProofPack, DpmProofPackSectio
 def render_proof_pack_markdown(proof_pack: DpmPreTradeProofPack) -> str:
     """Render a human-readable proof-pack summary without changing evidence truth."""
 
-    lines = [
+    lines = _decision_summary_lines(proof_pack)
+    lines.extend(_supportability_lines(proof_pack))
+    lines.extend(_section_matrix_lines(proof_pack))
+    lines.extend(_timeline_lines(proof_pack))
+    lines.extend(_evidence_gap_lines(proof_pack))
+    lines.extend(_integrity_lines(proof_pack))
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _decision_summary_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    return [
         f"# Pre-Trade Proof Pack {proof_pack.proof_pack_id}",
         "",
         "## Decision Summary",
@@ -20,61 +30,71 @@ def render_proof_pack_markdown(proof_pack: DpmPreTradeProofPack) -> str:
         f"- Created by: `{proof_pack.created_by}`",
         f"- Recommended action: `{proof_pack.decision_summary.recommended_action}`",
         f"- Rationale: {proof_pack.decision_summary.business_rationale}",
+    ]
+
+
+def _supportability_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    lines = [
         "",
         "## Supportability",
         "",
         "| State | Count |",
         "| --- | ---: |",
     ]
-    for state, count in sorted(proof_pack.supportability.section_state_counts.items()):
-        lines.append(f"| `{state}` | {count} |")
-
     lines.extend(
-        [
-            "",
-            "## Section Matrix",
-            "",
-            "| Section | State | Summary | Reason codes |",
-            "| --- | --- | --- | --- |",
-        ]
+        f"| `{state}` | {count} |"
+        for state, count in sorted(proof_pack.supportability.section_state_counts.items())
     )
-    for section in proof_pack.sections:
-        lines.append(_section_row(section))
+    return lines
 
-    lines.extend(
-        [
-            "",
-            "## Timeline",
-            "",
-            "| Time | Event | Actor | Status | Reason codes |",
-            "| --- | --- | --- | --- | --- |",
-        ]
-    )
-    for event in proof_pack.decision_timeline.events:
-        lines.append(
+
+def _section_matrix_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    return [
+        "",
+        "## Section Matrix",
+        "",
+        "| Section | State | Summary | Reason codes |",
+        "| --- | --- | --- | --- |",
+        *(_section_row(section) for section in proof_pack.sections),
+    ]
+
+
+def _timeline_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    return [
+        "",
+        "## Timeline",
+        "",
+        "| Time | Event | Actor | Status | Reason codes |",
+        "| --- | --- | --- | --- | --- |",
+        *(
             "| "
             f"`{event.event_time}` | `{event.event_type}` | `{event.actor}` | "
             f"`{event.status}` | {_codes(event.reason_codes)} |"
-        )
+            for event in proof_pack.decision_timeline.events
+        ),
+    ]
 
-    if proof_pack.supportability.reason_codes:
-        lines.extend(["", "## Evidence Gaps", ""])
-        for code in proof_pack.supportability.reason_codes:
-            lines.append(f"- `{code}`")
 
-    lines.extend(
-        [
-            "",
-            "## Integrity",
-            "",
-            f"- Content hash: `{proof_pack.content_hash}`",
-            "- Source hashes:",
-        ]
-    )
-    for key, value in sorted(proof_pack.source_hashes.items()):
-        lines.append(f"  - `{key}`: `{value}`")
+def _evidence_gap_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    if not proof_pack.supportability.reason_codes:
+        return []
+    return [
+        "",
+        "## Evidence Gaps",
+        "",
+        *(f"- `{code}`" for code in proof_pack.supportability.reason_codes),
+    ]
 
-    return "\n".join(lines).rstrip() + "\n"
+
+def _integrity_lines(proof_pack: DpmPreTradeProofPack) -> list[str]:
+    return [
+        "",
+        "## Integrity",
+        "",
+        f"- Content hash: `{proof_pack.content_hash}`",
+        "- Source hashes:",
+        *(f"  - `{key}`: `{value}`" for key, value in sorted(proof_pack.source_hashes.items())),
+    ]
 
 
 def _section_row(section: DpmProofPackSection) -> str:
