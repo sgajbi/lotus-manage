@@ -20551,3 +20551,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal construction diagnostic
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-834: PM quality worst-state policy maps
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_worst_state` was the top current source-complexity hotspot after the construction
+  diagnostic slice and encoded severity ranking, `NOT_SUPPORTED` normalization, known-state
+  returns, and unknown fallback through a local map plus branch chain.
+- Action: extracted explicit module-level PM-quality state ranking and normalization maps while
+  preserving state precedence, `NOT_SUPPORTED` fallback to `DEGRADED`, and unknown-state
+  conservative degradation. Added direct guard-edge assertions for mixed-state precedence and
+  unsupported/unknown fallback behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability refactoring and repo-local quality evidence.

@@ -957,6 +957,9 @@ def test_pm_quality_scoring_guard_edges_are_source_safe() -> None:
     assert scoring._worst_state(["BREACHED"]) == "BREACHED"
     assert scoring._worst_state(["DEGRADED"]) == "DEGRADED"
     assert scoring._worst_state(["PENDING_REVIEW"]) == "PENDING_REVIEW"
+    assert scoring._worst_state(["READY", "PENDING_REVIEW", "DISABLED"]) == "PENDING_REVIEW"
+    assert scoring._worst_state(["READY", "NOT_SUPPORTED"]) == "READY"
+    assert scoring._worst_state(["NOT_SUPPORTED"]) == "DEGRADED"
     assert scoring._worst_state(["UNKNOWN"]) == "DEGRADED"
     assert scoring._mean([]) == Decimal("0")
 
