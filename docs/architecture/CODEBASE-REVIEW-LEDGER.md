@@ -20303,3 +20303,29 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
 - Wiki decision: no wiki source change required; this is internal campaign approval-inbox
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-825: Expected outcome wave-item resolution helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/snapshots.py`,
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_resolve_wave_item` was the top current source-complexity hotspot after the approval
+  inbox slice and mixed optional wave evidence validation, required item-id validation, wave item
+  lookup, portfolio/mandate/alternative/proof-pack linkage checks, and return selection in one
+  resolver.
+- Action: extracted deterministic wave-item lookup requirement validation, wave item lookup, and
+  wave item linkage validation helpers while preserving existing fail-closed error messages and
+  lineage checks. Added direct helper tests for lookup input validation and missing-item behavior
+  alongside existing expected-snapshot assembly and invalid-linkage coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q`,
+  `python scripts/engineering_health_report.py`,
+  and `git restore quality/baseline_report.md quality/architecture_rules.md quality/api_governance_rules.md`.
+- Wiki decision: no wiki source change required; this is internal expected-outcome snapshot
+  maintainability refactoring and repo-local quality evidence.
