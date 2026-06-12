@@ -19385,3 +19385,34 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-795: Portfolio-memory search filter predicates
+
+- Date: 2026-06-12
+- Scope: `src/core/portfolio_memory/search_filters.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_filters.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `event_matches_search_filters` was the top current source-complexity hotspot and
+  combined event type, supportability state, represented source-system, and represented
+  source-type matching inside one portfolio-memory search predicate.
+- Action: extracted field-specific event type, supportability, source-system, and source-type
+  match predicates while preserving the existing search filter behavior across event-local source
+  fields, source refs, and artifact refs. Added direct helper tests for optional filters, matched
+  and mismatched event type, matched and mismatched supportability state, and source facet
+  inclusion/exclusion. Refreshed current-state quality reports and preserved the stable baseline
+  artifact; the refreshed complexity report shows `event_matches_search_filters` dropped out of
+  the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/search_filters.py tests/unit/dpm/portfolio_memory/test_search_filters.py`,
+  `python -m ruff format --check src/core/portfolio_memory/search_filters.py tests/unit/dpm/portfolio_memory/test_search_filters.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_filters.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_filters.py -q` (6 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search
+  maintainability refactoring and repo-local quality evidence.

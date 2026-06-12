@@ -25,15 +25,37 @@ def event_matches_search_filters(
     source_system: str | None,
     source_type: str | None,
 ) -> bool:
-    if event_type is not None and event.event_type != event_type:
-        return False
-    if supportability_state is not None and event.supportability_state != supportability_state:
-        return False
-    if source_system is not None and source_system not in event_source_systems(event):
-        return False
-    if source_type is not None and source_type not in event_source_types(event):
-        return False
-    return True
+    return (
+        _event_type_matches(event=event, event_type=event_type)
+        and _event_supportability_matches(
+            event=event,
+            supportability_state=supportability_state,
+        )
+        and _event_source_system_matches(event=event, source_system=source_system)
+        and _event_source_type_matches(event=event, source_type=source_type)
+    )
+
+
+def _event_type_matches(*, event: DpmPortfolioMemoryEvent, event_type: str | None) -> bool:
+    return event_type is None or event.event_type == event_type
+
+
+def _event_supportability_matches(
+    *,
+    event: DpmPortfolioMemoryEvent,
+    supportability_state: PortfolioMemorySupportabilityState | None,
+) -> bool:
+    return supportability_state is None or event.supportability_state == supportability_state
+
+
+def _event_source_system_matches(
+    *, event: DpmPortfolioMemoryEvent, source_system: str | None
+) -> bool:
+    return source_system is None or source_system in event_source_systems(event)
+
+
+def _event_source_type_matches(*, event: DpmPortfolioMemoryEvent, source_type: str | None) -> bool:
+    return source_type is None or source_type in event_source_types(event)
 
 
 def event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
