@@ -18,7 +18,16 @@ from src.core.construction import (
     build_alternative_set,
     build_rebalance_result_alternative,
 )
-from src.core.models import EngineOptions, ExcludedInstrument, Money, RebalanceResult, TaxImpact
+from src.core.models import (
+    EngineOptions,
+    ExcludedInstrument,
+    GateDecision,
+    GateDecisionSummary,
+    GateReason,
+    Money,
+    RebalanceResult,
+    TaxImpact,
+)
 from src.core.mandates import (
     DpmMandateDigitalTwin,
     DpmMandateHealthInput,
@@ -499,6 +508,82 @@ def test_approval_requirements_section_payload_blocks_for_blocked_run() -> None:
     assert facts["workflow_decisions"] == []
     assert metrics == {"workflow_decision_count": 0}
     assert reason_codes == []
+
+
+def test_approval_section_state_uses_gate_required_review_and_blocked_precedence() -> None:
+    result = _ready_rebalance_result()
+    review_gate = GateDecision(
+        gate="MANDATE_APPROVAL_REQUIRED",
+        recommended_next_step="REQUEST_MANDATE_APPROVAL",
+        reasons=[],
+        summary=GateDecisionSummary(
+            hard_fail_count=0,
+            soft_fail_count=1,
+            new_high_suitability_count=0,
+            new_medium_suitability_count=0,
+        ),
+    )
+    blocked_gate = review_gate.model_copy(
+        update={"gate": "BLOCKED", "recommended_next_step": "FIX_INPUT"}
+    )
+
+    assert (
+        builder_module._approval_section_state(result=result, gate=review_gate) == "PENDING_REVIEW"
+    )
+    assert builder_module._approval_section_state(result=result, gate=blocked_gate) == "BLOCKED"
+    assert (
+        builder_module._approval_section_state(
+            result=result.model_copy(update={"status": "BLOCKED"}),
+            gate=review_gate,
+        )
+        == "BLOCKED"
+    )
+
+
+def test_approval_support_helpers_serialize_ordered_facts_and_reason_codes() -> None:
+    result = _ready_rebalance_result()
+    later = DpmRunWorkflowDecisionRecord(
+        decision_id="dwd_later",
+        run_id=result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="LATER",
+        actor_id="pm_002",
+        decided_at=datetime(2026, 5, 3, 10, 0, tzinfo=timezone.utc),
+        correlation_id="corr-later",
+    )
+    earlier = later.model_copy(
+        update={
+            "decision_id": "dwd_earlier",
+            "reason_code": "EARLIER",
+            "actor_id": "pm_001",
+            "decided_at": datetime(2026, 5, 3, 9, 0, tzinfo=timezone.utc),
+            "correlation_id": "corr-earlier",
+        }
+    )
+    gate = GateDecision(
+        gate="COMPLIANCE_REVIEW_REQUIRED",
+        recommended_next_step="COMPLIANCE_REVIEW",
+        reasons=[
+            GateReason(
+                reason_code="DPM_COMPLIANCE_REVIEW_REQUIRED",
+                severity="HIGH",
+                source="SUITABILITY",
+            )
+        ],
+        summary=GateDecisionSummary(
+            hard_fail_count=0,
+            soft_fail_count=0,
+            new_high_suitability_count=1,
+            new_medium_suitability_count=0,
+        ),
+    )
+
+    facts = builder_module._approval_workflow_decision_facts([later, earlier])
+
+    assert [fact["decision_id"] for fact in facts] == ["dwd_earlier", "dwd_later"]
+    assert builder_module._approval_gate_fact(gate)["gate"] == "COMPLIANCE_REVIEW_REQUIRED"
+    assert builder_module._approval_reason_codes(gate) == ["DPM_COMPLIANCE_REVIEW_REQUIRED"]
+    assert builder_module._approval_reason_codes(None) == []
 
 
 def test_proof_pack_governance_section_payload_orders_workflow_decisions() -> None:

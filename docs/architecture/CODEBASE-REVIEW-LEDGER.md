@@ -19226,3 +19226,34 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal shared simulation helper
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-790: Proof-pack approval posture helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_approval_requirements_section_payload` was the top current source-complexity hotspot
+  and mixed workflow decision ordering, gate fact serialization, approval state precedence, metric
+  assembly, and reason-code projection inside one proof-pack section payload helper.
+- Action: extracted focused approval workflow fact, approval state, gate fact, and reason-code
+  helpers while preserving the proof-pack section payload contract and existing run/gate precedence
+  behavior. Added direct helper tests for gate-required pending review, blocked precedence, ordered
+  workflow decision facts, gate serialization, and reason-code projection. Refreshed current-state
+  quality reports and preserved the stable baseline artifact; the refreshed complexity report shows
+  `_approval_requirements_section_payload` dropped out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q` (74 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal proof-pack payload
+  maintainability refactoring and repo-local quality evidence.
