@@ -619,17 +619,55 @@ def _optional_transition_replay_fields_match(
     sla_posture: CampaignAssignmentSlaPosture | None,
     due_at: datetime | None,
 ) -> bool:
-    if assigned_actor_ids is not None and transition.assigned_actor_ids != _normalize_actor_ids(
-        assigned_actor_ids
-    ):
-        return False
-    if escalation_tier is not None and transition.escalation_tier != escalation_tier:
-        return False
-    if sla_posture is not None and transition.sla_posture != sla_posture:
-        return False
-    if due_at is not None and transition.due_at != due_at:
-        return False
-    return True
+    return (
+        _transition_assignees_replay_match(
+            transition=transition,
+            assigned_actor_ids=assigned_actor_ids,
+        )
+        and _transition_escalation_tier_replay_match(
+            transition=transition,
+            escalation_tier=escalation_tier,
+        )
+        and _transition_sla_posture_replay_match(
+            transition=transition,
+            sla_posture=sla_posture,
+        )
+        and _transition_due_at_replay_match(transition=transition, due_at=due_at)
+    )
+
+
+def _transition_assignees_replay_match(
+    *,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    assigned_actor_ids: list[str] | None,
+) -> bool:
+    if assigned_actor_ids is None:
+        return True
+    return transition.assigned_actor_ids == _normalize_actor_ids(assigned_actor_ids)
+
+
+def _transition_escalation_tier_replay_match(
+    *,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+) -> bool:
+    return escalation_tier is None or transition.escalation_tier == escalation_tier
+
+
+def _transition_sla_posture_replay_match(
+    *,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    sla_posture: CampaignAssignmentSlaPosture | None,
+) -> bool:
+    return sla_posture is None or transition.sla_posture == sla_posture
+
+
+def _transition_due_at_replay_match(
+    *,
+    transition: DpmBulkReviewCampaignDefinitionAssignmentTaskTransition,
+    due_at: datetime | None,
+) -> bool:
+    return due_at is None or transition.due_at == due_at
 
 
 def _source_ref_payloads(source_refs: list[DpmWaveSourceRef]) -> list[dict[str, object]]:

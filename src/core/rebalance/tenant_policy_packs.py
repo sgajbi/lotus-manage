@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Protocol
+from typing import Any, Optional, Protocol
 
 
 class DpmTenantPolicyPackResolver(Protocol):
@@ -25,25 +25,39 @@ class StaticMapDpmTenantPolicyPackResolver:
 
 
 def parse_tenant_policy_pack_map(mapping_json: Optional[str]) -> dict[str, str]:
+    raw_mapping = _load_tenant_policy_pack_json_map(mapping_json)
+    if raw_mapping is None:
+        return {}
+    mapping: dict[str, str] = {}
+    for tenant_id, policy_pack_id in raw_mapping.items():
+        row = _tenant_policy_pack_mapping_row(tenant_id=tenant_id, policy_pack_id=policy_pack_id)
+        if row is not None:
+            normalized_tenant_id, normalized_policy_pack_id = row
+            mapping[normalized_tenant_id] = normalized_policy_pack_id
+    return mapping
+
+
+def _load_tenant_policy_pack_json_map(mapping_json: Optional[str]) -> dict[str, Any] | None:
     normalized_json = (mapping_json or "").strip()
     if not normalized_json:
-        return {}
+        return None
     try:
         raw = json.loads(normalized_json)
     except json.JSONDecodeError:
-        return {}
-    if not isinstance(raw, dict):
-        return {}
-    mapping: dict[str, str] = {}
-    for tenant_id, policy_pack_id in raw.items():
-        if not isinstance(policy_pack_id, str):
-            continue
-        normalized_tenant_id = _normalize_optional_value(tenant_id)
-        normalized_policy_pack_id = _normalize_optional_value(policy_pack_id)
-        if normalized_tenant_id is None or normalized_policy_pack_id is None:
-            continue
-        mapping[normalized_tenant_id] = normalized_policy_pack_id
-    return mapping
+        return None
+    return raw if isinstance(raw, dict) else None
+
+
+def _tenant_policy_pack_mapping_row(
+    *, tenant_id: Any, policy_pack_id: Any
+) -> tuple[str, str] | None:
+    if not isinstance(tenant_id, str) or not isinstance(policy_pack_id, str):
+        return None
+    normalized_tenant_id = _normalize_optional_value(tenant_id)
+    normalized_policy_pack_id = _normalize_optional_value(policy_pack_id)
+    if normalized_tenant_id is None or normalized_policy_pack_id is None:
+        return None
+    return normalized_tenant_id, normalized_policy_pack_id
 
 
 def build_tenant_policy_pack_resolver(

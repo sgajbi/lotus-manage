@@ -19291,3 +19291,65 @@ and improves internal transaction-cost source posture maintainability only.
   and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
 - Wiki decision: no wiki source change required; this is internal risk outcome source
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-792: Tenant policy-pack map parser helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/rebalance/tenant_policy_packs.py`,
+  `tests/unit/dpm/engine/test_tenant_policy_pack_resolver.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `parse_tenant_policy_pack_map` was the top current source-complexity hotspot and mixed
+  optional configuration normalization, JSON decoding, map-shape validation, row validation, and
+  tenant/policy-pack id normalization in one resolver-support helper.
+- Action: extracted JSON map loading and tenant-policy-pack row normalization helpers while
+  preserving fail-closed invalid configuration behavior and the existing static resolver contract.
+  Added direct helper tests for empty/invalid/non-object JSON, valid map loading, string-pair
+  normalization, and invalid row rejection. Refreshed current-state quality reports and preserved
+  the stable baseline artifact; the refreshed complexity report shows
+  `parse_tenant_policy_pack_map` dropped out of the top current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/tenant_policy_packs.py tests/unit/dpm/engine/test_tenant_policy_pack_resolver.py`,
+  `python -m ruff format --check src/core/rebalance/tenant_policy_packs.py tests/unit/dpm/engine/test_tenant_policy_pack_resolver.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/tenant_policy_packs.py`,
+  `python -m pytest tests/unit/dpm/engine/test_tenant_policy_pack_resolver.py -q` (7 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal tenant policy-pack resolver
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260612-793: Campaign assignment transition replay helpers
+
+- Date: 2026-06-12
+- Scope: `src/core/waves/campaign_assignment_tasks.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_optional_transition_replay_fields_match` was the top current source-complexity
+  hotspot and combined optional assignee, escalation-tier, SLA-posture, and due-date comparison
+  rules for idempotent assignment task transition replay in one predicate.
+- Action: extracted field-specific replay predicates for assignees, escalation tier, SLA posture,
+  and due date while preserving the existing transition-ref replay/conflict behavior. Added direct
+  helper tests for normalized assignee matching, assignee mismatch, unspecified optional fields,
+  mismatched escalation tier, mismatched SLA posture, and mismatched due date. Refreshed
+  current-state quality reports and preserved the stable baseline artifact; the refreshed
+  complexity report shows `_optional_transition_replay_fields_match` dropped out of the top
+  current source-complexity list.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q` (74 passed),
+  `python scripts/engineering_health_report.py`,
+  `git restore quality/baseline_report.md`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `git diff --check`,
+  and service leakage scan (`rg -n "from src\\.api\\.routers|import src\\.api\\.routers|HTTPException|status\\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"` returned no matches).
+- Wiki decision: no wiki source change required; this is internal campaign assignment task
+  idempotency helper maintainability refactoring and repo-local quality evidence.

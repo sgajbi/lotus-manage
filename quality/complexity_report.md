@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T09:49:04+00:00`
+- Generated at: `2026-06-12T10:04:26+00:00`
 
-- Current ref: `8c5ffc6e`
+- Current ref: `ba65f13c`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | parse_tenant_policy_pack_map | src/core/rebalance/tenant_policy_packs.py | 9 | 20 |
-| 2 | _optional_transition_replay_fields_match | src/core/waves/campaign_assignment_tasks.py | 9 | 19 |
-| 3 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
-| 4 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
-| 5 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
-| 6 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
-| 7 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
-| 8 | _remediation_routes | src/api/routers/outcome_review_supportability_routes.py | 9 | 12 |
-| 9 | source_supportability_state | src/core/portfolio_memory/supportability.py | 9 | 9 |
-| 10 | setup_observability | src/api/observability.py | 8 | 98 |
+| 1 | _ensure_schema_documentation | src/api/openapi_enrichment.py | 9 | 18 |
+| 2 | event_matches_search_filters | src/core/portfolio_memory/search_filters.py | 9 | 17 |
+| 3 | _schema_http_operations | src/api/openapi_enrichment.py | 9 | 16 |
+| 4 | _attribution_level | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 5 | _attribution_currency | src/core/outcomes/performance_sources.py | 9 | 14 |
+| 6 | _remediation_routes | src/api/routers/outcome_review_supportability_routes.py | 9 | 12 |
+| 7 | source_supportability_state | src/core/portfolio_memory/supportability.py | 9 | 9 |
+| 8 | setup_observability | src/api/observability.py | 8 | 98 |
+| 9 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 8 | 89 |
+| 10 | _decision_timeline | src/core/proof_packs/builder.py | 8 | 89 |
 
 ### Most Complex Current Test Functions
 
