@@ -20756,3 +20756,31 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk-source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-841: Security intent constraint predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_security_intent_constraints` was the top current source-complexity hotspot after the
+  drawdown source posture slice and mixed min-notional, sell safety, and tax-budget constraint
+  label decisions in one helper.
+- Action: extracted named sell-side available-holding and tax-budget constraint predicates while
+  preserving min-notional, available-holding, and tax-budget label ordering. Added direct tests
+  proving the predicates are sell-side only and respect disabled tax awareness.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance intent safety
+  maintainability refactoring and repo-local quality evidence.
