@@ -22796,3 +22796,32 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-911: Campaign assignment transition requirement predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow controls, and testing.
+- Finding: `_validate_transition_field_requirements` combined open-task assignee requirements,
+  reassignment/escalation actor-id requirements, and due-date transition requirements in one
+  conditional sequence. The behavior was correct, but controlled assignment-task transitions are
+  easier to review when each required-field rule is named.
+- Action: extracted `_transition_requires_open_assignees`, `_transition_requires_actor_ids`, and
+  `_transition_requires_due_at` so each transition guard predicate is independently testable
+  before error-code mapping. Expanded direct helper tests for open/closed assignee requirements,
+  reassignment actor-id requirements, non-reassignment pass-through, and due-date requirements.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  and `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 86 passed and `_validate_transition_field_requirements` reduced from
+  B(7) to A(4) under radon.
+- Residual risk: this slice improves campaign assignment transition maintainability only. It
+  does not change assignment-task semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal campaign assignment helper
+  maintainability hardening with no operator-facing contract change.

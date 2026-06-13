@@ -74,6 +74,9 @@ from src.core.waves.campaign_assignment_tasks import (
     _transition_due_at_replay_match,
     _transition_escalation_tier_replay_match,
     _transition_next_assignees,
+    _transition_requires_actor_ids,
+    _transition_requires_due_at,
+    _transition_requires_open_assignees,
     _transition_sla_posture_replay_match,
     _transition_task_fields,
     _validate_transition_field_requirements,
@@ -1963,6 +1966,15 @@ def test_campaign_assignment_task_transition_replay_helper_returns_definition_or
 def test_campaign_assignment_task_transition_field_requirement_helper_rejects_missing_fields() -> (
     None
 ):
+    assert _transition_requires_open_assignees(next_status="OPEN", next_assignees=[])
+    assert not _transition_requires_open_assignees(next_status="RESOLVED", next_assignees=[])
+    assert _transition_requires_actor_ids(transition_type="REASSIGNED", assigned_actor_ids=None)
+    assert not _transition_requires_actor_ids(
+        transition_type="ACKNOWLEDGED",
+        assigned_actor_ids=None,
+    )
+    assert _transition_requires_due_at(transition_type="DUE_DATE_CHANGED", due_at=None)
+
     with pytest.raises(
         ValueError,
         match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED",

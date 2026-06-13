@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T15:59:47+00:00`
+- Generated at: `2026-06-13T16:02:50+00:00`
 
-- Report source snapshot: `6ca8fced+worktree`
+- Report source snapshot: `f161bf92+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
-| 2 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
-| 3 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
-| 4 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
-| 5 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 6 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 7 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 8 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 9 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 10 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 1 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
+| 2 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
+| 3 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 4 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
+| 5 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 6 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 7 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 8 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 9 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 10 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
 
 ### Most Complex Current Test Functions
 
