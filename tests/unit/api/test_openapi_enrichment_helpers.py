@@ -349,25 +349,41 @@ def test_openapi_enrichment_resolved_schema_example_dispatches_example_strategie
         prop_schema={"$ref": "#/components/schemas/Leaf"},
         schemas=schemas,
         seen_refs=set(),
-    ) == {"currency": "USD"}
+    ) == (True, {"currency": "USD"})
     assert _resolved_schema_example(
         prop_name="choice",
         prop_schema={"oneOf": [{"type": "null"}, {"type": "array", "items": {"type": "string"}}]},
         schemas=schemas,
         seen_refs=set(),
-    ) == ["sample_choice_item"]
+    ) == (True, ["sample_choice_item"])
     assert _resolved_schema_example(
         prop_name="attributes",
         prop_schema={"type": "object", "additionalProperties": {"type": "boolean"}},
         schemas=schemas,
         seen_refs=set(),
-    ) == {"sample_key": True}
+    ) == (True, {"sample_key": True})
+    assert _resolved_schema_example(
+        prop_name="plain",
+        prop_schema={"type": "string"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (False, None)
+
+
+def test_openapi_enrichment_resolved_schema_example_preserves_declared_null() -> None:
+    schemas = {"NullableLeaf": {"type": "object", "example": None}}
+
+    assert _resolved_schema_example(
+        prop_name="nullable_leaf",
+        prop_schema={"$ref": "#/components/schemas/NullableLeaf"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, None)
     assert (
-        _resolved_schema_example(
-            prop_name="plain",
-            prop_schema={"type": "string"},
-            schemas=schemas,
-            seen_refs=set(),
+        _example_from_schema(
+            "nullable_leaf",
+            {"$ref": "#/components/schemas/NullableLeaf"},
+            schemas,
         )
         is None
     )

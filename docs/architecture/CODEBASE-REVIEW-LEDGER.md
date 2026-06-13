@@ -22264,3 +22264,29 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API-governance helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-893: OpenAPI explicit-null example preservation
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: PR review identified that `_resolved_schema_example` collapsed the existing
+  `(matched, example)` helper contract into an optional example value. That made an explicit
+  `example: null` resolved through a `$ref` indistinguishable from no schema-derived example,
+  allowing fallback inference to fabricate a non-null sample.
+- Action: restored the dispatcher to return `(matched, example)` and updated `_example_from_schema`
+  to use the matched flag. Added direct regression coverage proving a referenced schema with
+  `example: null` remains a matched null example.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, and
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`; the focused OpenAPI
+  enrichment helper suite reported 30 passed.
+- Residual risk: this slice preserves generated OpenAPI example semantics only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  correctness hardening with no operator-facing contract change.

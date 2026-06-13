@@ -331,13 +331,13 @@ def _example_from_schema(
     if has_declared_example:
         return declared_example
 
-    schema_example = _resolved_schema_example(
+    has_schema_example, schema_example = _resolved_schema_example(
         prop_name=prop_name,
         prop_schema=prop_schema,
         schemas=schemas,
         seen_refs=seen_refs,
     )
-    if schema_example is not None:
+    if has_schema_example:
         return schema_example
 
     return _infer_example(prop_name, prop_schema)
@@ -349,7 +349,7 @@ def _resolved_schema_example(
     prop_schema: dict[str, Any],
     schemas: dict[str, Any],
     seen_refs: set[str],
-) -> Any | None:
+) -> tuple[bool, Any]:
     for matched, example in (
         _ref_example_from_schema(prop_schema, schemas, seen_refs),
         _composite_example_from_schema(prop_name, prop_schema, schemas, seen_refs),
@@ -361,8 +361,8 @@ def _resolved_schema_example(
         ),
     ):
         if matched:
-            return example
-    return None
+            return True, example
+    return False, None
 
 
 def _ensure_json_content_example(
