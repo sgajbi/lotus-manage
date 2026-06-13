@@ -22738,3 +22738,33 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM-quality fairness helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-909: Bulk-review campaign definition structural guards
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_definitions.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Bank-buyable control area: architecture, campaign governance, and testing.
+- Finding: `validate_definition` combined lifecycle validation, eligible portfolio type presence,
+  candidate presence, deterministic content-hash validation, and hash assignment in one model
+  validator. The behavior was correct, but the bulk-review campaign definition governance
+  contract was harder to review than an immutable campaign definition guard should be.
+- Action: extracted `_validate_campaign_definition_structure`,
+  `_has_eligible_portfolio_type`, and `_apply_campaign_definition_content_hash` so structural
+  required fields and content-hash binding are named and directly testable after lifecycle
+  validation. Added direct helper tests for eligible portfolio type detection, missing structural
+  scope, missing candidates, content-hash assignment, and mismatch rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definitions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  and `python -m radon cc src/core/waves/campaign_definitions.py -s`; the focused campaign
+  definition repository suite reported 53 passed and `validate_definition` reduced from B(7) to
+  A(3) under radon.
+- Residual risk: this slice improves bulk-review campaign definition maintainability only. It
+  does not change campaign definition semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal campaign definition helper
+  maintainability hardening with no operator-facing contract change.

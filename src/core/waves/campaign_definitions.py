@@ -589,15 +589,31 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
             self._validate_retired_lifecycle()
         else:
             self._validate_superseded_lifecycle()
-        if not [value for value in self.eligible_portfolio_types if value.strip()]:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
-        if not self.candidates:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED")
-        expected_hash = bulk_review_campaign_definition_hash(self, include_hash=False)
-        if self.content_hash and self.content_hash != expected_hash:
-            raise ValueError("BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH")
-        self.content_hash = expected_hash
+        _validate_campaign_definition_structure(self)
+        _apply_campaign_definition_content_hash(self)
         return self
+
+
+def _validate_campaign_definition_structure(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> None:
+    if not _has_eligible_portfolio_type(definition.eligible_portfolio_types):
+        raise ValueError("BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED")
+    if not definition.candidates:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED")
+
+
+def _has_eligible_portfolio_type(eligible_portfolio_types: list[str]) -> bool:
+    return any(portfolio_type.strip() for portfolio_type in eligible_portfolio_types)
+
+
+def _apply_campaign_definition_content_hash(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> None:
+    expected_hash = bulk_review_campaign_definition_hash(definition, include_hash=False)
+    if definition.content_hash and definition.content_hash != expected_hash:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH")
+    definition.content_hash = expected_hash
 
 
 def bulk_review_campaign_definition_hash(

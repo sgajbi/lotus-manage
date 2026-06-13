@@ -56,6 +56,9 @@ from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
     DpmBulkReviewCampaignDefinitionGovernance,
+    _apply_campaign_definition_content_hash,
+    _has_eligible_portfolio_type,
+    _validate_campaign_definition_structure,
     _validate_lifecycle_fields_absent,
     _validate_required_lifecycle_value,
     bulk_review_campaign_definition_hash,
@@ -163,6 +166,36 @@ def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> Non
             correlation_id="corr-campaign-definition-001",
             content_hash="sha256:bad",
         )
+
+
+def test_campaign_definition_structure_helpers_require_scope_and_candidates() -> None:
+    assert _has_eligible_portfolio_type([" ", "DISCRETIONARY"])
+    assert not _has_eligible_portfolio_type([" ", ""])
+
+    valid_definition = _definition()
+    _validate_campaign_definition_structure(valid_definition)
+
+    missing_portfolio_types = _definition().model_copy(
+        update={"eligible_portfolio_types": [" ", ""]}
+    )
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED"):
+        _validate_campaign_definition_structure(missing_portfolio_types)
+
+    missing_candidates = _definition().model_copy(update={"candidates": []})
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED"):
+        _validate_campaign_definition_structure(missing_candidates)
+
+
+def test_campaign_definition_content_hash_helper_applies_and_rejects_mismatch() -> None:
+    definition = _definition().model_copy(update={"content_hash": ""})
+
+    _apply_campaign_definition_content_hash(definition)
+
+    assert definition.content_hash == bulk_review_campaign_definition_hash(definition)
+
+    mismatched = _definition().model_copy(update={"content_hash": "sha256:bad"})
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH"):
+        _apply_campaign_definition_content_hash(mismatched)
 
 
 def test_campaign_definition_hash_preserves_pre_approval_decision_payloads() -> None:
