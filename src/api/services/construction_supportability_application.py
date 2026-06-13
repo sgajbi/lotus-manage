@@ -29,6 +29,10 @@ _EnrichmentStatusSelector = Callable[
     [ConstructionEnrichmentSummary],
     ConstructionMethodStatus,
 ]
+_AuthorityContextStatusSelector = Callable[
+    [ConstructionAuthorityContext],
+    ConstructionMethodStatus | None,
+]
 
 _METHOD_ENRICHMENT_STATUS_SELECTORS: dict[
     ConstructionMethod,
@@ -40,6 +44,40 @@ _METHOD_ENRICHMENT_STATUS_SELECTORS: dict[
     ConstructionMethod.LIQUIDITY_AWARE: lambda enrichment: enrichment.liquidity_status,
     ConstructionMethod.CURRENCY_OVERLAY: lambda enrichment: enrichment.fx_status,
     ConstructionMethod.RISK_AWARE: lambda enrichment: enrichment.risk_status,
+}
+
+
+def _liquidity_authority_context_status(
+    authority_context: ConstructionAuthorityContext,
+) -> ConstructionMethodStatus | None:
+    if authority_context.liquidity_context is None:
+        return None
+    return authority_context.liquidity_context.supportability_status
+
+
+def _currency_overlay_authority_context_status(
+    authority_context: ConstructionAuthorityContext,
+) -> ConstructionMethodStatus | None:
+    if authority_context.currency_overlay_context is None:
+        return None
+    return authority_context.currency_overlay_context.supportability_status
+
+
+def _regime_stress_authority_context_status(
+    authority_context: ConstructionAuthorityContext,
+) -> ConstructionMethodStatus | None:
+    if authority_context.regime_stress_context is None:
+        return None
+    return authority_context.regime_stress_context.supportability_status
+
+
+_AUTHORITY_CONTEXT_STATUS_SELECTORS: dict[
+    ConstructionMethod,
+    _AuthorityContextStatusSelector,
+] = {
+    ConstructionMethod.LIQUIDITY_AWARE: _liquidity_authority_context_status,
+    ConstructionMethod.CURRENCY_OVERLAY: _currency_overlay_authority_context_status,
+    ConstructionMethod.REGIME_STRESS_AWARE: _regime_stress_authority_context_status,
 }
 
 
@@ -202,13 +240,10 @@ def authority_context_status(
     method: ConstructionMethod,
     authority_context: ConstructionAuthorityContext,
 ) -> ConstructionMethodStatus | None:
-    if method == ConstructionMethod.LIQUIDITY_AWARE and authority_context.liquidity_context:
-        return authority_context.liquidity_context.supportability_status
-    if method == ConstructionMethod.CURRENCY_OVERLAY and authority_context.currency_overlay_context:
-        return authority_context.currency_overlay_context.supportability_status
-    if method == ConstructionMethod.REGIME_STRESS_AWARE and authority_context.regime_stress_context:
-        return authority_context.regime_stress_context.supportability_status
-    return None
+    selector = _AUTHORITY_CONTEXT_STATUS_SELECTORS.get(method)
+    if selector is None:
+        return None
+    return selector(authority_context)
 
 
 __all__ = [

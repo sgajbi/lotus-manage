@@ -22825,3 +22825,93 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal campaign assignment helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-912: Construction authority context status dispatch
+
+- Date: 2026-06-14
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Bank-buyable control area: architecture, construction supportability governance, and testing.
+- Finding: `authority_context_status` combined liquidity, currency-overlay, and regime-stress
+  authority context status checks in one conditional sequence. The behavior was correct, but
+  method-specific source authority readiness should be reviewable as named supportability rules.
+- Action: extracted `_liquidity_authority_context_status`,
+  `_currency_overlay_authority_context_status`, and `_regime_stress_authority_context_status`,
+  then routed `authority_context_status` through a method-to-selector map. Added direct helper
+  tests for present-context status projection and missing-context `None` fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  and `python -m radon cc src/api/services/construction_supportability_application.py -s`; the
+  focused construction supportability application suite reported 16 passed, the report-only
+  complexity baseline had listed `authority_context_status` at B(7), and current radon reports it
+  at A(2).
+- Residual risk: this slice improves construction supportability authority-context
+  maintainability only. It does not change construction semantics, certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-913: OpenAPI documentable property extraction
+
+- Date: 2026-06-14
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, OpenAPI governance, and testing.
+- Finding: `_model_documentable_properties` combined model-name validation, model-schema shape
+  checks, properties collection validation, and property-fragment filtering in one helper. The
+  generated OpenAPI behavior was correct, but schema documentation enrichment should keep model
+  and property filtering rules independently reviewable.
+- Action: extracted `_model_property_schemas` and `_documentable_property_schema` so model-level
+  eligibility and property-fragment eligibility are separate, directly testable rules before
+  documentation enrichment applies generated descriptions and examples. Added direct tests for
+  valid fragments, non-string property names, non-dict schemas, invalid models, and invalid
+  properties collections.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  and `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment
+  helper suite reported 35 passed, the report-only complexity baseline had listed
+  `_model_documentable_properties` at B(7), and current radon reports it at A(3) with the
+  extracted `_model_property_schemas` helper at A(5).
+- Residual risk: this slice improves OpenAPI schema documentation helper maintainability only. It
+  does not change OpenAPI output semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-914: Integration capability publishability guards
+
+- Date: 2026-06-14
+- Scope: `src/api/services/integration_capabilities_service.py` and
+  `tests/unit/dpm/test_integration_capabilities_service.py`.
+- Bank-buyable control area: API quality, integration capability governance, and testing.
+- Finding: `stateful_execution_publishable` combined portfolio-id input-mode publication,
+  stateful Core sourcing enablement, Core base URL presence, and legacy resolver-route blocking
+  in one boolean expression. The behavior was correct, but capability publication should expose
+  each fail-closed guard as a named rule.
+- Action: extracted `_stateful_portfolio_id_input_mode_enabled`,
+  `_stateful_core_sourcing_enabled`, `_core_base_url_configured`, and
+  `_uses_legacy_monolithic_resolver_path`, then kept `stateful_execution_publishable` as a small
+  guard aggregator. Added direct tests for the flag guards, Core base URL trimming, and legacy
+  resolver-route detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py`,
+  `python -m ruff format --check src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/integration_capabilities_service.py`,
+  `python -m pytest tests/unit/dpm/test_integration_capabilities_service.py -q`,
+  and `python -m radon cc src/api/services/integration_capabilities_service.py -s`; the focused
+  integration capability service suite reported 8 passed, the report-only complexity baseline had
+  listed `stateful_execution_publishable` at B(7), and current radon reports it at A(2).
+- Residual risk: this slice improves integration capability publication maintainability only. It
+  does not change capability response semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal integration-capability service
+  helper maintainability hardening with no operator-facing contract change.

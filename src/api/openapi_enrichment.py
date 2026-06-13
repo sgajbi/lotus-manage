@@ -676,14 +676,33 @@ def _schema_component_schemas(schema: dict[str, Any]) -> dict[str, Any] | None:
 def _model_documentable_properties(
     *, model_name: Any, model_schema: Any
 ) -> Iterator[tuple[str, str, dict[str, Any]]]:
-    if not isinstance(model_name, str) or not isinstance(model_schema, dict):
+    if not isinstance(model_name, str):
+        return
+    for prop_name, prop_schema in _model_property_schemas(model_schema):
+        yield model_name, prop_name, prop_schema
+
+
+def _model_property_schemas(model_schema: Any) -> Iterator[tuple[str, dict[str, Any]]]:
+    if not isinstance(model_schema, dict):
         return
     properties = model_schema.get("properties", {})
     if not isinstance(properties, dict):
         return
     for prop_name, prop_schema in properties.items():
-        if isinstance(prop_name, str) and isinstance(prop_schema, dict):
-            yield model_name, prop_name, prop_schema
+        property_schema = _documentable_property_schema(prop_name, prop_schema)
+        if property_schema is not None:
+            yield property_schema
+
+
+def _documentable_property_schema(
+    prop_name: Any,
+    prop_schema: Any,
+) -> tuple[str, dict[str, Any]] | None:
+    if not isinstance(prop_name, str):
+        return None
+    if not isinstance(prop_schema, dict):
+        return None
+    return prop_name, prop_schema
 
 
 def _ensure_property_documentation(
