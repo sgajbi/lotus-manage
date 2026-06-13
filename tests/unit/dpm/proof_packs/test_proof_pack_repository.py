@@ -10,6 +10,11 @@ from src.core.proof_packs.repository import DpmProofPackConflictError
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
+from src.infrastructure.proof_packs.in_memory import (
+    _ensure_proof_pack_content_is_immutable,
+    _idempotency_binding,
+    _retention_metadata,
+)
 from tests.shared.factories import (
     cash,
     market_data_snapshot,
@@ -145,6 +150,60 @@ def test_in_memory_repository_rejects_idempotency_conflict() -> None:
             idempotency_key="idem-proof-pack-repository",
             retention_expires_at=RETENTION_EXPIRES_AT,
         )
+
+
+def test_proof_pack_immutability_helper_allows_matching_content_hash() -> None:
+    proof_pack = _proof_pack()
+    replay = proof_pack.model_copy(deep=True)
+
+    _ensure_proof_pack_content_is_immutable(existing=proof_pack, proof_pack=replay)
+
+
+def test_proof_pack_immutability_helper_rejects_changed_content_hash() -> None:
+    proof_pack = _proof_pack(reason="Initial rationale.")
+    mutated = _proof_pack(reason="Changed rationale.")
+
+    with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IMMUTABLE_CONFLICT"):
+        _ensure_proof_pack_content_is_immutable(existing=proof_pack, proof_pack=mutated)
+
+
+def test_idempotency_binding_helper_returns_optional_binding_and_rejects_conflicts() -> None:
+    assert (
+        _idempotency_binding(
+            idempotency_key=None,
+            existing_proof_pack_id=None,
+            proof_pack_id="dpp_none",
+        )
+        is None
+    )
+    assert _idempotency_binding(
+        idempotency_key="idem-proof-pack-repository",
+        existing_proof_pack_id="dpp_repo_001",
+        proof_pack_id="dpp_repo_001",
+    ) == ("idem-proof-pack-repository", "dpp_repo_001")
+
+    with pytest.raises(DpmProofPackConflictError, match="DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT"):
+        _idempotency_binding(
+            idempotency_key="idem-proof-pack-repository",
+            existing_proof_pack_id="dpp_repo_001",
+            proof_pack_id="dpp_repo_002",
+        )
+
+
+def test_retention_metadata_helper_preserves_policy_and_optional_expiry() -> None:
+    expiring = _retention_metadata(
+        proof_pack_id="dpp_repo_001",
+        retention_expires_at=RETENTION_EXPIRES_AT,
+    )
+    non_expiring = _retention_metadata(
+        proof_pack_id="dpp_repo_002",
+        retention_expires_at=None,
+    )
+
+    assert expiring.retention_policy == "DPM_PRE_TRADE_PROOF_PACK_7Y"
+    assert expiring.retention_expires_at == RETENTION_EXPIRES_AT.isoformat()
+    assert non_expiring.retention_policy == "DPM_PRE_TRADE_PROOF_PACK_7Y"
+    assert non_expiring.retention_expires_at is None
 
 
 def test_in_memory_repository_appends_refs_without_mutating_body() -> None:

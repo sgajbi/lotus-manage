@@ -172,29 +172,14 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
     def purge_mandate_records_before(self, *, cutoff: datetime) -> int:
         cutoff_utc = cutoff.astimezone(timezone.utc)
         with self._lock:
-            mandate_keys = [
-                key
-                for key, twin in self._mandates_by_key.items()
-                if datetime.combine(twin.as_of_date, datetime.min.time(), timezone.utc) < cutoff_utc
-            ]
-            health_keys = [
-                key
-                for key, snapshot in self._health_snapshots.items()
-                if snapshot.calculated_at < cutoff_utc
-            ]
-            exception_keys = [
-                key
-                for key, exception in self._exceptions.items()
-                if exception.detected_at < cutoff_utc
-                and (exception.state == "RESOLVED" or exception.resolved_at is not None)
-            ]
+            mandate_keys = _stale_mandate_keys(self._mandates_by_key, cutoff_utc)
+            health_keys = _stale_health_snapshot_keys(self._health_snapshots, cutoff_utc)
+            run_keys = _stale_monitoring_run_keys(self._monitoring_runs, cutoff_utc)
+            exception_keys = _stale_resolved_exception_keys(self._exceptions, cutoff_utc)
             for mandate_key in mandate_keys:
                 self._mandates_by_key.pop(mandate_key, None)
             for health_key in health_keys:
                 self._health_snapshots.pop(health_key, None)
-            run_keys = [
-                key for key, run in self._monitoring_runs.items() if run.requested_at < cutoff_utc
-            ]
             for run_key in run_keys:
                 self._monitoring_runs.pop(run_key, None)
             for exception_key in exception_keys:
@@ -204,6 +189,43 @@ class InMemoryDpmMandateRepository(DpmMandateRepository):
 
 def _latest_twin(rows: list[DpmMandateDigitalTwin]) -> DpmMandateDigitalTwin:
     return max(rows, key=lambda row: (row.as_of_date, row.mandate_version))
+
+
+def _stale_mandate_keys(
+    mandates: dict[tuple[str, str], DpmMandateDigitalTwin],
+    cutoff_utc: datetime,
+) -> list[tuple[str, str]]:
+    return [
+        key
+        for key, twin in mandates.items()
+        if datetime.combine(twin.as_of_date, datetime.min.time(), timezone.utc) < cutoff_utc
+    ]
+
+
+def _stale_health_snapshot_keys(
+    snapshots: dict[str, DpmMandateHealthSnapshot],
+    cutoff_utc: datetime,
+) -> list[str]:
+    return [key for key, snapshot in snapshots.items() if snapshot.calculated_at < cutoff_utc]
+
+
+def _stale_monitoring_run_keys(
+    runs: dict[str, DpmMonitoringRun],
+    cutoff_utc: datetime,
+) -> list[str]:
+    return [key for key, run in runs.items() if run.requested_at < cutoff_utc]
+
+
+def _stale_resolved_exception_keys(
+    exceptions: dict[str, DpmMonitoringException],
+    cutoff_utc: datetime,
+) -> list[str]:
+    return [
+        key
+        for key, exception in exceptions.items()
+        if exception.detected_at < cutoff_utc
+        and (exception.state == "RESOLVED" or exception.resolved_at is not None)
+    ]
 
 
 def _filtered_monitoring_exceptions(

@@ -19,6 +19,12 @@ from src.core.mandates import (
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 import src.infrastructure.mandates.in_memory as mandate_in_memory
 import src.infrastructure.mandates.postgres as mandate_postgres
+from src.infrastructure.mandates.in_memory import (
+    _stale_health_snapshot_keys,
+    _stale_mandate_keys,
+    _stale_monitoring_run_keys,
+    _stale_resolved_exception_keys,
+)
 from src.infrastructure.mandates.postgres import PostgresDpmMandateRepository
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 
@@ -418,6 +424,74 @@ def test_repository_retention_keeps_active_exceptions_but_purges_old_resolved_re
         cursor=None,
     )
     assert rows == []
+
+
+def test_in_memory_retention_key_helpers_select_only_stale_records() -> None:
+    cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    old_twin = _twin(version="old", as_of=date(2024, 1, 1))
+    current_twin = _twin(version="current", as_of=date(2026, 1, 1))
+    old_snapshot = _health_snapshot(old_twin).model_copy(
+        update={"health_snapshot_id": "health_old", "calculated_at": cutoff - timedelta(days=1)}
+    )
+    current_snapshot = _health_snapshot(current_twin).model_copy(
+        update={"health_snapshot_id": "health_current", "calculated_at": cutoff}
+    )
+    old_run = _monitoring_run(run_id="run_old", requested_at=cutoff - timedelta(seconds=1))
+    current_run = _monitoring_run(run_id="run_current", requested_at=cutoff)
+
+    assert _stale_mandate_keys(
+        {
+            (old_twin.mandate_id, old_twin.mandate_version): old_twin,
+            (current_twin.mandate_id, current_twin.mandate_version): current_twin,
+        },
+        cutoff,
+    ) == [(old_twin.mandate_id, old_twin.mandate_version)]
+    assert _stale_health_snapshot_keys(
+        {
+            old_snapshot.health_snapshot_id: old_snapshot,
+            current_snapshot.health_snapshot_id: current_snapshot,
+        },
+        cutoff,
+    ) == [old_snapshot.health_snapshot_id]
+    assert _stale_monitoring_run_keys(
+        {
+            old_run.monitoring_run_id: old_run,
+            current_run.monitoring_run_id: current_run,
+        },
+        cutoff,
+    ) == [old_run.monitoring_run_id]
+
+
+def test_in_memory_retention_exception_helper_keeps_active_exceptions() -> None:
+    cutoff = datetime(2025, 1, 1, tzinfo=timezone.utc)
+    twin = _twin(as_of=date(2024, 1, 1))
+    base_exception = monitoring_exceptions_from_health(
+        calculate_mandate_health(
+            DpmMandateHealthInput(
+                twin=twin,
+                cash_weight=Decimal("0.50"),
+                current_weights={"EQ_US_AAPL": Decimal("0.60")},
+                target_weights={"EQ_US_AAPL": Decimal("0.60")},
+            )
+        ),
+        source_lineage=[],
+    )[0].model_copy(update={"detected_at": cutoff - timedelta(days=1)})
+    active_exception = base_exception.model_copy(update={"exception_id": "active_old"})
+    resolved_exception = base_exception.model_copy(
+        update={
+            "exception_id": "resolved_old",
+            "state": "RESOLVED",
+            "resolved_at": cutoff - timedelta(hours=1),
+        }
+    )
+
+    assert _stale_resolved_exception_keys(
+        {
+            active_exception.exception_id: active_exception,
+            resolved_exception.exception_id: resolved_exception,
+        },
+        cutoff,
+    ) == [resolved_exception.exception_id]
 
 
 def test_repository_persists_pages_and_purges_monitoring_runs() -> None:

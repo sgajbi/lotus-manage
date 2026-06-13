@@ -22380,3 +22380,95 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal target-generation helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-897: In-memory mandate retention key selectors
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py` and
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`.
+- Bank-buyable control area: architecture, retention supportability, and testing.
+- Finding: `purge_mandate_records_before` combined retention cutoff normalization, stale mandate,
+  health, monitoring-run, and resolved-exception key selection, dictionary mutation, and purged-row
+  counting in one repository method. The behavior was correct, but the retention rules were harder
+  to review than an operational supportability repository should be.
+- Action: extracted `_stale_mandate_keys`, `_stale_health_snapshot_keys`,
+  `_stale_monitoring_run_keys`, and `_stale_resolved_exception_keys` so retention selection rules
+  are independently testable before mutation. Added direct tests for stale/current mandate, health,
+  and run selection plus the rule that old active exceptions are retained until resolved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/mandates/in_memory.py -s`; the focused mandate repository
+  suite reported 18 passed, `purge_mandate_records_before` reduced to A(5) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves in-memory retention maintainability only. It does not change
+  PostgreSQL retention semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal repository helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-898: Campaign assignment action page state helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_assignment_actions.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, workflow supportability, and testing.
+- Finding: `build_bulk_review_campaign_definition_assignment_action_page` combined assignment
+  action sorting, pagination, latest-action derivation, resolved-state actor clearing, escalation
+  posture, SLA posture, and page construction. The behavior was correct, but the workflow page
+  state projection was harder to review than a governed maker/checker supportability surface should
+  be.
+- Action: extracted `_AssignmentActionPageState`, `_sorted_assignment_actions`, and
+  `_assignment_action_page_state` so current assignment posture is independently testable before
+  page construction. Added direct tests for latest-action ordering, active escalation state,
+  empty defaults, and resolved-action actor clearing.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_actions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/waves/campaign_assignment_actions.py -s`; the focused campaign
+  discovery suite reported 86 passed, `build_bulk_review_campaign_definition_assignment_action_page`
+  reduced to A(1) under radon, and the refreshed quality report no longer lists it in the top source
+  hotspots.
+- Residual risk: this slice improves assignment-action page-state maintainability only. It does not
+  change campaign workflow semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal workflow helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-899: Proof pack persistence guard helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/proof_packs/in_memory.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_repository.py`.
+- Bank-buyable control area: architecture, immutable evidence persistence, and testing.
+- Finding: `save_proof_pack` combined immutable content-hash enforcement, idempotency conflict
+  detection, proof-pack cloning, and retention metadata construction in one repository method. The
+  behavior was correct, but the evidence-store guardrails were harder to review than a governed
+  proof-pack persistence boundary should be.
+- Action: extracted `_ensure_proof_pack_content_is_immutable`, `_idempotency_binding`, and
+  `_retention_metadata` so immutable proof-pack and retention decisions are independently testable
+  before repository mutation. Added direct tests for matching-content replay, changed-content
+  rejection, optional idempotency binding, idempotency conflicts, and optional retention expiry.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/proof_packs/in_memory.py tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python -m ruff format --check src/infrastructure/proof_packs/in_memory.py tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/proof_packs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_repository.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/proof_packs/in_memory.py -s`; the focused proof-pack
+  repository suite reported 9 passed, `save_proof_pack` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves in-memory proof-pack persistence maintainability only. It does
+  not change PostgreSQL proof-pack persistence semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal repository helper
+  maintainability hardening with no operator-facing contract change.

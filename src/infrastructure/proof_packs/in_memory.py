@@ -17,6 +17,42 @@ from src.core.proof_packs.repository import (
 RETENTION_POLICY_PRE_TRADE_PROOF_PACK = "DPM_PRE_TRADE_PROOF_PACK_7Y"
 
 
+def _ensure_proof_pack_content_is_immutable(
+    *,
+    existing: DpmPreTradeProofPack | None,
+    proof_pack: DpmPreTradeProofPack,
+) -> None:
+    if existing is not None and existing.content_hash != proof_pack.content_hash:
+        raise DpmProofPackConflictError("DPM_PROOF_PACK_IMMUTABLE_CONFLICT")
+
+
+def _idempotency_binding(
+    *,
+    idempotency_key: str | None,
+    existing_proof_pack_id: str | None,
+    proof_pack_id: str,
+) -> tuple[str, str] | None:
+    if idempotency_key is None:
+        return None
+    if existing_proof_pack_id is not None and existing_proof_pack_id != proof_pack_id:
+        raise DpmProofPackConflictError("DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT")
+    return idempotency_key, proof_pack_id
+
+
+def _retention_metadata(
+    *,
+    proof_pack_id: str,
+    retention_expires_at: datetime | None,
+) -> DpmProofPackRetentionMetadata:
+    return DpmProofPackRetentionMetadata(
+        proof_pack_id=proof_pack_id,
+        retention_policy=RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
+        retention_expires_at=(
+            retention_expires_at.isoformat() if retention_expires_at is not None else None
+        ),
+    )
+
+
 class InMemoryDpmProofPackRepository(DpmProofPackRepository):
     def __init__(self) -> None:
         self._lock = Lock()
@@ -34,20 +70,22 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
     ) -> None:
         with self._lock:
             existing = self._proof_packs.get(proof_pack.proof_pack_id)
-            if existing is not None and existing.content_hash != proof_pack.content_hash:
-                raise DpmProofPackConflictError("DPM_PROOF_PACK_IMMUTABLE_CONFLICT")
-            if idempotency_key is not None:
-                existing_id = self._idempotency_index.get(idempotency_key)
-                if existing_id is not None and existing_id != proof_pack.proof_pack_id:
-                    raise DpmProofPackConflictError("DPM_PROOF_PACK_IDEMPOTENCY_CONFLICT")
-                self._idempotency_index[idempotency_key] = proof_pack.proof_pack_id
-            self._proof_packs[proof_pack.proof_pack_id] = deepcopy(proof_pack)
-            self._retention[proof_pack.proof_pack_id] = DpmProofPackRetentionMetadata(
-                proof_pack_id=proof_pack.proof_pack_id,
-                retention_policy=RETENTION_POLICY_PRE_TRADE_PROOF_PACK,
-                retention_expires_at=(
-                    retention_expires_at.isoformat() if retention_expires_at is not None else None
+            _ensure_proof_pack_content_is_immutable(existing=existing, proof_pack=proof_pack)
+            binding = _idempotency_binding(
+                idempotency_key=idempotency_key,
+                existing_proof_pack_id=(
+                    self._idempotency_index.get(idempotency_key)
+                    if idempotency_key is not None
+                    else None
                 ),
+                proof_pack_id=proof_pack.proof_pack_id,
+            )
+            if binding is not None:
+                self._idempotency_index[binding[0]] = binding[1]
+            self._proof_packs[proof_pack.proof_pack_id] = deepcopy(proof_pack)
+            self._retention[proof_pack.proof_pack_id] = _retention_metadata(
+                proof_pack_id=proof_pack.proof_pack_id,
+                retention_expires_at=retention_expires_at,
             )
 
     def get_proof_pack(self, *, proof_pack_id: str) -> DpmPreTradeProofPack | None:

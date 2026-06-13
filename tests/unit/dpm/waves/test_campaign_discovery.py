@@ -55,8 +55,10 @@ from src.core.waves.campaign_workflow_automation import (
 )
 from src.core.waves.campaign_assignment_actions import (
     DpmBulkReviewCampaignDefinitionAssignmentActionPage,
+    _assignment_action_page_state,
     _assignment_action_replay_result,
     _assignment_action_request,
+    _sorted_assignment_actions,
     build_bulk_review_campaign_definition_assignment_action_page,
     record_bulk_review_campaign_definition_assignment_action,
 )
@@ -757,6 +759,78 @@ def test_campaign_assignment_actions_record_append_only_posture() -> None:
     assert page.current_assigned_actor_ids == ["governance_ops"]
     assert page.current_escalation_tier == "GOVERNANCE"
     assert page.current_sla_posture == "ATTENTION"
+
+
+def test_campaign_assignment_action_page_state_tracks_latest_action() -> None:
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=_definition(),
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    escalated = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="ESCALATED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Approval evidence requires governance attention.",
+        assigned_actor_ids=["governance_ops"],
+        escalation_tier="GOVERNANCE",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+
+    actions = _sorted_assignment_actions(escalated)
+    state = _assignment_action_page_state(actions)
+
+    assert [action.action_ref for action in actions] == [
+        "BRC-ASSIGN-2026-05-002",
+        "BRC-ASSIGN-2026-05-001",
+    ]
+    assert state.latest_action_type == "ESCALATED"
+    assert state.current_assigned_actor_ids == ["governance_ops"]
+    assert state.current_escalation_tier == "GOVERNANCE"
+    assert state.current_sla_posture == "ATTENTION"
+
+
+def test_campaign_assignment_action_page_state_defaults_and_resolved_actions() -> None:
+    empty_state = _assignment_action_page_state([])
+    assigned = record_bulk_review_campaign_definition_assignment_action(
+        definition=_definition(),
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-001",
+    )
+    resolved = record_bulk_review_campaign_definition_assignment_action(
+        definition=assigned,
+        action_type="RESOLVED",
+        action_ref="BRC-ASSIGN-2026-05-002",
+        recorded_by="ops",
+        action_reason="Assignment completed.",
+        assigned_actor_ids=[],
+        escalation_tier="NONE",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-002",
+    )
+    resolved_state = _assignment_action_page_state(_sorted_assignment_actions(resolved))
+
+    assert empty_state.latest_action_type is None
+    assert empty_state.current_assigned_actor_ids == []
+    assert empty_state.current_escalation_tier == "NONE"
+    assert empty_state.current_sla_posture == "ON_TRACK"
+    assert resolved_state.latest_action_type == "RESOLVED"
+    assert resolved_state.current_assigned_actor_ids == []
+    assert resolved_state.current_escalation_tier == "NONE"
 
 
 def test_campaign_assignment_actions_validate_conflicts_and_resolved_state() -> None:
