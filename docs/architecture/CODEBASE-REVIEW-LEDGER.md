@@ -22915,3 +22915,32 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal integration-capability service
   helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-915: Outcome comparison state rollup predicates
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/comparison.py` and `tests/unit/core/test_outcome_comparison.py`.
+- Bank-buyable control area: architecture, outcome-review governance, and testing.
+- Finding: `_roll_up_state` combined empty-review handling, all-not-supported handling, blocked /
+  breached / pending-review precedence, and mixed degraded/not-supported downgrade rules in one
+  conditional sequence. The behavior was correct, but outcome-review supportability precedence is
+  easier to audit when each rollup rule is named.
+- Action: extracted `_all_states_not_supported`, `_first_comparison_state_by_precedence`, and
+  `_mixed_review_requires_degraded_rollup`, then kept `_roll_up_state` as the small orchestrator
+  for comparison supportability state. Added direct helper tests for all-not-supported handling,
+  blocked-before-breached-before-pending precedence, and mixed degraded/not-supported review
+  rollup.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m ruff format --check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/comparison.py`,
+  `python -m pytest tests/unit/core/test_outcome_comparison.py -q`,
+  and `python -m radon cc src/core/outcomes/comparison.py -s`; the focused outcome comparison
+  suite reported 15 passed, the report-only complexity baseline had listed `_roll_up_state` at
+  B(7), and current radon reports it at A(5).
+- Residual risk: this slice improves outcome-review comparison state-rollup maintainability only.
+  It does not change comparison semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-review helper
+  maintainability hardening with no operator-facing contract change.
