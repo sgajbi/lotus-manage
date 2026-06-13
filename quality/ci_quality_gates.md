@@ -26,8 +26,7 @@ The following commands are active repository gates:
   - `make architecture-gate` (`python -m importlinter.cli import-linter lint --config .importlinter`)
   - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
   - `make dependency-hygiene-gate` (`python -m deptry src tests`)
-  - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)  
-    (currently report-only until noise budget is reduced)
+  - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
   - `python -m pytest tests/unit`
 
 - `make ci`
@@ -47,7 +46,7 @@ The following commands are active repository gates:
 - Workflow file: `.github/workflows/feature-lane.yml`
 - Required lanes:
   - `ruff` + `mypy` + `no-alias` + `openapi` + `api-vocabulary` + `security-audit`
-  - `importlinter` + `radon` + `deptry` + `vulture` (non-blocking report-only)
+  - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
   - unit tests
 
 ### PR Merge Gate
@@ -55,7 +54,7 @@ The following commands are active repository gates:
 - Workflow file: `.github/workflows/pr-merge-gate.yml`
 - Required lanes:
   - same static/type/openapi/vocabulary/security gates as Feature Lane
-  - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate` (non-blocking report-only)
+  - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
   - migration smoke
   - matrix unit/integration/e2e tests with coverage upload
   - combined coverage floor (`99`)
