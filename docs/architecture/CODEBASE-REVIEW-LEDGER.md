@@ -22885,3 +22885,33 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-914: Integration capability publishability guards
+
+- Date: 2026-06-14
+- Scope: `src/api/services/integration_capabilities_service.py` and
+  `tests/unit/dpm/test_integration_capabilities_service.py`.
+- Bank-buyable control area: API quality, integration capability governance, and testing.
+- Finding: `stateful_execution_publishable` combined portfolio-id input-mode publication,
+  stateful Core sourcing enablement, Core base URL presence, and legacy resolver-route blocking
+  in one boolean expression. The behavior was correct, but capability publication should expose
+  each fail-closed guard as a named rule.
+- Action: extracted `_stateful_portfolio_id_input_mode_enabled`,
+  `_stateful_core_sourcing_enabled`, `_core_base_url_configured`, and
+  `_uses_legacy_monolithic_resolver_path`, then kept `stateful_execution_publishable` as a small
+  guard aggregator. Added direct tests for the flag guards, Core base URL trimming, and legacy
+  resolver-route detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py`,
+  `python -m ruff format --check src/api/services/integration_capabilities_service.py tests/unit/dpm/test_integration_capabilities_service.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/integration_capabilities_service.py`,
+  `python -m pytest tests/unit/dpm/test_integration_capabilities_service.py -q`,
+  and `python -m radon cc src/api/services/integration_capabilities_service.py -s`; the focused
+  integration capability service suite reported 8 passed, the report-only complexity baseline had
+  listed `stateful_execution_publishable` at B(7), and current radon reports it at A(2).
+- Residual risk: this slice improves integration capability publication maintainability only. It
+  does not change capability response semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal integration-capability service
+  helper maintainability hardening with no operator-facing contract change.

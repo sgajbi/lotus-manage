@@ -1,6 +1,10 @@
 from datetime import date
 
 from src.api.services.integration_capabilities_service import (
+    _core_base_url_configured,
+    _stateful_core_sourcing_enabled,
+    _stateful_portfolio_id_input_mode_enabled,
+    _uses_legacy_monolithic_resolver_path,
     build_capabilities_response,
     stateful_execution_publishable,
     supported_input_modes,
@@ -48,6 +52,29 @@ def test_stateful_execution_publishable_is_true_when_all_requirements_match() ->
             "DPM_CORE_RESOLVER_PATH_TEMPLATE": "/integration/portfolios/{portfolio_id}/core-snapshot",
         }.get(name)
     )
+
+
+def test_stateful_execution_publishable_guard_helpers_resolve_required_flags() -> None:
+    env_values = {
+        "DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED": "true",
+        "DPM_STATEFUL_CORE_SOURCING_ENABLED": "true",
+        "DPM_CORE_BASE_URL": " http://core.example ",
+    }
+
+    assert _stateful_portfolio_id_input_mode_enabled(env_get=env_values.get)
+    assert _stateful_core_sourcing_enabled(env_get=env_values.get)
+    assert _core_base_url_configured(env_get=env_values.get)
+    assert not _core_base_url_configured(env_get=lambda name: "   ")
+
+
+def test_stateful_execution_publishable_guard_detects_legacy_resolver_path() -> None:
+    assert _uses_legacy_monolithic_resolver_path(
+        "/integration/portfolios/{portfolio_id}/dpm-execution-context"
+    )
+    assert not _uses_legacy_monolithic_resolver_path(
+        "/integration/portfolios/{portfolio_id}/core-snapshot"
+    )
+    assert not _uses_legacy_monolithic_resolver_path("")
 
 
 def test_build_capabilities_response_applies_defaults_and_supplies_all_sections() -> None:

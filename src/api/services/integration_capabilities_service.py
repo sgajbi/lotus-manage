@@ -28,17 +28,31 @@ def supported_input_modes(
     return supported_modes
 
 
+def _stateful_portfolio_id_input_mode_enabled(*, env_get: EnvGetter) -> bool:
+    return env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False, env_get=env_get)
+
+
+def _stateful_core_sourcing_enabled(*, env_get: EnvGetter) -> bool:
+    return env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False, env_get=env_get)
+
+
+def _core_base_url_configured(*, env_get: EnvGetter) -> bool:
+    return bool((env_get("DPM_CORE_BASE_URL") or "").strip())
+
+
+def _uses_legacy_monolithic_resolver_path(resolver_path_template: str) -> bool:
+    return bool(resolver_path_template) and "dpm-execution-context" in resolver_path_template
+
+
 def stateful_execution_publishable(*, env_get: EnvGetter) -> bool:
     resolver_path_template = (env_get("DPM_CORE_RESOLVER_PATH_TEMPLATE") or "").strip()
-    uses_legacy_monolithic_resolver = (
-        bool(resolver_path_template) and "dpm-execution-context" in resolver_path_template
-    )
-    return (
-        env_bool("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", False, env_get=env_get)
-        and env_bool("DPM_STATEFUL_CORE_SOURCING_ENABLED", False, env_get=env_get)
-        and bool((env_get("DPM_CORE_BASE_URL") or "").strip())
-        and not uses_legacy_monolithic_resolver
-    )
+    publish_guards = [
+        _stateful_portfolio_id_input_mode_enabled(env_get=env_get),
+        _stateful_core_sourcing_enabled(env_get=env_get),
+        _core_base_url_configured(env_get=env_get),
+        not _uses_legacy_monolithic_resolver_path(resolver_path_template),
+    ]
+    return all(publish_guards)
 
 
 def build_feature_capabilities(
