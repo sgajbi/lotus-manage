@@ -79,6 +79,15 @@ class _ConcentrationResponseSections:
     issuer_coverage_status: Any
 
 
+@dataclass(frozen=True)
+class _RiskEventCohortMetadata:
+    product_name: str
+    product_version: str
+    source_service: str
+    request_fingerprint: str
+    calculation_supportability: str
+
+
 class LotusRiskAuthorityClient:
     """Bounded client for lotus-risk authority outputs used by construction.
 
@@ -427,22 +436,54 @@ def _regime_reason_codes(value: Any) -> list[str]:
 
 def _risk_event_cohort_from_response(body: dict[str, Any]) -> RiskEventAffectedCohort:
     try:
-        metadata = _dict_section(body, "metadata")
-        affected = _risk_event_affected_portfolios(body.get("affected_portfolios"))
+        metadata = _risk_event_cohort_metadata(body)
         return RiskEventAffectedCohort(
-            cohort_id=str(body["cohort_id"]),
-            risk_event_id=str(body["risk_event_id"]),
-            display_name=str(body["display_name"]),
-            product_name=str(metadata.get("product_name") or "RiskEventAffectedCohort"),
-            product_version=str(metadata.get("product_version") or "v1"),
-            source_service=str(metadata.get("source_service") or "lotus-risk"),
-            request_fingerprint=str(metadata.get("request_fingerprint") or ""),
-            calculation_supportability=str(metadata.get("calculation_supportability") or "blocked"),
+            cohort_id=_required_text(body=body, key="cohort_id"),
+            risk_event_id=_required_text(body=body, key="risk_event_id"),
+            display_name=_required_text(body=body, key="display_name"),
+            product_name=metadata.product_name,
+            product_version=metadata.product_version,
+            source_service=metadata.source_service,
+            request_fingerprint=metadata.request_fingerprint,
+            calculation_supportability=metadata.calculation_supportability,
             reason_codes=_risk_event_reason_codes(body.get("reason_codes")),
-            affected_portfolios=affected,
+            affected_portfolios=_risk_event_affected_portfolios(body.get("affected_portfolios")),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise LotusRiskAuthorityUnavailableError("LOTUS_RISK_INVALID_RESPONSE") from exc
+
+
+def _risk_event_cohort_metadata(body: dict[str, Any]) -> _RiskEventCohortMetadata:
+    metadata = _dict_section(body, "metadata")
+    return _RiskEventCohortMetadata(
+        product_name=_metadata_text(
+            metadata=metadata,
+            key="product_name",
+            default="RiskEventAffectedCohort",
+        ),
+        product_version=_metadata_text(metadata=metadata, key="product_version", default="v1"),
+        source_service=_metadata_text(
+            metadata=metadata, key="source_service", default="lotus-risk"
+        ),
+        request_fingerprint=_metadata_text(
+            metadata=metadata,
+            key="request_fingerprint",
+            default="",
+        ),
+        calculation_supportability=_metadata_text(
+            metadata=metadata,
+            key="calculation_supportability",
+            default="blocked",
+        ),
+    )
+
+
+def _metadata_text(*, metadata: dict[str, Any], key: str, default: str) -> str:
+    return str(metadata.get(key) or default)
+
+
+def _required_text(*, body: dict[str, Any], key: str) -> str:
+    return str(body[key])
 
 
 def _risk_event_reason_codes(reason_codes: Any) -> tuple[str, ...]:

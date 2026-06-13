@@ -22650,3 +22650,91 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM-quality helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-906: Risk-event cohort response metadata helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Bank-buyable control area: architecture, resilience, source-authority integration, and testing.
+- Finding: `_risk_event_cohort_from_response` combined response metadata defaulting, required
+  cohort identifier extraction, source reason-code projection, and affected-portfolio mapping in
+  one infrastructure response mapper. The behavior was correct, but the fail-closed
+  lotus-risk authority boundary was harder to review than an external authority adapter should be.
+- Action: extracted `_RiskEventCohortMetadata`, `_risk_event_cohort_metadata`, `_metadata_text`,
+  and `_required_text` so metadata fallback and required identifier rules are independently
+  testable before cohort assembly. Added direct tests for missing metadata defaults and required
+  response identifier projection/failure.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  and `python -m radon cc src/infrastructure/risk_authority/client.py -s`; the focused
+  risk-authority client suite reported 33 passed and `_risk_event_cohort_from_response` reduced
+  from B(7) to A(2) under radon.
+- Residual risk: this slice improves lotus-risk authority response mapping maintainability only.
+  It does not change risk-event cohort semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-907: Command-center supportability posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/mandate_command_center.py` and
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`.
+- Bank-buyable control area: architecture, command-center supportability, and testing.
+- Finding: `command_center_supportability_state` combined empty-result handling, source-readiness
+  fail-closed posture, partial-data reason selection, and ready-state defaulting in one policy
+  mapper. The behavior was correct, but the command-center supportability contract was harder to
+  review than an operator-facing supportability surface should be.
+- Action: extracted `_empty_command_center_supportability` and
+  `_partial_command_center_supportability` so empty and partial posture decisions are named and
+  directly testable before source-readiness and ready-state roll-up. Added direct tests for empty
+  latest-run handling, explicit empty completeness, partial reason preservation, fallback partial
+  reason selection, and complete-state pass-through.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py -q`,
+  and `python -m radon cc src/api/services/mandate_command_center.py -s`; the focused mandate
+  command-center suite reported 15 passed and `command_center_supportability_state` reduced from
+  B(7) to A(5) under radon.
+- Residual risk: this slice improves command-center supportability maintainability only. It does
+  not change command-center API semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal command-center supportability
+  helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-908: PM-quality fairness scope mismatch predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, PM operating-quality governance, and testing.
+- Finding: `_score_run_scope_mismatch_reasons` combined policy identity matching, as-of date
+  matching, scorable-state filtering, and reason-code deduplication in one fairness guard loop.
+  The behavior was correct, but the cross-segment fairness eligibility rules were harder to review
+  than PM-quality governance should be.
+- Action: extracted `_score_run_policy_mismatched`, `_score_run_as_of_date_mismatched`, and
+  `_score_run_not_scorable` so each fairness eligibility rule is independently testable before
+  mismatch reason aggregation. Added direct tests for policy, date, blocked/scorable state, and
+  deduplicated mismatch reason output.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  and `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM operating-quality
+  suite reported 31 passed and `_score_run_scope_mismatch_reasons` reduced from B(7) to A(5)
+  under radon.
+- Residual risk: this slice improves PM-quality fairness eligibility maintainability only. It
+  does not change fairness analysis semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality fairness helper
+  maintainability hardening with no operator-facing contract change.

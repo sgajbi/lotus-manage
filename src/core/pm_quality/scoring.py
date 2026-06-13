@@ -722,13 +722,38 @@ def _score_run_scope_mismatch_reasons(
 ) -> list[str]:
     reasons: set[str] = set()
     for score_run in score_runs:
-        if score_run.policy_id != policy_id or score_run.policy_version != policy_version:
+        if _score_run_policy_mismatched(
+            score_run=score_run,
+            policy_id=policy_id,
+            policy_version=policy_version,
+        ):
             reasons.add("PM_QUALITY_FAIRNESS_POLICY_MISMATCH")
-        if score_run.as_of_date != as_of_date:
+        if _score_run_as_of_date_mismatched(score_run=score_run, as_of_date=as_of_date):
             reasons.add("PM_QUALITY_FAIRNESS_AS_OF_DATE_MISMATCH")
-        if score_run.state in {"DISABLED", "BLOCKED"} or score_run.score is None:
+        if _score_run_not_scorable(score_run):
             reasons.add("PM_QUALITY_FAIRNESS_SCORE_RUN_NOT_SCORABLE")
     return sorted(reasons)
+
+
+def _score_run_policy_mismatched(
+    *,
+    score_run: DpmPmOperatingQualityScoreRun,
+    policy_id: str,
+    policy_version: str,
+) -> bool:
+    return score_run.policy_id != policy_id or score_run.policy_version != policy_version
+
+
+def _score_run_as_of_date_mismatched(
+    *,
+    score_run: DpmPmOperatingQualityScoreRun,
+    as_of_date: str,
+) -> bool:
+    return score_run.as_of_date != as_of_date
+
+
+def _score_run_not_scorable(score_run: DpmPmOperatingQualityScoreRun) -> bool:
+    return score_run.state in {"DISABLED", "BLOCKED"} or score_run.score is None
 
 
 def _score_run(
