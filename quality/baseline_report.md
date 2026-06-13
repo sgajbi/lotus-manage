@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-04T13:53:42+00:00`
+- Generated at: `2026-06-13T05:17:02+00:00`
 
-- Baseline commit: `e197d2cc`
+- Baseline commit: `22e1497d`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -10,9 +10,9 @@
 
 | Metric | Value |
 | --- | --- |
-| Python files | 796 |
-| Total Python LOC | 153392 |
-| Test functions | 2078 |
+| Python files | 817 |
+| Total Python LOC | 170325 |
+| Test functions | 2462 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 
@@ -37,8 +37,8 @@
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | reported as known baseline debt | 1 - baseline |
 | Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |
-| Dead code | vulture baseline capture via `quality-baseline.yml` | 1 - report-only baseline |
-| Dependency hygiene | `deptry` + `pip check` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
+| Dead code | `make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml` | 2 - active/new-regression |
+| Dependency hygiene | `make dependency-hygiene-gate`, `pip check`, and `make security-audit` | 2 - active/new-regression |
 | Security | `bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
 | Documentation gaps | current docs tests plus planned docs scorecard | planned |
 | Observability gaps | `scripts/validate_observability_contracts.py`; richer runtime gap report planned | 2 - active/new-regression |
