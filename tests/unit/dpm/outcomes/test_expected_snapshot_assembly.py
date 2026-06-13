@@ -13,9 +13,12 @@ from src.core.construction.vocabulary import ConstructionMethod, ConstructionMet
 from src.core.models import Money
 from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
+    _find_handoff,
     _find_wave_item,
+    _handoff_lookup_required,
     _highest_construction_outcome_state,
     _proof_pack_state,
+    _validate_handoff_linkage,
     _wave_item_lookup_required,
     assemble_expected_outcome_snapshot,
     build_expected_snapshot_calculation_trace,
@@ -485,6 +488,65 @@ def test_find_wave_item_helper_returns_matching_wave_item_or_fails_closed() -> N
     assert _find_wave_item(wave=wave, wave_item_id="dwi_outcome_001") == wave.items[0]
     with pytest.raises(DpmExpectedSnapshotAssemblyError, match="wave_item_id does not exist"):
         _find_wave_item(wave=wave, wave_item_id="dwi_missing")
+
+
+def test_handoff_lookup_required_helper_validates_lookup_inputs() -> None:
+    wave = _wave()
+
+    assert _handoff_lookup_required(wave=None, wave_item=None, handoff_ref_id=None) is False
+    assert (
+        _handoff_lookup_required(
+            wave=wave,
+            wave_item=wave.items[0],
+            handoff_ref_id="dwh_outcome_001",
+        )
+        is True
+    )
+
+    with pytest.raises(
+        DpmExpectedSnapshotAssemblyError,
+        match="handoff_ref_id requires wave and wave_item evidence",
+    ):
+        _handoff_lookup_required(
+            wave=None,
+            wave_item=None,
+            handoff_ref_id="dwh_outcome_001",
+        )
+
+
+def test_find_handoff_helper_returns_matching_handoff_or_fails_closed() -> None:
+    wave = _wave()
+
+    assert _find_handoff(wave=wave, handoff_ref_id="dwh_outcome_001") == wave.handoff_refs[0]
+    with pytest.raises(DpmExpectedSnapshotAssemblyError, match="handoff_ref_id does not exist"):
+        _find_handoff(wave=wave, handoff_ref_id="dwh_missing")
+
+
+def test_validate_handoff_linkage_helper_rejects_item_and_execution_boundary_gaps() -> None:
+    wave = _wave()
+    handoff = wave.handoff_refs[0]
+
+    _validate_handoff_linkage(handoff=handoff, wave=wave, wave_item=wave.items[0])
+
+    with pytest.raises(
+        DpmExpectedSnapshotAssemblyError,
+        match="handoff_ref_id does not include the selected wave item",
+    ):
+        _validate_handoff_linkage(
+            handoff=handoff.model_copy(update={"item_ids": ["dwi_other"]}),
+            wave=wave,
+            wave_item=wave.items[0],
+        )
+
+    with pytest.raises(
+        DpmExpectedSnapshotAssemblyError,
+        match="manage handoff evidence cannot claim external execution",
+    ):
+        _validate_handoff_linkage(
+            handoff=handoff.model_copy(update={"external_execution_claimed": True}),
+            wave=wave,
+            wave_item=wave.items[0],
+        )
 
 
 @pytest.mark.parametrize(

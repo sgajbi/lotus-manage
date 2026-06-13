@@ -22472,3 +22472,94 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal repository helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-900: Expected outcome handoff linkage helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/snapshots.py` and
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`.
+- Bank-buyable control area: architecture, outcome evidence lineage, and testing.
+- Finding: `_resolve_handoff` combined optional handoff lookup preconditions, wave handoff search,
+  wave identity validation, selected-item membership validation, and the no-external-execution
+  boundary in one helper. The behavior was correct, but the expected-outcome handoff guardrails
+  were harder to review than source-backed outcome evidence assembly should be.
+- Action: extracted `_handoff_lookup_required`, `_find_handoff`, and
+  `_validate_handoff_linkage` so lookup and boundary decisions are independently testable before
+  snapshot assembly continues. Added direct tests for optional lookup, missing handoffs, valid
+  linkage, missing selected-item membership, and external execution claims.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/outcomes/snapshots.py -s`; the focused expected-outcome snapshot
+  suite reported 26 passed, `_resolve_handoff` reduced to A(5) under radon, and the refreshed
+  quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves expected-outcome handoff lineage maintainability only. It does
+  not change outcome-review semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-evidence helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-901: Wave source analytics reference metadata helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/source_analytics.py` and
+  `tests/unit/dpm/waves/test_source_analytics.py`.
+- Bank-buyable control area: architecture, source-owned analytics lineage, and testing.
+- Finding: `_analytics_source_ref` combined source product type defaulting, fallback source id
+  selection, optional version projection, supportability defaulting, and optional content-hash
+  projection in one mapper. The behavior was correct, but the source-reference metadata rules were
+  harder to review than source-owned wave analytics lineage should be.
+- Action: extracted `_analytics_source_type`, `_source_context_value_or_fallback`, and
+  `_optional_source_context_value` so source-reference metadata decisions are independently
+  testable. Added direct tests for explicit source-product metadata and risk/performance defaulted
+  reference metadata.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m ruff format --check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_analytics.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/waves/source_analytics.py -s`; the focused source-analytics suite
+  reported 6 passed, `_analytics_source_ref` reduced to A(1) under radon, and the refreshed quality
+  report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves wave source-analytics lineage maintainability only. It does
+  not change source-analytics semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal wave source-analytics helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-902: Liquidity status policy helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Bank-buyable control area: architecture, construction supportability, and testing.
+- Finding: `liquidity_status` combined missing-context defaulting, blocking cash diagnostics,
+  minimum-cash policy review pressure, cashflow projection status, and final supportability
+  roll-up in one classifier. The behavior was correct, but the liquidity supportability decision
+  path was harder to review than a construction policy support surface should be.
+- Action: extracted `_has_blocking_cash_diagnostics` and `_minimum_cash_weight_status` so
+  hard-blocking cash diagnostics and minimum-cash policy pressure are independently testable before
+  cashflow projection roll-up. Added direct tests for non-blocking and blocking diagnostics,
+  above-policy cash, below-policy pending-review pressure, and preservation of an already-blocked
+  status.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/services/construction_liquidity_supportability.py -s`; the focused
+  liquidity supportability suite reported 10 passed, `liquidity_status` reduced to A(4) under
+  radon, and the refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves construction liquidity supportability maintainability only.
+  It does not change liquidity policy semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability helper
+  maintainability hardening with no operator-facing contract change.

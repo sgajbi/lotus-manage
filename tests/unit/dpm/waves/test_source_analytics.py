@@ -225,6 +225,53 @@ def test_family_item_source_analytics_skips_missing_and_non_mapping_diagnostics(
     ) == [{"supportability_state": "READY"}]
 
 
+def test_analytics_source_ref_preserves_source_product_metadata() -> None:
+    source_ref = source_analytics_module._analytics_source_ref(
+        source_context={
+            "source_product_name": "ConcentrationRiskReport",
+            "source_product_version": "v1",
+            "source_id": "risk-concentration-001",
+            "supportability_status": "READY",
+            "content_hash": "sha256:risk-001",
+        },
+        source_system="lotus-risk",
+        family="risk",
+        fallback_id="cas_source_analytics_001",
+    )
+
+    assert source_ref == DpmWaveSourceRef(
+        source_system="lotus-risk",
+        source_type="ConcentrationRiskReport",
+        source_id="risk-concentration-001",
+        source_version="v1",
+        supportability_state="READY",
+        content_hash="sha256:risk-001",
+    )
+
+
+def test_analytics_source_ref_defaults_missing_metadata_by_family() -> None:
+    risk_ref = source_analytics_module._analytics_source_ref(
+        source_context={},
+        source_system="lotus-risk",
+        family="risk",
+        fallback_id="cas_source_analytics_001",
+    )
+    performance_ref = source_analytics_module._analytics_source_ref(
+        source_context={"content_hash": ""},
+        source_system="lotus-performance",
+        family="performance",
+        fallback_id="cas_source_analytics_001",
+    )
+
+    assert risk_ref.source_type == "RISK_AUTHORITY_CONTEXT"
+    assert risk_ref.source_id == "cas_source_analytics_001"
+    assert risk_ref.source_version is None
+    assert risk_ref.supportability_state == "DEGRADED"
+    assert risk_ref.content_hash is None
+    assert performance_ref.source_type == "PERFORMANCE_AUTHORITY_CONTEXT"
+    assert performance_ref.content_hash is None
+
+
 def _alternative(
     alternative_id: str,
     diagnostics: dict[str, object],

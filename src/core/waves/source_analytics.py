@@ -199,21 +199,51 @@ def _analytics_source_ref(
     family: str,
     fallback_id: str,
 ) -> DpmWaveSourceRef:
-    source_type = str(
-        source_context.get("source_product_name")
-        or ("RISK_AUTHORITY_CONTEXT" if family == "risk" else "PERFORMANCE_AUTHORITY_CONTEXT")
-    )
-    source_version = source_context.get("source_product_version")
     return DpmWaveSourceRef(
         source_system=source_system,
-        source_type=source_type,
-        source_id=str(source_context.get("source_id") or fallback_id),
-        source_version=str(source_version) if source_version is not None else None,
-        supportability_state=str(source_context.get("supportability_status") or "DEGRADED"),
-        content_hash=(
-            str(source_context.get("content_hash")) if source_context.get("content_hash") else None
+        source_type=_analytics_source_type(source_context=source_context, family=family),
+        source_id=_source_context_value_or_fallback(
+            source_context=source_context,
+            key="source_id",
+            fallback=fallback_id,
+        ),
+        source_version=_optional_source_context_value(
+            source_context=source_context,
+            key="source_product_version",
+        ),
+        supportability_state=_source_context_value_or_fallback(
+            source_context=source_context,
+            key="supportability_status",
+            fallback="DEGRADED",
+        ),
+        content_hash=_optional_source_context_value(
+            source_context=source_context, key="content_hash"
         ),
     )
+
+
+def _analytics_source_type(*, source_context: dict[str, object], family: str) -> str:
+    return _source_context_value_or_fallback(
+        source_context=source_context,
+        key="source_product_name",
+        fallback=(
+            "RISK_AUTHORITY_CONTEXT" if family == "risk" else "PERFORMANCE_AUTHORITY_CONTEXT"
+        ),
+    )
+
+
+def _source_context_value_or_fallback(
+    *,
+    source_context: dict[str, object],
+    key: str,
+    fallback: str,
+) -> str:
+    return str(source_context.get(key) or fallback)
+
+
+def _optional_source_context_value(*, source_context: dict[str, object], key: str) -> str | None:
+    value = source_context.get(key)
+    return str(value) if value else None
 
 
 def _source_measures(

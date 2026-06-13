@@ -296,15 +296,52 @@ def _resolve_handoff(
     wave_item: DpmRebalanceWaveItem | None,
     handoff_ref_id: str | None,
 ) -> DpmWaveHandoffRef | None:
-    if not handoff_ref_id:
+    if not _handoff_lookup_required(
+        wave=wave,
+        wave_item=wave_item,
+        handoff_ref_id=handoff_ref_id,
+    ):
         return None
+    assert wave is not None
+    assert wave_item is not None
+    assert handoff_ref_id is not None
+    handoff = _find_handoff(wave=wave, handoff_ref_id=handoff_ref_id)
+    _validate_handoff_linkage(handoff=handoff, wave=wave, wave_item=wave_item)
+    return handoff
+
+
+def _handoff_lookup_required(
+    *,
+    wave: DpmRebalanceWave | None,
+    wave_item: DpmRebalanceWaveItem | None,
+    handoff_ref_id: str | None,
+) -> bool:
+    if not handoff_ref_id:
+        return False
     if wave is None or wave_item is None:
         msg = "handoff_ref_id requires wave and wave_item evidence"
         raise DpmExpectedSnapshotAssemblyError(msg)
-    handoff = next((ref for ref in wave.handoff_refs if ref.handoff_ref_id == handoff_ref_id), None)
-    if handoff is None:
-        msg = "handoff_ref_id does not exist in wave"
-        raise DpmExpectedSnapshotAssemblyError(msg)
+    return True
+
+
+def _find_handoff(
+    *,
+    wave: DpmRebalanceWave,
+    handoff_ref_id: str,
+) -> DpmWaveHandoffRef:
+    for handoff in wave.handoff_refs:
+        if handoff.handoff_ref_id == handoff_ref_id:
+            return handoff
+    msg = "handoff_ref_id does not exist in wave"
+    raise DpmExpectedSnapshotAssemblyError(msg)
+
+
+def _validate_handoff_linkage(
+    *,
+    handoff: DpmWaveHandoffRef,
+    wave: DpmRebalanceWave,
+    wave_item: DpmRebalanceWaveItem,
+) -> None:
     _require_equal("handoff.wave_id", handoff.wave_id, wave.wave_id)
     if wave_item.wave_item_id not in handoff.item_ids:
         msg = "handoff_ref_id does not include the selected wave item"
@@ -312,7 +349,6 @@ def _resolve_handoff(
     if handoff.external_execution_claimed:
         msg = "manage handoff evidence cannot claim external execution"
         raise DpmExpectedSnapshotAssemblyError(msg)
-    return handoff
 
 
 def _expected_values_from_alternative(

@@ -18,11 +18,14 @@ def liquidity_status(
     if context is None:
         return ConstructionMethodStatus.DEGRADED
     status = context.supportability_status
-    if result.diagnostics.cash_ladder_breaches or result.diagnostics.insufficient_cash:
+    if _has_blocking_cash_diagnostics(result=result):
         return ConstructionMethodStatus.BLOCKED
     cash_weight = post_trade_cash_weight(result=result)
-    if cash_weight is not None and cash_weight < context.minimum_cash_weight:
-        status = lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
+    status = _minimum_cash_weight_status(
+        status=status,
+        cash_weight=cash_weight,
+        minimum_cash_weight=context.minimum_cash_weight,
+    )
     cashflow_status = cashflow_projection_status(
         result=result,
         context=context,
@@ -31,6 +34,21 @@ def liquidity_status(
     if cashflow_status is None:
         return status
     return lowest_construction_status([status, cashflow_status])
+
+
+def _has_blocking_cash_diagnostics(*, result: RebalanceResult) -> bool:
+    return bool(result.diagnostics.cash_ladder_breaches or result.diagnostics.insufficient_cash)
+
+
+def _minimum_cash_weight_status(
+    *,
+    status: ConstructionMethodStatus,
+    cash_weight: Decimal | None,
+    minimum_cash_weight: Decimal,
+) -> ConstructionMethodStatus:
+    if cash_weight is None or cash_weight >= minimum_cash_weight:
+        return status
+    return lowest_construction_status([status, ConstructionMethodStatus.PENDING_REVIEW])
 
 
 def cashflow_projection_status(
