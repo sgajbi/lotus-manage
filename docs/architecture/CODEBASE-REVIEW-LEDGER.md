@@ -22350,3 +22350,33 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal risk-authority mapping
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-896: Single-position target cap helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/targets.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`.
+- Bank-buyable control area: architecture, deterministic target generation, and testing.
+- Finding: `_apply_single_position_max_weight` combined overweight-target capping, released-weight
+  calculation, buyable-recipient selection, proportional redistribution, and pending-review
+  classification in one helper. The behavior was correct, but this made a core target-generation
+  guard harder to review and kept it in the top source hotspot report.
+- Action: extracted `_cap_single_position_targets` and `_redistribute_single_position_excess` so
+  capping and redistribution can be tested independently while preserving the existing
+  `READY`/`PENDING_REVIEW` behavior and Decimal arithmetic. Added direct tests for released-weight
+  calculation and unplaced redistribution remainder.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_target_generation.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/targets.py -s`; the focused target-generation suite
+  reported 24 passed, `_apply_single_position_max_weight` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves deterministic target-generation maintainability only. It does
+  not change rebalance policy semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal target-generation helper
+  maintainability hardening with no operator-facing contract change.
