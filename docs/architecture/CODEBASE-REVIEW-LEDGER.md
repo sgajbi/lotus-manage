@@ -22650,3 +22650,32 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM-quality helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-906: Risk-event cohort response metadata helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Bank-buyable control area: architecture, resilience, source-authority integration, and testing.
+- Finding: `_risk_event_cohort_from_response` combined response metadata defaulting, required
+  cohort identifier extraction, source reason-code projection, and affected-portfolio mapping in
+  one infrastructure response mapper. The behavior was correct, but the fail-closed
+  lotus-risk authority boundary was harder to review than an external authority adapter should be.
+- Action: extracted `_RiskEventCohortMetadata`, `_risk_event_cohort_metadata`, `_metadata_text`,
+  and `_required_text` so metadata fallback and required identifier rules are independently
+  testable before cohort assembly. Added direct tests for missing metadata defaults and required
+  response identifier projection/failure.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  and `python -m radon cc src/infrastructure/risk_authority/client.py -s`; the focused
+  risk-authority client suite reported 33 passed and `_risk_event_cohort_from_response` reduced
+  from B(7) to A(2) under radon.
+- Residual risk: this slice improves lotus-risk authority response mapping maintainability only.
+  It does not change risk-event cohort semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter helper
+  maintainability hardening with no operator-facing contract change.

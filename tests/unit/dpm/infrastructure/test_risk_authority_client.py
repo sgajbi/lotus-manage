@@ -19,6 +19,7 @@ from src.infrastructure.risk_authority.client import (
     _post_with_retries,
     _risk_event_affected_portfolios,
     _risk_event_cohort_from_response,
+    _risk_event_cohort_metadata,
     _risk_event_reason_codes,
     _regime_context_from_scenario_response,
     _regime_governance_date,
@@ -28,6 +29,7 @@ from src.infrastructure.risk_authority.client import (
     _regime_source_system,
     _scenario_bucket,
     _scenario_status_from_supportability,
+    _required_text,
 )
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import valid_api_payload
@@ -355,6 +357,27 @@ def test_risk_event_cohort_helpers_project_reason_codes_and_affected_portfolios(
     assert affected[0].dominant_bucket == "FIXED_INCOME"
     assert _risk_event_reason_codes(body["reason_codes"]) == ("RISK_EVENT_AFFECTED_COHORT_READY",)
     assert _risk_event_reason_codes("not-a-list") == ("RISK_EVENT_COHORT_REASON_CODES_MISSING",)
+
+
+def test_risk_event_cohort_metadata_defaults_missing_source_metadata() -> None:
+    body = _risk_event_cohort_response()
+    body.pop("metadata")
+
+    metadata = _risk_event_cohort_metadata(body)
+
+    assert metadata.product_name == "RiskEventAffectedCohort"
+    assert metadata.product_version == "v1"
+    assert metadata.source_service == "lotus-risk"
+    assert metadata.request_fingerprint == ""
+    assert metadata.calculation_supportability == "blocked"
+
+
+def test_required_text_projects_required_response_identifiers() -> None:
+    body = _risk_event_cohort_response()
+
+    assert _required_text(body=body, key="cohort_id") == "risk_event_cohort_test"
+    with pytest.raises(KeyError):
+        _required_text(body=body, key="missing")
 
 
 def test_risk_event_affected_portfolios_rejects_invalid_payload_shape() -> None:
