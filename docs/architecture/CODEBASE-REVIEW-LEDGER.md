@@ -21016,3 +21016,31 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal mandate supportability repository
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-850: Rebalance final gate status resolution helper
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/engine.py`,
+  `tests/unit/dpm/engine/test_engine_wrapper_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `run_simulation` was the top current source-complexity hotspot after the mandate
+  monitoring exception filter slice and carried the final target-generation versus execution
+  status reconciliation inline inside the broader rebalance orchestration.
+- Action: extracted a named final gate status resolver that preserves the existing rule where a
+  target-generation `PENDING_REVIEW` posture promotes an otherwise `READY` execution result, while
+  preserving execution `BLOCKED` dominance. Added direct helper tests for review promotion,
+  blocked preservation, and ready passthrough.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python -m ruff format --check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/engine.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance orchestration
+  maintainability refactoring and repo-local quality evidence.

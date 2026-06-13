@@ -331,6 +331,16 @@ def _check_blocking_dq(dq_log: dict[str, list[str]], options: EngineOptions) -> 
     return check_blocking_dq_impl(dq_log, options)
 
 
+def _resolve_final_gate_status(
+    *,
+    target_status: str,
+    execution_status: Literal["READY", "BLOCKED", "PENDING_REVIEW"],
+) -> Literal["READY", "BLOCKED", "PENDING_REVIEW"]:
+    if target_status == "PENDING_REVIEW" and execution_status == "READY":
+        return "PENDING_REVIEW"
+    return execution_status
+
+
 def run_simulation(
     portfolio: PortfolioSnapshot,
     market_data: MarketDataSnapshot,
@@ -426,9 +436,10 @@ def run_simulation(
         portfolio, market_data, shelf, security_intents, options, tv, diag_data
     )
 
-    if s3_stat == "PENDING_REVIEW" and f_stat == "READY":
-        f_stat = "PENDING_REVIEW"
-    gate_status: Literal["READY", "BLOCKED", "PENDING_REVIEW"] = f_stat
+    gate_status = _resolve_final_gate_status(
+        target_status=s3_stat,
+        execution_status=f_stat,
+    )
     gate_decision = None
     if options.enable_workflow_gates:
         gate_decision = evaluate_gate_decision(

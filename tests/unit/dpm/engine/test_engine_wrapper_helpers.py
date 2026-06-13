@@ -99,6 +99,30 @@ def test_compare_target_methods_if_requested_records_divergence_warnings(monkeyp
     ]
 
 
+def test_resolve_final_gate_status_preserves_target_review_requirement():
+    assert (
+        dpm_engine._resolve_final_gate_status(
+            target_status="PENDING_REVIEW",
+            execution_status="READY",
+        )
+        == "PENDING_REVIEW"
+    )
+    assert (
+        dpm_engine._resolve_final_gate_status(
+            target_status="PENDING_REVIEW",
+            execution_status="BLOCKED",
+        )
+        == "BLOCKED"
+    )
+    assert (
+        dpm_engine._resolve_final_gate_status(
+            target_status="READY",
+            execution_status="READY",
+        )
+        == "READY"
+    )
+
+
 def test_build_settlement_ladder_wrapper_delegates(monkeypatch):
     monkeypatch.setattr(
         dpm_engine,
