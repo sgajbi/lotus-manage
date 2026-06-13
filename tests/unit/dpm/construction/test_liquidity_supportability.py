@@ -7,6 +7,8 @@ from src.api.services.construction_liquidity_supportability import (
     _cashflow_projection_currency_mismatch,
     _cashflow_projection_is_usable,
     _cashflow_projection_usability_reason_codes,
+    _has_blocking_cash_diagnostics,
+    _minimum_cash_weight_status,
     _post_trade_total_value_unavailable,
     cashflow_projection_reason_codes,
     cashflow_projection_status,
@@ -19,7 +21,7 @@ from src.api.services.construction_liquidity_supportability import (
 from src.api.services.construction_liquidity_source_context import source_liquidity_context
 from src.core.construction.models import AuthoritativeLiquidityCashflowProjection
 from src.core.construction.vocabulary import ConstructionMethodStatus
-from src.core.models import EngineOptions, RebalanceResult
+from src.core.models import EngineOptions, InsufficientCashEntry, RebalanceResult
 from src.core.rebalance.engine import run_simulation
 from tests.shared.factories import (
     cash,
@@ -77,6 +79,48 @@ def test_liquidity_supportability_uses_manage_settlement_policy_context() -> Non
     assert "LIQUIDITY_POLICY_DERIVED_FROM_MANAGE_SETTLEMENT_RULES" in liquidity_reason_codes(
         result=result,
         context=context,
+    )
+
+
+def test_liquidity_status_policy_helpers_classify_cash_blockers_and_minimum_cash() -> None:
+    result = _trade_result()
+    blocked_result = result.model_copy(
+        update={
+            "diagnostics": result.diagnostics.model_copy(
+                update={
+                    "insufficient_cash": [
+                        InsufficientCashEntry(currency="USD", deficit=Decimal("10"))
+                    ]
+                }
+            )
+        }
+    )
+
+    assert not _has_blocking_cash_diagnostics(result=result)
+    assert _has_blocking_cash_diagnostics(result=blocked_result)
+    assert (
+        _minimum_cash_weight_status(
+            status=ConstructionMethodStatus.READY,
+            cash_weight=Decimal("0.03"),
+            minimum_cash_weight=Decimal("0.02"),
+        )
+        == ConstructionMethodStatus.READY
+    )
+    assert (
+        _minimum_cash_weight_status(
+            status=ConstructionMethodStatus.READY,
+            cash_weight=Decimal("0.01"),
+            minimum_cash_weight=Decimal("0.02"),
+        )
+        == ConstructionMethodStatus.PENDING_REVIEW
+    )
+    assert (
+        _minimum_cash_weight_status(
+            status=ConstructionMethodStatus.BLOCKED,
+            cash_weight=Decimal("0.01"),
+            minimum_cash_weight=Decimal("0.02"),
+        )
+        == ConstructionMethodStatus.BLOCKED
     )
 
 

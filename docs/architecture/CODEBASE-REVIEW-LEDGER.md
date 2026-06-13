@@ -22532,3 +22532,34 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal wave source-analytics helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-902: Liquidity status policy helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Bank-buyable control area: architecture, construction supportability, and testing.
+- Finding: `liquidity_status` combined missing-context defaulting, blocking cash diagnostics,
+  minimum-cash policy review pressure, cashflow projection status, and final supportability
+  roll-up in one classifier. The behavior was correct, but the liquidity supportability decision
+  path was harder to review than a construction policy support surface should be.
+- Action: extracted `_has_blocking_cash_diagnostics` and `_minimum_cash_weight_status` so
+  hard-blocking cash diagnostics and minimum-cash policy pressure are independently testable before
+  cashflow projection roll-up. Added direct tests for non-blocking and blocking diagnostics,
+  above-policy cash, below-policy pending-review pressure, and preservation of an already-blocked
+  status.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/services/construction_liquidity_supportability.py -s`; the focused
+  liquidity supportability suite reported 10 passed, `liquidity_status` reduced to A(4) under
+  radon, and the refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves construction liquidity supportability maintainability only.
+  It does not change liquidity policy semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability helper
+  maintainability hardening with no operator-facing contract change.

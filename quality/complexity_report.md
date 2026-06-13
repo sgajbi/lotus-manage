@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T13:16:58+00:00`
+- Generated at: `2026-06-13T13:20:01+00:00`
 
-- Report source snapshot: `8942328b+worktree`
+- Report source snapshot: `679f4428+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
-| 2 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
-| 3 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
-| 4 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
-| 5 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
-| 6 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
-| 7 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
-| 8 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
-| 9 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
-| 10 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
+| 1 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 2 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
+| 3 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
+| 4 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
+| 5 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 6 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
+| 7 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 8 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
+| 9 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
+| 10 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
 
 ### Most Complex Current Test Functions
 
