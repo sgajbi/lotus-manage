@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T11:26:13+00:00`
+- Generated at: `2026-06-13T11:28:43+00:00`
 
-- Report source snapshot: `2166aecf+worktree`
+- Report source snapshot: `3cc7e135+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
-| 2 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
-| 3 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 4 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 5 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
-| 6 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
-| 7 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
-| 8 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
-| 9 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
-| 10 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 1 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
+| 2 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
+| 3 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
+| 4 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 5 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
+| 6 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
+| 7 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
+| 8 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
+| 9 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 10 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
 
 ### Most Complex Current Test Functions
 

@@ -22082,3 +22082,34 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API-service maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-887: Wave portfolio resolution dispatch table
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/wave_portfolio_resolution.py` and
+  `tests/unit/api/test_wave_portfolio_resolution.py`.
+- Bank-buyable control area: architecture, API quality, and testing.
+- Finding: `resolve_portfolio_inputs_for_request` encoded each wave trigger branch directly in the
+  public router helper. The behavior was correct, but the dispatch structure made it harder to
+  distinguish trigger routing from the router-owned HTTP/source-authority error handling that must
+  remain near the API boundary.
+- Action: introduced `_PortfolioResolutionContext` and a trigger-handler table for explicit
+  portfolio lists, PM-book review, CIO model change, risk event, tactical house view, and bulk
+  review campaign resolution. Kept source-unavailable and source-dependency HTTP exception mapping
+  in the router helpers. Added direct public-entry coverage proving explicit-list dispatch
+  preserves the request portfolio payloads.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_portfolio_resolution.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/routers/wave_portfolio_resolution.py -s`; the focused wave
+  portfolio-resolution suite reported 3 passed, and `resolve_portfolio_inputs_for_request`
+  reduced from B(9) to A(1) under radon.
+- Residual risk: this slice improves router dispatch maintainability only. It does not change wave
+  trigger semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API router maintainability
+  hardening with no operator-facing contract change.

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from decimal import Decimal
 
 from src.api.routers.wave_campaign_definition_resolution import (
@@ -45,6 +46,16 @@ from src.api.services.authority_client_service import (
 )
 
 
+@dataclass(frozen=True)
+class _PortfolioResolutionContext:
+    request: DpmWavePreviewRequest
+    correlation_id: str
+    advise_authority_client: AdviseAuthorityClient | None
+    risk_authority_client: RiskAuthorityClient | None
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository
+    core_resolver_factory: Callable[[], object]
+
+
 def resolve_portfolio_inputs_for_request(
     *,
     request: DpmWavePreviewRequest,
@@ -54,43 +65,92 @@ def resolve_portfolio_inputs_for_request(
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     core_resolver_factory: Callable[[], object],
 ) -> list[dict[str, object]]:
-    if request.trigger_type == "EXPLICIT_PORTFOLIO_LIST":
-        return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
-    if request.trigger_type == "PM_BOOK_REVIEW":
-        return resolve_pm_book_portfolios(
-            request=request,
-            correlation_id=correlation_id,
-            core_resolver_factory=core_resolver_factory,
-        )
-    if request.trigger_type == "CIO_MODEL_CHANGE":
-        return resolve_cio_model_change_portfolios(
-            request=request,
-            correlation_id=correlation_id,
-            core_resolver_factory=core_resolver_factory,
-        )
-    if request.trigger_type == "RISK_EVENT":
-        return _resolve_risk_event_portfolios(
-            request=request,
-            correlation_id=correlation_id,
-            risk_authority_client=risk_authority_client,
-        )
-    if request.trigger_type == "TACTICAL_HOUSE_VIEW":
-        return _resolve_tactical_house_view_portfolios(
-            request=request,
-            correlation_id=correlation_id,
-            advise_authority_client=advise_authority_client,
-        )
-    if request.trigger_type == "BULK_REVIEW_CAMPAIGN":
-        resolved_request = request_with_campaign_definition(
-            request=request,
-            repository=campaign_definition_repository,
-        )
-        return resolve_bulk_review_campaign_portfolios(
-            request=resolved_request,
-            correlation_id=correlation_id,
-            core_resolver_factory=core_resolver_factory,
-        )
-    return [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
+    context = _PortfolioResolutionContext(
+        request=request,
+        correlation_id=correlation_id,
+        advise_authority_client=advise_authority_client,
+        risk_authority_client=risk_authority_client,
+        campaign_definition_repository=campaign_definition_repository,
+        core_resolver_factory=core_resolver_factory,
+    )
+    handler = _PORTFOLIO_RESOLUTION_HANDLERS.get(
+        request.trigger_type,
+        _resolve_explicit_request_portfolios,
+    )
+    return handler(context)
+
+
+def _resolve_explicit_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    return [portfolio.model_dump(mode="json") for portfolio in context.request.portfolios]
+
+
+def _resolve_pm_book_review_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    return resolve_pm_book_portfolios(
+        request=context.request,
+        correlation_id=context.correlation_id,
+        core_resolver_factory=context.core_resolver_factory,
+    )
+
+
+def _resolve_cio_model_change_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    return resolve_cio_model_change_portfolios(
+        request=context.request,
+        correlation_id=context.correlation_id,
+        core_resolver_factory=context.core_resolver_factory,
+    )
+
+
+def _resolve_risk_event_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    return _resolve_risk_event_portfolios(
+        request=context.request,
+        correlation_id=context.correlation_id,
+        risk_authority_client=context.risk_authority_client,
+    )
+
+
+def _resolve_tactical_house_view_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    return _resolve_tactical_house_view_portfolios(
+        request=context.request,
+        correlation_id=context.correlation_id,
+        advise_authority_client=context.advise_authority_client,
+    )
+
+
+def _resolve_bulk_review_campaign_request_portfolios(
+    context: _PortfolioResolutionContext,
+) -> list[dict[str, object]]:
+    resolved_request = request_with_campaign_definition(
+        request=context.request,
+        repository=context.campaign_definition_repository,
+    )
+    return resolve_bulk_review_campaign_portfolios(
+        request=resolved_request,
+        correlation_id=context.correlation_id,
+        core_resolver_factory=context.core_resolver_factory,
+    )
+
+
+_PORTFOLIO_RESOLUTION_HANDLERS: dict[
+    str,
+    Callable[[_PortfolioResolutionContext], list[dict[str, object]]],
+] = {
+    "EXPLICIT_PORTFOLIO_LIST": _resolve_explicit_request_portfolios,
+    "PM_BOOK_REVIEW": _resolve_pm_book_review_request_portfolios,
+    "CIO_MODEL_CHANGE": _resolve_cio_model_change_request_portfolios,
+    "RISK_EVENT": _resolve_risk_event_request_portfolios,
+    "TACTICAL_HOUSE_VIEW": _resolve_tactical_house_view_request_portfolios,
+    "BULK_REVIEW_CAMPAIGN": _resolve_bulk_review_campaign_request_portfolios,
+}
 
 
 def _resolve_tactical_house_view_portfolios(
