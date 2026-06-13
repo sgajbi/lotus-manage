@@ -11,6 +11,8 @@ from src.api.dependencies import (
     get_wave_repository,
 )
 from src.api.main import app
+from src.api.routers.proof_pack_generate_routes import _generate_initial_proof_pack
+from src.api.routers.proof_pack_models import DpmProofPackGenerateRequest
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
 from src.api.services import proof_pack_service
 from src.core.mandates import (
@@ -402,6 +404,115 @@ def test_generate_proof_pack_validates_source_fields(client: TestClient) -> None
     )
     assert missing_source.status_code == 422
     assert missing_source.json()["detail"] == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
+
+
+def test_generate_initial_proof_pack_validates_missing_source_fields() -> None:
+    with pytest.raises(HTTPException) as missing_run:
+        _generate_initial_proof_pack(
+            request=DpmProofPackGenerateRequest(source_type="REBALANCE_RUN", actor_id="pm_api"),
+            idempotency_key="idem-missing-run",
+            correlation_id=None,
+            run_service=object(),
+            construction_repository=object(),
+            mandate_repository=object(),
+            proof_pack_repository=object(),
+        )
+    assert missing_run.value.status_code == 422
+    assert missing_run.value.detail == "DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED"
+
+    with pytest.raises(HTTPException) as missing_alternative:
+        _generate_initial_proof_pack(
+            request=DpmProofPackGenerateRequest(
+                source_type="SELECTED_ALTERNATIVE",
+                actor_id="pm_api",
+            ),
+            idempotency_key="idem-missing-alternative",
+            correlation_id=None,
+            run_service=object(),
+            construction_repository=object(),
+            mandate_repository=object(),
+            proof_pack_repository=object(),
+        )
+    assert missing_alternative.value.status_code == 422
+    assert missing_alternative.value.detail == "DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED"
+
+
+def test_generate_initial_proof_pack_dispatches_source_specific_services(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, dict[str, object]] = {}
+    run_pack = object()
+    selected_pack = object()
+    run_service = object()
+    construction_repository = object()
+    mandate_repository = object()
+    proof_pack_repository = object()
+
+    def generate_from_run(**kwargs):
+        captured["run"] = kwargs
+        return run_pack
+
+    def generate_from_selected_alternative(**kwargs):
+        captured["selected"] = kwargs
+        return selected_pack
+
+    monkeypatch.setattr(proof_pack_service, "generate_proof_pack_from_run", generate_from_run)
+    monkeypatch.setattr(
+        proof_pack_service,
+        "generate_proof_pack_from_selected_alternative",
+        generate_from_selected_alternative,
+    )
+
+    assert (
+        _generate_initial_proof_pack(
+            request=DpmProofPackGenerateRequest(
+                source_type="REBALANCE_RUN",
+                rebalance_run_id="rr_api",
+                actor_id="pm_api",
+                reason="Generate proof pack from run.",
+                mandate_id="mandate_api_001",
+            ),
+            idempotency_key="idem-run",
+            correlation_id="corr-run",
+            run_service=run_service,
+            construction_repository=construction_repository,
+            mandate_repository=mandate_repository,
+            proof_pack_repository=proof_pack_repository,
+        )
+        is run_pack
+    )
+    assert captured["run"]["rebalance_run_id"] == "rr_api"
+    assert captured["run"]["correlation_id"] == "corr-run"
+    assert captured["run"]["run_service"] is run_service
+    assert captured["run"]["mandate_repository"] is mandate_repository
+    assert captured["run"]["proof_pack_repository"] is proof_pack_repository
+
+    assert (
+        _generate_initial_proof_pack(
+            request=DpmProofPackGenerateRequest(
+                source_type="SELECTED_ALTERNATIVE",
+                alternative_set_id="alt_set_api",
+                selected_alternative_id="alt_api",
+                actor_id="pm_api",
+                reason="Generate proof pack from selected alternative.",
+                mandate_id="mandate_api_001",
+            ),
+            idempotency_key="idem-selected",
+            correlation_id="corr-selected",
+            run_service=run_service,
+            construction_repository=construction_repository,
+            mandate_repository=mandate_repository,
+            proof_pack_repository=proof_pack_repository,
+        )
+        is selected_pack
+    )
+    assert captured["selected"]["alternative_set_id"] == "alt_set_api"
+    assert captured["selected"]["selected_alternative_id"] == "alt_api"
+    assert captured["selected"]["correlation_id"] == "corr-selected"
+    assert captured["selected"]["construction_repository"] is construction_repository
+    assert captured["selected"]["run_service"] is run_service
+    assert captured["selected"]["mandate_repository"] is mandate_repository
+    assert captured["selected"]["proof_pack_repository"] is proof_pack_repository
 
 
 def test_generate_proof_pack_preserves_governed_http_exceptions(
