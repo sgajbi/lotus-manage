@@ -4,6 +4,9 @@ from typing import Any, cast
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_supportability_application import (
+    _currency_overlay_authority_context_status,
+    _liquidity_authority_context_status,
+    _regime_stress_authority_context_status,
     apply_construction_supportability,
     authority_context_status,
     enrichment_summary_diagnostics,
@@ -436,6 +439,35 @@ def test_authority_context_status_ignores_context_for_unrelated_method() -> None
         )
         is None
     )
+
+
+def test_authority_context_status_helpers_project_available_context_status() -> None:
+    assert (
+        _liquidity_authority_context_status(
+            ConstructionAuthorityContext(liquidity_context=_liquidity_context())
+        )
+        == ConstructionMethodStatus.READY
+    )
+    assert (
+        _currency_overlay_authority_context_status(
+            ConstructionAuthorityContext(currency_overlay_context=_blocked_currency_context())
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+    assert (
+        _regime_stress_authority_context_status(
+            ConstructionAuthorityContext(regime_stress_context=_blocked_regime_context())
+        )
+        == ConstructionMethodStatus.BLOCKED
+    )
+
+
+def test_authority_context_status_helpers_return_none_without_matching_context() -> None:
+    authority_context = ConstructionAuthorityContext()
+
+    assert _liquidity_authority_context_status(authority_context) is None
+    assert _currency_overlay_authority_context_status(authority_context) is None
+    assert _regime_stress_authority_context_status(authority_context) is None
 
 
 def test_method_enrichment_statuses_project_method_specific_enrichment() -> None:

@@ -22825,3 +22825,31 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal campaign assignment helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-912: Construction authority context status dispatch
+
+- Date: 2026-06-14
+- Scope: `src/api/services/construction_supportability_application.py` and
+  `tests/unit/dpm/construction/test_supportability_application.py`.
+- Bank-buyable control area: architecture, construction supportability governance, and testing.
+- Finding: `authority_context_status` combined liquidity, currency-overlay, and regime-stress
+  authority context status checks in one conditional sequence. The behavior was correct, but
+  method-specific source authority readiness should be reviewable as named supportability rules.
+- Action: extracted `_liquidity_authority_context_status`,
+  `_currency_overlay_authority_context_status`, and `_regime_stress_authority_context_status`,
+  then routed `authority_context_status` through a method-to-selector map. Added direct helper
+  tests for present-context status projection and missing-context `None` fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
+  and `python -m radon cc src/api/services/construction_supportability_application.py -s`; the
+  focused construction supportability application suite reported 16 passed and
+  `authority_context_status` reduced from B(7) to A(2) under radon.
+- Residual risk: this slice improves construction supportability authority-context
+  maintainability only. It does not change construction semantics, certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  helper maintainability hardening with no operator-facing contract change.
