@@ -290,6 +290,35 @@ def test_attribution_adapter_wraps_source_owned_active_return_reconciliation() -
 
 
 def test_attribution_source_helper_builds_source_id_and_reason_codes() -> None:
+    period_result = perf_sources._attribution_period(_attribution_response(), period="YTD")
+    reconciliation_value, reconciliation_reason, reconciliation_token = (
+        perf_sources._reconciliation_attribution_value(
+            period_result=period_result,
+            measure="reconciliation_total_active_return",
+        )
+    )
+    assert str(reconciliation_value) == "0.0049"
+    assert reconciliation_reason == "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION"
+    assert reconciliation_token == "reconciliation"
+
+    level_value, level_reason, level_token = perf_sources._level_attribution_value(
+        period_result=period_result,
+        measure="level_total_effect",
+        level_dimension="asset_class",
+    )
+    assert str(level_value) == "0.0047"
+    assert level_reason == "PERFORMANCE_ATTRIBUTION_LEVEL_ASSET_CLASS"
+    assert level_token == "level:asset_class"
+
+    currency_value, currency_reason, currency_token = perf_sources._currency_attribution_value(
+        period_result=period_result,
+        measure="currency_total_effect",
+        currency="USD",
+    )
+    assert str(currency_value) == "0.0011"
+    assert currency_reason == "PERFORMANCE_ATTRIBUTION_CURRENCY_USD"
+    assert currency_token == "currency:usd"
+
     perf_sources._ensure_ready_attribution_value(
         source_state="DEGRADED",
         value=None,

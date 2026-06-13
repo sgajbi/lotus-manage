@@ -23153,3 +23153,32 @@ and improves internal transaction-cost source posture maintainability only.
   readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal source adapter maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-923: Performance attribution selector helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/performance_sources.py` and
+  `tests/unit/core/test_performance_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, source-owned performance evidence mapping, and testing.
+- Finding: `_attribution_value` handled reconciliation, attribution-level, and currency-selector
+  branches inline. The behavior was correct, but performance attribution source evidence is easier
+  to maintain when each selector family has a named helper and direct tests for value conversion,
+  selector reason, and selector token projection.
+- Action: extracted `_reconciliation_attribution_value`, `_level_attribution_value`, and
+  `_currency_attribution_value`, then kept `_attribution_value` as the selector dispatcher. Added
+  direct helper assertions for reconciliation active return, asset-class level total effect, and
+  USD currency total effect.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/performance_sources.py`,
+  `python -m pytest tests/unit/core/test_performance_realized_outcome_sources.py -q`, and
+  `python -m radon cc src/core/outcomes/performance_sources.py -s`; the focused performance
+  realized outcome source suite reported 29 passed, and radon reports `_attribution_value` at A(3)
+  after this extraction.
+- Residual risk: this slice improves performance source-owned attribution adapter maintainability
+  only. It does not change source evidence semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal source adapter maintainability
+  hardening with no operator-facing contract change.
