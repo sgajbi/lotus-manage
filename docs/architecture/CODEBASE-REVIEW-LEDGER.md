@@ -23090,3 +23090,35 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-921: Proof-pack eligibility payload helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack eligibility evidence, and testing.
+- Finding: `_eligibility_and_restrictions_section_payload` combined client-restriction source
+  context handling, Manage-local universe exclusion fallback, exclusion fact serialization,
+  exclusion-state mapping, and reason-code de-duplication in one helper. The behavior was correct,
+  but eligibility proof-pack posture is easier to maintain when source-context and local-exclusion
+  branches are named separately.
+- Action: extracted `_eligibility_payload_with_restriction_context`,
+  `_eligibility_payload_from_universe_exclusions`, `_eligibility_state_from_universe_exclusions`,
+  `_excluded_instrument_facts`, and `_eligibility_reason_codes`, then kept
+  `_eligibility_and_restrictions_section_payload` as the dispatcher. Added direct assertions for
+  exclusion state, exclusion fact serialization, reason-code generation, and source-context payload
+  projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 96 passed, and radon reports `_eligibility_and_restrictions_section_payload` at A(2)
+  after this extraction.
+- Residual risk: this slice improves proof-pack eligibility evidence maintainability only. It does
+  not change proof-pack semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.

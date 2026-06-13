@@ -34,7 +34,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import GateDecision, RebalanceResult
+from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -1113,32 +1113,69 @@ def _eligibility_and_restrictions_section_payload(
     restriction_context = source_analytics.get("client_restriction")
     excluded = result.universe.excluded
     if restriction_context is not None:
-        reason_codes = list(restriction_context.reason_codes)
-        if excluded:
-            reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
-        return (
-            _lowest_section_state(
-                [
-                    restriction_context.state,
-                    "PENDING_REVIEW" if excluded else "READY",
-                ]
-            ),
-            "Eligibility evidence and source-owned client restriction profile are attached.",
-            {
-                **restriction_context.facts,
-                "excluded": [item.model_dump(mode="json") for item in excluded],
-            },
-            {**restriction_context.metrics, "excluded_count": len(excluded)},
-            sorted(set(reason_codes)),
+        return _eligibility_payload_with_restriction_context(
+            restriction_context=restriction_context,
+            excluded=excluded,
         )
 
+    return _eligibility_payload_from_universe_exclusions(excluded)
+
+
+def _eligibility_payload_with_restriction_context(
+    *,
+    restriction_context: ProofPackSourceAnalytics,
+    excluded: list[ExcludedInstrument],
+) -> _SectionPayload:
     return (
-        "READY" if not excluded else "PENDING_REVIEW",
-        "Eligibility and restriction evidence captured from source run universe.",
-        {"excluded": [item.model_dump(mode="json") for item in excluded]},
-        {"excluded_count": len(excluded)},
-        ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
+        _lowest_section_state(
+            [
+                restriction_context.state,
+                _eligibility_state_from_universe_exclusions(excluded),
+            ]
+        ),
+        "Eligibility evidence and source-owned client restriction profile are attached.",
+        {**restriction_context.facts, "excluded": _excluded_instrument_facts(excluded)},
+        {**restriction_context.metrics, "excluded_count": len(excluded)},
+        _eligibility_reason_codes(
+            base_reason_codes=restriction_context.reason_codes,
+            excluded=excluded,
+        ),
     )
+
+
+def _eligibility_payload_from_universe_exclusions(
+    excluded: list[ExcludedInstrument],
+) -> _SectionPayload:
+    return (
+        _eligibility_state_from_universe_exclusions(excluded),
+        "Eligibility and restriction evidence captured from source run universe.",
+        {"excluded": _excluded_instrument_facts(excluded)},
+        {"excluded_count": len(excluded)},
+        _eligibility_reason_codes(base_reason_codes=[], excluded=excluded),
+    )
+
+
+def _eligibility_state_from_universe_exclusions(
+    excluded: list[ExcludedInstrument],
+) -> ProofPackSectionState:
+    return "PENDING_REVIEW" if excluded else "READY"
+
+
+def _excluded_instrument_facts(
+    excluded: list[ExcludedInstrument],
+) -> list[dict[str, Any]]:
+    return [item.model_dump(mode="json") for item in excluded]
+
+
+def _eligibility_reason_codes(
+    *,
+    base_reason_codes: list[str],
+    excluded: list[ExcludedInstrument],
+) -> list[str]:
+    reason_codes = list(base_reason_codes)
+    if excluded:
+        reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
+    return sorted(set(reason_codes))
 
 
 def _decision_summary_section_payload(

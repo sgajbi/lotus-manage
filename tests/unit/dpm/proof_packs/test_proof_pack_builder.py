@@ -1232,6 +1232,15 @@ def test_eligibility_and_restrictions_section_payload_reports_universe_exclusion
     assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
     assert metrics == {"excluded_count": 1}
     assert reason_codes == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
+    excluded = result.universe.excluded
+    assert builder_module._eligibility_state_from_universe_exclusions(excluded) == "PENDING_REVIEW"
+    assert builder_module._excluded_instrument_facts(excluded)[0]["instrument_id"] == (
+        "PRIVATE_CREDIT_FUND"
+    )
+    assert builder_module._eligibility_reason_codes(
+        base_reason_codes=[],
+        excluded=excluded,
+    ) == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
 
 
 def test_eligibility_and_restrictions_section_payload_merges_restriction_context() -> None:
@@ -1301,6 +1310,12 @@ def test_eligibility_and_restrictions_section_payload_merges_restriction_context
         "CLIENT_RESTRICTION_PROFILE_READY",
         "DPM_UNIVERSE_EXCLUSIONS_PRESENT",
     ]
+    restriction_payload = builder_module._eligibility_payload_with_restriction_context(
+        restriction_context=restriction,
+        excluded=result.universe.excluded,
+    )
+    assert restriction_payload[0] == "PENDING_REVIEW"
+    assert restriction_payload[2]["source_product_name"] == "ClientRestrictionProfile"
 
 
 def test_run_source_context_section_payload_dispatches_source_context_sections() -> None:
