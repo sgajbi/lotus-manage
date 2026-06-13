@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T05:40:22+00:00`
+- Generated at: `2026-06-13T05:59:52+00:00`
 
-- Current ref: `9f7dec6a`
+- Current ref: `fde33385`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -41,7 +41,7 @@
 | 7 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
 | 8 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
 | 9 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 10 | _run_policy_section_payload | src/core/proof_packs/builder.py | 7 | 49 |
+| 10 | _transaction_cost_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 49 |
 
 ### Most Complex Current Test Functions
 

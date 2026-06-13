@@ -21446,3 +21446,30 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal wave source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-865: Proof-pack run policy payload helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_run_policy_section_payload` mixed proof-pack drift-impact, tax-impact, and
+  rule-result payload construction in one policy dispatcher. The behavior was correct, but the
+  helper concentrated unrelated proof-pack policy facts and made source-evidence review harder than
+  necessary for run policy and governance sections.
+- Action: extracted drift-impact, tax-impact, and rule-result section payload builders behind the
+  existing dispatcher and added direct tests for selected-alternative drift metrics plus blocked
+  hard-failed rule posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 86 passed and `_run_policy_section_payload` is A(4).
+- Residual risk: this slice improves internal proof-pack policy payload maintainability only. It
+  does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability hardening with no operator-facing contract change.

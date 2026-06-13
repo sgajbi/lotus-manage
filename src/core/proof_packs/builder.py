@@ -698,15 +698,18 @@ def _run_policy_section_payload(
     selected_alternative: ConstructionAlternative | None,
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
     if section_type == "drift_impact":
-        if selected_alternative is not None:
-            metrics = selected_alternative.comparison_metrics.model_dump(mode="json")
-            return (
-                "READY",
-                "Drift impact captured from construction comparison metrics.",
-                {},
-                metrics,
-                [],
-            )
+        return _drift_impact_section_payload(selected_alternative=selected_alternative)
+    if section_type == "tax_impact":
+        return _tax_impact_section_payload(result=result)
+    if section_type == "rule_results":
+        return _rule_results_section_payload(result=result)
+    return None
+
+
+def _drift_impact_section_payload(
+    *, selected_alternative: ConstructionAlternative | None
+) -> _SectionPayload:
+    if selected_alternative is None:
         return (
             "DEGRADED",
             "Direct-run proof has no construction comparison drift trace.",
@@ -714,32 +717,42 @@ def _run_policy_section_payload(
             {},
             ["DPM_DRIFT_COMPARISON_UNAVAILABLE"],
         )
-    if section_type == "tax_impact":
-        if result.tax_impact is None:
-            return (
-                "DEGRADED",
-                "Tax impact is not available for this run.",
-                {},
-                {},
-                ["DPM_TAX_IMPACT_MISSING"],
-            )
+    return (
+        "READY",
+        "Drift impact captured from construction comparison metrics.",
+        {},
+        selected_alternative.comparison_metrics.model_dump(mode="json"),
+        [],
+    )
+
+
+def _tax_impact_section_payload(*, result: RebalanceResult) -> _SectionPayload:
+    if result.tax_impact is None:
         return (
-            "READY",
-            "Tax impact captured from manage tax-aware simulation.",
-            result.tax_impact.model_dump(mode="json"),
+            "DEGRADED",
+            "Tax impact is not available for this run.",
             {},
-            [],
+            {},
+            ["DPM_TAX_IMPACT_MISSING"],
         )
-    if section_type == "rule_results":
-        failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
-        return (
-            "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
-            "Rule results captured from manage policy engine.",
-            {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
-            {"fail_count": len(failed)},
-            [rule.reason_code for rule in failed],
-        )
-    return None
+    return (
+        "READY",
+        "Tax impact captured from manage tax-aware simulation.",
+        result.tax_impact.model_dump(mode="json"),
+        {},
+        [],
+    )
+
+
+def _rule_results_section_payload(*, result: RebalanceResult) -> _SectionPayload:
+    failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
+    return (
+        "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
+        "Rule results captured from manage policy engine.",
+        {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
+        {"fail_count": len(failed)},
+        [rule.reason_code for rule in failed],
+    )
 
 
 def _proof_pack_governance_section_payload(

@@ -28,6 +28,7 @@ from src.core.models import (
     GateReason,
     Money,
     RebalanceResult,
+    RuleResult,
     TaxImpact,
 )
 from src.core.mandates import (
@@ -509,6 +510,54 @@ def test_run_policy_section_payload_returns_missing_tax_impact_posture() -> None
     assert facts == {}
     assert metrics == {}
     assert reason_codes == ["DPM_TAX_IMPACT_MISSING"]
+
+
+def test_drift_impact_section_payload_preserves_selected_alternative_metrics() -> None:
+    alternative = build_rebalance_result_alternative(result=_ready_rebalance_result())
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_drift_policy",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+    selected_alternative = alternative_set.alternatives[0]
+
+    state, summary, facts, metrics, reason_codes = builder_module._drift_impact_section_payload(
+        selected_alternative=selected_alternative
+    )
+
+    assert state == "READY"
+    assert summary == "Drift impact captured from construction comparison metrics."
+    assert facts == {}
+    assert metrics == selected_alternative.comparison_metrics.model_dump(mode="json")
+    assert reason_codes == []
+
+
+def test_rule_results_section_payload_blocks_on_hard_failed_policy_rule() -> None:
+    result = _ready_rebalance_result().model_copy(
+        update={
+            "rule_results": [
+                RuleResult(
+                    rule_id="NO_SHORTING",
+                    severity="HARD",
+                    status="FAIL",
+                    measured=Decimal("-1"),
+                    threshold={"minimum_weight": Decimal("0")},
+                    reason_code="DPM_NO_SHORTING",
+                )
+            ]
+        }
+    )
+
+    state, summary, facts, metrics, reason_codes = builder_module._rule_results_section_payload(
+        result=result
+    )
+
+    assert state == "BLOCKED"
+    assert summary == "Rule results captured from manage policy engine."
+    assert facts["rule_results"][0]["rule_id"] == "NO_SHORTING"
+    assert metrics == {"fail_count": 1}
+    assert reason_codes == ["DPM_NO_SHORTING"]
 
 
 def test_run_bound_section_payload_dispatches_state_policy_and_diagnostics() -> None:
