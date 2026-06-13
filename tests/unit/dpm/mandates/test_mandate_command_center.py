@@ -1,6 +1,10 @@
 from datetime import date, datetime, timezone
 
 from src.api.services.mandate_command_center import (
+    _normalized_source_readiness_states,
+    _source_readiness_blocks_command_center,
+    _source_readiness_degrades_command_center,
+    _source_readiness_supportability_posture,
     attention_buckets,
     build_command_center_summary,
     command_center_completeness,
@@ -94,6 +98,28 @@ def test_command_center_supportability_state_maps_empty_and_source_postures() ->
         completeness="COMPLETE",
         partial_reasons=[],
     ) == ("READY", "COMMAND_CENTER_READY")
+
+
+def test_command_center_source_readiness_helpers_preserve_precedence() -> None:
+    source_states = _normalized_source_readiness_states(
+        {
+            "ready": 2,
+            "blocked": 1,
+            "stale": 1,
+        }
+    )
+
+    assert source_states == {"READY", "BLOCKED", "STALE"}
+    assert _source_readiness_blocks_command_center(source_states)
+    assert _source_readiness_degrades_command_center(source_states)
+    assert _source_readiness_supportability_posture(
+        source_readiness_summary={"STALE": 1, "BLOCKED": 1}
+    ) == ("BLOCKED", "COMMAND_CENTER_SOURCE_READINESS_BLOCKED")
+    assert _source_readiness_supportability_posture(source_readiness_summary={"STALE": 1}) == (
+        "DEGRADED",
+        "COMMAND_CENTER_SOURCE_READINESS_DEGRADED",
+    )
+    assert _source_readiness_supportability_posture(source_readiness_summary={"READY": 2}) is None
 
 
 def test_run_matches_command_center_filters_uses_bounded_filter_values() -> None:
