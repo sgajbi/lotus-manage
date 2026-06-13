@@ -21359,8 +21359,8 @@ and improves internal transaction-cost source posture maintainability only.
   fail-closed state/quality mapping, and reason-code assembly into focused helpers while preserving
   external OMS acknowledgement non-promotion semantics. Added direct helper coverage for
   deterministic identity, reason-code expansion, empty selector defaults, and fail-closed mapping.
-  Removed the deprecated `exclude_if` field kwarg from `DpmWaveSourceRef` and added direct
-  serialization coverage for the existing null optional-field posture.
+  Removed the deprecated `exclude_if` field kwarg from `DpmWaveSourceRef` and localized
+  optional-field omission to source-ref payload builders while preserving existing payload coverage.
 - Status: hardened.
 - Evidence:
   `python -m ruff check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py src/core/waves/models.py tests/unit/dpm/waves/test_wave_domain.py`,
