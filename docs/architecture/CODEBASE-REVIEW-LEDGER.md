@@ -22380,3 +22380,33 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal target-generation helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-897: In-memory mandate retention key selectors
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py` and
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`.
+- Bank-buyable control area: architecture, retention supportability, and testing.
+- Finding: `purge_mandate_records_before` combined retention cutoff normalization, stale mandate,
+  health, monitoring-run, and resolved-exception key selection, dictionary mutation, and purged-row
+  counting in one repository method. The behavior was correct, but the retention rules were harder
+  to review than an operational supportability repository should be.
+- Action: extracted `_stale_mandate_keys`, `_stale_health_snapshot_keys`,
+  `_stale_monitoring_run_keys`, and `_stale_resolved_exception_keys` so retention selection rules
+  are independently testable before mutation. Added direct tests for stale/current mandate, health,
+  and run selection plus the rule that old active exceptions are retained until resolved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/mandates/in_memory.py -s`; the focused mandate repository
+  suite reported 18 passed, `purge_mandate_records_before` reduced to A(5) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves in-memory retention maintainability only. It does not change
+  PostgreSQL retention semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal repository helper
+  maintainability hardening with no operator-facing contract change.
