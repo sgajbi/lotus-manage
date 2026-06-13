@@ -23061,3 +23061,32 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-920: Proof-pack selected-alternative payload helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack construction evidence, and testing.
+- Finding: `_selected_alternative_section_payload` combined missing-selection fallback, method
+  state mapping, method reason-code mapping, identity facts, method trace facts, and metrics
+  projection in one helper. The behavior was correct, but selected-alternative proof-pack evidence
+  is easier to audit when the state, reason-code, and fact mappers are named.
+- Action: extracted `_selected_alternative_method_state`,
+  `_selected_alternative_reason_codes`, and `_selected_alternative_facts`, then kept
+  `_selected_alternative_section_payload` as the section assembler. Added direct assertions for
+  ready and degraded method status plus selected-alternative identity fact projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 96 passed, and radon reports `_selected_alternative_section_payload` at A(2) after this
+  extraction.
+- Residual risk: this slice improves selected-alternative proof-pack evidence maintainability only.
+  It does not change proof-pack semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.

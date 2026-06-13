@@ -983,6 +983,21 @@ def test_selected_alternative_section_payload_projects_method_trace() -> None:
     assert facts["constraint_trace"]
     assert metrics == alternative.comparison_metrics.model_dump(mode="json")
     assert reason_codes == []
+    assert builder_module._selected_alternative_method_state(alternative) == "READY"
+    assert builder_module._selected_alternative_reason_codes(alternative) == []
+    degraded_alternative = alternative.model_copy(update={"method_status": "DEGRADED"})
+    assert builder_module._selected_alternative_method_state(degraded_alternative) == "DEGRADED"
+    assert builder_module._selected_alternative_reason_codes(degraded_alternative) == [
+        "DPM_SELECTED_METHOD_NOT_READY"
+    ]
+    assert (
+        builder_module._selected_alternative_facts(
+            alternative_set=alternative_set,
+            selected_alternative=alternative,
+            selection=selection,
+        )["selected_alternative_id"]
+        == alternative.alternative_id
+    )
 
 
 def test_decision_timeline_orders_source_workflow_and_generated_events() -> None:

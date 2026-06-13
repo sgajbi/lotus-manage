@@ -993,31 +993,55 @@ def _selected_alternative_section_payload(
             {},
             ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
         )
-    selected_state = (
-        "READY"
-        if selected_alternative.method_status == "READY"
-        else cast(ProofPackSectionState, str(selected_alternative.method_status))
-    )
     return (
-        selected_state,
+        _selected_alternative_method_state(selected_alternative),
         "Selected construction alternative captured with method and trace evidence.",
-        {
-            "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
-            "selected_alternative_id": selected_alternative.alternative_id,
-            "selection_id": selection.selection_id if selection else None,
-            "method": selected_alternative.method,
-            "method_status": selected_alternative.method_status,
-            "summary": selected_alternative.summary,
-            "objective_trace": [
-                item.model_dump(mode="json") for item in selected_alternative.objective_trace
-            ],
-            "constraint_trace": [
-                item.model_dump(mode="json") for item in selected_alternative.constraint_trace
-            ],
-        },
+        _selected_alternative_facts(
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
+        ),
         selected_alternative.comparison_metrics.model_dump(mode="json"),
-        [] if selected_alternative.method_status == "READY" else ["DPM_SELECTED_METHOD_NOT_READY"],
+        _selected_alternative_reason_codes(selected_alternative),
     )
+
+
+def _selected_alternative_method_state(
+    selected_alternative: ConstructionAlternative,
+) -> ProofPackSectionState:
+    if selected_alternative.method_status == "READY":
+        return "READY"
+    return cast(ProofPackSectionState, str(selected_alternative.method_status))
+
+
+def _selected_alternative_reason_codes(
+    selected_alternative: ConstructionAlternative,
+) -> list[str]:
+    if selected_alternative.method_status == "READY":
+        return []
+    return ["DPM_SELECTED_METHOD_NOT_READY"]
+
+
+def _selected_alternative_facts(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative,
+    selection: ConstructionAlternativeSelection | None,
+) -> dict[str, Any]:
+    return {
+        "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
+        "selected_alternative_id": selected_alternative.alternative_id,
+        "selection_id": selection.selection_id if selection else None,
+        "method": selected_alternative.method,
+        "method_status": selected_alternative.method_status,
+        "summary": selected_alternative.summary,
+        "objective_trace": [
+            item.model_dump(mode="json") for item in selected_alternative.objective_trace
+        ],
+        "constraint_trace": [
+            item.model_dump(mode="json") for item in selected_alternative.constraint_trace
+        ],
+    }
 
 
 def _source_readiness_section_payload(
