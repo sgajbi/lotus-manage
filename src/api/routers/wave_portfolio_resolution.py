@@ -18,6 +18,7 @@ from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
+from src.api.routers.wave_request_models import DpmTacticalHouseViewInput
 from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_risk_event_validation import (
     build_risk_event_candidate_payloads,
@@ -29,6 +30,7 @@ from src.api.routers.wave_source_dependency_http import (
     source_unavailable_http_exception,
 )
 from src.api.routers.wave_tactical_candidate_selection import (
+    TacticalHouseViewAuthorityRequest,
     build_tactical_house_view_authority_request,
     build_tactical_house_view_resolved_portfolios,
     tactical_house_view_cohort_failure,
@@ -97,41 +99,12 @@ def _resolve_tactical_house_view_portfolios(
     correlation_id: str,
     advise_authority_client: AdviseAuthorityClient | None,
 ) -> list[dict[str, object]]:
-    tactical_view = request.tactical_house_view
-    if tactical_view is None:
-        raise wave_service.DpmWaveValidationError(
-            "TACTICAL_HOUSE_VIEW_REQUIRED",
-            "TACTICAL_HOUSE_VIEW requires tactical_house_view source evidence.",
-        )
-    if not request.portfolios:
-        raise wave_service.DpmWaveValidationError(
-            "TACTICAL_HOUSE_VIEW_CANDIDATE_PORTFOLIOS_REQUIRED",
-            "TACTICAL_HOUSE_VIEW requires source-backed candidate portfolios.",
-        )
-    if not tactical_view.source_refs:
-        raise wave_service.DpmWaveValidationError(
-            "TACTICAL_HOUSE_VIEW_SOURCE_REFS_REQUIRED",
-            "TACTICAL_HOUSE_VIEW requires tactical house-view source_refs.",
-        )
     if advise_authority_client is None:
         raise source_unavailable_http_exception(
             code="DPM_TACTICAL_HOUSE_VIEW_COHORT_UNAVAILABLE",
             message="DPM_ADVISE_BASE_URL is not configured.",
         )
-    as_of_date = parse_wave_as_of_date(request.as_of_date)
-    eligible_portfolio_types = normalize_required_portfolio_types(
-        request.portfolio_types,
-        required_code="TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED",
-        required_message="TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
-    )
-
-    authority_request = build_tactical_house_view_authority_request(
-        tactical_view=tactical_view,
-        portfolios=request.portfolios,
-        eligible_portfolio_types=eligible_portfolio_types,
-        as_of_date=as_of_date,
-        min_exposure_weight=request.min_tactical_exposure_weight,
-    )
+    authority_request = _tactical_house_view_authority_request_for_wave(request)
 
     try:
         cohort = advise_authority_client.tactical_house_view_affected_cohort(
@@ -157,6 +130,65 @@ def _resolve_tactical_house_view_portfolios(
         )
 
     return build_tactical_house_view_resolved_portfolios(cohort)
+
+
+def _tactical_house_view_authority_request_for_wave(
+    request: DpmWavePreviewRequest,
+) -> TacticalHouseViewAuthorityRequest:
+    tactical_view = _required_tactical_house_view(request)
+    _require_tactical_house_view_candidate_portfolios(request)
+    _require_tactical_house_view_source_refs(tactical_view)
+    return build_tactical_house_view_authority_request(
+        tactical_view=tactical_view,
+        portfolios=request.portfolios,
+        eligible_portfolio_types=_tactical_house_view_portfolio_types(request),
+        as_of_date=parse_wave_as_of_date(request.as_of_date),
+        min_exposure_weight=request.min_tactical_exposure_weight,
+    )
+
+
+def _required_tactical_house_view(
+    request: DpmWavePreviewRequest,
+) -> DpmTacticalHouseViewInput:
+    tactical_view = request.tactical_house_view
+    if tactical_view is None:
+        raise wave_service.DpmWaveValidationError(
+            "TACTICAL_HOUSE_VIEW_REQUIRED",
+            "TACTICAL_HOUSE_VIEW requires tactical_house_view source evidence.",
+        )
+    return tactical_view
+
+
+def _require_tactical_house_view_candidate_portfolios(
+    request: DpmWavePreviewRequest,
+) -> None:
+    if request.portfolios:
+        return
+    raise wave_service.DpmWaveValidationError(
+        "TACTICAL_HOUSE_VIEW_CANDIDATE_PORTFOLIOS_REQUIRED",
+        "TACTICAL_HOUSE_VIEW requires source-backed candidate portfolios.",
+    )
+
+
+def _require_tactical_house_view_source_refs(
+    tactical_view: DpmTacticalHouseViewInput,
+) -> None:
+    if tactical_view.source_refs:
+        return
+    raise wave_service.DpmWaveValidationError(
+        "TACTICAL_HOUSE_VIEW_SOURCE_REFS_REQUIRED",
+        "TACTICAL_HOUSE_VIEW requires tactical house-view source_refs.",
+    )
+
+
+def _tactical_house_view_portfolio_types(
+    request: DpmWavePreviewRequest,
+) -> list[str]:
+    return normalize_required_portfolio_types(
+        request.portfolio_types,
+        required_code="TACTICAL_HOUSE_VIEW_PORTFOLIO_TYPES_REQUIRED",
+        required_message="TACTICAL_HOUSE_VIEW requires at least one eligible portfolio type.",
+    )
 
 
 def _resolve_risk_event_portfolios(
