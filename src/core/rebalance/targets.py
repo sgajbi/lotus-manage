@@ -152,56 +152,73 @@ def apply_group_constraints(
 
     buy_set = set(buy_list)
     shelf_attrs_by_id, known_attr_keys = _build_shelf_attr_indexes(shelf)
-    sorted_keys = sorted(options.group_constraints.keys())
-
-    for constraint_key in sorted_keys:
-        constraint = options.group_constraints[constraint_key]
-
-        constraint_parts = _constraint_key_parts(
-            constraint_key,
-            known_attr_keys=known_attr_keys,
-            diagnostics=diagnostics,
-        )
-        if constraint_parts is None:
-            continue
-
-        attr_key, attr_val = constraint_parts
-        group_members = _group_constraint_members(
-            eligible_targets=eligible_targets,
-            shelf_attrs_by_id=shelf_attrs_by_id,
-            attr_key=attr_key,
-            attr_val=attr_val,
-        )
-        if not group_members:
-            continue
-
-        current_w = sum((eligible_targets[i] for i in group_members), Decimal("0"))
-        if current_w <= constraint.max_weight + Decimal("0.0001"):
-            continue
-
-        current_w, excess = _cap_group_constraint_members(
-            eligible_targets=eligible_targets,
-            group_members=group_members,
-            max_weight=constraint.max_weight,
-        )
-        recipients = _redistribute_group_constraint_excess(
+    for constraint_key in sorted(options.group_constraints.keys()):
+        status = _apply_group_constraint(
+            constraint_key=constraint_key,
+            max_weight=options.group_constraints[constraint_key].max_weight,
             eligible_targets=eligible_targets,
             buy_set=buy_set,
-            group_members=group_members,
-            released_weight=excess,
-        )
-        status = _record_group_constraint_event(
+            shelf_attrs_by_id=shelf_attrs_by_id,
+            known_attr_keys=known_attr_keys,
             diagnostics=diagnostics,
-            constraint_key=constraint_key,
-            group_weight_before=current_w,
-            max_weight=constraint.max_weight,
-            released_weight=excess,
-            recipients=recipients,
         )
         if status == "BLOCKED":
             return "BLOCKED"
 
     return "READY"
+
+
+def _apply_group_constraint(
+    *,
+    constraint_key: str,
+    max_weight: Decimal,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    shelf_attrs_by_id: dict[str, dict[str, str]],
+    known_attr_keys: set[str],
+    diagnostics: DiagnosticsData,
+) -> _GroupConstraintStatus:
+    constraint_parts = _constraint_key_parts(
+        constraint_key,
+        known_attr_keys=known_attr_keys,
+        diagnostics=diagnostics,
+    )
+    if constraint_parts is None:
+        return "READY"
+
+    attr_key, attr_val = constraint_parts
+    group_members = _group_constraint_members(
+        eligible_targets=eligible_targets,
+        shelf_attrs_by_id=shelf_attrs_by_id,
+        attr_key=attr_key,
+        attr_val=attr_val,
+    )
+    if not group_members:
+        return "READY"
+
+    current_w = sum((eligible_targets[i] for i in group_members), Decimal("0"))
+    if current_w <= max_weight + Decimal("0.0001"):
+        return "READY"
+
+    current_w, excess = _cap_group_constraint_members(
+        eligible_targets=eligible_targets,
+        group_members=group_members,
+        max_weight=max_weight,
+    )
+    recipients = _redistribute_group_constraint_excess(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        group_members=group_members,
+        released_weight=excess,
+    )
+    return _record_group_constraint_event(
+        diagnostics=diagnostics,
+        constraint_key=constraint_key,
+        group_weight_before=current_w,
+        max_weight=max_weight,
+        released_weight=excess,
+        recipients=recipients,
+    )
 
 
 def generate_targets(
