@@ -21162,3 +21162,33 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal proof-pack route
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-855: Regime-stress proof-pack source facts helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_regime_stress_source_analytics` became the next current source-complexity hotspot after
+  the proof-pack route dispatch slice and assembled source context validation, evidence posture,
+  reason-code posture, source refs, source facts, source metrics, and final analytics payload in
+  one function.
+- Action: extracted regime-stress source fact and metric projection into named helpers while
+  preserving source-owned `RegimeScenarioPackEvaluation:v1` identity, governance evidence
+  projection, effective-period and applicability posture, and source-supplied loss-threshold
+  metrics. Added direct helper coverage for projected facts and metrics using the source context
+  contract shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability refactoring and repo-local quality evidence.

@@ -418,43 +418,57 @@ def _regime_stress_source_analytics(
             "Scenario/regime evidence is attached from source-owned "
             "RegimeScenarioPackEvaluation:v1."
         ),
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": "RegimeScenarioPackEvaluation",
-            "source_product_version": context.source_product_version,
-            "scenario_pack_id": context.scenario_pack_id,
-            "cio_approval_status": context.cio_approval_status,
-            "cio_approval_ref": context.cio_approval_ref,
-            "approved_by": context.approved_by,
-            "approved_at": context.approved_at,
-            "effective_from": context.effective_from.isoformat()
-            if context.effective_from is not None
-            else None,
-            "effective_to": context.effective_to.isoformat()
-            if context.effective_to is not None
-            else None,
-            "effective_period_status": context.effective_period_status,
-            "applicability_status": context.applicability_status,
-            "applicability_scope": context.applicability_scope,
-            "portfolio_applicability_ref": context.portfolio_applicability_ref,
-            "methodology_ref": context.methodology_ref,
-            "applicable_portfolio_ids": context.applicable_portfolio_ids,
-            "applicable_mandate_ids": context.applicable_mandate_ids,
-            "approval_evidence_projected": context.cio_approval_ref is not None,
-            "effective_period_projected": context.effective_from is not None
-            or context.effective_to is not None,
-            "applicability_evidence_projected": _regime_applicability_projected(context),
-            "scenario_evidence_posture": evidence_posture["facts"],
-        },
-        metrics={
-            "worst_case_loss_pct": context.worst_case_loss_pct,
-            "maximum_allowed_loss_pct": context.maximum_allowed_loss_pct,
-        },
+        facts=_regime_stress_source_facts(context=context, evidence_posture=evidence_posture),
+        metrics=_regime_stress_source_metrics(context),
         reason_codes=sorted(reason_codes),
         source_ref=source_ref,
         source_hash_key="regime_stress_context",
         content_hash=content_hash,
     )
+
+
+def _regime_stress_source_facts(
+    *,
+    context: AuthoritativeRegimeStressContext,
+    evidence_posture: dict[str, Any],
+) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": "RegimeScenarioPackEvaluation",
+        "source_product_version": context.source_product_version,
+        "scenario_pack_id": context.scenario_pack_id,
+        "cio_approval_status": context.cio_approval_status,
+        "cio_approval_ref": context.cio_approval_ref,
+        "approved_by": context.approved_by,
+        "approved_at": context.approved_at,
+        "effective_from": context.effective_from.isoformat()
+        if context.effective_from is not None
+        else None,
+        "effective_to": context.effective_to.isoformat()
+        if context.effective_to is not None
+        else None,
+        "effective_period_status": context.effective_period_status,
+        "applicability_status": context.applicability_status,
+        "applicability_scope": context.applicability_scope,
+        "portfolio_applicability_ref": context.portfolio_applicability_ref,
+        "methodology_ref": context.methodology_ref,
+        "applicable_portfolio_ids": context.applicable_portfolio_ids,
+        "applicable_mandate_ids": context.applicable_mandate_ids,
+        "approval_evidence_projected": context.cio_approval_ref is not None,
+        "effective_period_projected": context.effective_from is not None
+        or context.effective_to is not None,
+        "applicability_evidence_projected": _regime_applicability_projected(context),
+        "scenario_evidence_posture": evidence_posture["facts"],
+    }
+
+
+def _regime_stress_source_metrics(
+    context: AuthoritativeRegimeStressContext,
+) -> dict[str, Any]:
+    return {
+        "worst_case_loss_pct": context.worst_case_loss_pct,
+        "maximum_allowed_loss_pct": context.maximum_allowed_loss_pct,
+    }
 
 
 def _regime_stress_evidence_posture(
