@@ -21327,8 +21327,9 @@ and improves internal transaction-cost source posture maintainability only.
   an ad hoc command instead of a repo-native active CI gate.
 - Action: added a service-boundary gate script backed by the same leakage patterns used by the
   engineering health report, wired it into `make check`, `make ci`, local CI parity, Feature Lane,
-  and PR Merge Gate, and captured the signal in Quality Baseline artifacts. Added direct tests for
-  blocked router/framework leakage and clean service modules.
+  and PR Merge Gate, and captured the signal in Quality Baseline artifacts. Added `pipefail` to
+  Quality Baseline report-only pipelines so warning signals remain visible when commands are piped
+  through `tee`. Added direct tests for blocked router/framework leakage and clean service modules.
 - Status: hardened.
 - Evidence:
   `python -m ruff check scripts/service_boundary_gate.py tests/unit/test_service_boundary_gate.py scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
