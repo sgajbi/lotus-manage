@@ -55,7 +55,7 @@ def _portfolio_universe_candidate_ref(
         source_version=str(candidate.binding_version),
         supportability_state="READY",
         selection_basis=selection_basis,
-    ).model_dump(mode="json")
+    ).model_dump(mode="json", exclude_none=True)
 
 
 def _portfolio_universe_candidate_page_ref(
@@ -68,7 +68,7 @@ def _portfolio_universe_candidate_page_ref(
         source_version=page.product_version,
         supportability_state=page.supportability.state,
         content_hash=page.source_batch_fingerprint,
-    ).model_dump(mode="json")
+    ).model_dump(mode="json", exclude_none=True)
 
 
 def resolve_core_dpm_portfolio_universe_candidates(
