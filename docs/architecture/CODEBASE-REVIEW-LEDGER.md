@@ -22974,3 +22974,36 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM operating-quality API model
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-917: Realized outcome source state predicates
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/realized_sources.py` and
+  `tests/unit/core/test_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, outcome-review source lineage, and testing.
+- Finding: `_state_from_source` combined not-supported, blocked, degraded, and ready source-owner
+  posture classification in one conditional sequence, while the adjacent realized-source
+  `_roll_up_state` combined empty-set handling, all-not-supported handling, source-state
+  precedence, and mixed not-supported downgrade behavior. The behavior was correct, but realized
+  source supportability should make each source-owner posture rule explicit.
+- Action: extracted `_source_reports_not_supported`, `_source_reports_blocked`,
+  `_source_reports_degraded`, `_all_realized_states_not_supported`,
+  `_first_realized_state_by_precedence`, and `_realized_rollup_state_for_precedent`, then kept the
+  public assembly flow unchanged. Added direct helper tests for source posture classification,
+  ready fallback, state precedence, all-not-supported handling, and mixed not-supported downgrade
+  to degraded.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/realized_sources.py`,
+  `python -m pytest tests/unit/core/test_realized_outcome_sources.py -q`,
+  and `python -m radon cc src/core/outcomes/realized_sources.py -s`; the focused realized outcome
+  source suite reported 16 passed, the report-only complexity baseline had listed
+  `_state_from_source` at B(7), and current radon reports `_state_from_source` at A(4) and
+  `_roll_up_state` at A(4).
+- Residual risk: this slice improves realized outcome source supportability maintainability only.
+  It does not change source-lineage semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal realized outcome helper
+  maintainability hardening with no operator-facing contract change.

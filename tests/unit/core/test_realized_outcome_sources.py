@@ -244,6 +244,53 @@ def test_realized_source_missing_ready_value_helper_is_state_specific() -> None:
     )
 
 
+def test_realized_source_state_helpers_classify_source_posture() -> None:
+    not_supported = _source(
+        dimension="RISK_REDUCTION",
+        source_state="READY",
+        quality="NOT_SUPPORTED",
+    )
+    blocked = _source(
+        dimension="DRIFT_REDUCTION",
+        source_state="READY",
+        quality="MALFORMED",
+    )
+    degraded = _source(
+        dimension="CASH_RESIDUAL",
+        source_state="READY",
+        quality="PARTIAL",
+    )
+    ready = _source(dimension="COST")
+
+    assert realized_source_helpers._source_reports_not_supported(not_supported)
+    assert realized_source_helpers._source_reports_blocked(blocked)
+    assert realized_source_helpers._source_reports_degraded(degraded)
+    assert realized_source_helpers._state_from_source(not_supported) == "NOT_SUPPORTED"
+    assert realized_source_helpers._state_from_source(blocked) == "BLOCKED"
+    assert realized_source_helpers._state_from_source(degraded) == "DEGRADED"
+    assert realized_source_helpers._state_from_source(ready) == "READY"
+
+
+def test_realized_source_rollup_helpers_preserve_source_state_precedence() -> None:
+    states = ["READY", "NOT_SUPPORTED", "DEGRADED", "BLOCKED"]
+
+    assert realized_source_helpers._all_realized_states_not_supported(["NOT_SUPPORTED"])
+    assert (
+        realized_source_helpers._all_realized_states_not_supported(["NOT_SUPPORTED", "READY"])
+        is False
+    )
+    assert realized_source_helpers._first_realized_state_by_precedence(states) == "BLOCKED"
+    assert (
+        realized_source_helpers._first_realized_state_by_precedence(["READY", "NOT_SUPPORTED"])
+        == "NOT_SUPPORTED"
+    )
+    assert realized_source_helpers._first_realized_state_by_precedence(["READY"]) is None
+    assert realized_source_helpers._realized_rollup_state_for_precedent("NOT_SUPPORTED") == (
+        "DEGRADED"
+    )
+    assert realized_source_helpers._realized_rollup_state_for_precedent("BLOCKED") == "BLOCKED"
+
+
 def test_source_owner_not_supported_degrades_mixed_snapshot_without_value() -> None:
     snapshot = assemble_realized_outcome_snapshot(
         portfolio_id="PB_SG_GLOBAL_BAL_001",
