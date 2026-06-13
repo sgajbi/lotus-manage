@@ -22846,10 +22846,42 @@ and improves internal transaction-cost source posture maintainability only.
   `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
   `python -m pytest tests/unit/dpm/construction/test_supportability_application.py -q`,
   and `python -m radon cc src/api/services/construction_supportability_application.py -s`; the
-  focused construction supportability application suite reported 16 passed and
-  `authority_context_status` reduced from B(7) to A(2) under radon.
+  focused construction supportability application suite reported 16 passed, the report-only
+  complexity baseline had listed `authority_context_status` at B(7), and current radon reports it
+  at A(2).
 - Residual risk: this slice improves construction supportability authority-context
   maintainability only. It does not change construction semantics, certify global bank-buyable
   readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal construction supportability
   helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-913: OpenAPI documentable property extraction
+
+- Date: 2026-06-14
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, OpenAPI governance, and testing.
+- Finding: `_model_documentable_properties` combined model-name validation, model-schema shape
+  checks, properties collection validation, and property-fragment filtering in one helper. The
+  generated OpenAPI behavior was correct, but schema documentation enrichment should keep model
+  and property filtering rules independently reviewable.
+- Action: extracted `_model_property_schemas` and `_documentable_property_schema` so model-level
+  eligibility and property-fragment eligibility are separate, directly testable rules before
+  documentation enrichment applies generated descriptions and examples. Added direct tests for
+  valid fragments, non-string property names, non-dict schemas, invalid models, and invalid
+  properties collections.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  and `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment
+  helper suite reported 35 passed, the report-only complexity baseline had listed
+  `_model_documentable_properties` at B(7), and current radon reports it at A(3) with the
+  extracted `_model_property_schemas` helper at A(5).
+- Residual risk: this slice improves OpenAPI schema documentation helper maintainability only. It
+  does not change OpenAPI output semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment helper
+  maintainability hardening with no operator-facing contract change.

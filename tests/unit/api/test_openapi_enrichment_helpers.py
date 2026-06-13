@@ -2,6 +2,7 @@ from src.api.openapi_enrichment import (
     _composite_example_from_schema,
     _collection_example_from_schema,
     _description_context,
+    _documentable_property_schema,
     _enum_example,
     _example_from_schema,
     _ensure_metrics_path_examples,
@@ -17,6 +18,7 @@ from src.api.openapi_enrichment import (
     _is_error_status_code,
     _is_http_operation_method,
     _model_documentable_properties,
+    _model_property_schemas,
     _number_example_for_key,
     _operation_has_error_response,
     _operation_tag_for_path,
@@ -643,6 +645,35 @@ def test_openapi_enrichment_schema_documentable_properties_filters_fragments() -
         list(_model_documentable_properties(model_name="Payload", model_schema={"properties": []}))
         == []
     )
+
+
+def test_openapi_enrichment_model_property_schemas_filters_property_fragments() -> None:
+    custom_property = {"type": "string"}
+
+    assert list(
+        _model_property_schemas(
+            {
+                "properties": {
+                    "customId": custom_property,
+                    42: {"type": "string"},
+                    "bad": [],
+                }
+            }
+        )
+    ) == [("customId", custom_property)]
+    assert list(_model_property_schemas([])) == []
+    assert list(_model_property_schemas({"properties": []})) == []
+
+
+def test_openapi_enrichment_documentable_property_schema_filters_invalid_fragments() -> None:
+    custom_property = {"type": "string"}
+
+    assert _documentable_property_schema("customId", custom_property) == (
+        "customId",
+        custom_property,
+    )
+    assert _documentable_property_schema(42, custom_property) is None
+    assert _documentable_property_schema("customId", []) is None
 
 
 def test_openapi_enrichment_property_documentation_preserves_existing_values() -> None:
