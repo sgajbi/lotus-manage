@@ -525,18 +525,15 @@ def generate_targets_solver(
     solved, latest_status = _solve_with_fallbacks(solver_problem.problem, cp)
 
     if not solved:
-        reason = _solver_failure_reason(latest_status)
-        diagnostics.warnings.append(reason)
-        if reason.startswith("INFEASIBLE_"):
-            diagnostics.warnings.extend(
-                _collect_infeasibility_hints(
-                    tradeable_ids=tradeable_ids,
-                    locked_weight=locked_weight,
-                    options=options,
-                    eligible_targets=eligible_targets,
-                    shelf=shelf,
-                )
-            )
+        _record_solver_failure(
+            latest_status=latest_status,
+            tradeable_ids=tradeable_ids,
+            locked_weight=locked_weight,
+            options=options,
+            eligible_targets=eligible_targets,
+            shelf=shelf,
+            diagnostics=diagnostics,
+        )
         return [], "BLOCKED"
 
     if not _apply_solver_values(
@@ -547,3 +544,27 @@ def generate_targets_solver(
     ):
         return [], "BLOCKED"
     return build_target_trace(model, eligible_targets, buy_list, total_val, base_ccy), status
+
+
+def _record_solver_failure(
+    *,
+    latest_status: str | None,
+    tradeable_ids: list[str],
+    locked_weight: Decimal,
+    options: EngineOptions,
+    eligible_targets: dict[str, Decimal],
+    shelf: list[ShelfEntry],
+    diagnostics: DiagnosticsData,
+) -> None:
+    reason = _solver_failure_reason(latest_status)
+    diagnostics.warnings.append(reason)
+    if reason.startswith("INFEASIBLE_"):
+        diagnostics.warnings.extend(
+            _collect_infeasibility_hints(
+                tradeable_ids=tradeable_ids,
+                locked_weight=locked_weight,
+                options=options,
+                eligible_targets=eligible_targets,
+                shelf=shelf,
+            )
+        )

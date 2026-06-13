@@ -23238,3 +23238,29 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal outcome comparison
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-926: Solver target failure diagnostics helper
+
+- Date: 2026-06-14
+- Scope: `src/core/target_generation.py` and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Bank-buyable control area: architecture, solver target-generation supportability, and testing.
+- Finding: `generate_targets_solver` still owned solver orchestration and infeasible diagnostic
+  enrichment in the same control path. The behavior was covered, but solver failure recording is a
+  distinct supportability concern and should be directly auditable.
+- Action: extracted `_record_solver_failure` to append solver failure reasons and infeasibility
+  hints, and added direct tests for infeasible warning order while preserving existing solver
+  fallback and target-generation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_solver_fallbacks.py -q`, and
+  `python -m radon cc src/core/target_generation.py -s`; the focused solver fallback suite
+  reported 16 passed, and radon reports `generate_targets_solver` at A(5) after this extraction.
+- Residual risk: this slice improves solver target-generation maintainability only. It does not
+  change solver semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal solver target-generation
+  maintainability hardening with no operator-facing contract change.
