@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T01:11:38+00:00`
+- Generated at: `2026-06-13T01:15:01+00:00`
 
-- Current ref: `5e52701a`
+- Current ref: `b3cb44ec`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
-| 2 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
-| 3 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
-| 4 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
-| 5 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
-| 6 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
-| 7 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
-| 8 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
-| 9 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
-| 10 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
+| 1 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
+| 2 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
+| 3 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
+| 4 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
+| 5 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
+| 6 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
+| 7 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
+| 8 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
+| 9 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
+| 10 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
 
 ### Most Complex Current Test Functions
 
