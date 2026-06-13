@@ -401,6 +401,67 @@ def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai
     assert refs[3].source_version == "duplicate"
 
 
+def test_pm_quality_summary_invocation_validation_helpers_classify_guardrails() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+    assert not summary_history._summary_review_action_target_mismatched(
+        score_run=score_run,
+        review_action=review_action,
+    )
+    assert summary_history._summary_review_action_target_mismatched(
+        score_run=score_run,
+        review_action=review_action.model_copy(update={"target_id": "other"}),
+    )
+    assert summary_history._summary_content_hash_invalid(None) is False
+    assert summary_history._summary_content_hash_invalid("sha256:summary") is False
+    assert summary_history._summary_content_hash_invalid("not-a-sha256-hash") is True
+
+
+def test_pm_quality_summary_invocation_validation_checks_preserve_error_order() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    ).model_copy(
+        update={
+            "target_id": "other",
+            "target_content_hash": "sha256:other",
+        }
+    )
+
+    checks = summary_history._summary_invocation_validation_checks(
+        score_run=score_run,
+        review_action=review_action,
+        workflow_pack_name="unsupported.pack",
+        summary_content_hash="not-a-sha256-hash",
+    )
+
+    assert [error_code for failed, error_code in checks if failed] == [
+        "PM_QUALITY_SUMMARY_REVIEW_ACTION_TARGET_MISMATCH",
+        "PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH",
+        "PM_QUALITY_SUMMARY_WORKFLOW_PACK_UNSUPPORTED",
+        "PM_QUALITY_SUMMARY_CONTENT_HASH_INVALID",
+    ]
+
+
 def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs() -> None:
     review = _review().model_copy(
         update={

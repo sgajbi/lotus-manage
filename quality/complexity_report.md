@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T15:03:57+00:00`
+- Generated at: `2026-06-13T15:06:48+00:00`
 
-- Report source snapshot: `aea86c28+worktree`
+- Report source snapshot: `9ecaca1c+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
-| 2 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
-| 3 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
-| 4 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
-| 5 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
-| 6 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
-| 7 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
-| 8 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
-| 9 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
-| 10 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 1 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
+| 2 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 3 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
+| 4 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 5 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
+| 6 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
+| 7 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
+| 8 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
+| 9 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 10 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
 
 ### Most Complex Current Test Functions
 

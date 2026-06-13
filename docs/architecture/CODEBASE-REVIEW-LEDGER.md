@@ -22621,3 +22621,32 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal construction supportability
   helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-905: PM-quality summary invocation validation guards
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/summary_history.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, PM operating-quality governance, and testing.
+- Finding: `_validate_summary_invocation_inputs` encoded summary invocation target validation,
+  content-hash binding, workflow-pack allowlisting, and generated-summary hash validation as a
+  single conditional sequence. The behavior was correct, but the guarded append-only summary
+  history contract was harder to review than PM-quality governance evidence should be.
+- Action: extracted `_summary_invocation_validation_checks`,
+  `_summary_review_action_target_mismatched`, and `_summary_content_hash_invalid` so the guard
+  predicates and first-error ordering are independently testable. Added direct tests for valid and
+  invalid target linkage, content-hash syntax, and multi-failure error ordering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/summary_history.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  and `python -m radon cc src/core/pm_quality/summary_history.py -s`; the focused PM operating
+  quality suite reported 29 passed and `_validate_summary_invocation_inputs` reduced from B(7) to
+  A(4) under radon.
+- Residual risk: this slice improves PM-quality summary invocation validation maintainability
+  only. It does not change PM-quality governance semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality helper
+  maintainability hardening with no operator-facing contract change.
