@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T16:22:48+00:00`
+- Generated at: `2026-06-13T16:25:34+00:00`
 
-- Report source snapshot: `b6d2921d`
+- Report source snapshot: `ef1ce9ec`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
-| 2 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
-| 3 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 4 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 5 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 6 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 7 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 8 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 9 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
-| 10 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
+| 1 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 2 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
+| 3 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 4 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 5 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 6 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 7 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 8 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
+| 9 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
+| 10 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
 
 ### Most Complex Current Test Functions
 
