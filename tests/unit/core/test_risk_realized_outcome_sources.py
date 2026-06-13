@@ -18,11 +18,14 @@ from src.core.outcomes.risk_sources import (
     _concentration_source_posture,
     _drawdown_measure_unavailable,
     _drawdown_source_posture,
+    _ensure_ready_historical_attribution_value,
     _ensure_ready_rolling_metric_value,
     _historical_attribution_contributor,
+    _historical_attribution_reason_codes,
     _historical_attribution_set,
     _historical_attribution_source_id,
     _historical_attribution_source_posture,
+    _historical_attribution_source_snapshot,
     _historical_attribution_value,
     _metric_unit,
     _primary_reason,
@@ -1561,6 +1564,87 @@ def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
         measure="contributor_component_contribution",
         contributor_group_key="TECH",
     ) == (Decimal("0.07"), "RISK_ATTRIBUTION_CONTRIBUTOR_TECH")
+    _ensure_ready_historical_attribution_value(
+        source_state="DEGRADED",
+        value=None,
+        measure="total_value",
+        period="YTD",
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+    )
+    with pytest.raises(RiskOutcomeSourceError, match="missing a numeric total_value"):
+        _ensure_ready_historical_attribution_value(
+            source_state="READY",
+            value=None,
+            measure="total_value",
+            period="YTD",
+            attribution_type="ACTIVE_RISK",
+            metric="TRACKING_ERROR",
+            grouping_dimension="SECTOR",
+        )
+    metadata = {
+        "stateful_active_risk_supported_grouping_dimensions": ["SECTOR", "ISSUER"],
+        "stateful_active_risk_gated_grouping_dimensions": ["ISSUER"],
+        "stateful_active_risk_gate_reason": "issuer unavailable",
+    }
+    assert _historical_attribution_reason_codes(
+        source_state="DEGRADED",
+        supportability_state="stale",
+        supportability_reason="calculation_stale",
+        period="YTD",
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+        measure="contributor_percent_contribution",
+        input_mode="stateful",
+        metadata=metadata,
+        measure_reason="RISK_ATTRIBUTION_CONTRIBUTOR_TECH",
+        quality_flags=["ESTIMATED"],
+        period_error="period missing",
+    ) == [
+        "RISK_SOURCE_DEGRADED",
+        "RISK_SUPPORTABILITY_STALE",
+        "RISK_REASON_CALCULATION_STALE",
+        "RISK_PERIOD_YTD",
+        "RISK_ATTRIBUTION_TYPE_ACTIVE_RISK",
+        "RISK_ATTRIBUTION_METRIC_TRACKING_ERROR",
+        "RISK_ATTRIBUTION_GROUPING_SECTOR",
+        "RISK_ATTRIBUTION_MEASURE_CONTRIBUTOR_PERCENT_CONTRIBUTION",
+        "RISK_ATTRIBUTION_INPUT_MODE_STATEFUL",
+        "RISK_ATTRIBUTION_STATEFUL_ACTIVE_RISK_SUPPORT_SUPPORTED_2_GATED_1_REASON_ISSUER_UNAVAILABLE",
+        "RISK_ATTRIBUTION_CONTRIBUTOR_TECH",
+        "RISK_ATTRIBUTION_QUALITY_FLAGS_1",
+        "RISK_ATTRIBUTION_PERIOD_ERROR_PERIOD_MISSING",
+    ]
+    snapshot = _historical_attribution_source_snapshot(
+        request_fingerprint="sha256:hist-attr",
+        period="YTD",
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+        measure="total_value",
+        contributor_group_key=None,
+        value=Decimal("0.15"),
+        source_state="READY",
+        quality="COMPLETE",
+        observed_at="2026-05-06",
+        as_of_date="2026-05-07",
+        supportability_state="ready",
+        supportability_reason="calculation_complete",
+        input_mode="stateless",
+        metadata={},
+        measure_reason="RISK_ATTRIBUTION_SET_LEVEL",
+        quality_flags=[],
+        period_error=None,
+    )
+    assert snapshot.source_id == (
+        "sha256:hist-attr:YTD:historical-attribution:ACTIVE_RISK:TRACKING_ERROR:SECTOR:total_value"
+    )
+    assert snapshot.value == Decimal("0.15")
+    assert snapshot.observed_at == "2026-05-06"
+    assert snapshot.as_of_date == "2026-05-07"
+    assert "RISK_ATTRIBUTION_PERIOD_OK" in snapshot.reason_codes
 
 
 def test_historical_attribution_posture_and_decimal_errors_are_fail_closed() -> None:

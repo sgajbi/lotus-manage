@@ -351,49 +351,38 @@ def realized_historical_attribution_source_from_attribution_response(
         period_error=period_error,
         quality_flags=quality_flags,
     )
-    if source_state == "READY" and value is None:
-        raise RiskOutcomeSourceError(
-            "lotus-risk historical attribution response is missing a numeric "
-            f"{measure} value for {period} {attribution_type} {metric} {grouping_dimension}"
-        )
+    _ensure_ready_historical_attribution_value(
+        source_state=source_state,
+        value=value,
+        measure=measure,
+        period=period,
+        attribution_type=attribution_type,
+        metric=metric,
+        grouping_dimension=grouping_dimension,
+    )
 
     input_mode = _read_text(response.get("input_mode")) or "unknown"
 
-    return DpmRealizedSourceSnapshot(
-        dimension="RISK_REDUCTION",
-        source_system="lotus-risk",
-        source_type="HISTORICAL_RISK_ATTRIBUTION",
-        source_id=_historical_attribution_source_id(
-            request_fingerprint=request_fingerprint,
-            period=period,
-            attribution_type=attribution_type,
-            metric=metric,
-            grouping_dimension=grouping_dimension,
-            measure=measure,
-            contributor_group_key=contributor_group_key,
-        ),
-        value=value if source_state != "NOT_SUPPORTED" else None,
-        unit="ratio",
+    return _historical_attribution_source_snapshot(
+        request_fingerprint=request_fingerprint,
+        period=period,
+        attribution_type=attribution_type,
+        metric=metric,
+        grouping_dimension=grouping_dimension,
+        measure=measure,
+        contributor_group_key=contributor_group_key,
+        value=value,
         source_state=source_state,
         quality=quality,
         observed_at=_read_text(period_result.get("end_date")),
         as_of_date=_read_text(scope.get("as_of_date")),
-        content_hash=request_fingerprint,
-        reason_codes=[
-            _primary_reason(source_state),
-            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
-            f"RISK_REASON_{supportability_reason.upper()}",
-            f"RISK_PERIOD_{period}",
-            f"RISK_ATTRIBUTION_TYPE_{attribution_type}",
-            f"RISK_ATTRIBUTION_METRIC_{metric}",
-            f"RISK_ATTRIBUTION_GROUPING_{grouping_dimension}",
-            f"RISK_ATTRIBUTION_MEASURE_{measure.upper()}",
-            f"RISK_ATTRIBUTION_INPUT_MODE_{input_mode.upper()}",
-            _historical_attribution_support_reason(metadata),
-            measure_reason,
-            _quality_flags_reason(quality_flags),
-            _period_error_reason(period_error),
-        ],
+        supportability_state=supportability_state,
+        supportability_reason=supportability_reason,
+        input_mode=input_mode,
+        metadata=metadata,
+        measure_reason=measure_reason,
+        quality_flags=quality_flags,
+        period_error=period_error,
     )
 
 
@@ -680,6 +669,117 @@ def _historical_attribution_source_id(
     if contributor_group_key is not None:
         source_id_parts.append(contributor_group_key)
     return ":".join(source_id_parts)
+
+
+def _historical_attribution_source_snapshot(
+    *,
+    request_fingerprint: str,
+    period: str,
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+    measure: HistoricalAttributionOutcomeMeasure,
+    contributor_group_key: str | None,
+    value: Decimal | None,
+    source_state: _RiskSourceState,
+    quality: _RiskSourceQuality,
+    observed_at: str | None,
+    as_of_date: str | None,
+    supportability_state: str,
+    supportability_reason: str,
+    input_mode: str,
+    metadata: dict[str, Any],
+    measure_reason: str,
+    quality_flags: list[Any],
+    period_error: str | None,
+) -> DpmRealizedSourceSnapshot:
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="HISTORICAL_RISK_ATTRIBUTION",
+        source_id=_historical_attribution_source_id(
+            request_fingerprint=request_fingerprint,
+            period=period,
+            attribution_type=attribution_type,
+            metric=metric,
+            grouping_dimension=grouping_dimension,
+            measure=measure,
+            contributor_group_key=contributor_group_key,
+        ),
+        value=value if source_state != "NOT_SUPPORTED" else None,
+        unit="ratio",
+        source_state=source_state,
+        quality=quality,
+        observed_at=observed_at,
+        as_of_date=as_of_date,
+        content_hash=request_fingerprint,
+        reason_codes=_historical_attribution_reason_codes(
+            source_state=source_state,
+            supportability_state=supportability_state,
+            supportability_reason=supportability_reason,
+            period=period,
+            attribution_type=attribution_type,
+            metric=metric,
+            grouping_dimension=grouping_dimension,
+            measure=measure,
+            input_mode=input_mode,
+            metadata=metadata,
+            measure_reason=measure_reason,
+            quality_flags=quality_flags,
+            period_error=period_error,
+        ),
+    )
+
+
+def _historical_attribution_reason_codes(
+    *,
+    source_state: _RiskSourceState,
+    supportability_state: str,
+    supportability_reason: str,
+    period: str,
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+    measure: HistoricalAttributionOutcomeMeasure,
+    input_mode: str,
+    metadata: dict[str, Any],
+    measure_reason: str,
+    quality_flags: list[Any],
+    period_error: str | None,
+) -> list[str]:
+    return [
+        _primary_reason(source_state),
+        f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+        f"RISK_REASON_{supportability_reason.upper()}",
+        f"RISK_PERIOD_{period}",
+        f"RISK_ATTRIBUTION_TYPE_{attribution_type}",
+        f"RISK_ATTRIBUTION_METRIC_{metric}",
+        f"RISK_ATTRIBUTION_GROUPING_{grouping_dimension}",
+        f"RISK_ATTRIBUTION_MEASURE_{measure.upper()}",
+        f"RISK_ATTRIBUTION_INPUT_MODE_{input_mode.upper()}",
+        _historical_attribution_support_reason(metadata),
+        measure_reason,
+        _quality_flags_reason(quality_flags),
+        _period_error_reason(period_error),
+    ]
+
+
+def _ensure_ready_historical_attribution_value(
+    *,
+    source_state: _RiskSourceState,
+    value: Decimal | None,
+    measure: HistoricalAttributionOutcomeMeasure,
+    period: str,
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+) -> None:
+    if source_state != "READY" or value is not None:
+        return
+    raise RiskOutcomeSourceError(
+        "lotus-risk historical attribution response is missing a numeric "
+        f"{measure} value for {period} {attribution_type} {metric} {grouping_dimension}"
+    )
 
 
 def _rolling_window_matches_request(
