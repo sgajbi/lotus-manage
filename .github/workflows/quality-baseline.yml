@@ -59,6 +59,10 @@ jobs:
         run: |
           lint-imports --config .importlinter 2>&1 | tee output/quality-baseline/import-linter.txt
 
+      - name: Service Boundary Gate
+        continue-on-error: true
+        run: python scripts/service_boundary_gate.py 2>&1 | tee output/quality-baseline/service-boundary.txt
+
       - name: Complexity Baseline
         continue-on-error: true
         run: |
