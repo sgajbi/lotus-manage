@@ -10,6 +10,7 @@ from src.core.models import (
 )
 from src.core.target_generation import (
     _apply_solver_values,
+    _build_solver_problem,
     _build_solver_attempts,
     _collect_infeasibility_hints,
     _infeasibility_capacity_hints,
@@ -33,6 +34,59 @@ class _NpStub:
     @staticmethod
     def array(values):
         return list(values)
+
+
+class _ExprStub:
+    def __add__(self, _other):
+        return self
+
+    def __radd__(self, _other):
+        return self
+
+    def __sub__(self, _other):
+        return self
+
+    def __ge__(self, _other):
+        return self
+
+    def __le__(self, _other):
+        return self
+
+
+class _VariableStub(_ExprStub):
+    value = [0.5]
+
+    def __init__(self, size: int) -> None:
+        self.size = size
+
+    def __getitem__(self, _index):
+        return _ExprStub()
+
+
+class _ProblemRecorder:
+    def __init__(self, objective, constraints) -> None:
+        self.objective = objective
+        self.constraints = constraints
+
+
+class _CpProblemStub:
+    @staticmethod
+    def Variable(size: int) -> _VariableStub:
+        return _VariableStub(size)
+
+    @staticmethod
+    def Minimize(expr):
+        return ("minimize", expr)
+
+    @staticmethod
+    def sum_squares(_expr):
+        return _ExprStub()
+
+    @staticmethod
+    def sum(_expr):
+        return _ExprStub()
+
+    Problem = _ProblemRecorder
 
 
 def test_build_solver_attempts_order_and_profiles() -> None:
@@ -115,6 +169,38 @@ def test_solver_model_weight_array_projects_tradeable_model_weights() -> None:
     )
 
     assert weights == [0.25, 0.0]
+
+
+def test_build_solver_problem_collects_cash_position_and_group_constraints() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+
+    problem_spec = _build_solver_problem(
+        cp=_CpProblemStub,
+        np=_NpStub,
+        model=ModelPortfolio(targets=[ModelTarget(instrument_id="BUY_1", weight=Decimal("0.25"))]),
+        tradeable_ids=["BUY_1"],
+        locked_weight=Decimal("0.20"),
+        eligible_targets={"BUY_1": Decimal("0.25"), "LOCKED": Decimal("0.20")},
+        shelf=[
+            ShelfEntry(
+                instrument_id="BUY_1",
+                status="APPROVED",
+                attributes={"sector": "TECH"},
+            )
+        ],
+        options=EngineOptions(
+            cash_band_min_weight=Decimal("0.05"),
+            cash_band_max_weight=Decimal("0.15"),
+            single_position_max_weight=Decimal("0.60"),
+            group_constraints={"sector:TECH": GroupConstraint(max_weight=Decimal("0.60"))},
+        ),
+        diagnostics=diagnostics,
+    )
+
+    assert isinstance(problem_spec.problem, _ProblemRecorder)
+    assert problem_spec.weights.size == 1
+    assert len(problem_spec.problem.constraints) == 5
+    assert diagnostics.warnings == []
 
 
 def test_apply_solver_values_quantizes_and_fails_closed_without_values() -> None:

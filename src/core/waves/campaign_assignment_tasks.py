@@ -202,34 +202,27 @@ def transition_bulk_review_campaign_definition_assignment_task(
         correlation_id, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_CORRELATION_REQUIRED"
     )
 
-    task_index = next(
-        (
-            index
-            for index, candidate in enumerate(definition.assignment_tasks)
-            if candidate.task_ref == normalized_ref
-        ),
-        None,
-    )
+    task_index = _assignment_task_index(definition=definition, task_ref=normalized_ref)
     if task_index is None:
         raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND")
     task = definition.assignment_tasks[task_index]
-    existing_by_ref = {transition.transition_ref: transition for transition in task.transitions}
-    existing = existing_by_ref.get(normalized_transition_ref)
-    if existing is not None:
-        if _transition_matches_request(
-            transition=existing,
-            transition_type=transition_type,
-            transitioned_by=normalized_transitioned_by,
-            transition_reason=normalized_reason,
-            correlation_id=normalized_correlation,
-            assigned_actor_ids=assigned_actor_ids,
-            escalation_tier=escalation_tier,
-            sla_posture=sla_posture,
-            due_at=due_at,
-            source_refs=source_refs or [],
-        ):
-            return definition
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT")
+    replayed_definition = _replayed_transition_definition(
+        definition=definition,
+        task=task,
+        transition_ref=normalized_transition_ref,
+        transition_type=transition_type,
+        transitioned_by=normalized_transitioned_by,
+        transition_reason=normalized_reason,
+        correlation_id=normalized_correlation,
+        assigned_actor_ids=assigned_actor_ids,
+        escalation_tier=escalation_tier,
+        sla_posture=sla_posture,
+        due_at=due_at,
+        source_refs=source_refs or [],
+    )
+    if replayed_definition is not None:
+        return replayed_definition
+
     replacement = _transitioned_task(
         task=task,
         transition_type=transition_type,
@@ -384,6 +377,71 @@ def _transitioned_task(
         }
     )
     return updated.model_copy(update={"content_hash": _task_hash(updated)})
+
+
+def _assignment_task_index(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task_ref: str,
+) -> int | None:
+    return next(
+        (
+            index
+            for index, candidate in enumerate(definition.assignment_tasks)
+            if candidate.task_ref == task_ref
+        ),
+        None,
+    )
+
+
+def _assignment_task_transition(
+    *,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    transition_ref: str,
+) -> DpmBulkReviewCampaignDefinitionAssignmentTaskTransition | None:
+    return next(
+        (
+            transition
+            for transition in task.transitions
+            if transition.transition_ref == transition_ref
+        ),
+        None,
+    )
+
+
+def _replayed_transition_definition(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+    transition_ref: str,
+    transition_type: CampaignAssignmentTaskTransitionType,
+    transitioned_by: str,
+    transition_reason: str,
+    correlation_id: str,
+    assigned_actor_ids: list[str] | None,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+    sla_posture: CampaignAssignmentSlaPosture | None,
+    due_at: datetime | None,
+    source_refs: list[DpmWaveSourceRef],
+) -> DpmBulkReviewCampaignDefinition | None:
+    existing = _assignment_task_transition(task=task, transition_ref=transition_ref)
+    if existing is None:
+        return None
+
+    if _transition_matches_request(
+        transition=existing,
+        transition_type=transition_type,
+        transitioned_by=transitioned_by,
+        transition_reason=transition_reason,
+        correlation_id=correlation_id,
+        assigned_actor_ids=assigned_actor_ids,
+        escalation_tier=escalation_tier,
+        sla_posture=sla_posture,
+        due_at=due_at,
+        source_refs=source_refs,
+    ):
+        return definition
+    raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT")
 
 
 def _validate_transition_allowed(
