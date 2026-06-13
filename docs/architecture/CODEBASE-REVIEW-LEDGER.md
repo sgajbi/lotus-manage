@@ -22113,3 +22113,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API router maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-888: PM operating-quality score-run builder helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/pm_operating_quality_score_run_builder.py` and
+  `tests/unit/api/test_pm_operating_quality_score_run_builder.py`.
+- Bank-buyable control area: architecture, API quality, and testing.
+- Finding: `build_score_run` combined policy resolution, optional source-owned PM-book scope
+  materialization, inline evidence assembly, outcome-review lookup, missing-review HTTP mapping,
+  and core score-run validation mapping in one router helper. The behavior was correct, but the
+  evidence assembly and outcome-review lookup rules were harder to test directly than the
+  PM-operating-quality supportability contract deserves.
+- Action: extracted `_ScoreRunEvidenceInputs`, `_score_run_evidence_inputs`, and
+  `_outcome_reviews_for_request` while preserving router-owned HTTP exception mapping and core
+  PM-quality scoring behavior. Added focused helper tests proving inline evidence is copied without
+  PM-book materialization and missing outcome-review ids map to the existing bounded `404` detail.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_score_run_builder.py tests/unit/api/test_pm_operating_quality_score_run_builder.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_score_run_builder.py tests/unit/api/test_pm_operating_quality_score_run_builder.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_score_run_builder.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_score_run_builder.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/routers/pm_operating_quality_score_run_builder.py -s`; the focused
+  builder suite reported 2 passed, and `build_score_run` reduced from B(7) to A(4).
+- Residual risk: this slice improves internal PM-quality score-run builder maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API router helper
+  maintainability hardening with no operator-facing contract change.
