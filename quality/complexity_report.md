@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T10:09:36+00:00`
+- Generated at: `2026-06-13T10:13:32+00:00`
 
-- Report source snapshot: `0fa63555+worktree`
+- Report source snapshot: `4c6cf8f2+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
-| 2 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
-| 3 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 4 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
-| 5 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
-| 6 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
-| 7 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 8 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 9 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
-| 10 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
+| 1 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
+| 2 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
+| 3 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
+| 4 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
+| 5 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
+| 6 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
+| 7 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
+| 8 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 9 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
+| 10 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
 
 ### Most Complex Current Test Functions
 
