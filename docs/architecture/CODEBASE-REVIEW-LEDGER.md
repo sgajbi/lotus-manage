@@ -21446,3 +21446,57 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal wave source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-865: Proof-pack run policy payload helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_run_policy_section_payload` mixed proof-pack drift-impact, tax-impact, and
+  rule-result payload construction in one policy dispatcher. The behavior was correct, but the
+  helper concentrated unrelated proof-pack policy facts and made source-evidence review harder than
+  necessary for run policy and governance sections.
+- Action: extracted drift-impact, tax-impact, and rule-result section payload builders behind the
+  existing dispatcher and added direct tests for selected-alternative drift metrics plus blocked
+  hard-failed rule posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 86 passed and `_run_policy_section_payload` is A(4).
+- Residual risk: this slice improves internal proof-pack policy payload maintainability only. It
+  does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-866: Proof-pack source-ref constructor helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_source_refs` still repeated construction of proof-pack lineage refs for manage-owned
+  run, construction, selected-alternative, mandate twin, and mandate-health artifacts. The
+  repetition made supportability-state mapping review harder and left no direct test for the
+  composed manage artifact source-ref list.
+- Action: extracted named source-ref constructors for each manage-owned artifact family and added
+  direct helper coverage for source-ref ordering, run supportability, degraded mandate-twin
+  posture, and mandate-health hash preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 87 passed and `_source_refs` reduced from B(7) to B(6).
+- Residual risk: this slice improves internal proof-pack lineage-ref maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability hardening with no operator-facing contract change.

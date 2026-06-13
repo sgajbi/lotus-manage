@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T05:40:22+00:00`
+- Generated at: `2026-06-13T06:03:45+00:00`
 
-- Current ref: `9f7dec6a`
+- Current ref: `b745e696`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
-| 2 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
-| 3 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
-| 4 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
-| 5 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
-| 6 | build_health_input_from_core_sources | src/core/mandates.py | 7 | 57 |
-| 7 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
-| 8 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
-| 9 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 10 | _run_policy_section_payload | src/core/proof_packs/builder.py | 7 | 49 |
+| 1 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
+| 2 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
+| 3 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
+| 4 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
+| 5 | build_health_input_from_core_sources | src/core/mandates.py | 7 | 57 |
+| 6 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
+| 7 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
+| 8 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
+| 9 | _transaction_cost_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 49 |
+| 10 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
 
 ### Most Complex Current Test Functions
 
