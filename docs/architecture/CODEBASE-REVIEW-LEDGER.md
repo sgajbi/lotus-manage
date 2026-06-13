@@ -21931,3 +21931,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API-service helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-882: Proof-pack pre-run section dispatch helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, operational evidence, and testing.
+- Finding: `_pre_run_section_payload` mixed fixed pre-run proof-pack section dispatch with
+  source-analytics and adapter dispatch. The behavior was correct, but the proof-pack evidence
+  builder made it harder to distinguish stable core sections from optional source-owned evidence
+  and adapter contracts.
+- Action: extracted `_pre_run_core_section_payload` for decision summary, mandate context, source
+  readiness, and selected-alternative section dispatch while keeping source analytics and adapter
+  dispatch in the existing specialized helpers. Added direct helper coverage proving core
+  decision-summary dispatch preserves actor, rationale, source-run status, metrics, and reason-code
+  behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 91 passed, `_pre_run_section_payload` reduced from B(7) to A(4), and the extracted
+  `_pre_run_core_section_payload` is A(5).
+- Residual risk: this slice improves internal proof-pack builder maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.

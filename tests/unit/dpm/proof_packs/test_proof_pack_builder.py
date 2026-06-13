@@ -284,6 +284,35 @@ def test_pre_run_adapter_payload_dispatches_configured_adapter_contract() -> Non
     assert reason_codes == []
 
 
+def test_pre_run_core_section_payload_dispatches_decision_summary() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_core_section_payload(
+        section_type="decision_summary",
+        result=result,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=None,
+        reason="Approve governed rebalance.",
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+        created_by="pm_001",
+    )
+
+    assert state == "READY"
+    assert summary == "Decision evidence assembled from manage run and actor rationale."
+    assert facts == {
+        "actor": "pm_001",
+        "reason": "Approve governed rebalance.",
+        "source_run_status": result.status,
+        "selected_alternative_id": None,
+    }
+    assert metrics == {}
+    assert reason_codes == []
+
+
 def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> None:
     result = _ready_rebalance_result()
 

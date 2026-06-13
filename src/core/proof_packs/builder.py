@@ -1142,7 +1142,7 @@ def _pre_run_adapter_payload(
     )
 
 
-def _pre_run_section_payload(
+def _pre_run_core_section_payload(
     *,
     section_type: ProofPackSectionType,
     result: RebalanceResult | None,
@@ -1155,7 +1155,6 @@ def _pre_run_section_payload(
     mandate_health: DpmMandateHealthSnapshot | None,
     mandate_evidence_gap_codes: list[str],
     created_by: str,
-    source_analytics: dict[str, ProofPackSourceAnalytics],
 ) -> _SectionPayload | None:
     if section_type == "decision_summary":
         return _decision_summary_section_payload(
@@ -1181,6 +1180,40 @@ def _pre_run_section_payload(
             selected_alternative=selected_alternative,
             selection=selection,
         )
+    return None
+
+
+def _pre_run_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    reason: str | None,
+    mandate_id: str | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    mandate_evidence_gap_codes: list[str],
+    created_by: str,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+) -> _SectionPayload | None:
+    core_payload = _pre_run_core_section_payload(
+        section_type=section_type,
+        result=result,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        reason=reason,
+        mandate_id=mandate_id,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+        created_by=created_by,
+    )
+    if core_payload is not None:
+        return core_payload
+
     source_analytics_payload = _pre_run_source_analytics_payload(
         section_type=section_type,
         source_analytics=source_analytics,
