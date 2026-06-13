@@ -21582,3 +21582,31 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal infrastructure migration
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-870: Run lineage filtering helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance_runs/service.py` and
+  `tests/unit/dpm/supportability/test_dpm_lineage_service.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `DpmRunSupportService.get_lineage_filtered` mixed repository read orchestration,
+  deterministic sorting, edge-type filtering, date-window filtering, cursor resolution, page
+  slicing, and next-cursor construction in one service method. The behavior was correct, but the
+  method concentrated lineage paging semantics in a harder-to-review supportability path.
+- Action: extracted lineage sorting, filter predicates, date-window filtering, and cursor paging
+  helpers while keeping repository access and response construction in the service method. Added
+  direct tests for deterministic edge ordering, edge-type/date-window filtering, cursor-after-edge
+  pagination, and missing-cursor empty-page behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `python -m ruff format --check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance_runs/service.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_lineage_service.py -q`,
+  and `python -m radon cc src/core/rebalance_runs/service.py -s`; the focused lineage suite
+  reported 3 passed and `DpmRunSupportService.get_lineage_filtered` reduced from C(15) to A(1).
+- Residual risk: this slice improves internal supportability lineage maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability-service
+  maintainability hardening with no operator-facing contract change.
