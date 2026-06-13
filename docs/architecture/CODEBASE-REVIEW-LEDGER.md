@@ -20987,3 +20987,88 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk-source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-849: Mandate monitoring exception filter predicate
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_monitoring_exception_matches` was the top current source-complexity hotspot after the
+  rolling risk window selection slice and repeated nullable equality logic for monitoring-run,
+  mandate, portfolio, and exception-state filters.
+- Action: extracted a generic nullable filter matcher and rewired the monitoring exception
+  predicate through that helper while preserving filtering, sorting, pagination, and repository
+  behavior. Added direct predicate coverage for wildcard filtering and mismatched monitoring-run
+  rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal mandate supportability repository
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-850: Rebalance final gate status resolution helper
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/engine.py`,
+  `tests/unit/dpm/engine/test_engine_wrapper_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `run_simulation` was the top current source-complexity hotspot after the mandate
+  monitoring exception filter slice and carried the final target-generation versus execution
+  status reconciliation inline inside the broader rebalance orchestration.
+- Action: extracted a named final gate status resolver that preserves the existing rule where a
+  target-generation `PENDING_REVIEW` posture promotes an otherwise `READY` execution result, while
+  preserving execution `BLOCKED` dominance. Added direct helper tests for review promotion,
+  blocked preservation, and ready passthrough.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python -m ruff format --check src/core/rebalance/engine.py tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/engine.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_wrapper_helpers.py tests/unit/dpm/engine/coverage/test_engine_status_blocking.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance orchestration
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-851: Historical risk attribution source identity helper
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `realized_historical_attribution_source_from_attribution_response` was the top current
+  source-complexity hotspot after the rebalance final gate status slice and assembled aggregate
+  versus contributor historical attribution source identity inline inside the source adapter.
+- Action: extracted a named historical attribution source-id helper while preserving source-owned
+  aggregate and contributor identity shape. Added direct helper coverage for both aggregate
+  attribution source IDs and contributor group source IDs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal risk-source adapter
+  maintainability refactoring and repo-local quality evidence.

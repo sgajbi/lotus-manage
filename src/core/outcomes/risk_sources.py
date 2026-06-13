@@ -355,23 +355,20 @@ def realized_historical_attribution_source_from_attribution_response(
         )
 
     input_mode = _read_text(response.get("input_mode")) or "unknown"
-    source_id_parts = [
-        request_fingerprint,
-        period,
-        "historical-attribution",
-        attribution_type,
-        metric,
-        grouping_dimension,
-        measure,
-    ]
-    if contributor_group_key is not None:
-        source_id_parts.append(contributor_group_key)
 
     return DpmRealizedSourceSnapshot(
         dimension="RISK_REDUCTION",
         source_system="lotus-risk",
         source_type="HISTORICAL_RISK_ATTRIBUTION",
-        source_id=":".join(source_id_parts),
+        source_id=_historical_attribution_source_id(
+            request_fingerprint=request_fingerprint,
+            period=period,
+            attribution_type=attribution_type,
+            metric=metric,
+            grouping_dimension=grouping_dimension,
+            measure=measure,
+            contributor_group_key=contributor_group_key,
+        ),
         value=value if source_state != "NOT_SUPPORTED" else None,
         unit="ratio",
         source_state=source_state,
@@ -594,6 +591,30 @@ def _rolling_window_result(
         ):
             return window_mapping, _resolved_window_length(resolved_window)
     return {}, _fallback_requested_window(window_length)
+
+
+def _historical_attribution_source_id(
+    *,
+    request_fingerprint: str,
+    period: str,
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+    measure: HistoricalAttributionOutcomeMeasure,
+    contributor_group_key: str | None,
+) -> str:
+    source_id_parts = [
+        request_fingerprint,
+        period,
+        "historical-attribution",
+        attribution_type,
+        metric,
+        grouping_dimension,
+        measure,
+    ]
+    if contributor_group_key is not None:
+        source_id_parts.append(contributor_group_key)
+    return ":".join(source_id_parts)
 
 
 def _rolling_window_matches_request(
