@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T16:49:02+00:00`
+- Generated at: `2026-06-13T16:52:07+00:00`
 
-- Report source snapshot: `ca52b76b`
+- Report source snapshot: `fddf0daf`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 2 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 3 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 4 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 5 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
-| 6 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
-| 7 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
-| 8 | generate_targets_solver | src/core/target_generation.py | 6 | 68 |
-| 9 | _attribution_value | src/core/outcomes/performance_sources.py | 6 | 65 |
-| 10 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
+| 1 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 2 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 3 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 4 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
+| 5 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
+| 6 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
+| 7 | generate_targets_solver | src/core/target_generation.py | 6 | 68 |
+| 8 | _attribution_value | src/core/outcomes/performance_sources.py | 6 | 65 |
+| 9 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
+| 10 | _state_from_health | src/core/waves/source_readiness.py | 6 | 64 |
 
 ### Most Complex Current Test Functions
 
