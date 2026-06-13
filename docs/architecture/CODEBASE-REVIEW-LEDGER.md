@@ -22174,3 +22174,36 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal PM-quality governance helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-890: Rebalance execution cash projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/test_engine_settlement_awareness.py`, and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Bank-buyable control area: architecture, execution supportability, and testing.
+- Finding: settlement ladder projection and projected-cash FX intent generation mixed balance
+  projection, breach detection, overdraft warning decisions, missing-FX handling, funding-map
+  projection, and diagnostics mutation in branch-heavy helpers. The behavior was correct, but the
+  execution supportability decisions were harder to review directly than the settlement and funding
+  controls deserve.
+- Action: extracted `_SettlementLadderProjection`, `_ProjectedCashFxResolution`,
+  `_settlement_ladder_projection`, `_settlement_ladder_projection_for_currency`, and
+  `_projected_cash_fx_resolution`, plus small projection-flattening helpers. Removed the now-stale
+  `_append_cash_ladder_point` helper. Added direct tests for per-currency settlement points,
+  breaches, overdraft utilization, missing-FX blocking posture, and funding FX intent projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/execution.py -s`; the focused execution suites reported
+  29 passed, `_append_settlement_ladder_points` reduced from B(7) to A(2), and
+  `_append_projected_cash_fx_intents` reduced from B(7) to B(6) under radon.
+- Residual risk: this slice improves internal rebalance execution supportability maintainability
+  only. It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal execution helper
+  maintainability hardening with no operator-facing contract change.

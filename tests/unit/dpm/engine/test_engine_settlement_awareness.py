@@ -3,6 +3,7 @@ from decimal import Decimal
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.execution import (
     _append_settlement_ladder_points,
+    _settlement_ladder_projection_for_currency,
     _settlement_cash_flows,
     _settlement_days_by_instrument,
     _settlement_horizon_days,
@@ -192,3 +193,21 @@ def test_append_settlement_ladder_points_records_breach_and_overdraft_warning() 
     assert diagnostics.cash_ladder_breaches[0].allowed_floor == Decimal("-25")
     assert diagnostics.cash_ladder_breaches[0].reason_code == "OVERDRAFT_ON_T_PLUS_1"
     assert "SETTLEMENT_OVERDRAFT_UTILIZED" in diagnostics.warnings
+
+
+def test_settlement_ladder_projection_for_currency_records_points_and_breaches() -> None:
+    projection = _settlement_ladder_projection_for_currency(
+        currency="USD",
+        daily_flows=[Decimal("50"), Decimal("-90"), Decimal("10")],
+        horizon_days=2,
+        max_overdraft=Decimal("25"),
+    )
+
+    assert [point.projected_balance for point in projection.points] == [
+        Decimal("50"),
+        Decimal("-40"),
+        Decimal("-30"),
+    ]
+    assert projection.overdraft_utilized
+    assert [breach.date_offset for breach in projection.breaches] == [1, 2]
+    assert projection.breaches[0].allowed_floor == Decimal("-25")

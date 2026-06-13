@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal, TypeAlias
 
@@ -38,6 +39,21 @@ _ExecutionSimulationResult: TypeAlias = tuple[
     _ExecutionSimulationStatus,
     Reconciliation | None,
 ]
+
+
+@dataclass(frozen=True)
+class _SettlementLadderProjection:
+    points: list[CashLadderPoint]
+    breaches: list[CashLadderBreach]
+    overdraft_utilized: bool
+
+
+@dataclass(frozen=True)
+class _ProjectedCashFxResolution:
+    intent: FxSpotIntent | None
+    funding_currency: str | None = None
+    missing_fx_pair: str | None = None
+    blocked: bool = False
 
 
 def build_settlement_ladder(
@@ -171,50 +187,97 @@ def _append_settlement_ladder_points(
     options: EngineOptions,
     diagnostics: DiagnosticsData,
 ) -> None:
-    overdraft_utilized = False
-    for currency in sorted(flows.keys()):
-        projected_balance = Decimal("0")
-        allowed_floor = -options.max_overdraft_by_ccy.get(currency, Decimal("0"))
-        for day in range(horizon_days + 1):
-            projected_balance += flows[currency][day]
-            _append_cash_ladder_point(
-                diagnostics=diagnostics,
-                day=day,
-                currency=currency,
-                projected_balance=projected_balance,
-            )
-            if projected_balance < Decimal("0") and options.max_overdraft_by_ccy.get(
-                currency, Decimal("0")
-            ) > Decimal("0"):
-                overdraft_utilized = True
-            if projected_balance < allowed_floor:
-                diagnostics.cash_ladder_breaches.append(
-                    CashLadderBreach(
-                        date_offset=day,
-                        currency=currency,
-                        projected_balance=projected_balance,
-                        allowed_floor=allowed_floor,
-                        reason_code=f"OVERDRAFT_ON_T_PLUS_{day}",
-                    )
-                )
+    projection = _settlement_ladder_projection(
+        flows=flows,
+        horizon_days=horizon_days,
+        options=options,
+    )
+    diagnostics.cash_ladder.extend(projection.points)
+    diagnostics.cash_ladder_breaches.extend(projection.breaches)
 
-    if overdraft_utilized:
+    if projection.overdraft_utilized:
         diagnostics.warnings.append("SETTLEMENT_OVERDRAFT_UTILIZED")
 
 
-def _append_cash_ladder_point(
+def _settlement_ladder_projection(
     *,
-    diagnostics: DiagnosticsData,
-    day: int,
-    currency: str,
-    projected_balance: Decimal,
-) -> None:
-    diagnostics.cash_ladder.append(
-        CashLadderPoint(
-            date_offset=day,
+    flows: dict[str, list[Decimal]],
+    horizon_days: int,
+    options: EngineOptions,
+) -> _SettlementLadderProjection:
+    currency_projections = [
+        _settlement_ladder_projection_for_currency(
             currency=currency,
-            projected_balance=projected_balance,
+            daily_flows=flows[currency],
+            horizon_days=horizon_days,
+            max_overdraft=options.max_overdraft_by_ccy.get(currency, Decimal("0")),
         )
+        for currency in sorted(flows.keys())
+    ]
+    return _SettlementLadderProjection(
+        points=_settlement_ladder_points(currency_projections),
+        breaches=_settlement_ladder_breaches(currency_projections),
+        overdraft_utilized=_settlement_ladder_overdraft_utilized(currency_projections),
+    )
+
+
+def _settlement_ladder_points(
+    projections: list[_SettlementLadderProjection],
+) -> list[CashLadderPoint]:
+    return [point for projection in projections for point in projection.points]
+
+
+def _settlement_ladder_breaches(
+    projections: list[_SettlementLadderProjection],
+) -> list[CashLadderBreach]:
+    return [breach for projection in projections for breach in projection.breaches]
+
+
+def _settlement_ladder_overdraft_utilized(
+    projections: list[_SettlementLadderProjection],
+) -> bool:
+    return any(projection.overdraft_utilized for projection in projections)
+
+
+def _settlement_ladder_projection_for_currency(
+    *,
+    currency: str,
+    daily_flows: list[Decimal],
+    horizon_days: int,
+    max_overdraft: Decimal,
+) -> _SettlementLadderProjection:
+    projected_balance = Decimal("0")
+    allowed_floor = -max_overdraft
+    points: list[CashLadderPoint] = []
+    breaches: list[CashLadderBreach] = []
+    overdraft_utilized = False
+
+    for day in range(horizon_days + 1):
+        projected_balance += daily_flows[day]
+        points.append(
+            CashLadderPoint(
+                date_offset=day,
+                currency=currency,
+                projected_balance=projected_balance,
+            )
+        )
+        if projected_balance < Decimal("0") and max_overdraft > Decimal("0"):
+            overdraft_utilized = True
+        if projected_balance < allowed_floor:
+            breaches.append(
+                CashLadderBreach(
+                    date_offset=day,
+                    currency=currency,
+                    projected_balance=projected_balance,
+                    allowed_floor=allowed_floor,
+                    reason_code=f"OVERDRAFT_ON_T_PLUS_{day}",
+                )
+            )
+
+    return _SettlementLadderProjection(
+        points=points,
+        breaches=breaches,
+        overdraft_utilized=overdraft_utilized,
     )
 
 
@@ -298,33 +361,60 @@ def _append_projected_cash_fx_intents(
 ) -> tuple[bool, dict[str, str]]:
     fx_intent_id_by_currency: dict[str, str] = {}
     for ccy, bal in projected_cash.items():
-        if ccy == portfolio.base_currency:
-            continue
-        rate = get_fx_rate(market_data, ccy, portfolio.base_currency)
-        if rate is None:
-            diagnostics.data_quality.setdefault("fx_missing", []).append(
-                f"{ccy}/{portfolio.base_currency}"
-            )
-            if options.block_on_missing_fx:
-                return True, fx_intent_id_by_currency
-            continue
-
-        fx_id = f"oi_fx_{len(intents) + 1}"
-        fx_intent = _fx_intent_for_projected_cash_balance(
+        resolution = _projected_cash_fx_resolution(
             currency=ccy,
             balance=bal,
             base_currency=portfolio.base_currency,
-            rate_to_base=rate,
-            intent_id=fx_id,
-            fx_buffer_pct=options.fx_buffer_pct,
+            market_data=market_data,
+            intent_id=f"oi_fx_{len(intents) + 1}",
+            options=options,
         )
-        if fx_intent is None:
+        if resolution.missing_fx_pair is not None:
+            diagnostics.data_quality.setdefault("fx_missing", []).append(resolution.missing_fx_pair)
+        if resolution.blocked:
+            return True, fx_intent_id_by_currency
+        if resolution.intent is None:
             continue
-        intents.append(fx_intent)
-        if bal < 0:
-            fx_intent_id_by_currency[ccy] = fx_id
+        intents.append(resolution.intent)
+        if resolution.funding_currency is not None:
+            fx_intent_id_by_currency[resolution.funding_currency] = resolution.intent.intent_id
 
     return False, fx_intent_id_by_currency
+
+
+def _projected_cash_fx_resolution(
+    *,
+    currency: str,
+    balance: Decimal,
+    base_currency: str,
+    market_data: MarketDataSnapshot,
+    intent_id: str,
+    options: EngineOptions,
+) -> _ProjectedCashFxResolution:
+    if currency == base_currency:
+        return _ProjectedCashFxResolution(intent=None)
+
+    fx_pair = f"{currency}/{base_currency}"
+    rate = get_fx_rate(market_data, currency, base_currency)
+    if rate is None:
+        return _ProjectedCashFxResolution(
+            intent=None,
+            missing_fx_pair=fx_pair,
+            blocked=options.block_on_missing_fx,
+        )
+
+    intent = _fx_intent_for_projected_cash_balance(
+        currency=currency,
+        balance=balance,
+        base_currency=base_currency,
+        rate_to_base=rate,
+        intent_id=intent_id,
+        fx_buffer_pct=options.fx_buffer_pct,
+    )
+    return _ProjectedCashFxResolution(
+        intent=intent,
+        funding_currency=currency if balance < 0 and intent is not None else None,
+    )
 
 
 def _settlement_blocked_simulation_result(

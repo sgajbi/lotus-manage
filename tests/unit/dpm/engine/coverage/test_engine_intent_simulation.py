@@ -8,6 +8,7 @@ from src.core.rebalance.execution import (
     _fx_intent_for_projected_cash_balance,
     _hard_rule_blockers,
     _link_execution_dependencies,
+    _projected_cash_fx_resolution,
     _project_cash_after_security_trades,
     _reconciliation_rule,
     _record_simulation_safety_warnings,
@@ -232,6 +233,32 @@ class TestIntentDependenciesAndSimulation:
         assert fx_map == {}
         assert intents == []
         assert diagnostics.data_quality == {"fx_missing": ["EUR/USD"]}
+
+    def test_projected_cash_fx_resolution_maps_missing_fx_and_funding_intent(self):
+        missing = _projected_cash_fx_resolution(
+            currency="EUR",
+            balance=Decimal("-100"),
+            base_currency="USD",
+            market_data=market_data_snapshot(),
+            intent_id="oi_fx_1",
+            options=EngineOptions(block_on_missing_fx=True),
+        )
+        funding = _projected_cash_fx_resolution(
+            currency="EUR",
+            balance=Decimal("-100"),
+            base_currency="USD",
+            market_data=market_data_snapshot(fx_rates=[fx("EUR/USD", "1.2")]),
+            intent_id="oi_fx_2",
+            options=EngineOptions(fx_buffer_pct=Decimal("0.05")),
+        )
+
+        assert missing.missing_fx_pair == "EUR/USD"
+        assert missing.blocked
+        assert missing.intent is None
+        assert funding.intent is not None
+        assert funding.intent.intent_id == "oi_fx_2"
+        assert funding.funding_currency == "EUR"
+        assert funding.intent.buy_amount == Decimal("105.00")
 
     def test_settlement_blocked_simulation_result_builds_rule_and_warning(self):
         portfolio = portfolio_snapshot(
