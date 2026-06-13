@@ -33,6 +33,25 @@ _EFFECTIVE_PERIOD_REASON_MARKERS = (
     "OUTSIDE_EFFECTIVE",
     "EFFECTIVE_PERIOD_EXCEPTION",
 )
+_MISSING_REGIME_STRESS_GOVERNANCE_REASONS: dict[str, str] = {
+    "cio_approval": "REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING",
+    "effective_period": "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
+    "applicability": "REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING",
+}
+_REGIME_SOURCE_REASON_POSTURE_EFFECTS: dict[
+    _RegimeStressSourceReasonPosture,
+    tuple[ProofPackSectionState, str],
+] = {
+    "INAPPLICABLE": ("BLOCKED", "REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED"),
+    "EFFECTIVE_PERIOD_EXCEPTION": (
+        "DEGRADED",
+        "REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION",
+    ),
+    "CONTRIBUTION_PARTIAL": (
+        "PENDING_REVIEW",
+        "REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL",
+    ),
+}
 _RegimeStressSourceReasonClassifier = tuple[
     _RegimeStressSourceReasonPosture,
     Callable[[str], bool],
@@ -517,33 +536,41 @@ def _regime_stress_evidence_posture(
     posture_states: list[ProofPackSectionState] = ["READY"]
 
     missing_governance_evidence = _missing_regime_stress_governance_evidence(context)
-    if "cio_approval" in missing_governance_evidence:
-        reason_codes.add("REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
-    if "effective_period" in missing_governance_evidence:
-        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
-    if "applicability" in missing_governance_evidence:
-        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING")
-        posture_states.append("PENDING_REVIEW")
+    missing_governance_reason_codes = _missing_regime_stress_governance_reason_codes(
+        missing_governance_evidence
+    )
+    reason_codes.update(missing_governance_reason_codes)
+    posture_states.extend(["PENDING_REVIEW"] * len(missing_governance_reason_codes))
 
     source_reason_posture = _regime_source_reason_posture(context.reason_codes)
     posture_facts["source_reason_posture"] = source_reason_posture
-    if source_reason_posture == "INAPPLICABLE":
-        reason_codes.add("REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED")
-        posture_states.append("BLOCKED")
-    elif source_reason_posture == "EFFECTIVE_PERIOD_EXCEPTION":
-        reason_codes.add("REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION")
-        posture_states.append("DEGRADED")
-    elif source_reason_posture == "CONTRIBUTION_PARTIAL":
-        reason_codes.add("REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL")
-        posture_states.append("PENDING_REVIEW")
+    source_reason_effect = _regime_source_reason_posture_effect(source_reason_posture)
+    if source_reason_effect is not None:
+        source_state, source_reason_code = source_reason_effect
+        reason_codes.add(source_reason_code)
+        posture_states.append(source_state)
 
     return {
         "state": _lowest_section_state(posture_states),
         "reason_codes": sorted(reason_codes),
         "facts": posture_facts,
     }
+
+
+def _missing_regime_stress_governance_reason_codes(
+    missing_governance_evidence: set[str],
+) -> set[str]:
+    return {
+        reason_code
+        for evidence_key, reason_code in _MISSING_REGIME_STRESS_GOVERNANCE_REASONS.items()
+        if evidence_key in missing_governance_evidence
+    }
+
+
+def _regime_source_reason_posture_effect(
+    source_reason_posture: _RegimeStressSourceReasonPosture,
+) -> tuple[ProofPackSectionState, str] | None:
+    return _REGIME_SOURCE_REASON_POSTURE_EFFECTS.get(source_reason_posture)
 
 
 def _regime_stress_governance_posture_facts(

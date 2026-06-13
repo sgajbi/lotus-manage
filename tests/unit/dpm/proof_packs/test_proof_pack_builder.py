@@ -51,8 +51,10 @@ from src.core.proof_packs.source_analytics import (
     _authority_source_ref,
     _degraded_context_reason_codes,
     _missing_regime_stress_governance_evidence,
+    _missing_regime_stress_governance_reason_codes,
     _performance_source_facts,
     _performance_source_metrics,
+    _regime_source_reason_posture_effect,
     _regime_source_reason_posture,
     _regime_stress_governance_posture_facts,
     _regime_stress_source_facts,
@@ -280,6 +282,35 @@ def test_pre_run_adapter_payload_dispatches_configured_adapter_contract() -> Non
         "AI evidence input adapter is available with forbidden-action and forbidden-field guardrails."
     )
     assert facts == {"adapter_contract": "DpmProofPackAiEvidenceInput"}
+    assert metrics == {}
+    assert reason_codes == []
+
+
+def test_pre_run_core_section_payload_dispatches_decision_summary() -> None:
+    result = _ready_rebalance_result()
+
+    state, summary, facts, metrics, reason_codes = builder_module._pre_run_core_section_payload(
+        section_type="decision_summary",
+        result=result,
+        alternative_set=None,
+        selected_alternative=None,
+        selection=None,
+        reason="Approve governed rebalance.",
+        mandate_id=None,
+        mandate_twin=None,
+        mandate_health=None,
+        mandate_evidence_gap_codes=[],
+        created_by="pm_001",
+    )
+
+    assert state == "READY"
+    assert summary == "Decision evidence assembled from manage run and actor rationale."
+    assert facts == {
+        "actor": "pm_001",
+        "reason": "Approve governed rebalance.",
+        "source_run_status": result.status,
+        "selected_alternative_id": None,
+    }
     assert metrics == {}
     assert reason_codes == []
 
@@ -2528,6 +2559,13 @@ def test_regime_stress_governance_posture_helpers_project_missing_evidence() -> 
         "effective_period",
         "applicability",
     }
+    assert _missing_regime_stress_governance_reason_codes(
+        {"cio_approval", "effective_period", "applicability"}
+    ) == {
+        "REGIME_SCENARIO_CIO_APPROVAL_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_EFFECTIVE_PERIOD_EVIDENCE_MISSING",
+        "REGIME_SCENARIO_APPLICABILITY_EVIDENCE_MISSING",
+    }
 
 
 def test_regime_stress_source_helpers_project_facts_and_metrics() -> None:
@@ -2602,6 +2640,28 @@ def test_regime_source_reason_posture_classifies_source_reason_codes(
     expected_posture: str,
 ) -> None:
     assert _regime_source_reason_posture(source_reason_codes) == expected_posture
+
+
+@pytest.mark.parametrize(
+    ("source_reason_posture", "expected_effect"),
+    [
+        ("READY", None),
+        ("INAPPLICABLE", ("BLOCKED", "REGIME_SCENARIO_APPLICABILITY_NOT_CONFIRMED")),
+        (
+            "EFFECTIVE_PERIOD_EXCEPTION",
+            ("DEGRADED", "REGIME_SCENARIO_EFFECTIVE_PERIOD_EXCEPTION"),
+        ),
+        (
+            "CONTRIBUTION_PARTIAL",
+            ("PENDING_REVIEW", "REGIME_SCENARIO_CONTRIBUTION_EVIDENCE_PARTIAL"),
+        ),
+    ],
+)
+def test_regime_source_reason_posture_effect_maps_section_state_and_reason(
+    source_reason_posture: str,
+    expected_effect: tuple[str, str] | None,
+) -> None:
+    assert _regime_source_reason_posture_effect(source_reason_posture) == expected_effect
 
 
 @pytest.mark.parametrize(
