@@ -23210,3 +23210,83 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal wave source-readiness
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-925: Outcome comparison result helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/comparison.py` and
+  `tests/unit/core/test_outcome_comparison.py`.
+- Bank-buyable control area: architecture, outcome review supportability, and testing.
+- Finding: `compare_outcome_dimension` mixed source supportability short-circuiting, missing-value
+  blocking, variance classification, and result construction in one path. The behavior was covered,
+  but outcome review supportability is easier to audit when terminal source states, missing
+  mandatory values, and deterministic variance comparison each have named helpers and direct tests.
+- Action: extracted `_source_supportability_result`, `_missing_value_result`, and
+  `_compared_dimension_result`; simplified `_source_supportability_state` with set-based precedence
+  checks; and added direct helper tests while preserving the public comparison behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m ruff format --check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/comparison.py`,
+  `python -m pytest tests/unit/core/test_outcome_comparison.py -q`, and
+  `python -m radon cc src/core/outcomes/comparison.py -s`; the focused outcome comparison suite
+  reported 18 passed, and radon reports every function in `comparison.py` at A-grade after this
+  extraction.
+- Residual risk: this slice improves outcome comparison maintainability only. It does not change
+  outcome review semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome comparison
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-926: Solver target failure diagnostics helper
+
+- Date: 2026-06-14
+- Scope: `src/core/target_generation.py` and
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`.
+- Bank-buyable control area: architecture, solver target-generation supportability, and testing.
+- Finding: `generate_targets_solver` still owned solver orchestration and infeasible diagnostic
+  enrichment in the same control path. The behavior was covered, but solver failure recording is a
+  distinct supportability concern and should be directly auditable.
+- Action: extracted `_record_solver_failure` to append solver failure reasons and infeasibility
+  hints, and added direct tests for infeasible warning order while preserving existing solver
+  fallback and target-generation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_solver_fallbacks.py -q`, and
+  `python -m radon cc src/core/target_generation.py -s`; the focused solver fallback suite
+  reported 16 passed, and radon reports `generate_targets_solver` at A(5) after this extraction.
+- Residual risk: this slice improves solver target-generation maintainability only. It does not
+  change solver semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal solver target-generation
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-927: Local check gate alignment
+
+- Date: 2026-06-14
+- Scope: `Makefile`, `quality/ci_quality_gates.md`, and this ledger.
+- Bank-buyable control area: CI measurement, local gate parity, and operational evidence.
+- Finding: `quality/ci_quality_gates.md` documented architecture, complexity, dependency-hygiene,
+  and dead-code scans as active `make check` gates, and Feature Lane already ran those checks, but
+  the local `make check` target did not include them. The local pre-PR gate was therefore narrower
+  than the documented bank-buyable engineering posture.
+- Action: aligned `make check` with the documented active gate set by adding
+  `typecheck-tests-critical`, `architecture-gate`, `complexity-gate`, `dependency-hygiene-gate`,
+  and `dead-code-gate`; aligned `make install` with the expanded local check dependencies by
+  installing the `quality` extra; refreshed the gate documentation to include the critical-test
+  typecheck.
+- Status: hardened.
+- Evidence: `make architecture-gate`, `make complexity-gate`, `make dependency-hygiene-gate`,
+  `make dead-code-gate`, `make -n install`, `make -n check`, and the expanded `make check`; the
+  expanded local gate completed with ruff, mypy, critical-test mypy, OpenAPI, vocabulary,
+  service-boundary, mesh-contract, import-linter, complexity, deptry, vulture, and 2743 unit tests
+  passing.
+- Residual risk: this slice improves local pre-PR enforcement parity only. It does not introduce
+  stricter xenon thresholds because current module-level complexity still has known C-ranked
+  residuals; those remain visible in reports and should be reduced before threshold promotion.
+- Wiki decision: no wiki source change required; this is repository-local CI command and quality
+  documentation alignment with no operator-facing contract change.

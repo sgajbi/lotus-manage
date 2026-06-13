@@ -7,6 +7,7 @@ from src.core.models import DiagnosticsData, EngineOptions, ModelPortfolio, Mode
 from src.core.target_generation import (
     _installed_solver_names,
     _load_solver_modules,
+    _record_solver_failure,
     _solve_attempt_status,
     _solve_with_fallbacks,
     _solver_is_available,
@@ -236,6 +237,42 @@ def test_load_solver_modules_does_not_hide_non_import_failures(monkeypatch) -> N
     with pytest.raises(RuntimeError, match="solver import side effect failed"):
         _load_solver_modules(diagnostics)
     assert diagnostics.warnings == []
+
+
+def test_record_solver_failure_adds_infeasibility_hints() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+
+    _record_solver_failure(
+        latest_status="infeasible",
+        tradeable_ids=["BUY_1", "BUY_2"],
+        locked_weight=Decimal("0.4"),
+        options=EngineOptions(
+            cash_band_max_weight=Decimal("0.20"),
+            single_position_max_weight=Decimal("0.10"),
+            group_constraints={"sector:TECH": {"max_weight": Decimal("0.3")}},
+        ),
+        eligible_targets={
+            "BUY_1": Decimal("0.3"),
+            "BUY_2": Decimal("0.3"),
+            "LOCKED_TECH": Decimal("0.4"),
+        },
+        shelf=[
+            ShelfEntry(instrument_id="BUY_1", status="APPROVED", attributes={"sector": "FIN"}),
+            ShelfEntry(instrument_id="BUY_2", status="APPROVED", attributes={"sector": "FIN"}),
+            ShelfEntry(
+                instrument_id="LOCKED_TECH",
+                status="SELL_ONLY",
+                attributes={"sector": "TECH"},
+            ),
+        ],
+        diagnostics=diagnostics,
+    )
+
+    assert diagnostics.warnings == [
+        "INFEASIBLE_INFEASIBLE",
+        "INFEASIBILITY_HINT_SINGLE_POSITION_CAPACITY",
+        "INFEASIBILITY_HINT_LOCKED_GROUP_WEIGHT_sector:TECH",
+    ]
 
 
 def test_generate_targets_solver_reports_pending_review_when_sell_excess_has_no_recipient(

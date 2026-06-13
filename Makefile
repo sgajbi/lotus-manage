@@ -4,7 +4,7 @@ COVERAGE_FAIL_UNDER ?= 99
 
 install:
 	python -m pip install --upgrade pip
-	pip install -e ".[dev]"
+	pip install -e ".[dev,quality]"
 	pre-commit install
 
 install-ci:
@@ -14,7 +14,9 @@ install-ci:
 pre-commit:
 	pre-commit run --all-files
 
-check: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate service-boundary-gate mesh-contract-validate test
+check: lint no-alias-gate typecheck typecheck-tests-critical openapi-gate api-vocabulary-gate \
+	service-boundary-gate mesh-contract-validate architecture-gate complexity-gate \
+	dependency-hygiene-gate dead-code-gate test
 
 ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate service-boundary-gate migration-smoke test-all security-audit
 

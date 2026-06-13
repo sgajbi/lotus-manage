@@ -171,6 +171,77 @@ def test_dimension_values_missing_detects_expected_or_realized_gaps() -> None:
     )
 
 
+def test_source_supportability_result_short_circuits_terminal_source_states() -> None:
+    not_supported_input = _dimension(
+        dimension="PERFORMANCE",
+        expected="0.0150",
+        realized="0.0160",
+        realized_state="NOT_SUPPORTED",
+        direction="HIGHER_IS_BETTER",
+    )
+    blocked_input = _dimension(
+        dimension="EXECUTION_QUALITY",
+        expected="0.0005",
+        realized="0.0007",
+        realized_state="BLOCKED",
+    )
+    source_refs = outcome_comparison._dimension_source_refs(not_supported_input)
+
+    not_supported_result = outcome_comparison._source_supportability_result(
+        dimension_input=not_supported_input,
+        source_refs=source_refs,
+        supportability_state="NOT_SUPPORTED",
+    )
+    blocked_result = outcome_comparison._source_supportability_result(
+        dimension_input=blocked_input,
+        source_refs=outcome_comparison._dimension_source_refs(blocked_input),
+        supportability_state="BLOCKED",
+    )
+    ready_result = outcome_comparison._source_supportability_result(
+        dimension_input=_dimension(),
+        source_refs=outcome_comparison._dimension_source_refs(_dimension()),
+        supportability_state="READY",
+    )
+
+    assert not_supported_result is not None
+    assert not_supported_result.state == "NOT_SUPPORTED"
+    assert not_supported_result.reason_code == "PERFORMANCE_OUTCOME_NOT_SUPPORTED"
+    assert blocked_result is not None
+    assert blocked_result.state == "BLOCKED"
+    assert blocked_result.reason_code == "EXECUTION_EVIDENCE_BLOCKED"
+    assert ready_result is None
+
+
+def test_missing_value_result_preserves_blocked_source_evidence_shape() -> None:
+    dimension_input = _dimension(expected="0.1200", realized=None)
+    result = outcome_comparison._missing_value_result(
+        dimension_input,
+        source_refs=outcome_comparison._dimension_source_refs(dimension_input),
+    )
+
+    assert result.state == "BLOCKED"
+    assert result.reason_code == "SOURCE_EVIDENCE_INCOMPLETE"
+    assert result.expected == Decimal("0.1200")
+    assert result.realized is None
+    assert result.calculation_trace["variance_pressure"] is None
+
+
+def test_compared_dimension_result_preserves_variance_classification() -> None:
+    dimension_input = _dimension(dimension="COST", expected="100.00", realized="111.00")
+    result = outcome_comparison._compared_dimension_result(
+        dimension_input=dimension_input,
+        source_refs=outcome_comparison._dimension_source_refs(dimension_input),
+        supportability_state="READY",
+        expected=Decimal("100.00"),
+        realized=Decimal("111.00"),
+    )
+
+    assert result.state == "BREACHED"
+    assert result.reason_code == "COST_ABOVE_ESTIMATE"
+    assert result.variance == Decimal("11.00")
+    assert result.calculation_trace["variance_pressure"] == Decimal("11.00")
+
+
 def test_dimension_state_and_reason_classifies_pressure_and_degraded_sources() -> None:
     breached_state, breached_reason = outcome_comparison._dimension_state_and_reason(
         dimension_input=_dimension(dimension="COST", expected="100.00", realized="111.00"),
