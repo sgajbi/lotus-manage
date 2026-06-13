@@ -62,7 +62,10 @@ from src.core.waves.campaign_assignment_actions import (
 )
 from src.core.waves.campaign_assignment_tasks import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+    _assignment_task_index,
+    _assignment_task_transition,
     _optional_transition_replay_fields_match,
+    _replayed_transition_definition,
     _required_transition_replay_fields,
     _source_ref_payloads,
     _transition_assignees_replay_match,
@@ -1768,6 +1771,119 @@ def test_campaign_assignment_task_transition_assignee_helper_normalizes_actor_id
         task=opened.assignment_tasks[0],
         assigned_actor_ids=None,
     ) == ["pm_001"]
+
+
+def test_campaign_assignment_task_index_returns_position_or_none() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    assert (
+        _assignment_task_index(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+        )
+        == 0
+    )
+    assert (
+        _assignment_task_index(
+            definition=opened,
+            task_ref="BRC-TASK-MISSING",
+        )
+        is None
+    )
+
+
+def test_campaign_assignment_task_transition_replay_helper_returns_definition_or_conflict() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    acknowledged = transition_bulk_review_campaign_definition_assignment_task(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+        transition_type="ACKNOWLEDGED",
+        transition_ref="BRC-TASK-2026-05-001:acknowledged",
+        transitioned_by="pm_001",
+        transition_reason="PM acknowledged source-backed campaign task.",
+        correlation_id="corr-campaign-assignment-task-transition-001",
+    )
+    task = acknowledged.assignment_tasks[0]
+
+    assert (
+        _assignment_task_transition(
+            task=task,
+            transition_ref="BRC-TASK-2026-05-001:acknowledged",
+        )
+        == task.transitions[-1]
+    )
+    assert (
+        _replayed_transition_definition(
+            definition=acknowledged,
+            task=task,
+            transition_ref="BRC-TASK-2026-05-001:acknowledged",
+            transition_type="ACKNOWLEDGED",
+            transitioned_by="pm_001",
+            transition_reason="PM acknowledged source-backed campaign task.",
+            correlation_id="corr-campaign-assignment-task-transition-001",
+            assigned_actor_ids=None,
+            escalation_tier=None,
+            sla_posture=None,
+            due_at=None,
+            source_refs=[],
+        )
+        is acknowledged
+    )
+    assert (
+        _replayed_transition_definition(
+            definition=acknowledged,
+            task=task,
+            transition_ref="BRC-TASK-2026-05-001:missing",
+            transition_type="ACKNOWLEDGED",
+            transitioned_by="pm_001",
+            transition_reason="PM acknowledged source-backed campaign task.",
+            correlation_id="corr-campaign-assignment-task-transition-001",
+            assigned_actor_ids=None,
+            escalation_tier=None,
+            sla_posture=None,
+            due_at=None,
+            source_refs=[],
+        )
+        is None
+    )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT",
+    ):
+        _replayed_transition_definition(
+            definition=acknowledged,
+            task=task,
+            transition_ref="BRC-TASK-2026-05-001:acknowledged",
+            transition_type="ACKNOWLEDGED",
+            transitioned_by="pm_001",
+            transition_reason="Different replay reason.",
+            correlation_id="corr-campaign-assignment-task-transition-001",
+            assigned_actor_ids=None,
+            escalation_tier=None,
+            sla_posture=None,
+            due_at=None,
+            source_refs=[],
+        )
 
 
 def test_campaign_assignment_task_transition_field_requirement_helper_rejects_missing_fields() -> (

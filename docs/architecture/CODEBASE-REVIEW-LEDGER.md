@@ -21102,3 +21102,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal target-generation solver
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-853: Campaign assignment-task transition replay helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_assignment_tasks.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `transition_bulk_review_campaign_definition_assignment_task` became the next current
+  source-complexity hotspot after the solver assembly slice and mixed assignment-task lookup,
+  transition replay detection, idempotent replay return, conflict rejection, and transition
+  replacement in one orchestration path.
+- Action: extracted assignment-task lookup, transition lookup, and replay/conflict resolution into
+  named helpers while preserving idempotent transition replay behavior and conflict fail-closed
+  semantics. Added direct helper coverage for found/missing task lookup, found transition lookup,
+  idempotent replay, missing replay, and conflicting replay rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal campaign assignment-task
+  transition maintainability refactoring and repo-local quality evidence.
