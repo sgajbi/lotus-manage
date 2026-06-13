@@ -22563,3 +22563,90 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal supportability helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-903: Proof-pack source analytics family dispatch
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`.
+- Bank-buyable control area: architecture, source-owned proof-pack lineage, and testing.
+- Finding: `source_analytics_for_context` encoded proof-pack analytics family dispatch as a
+  conditional chain. The behavior was correct, but every new source-owned analytics family would
+  extend branching in the public mapper instead of a compact registry that can be reviewed and
+  tested directly.
+- Action: replaced the conditional family dispatch with a typed `_SOURCE_ANALYTICS_BUILDERS`
+  registry and added direct tests proving every supported family maps to the expected
+  source-hash key while empty contexts still short-circuit without dispatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  suites reported 103 passed and `source_analytics_for_context` reduced from B(7) to A(2) under
+  radon.
+- Residual risk: this slice improves source-analytics dispatch maintainability only. It does not
+  change proof-pack semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-lineage helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-904: Sustainability allocation threshold helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_sustainability_supportability.py` and
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`.
+- Bank-buyable control area: architecture, construction supportability, and testing.
+- Finding: `sustainability_allocation_breaches` combined active preference iteration, target asset
+  class allocation aggregation, minimum threshold evaluation, and maximum threshold evaluation in
+  one loop. The behavior was correct, but the sustainability supportability policy was harder to
+  review than a source-owned client-preference control should be.
+- Action: extracted `_preference_allocation_weight`, `_minimum_allocation_breached`,
+  `_maximum_allocation_breached`, and `_preference_allocation_breached` so each policy decision is
+  independently testable before supportability reason-code roll-up. Added direct tests for
+  multi-asset aggregation, strict min/max boundaries, no-asset-class preferences, and both minimum
+  and maximum breach detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_sustainability_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_sustainability_supportability.py -q`,
+  and `python -m radon cc src/api/services/construction_sustainability_supportability.py -s`;
+  the focused sustainability supportability suite reported 9 passed and
+  `sustainability_allocation_breaches` reduced from B(8) to A(3) under radon.
+- Residual risk: this slice improves construction sustainability supportability maintainability
+  only. It does not change client-preference semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-905: PM-quality summary invocation validation guards
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/summary_history.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, PM operating-quality governance, and testing.
+- Finding: `_validate_summary_invocation_inputs` encoded summary invocation target validation,
+  content-hash binding, workflow-pack allowlisting, and generated-summary hash validation as a
+  single conditional sequence. The behavior was correct, but the guarded append-only summary
+  history contract was harder to review than PM-quality governance evidence should be.
+- Action: extracted `_summary_invocation_validation_checks`,
+  `_summary_review_action_target_mismatched`, and `_summary_content_hash_invalid` so the guard
+  predicates and first-error ordering are independently testable. Added direct tests for valid and
+  invalid target linkage, content-hash syntax, and multi-failure error ordering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/summary_history.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/summary_history.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  and `python -m radon cc src/core/pm_quality/summary_history.py -s`; the focused PM operating
+  quality suite reported 29 passed and `_validate_summary_invocation_inputs` reduced from B(7) to
+  A(4) under radon.
+- Residual risk: this slice improves PM-quality summary invocation validation maintainability
+  only. It does not change PM-quality governance semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality helper
+  maintainability hardening with no operator-facing contract change.

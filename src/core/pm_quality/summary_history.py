@@ -114,17 +114,63 @@ def _validate_summary_invocation_inputs(
     workflow_pack_name: str,
     summary_content_hash: str | None,
 ) -> None:
-    if (
+    validation_errors = [
+        error_code
+        for failed, error_code in _summary_invocation_validation_checks(
+            score_run=score_run,
+            review_action=review_action,
+            workflow_pack_name=workflow_pack_name,
+            summary_content_hash=summary_content_hash,
+        )
+        if failed
+    ]
+    if validation_errors:
+        raise ValueError(validation_errors[0])
+
+
+def _summary_invocation_validation_checks(
+    *,
+    score_run: DpmPmOperatingQualityScoreRun,
+    review_action: DpmPmQualityReviewAction,
+    workflow_pack_name: str,
+    summary_content_hash: str | None,
+) -> tuple[tuple[bool, str], ...]:
+    return (
+        (
+            _summary_review_action_target_mismatched(
+                score_run=score_run,
+                review_action=review_action,
+            ),
+            "PM_QUALITY_SUMMARY_REVIEW_ACTION_TARGET_MISMATCH",
+        ),
+        (
+            review_action.target_content_hash != score_run.content_hash,
+            "PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH",
+        ),
+        (
+            workflow_pack_name != "pm_quality_summary.pack",
+            "PM_QUALITY_SUMMARY_WORKFLOW_PACK_UNSUPPORTED",
+        ),
+        (
+            _summary_content_hash_invalid(summary_content_hash),
+            "PM_QUALITY_SUMMARY_CONTENT_HASH_INVALID",
+        ),
+    )
+
+
+def _summary_review_action_target_mismatched(
+    *,
+    score_run: DpmPmOperatingQualityScoreRun,
+    review_action: DpmPmQualityReviewAction,
+) -> bool:
+    return (
         review_action.target_type != "SCORE_RUN"
         or review_action.target_id != score_run.score_run_id
-    ):
-        raise ValueError("PM_QUALITY_SUMMARY_REVIEW_ACTION_TARGET_MISMATCH")
-    if review_action.target_content_hash != score_run.content_hash:
-        raise ValueError("PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH")
-    if workflow_pack_name != "pm_quality_summary.pack":
-        raise ValueError("PM_QUALITY_SUMMARY_WORKFLOW_PACK_UNSUPPORTED")
-    if summary_content_hash is not None and not summary_content_hash.startswith("sha256:"):
-        raise ValueError("PM_QUALITY_SUMMARY_CONTENT_HASH_INVALID")
+    )
+
+
+def _summary_content_hash_invalid(summary_content_hash: str | None) -> bool:
+    return summary_content_hash is not None and not summary_content_hash.startswith("sha256:")
 
 
 def _summary_invocation_source_refs(
