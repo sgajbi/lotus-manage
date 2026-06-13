@@ -235,6 +235,28 @@ def test_review_rollup_treats_mixed_ready_and_not_supported_as_degraded() -> Non
     assert "PERFORMANCE_OUTCOME_NOT_SUPPORTED" in comparison.supportability.reason_codes
 
 
+def test_review_rollup_helpers_preserve_comparison_state_precedence() -> None:
+    states = ["READY", "PENDING_REVIEW", "BREACHED", "BLOCKED"]
+
+    assert outcome_comparison._all_states_not_supported(["NOT_SUPPORTED"]) is True
+    assert outcome_comparison._all_states_not_supported(["NOT_SUPPORTED", "READY"]) is False
+    assert outcome_comparison._first_comparison_state_by_precedence(states) == "BLOCKED"
+    assert (
+        outcome_comparison._first_comparison_state_by_precedence(["READY", "PENDING_REVIEW"])
+        == "PENDING_REVIEW"
+    )
+    assert outcome_comparison._first_comparison_state_by_precedence(["READY"]) is None
+
+
+def test_mixed_review_degraded_rollup_helper_detects_source_quality_attention() -> None:
+    assert outcome_comparison._mixed_review_requires_degraded_rollup(["READY", "DEGRADED"])
+    assert outcome_comparison._mixed_review_requires_degraded_rollup(["READY", "NOT_SUPPORTED"])
+    assert (
+        outcome_comparison._mixed_review_requires_degraded_rollup(["READY", "PENDING_REVIEW"])
+        is False
+    )
+
+
 def test_tolerance_requires_hard_threshold_to_be_at_least_soft_threshold() -> None:
     with pytest.raises(ValidationError, match="hard tolerance"):
         DpmOutcomeTolerance(soft=Decimal("0.0100"), hard=Decimal("0.0025"))

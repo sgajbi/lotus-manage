@@ -38,6 +38,11 @@ _PENDING_REASON: dict[OutcomeDimension, str] = {
 _BLOCKING_STATES: set[OutcomeDimensionState] = {"BLOCKED"}
 _DEGRADED_STATES: set[OutcomeDimensionState] = {"DEGRADED"}
 _NOT_SUPPORTED_STATES: set[OutcomeDimensionState] = {"NOT_SUPPORTED"}
+_COMPARISON_STATE_PRECEDENCE: tuple[OutcomeDimensionState, ...] = (
+    "BLOCKED",
+    "BREACHED",
+    "PENDING_REVIEW",
+)
 
 
 def compare_outcome_dimensions(
@@ -226,14 +231,31 @@ def _result(
 def _roll_up_state(states: list[OutcomeDimensionState]) -> OutcomeDimensionState:
     if not states:
         return "BLOCKED"
-    if all(state == "NOT_SUPPORTED" for state in states):
+    if _all_states_not_supported(states):
         return "NOT_SUPPORTED"
-    for candidate in ("BLOCKED", "BREACHED", "PENDING_REVIEW"):
-        if candidate in states:
-            return candidate
-    if "DEGRADED" in states or "NOT_SUPPORTED" in states:
+    precedent_state = _first_comparison_state_by_precedence(states)
+    if precedent_state is not None:
+        return precedent_state
+    if _mixed_review_requires_degraded_rollup(states):
         return "DEGRADED"
     return "READY"
+
+
+def _all_states_not_supported(states: list[OutcomeDimensionState]) -> bool:
+    return all(state == "NOT_SUPPORTED" for state in states)
+
+
+def _first_comparison_state_by_precedence(
+    states: list[OutcomeDimensionState],
+) -> OutcomeDimensionState | None:
+    for candidate in _COMPARISON_STATE_PRECEDENCE:
+        if candidate in states:
+            return candidate
+    return None
+
+
+def _mixed_review_requires_degraded_rollup(states: list[OutcomeDimensionState]) -> bool:
+    return "DEGRADED" in states or "NOT_SUPPORTED" in states
 
 
 def _roll_up_reason_codes(results: list[DpmOutcomeDimensionResult]) -> list[str]:

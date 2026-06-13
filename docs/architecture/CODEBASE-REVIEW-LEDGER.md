@@ -22915,3 +22915,121 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal integration-capability service
   helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-915: Outcome comparison state rollup predicates
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/comparison.py` and `tests/unit/core/test_outcome_comparison.py`.
+- Bank-buyable control area: architecture, outcome-review governance, and testing.
+- Finding: `_roll_up_state` combined empty-review handling, all-not-supported handling, blocked /
+  breached / pending-review precedence, and mixed degraded/not-supported downgrade rules in one
+  conditional sequence. The behavior was correct, but outcome-review supportability precedence is
+  easier to audit when each rollup rule is named.
+- Action: extracted `_all_states_not_supported`, `_first_comparison_state_by_precedence`, and
+  `_mixed_review_requires_degraded_rollup`, then kept `_roll_up_state` as the small orchestrator
+  for comparison supportability state. Added direct helper tests for all-not-supported handling,
+  blocked-before-breached-before-pending precedence, and mixed degraded/not-supported review
+  rollup.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m ruff format --check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/comparison.py`,
+  `python -m pytest tests/unit/core/test_outcome_comparison.py -q`,
+  and `python -m radon cc src/core/outcomes/comparison.py -s`; the focused outcome comparison
+  suite reported 15 passed, the report-only complexity baseline had listed `_roll_up_state` at
+  B(7), and current radon reports it at A(5).
+- Residual risk: this slice improves outcome-review comparison state-rollup maintainability only.
+  It does not change comparison semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-review helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-916: PM-quality policy-selection predicates
+
+- Date: 2026-06-14
+- Scope: `src/api/routers/pm_operating_quality_models.py` and
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Bank-buyable control area: API quality, PM operating-quality governance, and testing.
+- Finding: `validate_policy_selection` combined inline-policy detection, partial persisted-policy
+  reference detection, complete persisted-policy reference detection, and conflict validation in
+  one model validator. The behavior was correct, but PM operating-quality score-run request
+  validation is easier to review when each allowed policy-selection shape is named.
+- Action: extracted `_has_inline_pm_quality_policy`,
+  `_has_pm_quality_policy_reference_fragment`, and `_has_complete_pm_quality_policy_reference`,
+  then kept `validate_policy_selection` as the request-level error mapper. Added direct helper
+  tests for inline policy, policy-id-only, policy-version-only, complete reference, and absent
+  reference inputs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_models.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py -q`,
+  and `python -m radon cc src/api/routers/pm_operating_quality_models.py -s`; the focused PM
+  operating-quality API suite reported 37 passed, the report-only complexity baseline had listed
+  `validate_policy_selection` at B(7), and current radon reports it at A(5).
+- Residual risk: this slice improves PM operating-quality request validation maintainability only.
+  It does not change API request semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM operating-quality API model
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-917: Realized outcome source state predicates
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/realized_sources.py` and
+  `tests/unit/core/test_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, outcome-review source lineage, and testing.
+- Finding: `_state_from_source` combined not-supported, blocked, degraded, and ready source-owner
+  posture classification in one conditional sequence, while the adjacent realized-source
+  `_roll_up_state` combined empty-set handling, all-not-supported handling, source-state
+  precedence, and mixed not-supported downgrade behavior. The behavior was correct, but realized
+  source supportability should make each source-owner posture rule explicit.
+- Action: extracted `_source_reports_not_supported`, `_source_reports_blocked`,
+  `_source_reports_degraded`, `_all_realized_states_not_supported`,
+  `_first_realized_state_by_precedence`, and `_realized_rollup_state_for_precedent`, then kept the
+  public assembly flow unchanged. Added direct helper tests for source posture classification,
+  ready fallback, state precedence, all-not-supported handling, and mixed not-supported downgrade
+  to degraded.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/realized_sources.py tests/unit/core/test_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/realized_sources.py`,
+  `python -m pytest tests/unit/core/test_realized_outcome_sources.py -q`,
+  and `python -m radon cc src/core/outcomes/realized_sources.py -s`; the focused realized outcome
+  source suite reported 16 passed, the report-only complexity baseline had listed
+  `_state_from_source` at B(7), and current radon reports `_state_from_source` at A(4) and
+  `_roll_up_state` at A(4).
+- Residual risk: this slice improves realized outcome source supportability maintainability only.
+  It does not change source-lineage semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal realized outcome helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-918: PM-quality blank policy reference guard
+
+- Date: 2026-06-14
+- Scope: `src/api/routers/pm_operating_quality_models.py` and
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Bank-buyable control area: API quality, fail-closed request validation, and testing.
+- Finding: PR review identified that `_has_complete_pm_quality_policy_reference` accepted empty
+  strings after the policy-selection helper extraction because it checked only for `None`.
+  The prior validator treated persisted policy references as complete only when both values were
+  truthy, so blank form/API fields could reach the service resolver as empty policy keys.
+- Action: restored truthy complete-reference semantics in
+  `_has_complete_pm_quality_policy_reference` and added direct regression assertions for blank
+  `policy_id` and blank `policy_version`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_models.py`, and
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py -q`; the focused PM
+  operating-quality API suite reported 37 passed.
+- Residual risk: this slice restores request-validation semantics for blank persisted policy
+  references only. It does not change service resolver behavior, certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM operating-quality API
+  validation hardening with no operator-facing contract change.

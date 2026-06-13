@@ -20,6 +20,9 @@ from src.api.routers.pm_operating_quality_book_scope_builder import (
     _pm_book_scope_source_id,
 )
 from src.api.routers.pm_operating_quality_models import (
+    _has_complete_pm_quality_policy_reference,
+    _has_inline_pm_quality_policy,
+    _has_pm_quality_policy_reference_fragment,
     _optional_summary_text,
     _required_summary_text,
     _validate_summary_content_hash,
@@ -387,6 +390,45 @@ def test_pm_operating_quality_request_models_normalize_and_validate_scope_edges(
             actor_id="ops",
             segments=[segment, segment],
         )
+
+
+def test_pm_operating_quality_policy_selection_helpers_classify_policy_inputs() -> None:
+    assert _has_inline_pm_quality_policy(_policy())
+    assert _has_inline_pm_quality_policy(None) is False
+    assert _has_pm_quality_policy_reference_fragment(
+        policy_id="pmq_sg_dpm",
+        policy_version=None,
+    )
+    assert _has_pm_quality_policy_reference_fragment(
+        policy_id=None,
+        policy_version="2026.05",
+    )
+    assert _has_pm_quality_policy_reference_fragment(policy_id=None, policy_version=None) is False
+    assert _has_complete_pm_quality_policy_reference(
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+    )
+    assert (
+        _has_complete_pm_quality_policy_reference(
+            policy_id="pmq_sg_dpm",
+            policy_version=None,
+        )
+        is False
+    )
+    assert (
+        _has_complete_pm_quality_policy_reference(
+            policy_id="",
+            policy_version="2026.05",
+        )
+        is False
+    )
+    assert (
+        _has_complete_pm_quality_policy_reference(
+            policy_id="pmq_sg_dpm",
+            policy_version="",
+        )
+        is False
+    )
 
 
 def test_pm_operating_quality_router_private_edges_fail_closed() -> None:

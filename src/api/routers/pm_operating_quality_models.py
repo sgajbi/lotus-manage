@@ -20,6 +20,26 @@ from src.core.pm_quality import (
 )
 
 
+def _has_inline_pm_quality_policy(policy: DpmPmOperatingQualityPolicy | None) -> bool:
+    return policy is not None
+
+
+def _has_pm_quality_policy_reference_fragment(
+    *,
+    policy_id: str | None,
+    policy_version: str | None,
+) -> bool:
+    return policy_id is not None or policy_version is not None
+
+
+def _has_complete_pm_quality_policy_reference(
+    *,
+    policy_id: str | None,
+    policy_version: str | None,
+) -> bool:
+    return bool(policy_id) and bool(policy_version)
+
+
 class DpmPmOperatingQualityPmBookScopeRequest(BaseModel):
     tenant_id: str | None = Field(
         default=None,
@@ -100,11 +120,18 @@ class DpmPmOperatingQualityScorePreviewRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_policy_selection(self) -> "DpmPmOperatingQualityScorePreviewRequest":
-        has_inline = self.policy is not None
-        has_ref = self.policy_id is not None or self.policy_version is not None
+        has_inline = _has_inline_pm_quality_policy(self.policy)
+        has_ref = _has_pm_quality_policy_reference_fragment(
+            policy_id=self.policy_id,
+            policy_version=self.policy_version,
+        )
         if has_inline and has_ref:
             raise ValueError("Supply either inline policy or persisted policy reference, not both")
-        if not has_inline and not (self.policy_id and self.policy_version):
+        has_complete_ref = _has_complete_pm_quality_policy_reference(
+            policy_id=self.policy_id,
+            policy_version=self.policy_version,
+        )
+        if not has_inline and not has_complete_ref:
             raise ValueError("Supply inline policy or both policy_id and policy_version")
         return self
 

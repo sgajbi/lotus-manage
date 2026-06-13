@@ -18,6 +18,11 @@ from src.core.outcomes.models import (
 _BLOCKING_QUALITIES = {"MISSING", "MALFORMED", "CONFLICTING"}
 _DEGRADED_QUALITIES = {"STALE", "UNAVAILABLE", "PARTIAL"}
 _NOT_SUPPORTED_QUALITIES = {"NOT_SUPPORTED"}
+_REALIZED_STATE_PRECEDENCE: tuple[OutcomeDimensionState, ...] = (
+    "BLOCKED",
+    "DEGRADED",
+    "NOT_SUPPORTED",
+)
 
 
 def assemble_realized_outcome_snapshot(
@@ -197,24 +202,57 @@ def _conflicting_metric(
 
 
 def _state_from_source(snapshot: DpmRealizedSourceSnapshot) -> OutcomeDimensionState:
-    if snapshot.source_state == "NOT_SUPPORTED" or snapshot.quality in _NOT_SUPPORTED_QUALITIES:
+    if _source_reports_not_supported(snapshot):
         return "NOT_SUPPORTED"
-    if snapshot.source_state == "BLOCKED" or snapshot.quality in _BLOCKING_QUALITIES:
+    if _source_reports_blocked(snapshot):
         return "BLOCKED"
-    if snapshot.source_state == "DEGRADED" or snapshot.quality in _DEGRADED_QUALITIES:
+    if _source_reports_degraded(snapshot):
         return "DEGRADED"
     return "READY"
+
+
+def _source_reports_not_supported(snapshot: DpmRealizedSourceSnapshot) -> bool:
+    return snapshot.source_state == "NOT_SUPPORTED" or snapshot.quality in _NOT_SUPPORTED_QUALITIES
+
+
+def _source_reports_blocked(snapshot: DpmRealizedSourceSnapshot) -> bool:
+    return snapshot.source_state == "BLOCKED" or snapshot.quality in _BLOCKING_QUALITIES
+
+
+def _source_reports_degraded(snapshot: DpmRealizedSourceSnapshot) -> bool:
+    return snapshot.source_state == "DEGRADED" or snapshot.quality in _DEGRADED_QUALITIES
 
 
 def _roll_up_state(states: list[OutcomeDimensionState]) -> OutcomeDimensionState:
     if not states:
         return "BLOCKED"
-    if all(state == "NOT_SUPPORTED" for state in states):
+    if _all_realized_states_not_supported(states):
         return "NOT_SUPPORTED"
-    for candidate in ("BLOCKED", "DEGRADED", "NOT_SUPPORTED"):
-        if candidate in states:
-            return "DEGRADED" if candidate == "NOT_SUPPORTED" else candidate
+    precedent_state = _first_realized_state_by_precedence(states)
+    if precedent_state is not None:
+        return _realized_rollup_state_for_precedent(precedent_state)
     return "READY"
+
+
+def _all_realized_states_not_supported(states: list[OutcomeDimensionState]) -> bool:
+    return all(state == "NOT_SUPPORTED" for state in states)
+
+
+def _first_realized_state_by_precedence(
+    states: list[OutcomeDimensionState],
+) -> OutcomeDimensionState | None:
+    for candidate in _REALIZED_STATE_PRECEDENCE:
+        if candidate in states:
+            return candidate
+    return None
+
+
+def _realized_rollup_state_for_precedent(
+    state: OutcomeDimensionState,
+) -> OutcomeDimensionState:
+    if state == "NOT_SUPPORTED":
+        return "DEGRADED"
+    return state
 
 
 def _roll_up_reason_codes(
