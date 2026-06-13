@@ -21192,3 +21192,34 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-856: Rolling-risk realized source identity helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `realized_rolling_risk_source_from_rolling_response` became the next current
+  source-complexity hotspot after the proof-pack source analytics slice and mixed
+  lotus-risk response navigation, supportability posture, source identity construction,
+  reason-code assembly, and realized source snapshot assembly in one adapter function.
+- Action: extracted rolling-risk source identity, metric value parsing, ready-value enforcement,
+  and reason-code assembly into pure helpers while preserving source-owned rolling metric values,
+  window selection, context posture, and `ROLLING_RISK_METRICS_REPORT` snapshot semantics. Added
+  direct helper coverage for decimal statistic parsing, missing-value tolerance outside READY
+  posture, READY missing-value rejection, beta percentile identity, and degraded risk-free context
+  reason-code projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal risk outcome source adapter
+  maintainability refactoring and repo-local quality evidence.

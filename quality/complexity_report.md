@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T01:50:20+00:00`
+- Generated at: `2026-06-13T02:05:16+00:00`
 
-- Current ref: `c8bc48e6`
+- Current ref: `ad7f2034`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
-| 2 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
-| 3 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
-| 4 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
-| 5 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
-| 6 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
-| 7 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
-| 8 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
-| 9 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
-| 10 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
+| 1 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
+| 2 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
+| 3 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
+| 4 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
+| 5 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
+| 6 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
+| 7 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
+| 8 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
+| 9 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
+| 10 | build_health_input_from_core_sources | src/core/mandates.py | 7 | 57 |
 
 ### Most Complex Current Test Functions
 
