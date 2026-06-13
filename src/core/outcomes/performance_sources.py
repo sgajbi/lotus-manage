@@ -29,6 +29,15 @@ AttributionOutcomeMeasure = Literal[
     "currency_selection",
     "currency_total_effect",
 ]
+_PerformanceSourceState = Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"]
+_PerformanceSourceQuality = Literal[
+    "COMPLETE",
+    "STALE",
+    "UNAVAILABLE",
+    "PARTIAL",
+    "MISSING",
+    "NOT_SUPPORTED",
+]
 
 
 class PerformanceOutcomeSourceError(ValueError):
@@ -238,10 +247,12 @@ def realized_attribution_source_from_attribution_response(
         supportability_state=supportability_state,
         value=value,
     )
-    if source_state == "READY" and value is None:
-        raise PerformanceOutcomeSourceError(
-            f"lotus-performance attribution response is missing a numeric attribution {measure} for {period}"
-        )
+    _ensure_ready_attribution_value(
+        source_state=source_state,
+        value=value,
+        measure=measure,
+        period=period,
+    )
 
     input_mode = _read_text(response.get("input_mode")) or "unknown"
     model = _read_text(response.get("model")) or "unknown"
@@ -250,6 +261,57 @@ def realized_attribution_source_from_attribution_response(
     benchmark_id = _read_text(benchmark.get("benchmark_id"))
     benchmark_source = _read_text(benchmark.get("return_source"))
 
+    return _attribution_source_snapshot(
+        metadata=metadata,
+        period=period,
+        measure=measure,
+        selector_token=selector_token,
+        value=value,
+        source_state=source_state,
+        quality=quality,
+        supportability_state=supportability_state,
+        supportability_reason=supportability_reason,
+        selector_reason=selector_reason,
+        input_mode=input_mode,
+        model=model,
+        linking=linking,
+        benchmark_id=benchmark_id,
+        benchmark_source=benchmark_source,
+    )
+
+
+def _ensure_ready_attribution_value(
+    *,
+    source_state: str,
+    value: Decimal | None,
+    measure: AttributionOutcomeMeasure,
+    period: str,
+) -> None:
+    if source_state != "READY" or value is not None:
+        return
+    raise PerformanceOutcomeSourceError(
+        f"lotus-performance attribution response is missing a numeric attribution {measure} for {period}"
+    )
+
+
+def _attribution_source_snapshot(
+    *,
+    metadata: dict[str, str | None],
+    period: str,
+    measure: AttributionOutcomeMeasure,
+    selector_token: str,
+    value: Decimal | None,
+    source_state: _PerformanceSourceState,
+    quality: _PerformanceSourceQuality,
+    supportability_state: str,
+    supportability_reason: str,
+    selector_reason: str,
+    input_mode: str,
+    model: str,
+    linking: str,
+    benchmark_id: str | None,
+    benchmark_source: str | None,
+) -> DpmRealizedSourceSnapshot:
     return DpmRealizedSourceSnapshot(
         dimension="PERFORMANCE",
         source_system="lotus-performance",

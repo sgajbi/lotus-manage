@@ -21253,3 +21253,35 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal wave portfolio-resolution
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-858: Performance attribution source snapshot helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/performance_sources.py`,
+  `tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `realized_attribution_source_from_attribution_response` became the next current
+  source-complexity hotspot after the tactical house-view portfolio-resolution slice and mixed
+  lotus-performance period navigation, source-owned attribution value selection, supportability
+  posture, READY value enforcement, benchmark context extraction, and realized source snapshot
+  assembly in one adapter function.
+- Action: extracted READY attribution value enforcement and `PERFORMANCE_ATTRIBUTION` snapshot
+  assembly into typed helpers while preserving source-owned attribution values, selector tokens,
+  benchmark reason codes, supportability posture, and no-local-attribution-math semantics. Added
+  direct helper coverage for non-READY missing-value tolerance, READY missing-value rejection, and
+  not-supported snapshot projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/performance_sources.py`,
+  `python -m pytest tests/unit/core/test_performance_realized_outcome_sources.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal performance outcome source
+  adapter maintainability refactoring and repo-local quality evidence.
