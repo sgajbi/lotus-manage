@@ -31,6 +31,29 @@ def apply_postgres_migrations(*, connection: Any, namespace: str) -> None:
 
 def _apply_migrations_locked(*, connection: Any, namespace: str) -> None:
     migrations = _load_migrations(namespace=namespace)
+    _ensure_schema_migrations_table(connection=connection)
+    applied = _load_applied_migration_checksums(connection=connection, namespace=namespace)
+    for migration in migrations:
+        existing_checksum = applied.get(migration.version)
+        if existing_checksum is not None:
+            _raise_if_checksum_changed(
+                namespace=namespace,
+                version=migration.version,
+                stored_checksum=existing_checksum,
+                expected_checksum=migration.checksum,
+            )
+            continue
+        sql = migration.sql_path.read_text(encoding="utf-8")
+        _execute_sql_statements(connection=connection, sql=sql)
+        _insert_schema_migration_record(
+            connection=connection,
+            namespace=namespace,
+            migration=migration,
+        )
+    connection.commit()
+
+
+def _ensure_schema_migrations_table(*, connection: Any) -> None:
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -41,6 +64,9 @@ def _apply_migrations_locked(*, connection: Any, namespace: str) -> None:
         )
         """
     )
+
+
+def _load_applied_migration_checksums(*, connection: Any, namespace: str) -> dict[str, str]:
     rows = connection.execute(
         """
         SELECT version, checksum
@@ -58,36 +84,50 @@ def _apply_migrations_locked(*, connection: Any, namespace: str) -> None:
         )
         checksum = str(row["checksum"])
         existing_checksum = applied.get(version)
-        if existing_checksum is not None and existing_checksum != checksum:
-            raise RuntimeError(f"POSTGRES_MIGRATION_CHECKSUM_MISMATCH:{namespace}:{version}")
-        applied[version] = checksum
-    for migration in migrations:
-        existing_checksum = applied.get(migration.version)
         if existing_checksum is not None:
-            if existing_checksum != migration.checksum:
-                raise RuntimeError(
-                    f"POSTGRES_MIGRATION_CHECKSUM_MISMATCH:{namespace}:{migration.version}"
-                )
-            continue
-        sql = migration.sql_path.read_text(encoding="utf-8")
-        _execute_sql_statements(connection=connection, sql=sql)
-        connection.execute(
-            """
-            INSERT INTO schema_migrations (
-                version,
-                namespace,
-                checksum,
-                applied_at
-            ) VALUES (%s, %s, %s, %s)
-            """,
-            (
-                _stored_version(namespace=namespace, version=migration.version),
-                namespace,
-                migration.checksum,
-                datetime.now(timezone.utc).isoformat(),
-            ),
-        )
-    connection.commit()
+            _raise_if_checksum_changed(
+                namespace=namespace,
+                version=version,
+                stored_checksum=existing_checksum,
+                expected_checksum=checksum,
+            )
+        applied[version] = checksum
+    return applied
+
+
+def _raise_if_checksum_changed(
+    *,
+    namespace: str,
+    version: str,
+    stored_checksum: str,
+    expected_checksum: str,
+) -> None:
+    if stored_checksum != expected_checksum:
+        raise RuntimeError(f"POSTGRES_MIGRATION_CHECKSUM_MISMATCH:{namespace}:{version}")
+
+
+def _insert_schema_migration_record(
+    *,
+    connection: Any,
+    namespace: str,
+    migration: PostgresMigration,
+) -> None:
+    connection.execute(
+        """
+        INSERT INTO schema_migrations (
+            version,
+            namespace,
+            checksum,
+            applied_at
+        ) VALUES (%s, %s, %s, %s)
+        """,
+        (
+            _stored_version(namespace=namespace, version=migration.version),
+            namespace,
+            migration.checksum,
+            datetime.now(timezone.utc).isoformat(),
+        ),
+    )
 
 
 def _execute_sql_statements(*, connection: Any, sql: str) -> None:

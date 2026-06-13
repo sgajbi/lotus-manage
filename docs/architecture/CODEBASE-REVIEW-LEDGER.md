@@ -21553,3 +21553,32 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal application-service
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-869: Postgres migration application helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/postgres_migrations.py` and
+  `tests/unit/shared/dependencies/test_postgres_migrations.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_apply_migrations_locked` still mixed schema-migration table creation, applied-row
+  normalization, checksum conflict detection, SQL execution, schema-migration metadata insertion,
+  and commit handling in one infrastructure helper. The behavior was correct, but the
+  forward-only migration contract was harder to review than necessary for production-safe schema
+  rollout.
+- Action: extracted helpers for schema-migration table creation, applied checksum loading,
+  checksum mismatch detection, and migration metadata insertion while preserving lock,
+  rollback, SQL execution, and commit behavior. Added direct tests for duplicate stored-version
+  checksum conflicts and namespace-scoped migration record insertion.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/postgres_migrations.py tests/unit/shared/dependencies/test_postgres_migrations.py`,
+  `python -m ruff format --check src/infrastructure/postgres_migrations.py tests/unit/shared/dependencies/test_postgres_migrations.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/postgres_migrations.py`,
+  `python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py -q`,
+  and `python -m radon cc src/infrastructure/postgres_migrations.py -s`; the focused Postgres
+  migration suite reported 6 passed and `_apply_migrations_locked` reduced from B(7) to A(3).
+- Residual risk: this slice improves internal migration maintainability only. It does not certify
+  global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure migration
+  maintainability hardening with no operator-facing contract change.
