@@ -22290,3 +22290,93 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal API-governance helper
   correctness hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-894: OpenAPI operation example enrichment helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: `_ensure_operation_examples` still coordinated request-body example enrichment,
+  response-body example enrichment, and error-response content enrichment directly. The behavior was
+  correct, but the generated OpenAPI operation example path remained a top source hotspot in the
+  quality report and was harder to review than the API governance layer should be.
+- Action: extracted `_ensure_request_body_example` and `_ensure_response_body_example` so request
+  and response enrichment can be reviewed and tested independently while preserving the existing
+  operation-level orchestration. Added direct helper coverage for JSON request enrichment,
+  non-JSON no-op behavior, success response examples, and structured error response examples.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment helper
+  suite reported 33 passed, `_ensure_operation_examples` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves OpenAPI enrichment maintainability only. It does not change
+  API schema truth, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-895: Risk concentration response section normalization
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Bank-buyable control area: architecture, downstream boundary clarity, and testing.
+- Finding: `_risk_context_from_concentration_response` combined source response section extraction,
+  supportability defaulting, source fingerprint preservation, issuer coverage projection, breach
+  counting, and `AuthoritativeRiskContext` construction. The behavior was correct, but the mapper
+  remained a top source hotspot and made the risk-authority boundary harder to review.
+- Action: extracted `_ConcentrationResponseSections` and `_concentration_response_sections` so
+  source-response shape and supportability defaults are normalized before context construction.
+  Added direct tests for populated source metadata and missing supportability defaults.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/risk_authority/client.py -s`; the focused risk-authority
+  suite reported 31 passed, `_risk_context_from_concentration_response` reduced from B(7) to B(6)
+  under radon, and the refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves source-owned concentration response mapping maintainability
+  only. It does not change source methodology, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal risk-authority mapping
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-896: Single-position target cap helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/targets.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`.
+- Bank-buyable control area: architecture, deterministic target generation, and testing.
+- Finding: `_apply_single_position_max_weight` combined overweight-target capping, released-weight
+  calculation, buyable-recipient selection, proportional redistribution, and pending-review
+  classification in one helper. The behavior was correct, but this made a core target-generation
+  guard harder to review and kept it in the top source hotspot report.
+- Action: extracted `_cap_single_position_targets` and `_redistribute_single_position_excess` so
+  capping and redistribution can be tested independently while preserving the existing
+  `READY`/`PENDING_REVIEW` behavior and Decimal arithmetic. Added direct tests for released-weight
+  calculation and unplaced redistribution remainder.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_target_generation.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/targets.py -s`; the focused target-generation suite
+  reported 24 passed, `_apply_single_position_max_weight` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves deterministic target-generation maintainability only. It does
+  not change rebalance policy semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal target-generation helper
+  maintainability hardening with no operator-facing contract change.

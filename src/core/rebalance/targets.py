@@ -357,21 +357,53 @@ def _apply_single_position_max_weight(
     buy_set: set[str],
     max_weight: Decimal,
 ) -> Literal["READY", "PENDING_REVIEW"]:
-    excess = sum(max(Decimal("0.0"), weight - max_weight) for weight in eligible_targets.values())
-    for instrument_id in eligible_targets:
-        eligible_targets[instrument_id] = min(eligible_targets[instrument_id], max_weight)
-
+    excess = _cap_single_position_targets(
+        eligible_targets=eligible_targets,
+        max_weight=max_weight,
+    )
     if excess <= Decimal("0.0"):
         return "READY"
 
+    remainder = _redistribute_single_position_excess(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        max_weight=max_weight,
+        excess=excess,
+    )
+    if remainder > Decimal("0.001"):
+        return "PENDING_REVIEW"
+    return "READY"
+
+
+def _cap_single_position_targets(
+    *,
+    eligible_targets: dict[str, Decimal],
+    max_weight: Decimal,
+) -> Decimal:
+    excess = sum(
+        (max(Decimal("0.0"), weight - max_weight) for weight in eligible_targets.values()),
+        Decimal("0.0"),
+    )
+    for instrument_id in eligible_targets:
+        eligible_targets[instrument_id] = min(eligible_targets[instrument_id], max_weight)
+    return excess
+
+
+def _redistribute_single_position_excess(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    max_weight: Decimal,
+    excess: Decimal,
+) -> Decimal:
     candidates = {
         instrument_id: weight
         for instrument_id, weight in eligible_targets.items()
         if instrument_id in buy_set and weight < max_weight
     }
-    total_candidate_weight = sum(candidates.values())
+    total_candidate_weight = sum(candidates.values(), Decimal("0.0"))
     if total_candidate_weight <= Decimal("0.0"):
-        return "PENDING_REVIEW"
+        return excess
 
     remainder = excess
     for instrument_id, weight in candidates.items():
@@ -379,9 +411,7 @@ def _apply_single_position_max_weight(
         eligible_targets[instrument_id] += share
         remainder -= share
 
-    if remainder > Decimal("0.001"):
-        return "PENDING_REVIEW"
-    return "READY"
+    return remainder
 
 
 def _apply_min_cash_buffer(

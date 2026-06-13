@@ -7,10 +7,12 @@ from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.rebalance.targets import (
     _apply_min_cash_buffer,
     _apply_single_position_max_weight,
+    _cap_single_position_targets,
     _cap_tradeable_targets_to_available_weight,
     _constraint_key_parts,
     _group_constraint_members,
     _redistribute_group_constraint_excess,
+    _redistribute_single_position_excess,
 )
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
@@ -177,6 +179,46 @@ class TestTargetGeneration:
         }
         assert eligible_targets["FI_A"] == Decimal("0.450")
         assert eligible_targets["FI_B"] == Decimal("0.150")
+
+    def test_cap_single_position_targets_returns_released_weight(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.80"),
+            "BUY_B": Decimal("0.20"),
+            "LOCKED": Decimal("0.60"),
+        }
+
+        excess = _cap_single_position_targets(
+            eligible_targets=eligible_targets,
+            max_weight=Decimal("0.50"),
+        )
+
+        assert excess == Decimal("0.40")
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.20"),
+            "LOCKED": Decimal("0.50"),
+        }
+
+    def test_redistribute_single_position_excess_returns_unplaced_remainder(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.40"),
+            "LOCKED": Decimal("0.50"),
+        }
+
+        remainder = _redistribute_single_position_excess(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            max_weight=Decimal("0.50"),
+            excess=Decimal("0.30"),
+        )
+
+        assert remainder == Decimal("0.20")
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.50"),
+            "LOCKED": Decimal("0.50"),
+        }
 
     def test_apply_single_position_max_weight_caps_and_redistributes_excess(self):
         eligible_targets = {

@@ -436,6 +436,47 @@ def _ensure_error_response_content(
         )
 
 
+def _ensure_request_body_example(
+    *,
+    operation: dict[str, Any],
+    schemas: dict[str, Any],
+    example_name: str,
+) -> None:
+    request_content = operation.get("requestBody", {}).get("content", {}).get(_JSON_MEDIA_TYPE)
+    if not isinstance(request_content, dict):
+        return
+    _ensure_json_content_example(
+        content=request_content,
+        schemas=schemas,
+        name=example_name,
+        summary="Example request payload.",
+    )
+
+
+def _ensure_response_body_example(
+    *,
+    response: dict[str, Any],
+    status_code: str,
+    schemas: dict[str, Any],
+    example_name: str,
+) -> None:
+    normalized_status_code = str(status_code)
+    if _is_error_status_code(normalized_status_code):
+        _ensure_error_response_content(
+            response=response,
+            status_code=normalized_status_code,
+        )
+    response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
+    if not isinstance(response_content, dict):
+        return
+    _ensure_json_content_example(
+        content=response_content,
+        schemas=schemas,
+        name=example_name,
+        summary="Example response payload.",
+    )
+
+
 def _ensure_operation_examples(
     *,
     method: str,
@@ -443,32 +484,21 @@ def _ensure_operation_examples(
     operation: dict[str, Any],
     schemas: dict[str, Any],
 ) -> None:
-    request_content = operation.get("requestBody", {}).get("content", {}).get(_JSON_MEDIA_TYPE)
-    if isinstance(request_content, dict):
-        _ensure_json_content_example(
-            content=request_content,
-            schemas=schemas,
-            name=f"{method}_{path}_request",
-            summary="Example request payload.",
-        )
+    _ensure_request_body_example(
+        operation=operation,
+        schemas=schemas,
+        example_name=f"{method}_{path}_request",
+    )
 
     for status_code, response in operation.get("responses", {}).items():
         if not isinstance(response, dict):
             continue
-        normalized_status_code = str(status_code)
-        if normalized_status_code.startswith(("4", "5")) or normalized_status_code == "default":
-            _ensure_error_response_content(
-                response=response,
-                status_code=normalized_status_code,
-            )
-        response_content = response.get("content", {}).get(_JSON_MEDIA_TYPE)
-        if isinstance(response_content, dict):
-            _ensure_json_content_example(
-                content=response_content,
-                schemas=schemas,
-                name=f"{method}_{path}_{status_code}_response",
-                summary="Example response payload.",
-            )
+        _ensure_response_body_example(
+            response=response,
+            status_code=str(status_code),
+            schemas=schemas,
+            example_name=f"{method}_{path}_{status_code}_response",
+        )
 
 
 def _is_http_operation_method(method: str) -> bool:
