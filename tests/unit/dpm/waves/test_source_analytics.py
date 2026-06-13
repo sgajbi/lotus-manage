@@ -9,6 +9,7 @@ from src.core.construction.models import (
 )
 from src.core.construction.vocabulary import ConstructionMethod, ConstructionMethodStatus
 from src.core.waves import DpmRebalanceWaveItem, DpmWaveSourceRef
+from src.core.waves import source_analytics as source_analytics_module
 from src.core.waves.source_analytics import (
     aggregate_wave_source_analytics,
     build_source_analytics_from_alternative_set,
@@ -135,6 +136,93 @@ def test_aggregate_wave_source_analytics_deduplicates_refs_and_counts_posture() 
         "LOTUS_RISK_CONCENTRATION_PARTIAL",
         "LOTUS_RISK_CONCENTRATION_READY",
     ]
+
+
+def test_aggregate_wave_source_analytics_rolls_up_families_independently() -> None:
+    items = [
+        _wave_item(
+            "dwi_004",
+            {
+                "risk": {
+                    "supportability_state": "BLOCKED",
+                    "source_systems": ["lotus-risk"],
+                    "source_refs": [
+                        {
+                            "source_system": "lotus-risk",
+                            "source_type": "RiskAuthorityContext",
+                            "source_id": "risk-context-004",
+                            "supportability_state": "BLOCKED",
+                        }
+                    ],
+                    "reason_codes": ["RISK_SOURCE_BLOCKED"],
+                    "source_measures": {
+                        "tracking_error": ["0.071"],
+                        "stress_loss_pct": ["-0.13"],
+                    },
+                },
+                "performance": {
+                    "supportability_state": "PENDING_REVIEW",
+                    "source_systems": ["lotus-performance"],
+                    "source_refs": [
+                        {
+                            "source_system": "lotus-performance",
+                            "source_type": "PerformanceAuthorityContext",
+                            "source_id": "performance-context-004",
+                            "supportability_state": "PENDING_REVIEW",
+                        }
+                    ],
+                    "reason_codes": ["PERFORMANCE_REVIEW_REQUIRED"],
+                    "source_measures": {
+                        "active_return": ["-0.018"],
+                        "benchmark_id": ["BMK_GLOBAL_BAL"],
+                    },
+                },
+            },
+        )
+    ]
+
+    summaries_by_family = {
+        summary.source_family: summary for summary in aggregate_wave_source_analytics(items)
+    }
+
+    assert summaries_by_family["RISK"].supportability_state == "BLOCKED"
+    assert summaries_by_family["RISK"].blocked_item_count == 1
+    assert summaries_by_family["RISK"].source_measures == {
+        "stress_loss_pct": ["-0.13"],
+        "tracking_error": ["0.071"],
+    }
+    assert summaries_by_family["PERFORMANCE"].supportability_state == "PENDING_REVIEW"
+    assert summaries_by_family["PERFORMANCE"].pending_review_item_count == 1
+    assert summaries_by_family["PERFORMANCE"].source_measures == {
+        "active_return": ["-0.018"],
+        "benchmark_id": ["BMK_GLOBAL_BAL"],
+    }
+
+
+def test_family_item_source_analytics_skips_missing_and_non_mapping_diagnostics() -> None:
+    items = [
+        DpmRebalanceWaveItem(
+            wave_item_id="dwi_missing",
+            portfolio_id="PF_MISSING",
+            state="SIMULATED",
+            diagnostics={},
+        ),
+        DpmRebalanceWaveItem(
+            wave_item_id="dwi_malformed",
+            portfolio_id="PF_MALFORMED",
+            state="SIMULATED",
+            diagnostics={"source_analytics": "not-a-mapping"},
+        ),
+        _wave_item(
+            "dwi_ready",
+            {"risk": {"supportability_state": "READY"}},
+        ),
+    ]
+
+    assert source_analytics_module._family_item_source_analytics(
+        items=items,
+        family="risk",
+    ) == [{"supportability_state": "READY"}]
 
 
 def _alternative(
