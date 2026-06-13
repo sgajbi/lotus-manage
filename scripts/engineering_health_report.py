@@ -97,6 +97,16 @@ def _git(*args: str) -> str:
     return completed.stdout
 
 
+def _git_status_porcelain() -> str:
+    return _git("status", "--porcelain")
+
+
+def _report_source_snapshot() -> str:
+    short_head = _git("rev-parse", "--short", "HEAD").strip()
+    suffix = "+worktree" if _git_status_porcelain().strip() else ""
+    return f"{short_head}{suffix}"
+
+
 def _python_paths_from_worktree() -> list[str]:
     paths: list[str] = []
     for root in PYTHON_ROOTS:
@@ -413,7 +423,7 @@ def _report_context(base_ref: str = DEFAULT_BASE_REF) -> HealthReportContext:
     return HealthReportContext(
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         base_ref=base_ref,
-        current_ref=_git("rev-parse", "--short", "HEAD").strip(),
+        current_ref=_report_source_snapshot(),
         base=base,
         current=current,
         openapi=_openapi_metrics(),
@@ -428,7 +438,7 @@ def build_refactor_report(context: HealthReportContext) -> str:
         "# lotus-manage Refactor Health Report",
         f"- Generated at: `{context.generated_at}`",
         f"- Baseline ref: `{context.base_ref}`",
-        f"- Current ref: `{context.current_ref}`",
+        f"- Report source snapshot: `{context.current_ref}`",
         "- Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.",
         "## Scorecard",
         _metric_summary(base, current),
@@ -482,7 +492,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Baseline Quality Report",
         f"- Generated at: `{context.generated_at}`",
-        f"- Baseline commit: `{context.current_ref}`",
+        f"- Report source snapshot: `{context.current_ref}`",
         "- Mode: report-only baseline. This records current posture; it does not enforce "
         "thresholds by itself.",
         "## Current Code Size",
@@ -616,7 +626,7 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Quality Scorecard",
         f"- Generated at: `{context.generated_at}`",
-        f"- Current ref: `{context.current_ref}`",
+        f"- Report source snapshot: `{context.current_ref}`",
         "- Purpose: make enterprise-readiness progress measurable without pretending report-only "
         "baselines are mature enforcement gates.",
         _table(["Area", "Status", "Evidence / next gate"], rows),
@@ -660,7 +670,7 @@ def build_complexity_report(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Complexity Report",
         f"- Generated at: `{context.generated_at}`",
-        f"- Current ref: `{context.current_ref}`",
+        f"- Report source snapshot: `{context.current_ref}`",
         "- Mode: report-only maintainability baseline using dependency-free AST branch counting.",
         "## Summary",
         _table(
