@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T10:33:03+00:00`
+- Generated at: `2026-06-13T10:35:16+00:00`
 
-- Report source snapshot: `d895d6cc+worktree`
+- Report source snapshot: `d3d5360f+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -41,7 +41,7 @@
 | 7 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
 | 8 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
 | 9 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
-| 10 | _regime_stress_evidence_posture | src/core/proof_packs/source_analytics.py | 7 | 35 |
+| 10 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
 
 ### Most Complex Current Test Functions
 

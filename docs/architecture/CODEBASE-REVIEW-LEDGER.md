@@ -21961,3 +21961,34 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-883: Regime-stress proof-pack evidence posture tables
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, source-owner evidence preservation, and testing.
+- Finding: `_regime_stress_evidence_posture` encoded missing governance evidence and
+  source-reason posture effects as branch-heavy local control flow. The behavior was correct, but
+  future source-owned scenario/posture additions would be harder to review against the
+  RegimeScenarioPackEvaluation boundary.
+- Action: extracted table-backed helpers for missing governance evidence reason codes and
+  source-reason posture effects while preserving the existing state precedence, facts, and sorted
+  reason-code behavior. Added direct helper coverage for missing CIO approval/effective-period/
+  applicability evidence and READY, inapplicable, effective-period exception, and partial
+  contribution source-reason posture effects.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  builder suite reported 95 passed, `_regime_stress_evidence_posture` reduced from B(7) to A(2)
+  under radon, and the refreshed complexity report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves proof-pack source-analytics maintainability only. It does not
+  change source-owner methodology, certify global bank-buyable readiness, or promote additional
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability hardening with no operator-facing contract change.
