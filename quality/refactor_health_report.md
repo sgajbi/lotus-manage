@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-13T15:36:02+00:00`
+- Generated at: `2026-06-13T15:38:15+00:00`
 
 - Baseline ref: `origin/main`
 
-- Report source snapshot: `485abf74+worktree`
+- Report source snapshot: `ba4c34fa`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
