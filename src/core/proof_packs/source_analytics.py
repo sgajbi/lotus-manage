@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 from pydantic import ValidationError
 
@@ -25,6 +25,17 @@ _RegimeStressSourceReasonPosture = Literal[
     "INAPPLICABLE",
     "EFFECTIVE_PERIOD_EXCEPTION",
     "CONTRIBUTION_PARTIAL",
+]
+_INAPPLICABLE_REASON_MARKERS = ("INAPPLICABLE", "NOT_APPLICABLE")
+_EFFECTIVE_PERIOD_REASON_MARKERS = (
+    "STALE",
+    "EXPIRED",
+    "OUTSIDE_EFFECTIVE",
+    "EFFECTIVE_PERIOD_EXCEPTION",
+)
+_RegimeStressSourceReasonClassifier = tuple[
+    _RegimeStressSourceReasonPosture,
+    Callable[[str], bool],
 ]
 
 ProofPackAnalyticsFamily = Literal[
@@ -245,9 +256,6 @@ def _transaction_cost_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_TRANSACTION_COST_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="transaction_cost",
         source_system=context.source_system,
@@ -263,28 +271,44 @@ def _transaction_cost_source_analytics(
             "Observed transaction-cost evidence is attached from source-owned "
             "TransactionCostCurve:v1."
         ),
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name,
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "as_of_date": context.as_of_date.isoformat(),
-            "window_start_date": context.window_start_date.isoformat(),
-            "window_end_date": context.window_end_date.isoformat(),
-            "missing_security_ids": context.missing_security_ids,
-            "curve_points": [point.model_dump(mode="json") for point in context.curve_points[:10]],
-        },
-        metrics={
-            "returned_curve_point_count": context.returned_curve_point_count,
-            "represented_observation_count": sum(
-                point.observation_count for point in context.curve_points
-            ),
-        },
-        reason_codes=reason_codes,
+        facts=_transaction_cost_source_facts(context),
+        metrics=_transaction_cost_source_metrics(context),
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_TRANSACTION_COST_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="transaction_cost_context",
         content_hash=context.content_hash or content_hash,
     )
+
+
+def _transaction_cost_source_facts(
+    context: AuthoritativeTransactionCostContext,
+) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": context.source_product_name,
+        "source_product_version": context.source_product_version,
+        "source_id": context.source_id,
+        "as_of_date": context.as_of_date.isoformat(),
+        "window_start_date": context.window_start_date.isoformat(),
+        "window_end_date": context.window_end_date.isoformat(),
+        "missing_security_ids": context.missing_security_ids,
+        "curve_points": [point.model_dump(mode="json") for point in context.curve_points[:10]],
+    }
+
+
+def _transaction_cost_source_metrics(
+    context: AuthoritativeTransactionCostContext,
+) -> dict[str, int]:
+    return {
+        "returned_curve_point_count": context.returned_curve_point_count,
+        "represented_observation_count": sum(
+            point.observation_count for point in context.curve_points
+        ),
+    }
 
 
 def _client_restriction_source_analytics(
@@ -296,9 +320,6 @@ def _client_restriction_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="client_restriction",
         source_system=context.source_system,
@@ -326,7 +347,11 @@ def _client_restriction_source_analytics(
             ],
         },
         metrics={"restriction_count": context.restriction_count},
-        reason_codes=reason_codes,
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="client_restriction_context",
         content_hash=context.content_hash or content_hash,
@@ -342,9 +367,6 @@ def _sustainability_preference_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="sustainability_preference",
         source_system=context.source_system,
@@ -375,7 +397,11 @@ def _sustainability_preference_source_analytics(
             ],
         },
         metrics={"preference_count": context.preference_count},
-        reason_codes=reason_codes,
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="sustainability_preference_context",
         content_hash=context.content_hash or content_hash,
@@ -425,6 +451,18 @@ def _regime_stress_source_analytics(
         source_hash_key="regime_stress_context",
         content_hash=content_hash,
     )
+
+
+def _degraded_context_reason_codes(
+    *,
+    supportability_status: ConstructionMethodStatus,
+    reason_codes: list[str],
+    degraded_reason: str,
+) -> list[str]:
+    resolved_reason_codes = list(reason_codes)
+    if supportability_status != ConstructionMethodStatus.READY and not resolved_reason_codes:
+        resolved_reason_codes.append(degraded_reason)
+    return resolved_reason_codes
 
 
 def _regime_stress_source_facts(
@@ -539,20 +577,42 @@ def _missing_regime_stress_governance_evidence(
 def _regime_source_reason_posture(
     reason_codes: list[str],
 ) -> _RegimeStressSourceReasonPosture:
-    normalized_reason_codes = {reason.upper() for reason in reason_codes}
-    if any(
-        "INAPPLICABLE" in reason or "NOT_APPLICABLE" in reason for reason in normalized_reason_codes
-    ):
-        return "INAPPLICABLE"
-    if any(
-        marker in reason
-        for reason in normalized_reason_codes
-        for marker in ["STALE", "EXPIRED", "OUTSIDE_EFFECTIVE", "EFFECTIVE_PERIOD_EXCEPTION"]
-    ):
-        return "EFFECTIVE_PERIOD_EXCEPTION"
-    if any("CONTRIBUTION" in reason and "PARTIAL" in reason for reason in normalized_reason_codes):
-        return "CONTRIBUTION_PARTIAL"
+    normalized_reason_codes = _normalized_reason_codes(reason_codes)
+    for posture, matches in _regime_source_reason_classifiers():
+        if any(matches(reason) for reason in normalized_reason_codes):
+            return posture
     return "READY"
+
+
+def _regime_source_reason_classifiers() -> tuple[_RegimeStressSourceReasonClassifier, ...]:
+    return (
+        ("INAPPLICABLE", _is_inapplicable_regime_reason),
+        ("EFFECTIVE_PERIOD_EXCEPTION", _is_effective_period_regime_reason),
+        ("CONTRIBUTION_PARTIAL", _is_partial_contribution_regime_reason),
+    )
+
+
+def _normalized_reason_codes(reason_codes: list[str]) -> set[str]:
+    return {reason.upper() for reason in reason_codes}
+
+
+def _is_inapplicable_regime_reason(reason: str) -> bool:
+    return _reason_contains_any_marker(reason=reason, markers=_INAPPLICABLE_REASON_MARKERS)
+
+
+def _is_effective_period_regime_reason(reason: str) -> bool:
+    return _reason_contains_any_marker(
+        reason=reason,
+        markers=_EFFECTIVE_PERIOD_REASON_MARKERS,
+    )
+
+
+def _is_partial_contribution_regime_reason(reason: str) -> bool:
+    return "CONTRIBUTION" in reason and "PARTIAL" in reason
+
+
+def _reason_contains_any_marker(*, reason: str, markers: tuple[str, ...]) -> bool:
+    return any(marker in reason for marker in markers)
 
 
 def _regime_applicability_projected(context: AuthoritativeRegimeStressContext) -> bool:
