@@ -37,7 +37,7 @@ def _has_complete_pm_quality_policy_reference(
     policy_id: str | None,
     policy_version: str | None,
 ) -> bool:
-    return policy_id is not None and policy_version is not None
+    return bool(policy_id) and bool(policy_version)
 
 
 class DpmPmOperatingQualityPmBookScopeRequest(BaseModel):

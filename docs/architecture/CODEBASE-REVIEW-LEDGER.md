@@ -23007,3 +23007,29 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal realized outcome helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-918: PM-quality blank policy reference guard
+
+- Date: 2026-06-14
+- Scope: `src/api/routers/pm_operating_quality_models.py` and
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Bank-buyable control area: API quality, fail-closed request validation, and testing.
+- Finding: PR review identified that `_has_complete_pm_quality_policy_reference` accepted empty
+  strings after the policy-selection helper extraction because it checked only for `None`.
+  The prior validator treated persisted policy references as complete only when both values were
+  truthy, so blank form/API fields could reach the service resolver as empty policy keys.
+- Action: restored truthy complete-reference semantics in
+  `_has_complete_pm_quality_policy_reference` and added direct regression assertions for blank
+  `policy_id` and blank `policy_version`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_models.py`, and
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py -q`; the focused PM
+  operating-quality API suite reported 37 passed.
+- Residual risk: this slice restores request-validation semantics for blank persisted policy
+  references only. It does not change service resolver behavior, certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM operating-quality API
+  validation hardening with no operator-facing contract change.

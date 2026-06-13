@@ -415,6 +415,20 @@ def test_pm_operating_quality_policy_selection_helpers_classify_policy_inputs() 
         )
         is False
     )
+    assert (
+        _has_complete_pm_quality_policy_reference(
+            policy_id="",
+            policy_version="2026.05",
+        )
+        is False
+    )
+    assert (
+        _has_complete_pm_quality_policy_reference(
+            policy_id="pmq_sg_dpm",
+            policy_version="",
+        )
+        is False
+    )
 
 
 def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
