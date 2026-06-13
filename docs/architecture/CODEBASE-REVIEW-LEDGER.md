@@ -21992,3 +21992,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-884: GitHub artifact actions Node 24 runtime
+
+- Date: 2026-06-13
+- Scope: `.github/workflows/pr-merge-gate.yml`, `.github/workflows/main-releasability.yml`,
+  `.github/workflows/quality-baseline.yml`, and
+  `tests/unit/test_ci_workflow_gate_enforcement.py`.
+- Bank-buyable control area: CI measurement, release evidence, and operational maintainability.
+- Finding: post-merge Main Releasability Gate emitted GitHub Actions deprecation annotations for
+  artifact upload/download steps and `setup-node` running on the Node 20 JavaScript action
+  runtime. The checks passed, but the warning creates avoidable CI noise ahead of GitHub's Node 24
+  default transition.
+- Action: upgraded artifact-producing and artifact-consuming workflows to native Node 24 action
+  majors (`actions/upload-artifact@v7`, `actions/download-artifact@v8`) and moved the Quality
+  Baseline Node setup to `actions/setup-node@v6` with Node 24. Added workflow regression tests
+  proving artifact workflows no longer use the Node 20 artifact action majors and Quality Baseline
+  no longer uses `setup-node@v4` or Node 20.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `python -m ruff format --check tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `python -m pytest tests/unit/test_ci_workflow_gate_enforcement.py -q`, and
+  `python scripts/engineering_health_report.py`; the focused workflow test suite reported
+  3 passed. Local `make workflow-lint` is not a repository target, so GitHub Feature Lane and PR
+  Merge Gate workflow-lint jobs remain the workflow-syntax proof for this slice.
+- Residual risk: this slice remediates the observed artifact-action runtime warning only. It does
+  not certify all possible future GitHub-hosted runner deprecations or change application runtime
+  behavior.
+- Wiki decision: no wiki source change required; this is CI warning remediation with no
+  operator-facing product contract change.
