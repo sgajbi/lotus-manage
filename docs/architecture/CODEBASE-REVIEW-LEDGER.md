@@ -20842,3 +20842,60 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal enterprise runtime
   security/config maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-844: Command-center supportability source posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/mandate_command_center.py`,
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `command_center_supportability_state` was the top current source-complexity hotspot
+  after the enterprise runtime config slice and mixed empty-run handling, source-readiness
+  precedence, partial-completeness handling, and ready fallback in one helper.
+- Action: extracted named command-center source-readiness normalization, blocking, degradation,
+  and supportability-posture helpers while preserving blocked-before-degraded precedence, partial
+  reason selection, and ready fallback behavior. Added direct tests proving case normalization,
+  blocked/degraded detection, precedence, and ready-source no-op posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal command-center supportability
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-845: OpenAPI semantic string example rules
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_semantic_string_example_for_key` was the top current source-complexity hotspot after
+  the command-center supportability slice and encoded identifier, currency, timestamp, date,
+  status, and fallback string example semantics as a branch chain.
+- Action: introduced explicit ordered semantic string example rules and separated identifier
+  example generation from rule-based examples while preserving timestamp-before-date precedence
+  and generic string fallback behavior. Added direct tests for rule ordering, identifier examples,
+  rule examples, and no-match behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring and repo-local quality evidence.

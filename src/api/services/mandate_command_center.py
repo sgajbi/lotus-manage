@@ -15,13 +15,18 @@ from src.core.mandates import (
     MonitoringSeverity,
 )
 
+CommandCenterSupportabilityState = Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"]
+CommandCenterSupportabilityPosture = tuple[CommandCenterSupportabilityState, str]
+_BLOCKING_SOURCE_READINESS_STATES = {"INCOMPLETE", "UNAVAILABLE", "BLOCKED"}
+_DEGRADED_SOURCE_READINESS_STATES = {"DEGRADED", "STALE"}
+
 
 @dataclass(frozen=True)
 class _CommandCenterReadModel:
     health_distribution: dict[str, int]
     partial_reasons: list[str]
     completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"]
-    supportability_state: Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"]
+    supportability_state: CommandCenterSupportabilityState
     supportability_reason: str
 
 
@@ -30,18 +35,42 @@ def command_center_supportability_state(
     latest_run: DpmMonitoringRun | None,
     completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
     partial_reasons: list[str],
-) -> tuple[Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"], str]:
+) -> CommandCenterSupportabilityPosture:
     if latest_run is None or completeness == "EMPTY":
         return "EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
 
-    source_states = {state.upper() for state in latest_run.source_readiness_summary}
-    if source_states.intersection({"INCOMPLETE", "UNAVAILABLE", "BLOCKED"}):
-        return "BLOCKED", "COMMAND_CENTER_SOURCE_READINESS_BLOCKED"
-    if source_states.intersection({"DEGRADED", "STALE"}):
-        return "DEGRADED", "COMMAND_CENTER_SOURCE_READINESS_DEGRADED"
+    source_posture = _source_readiness_supportability_posture(
+        source_readiness_summary=latest_run.source_readiness_summary
+    )
+    if source_posture is not None:
+        return source_posture
     if completeness == "PARTIAL" or partial_reasons:
         return "PARTIAL", partial_reasons[0] if partial_reasons else "COMMAND_CENTER_PARTIAL"
     return "READY", "COMMAND_CENTER_READY"
+
+
+def _source_readiness_supportability_posture(
+    *,
+    source_readiness_summary: dict[str, int],
+) -> CommandCenterSupportabilityPosture | None:
+    source_states = _normalized_source_readiness_states(source_readiness_summary)
+    if _source_readiness_blocks_command_center(source_states):
+        return "BLOCKED", "COMMAND_CENTER_SOURCE_READINESS_BLOCKED"
+    if _source_readiness_degrades_command_center(source_states):
+        return "DEGRADED", "COMMAND_CENTER_SOURCE_READINESS_DEGRADED"
+    return None
+
+
+def _normalized_source_readiness_states(source_readiness_summary: dict[str, int]) -> set[str]:
+    return {state.upper() for state in source_readiness_summary}
+
+
+def _source_readiness_blocks_command_center(source_states: set[str]) -> bool:
+    return bool(source_states.intersection(_BLOCKING_SOURCE_READINESS_STATES))
+
+
+def _source_readiness_degrades_command_center(source_states: set[str]) -> bool:
+    return bool(source_states.intersection(_DEGRADED_SOURCE_READINESS_STATES))
 
 
 def run_matches_command_center_filters(
