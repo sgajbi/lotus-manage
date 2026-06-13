@@ -21809,3 +21809,29 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal portfolio-memory
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-878: Quality report source-snapshot provenance
+
+- Date: 2026-06-13
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  and generated `quality/` reports.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: generated quality reports labelled their measured worktree as `Current ref`, which can
+  look like a committed SHA even when the report necessarily includes uncommitted code and report
+  changes before the slice commit exists. That made before/after evidence less precise than the
+  bank-buyable reporting standard requires.
+- Action: added explicit report source-snapshot provenance. The report generator now emits the
+  short `HEAD` when the tree is clean and `HEAD+worktree` when measured files include uncommitted
+  worktree content. Refreshed the baseline, scorecard, refactor-health, and complexity reports to
+  use `Report source snapshot` wording instead of implying a final committed ref.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m ruff format --check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/engineering_health_report.py`, and
+  `python -m pytest tests/unit/test_engineering_health_report.py -q`; the focused reporting suite
+  reported 8 passed.
+- Residual risk: this improves report provenance only. It does not certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal quality-evidence hardening with
+  no operator-facing contract change.
