@@ -21072,3 +21072,33 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk-source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-852: Target-generation solver problem assembly helper
+
+- Date: 2026-06-13
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `generate_targets_solver` was the top current source-complexity hotspot after the
+  historical risk attribution source identity slice and mixed solver dependency loading, sell-only
+  redistribution, universe selection, solver objective and constraint assembly, fallback solve
+  handling, and trace generation in one function.
+- Action: extracted solver problem assembly into a named helper that returns the constructed solver
+  problem and weights variable while preserving cash-band bounds, single-position caps, group
+  constraints, fallback solve behavior, and trace output. Added direct helper coverage using solver
+  stubs for cash, position, and group-constraint construction without requiring real solver
+  dependencies.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m ruff format --check src/core/target_generation.py tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src/core/target_generation.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/core/test_target_generation_solver_fallbacks.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal target-generation solver
+  maintainability refactoring and repo-local quality evidence.

@@ -26,6 +26,11 @@ class SolverGroupMembers(NamedTuple):
     locked_weight: Decimal
 
 
+class SolverProblemSpec(NamedTuple):
+    problem: Any
+    weights: Any
+
+
 def _build_solver_attempts(cp: Any) -> tuple[tuple[Any, tuple[dict[str, Any], ...]], ...]:
     """
     Ordered solver attempts with bounded runtime and compatibility fallbacks.
@@ -329,6 +334,51 @@ def _apply_solver_values(
     return True
 
 
+def _build_solver_problem(
+    *,
+    cp: Any,
+    np: Any,
+    model: Any,
+    tradeable_ids: list[str],
+    locked_weight: Decimal,
+    eligible_targets: dict[str, Decimal],
+    shelf: list[ShelfEntry],
+    options: EngineOptions,
+    diagnostics: DiagnosticsData,
+) -> SolverProblemSpec:
+    w_model = _solver_model_weight_array(np=np, model=model, tradeable_ids=tradeable_ids)
+    w = cp.Variable(len(tradeable_ids))
+
+    objective = cp.Minimize(cp.sum_squares(w - w_model))
+    constraints = [w >= 0]
+
+    invested_bounds = _solver_invested_bounds(
+        locked_weight=locked_weight,
+        options=options,
+    )
+    constraints.append(cp.sum(w) >= float(invested_bounds.minimum))
+    constraints.append(cp.sum(w) <= float(invested_bounds.maximum))
+
+    if options.single_position_max_weight is not None:
+        constraints.append(w <= float(options.single_position_max_weight))
+
+    _append_solver_group_constraints(
+        cp=cp,
+        w=w,
+        constraints=constraints,
+        options=options,
+        eligible_targets=eligible_targets,
+        shelf=shelf,
+        tradeable_ids=tradeable_ids,
+        diagnostics=diagnostics,
+    )
+
+    return SolverProblemSpec(
+        problem=cp.Problem(objective, constraints),
+        weights=w,
+    )
+
+
 def _load_solver_modules(diagnostics: DiagnosticsData) -> tuple[Any, Any] | None:
     if not has_solver_dependencies():
         diagnostics.warnings.append("SOLVER_ERROR")
@@ -461,35 +511,18 @@ def generate_targets_solver(
     if not tradeable_ids:
         return build_target_trace(model, eligible_targets, buy_list, total_val, base_ccy), status
 
-    w_model = _solver_model_weight_array(np=np, model=model, tradeable_ids=tradeable_ids)
-    w = cp.Variable(len(tradeable_ids))
-
-    objective = cp.Minimize(cp.sum_squares(w - w_model))
-    constraints = [w >= 0]
-
-    invested_bounds = _solver_invested_bounds(
-        locked_weight=locked_weight,
-        options=options,
-    )
-    constraints.append(cp.sum(w) >= float(invested_bounds.minimum))
-    constraints.append(cp.sum(w) <= float(invested_bounds.maximum))
-
-    if options.single_position_max_weight is not None:
-        constraints.append(w <= float(options.single_position_max_weight))
-
-    _append_solver_group_constraints(
+    solver_problem = _build_solver_problem(
         cp=cp,
-        w=w,
-        constraints=constraints,
-        options=options,
+        np=np,
+        model=model,
+        tradeable_ids=tradeable_ids,
+        locked_weight=locked_weight,
         eligible_targets=eligible_targets,
         shelf=shelf,
-        tradeable_ids=tradeable_ids,
+        options=options,
         diagnostics=diagnostics,
     )
-
-    prob = cp.Problem(objective, constraints)
-    solved, latest_status = _solve_with_fallbacks(prob, cp)
+    solved, latest_status = _solve_with_fallbacks(solver_problem.problem, cp)
 
     if not solved:
         reason = _solver_failure_reason(latest_status)
@@ -507,7 +540,7 @@ def generate_targets_solver(
         return [], "BLOCKED"
 
     if not _apply_solver_values(
-        values=w.value,
+        values=solver_problem.weights.value,
         tradeable_ids=tradeable_ids,
         eligible_targets=eligible_targets,
         diagnostics=diagnostics,
