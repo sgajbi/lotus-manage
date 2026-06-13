@@ -22738,3 +22738,90 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM-quality fairness helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-909: Bulk-review campaign definition structural guards
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_definitions.py` and
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`.
+- Bank-buyable control area: architecture, campaign governance, and testing.
+- Finding: `validate_definition` combined lifecycle validation, eligible portfolio type presence,
+  candidate presence, deterministic content-hash validation, and hash assignment in one model
+  validator. The behavior was correct, but the bulk-review campaign definition governance
+  contract was harder to review than an immutable campaign definition guard should be.
+- Action: extracted `_validate_campaign_definition_structure`,
+  `_has_eligible_portfolio_type`, and `_apply_campaign_definition_content_hash` so structural
+  required fields and content-hash binding are named and directly testable after lifecycle
+  validation. Added direct helper tests for eligible portfolio type detection, missing structural
+  scope, missing candidates, content-hash assignment, and mismatch rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m ruff format --check src/core/waves/campaign_definitions.py tests/unit/dpm/waves/test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_definitions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_definition_repository.py -q`,
+  and `python -m radon cc src/core/waves/campaign_definitions.py -s`; the focused campaign
+  definition repository suite reported 53 passed and `validate_definition` reduced from B(7) to
+  A(3) under radon.
+- Residual risk: this slice improves bulk-review campaign definition maintainability only. It
+  does not change campaign definition semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal campaign definition helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-910: Proof-pack correlation fallback helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack lineage, and testing.
+- Finding: `_resolve_proof_pack_correlation_id` encoded explicit, selected-alternative,
+  rebalance-run, and generated correlation fallback order as one nested expression. The behavior
+  was correct, but proof-pack lineage correlation should be reviewable as named fallback rules.
+- Action: extracted `_selection_correlation_id`, `_run_correlation_id`, and
+  `_generated_proof_pack_correlation_id` so each fallback source is directly named before the
+  resolver chooses the first available value. Added a direct fallback-order test covering explicit,
+  selection, run, and generated proof-pack correlation ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 96 passed and `_resolve_proof_pack_correlation_id` reduced from B(7) to A(3)
+  under radon.
+- Residual risk: this slice improves proof-pack correlation fallback maintainability only. It
+  does not change proof-pack lineage semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-911: Campaign assignment transition requirement predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow controls, and testing.
+- Finding: `_validate_transition_field_requirements` combined open-task assignee requirements,
+  reassignment/escalation actor-id requirements, and due-date transition requirements in one
+  conditional sequence. The behavior was correct, but controlled assignment-task transitions are
+  easier to review when each required-field rule is named.
+- Action: extracted `_transition_requires_open_assignees`, `_transition_requires_actor_ids`, and
+  `_transition_requires_due_at` so each transition guard predicate is independently testable
+  before error-code mapping. Expanded direct helper tests for open/closed assignee requirements,
+  reassignment actor-id requirements, non-reassignment pass-through, and due-date requirements.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  and `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 86 passed and `_validate_transition_field_requirements` reduced from
+  B(7) to A(4) under radon.
+- Residual risk: this slice improves campaign assignment transition maintainability only. It
+  does not change assignment-task semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal campaign assignment helper
+  maintainability hardening with no operator-facing contract change.

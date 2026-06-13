@@ -411,14 +411,30 @@ def _resolve_proof_pack_correlation_id(
     run: DpmRunRecord | None,
     created_at: datetime,
 ) -> str:
-    return (
-        correlation_id
-        or (
-            selection.correlation_id if selection is not None and selection.correlation_id else None
-        )
-        or (run.correlation_id if run is not None else None)
-        or f"proof-pack-{created_at.strftime('%Y%m%d%H%M%S')}"
+    return next(
+        candidate
+        for candidate in [
+            correlation_id,
+            _selection_correlation_id(selection),
+            _run_correlation_id(run),
+            _generated_proof_pack_correlation_id(created_at),
+        ]
+        if candidate
     )
+
+
+def _selection_correlation_id(selection: ConstructionAlternativeSelection | None) -> str | None:
+    if selection is None or not selection.correlation_id:
+        return None
+    return selection.correlation_id
+
+
+def _run_correlation_id(run: DpmRunRecord | None) -> str | None:
+    return run.correlation_id if run is not None else None
+
+
+def _generated_proof_pack_correlation_id(created_at: datetime) -> str:
+    return f"proof-pack-{created_at.strftime('%Y%m%d%H%M%S')}"
 
 
 def _proof_pack_sections(

@@ -504,12 +504,42 @@ def _validate_transition_field_requirements(
     assigned_actor_ids: list[str] | None,
     due_at: datetime | None,
 ) -> None:
-    if next_status not in _CLOSED_STATUSES and not next_assignees:
+    if _transition_requires_open_assignees(
+        next_status=next_status,
+        next_assignees=next_assignees,
+    ):
         raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None:
+    if _transition_requires_actor_ids(
+        transition_type=transition_type,
+        assigned_actor_ids=assigned_actor_ids,
+    ):
         raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
-    if transition_type == "DUE_DATE_CHANGED" and due_at is None:
+    if _transition_requires_due_at(transition_type=transition_type, due_at=due_at):
         raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_DUE_AT_REQUIRED")
+
+
+def _transition_requires_open_assignees(
+    *,
+    next_status: CampaignAssignmentTaskStatus,
+    next_assignees: list[str],
+) -> bool:
+    return next_status not in _CLOSED_STATUSES and not next_assignees
+
+
+def _transition_requires_actor_ids(
+    *,
+    transition_type: CampaignAssignmentTaskTransitionType,
+    assigned_actor_ids: list[str] | None,
+) -> bool:
+    return transition_type in {"REASSIGNED", "ESCALATED"} and assigned_actor_ids is None
+
+
+def _transition_requires_due_at(
+    *,
+    transition_type: CampaignAssignmentTaskTransitionType,
+    due_at: datetime | None,
+) -> bool:
+    return transition_type == "DUE_DATE_CHANGED" and due_at is None
 
 
 def _next_status(
