@@ -22410,3 +22410,35 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal repository helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-898: Campaign assignment action page state helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_assignment_actions.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, workflow supportability, and testing.
+- Finding: `build_bulk_review_campaign_definition_assignment_action_page` combined assignment
+  action sorting, pagination, latest-action derivation, resolved-state actor clearing, escalation
+  posture, SLA posture, and page construction. The behavior was correct, but the workflow page
+  state projection was harder to review than a governed maker/checker supportability surface should
+  be.
+- Action: extracted `_AssignmentActionPageState`, `_sorted_assignment_actions`, and
+  `_assignment_action_page_state` so current assignment posture is independently testable before
+  page construction. Added direct tests for latest-action ordering, active escalation state,
+  empty defaults, and resolved-action actor clearing.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_actions.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_actions.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/waves/campaign_assignment_actions.py -s`; the focused campaign
+  discovery suite reported 86 passed, `build_bulk_review_campaign_definition_assignment_action_page`
+  reduced to A(1) under radon, and the refreshed quality report no longer lists it in the top source
+  hotspots.
+- Residual risk: this slice improves assignment-action page-state maintainability only. It does not
+  change campaign workflow semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal workflow helper
+  maintainability hardening with no operator-facing contract change.

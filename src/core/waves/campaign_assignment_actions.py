@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -31,6 +32,14 @@ class _AssignmentActionRequest(BaseModel):
     action_reason: str
     assigned_actor_ids: list[str]
     correlation_id: str
+
+
+@dataclass(frozen=True)
+class _AssignmentActionPageState:
+    latest_action_type: CampaignAssignmentActionType | None
+    current_assigned_actor_ids: list[str]
+    current_escalation_tier: CampaignAssignmentEscalationTier
+    current_sla_posture: CampaignAssignmentSlaPosture
 
 
 class DpmBulkReviewCampaignDefinitionAssignmentActionPage(BaseModel):
@@ -182,26 +191,51 @@ def build_bulk_review_campaign_definition_assignment_action_page(
     limit: int = 50,
     offset: int = 0,
 ) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
-    actions = sorted(
-        definition.assignment_actions,
-        key=lambda action: action.recorded_at,
-        reverse=True,
-    )
+    actions = _sorted_assignment_actions(definition)
     page = actions[offset : offset + limit]
-    latest = actions[0] if actions else None
+    state = _assignment_action_page_state(actions)
     return DpmBulkReviewCampaignDefinitionAssignmentActionPage(
         campaign_id=definition.campaign_id,
         campaign_version=definition.campaign_version,
         assignment_actions=page,
-        latest_action_type=latest.action_type if latest else None,
-        current_assigned_actor_ids=[]
-        if latest is None or latest.action_type == "RESOLVED"
-        else latest.assigned_actor_ids,
-        current_escalation_tier=latest.escalation_tier if latest else "NONE",
-        current_sla_posture=latest.sla_posture if latest else "ON_TRACK",
+        latest_action_type=state.latest_action_type,
+        current_assigned_actor_ids=state.current_assigned_actor_ids,
+        current_escalation_tier=state.current_escalation_tier,
+        current_sla_posture=state.current_sla_posture,
         count=len(page),
         limit=limit,
         offset=offset,
+    )
+
+
+def _sorted_assignment_actions(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> list[DpmBulkReviewCampaignDefinitionAssignmentAction]:
+    return sorted(
+        definition.assignment_actions,
+        key=lambda action: action.recorded_at,
+        reverse=True,
+    )
+
+
+def _assignment_action_page_state(
+    actions: list[DpmBulkReviewCampaignDefinitionAssignmentAction],
+) -> _AssignmentActionPageState:
+    latest = actions[0] if actions else None
+    if latest is None:
+        return _AssignmentActionPageState(
+            latest_action_type=None,
+            current_assigned_actor_ids=[],
+            current_escalation_tier="NONE",
+            current_sla_posture="ON_TRACK",
+        )
+    return _AssignmentActionPageState(
+        latest_action_type=latest.action_type,
+        current_assigned_actor_ids=[]
+        if latest.action_type == "RESOLVED"
+        else latest.assigned_actor_ids,
+        current_escalation_tier=latest.escalation_tier,
+        current_sla_posture=latest.sla_posture,
     )
 
 

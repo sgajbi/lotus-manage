@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T12:47:17+00:00`
+- Generated at: `2026-06-13T12:52:03+00:00`
 
-- Report source snapshot: `7c9905c0+worktree`
+- Report source snapshot: `a12d37b6+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
-| 2 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
-| 3 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
-| 4 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
-| 5 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
-| 6 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
-| 7 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
-| 8 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
-| 9 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
-| 10 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 1 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
+| 2 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
+| 3 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
+| 4 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
+| 5 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 6 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
+| 7 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
+| 8 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
+| 9 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 10 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
 
 ### Most Complex Current Test Functions
 
