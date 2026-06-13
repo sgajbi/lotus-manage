@@ -877,11 +877,27 @@ def _approval_workflow_decision_facts(
 def _approval_section_state(
     *, result: RebalanceResult, gate: GateDecision | None
 ) -> ProofPackSectionState:
-    if result.status == "BLOCKED" or (gate is not None and gate.gate == "BLOCKED"):
+    if _run_blocks_approval(result) or _gate_blocks_approval(gate):
         return "BLOCKED"
-    if result.status == "PENDING_REVIEW" or (gate is not None and gate.gate.endswith("REQUIRED")):
+    if _run_requires_approval_review(result) or _gate_requires_approval_review(gate):
         return "PENDING_REVIEW"
     return "READY"
+
+
+def _run_blocks_approval(result: RebalanceResult) -> bool:
+    return result.status == "BLOCKED"
+
+
+def _gate_blocks_approval(gate: GateDecision | None) -> bool:
+    return gate is not None and gate.gate == "BLOCKED"
+
+
+def _run_requires_approval_review(result: RebalanceResult) -> bool:
+    return result.status == "PENDING_REVIEW"
+
+
+def _gate_requires_approval_review(gate: GateDecision | None) -> bool:
+    return gate is not None and gate.gate.endswith("REQUIRED")
 
 
 def _approval_gate_fact(gate: GateDecision | None) -> dict[str, Any] | None:

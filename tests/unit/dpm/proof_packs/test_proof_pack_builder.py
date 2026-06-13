@@ -703,6 +703,8 @@ def test_approval_requirements_section_payload_blocks_for_blocked_run() -> None:
 
 def test_approval_section_state_uses_gate_required_review_and_blocked_precedence() -> None:
     result = _ready_rebalance_result()
+    review_result = result.model_copy(update={"status": "PENDING_REVIEW"})
+    blocked_result = result.model_copy(update={"status": "BLOCKED"})
     review_gate = GateDecision(
         gate="MANDATE_APPROVAL_REQUIRED",
         recommended_next_step="REQUEST_MANDATE_APPROVAL",
@@ -724,11 +726,21 @@ def test_approval_section_state_uses_gate_required_review_and_blocked_precedence
     assert builder_module._approval_section_state(result=result, gate=blocked_gate) == "BLOCKED"
     assert (
         builder_module._approval_section_state(
-            result=result.model_copy(update={"status": "BLOCKED"}),
+            result=blocked_result,
             gate=review_gate,
         )
         == "BLOCKED"
     )
+    assert builder_module._run_blocks_approval(blocked_result)
+    assert builder_module._run_blocks_approval(result) is False
+    assert builder_module._gate_blocks_approval(blocked_gate)
+    assert builder_module._gate_blocks_approval(review_gate) is False
+    assert builder_module._gate_blocks_approval(None) is False
+    assert builder_module._run_requires_approval_review(review_result)
+    assert builder_module._run_requires_approval_review(result) is False
+    assert builder_module._gate_requires_approval_review(review_gate)
+    assert builder_module._gate_requires_approval_review(blocked_gate) is False
+    assert builder_module._gate_requires_approval_review(None) is False
 
 
 def test_approval_support_helpers_serialize_ordered_facts_and_reason_codes() -> None:

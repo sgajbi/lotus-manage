@@ -23033,3 +23033,31 @@ and improves internal transaction-cost source posture maintainability only.
   readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal PM operating-quality API
   validation hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-919: Proof-pack approval-state predicates
+
+- Date: 2026-06-14
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack governance evidence, and testing.
+- Finding: `_approval_section_state` encoded run-blocked, gate-blocked, run-review, and
+  gate-review classification directly inside one conditional rollup. The behavior was correct, but
+  approval proof-pack posture is easier to review when the blocked and pending-review predicates
+  are named and directly tested.
+- Action: extracted `_run_blocks_approval`, `_gate_blocks_approval`,
+  `_run_requires_approval_review`, and `_gate_requires_approval_review`, then kept
+  `_approval_section_state` as the precedence mapper. Added direct assertions for each predicate
+  alongside the existing blocked-before-review precedence proof.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 96 passed, and radon reports `_approval_section_state` at A(5) after this extraction.
+- Residual risk: this slice improves proof-pack approval posture maintainability only. It does not
+  change proof-pack semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.
