@@ -57,6 +57,15 @@ class _SemanticDescriptionRule:
         return self.template.format(text=context.text)
 
 
+@dataclass(frozen=True)
+class _SemanticStringExampleRule:
+    keyword_terms: tuple[str, ...]
+    example: str
+
+    def matches(self, key: str) -> bool:
+        return any(term in key for term in self.keyword_terms)
+
+
 _SEMANTIC_DESCRIPTION_RULES = (
     _SemanticDescriptionRule(
         ("date",),
@@ -70,6 +79,13 @@ _SEMANTIC_DESCRIPTION_RULES = (
     _SemanticDescriptionRule(("quantity",), (), "Quantity value for {text}."),
     _SemanticDescriptionRule(("rate", "price"), (), "Rate/price value for {text}."),
     _SemanticDescriptionRule(("status",), (), "Current status for {text}."),
+)
+
+_SEMANTIC_STRING_EXAMPLE_RULES = (
+    _SemanticStringExampleRule(("currency",), "USD"),
+    _SemanticStringExampleRule(("time", "timestamp"), "2026-03-02T10:30:00Z"),
+    _SemanticStringExampleRule(("date",), "2026-03-02"),
+    _SemanticStringExampleRule(("status",), "READY"),
 )
 
 
@@ -94,20 +110,32 @@ def _number_example_for_key(key: str) -> float:
 
 
 def _semantic_string_example_for_key(key: str, schema_type: Any) -> str | None:
-    if key.endswith("_id"):
-        entity = key[: -len("_id")]
-        return f"{entity.upper()}_001"
-    if "currency" in key:
-        return "USD"
-    if "time" in key or "timestamp" in key:
-        return "2026-03-02T10:30:00Z"
-    if "date" in key:
-        return "2026-03-02"
-    if "status" in key:
-        return "READY"
+    identifier_example = _semantic_identifier_example(key)
+    if identifier_example is not None:
+        return identifier_example
+
+    rule_example = _semantic_string_rule_example(key)
+    if rule_example is not None:
+        return rule_example
+
     if schema_type == "string":
         return f"sample_{key}"
     return None
+
+
+def _semantic_identifier_example(key: str) -> str | None:
+    if not key.endswith("_id"):
+        return None
+    entity = key[: -len("_id")]
+    return f"{entity.upper()}_001"
+
+
+def _semantic_string_rule_example(key: str) -> str | None:
+    matching_rule = next(
+        (rule for rule in _SEMANTIC_STRING_EXAMPLE_RULES if rule.matches(key)),
+        None,
+    )
+    return matching_rule.example if matching_rule is not None else None
 
 
 def _enum_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:

@@ -30,8 +30,11 @@ from src.api.openapi_enrichment import (
     _schema_path_methods,
     _schema_type_example,
     _SEMANTIC_DESCRIPTION_RULES,
+    _SEMANTIC_STRING_EXAMPLE_RULES,
     _semantic_description_for_context,
+    _semantic_identifier_example,
     _semantic_string_example_for_key,
+    _semantic_string_rule_example,
     enrich_openapi_schema,
 )
 
@@ -126,6 +129,23 @@ def test_openapi_enrichment_semantic_string_examples_follow_domain_semantics() -
     assert _semantic_string_example_for_key("workflow_status", "string") == "READY"
     assert _semantic_string_example_for_key("display_name", "string") == "sample_display_name"
     assert _semantic_string_example_for_key("unknown", None) is None
+
+
+def test_openapi_enrichment_semantic_string_rules_preserve_precedence() -> None:
+    rule_examples = [rule.example for rule in _SEMANTIC_STRING_EXAMPLE_RULES]
+
+    assert rule_examples == [
+        "USD",
+        "2026-03-02T10:30:00Z",
+        "2026-03-02",
+        "READY",
+    ]
+    assert _semantic_identifier_example("custom_id") == "CUSTOM_001"
+    assert _semantic_identifier_example("status") is None
+    assert _semantic_string_rule_example("updated_timestamp") == "2026-03-02T10:30:00Z"
+    assert _semantic_string_rule_example("as_of_date") == "2026-03-02"
+    assert _semantic_string_rule_example("workflow_status") == "READY"
+    assert _semantic_string_rule_example("display_name") is None
 
 
 def test_openapi_enrichment_infer_example_helpers_separate_schema_concerns() -> None:

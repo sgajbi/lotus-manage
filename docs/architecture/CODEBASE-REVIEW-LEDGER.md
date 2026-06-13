@@ -20871,3 +20871,31 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal command-center supportability
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-845: OpenAPI semantic string example rules
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_semantic_string_example_for_key` was the top current source-complexity hotspot after
+  the command-center supportability slice and encoded identifier, currency, timestamp, date,
+  status, and fallback string example semantics as a branch chain.
+- Action: introduced explicit ordered semantic string example rules and separated identifier
+  example generation from rule-based examples while preserving timestamp-before-date precedence
+  and generic string fallback behavior. Added direct tests for rule ordering, identifier examples,
+  rule examples, and no-match behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
+  maintainability refactoring and repo-local quality evidence.
