@@ -21375,3 +21375,30 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal source-adapter maintainability
   and local warning-signal hardening.
+
+## BACKEND-REVIEW-20260613-862: Enforced quality gate promotion
+
+- Date: 2026-06-13
+- Scope: `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `quality/ci_quality_gates.md`,
+  `scripts/engineering_health_report.py`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  and `tests/unit/test_engineering_health_report.py`.
+- Finding: architecture, complexity, dependency-hygiene, and dead-code gates were clean under
+  their current repo-native thresholds, but Feature Lane, PR Merge Gate, and Main Releasability
+  still treated them as advisory `continue-on-error` steps. That left remediated quality checks
+  weaker than the refactoring program's active enforcement posture.
+- Action: promoted the four remediated quality gates to enforced CI steps across Feature Lane, PR
+  Merge Gate, and Main Releasability, updated CI quality documentation and generated scorecard
+  language to distinguish active gates from the separate report-only Quality Baseline workflow,
+  and added a unit guard that rejects reintroducing `continue-on-error` for those gates.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `python -m ruff format --check scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `python -m pytest tests/unit/test_engineering_health_report.py tests/unit/test_ci_workflow_gate_enforcement.py -q`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make dependency-hygiene-gate`,
+  and `make dead-code-gate`.
+- Wiki decision: no wiki source change required; this is repo-local CI enforcement and quality
+  scorecard truth.

@@ -121,6 +121,8 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
     assert "# lotus-manage Quality Scorecard" in scorecard
     assert "| OpenAPI governance | Active gate | `scripts/openapi_quality_gate.py`. |" in scorecard
     assert "| Service boundary | Active gate | `scripts/service_boundary_gate.py`. |" in scorecard
+    assert "| Dependency architecture | Active gate |" in scorecard
+    assert "| Dead code | Active gate |" in scorecard
     assert "| Complexity | Report-only baseline |" in scorecard
     assert (
         "| 4 - enterprise-readiness gates | Block release on full readiness posture." in scorecard

@@ -536,12 +536,12 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 ],
                 [
                     "Dead code",
-                    "vulture baseline capture via `quality-baseline.yml`",
-                    "1 - report-only baseline",
+                    "`make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml`",
+                    "2 - active/new-regression",
                 ],
                 [
                     "Dependency hygiene",
-                    "`deptry` + `pip check` via `quality-baseline.yml` and `make security-audit`",
+                    "`make dependency-hygiene-gate`, `pip check`, and `make security-audit`",
                     "2 - active/new-regression",
                 ],
                 [
@@ -589,13 +589,13 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Dead code",
-            "Report-only baseline",
-            "`quality-baseline.yml` captures `vulture` output; add thresholds after baseline review.",
+            "Active gate",
+            "`make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output.",
         ],
         [
             "Dependency architecture",
-            "Report-only baseline",
-            "`quality-baseline.yml` captures `importlinter` and `deptry`; add thresholds after baseline review.",
+            "Active gate",
+            "`make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry.",
         ],
         [
             "Security depth",
