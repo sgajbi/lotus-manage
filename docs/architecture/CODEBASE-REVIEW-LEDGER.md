@@ -22442,3 +22442,33 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal workflow helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-899: Proof pack persistence guard helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/proof_packs/in_memory.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_repository.py`.
+- Bank-buyable control area: architecture, immutable evidence persistence, and testing.
+- Finding: `save_proof_pack` combined immutable content-hash enforcement, idempotency conflict
+  detection, proof-pack cloning, and retention metadata construction in one repository method. The
+  behavior was correct, but the evidence-store guardrails were harder to review than a governed
+  proof-pack persistence boundary should be.
+- Action: extracted `_ensure_proof_pack_content_is_immutable`, `_idempotency_binding`, and
+  `_retention_metadata` so immutable proof-pack and retention decisions are independently testable
+  before repository mutation. Added direct tests for matching-content replay, changed-content
+  rejection, optional idempotency binding, idempotency conflicts, and optional retention expiry.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/proof_packs/in_memory.py tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python -m ruff format --check src/infrastructure/proof_packs/in_memory.py tests/unit/dpm/proof_packs/test_proof_pack_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/proof_packs/in_memory.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_repository.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/proof_packs/in_memory.py -s`; the focused proof-pack
+  repository suite reported 9 passed, `save_proof_pack` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves in-memory proof-pack persistence maintainability only. It does
+  not change PostgreSQL proof-pack persistence semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal repository helper
+  maintainability hardening with no operator-facing contract change.
