@@ -8,6 +8,7 @@ from src.core.models import (
     ModelTarget,
     ShelfEntry,
 )
+from src.core.rebalance.targets import _apply_group_constraint
 from src.core.target_generation import (
     _apply_solver_values,
     _build_solver_problem,
@@ -201,6 +202,65 @@ def test_build_solver_problem_collects_cash_position_and_group_constraints() -> 
     assert problem_spec.weights.size == 1
     assert len(problem_spec.problem.constraints) == 5
     assert diagnostics.warnings == []
+
+
+def test_apply_group_constraint_caps_and_redistributes_matching_group() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+    eligible_targets = {"TECH": Decimal("0.60"), "FI": Decimal("0.40")}
+
+    status = _apply_group_constraint(
+        constraint_key="sector:TECH",
+        max_weight=Decimal("0.20"),
+        eligible_targets=eligible_targets,
+        buy_set={"TECH", "FI"},
+        shelf_attrs_by_id={"TECH": {"sector": "TECH"}, "FI": {"sector": "FI"}},
+        known_attr_keys={"sector"},
+        diagnostics=diagnostics,
+    )
+
+    assert status == "READY"
+    assert eligible_targets["TECH"] == Decimal("0.20")
+    assert eligible_targets["FI"] == Decimal("0.80")
+    assert diagnostics.group_constraint_events[0].status == "CAPPED"
+
+
+def test_apply_group_constraint_skips_unknown_or_within_limit_group() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+    eligible_targets = {"TECH": Decimal("0.20001"), "FI": Decimal("0.79999")}
+
+    status = _apply_group_constraint(
+        constraint_key="sector:TECH",
+        max_weight=Decimal("0.20"),
+        eligible_targets=eligible_targets,
+        buy_set={"TECH", "FI"},
+        shelf_attrs_by_id={"TECH": {"sector": "TECH"}, "FI": {"sector": "FI"}},
+        known_attr_keys={"sector"},
+        diagnostics=diagnostics,
+    )
+
+    assert status == "READY"
+    assert eligible_targets["TECH"] == Decimal("0.20001")
+    assert diagnostics.warnings == []
+    assert diagnostics.group_constraint_events == []
+
+
+def test_apply_group_constraint_blocks_when_no_redistribution_recipient() -> None:
+    diagnostics = DiagnosticsData(data_quality={}, suppressed_intents=[], warnings=[])
+    eligible_targets = {"TECH": Decimal("0.60"), "LOCKED": Decimal("0.40")}
+
+    status = _apply_group_constraint(
+        constraint_key="sector:TECH",
+        max_weight=Decimal("0.20"),
+        eligible_targets=eligible_targets,
+        buy_set={"TECH"},
+        shelf_attrs_by_id={"TECH": {"sector": "TECH"}, "LOCKED": {"sector": "FI"}},
+        known_attr_keys={"sector"},
+        diagnostics=diagnostics,
+    )
+
+    assert status == "BLOCKED"
+    assert "NO_ELIGIBLE_REDISTRIBUTION_DESTINATION" in diagnostics.warnings
+    assert diagnostics.group_constraint_events[0].status == "BLOCKED"
 
 
 def test_apply_solver_values_quantizes_and_fails_closed_without_values() -> None:

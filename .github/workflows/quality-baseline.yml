@@ -42,26 +42,38 @@ jobs:
       - name: Ruff
         continue-on-error: true
         run: |
+          set -o pipefail
           mkdir -p output/quality-baseline
           python -m ruff check . 2>&1 | tee output/quality-baseline/ruff.txt
 
       - name: Mypy
         continue-on-error: true
         run: |
+          set -o pipefail
           python -m mypy --config-file mypy.ini src 2>&1 | tee output/quality-baseline/mypy.txt
 
       - name: Coverage
         continue-on-error: true
-        run: python -m pytest tests/unit --cov=src --cov-report=term-missing 2>&1 | tee output/quality-baseline/coverage.txt
+        run: |
+          set -o pipefail
+          python -m pytest tests/unit --cov=src --cov-report=term-missing 2>&1 | tee output/quality-baseline/coverage.txt
 
       - name: Architecture Import Rules
         continue-on-error: true
         run: |
+          set -o pipefail
           lint-imports --config .importlinter 2>&1 | tee output/quality-baseline/import-linter.txt
+
+      - name: Service Boundary Gate
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python scripts/service_boundary_gate.py 2>&1 | tee output/quality-baseline/service-boundary.txt
 
       - name: Complexity Baseline
         continue-on-error: true
         run: |
+          set -o pipefail
           {
             radon cc src -s -a
             radon mi src -s
@@ -70,15 +82,20 @@ jobs:
 
       - name: Dead Code Baseline
         continue-on-error: true
-        run: vulture src tests --min-confidence 80 2>&1 | tee output/quality-baseline/vulture.txt
+        run: |
+          set -o pipefail
+          vulture src tests --min-confidence 80 2>&1 | tee output/quality-baseline/vulture.txt
 
       - name: Dependency Baseline
         continue-on-error: true
-        run: deptry . 2>&1 | tee output/quality-baseline/deptry.txt
+        run: |
+          set -o pipefail
+          deptry . 2>&1 | tee output/quality-baseline/deptry.txt
 
       - name: Security Baseline
         continue-on-error: true
         run: |
+          set -o pipefail
           {
             bandit -q -r src -c pyproject.toml
             pip-audit -r pyproject.toml
@@ -87,11 +104,14 @@ jobs:
 
       - name: Documentation Baseline
         continue-on-error: true
-        run: interrogate src 2>&1 | tee output/quality-baseline/interrogate.txt
+        run: |
+          set -o pipefail
+          interrogate src 2>&1 | tee output/quality-baseline/interrogate.txt
 
       - name: OpenAPI Spectral Baseline
         continue-on-error: true
         run: |
+          set -o pipefail
           python - <<'PY' > openapi.json
           import json
           from src.api.main import app

@@ -21285,3 +21285,60 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal performance outcome source
   adapter maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-859: Rebalance group-constraint application helper
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/targets.py`, `tests/unit/core/test_target_generation_helpers.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `apply_group_constraints` became the next current source-complexity hotspot after the
+  performance attribution source snapshot slice and mixed deterministic constraint ordering,
+  constraint-key validation, member selection, tolerance checks, capping, redistribution, event
+  recording, and blocked status propagation in one orchestration loop.
+- Action: extracted single group-constraint application into a focused helper while preserving
+  deterministic constraint ordering, tolerance behavior, capped redistribution events, and
+  fail-closed blocked status when excess cannot be redistributed. Added direct helper coverage for
+  capped redistribution, within-limit no-op, and blocked no-recipient behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/core/test_target_generation_helpers.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/core/test_target_generation_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py tests/unit/dpm/engine/coverage/test_engine_target_generation.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal target-generation
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-860: Service-boundary leakage gate enforcement
+
+- Date: 2026-06-13
+- Scope: `scripts/service_boundary_gate.py`, `Makefile`, `.github/workflows/feature-lane.yml`,
+  `.github/workflows/pr-merge-gate.yml`, `.github/workflows/quality-baseline.yml`,
+  `scripts/engineering_health_report.py`, `tests/unit/test_service_boundary_gate.py`,
+  `tests/unit/test_engineering_health_report.py`, and quality reports.
+- Finding: the enterprise backend refactoring workflow required service leakage scans to keep
+  router, FastAPI, and Starlette transport concerns out of service modules, but the check was still
+  an ad hoc command instead of a repo-native active CI gate.
+- Action: added a service-boundary gate script backed by the same leakage patterns used by the
+  engineering health report, wired it into `make check`, `make ci`, local CI parity, Feature Lane,
+  and PR Merge Gate, and captured the signal in Quality Baseline artifacts. Added `pipefail` to
+  Quality Baseline report-only pipelines so warning signals remain visible when commands are piped
+  through `tee`. Added direct tests for blocked router/framework leakage and clean service modules.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check scripts/service_boundary_gate.py tests/unit/test_service_boundary_gate.py scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m ruff format --check scripts/service_boundary_gate.py tests/unit/test_service_boundary_gate.py scripts/engineering_health_report.py tests/unit/test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts/service_boundary_gate.py scripts/engineering_health_report.py`,
+  `python -m pytest tests/unit/test_service_boundary_gate.py tests/unit/test_engineering_health_report.py -q`,
+  `python scripts/service_boundary_gate.py`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is repo-native CI gate hardening for existing
+  backend service-boundary governance.

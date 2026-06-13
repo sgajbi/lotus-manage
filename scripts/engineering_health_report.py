@@ -571,11 +571,7 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ["Unit tests", "Active gate", "`make check` runs `tests/unit`."],
         ["OpenAPI governance", "Active gate", "`scripts/openapi_quality_gate.py`."],
         ["API vocabulary", "Active gate", "`scripts/api_vocabulary_inventory.py --validate-only`."],
-        [
-            "Service boundary leakage",
-            "Report plus focused scans",
-            "Current service boundary findings: 0.",
-        ],
+        ["Service boundary", "Active gate", "`scripts/service_boundary_gate.py`."],
         [
             "Router infrastructure imports",
             "Baseline debt",
