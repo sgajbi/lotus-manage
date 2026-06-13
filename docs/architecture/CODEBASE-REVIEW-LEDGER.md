@@ -21691,3 +21691,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-874: Transaction-cost source analytics projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_transaction_cost_source_analytics` still combined source-context validation, source
+  ref construction, fact projection, represented-observation metric projection, degraded-reason
+  resolution, and analytics assembly in one helper. The behavior was correct, but the source-owned
+  transaction-cost projection was harder to test directly than the proof-pack evidence path
+  requires.
+- Action: extracted `_transaction_cost_source_facts` and `_transaction_cost_source_metrics` while
+  preserving the source-owned curve point payload shape and represented-observation aggregation.
+  Added direct helper tests for source facts, emitted curve-point fields, missing-security ids, and
+  represented observation count.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -k "transaction_cost_source_helpers or source_analytics_degraded_and_blocked_context_fallbacks or source_analytics" -q`,
+  and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  source-analytics suite reported 13 passed and `_transaction_cost_source_analytics` reduced to
+  A(5).
+- Residual risk: this slice improves internal proof-pack transaction-cost evidence
+  maintainability only. It does not certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability hardening with no operator-facing contract change.

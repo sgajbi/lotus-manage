@@ -271,23 +271,8 @@ def _transaction_cost_source_analytics(
             "Observed transaction-cost evidence is attached from source-owned "
             "TransactionCostCurve:v1."
         ),
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name,
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "as_of_date": context.as_of_date.isoformat(),
-            "window_start_date": context.window_start_date.isoformat(),
-            "window_end_date": context.window_end_date.isoformat(),
-            "missing_security_ids": context.missing_security_ids,
-            "curve_points": [point.model_dump(mode="json") for point in context.curve_points[:10]],
-        },
-        metrics={
-            "returned_curve_point_count": context.returned_curve_point_count,
-            "represented_observation_count": sum(
-                point.observation_count for point in context.curve_points
-            ),
-        },
+        facts=_transaction_cost_source_facts(context),
+        metrics=_transaction_cost_source_metrics(context),
         reason_codes=_degraded_context_reason_codes(
             supportability_status=context.supportability_status,
             reason_codes=context.reason_codes,
@@ -297,6 +282,33 @@ def _transaction_cost_source_analytics(
         source_hash_key="transaction_cost_context",
         content_hash=context.content_hash or content_hash,
     )
+
+
+def _transaction_cost_source_facts(
+    context: AuthoritativeTransactionCostContext,
+) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": context.source_product_name,
+        "source_product_version": context.source_product_version,
+        "source_id": context.source_id,
+        "as_of_date": context.as_of_date.isoformat(),
+        "window_start_date": context.window_start_date.isoformat(),
+        "window_end_date": context.window_end_date.isoformat(),
+        "missing_security_ids": context.missing_security_ids,
+        "curve_points": [point.model_dump(mode="json") for point in context.curve_points[:10]],
+    }
+
+
+def _transaction_cost_source_metrics(
+    context: AuthoritativeTransactionCostContext,
+) -> dict[str, int]:
+    return {
+        "returned_curve_point_count": context.returned_curve_point_count,
+        "represented_observation_count": sum(
+            point.observation_count for point in context.curve_points
+        ),
+    }
 
 
 def _client_restriction_source_analytics(

@@ -59,6 +59,8 @@ from src.core.proof_packs.source_analytics import (
     _regime_stress_source_metrics,
     _risk_source_facts,
     _risk_source_metrics,
+    _transaction_cost_source_facts,
+    _transaction_cost_source_metrics,
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
@@ -2385,6 +2387,91 @@ def test_degraded_context_reason_codes_preserve_source_reasons_before_fallback()
         )
         == []
     )
+
+
+def test_transaction_cost_source_helpers_project_facts_and_metrics() -> None:
+    context = AuthoritativeTransactionCostContext(
+        supportability_status="READY",
+        source_system="lotus-core",
+        source_product_name="TransactionCostCurve",
+        source_product_version="v1",
+        source_id="transaction-cost-context-001",
+        as_of_date="2026-05-03",
+        window_start_date="2026-04-03",
+        window_end_date="2026-05-03",
+        returned_curve_point_count=2,
+        missing_security_ids=["SEC_MISSING"],
+        curve_points=[
+            AuthoritativeTransactionCostPoint(
+                security_id="SEC_A",
+                transaction_type="BUY",
+                currency="USD",
+                total_notional=Decimal("30000"),
+                total_cost=Decimal("37.50"),
+                average_cost_bps=Decimal("12.5"),
+                min_cost_bps=Decimal("10.0"),
+                max_cost_bps=Decimal("15.0"),
+                observation_count=3,
+                first_observed_date="2026-04-03",
+                last_observed_date="2026-05-01",
+            ),
+            AuthoritativeTransactionCostPoint(
+                security_id="SEC_B",
+                transaction_type="SELL",
+                currency="USD",
+                total_notional=Decimal("50000"),
+                total_cost=Decimal("40.00"),
+                average_cost_bps=Decimal("8.0"),
+                min_cost_bps=Decimal("7.0"),
+                max_cost_bps=Decimal("9.0"),
+                observation_count=5,
+                first_observed_date="2026-04-05",
+                last_observed_date="2026-05-02",
+            ),
+        ],
+    )
+
+    facts = _transaction_cost_source_facts(context)
+
+    assert facts["source_system"] == "lotus-core"
+    assert facts["source_product_name"] == "TransactionCostCurve"
+    assert facts["source_id"] == "transaction-cost-context-001"
+    assert facts["as_of_date"] == "2026-05-03"
+    assert facts["missing_security_ids"] == ["SEC_MISSING"]
+    assert facts["curve_points"] == [
+        {
+            "security_id": "SEC_A",
+            "transaction_type": "BUY",
+            "currency": "USD",
+            "total_notional": "30000",
+            "total_cost": "37.50",
+            "average_cost_bps": "12.5",
+            "min_cost_bps": "10.0",
+            "max_cost_bps": "15.0",
+            "observation_count": 3,
+            "first_observed_date": "2026-04-03",
+            "last_observed_date": "2026-05-01",
+            "sample_transaction_ids": [],
+        },
+        {
+            "security_id": "SEC_B",
+            "transaction_type": "SELL",
+            "currency": "USD",
+            "total_notional": "50000",
+            "total_cost": "40.00",
+            "average_cost_bps": "8.0",
+            "min_cost_bps": "7.0",
+            "max_cost_bps": "9.0",
+            "observation_count": 5,
+            "first_observed_date": "2026-04-05",
+            "last_observed_date": "2026-05-02",
+            "sample_transaction_ids": [],
+        },
+    ]
+    assert _transaction_cost_source_metrics(context) == {
+        "returned_curve_point_count": 2,
+        "represented_observation_count": 8,
+    }
 
 
 def test_regime_scenario_pack_missing_governance_evidence_is_pending_review() -> None:
