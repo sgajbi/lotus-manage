@@ -21500,3 +21500,56 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack builder
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-867: Postgres wave save helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/waves/postgres.py` and
+  `tests/unit/dpm/waves/test_wave_domain.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `PostgresDpmWaveRepository.save_wave` still mixed idempotency conflict detection,
+  durable wave insertion, idempotency marker insertion, event insertion, and commit orchestration in
+  one repository method. The behavior was correct, but the persistence contract was harder to
+  review than necessary for durable DPM wave creation and replay safety.
+- Action: extracted repository-local helpers for idempotency conflict detection, durable wave row
+  insertion, and idempotency marker insertion while leaving transaction orchestration in
+  `save_wave`. Added focused helper tests for no-key idempotency behavior, durable create payload
+  persistence, event persistence, and duplicate wave-id rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/waves/postgres.py tests/unit/dpm/waves/test_wave_domain.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_domain.py -q`,
+  and `python -m radon cc src/infrastructure/waves/postgres.py -s`; the focused wave domain suite
+  reported 21 passed and `PostgresDpmWaveRepository.save_wave` reduced from B(7) to A(1).
+- Residual risk: this slice improves internal DPM wave persistence maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-868: Batch scenario execution outcome helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/rebalance_batch_execution.py` and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `execute_batch_scenarios` still combined scenario option validation, scenario execution,
+  failed-scenario mapping, result collection, and telemetry summary in one application-service
+  function. The behavior was correct, but the per-scenario outcome handling was harder to review
+  than the batch analysis contract requires.
+- Action: extracted a typed `BatchScenarioOutcome`, a per-scenario execution helper, and a result
+  recorder helper while keeping the public batch orchestration contract unchanged. Added direct
+  helper tests for invalid scenario options, execution exceptions, and failure outcome recording.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/rebalance_batch_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format --check src/api/services/rebalance_batch_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_batch_execution.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -q`,
+  and `python -m radon cc src/api/services/rebalance_batch_execution.py -s`; the focused runtime
+  service-edge suite reported 44 passed and `execute_batch_scenarios` reduced from B(7) to A(5).
+- Residual risk: this slice improves internal batch execution maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal application-service
+  maintainability hardening with no operator-facing contract change.
