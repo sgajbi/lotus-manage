@@ -1577,6 +1577,57 @@ def test_proof_pack_build_context_prefers_explicit_correlation_then_falls_back_t
     assert run_fallback.correlation_id == result.correlation_id
 
 
+def test_proof_pack_correlation_id_helper_uses_ordered_fallbacks() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    selection = ConstructionAlternativeSelection(
+        selection_id="sel_context_corr",
+        alternative_set_id="cas_context_corr",
+        alternative_id="alt_context_corr",
+        selected_at=CREATED_AT,
+        actor_id="pm_001",
+        reason_code="MODEL_DRIFT_REVIEW",
+        correlation_id="corr-selection-context",
+    )
+
+    assert (
+        builder_module._resolve_proof_pack_correlation_id(
+            correlation_id="corr-explicit-context",
+            selection=selection,
+            run=run,
+            created_at=CREATED_AT,
+        )
+        == "corr-explicit-context"
+    )
+    assert (
+        builder_module._resolve_proof_pack_correlation_id(
+            correlation_id=None,
+            selection=selection,
+            run=run,
+            created_at=CREATED_AT,
+        )
+        == "corr-selection-context"
+    )
+    assert (
+        builder_module._resolve_proof_pack_correlation_id(
+            correlation_id=None,
+            selection=selection.model_copy(update={"correlation_id": None}),
+            run=run,
+            created_at=CREATED_AT,
+        )
+        == result.correlation_id
+    )
+    assert (
+        builder_module._resolve_proof_pack_correlation_id(
+            correlation_id=None,
+            selection=None,
+            run=None,
+            created_at=CREATED_AT,
+        )
+        == "proof-pack-20260503093000"
+    )
+
+
 def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs() -> None:
     result = _ready_rebalance_result()
     alternative = build_rebalance_result_alternative(result=result)

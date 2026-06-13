@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T15:56:58+00:00`
+- Generated at: `2026-06-13T15:59:47+00:00`
 
-- Report source snapshot: `3a3394b4+worktree`
+- Report source snapshot: `6ca8fced+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
-| 2 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
-| 3 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
-| 4 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
-| 5 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
-| 6 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 7 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 8 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 9 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 10 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 1 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
+| 2 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
+| 3 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
+| 4 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 5 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
+| 6 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 7 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 8 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 9 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 10 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
 
 ### Most Complex Current Test Functions
 

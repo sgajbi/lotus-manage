@@ -22768,3 +22768,31 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal campaign definition helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-910: Proof-pack correlation fallback helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack lineage, and testing.
+- Finding: `_resolve_proof_pack_correlation_id` encoded explicit, selected-alternative,
+  rebalance-run, and generated correlation fallback order as one nested expression. The behavior
+  was correct, but proof-pack lineage correlation should be reviewable as named fallback rules.
+- Action: extracted `_selection_correlation_id`, `_run_correlation_id`, and
+  `_generated_proof_pack_correlation_id` so each fallback source is directly named before the
+  resolver chooses the first available value. Added a direct fallback-order test covering explicit,
+  selection, run, and generated proof-pack correlation ids.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder
+  suite reported 96 passed and `_resolve_proof_pack_correlation_id` reduced from B(7) to A(3)
+  under radon.
+- Residual risk: this slice improves proof-pack correlation fallback maintainability only. It
+  does not change proof-pack lineage semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack helper
+  maintainability hardening with no operator-facing contract change.
