@@ -290,6 +290,55 @@ def test_attribution_adapter_wraps_source_owned_active_return_reconciliation() -
 
 
 def test_attribution_source_helper_builds_source_id_and_reason_codes() -> None:
+    perf_sources._ensure_ready_attribution_value(
+        source_state="DEGRADED",
+        value=None,
+        measure="reconciliation_total_active_return",
+        period="YTD",
+    )
+    with pytest.raises(PerformanceOutcomeSourceError, match="numeric attribution"):
+        perf_sources._ensure_ready_attribution_value(
+            source_state="READY",
+            value=None,
+            measure="reconciliation_total_active_return",
+            period="YTD",
+        )
+
+    snapshot = perf_sources._attribution_source_snapshot(
+        metadata={
+            "calculation_id": "calc-001",
+            "calculation_hash": "sha256:attr",
+            "as_of_date": "2026-05-06",
+        },
+        period="YTD",
+        measure="currency_total_effect",
+        selector_token="currency:usd",
+        value=None,
+        source_state="NOT_SUPPORTED",
+        quality="NOT_SUPPORTED",
+        supportability_state="unsupported",
+        supportability_reason="methodology_not_supported",
+        selector_reason="PERFORMANCE_ATTRIBUTION_CURRENCY_USD",
+        input_mode="stateful",
+        model="brinson_fachler",
+        linking="carino",
+        benchmark_id="BMK_GLOBAL_60_40",
+        benchmark_source="calculated",
+    )
+
+    assert snapshot.source_id == "calc-001:YTD:attribution:currency_total_effect:currency:usd"
+    assert snapshot.value is None
+    assert snapshot.content_hash == "sha256:attr"
+    assert snapshot.reason_codes[:7] == [
+        "PERFORMANCE_SOURCE_NOT_SUPPORTED",
+        "PERFORMANCE_SUPPORTABILITY_UNSUPPORTED",
+        "PERFORMANCE_REASON_METHODOLOGY_NOT_SUPPORTED",
+        "PERFORMANCE_PERIOD_YTD",
+        "PERFORMANCE_MEASURE_FAMILY_ATTRIBUTION",
+        "PERFORMANCE_ATTRIBUTION_MEASURE_CURRENCY_TOTAL_EFFECT",
+        "PERFORMANCE_ATTRIBUTION_CURRENCY_USD",
+    ]
+
     assert (
         perf_sources._attribution_source_id(
             calculation_id="calc-001",
