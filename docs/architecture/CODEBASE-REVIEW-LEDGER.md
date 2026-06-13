@@ -20899,3 +20899,91 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal OpenAPI enrichment
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-846: PM quality policy validation guard helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/models.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `validate_policy` was the top current source-complexity hotspot after the OpenAPI
+  semantic example rules slice and mixed threshold ordering, enabled-policy evidence,
+  governance-approval requirements, duplicate-indicator rejection, and prohibited-use checks in
+  one model validator.
+- Action: extracted named PM-quality policy guard helpers for threshold ordering,
+  enabled-policy evidence, unique indicators, and permitted uses while preserving the public
+  Pydantic validation contract. Added focused model tests proving normalized prohibited-use
+  rejection and enabled-policy governance-approval fail-closed behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/models.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/models.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/models.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal PM operating-quality model
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-847: Persistence-profile guardrail error helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/persistence_profile.py`, `tests/unit/api/test_persistence_profile.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `validate_persistence_profile_guardrails` was the top current source-complexity hotspot
+  after the PM-quality policy validation slice and mixed production-profile branching, DPM
+  supportability-store checks, policy-pack catalog backend requirements, and explicit DSN
+  requirements in one API supportability guardrail.
+- Action: extracted explicit guardrail-error helpers for production persistence profile validation
+  and policy-pack catalog enforcement while preserving existing fail-fast error precedence and
+  runtime error strings. Added focused tests for policy-pack enablement flags plus the previously
+  uncovered DPM Postgres DSN and policy-pack Postgres DSN failure paths.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/persistence_profile.py tests/unit/api/test_persistence_profile.py`,
+  `python -m ruff format --check src/api/persistence_profile.py tests/unit/api/test_persistence_profile.py`,
+  `python -m mypy --config-file mypy.ini src/api/persistence_profile.py`,
+  `python -m pytest tests/unit/api/test_persistence_profile.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal production persistence-profile
+  guardrail maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-848: Rolling risk window selection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_rolling_window_result` was the top current source-complexity hotspot after the
+  persistence-profile guardrail slice and mixed missing-window fallback, requested-window
+  matching, resolved-window normalization, and no-match fallback in one helper.
+- Action: extracted rolling-window match and fallback normalization helpers while preserving
+  existing source-owned payload behavior and source-id window labeling semantics. Added a focused
+  edge test proving a selected source window without declared `window_length` remains labeled as
+  `unknown`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal risk-source adapter
+  maintainability refactoring and repo-local quality evidence.

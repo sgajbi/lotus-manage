@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T00:43:03+00:00`
+- Generated at: `2026-06-13T01:00:56+00:00`
 
-- Current ref: `36b171a3`
+- Current ref: `d6fe4656`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
-| 2 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
-| 3 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
-| 4 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
-| 5 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
-| 6 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
-| 7 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
-| 8 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
-| 9 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
-| 10 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
+| 1 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
+| 2 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
+| 3 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
+| 4 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
+| 5 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
+| 6 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
+| 7 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
+| 8 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
+| 9 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
+| 10 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
 
 ### Most Complex Current Test Functions
 
