@@ -1336,6 +1336,50 @@ def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postu
         )
 
 
+def test_pm_quality_score_run_scope_mismatch_helpers_classify_fairness_inputs() -> None:
+    ready = _ready_score_run()
+    policy_mismatch = _ready_score_run(policy_id="pmq_other")
+    date_mismatch = _ready_score_run(as_of_date="2026-05-11")
+    blocked = _ready_score_run(state="BLOCKED")
+
+    assert not scoring._score_run_policy_mismatched(
+        score_run=ready,
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+    )
+    assert scoring._score_run_policy_mismatched(
+        score_run=policy_mismatch,
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+    )
+    assert scoring._score_run_as_of_date_mismatched(
+        score_run=date_mismatch,
+        as_of_date="2026-05-12",
+    )
+    assert scoring._score_run_not_scorable(blocked)
+    assert not scoring._score_run_not_scorable(ready)
+
+
+def test_pm_quality_score_run_scope_mismatch_reasons_deduplicate_failures() -> None:
+    reasons = scoring._score_run_scope_mismatch_reasons(
+        score_runs=[
+            _ready_score_run(policy_id="pmq_other"),
+            _ready_score_run(as_of_date="2026-05-11"),
+            _ready_score_run(state="BLOCKED"),
+            _ready_score_run(state="DISABLED"),
+        ],
+        policy_id="pmq_sg_dpm",
+        policy_version="2026.05",
+        as_of_date="2026-05-12",
+    )
+
+    assert reasons == [
+        "PM_QUALITY_FAIRNESS_AS_OF_DATE_MISMATCH",
+        "PM_QUALITY_FAIRNESS_POLICY_MISMATCH",
+        "PM_QUALITY_FAIRNESS_SCORE_RUN_NOT_SCORABLE",
+    ]
+
+
 def test_pm_quality_fairness_analysis_blocks_segments_below_minimum_count() -> None:
     empty_segment = DpmPmQualityFairnessSegmentInput(
         segment_id="sg_dpm_empty",

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T15:31:47+00:00`
+- Generated at: `2026-06-13T15:36:02+00:00`
 
-- Report source snapshot: `16764567+worktree`
+- Report source snapshot: `485abf74+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
-| 2 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
-| 3 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
-| 4 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
-| 5 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
-| 6 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
-| 7 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
-| 8 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 9 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 10 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 1 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 2 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
+| 3 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
+| 4 | authority_context_status | src/api/services/construction_supportability_application.py | 7 | 12 |
+| 5 | _model_documentable_properties | src/api/openapi_enrichment.py | 7 | 11 |
+| 6 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
+| 7 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
+| 8 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 9 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 10 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
 
 ### Most Complex Current Test Functions
 

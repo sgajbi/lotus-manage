@@ -22709,3 +22709,32 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal command-center supportability
   helper maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-908: PM-quality fairness scope mismatch predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, PM operating-quality governance, and testing.
+- Finding: `_score_run_scope_mismatch_reasons` combined policy identity matching, as-of date
+  matching, scorable-state filtering, and reason-code deduplication in one fairness guard loop.
+  The behavior was correct, but the cross-segment fairness eligibility rules were harder to review
+  than PM-quality governance should be.
+- Action: extracted `_score_run_policy_mismatched`, `_score_run_as_of_date_mismatched`, and
+  `_score_run_not_scorable` so each fairness eligibility rule is independently testable before
+  mismatch reason aggregation. Added direct tests for policy, date, blocked/scorable state, and
+  deduplicated mismatch reason output.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  and `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM operating-quality
+  suite reported 31 passed and `_score_run_scope_mismatch_reasons` reduced from B(7) to A(5)
+  under radon.
+- Residual risk: this slice improves PM-quality fairness eligibility maintainability only. It
+  does not change fairness analysis semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality fairness helper
+  maintainability hardening with no operator-facing contract change.
