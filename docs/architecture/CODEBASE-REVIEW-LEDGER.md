@@ -20813,3 +20813,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal campaign operating queue
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-843: Enterprise runtime config issue helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `validate_enterprise_runtime_config` was the top current source-complexity hotspot after
+  the campaign operating queue slice and mixed policy-version validation, secret-rotation bounds,
+  authz key-material requirements, and fail-fast enforcement in one helper.
+- Action: extracted named runtime-config issue helpers for policy version, secret rotation, and
+  authz key material, then made the public validator assemble those bounded issues before applying
+  enforcement. Added direct tests for both failing and passing helper states while preserving the
+  existing runtime enforcement behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python -m ruff format --check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/enterprise_readiness.py`,
+  `python -m pytest tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal enterprise runtime
+  security/config maintainability refactoring and repo-local quality evidence.

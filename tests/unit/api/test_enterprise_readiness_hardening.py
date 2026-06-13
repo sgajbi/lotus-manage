@@ -3,10 +3,13 @@ from fastapi.testclient import TestClient
 import pytest
 
 from src.api.enterprise_readiness import (
+    _authz_key_material_issue,
     _has_service_identity,
     _missing_required_headers,
     _normalized_headers,
+    _policy_version_issue,
     _provided_capabilities,
+    _secret_rotation_issue,
     _write_authorization_required,
     authorize_write_request,
     build_enterprise_audit_middleware,
@@ -39,6 +42,25 @@ def test_enterprise_runtime_config_reports_missing_policy_version(monkeypatch) -
     monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", " ")
 
     assert validate_enterprise_runtime_config() == ["missing_policy_version"]
+
+
+def test_enterprise_runtime_config_issue_helpers_are_bounded(monkeypatch) -> None:
+    monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", " ")
+    monkeypatch.setenv("ENTERPRISE_SECRET_ROTATION_DAYS", "0")
+    monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
+    monkeypatch.setenv("ENTERPRISE_PRIMARY_KEY_ID", "")
+
+    assert _policy_version_issue() == "missing_policy_version"
+    assert _secret_rotation_issue() == "secret_rotation_days_out_of_range"
+    assert _authz_key_material_issue() == "missing_primary_key_id"
+
+    monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", "1.2.3")
+    monkeypatch.setenv("ENTERPRISE_SECRET_ROTATION_DAYS", "90")
+    monkeypatch.setenv("ENTERPRISE_PRIMARY_KEY_ID", "kid-active")
+
+    assert _policy_version_issue() is None
+    assert _secret_rotation_issue() is None
+    assert _authz_key_material_issue() is None
 
 
 def test_capability_rule_ignores_non_matching_method(monkeypatch) -> None:
