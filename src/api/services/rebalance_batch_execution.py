@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -20,8 +21,17 @@ from src.core.dpm_source_context import DpmResolvedSourceContext
 from src.core.models import (
     BatchRebalanceRequest,
     BatchRebalanceResult,
+    BatchScenarioMetric,
+    RebalanceResult,
 )
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
+
+
+@dataclass(frozen=True)
+class BatchScenarioOutcome:
+    result: RebalanceResult | None = None
+    comparison_metric: BatchScenarioMetric | None = None
+    error: str | None = None
 
 
 def execute_batch_scenarios(
@@ -35,36 +45,30 @@ def execute_batch_scenarios(
     record_for_support: RecordForSupportFn,
     current_logger: logging.Logger | Any,
 ) -> BatchRebalanceResult:
-    results = {}
-    comparison_metrics = {}
-    failed_scenarios = {}
-    warnings = []
+    results: dict[str, RebalanceResult] = {}
+    comparison_metrics: dict[str, BatchScenarioMetric] = {}
+    failed_scenarios: dict[str, str] = {}
+    warnings: list[str] = []
 
     for scenario_name in sorted(request.scenarios.keys()):
-        scenario = request.scenarios[scenario_name]
-        try:
-            options = validate_batch_scenario_options(scenario)
-        except ValidationError as exc:
-            failed_scenarios[scenario_name] = to_invalid_options_error(exc)
-            continue
-
-        try:
-            scenario_result, scenario_metric = execute_valid_batch_scenario(
-                request=request,
-                scenario_name=scenario_name,
-                options=options,
-                batch_id=batch_id,
-                correlation_id=correlation_id,
-                policy_definition=policy_definition,
-                source_context=source_context,
-                run_simulation_fn=run_simulation_fn,
-                record_for_support=record_for_support,
-            )
-            results[scenario_name] = scenario_result
-            comparison_metrics[scenario_name] = scenario_metric
-        except (ValidationError, RuntimeError, ValueError) as exc:
-            current_logger.exception("Scenario execution failed")
-            failed_scenarios[scenario_name] = f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}"
+        outcome = _execute_batch_scenario(
+            request=request,
+            scenario_name=scenario_name,
+            batch_id=batch_id,
+            correlation_id=correlation_id,
+            policy_definition=policy_definition,
+            source_context=source_context,
+            run_simulation_fn=run_simulation_fn,
+            record_for_support=record_for_support,
+            current_logger=current_logger,
+        )
+        _record_batch_scenario_outcome(
+            scenario_name=scenario_name,
+            outcome=outcome,
+            results=results,
+            comparison_metrics=comparison_metrics,
+            failed_scenarios=failed_scenarios,
+        )
 
     if failed_scenarios:
         warnings.append("PARTIAL_BATCH_FAILURE")
@@ -84,6 +88,58 @@ def execute_batch_scenarios(
         failed_scenarios=failed_scenarios,
         warnings=warnings,
     )
+
+
+def _execute_batch_scenario(
+    *,
+    request: BatchRebalanceRequest,
+    scenario_name: str,
+    batch_id: str,
+    correlation_id: Optional[str],
+    policy_definition: Optional[DpmPolicyPackDefinition],
+    source_context: Optional[DpmResolvedSourceContext],
+    run_simulation_fn: RunSimulationFn,
+    record_for_support: RecordForSupportFn,
+    current_logger: logging.Logger | Any,
+) -> BatchScenarioOutcome:
+    try:
+        options = validate_batch_scenario_options(request.scenarios[scenario_name])
+    except ValidationError as exc:
+        return BatchScenarioOutcome(error=to_invalid_options_error(exc))
+
+    try:
+        scenario_result, scenario_metric = execute_valid_batch_scenario(
+            request=request,
+            scenario_name=scenario_name,
+            options=options,
+            batch_id=batch_id,
+            correlation_id=correlation_id,
+            policy_definition=policy_definition,
+            source_context=source_context,
+            run_simulation_fn=run_simulation_fn,
+            record_for_support=record_for_support,
+        )
+    except (ValidationError, RuntimeError, ValueError) as exc:
+        current_logger.exception("Scenario execution failed")
+        return BatchScenarioOutcome(error=f"SCENARIO_EXECUTION_ERROR: {type(exc).__name__}")
+
+    return BatchScenarioOutcome(result=scenario_result, comparison_metric=scenario_metric)
+
+
+def _record_batch_scenario_outcome(
+    *,
+    scenario_name: str,
+    outcome: BatchScenarioOutcome,
+    results: dict[str, RebalanceResult],
+    comparison_metrics: dict[str, BatchScenarioMetric],
+    failed_scenarios: dict[str, str],
+) -> None:
+    if outcome.error is not None:
+        failed_scenarios[scenario_name] = outcome.error
+        return
+    if outcome.result is not None and outcome.comparison_metric is not None:
+        results[scenario_name] = outcome.result
+        comparison_metrics[scenario_name] = outcome.comparison_metric
 
 
 __all__ = ["execute_batch_scenarios"]

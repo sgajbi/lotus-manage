@@ -21526,3 +21526,30 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal infrastructure maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-868: Batch scenario execution outcome helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/rebalance_batch_execution.py` and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `execute_batch_scenarios` still combined scenario option validation, scenario execution,
+  failed-scenario mapping, result collection, and telemetry summary in one application-service
+  function. The behavior was correct, but the per-scenario outcome handling was harder to review
+  than the batch analysis contract requires.
+- Action: extracted a typed `BatchScenarioOutcome`, a per-scenario execution helper, and a result
+  recorder helper while keeping the public batch orchestration contract unchanged. Added direct
+  helper tests for invalid scenario options, execution exceptions, and failure outcome recording.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/rebalance_batch_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format --check src/api/services/rebalance_batch_execution.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_batch_execution.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -q`,
+  and `python -m radon cc src/api/services/rebalance_batch_execution.py -s`; the focused runtime
+  service-edge suite reported 44 passed and `execute_batch_scenarios` reduced from B(7) to A(5).
+- Residual risk: this slice improves internal batch execution maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal application-service
+  maintainability hardening with no operator-facing contract change.

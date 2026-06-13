@@ -822,6 +822,79 @@ def test_rebalance_batch_execution_reports_invalid_options_without_running_engin
     assert result.warnings == ["PARTIAL_BATCH_FAILURE"]
 
 
+def test_rebalance_batch_scenario_helper_reports_invalid_options() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"invalid_case": {"options": {"max_turnover_pct": "bad"}}}
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+
+    outcome = batch_execution._execute_batch_scenario(  # noqa: SLF001
+        request=request,
+        scenario_name="invalid_case",
+        batch_id="batch_test",
+        correlation_id="corr_batch",
+        policy_definition=None,
+        source_context=None,
+        run_simulation_fn=lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("invalid options should fail before engine execution")
+        ),
+        record_for_support=lambda **_kwargs: None,
+        current_logger=SimpleNamespace(exception=lambda *_args, **_kwargs: None),
+    )
+
+    assert outcome.result is None
+    assert outcome.comparison_metric is None
+    assert outcome.error is not None
+    assert outcome.error.startswith("INVALID_OPTIONS:")
+
+
+def test_rebalance_batch_scenario_helper_reports_execution_errors() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+    request = BatchRebalanceRequest.model_validate(batch_payload)
+    logged: list[str] = []
+
+    outcome = batch_execution._execute_batch_scenario(  # noqa: SLF001
+        request=request,
+        scenario_name="baseline",
+        batch_id="batch_test",
+        correlation_id="corr_batch",
+        policy_definition=None,
+        source_context=None,
+        run_simulation_fn=lambda **_kwargs: (_ for _ in ()).throw(
+            RuntimeError("engine unavailable")
+        ),
+        record_for_support=lambda **_kwargs: None,
+        current_logger=SimpleNamespace(exception=lambda message: logged.append(message)),
+    )
+
+    assert outcome.result is None
+    assert outcome.comparison_metric is None
+    assert outcome.error == "SCENARIO_EXECUTION_ERROR: RuntimeError"
+    assert logged == ["Scenario execution failed"]
+
+
+def test_rebalance_batch_scenario_outcome_recorder_routes_failures() -> None:
+    results: dict[str, object] = {}
+    metrics: dict[str, object] = {}
+    failed: dict[str, str] = {}
+
+    batch_execution._record_batch_scenario_outcome(  # noqa: SLF001
+        scenario_name="baseline",
+        outcome=batch_execution.BatchScenarioOutcome(
+            error="SCENARIO_EXECUTION_ERROR: RuntimeError"
+        ),
+        results=results,
+        comparison_metrics=metrics,
+        failed_scenarios=failed,
+    )
+
+    assert results == {}
+    assert metrics == {}
+    assert failed == {"baseline": "SCENARIO_EXECUTION_ERROR: RuntimeError"}
+
+
 def test_batch_scenario_execution_ids_are_deterministic() -> None:
     assert batch_scenario_execution.build_batch_scenario_execution_ids(
         batch_id="batch_test",
