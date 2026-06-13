@@ -3,11 +3,21 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from src.core.rebalance.engine import run_simulation
-from src.core.rebalance_runs.models import DpmRunRecord
+from src.core.rebalance_runs.models import (
+    DpmAsyncOperationRecord,
+    DpmLineageEdgeRecord,
+    DpmRunIdempotencyHistoryRecord,
+    DpmRunRecord,
+    DpmRunWorkflowDecisionRecord,
+)
 from src.core.rebalance_runs.service import (
     DpmAsyncOperationConflictError,
     DpmRunNotFoundError,
     DpmRunSupportService,
+    _support_bundle_async_operation,
+    _support_bundle_idempotency_history,
+    _support_bundle_lineage,
+    _support_bundle_workflow_history,
 )
 from src.core.models import EngineOptions
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
@@ -217,3 +227,121 @@ def test_supportability_summary_posture_empty_ready_stale_and_degraded():
     assert degraded.supportability.state == "degraded"
     assert degraded.supportability.reason == "supportability_summary_degraded"
     assert degraded.supportability.freshness_bucket == "current"
+
+
+def test_support_bundle_helpers_project_optional_sections_and_sort_evidence():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    run = DpmRunRecord(
+        rebalance_run_id="rr_support_bundle_1",
+        correlation_id="corr_support_bundle_1",
+        request_hash="sha256:req-support-bundle-1",
+        idempotency_key="idem_support_bundle_1",
+        portfolio_id="pf_support_bundle_1",
+        created_at=now,
+        result_json=_sample_result().model_dump(mode="json"),
+    )
+
+    operation = DpmAsyncOperationRecord(
+        operation_id="dop_support_bundle_1",
+        operation_type="ANALYZE_SCENARIOS",
+        status="PENDING",
+        correlation_id=run.correlation_id,
+        created_at=now,
+        started_at=None,
+        finished_at=None,
+        result_json=None,
+        error_json=None,
+        request_json={"scenarios": {"baseline": {"options": {}}}},
+    )
+    async_operation = _support_bundle_async_operation(run=run, operation=operation)
+    assert async_operation is not None
+    assert async_operation.operation_id == "dop_support_bundle_1"
+    assert async_operation.is_executable is True
+    assert _support_bundle_async_operation(run=run, operation=None) is None
+
+    history = _support_bundle_idempotency_history(
+        run=run,
+        history=[
+            DpmRunIdempotencyHistoryRecord(
+                idempotency_key=run.idempotency_key,
+                rebalance_run_id=run.rebalance_run_id,
+                correlation_id=run.correlation_id,
+                request_hash=run.request_hash,
+                created_at=now + timedelta(minutes=1),
+            ),
+            DpmRunIdempotencyHistoryRecord(
+                idempotency_key=run.idempotency_key,
+                rebalance_run_id="rr_support_bundle_0",
+                correlation_id="corr_support_bundle_0",
+                request_hash="sha256:req-support-bundle-0",
+                created_at=now,
+            ),
+        ],
+    )
+    assert history is not None
+    assert history.idempotency_key == run.idempotency_key
+    assert [item.rebalance_run_id for item in history.history] == [
+        "rr_support_bundle_0",
+        run.rebalance_run_id,
+    ]
+    assert (
+        _support_bundle_idempotency_history(
+            run=run.model_copy(update={"idempotency_key": None}),
+            history=[],
+        )
+        is None
+    )
+
+    workflow_history = _support_bundle_workflow_history(
+        rebalance_run_id=run.rebalance_run_id,
+        decisions=[
+            DpmRunWorkflowDecisionRecord(
+                decision_id="dwd_later",
+                run_id=run.rebalance_run_id,
+                action="APPROVE",
+                reason_code="REVIEW_APPROVED",
+                comment=None,
+                actor_id="reviewer_1",
+                decided_at=now + timedelta(minutes=2),
+                correlation_id="corr_decision_later",
+            ),
+            DpmRunWorkflowDecisionRecord(
+                decision_id="dwd_earlier",
+                run_id=run.rebalance_run_id,
+                action="REQUEST_CHANGES",
+                reason_code="NEEDS_DETAIL",
+                comment=None,
+                actor_id="reviewer_2",
+                decided_at=now,
+                correlation_id="corr_decision_earlier",
+            ),
+        ],
+    )
+    assert [decision.decision_id for decision in workflow_history.decisions] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+
+    lineage = _support_bundle_lineage(
+        rebalance_run_id=run.rebalance_run_id,
+        edges=[
+            DpmLineageEdgeRecord(
+                source_entity_id="idem_support_bundle_1",
+                edge_type="IDEMPOTENCY_TO_RUN",
+                target_entity_id=run.rebalance_run_id,
+                created_at=now + timedelta(minutes=1),
+                metadata_json={"request_hash": run.request_hash},
+            ),
+            DpmLineageEdgeRecord(
+                source_entity_id=run.correlation_id,
+                edge_type="CORRELATION_TO_RUN",
+                target_entity_id=run.rebalance_run_id,
+                created_at=now,
+                metadata_json={"request_hash": run.request_hash},
+            ),
+        ],
+    )
+    assert [edge.edge_type for edge in lineage.edges] == [
+        "CORRELATION_TO_RUN",
+        "IDEMPOTENCY_TO_RUN",
+    ]

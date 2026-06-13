@@ -21863,3 +21863,71 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal domain helper maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-880: Rebalance-run support-bundle projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance_runs/service.py` and
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`.
+- Bank-buyable control area: architecture, operational evidence, and testing.
+- Finding: `get_run_support_bundle` combined required-run lookup, optional artifact resolution,
+  async-operation projection, idempotency-history projection, workflow-history ordering, lineage
+  ordering, and response assembly in one method. The behavior was correct, but the support-bundle
+  evidence path was harder to review than the action-register supportability contract deserves.
+- Action: extracted optional support-bundle repository lookups and pure projection helpers for
+  async operation, idempotency history, workflow history, and lineage evidence while preserving the
+  public response shape. Added direct helper coverage proving optional-section omission,
+  executable async-operation projection, idempotency-history ordering, workflow-decision ordering,
+  and deterministic lineage ordering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `python -m ruff format --check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance_runs/service.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/service_boundary_gate.py`,
+  service leakage scan, `git diff --check`, and
+  `python -m radon cc src/core/rebalance_runs/service.py -s`; the focused supportability suite
+  reported 7 passed, `make check` reported 2663 passed, and `get_run_support_bundle` reduced
+  from B(7) to A(2).
+- Residual risk: this slice improves internal rebalance-run support-bundle maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal operational-evidence helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-881: Stateful source-context resolver helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/rebalance_stateful_source_context.py` and
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`.
+- Bank-buyable control area: architecture, observability, and testing.
+- Finding: `resolve_stateful_source_context` combined stateful-input gating, resolver
+  construction/invocation, failure-to-domain-error mapping, resolver supportability metric
+  emission, success reason projection, context hashing, and response assembly in one helper. The
+  behavior was correct, but the stateful sourcing boundary was harder to review than the core
+  resolver observability and fail-closed supportability contract requires.
+- Action: extracted stateful-input gating, core resolver execution/error mapping, resolver failure
+  metric emission, success metric emission, and success supportability-state/reason projection
+  helpers while preserving the public resolver response. Added direct helper coverage proving
+  stateful-input gating and ready/degraded success reason projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/rebalance_stateful_source_context.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff format --check src/api/services/rebalance_stateful_source_context.py tests/unit/api/test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/rebalance_stateful_source_context.py`,
+  `python -m pytest tests/unit/api/test_runtime_request_model_and_service_edges.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/service_boundary_gate.py`,
+  service leakage scan, `git diff --check`, and
+  `python -m radon cc src/api/services/rebalance_stateful_source_context.py -s`; the focused
+  runtime request/service-edge suite reported 45 passed, `make check` reported 2664 passed, and
+  `resolve_stateful_source_context` reduced from B(7) to A(1).
+- Residual risk: this slice improves internal stateful source-context maintainability only. It
+  does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-service helper
+  maintainability hardening with no operator-facing contract change.

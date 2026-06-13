@@ -260,6 +260,41 @@ def test_stateful_source_context_helper_gates_before_resolver_call() -> None:
         )
 
 
+def test_stateful_source_context_helpers_project_gates_and_success_posture() -> None:
+    stateful_input = _stateful_input()
+    envelope = RebalanceExecutionRequestEnvelope.model_construct(
+        input_mode="stateful",
+        stateful_input=stateful_input,
+        stateless_input=None,
+        options_override={},
+    )
+
+    assert (
+        stateful_source_context._stateful_source_input(
+            envelope=envelope,
+            stateful_enabled=True,
+        )
+        == stateful_input
+    )
+    with pytest.raises(service.DpmRebalanceStatefulInputDisabledError):
+        stateful_source_context._stateful_source_input(
+            envelope=envelope,
+            stateful_enabled=False,
+        )
+
+    ready_context = SimpleNamespace(supportability=SimpleNamespace(state="READY"))
+    degraded_context = SimpleNamespace(supportability=SimpleNamespace(state="DEGRADED"))
+    assert (
+        stateful_source_context._core_resolver_supportability_state(context=ready_context)
+        == "ready"
+    )
+    assert stateful_source_context._core_resolver_success_reason(context=ready_context) == "ready"
+    assert (
+        stateful_source_context._core_resolver_success_reason(context=degraded_context)
+        == "degraded"
+    )
+
+
 def test_rebalance_request_envelope_resolution_handles_stateless_and_transform_failure() -> None:
     request = RebalanceRequest.model_validate(valid_api_payload())
     stateless_envelope = RebalanceExecutionRequestEnvelope(
