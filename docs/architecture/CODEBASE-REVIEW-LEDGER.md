@@ -21610,3 +21610,25 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal supportability-service
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-871: Main releasability service-boundary enforcement
+
+- Date: 2026-06-13
+- Scope: `.github/workflows/main-releasability.yml`.
+- Bank-buyable control area: CI measurement and architecture enforcement.
+- Finding: the Feature Lane and PR Merge Gate enforced `make service-boundary-gate`, but the Main
+  Releasability Gate did not repeat the same service-boundary check after merge. That left a small
+  governance asymmetry in the final releasability lane for the already-remediated service-layer
+  boundary rule.
+- Action: added `Service Boundary Gate` to the Main Releasability lint/typecheck/security job,
+  directly after the OpenAPI and API vocabulary gates and before migration smoke, matching the
+  intended API/architecture governance sequence used in the PR lane.
+- Status: hardened.
+- Evidence: `python -c "import yaml; yaml.safe_load(open('.github/workflows/main-releasability.yml', encoding='utf-8')); print('YAML syntax ok')"`,
+  `python scripts/service_boundary_gate.py`, and `git diff --check` passed locally. Local
+  `actionlint` was not installed; GitHub workflow lint remains the authoritative actionlint
+  validation for the PR.
+- Residual risk: this improves CI enforcement alignment only. It does not certify global
+  bank-buyable readiness or replace GitHub Actions execution on the opened PR and merged `main`.
+- Wiki decision: no wiki source change required; this is internal CI enforcement alignment with no
+  operator-facing runbook or API contract change.

@@ -51,6 +51,8 @@ jobs:
         run: make openapi-gate
       - name: API Vocabulary Gate
         run: make api-vocabulary-gate
+      - name: Service Boundary Gate
+        run: make service-boundary-gate
       - name: Migration Contract Smoke
         run: make migration-smoke
       - name: Architecture Gate
