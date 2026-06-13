@@ -21223,3 +21223,33 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk outcome source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-857: Tactical house-view portfolio resolution helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/wave_portfolio_resolution.py`,
+  `tests/unit/api/test_wave_portfolio_resolution.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_resolve_tactical_house_view_portfolios` became the next current source-complexity
+  hotspot after the rolling-risk source adapter slice and mixed tactical house-view source
+  precondition validation, eligible portfolio-type normalization, lotus-advise authority request
+  construction, downstream source call, and dependency failure mapping in one router helper.
+- Action: extracted tactical house-view source-evidence preconditions, eligible portfolio-type
+  normalization, and authority-request preparation into router-local helpers while preserving
+  lotus-advise source-owned cohort resolution, fail-closed unavailable/rejected/cohort-incomplete
+  behavior, and resolved portfolio lineage projection. Added direct helper coverage for
+  authority-request source context projection and missing source-evidence rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_portfolio_resolution.py tests/unit/dpm/api/test_waves_api.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal wave portfolio-resolution
+  maintainability refactoring and repo-local quality evidence.
