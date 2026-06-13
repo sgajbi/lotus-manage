@@ -22563,3 +22563,31 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal supportability helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-903: Proof-pack source analytics family dispatch
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_source_analytics.py`.
+- Bank-buyable control area: architecture, source-owned proof-pack lineage, and testing.
+- Finding: `source_analytics_for_context` encoded proof-pack analytics family dispatch as a
+  conditional chain. The behavior was correct, but every new source-owned analytics family would
+  extend branching in the public mapper instead of a compact registry that can be reviewed and
+  tested directly.
+- Action: replaced the conditional family dispatch with a typed `_SOURCE_ANALYTICS_BUILDERS`
+  registry and added direct tests proving every supported family maps to the expected
+  source-hash key while empty contexts still short-circuit without dispatch.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_source_analytics.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  suites reported 103 passed and `source_analytics_for_context` reduced from B(7) to A(2) under
+  radon.
+- Residual risk: this slice improves source-analytics dispatch maintainability only. It does not
+  change proof-pack semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-lineage helper
+  maintainability hardening with no operator-facing contract change.

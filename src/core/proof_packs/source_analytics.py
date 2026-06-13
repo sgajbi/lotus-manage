@@ -80,6 +80,9 @@ class ProofPackSourceAnalytics:
     content_hash: str
 
 
+_SourceAnalyticsBuilder = Callable[[dict[str, Any]], ProofPackSourceAnalytics | None]
+
+
 def source_analytics_for_alternative(
     *,
     alternative: ConstructionAlternative | None,
@@ -103,17 +106,7 @@ def source_analytics_for_context(
 
     if not source_context:
         return None
-    if family == "risk":
-        return _risk_source_analytics(source_context)
-    if family == "performance":
-        return _performance_source_analytics(source_context)
-    if family == "transaction_cost":
-        return _transaction_cost_source_analytics(source_context)
-    if family == "client_restriction":
-        return _client_restriction_source_analytics(source_context)
-    if family == "sustainability_preference":
-        return _sustainability_preference_source_analytics(source_context)
-    return _regime_stress_source_analytics(source_context)
+    return _SOURCE_ANALYTICS_BUILDERS[family](source_context)
 
 
 def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAnalytics | None:
@@ -470,6 +463,16 @@ def _regime_stress_source_analytics(
         source_hash_key="regime_stress_context",
         content_hash=content_hash,
     )
+
+
+_SOURCE_ANALYTICS_BUILDERS: dict[ProofPackAnalyticsFamily, _SourceAnalyticsBuilder] = {
+    "risk": _risk_source_analytics,
+    "performance": _performance_source_analytics,
+    "transaction_cost": _transaction_cost_source_analytics,
+    "client_restriction": _client_restriction_source_analytics,
+    "sustainability_preference": _sustainability_preference_source_analytics,
+    "regime_stress": _regime_stress_source_analytics,
+}
 
 
 def _degraded_context_reason_codes(
