@@ -21044,3 +21044,31 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal rebalance orchestration
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-851: Historical risk attribution source identity helper
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `realized_historical_attribution_source_from_attribution_response` was the top current
+  source-complexity hotspot after the rebalance final gate status slice and assembled aggregate
+  versus contributor historical attribution source identity inline inside the source adapter.
+- Action: extracted a named historical attribution source-id helper while preserving source-owned
+  aggregate and contributor identity shape. Added direct helper coverage for both aggregate
+  attribution source IDs and contributor group source IDs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal risk-source adapter
+  maintainability refactoring and repo-local quality evidence.

@@ -20,6 +20,7 @@ from src.core.outcomes.risk_sources import (
     _drawdown_source_posture,
     _historical_attribution_contributor,
     _historical_attribution_set,
+    _historical_attribution_source_id,
     _historical_attribution_source_posture,
     _historical_attribution_value,
     _metric_unit,
@@ -1462,6 +1463,30 @@ def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
     )
     assert (
         _historical_attribution_contributor(attribution_set={}, contributor_group_key="TECH") == {}
+    )
+    assert (
+        _historical_attribution_source_id(
+            request_fingerprint="sha256:hist-attr",
+            period="YTD",
+            attribution_type="ACTIVE_RISK",
+            metric="TRACKING_ERROR",
+            grouping_dimension="SECTOR",
+            measure="total_value",
+            contributor_group_key=None,
+        )
+        == "sha256:hist-attr:YTD:historical-attribution:ACTIVE_RISK:TRACKING_ERROR:SECTOR:total_value"
+    )
+    assert _historical_attribution_source_id(
+        request_fingerprint="sha256:hist-attr",
+        period="YTD",
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+        measure="contributor_percent_contribution",
+        contributor_group_key="TECH",
+    ) == (
+        "sha256:hist-attr:YTD:historical-attribution:ACTIVE_RISK:"
+        "TRACKING_ERROR:SECTOR:contributor_percent_contribution:TECH"
     )
     assert _historical_attribution_value(
         attribution_set={"total_value": "0.15"},
