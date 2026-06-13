@@ -52,19 +52,61 @@ def sustainability_allocation_breaches(
     context: AuthoritativeSustainabilityPreferenceContext,
 ) -> list[AuthoritativeSustainabilityPreference]:
     weight_by_asset_class = allocation_weight_by_asset_class(result=result)
-    breaches: list[AuthoritativeSustainabilityPreference] = []
-    for preference in active_sustainability_preferences(context=context):
-        if not preference.applies_to_asset_classes:
-            continue
-        weight = sum(
+    return [
+        preference
+        for preference in active_sustainability_preferences(context=context)
+        if _preference_allocation_breached(
+            preference=preference,
+            weight_by_asset_class=weight_by_asset_class,
+        )
+    ]
+
+
+def _preference_allocation_breached(
+    *,
+    preference: AuthoritativeSustainabilityPreference,
+    weight_by_asset_class: dict[str, Decimal],
+) -> bool:
+    if not preference.applies_to_asset_classes:
+        return False
+    weight = _preference_allocation_weight(
+        preference=preference,
+        weight_by_asset_class=weight_by_asset_class,
+    )
+    return _minimum_allocation_breached(
+        preference=preference,
+        weight=weight,
+    ) or _maximum_allocation_breached(preference=preference, weight=weight)
+
+
+def _preference_allocation_weight(
+    *,
+    preference: AuthoritativeSustainabilityPreference,
+    weight_by_asset_class: dict[str, Decimal],
+) -> Decimal:
+    return sum(
+        (
             weight_by_asset_class.get(asset_class.lower(), Decimal("0"))
             for asset_class in preference.applies_to_asset_classes
-        )
-        if preference.minimum_allocation is not None and weight < preference.minimum_allocation:
-            breaches.append(preference)
-        if preference.maximum_allocation is not None and weight > preference.maximum_allocation:
-            breaches.append(preference)
-    return breaches
+        ),
+        Decimal("0"),
+    )
+
+
+def _minimum_allocation_breached(
+    *,
+    preference: AuthoritativeSustainabilityPreference,
+    weight: Decimal,
+) -> bool:
+    return preference.minimum_allocation is not None and weight < preference.minimum_allocation
+
+
+def _maximum_allocation_breached(
+    *,
+    preference: AuthoritativeSustainabilityPreference,
+    weight: Decimal,
+) -> bool:
+    return preference.maximum_allocation is not None and weight > preference.maximum_allocation
 
 
 def allocation_weight_by_asset_class(*, result: RebalanceResult) -> dict[str, Decimal]:

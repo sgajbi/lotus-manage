@@ -1,6 +1,10 @@
 from decimal import Decimal
 
 from src.api.services.construction_sustainability_supportability import (
+    _maximum_allocation_breached,
+    _minimum_allocation_breached,
+    _preference_allocation_breached,
+    _preference_allocation_weight,
     active_sustainability_preferences,
     allocation_weight_by_asset_class,
     sustainability_preference_reason_codes,
@@ -107,6 +111,99 @@ def test_allocation_weight_by_asset_class_projects_post_trade_weights() -> None:
 
     assert set(weight_by_asset_class) == {"cash", "equity"}
     assert weight_by_asset_class["equity"] > Decimal("0")
+
+
+def test_sustainability_preference_allocation_weight_sums_target_asset_classes() -> None:
+    preference = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="MULTI_ASSET_MINIMUM",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        applies_to_asset_classes=["EQUITY", "BOND"],
+        minimum_allocation=Decimal("0.65"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+
+    assert _preference_allocation_weight(
+        preference=preference,
+        weight_by_asset_class={
+            "equity": Decimal("0.40"),
+            "bond": Decimal("0.20"),
+            "cash": Decimal("0.40"),
+        },
+    ) == Decimal("0.60")
+
+
+def test_sustainability_preference_allocation_threshold_helpers_are_strict() -> None:
+    preference = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="EQUITY_RANGE",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        applies_to_asset_classes=["EQUITY"],
+        minimum_allocation=Decimal("0.40"),
+        maximum_allocation=Decimal("0.60"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+
+    assert _minimum_allocation_breached(preference=preference, weight=Decimal("0.39")) is True
+    assert _minimum_allocation_breached(preference=preference, weight=Decimal("0.40")) is False
+    assert _maximum_allocation_breached(preference=preference, weight=Decimal("0.61")) is True
+    assert _maximum_allocation_breached(preference=preference, weight=Decimal("0.60")) is False
+
+
+def test_sustainability_preference_allocation_breach_requires_asset_class_scope() -> None:
+    preference = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="CLASSIFICATION_ONLY",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        maximum_allocation=Decimal("0.10"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+
+    assert (
+        _preference_allocation_breached(
+            preference=preference,
+            weight_by_asset_class={"equity": Decimal("1.00")},
+        )
+        is False
+    )
+
+
+def test_sustainability_preference_allocation_breach_detects_minimum_and_maximum() -> None:
+    minimum = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="MIN_BOND",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        applies_to_asset_classes=["BOND"],
+        minimum_allocation=Decimal("0.30"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+    maximum = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="MAX_EQUITY",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        applies_to_asset_classes=["EQUITY"],
+        maximum_allocation=Decimal("0.50"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+
+    assert _preference_allocation_breached(
+        preference=minimum,
+        weight_by_asset_class={"bond": Decimal("0.20")},
+    )
+    assert _preference_allocation_breached(
+        preference=maximum,
+        weight_by_asset_class={"equity": Decimal("0.60")},
+    )
 
 
 def test_sustainability_supportability_degrades_without_source_profile() -> None:

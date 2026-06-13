@@ -22591,3 +22591,33 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-lineage helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-904: Sustainability allocation threshold helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_sustainability_supportability.py` and
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`.
+- Bank-buyable control area: architecture, construction supportability, and testing.
+- Finding: `sustainability_allocation_breaches` combined active preference iteration, target asset
+  class allocation aggregation, minimum threshold evaluation, and maximum threshold evaluation in
+  one loop. The behavior was correct, but the sustainability supportability policy was harder to
+  review than a source-owned client-preference control should be.
+- Action: extracted `_preference_allocation_weight`, `_minimum_allocation_breached`,
+  `_maximum_allocation_breached`, and `_preference_allocation_breached` so each policy decision is
+  independently testable before supportability reason-code roll-up. Added direct tests for
+  multi-asset aggregation, strict min/max boundaries, no-asset-class preferences, and both minimum
+  and maximum breach detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_sustainability_supportability.py tests/unit/dpm/construction/test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_sustainability_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_sustainability_supportability.py -q`,
+  and `python -m radon cc src/api/services/construction_sustainability_supportability.py -s`;
+  the focused sustainability supportability suite reported 9 passed and
+  `sustainability_allocation_breaches` reduced from B(8) to A(3) under radon.
+- Residual risk: this slice improves construction sustainability supportability maintainability
+  only. It does not change client-preference semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  helper maintainability hardening with no operator-facing contract change.
