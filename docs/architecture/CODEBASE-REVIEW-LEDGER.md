@@ -20698,3 +20698,33 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal construction supportability
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-839: Workflow gate route precedence table
+
+- Date: 2026-06-13
+- Scope: `src/core/common/workflow_gates.py`,
+  `tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `tests/unit/core/test_common_edge_coverage.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_select_gate_route` was the top current source-complexity hotspot after the
+  construction supportability selector slice and encoded workflow gate precedence through a branch
+  stack that made blocked, compliance, risk, approval, and execution routing order harder to audit.
+- Action: introduced an explicit workflow gate route context and precedence table while preserving
+  the existing decision order and default execution route. Expanded direct route tests to cover
+  blocked, compliance, risk, already-approved execution, mandate-approval, and clean execution
+  decisions alongside the existing end-to-end gate evaluation coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m ruff format --check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/workflow_gates.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_workflow_gates.py tests/unit/core/test_common_edge_coverage.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal workflow gate maintainability
+  refactoring and repo-local quality evidence.

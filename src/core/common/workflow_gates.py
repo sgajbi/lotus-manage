@@ -1,5 +1,6 @@
 from collections.abc import Iterable
-from typing import Literal
+from dataclasses import dataclass
+from typing import Callable, Literal
 
 from src.core.models import (
     DiagnosticsData,
@@ -29,6 +30,63 @@ _NextStep = Literal[
     "EXECUTE",
     "NONE",
 ]
+
+_SimulationStatus = Literal["READY", "BLOCKED", "PENDING_REVIEW"]
+
+
+@dataclass(frozen=True)
+class _GateRouteContext:
+    status: _SimulationStatus
+    hard_fail_count: int
+    soft_fail_count: int
+    new_high: int
+    new_medium: int
+    options: EngineOptions
+    requires_mandate_approval: bool
+
+
+_GateRoutePredicate = Callable[[_GateRouteContext], bool]
+
+
+@dataclass(frozen=True)
+class _GateRouteDecision:
+    gate: _GateName
+    next_step: _NextStep
+    applies: _GateRoutePredicate
+
+
+_GATE_ROUTE_PRECEDENCE: tuple[_GateRouteDecision, ...] = (
+    _GateRouteDecision(
+        gate="BLOCKED",
+        next_step="FIX_INPUT",
+        applies=lambda context: context.status == "BLOCKED" or context.hard_fail_count > 0,
+    ),
+    _GateRouteDecision(
+        gate="COMPLIANCE_REVIEW_REQUIRED",
+        next_step="COMPLIANCE_REVIEW",
+        applies=lambda context: context.new_high > 0,
+    ),
+    _GateRouteDecision(
+        gate="RISK_REVIEW_REQUIRED",
+        next_step="RISK_REVIEW",
+        applies=lambda context: context.soft_fail_count > 0 or context.new_medium > 0,
+    ),
+    _GateRouteDecision(
+        gate="EXECUTION_READY",
+        next_step="EXECUTE",
+        applies=lambda context: context.options.mandate_approval_already_obtained,
+    ),
+    _GateRouteDecision(
+        gate="MANDATE_APPROVAL_REQUIRED",
+        next_step="REQUEST_MANDATE_APPROVAL",
+        applies=lambda context: context.requires_mandate_approval,
+    ),
+    _GateRouteDecision(
+        gate="EXECUTION_READY",
+        next_step="EXECUTE",
+        applies=lambda context: True,
+    ),
+)
 
 
 def _dq_reasons(diagnostics: DiagnosticsData | None) -> list[GateReason]:
@@ -125,7 +183,7 @@ def _suitability_reasons(
 
 def evaluate_gate_decision(
     *,
-    status: Literal["READY", "BLOCKED", "PENDING_REVIEW"],
+    status: _SimulationStatus,
     rule_results: Iterable[RuleResult],
     suitability: SuitabilityResult | None,
     diagnostics: DiagnosticsData | None,
@@ -167,7 +225,7 @@ def evaluate_gate_decision(
 
 def _select_gate_route(
     *,
-    status: Literal["READY", "BLOCKED", "PENDING_REVIEW"],
+    status: _SimulationStatus,
     hard_fail_count: int,
     soft_fail_count: int,
     new_high: int,
@@ -175,17 +233,19 @@ def _select_gate_route(
     options: EngineOptions,
     requires_mandate_approval: bool,
 ) -> tuple[_GateName, _NextStep]:
-    if status == "BLOCKED" or hard_fail_count > 0:
-        return "BLOCKED", "FIX_INPUT"
-    if new_high > 0:
-        return "COMPLIANCE_REVIEW_REQUIRED", "COMPLIANCE_REVIEW"
-    if soft_fail_count > 0 or new_medium > 0:
-        return "RISK_REVIEW_REQUIRED", "RISK_REVIEW"
-    if options.mandate_approval_already_obtained:
-        return "EXECUTION_READY", "EXECUTE"
-    if requires_mandate_approval:
-        return "MANDATE_APPROVAL_REQUIRED", "REQUEST_MANDATE_APPROVAL"
-    return "EXECUTION_READY", "EXECUTE"
+    context = _GateRouteContext(
+        status=status,
+        hard_fail_count=hard_fail_count,
+        soft_fail_count=soft_fail_count,
+        new_high=new_high,
+        new_medium=new_medium,
+        options=options,
+        requires_mandate_approval=requires_mandate_approval,
+    )
+    for route in _GATE_ROUTE_PRECEDENCE:
+        if route.applies(context):
+            return route.gate, route.next_step
+    raise AssertionError("workflow gate route precedence did not define a default route")
 
 
 def _sorted_gate_reasons(reasons: list[GateReason]) -> list[GateReason]:
