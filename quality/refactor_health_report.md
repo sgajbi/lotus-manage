@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-13T00:23:52+00:00`
+- Generated at: `2026-06-13T00:27:50+00:00`
 
 - Baseline ref: `origin/main`
 
-- Current ref: `61b57d25`
+- Current ref: `29601cfd`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 813 | 813 | +0 |
-| Total Python LOC | 168607 | 168747 | +140 |
-| Test functions | 2435 | 2438 | +3 |
+| Total Python LOC | 168607 | 168786 | +179 |
+| Test functions | 2435 | 2439 | +4 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
