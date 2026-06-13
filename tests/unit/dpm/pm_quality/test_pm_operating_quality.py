@@ -745,6 +745,17 @@ def test_pm_operating_quality_policy_rejects_prohibited_uses_and_date_mismatch()
             governance_approval=_governance_approval(),
             allowed_uses=["portfolio_management_review", "compensation"],
         )
+    with pytest.raises(ValueError, match="prohibited use"):
+        DpmPmOperatingQualityPolicy(
+            policy_id="pmq_bad_normalized_use",
+            policy_version="2026.05",
+            enabled=True,
+            as_of_date="2026-05-12",
+            access_purpose="SUPERVISORY_CONTROL_REVIEW",
+            weights=[DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))],
+            governance_approval=_governance_approval(),
+            allowed_uses=["portfolio_management_review", " HR "],
+        )
 
 
 def test_pm_quality_scope_policy_models_reject_unproven_or_invalid_scope() -> None:
@@ -819,6 +830,16 @@ def test_pm_quality_policy_model_rejects_threshold_weight_and_indicator_edges() 
             access_purpose="SUPERVISORY_CONTROL_REVIEW",
             weights=[],
             governance_approval=_governance_approval(),
+        )
+    with pytest.raises(ValueError, match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"):
+        DpmPmOperatingQualityPolicy(
+            policy_id="pmq_missing_governance",
+            policy_version="2026.05",
+            enabled=True,
+            as_of_date="2026-05-12",
+            access_purpose="SUPERVISORY_CONTROL_REVIEW",
+            weights=[DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))],
+            governance_approval=None,
         )
     with pytest.raises(ValueError, match="indicators must be unique"):
         DpmPmOperatingQualityPolicy(

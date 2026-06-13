@@ -67,6 +67,46 @@ PmQualitySummaryInvocationState = Literal[
     "FAILED",
 ]
 
+_PM_QUALITY_FORBIDDEN_POLICY_USES = {
+    "compensation",
+    "hr",
+    "conduct_enforcement",
+    "autonomous_decisioning",
+}
+
+
+def _ensure_policy_threshold_order(
+    *,
+    ready_threshold: Decimal,
+    watch_threshold: Decimal,
+) -> None:
+    if ready_threshold < watch_threshold:
+        raise ValueError("ready_threshold must be greater than or equal to watch_threshold")
+
+
+def _ensure_enabled_policy_has_required_evidence(
+    *,
+    enabled: bool,
+    weights: list["DpmPmQualityWeight"],
+    governance_approval: "DpmPmQualityGovernanceApproval | None",
+) -> None:
+    if enabled and not weights:
+        raise ValueError("enabled PM quality policies require at least one configured weight")
+    if enabled and governance_approval is None:
+        raise ValueError("PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED")
+
+
+def _ensure_policy_indicators_are_unique(weights: list["DpmPmQualityWeight"]) -> None:
+    indicators = [weight.indicator for weight in weights]
+    if len(set(indicators)) != len(indicators):
+        raise ValueError("PM quality policy indicators must be unique")
+
+
+def _ensure_policy_uses_are_permitted(allowed_uses: list[str]) -> None:
+    normalized_uses = {use.strip().lower() for use in allowed_uses}
+    if normalized_uses & _PM_QUALITY_FORBIDDEN_POLICY_USES:
+        raise ValueError("PM quality policy contains a prohibited use")
+
 
 class DpmPmQualityWeight(BaseModel):
     """One configured scoring dimension for PM operating quality."""
@@ -246,19 +286,17 @@ class DpmPmOperatingQualityPolicy(BaseModel):
 
     @model_validator(mode="after")
     def validate_policy(self) -> "DpmPmOperatingQualityPolicy":
-        if self.ready_threshold < self.watch_threshold:
-            raise ValueError("ready_threshold must be greater than or equal to watch_threshold")
-        if self.enabled and not self.weights:
-            raise ValueError("enabled PM quality policies require at least one configured weight")
-        if self.enabled and self.governance_approval is None:
-            raise ValueError("PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED")
-        indicators = [weight.indicator for weight in self.weights]
-        if len(set(indicators)) != len(indicators):
-            raise ValueError("PM quality policy indicators must be unique")
-        forbidden = {"compensation", "hr", "conduct_enforcement", "autonomous_decisioning"}
-        normalized_uses = {use.strip().lower() for use in self.allowed_uses}
-        if normalized_uses & forbidden:
-            raise ValueError("PM quality policy contains a prohibited use")
+        _ensure_policy_threshold_order(
+            ready_threshold=self.ready_threshold,
+            watch_threshold=self.watch_threshold,
+        )
+        _ensure_enabled_policy_has_required_evidence(
+            enabled=self.enabled,
+            weights=self.weights,
+            governance_approval=self.governance_approval,
+        )
+        _ensure_policy_indicators_are_unique(self.weights)
+        _ensure_policy_uses_are_permitted(self.allowed_uses)
         return self
 
 
