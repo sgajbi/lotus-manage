@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T13:13:35+00:00`
+- Generated at: `2026-06-13T13:16:58+00:00`
 
-- Report source snapshot: `dcd1a5c5+worktree`
+- Report source snapshot: `8942328b+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
-| 2 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
-| 3 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
-| 4 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
-| 5 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
-| 6 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
-| 7 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
-| 8 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
-| 9 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
-| 10 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
+| 1 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
+| 2 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 3 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
+| 4 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
+| 5 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
+| 6 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 7 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
+| 8 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 9 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
+| 10 | _validate_transition_field_requirements | src/core/waves/campaign_assignment_tasks.py | 7 | 14 |
 
 ### Most Complex Current Test Functions
 

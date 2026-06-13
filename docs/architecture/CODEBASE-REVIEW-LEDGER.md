@@ -22502,3 +22502,33 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal outcome-evidence helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-901: Wave source analytics reference metadata helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/source_analytics.py` and
+  `tests/unit/dpm/waves/test_source_analytics.py`.
+- Bank-buyable control area: architecture, source-owned analytics lineage, and testing.
+- Finding: `_analytics_source_ref` combined source product type defaulting, fallback source id
+  selection, optional version projection, supportability defaulting, and optional content-hash
+  projection in one mapper. The behavior was correct, but the source-reference metadata rules were
+  harder to review than source-owned wave analytics lineage should be.
+- Action: extracted `_analytics_source_type`, `_source_context_value_or_fallback`, and
+  `_optional_source_context_value` so source-reference metadata decisions are independently
+  testable. Added direct tests for explicit source-product metadata and risk/performance defaulted
+  reference metadata.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m ruff format --check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_analytics.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/waves/source_analytics.py -s`; the focused source-analytics suite
+  reported 6 passed, `_analytics_source_ref` reduced to A(1) under radon, and the refreshed quality
+  report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves wave source-analytics lineage maintainability only. It does
+  not change source-analytics semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal wave source-analytics helper
+  maintainability hardening with no operator-facing contract change.
