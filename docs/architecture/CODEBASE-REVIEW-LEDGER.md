@@ -22022,3 +22022,32 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is CI warning remediation with no
   operator-facing product contract change.
+
+## BACKEND-REVIEW-20260613-885: Rebalance turnover budget selection helper
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/turnover.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`.
+- Bank-buyable control area: architecture, testing, and portfolio execution supportability.
+- Finding: `apply_turnover_limit` combined turnover-cap policy dispatch, ranked selection,
+  dropped-intent diagnostic projection, and warning mutation in one function. The behavior was
+  correct, but the budget-selection rule was harder to review directly than a mandate execution
+  constraint should be.
+- Action: extracted a typed `_TurnoverSelection`, a pure `_select_turnover_budget_intents` helper,
+  and `_ranked_turnover_intents` while preserving the public turnover-cap behavior and diagnostic
+  payload shape. Added direct helper coverage proving ranked exact-fit selection, missing-notional
+  omission, dropped-intent projection, and governed base-currency notional evidence.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python -m ruff format --check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/turnover.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py tests/unit/dpm/engine/test_engine_turnover_control.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/turnover.py -s`; the focused turnover suites reported
+  18 passed, and `apply_turnover_limit` reduced from B(7) to A(4).
+- Residual risk: this slice improves internal turnover-control maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal execution-control helper
+  maintainability hardening with no operator-facing contract change.

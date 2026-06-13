@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from decimal import Decimal
 from src.core.models import (
     DiagnosticsData,
@@ -6,6 +7,12 @@ from src.core.models import (
     Money,
     SecurityTradeIntent,
 )
+
+
+@dataclass(frozen=True)
+class _TurnoverSelection:
+    selected: list[SecurityTradeIntent]
+    dropped: list[DroppedIntent]
 
 
 def calculate_turnover_score(intent: SecurityTradeIntent, portfolio_value_base: Decimal) -> Decimal:
@@ -36,38 +43,66 @@ def apply_turnover_limit(
     if proposed <= budget:
         return intents
 
-    ranked = sorted(
-        intents,
-        key=lambda intent: _turnover_rank_key(
-            intent=intent,
-            portfolio_value_base=portfolio_value_base,
-        ),
+    selection = _select_turnover_budget_intents(
+        intents=intents,
+        budget=budget,
+        portfolio_value_base=portfolio_value_base,
+        base_currency=base_currency,
     )
+    diagnostics.dropped_intents.extend(selection.dropped)
 
+    if diagnostics.dropped_intents:
+        diagnostics.warnings.append("PARTIAL_REBALANCE_TURNOVER_LIMIT")
+
+    return selection.selected
+
+
+def _select_turnover_budget_intents(
+    *,
+    intents: list[SecurityTradeIntent],
+    budget: Decimal,
+    portfolio_value_base: Decimal,
+    base_currency: str,
+) -> _TurnoverSelection:
     selected: list[SecurityTradeIntent] = []
+    dropped: list[DroppedIntent] = []
     used = Decimal("0")
-    for intent in ranked:
+
+    for intent in _ranked_turnover_intents(
+        intents=intents,
+        portfolio_value_base=portfolio_value_base,
+    ):
         if intent.notional_base is None:
             continue
         notional_abs = abs(intent.notional_base.amount)
         if used + notional_abs <= budget:
             selected.append(intent)
             used += notional_abs
-            continue
-
-        diagnostics.dropped_intents.append(
-            _dropped_turnover_intent(
-                intent=intent,
-                notional_abs=notional_abs,
-                portfolio_value_base=portfolio_value_base,
-                base_currency=base_currency,
+        else:
+            dropped.append(
+                _dropped_turnover_intent(
+                    intent=intent,
+                    notional_abs=notional_abs,
+                    portfolio_value_base=portfolio_value_base,
+                    base_currency=base_currency,
+                )
             )
-        )
 
-    if diagnostics.dropped_intents:
-        diagnostics.warnings.append("PARTIAL_REBALANCE_TURNOVER_LIMIT")
+    return _TurnoverSelection(selected=selected, dropped=dropped)
 
-    return selected
+
+def _ranked_turnover_intents(
+    *,
+    intents: list[SecurityTradeIntent],
+    portfolio_value_base: Decimal,
+) -> list[SecurityTradeIntent]:
+    return sorted(
+        intents,
+        key=lambda intent: _turnover_rank_key(
+            intent=intent,
+            portfolio_value_base=portfolio_value_base,
+        ),
+    )
 
 
 def _turnover_budget(*, portfolio_value_base: Decimal, max_turnover_pct: Decimal) -> Decimal:
