@@ -1,7 +1,9 @@
 from decimal import Decimal
 
 from src.api.services.construction_liquidity_supportability import (
+    _adjusted_cash_below_policy,
     _cashflow_projection_policy_assessment,
+    _cashflow_projection_policy_inputs,
     _cashflow_projection_currency_mismatch,
     _cashflow_projection_is_usable,
     _cashflow_projection_usability_reason_codes,
@@ -189,6 +191,33 @@ def test_cashflow_projection_policy_assessment_flags_projected_policy_pressure()
     assert assessment.adjusted_cash_below_policy
     assert "CASHFLOW_PROJECTION_ADJUSTED_CASH_BELOW_POLICY" in (
         cashflow_projection_reason_codes(result=result, context=source_context)
+    )
+
+
+def test_cashflow_projection_policy_input_helpers_project_effective_cash_weight() -> None:
+    result = _trade_result()
+    projection = _cashflow_projection()
+
+    inputs = _cashflow_projection_policy_inputs(
+        result=result,
+        projection=projection,
+        cash_weight=None,
+        derive_cash_weight=True,
+    )
+
+    assert inputs.projection == projection
+    assert not inputs.currency_mismatch
+    assert not inputs.total_value_unavailable
+    assert inputs.effective_cash_weight == post_trade_cash_weight(result=result)
+    assert _adjusted_cash_below_policy(
+        cash_weight=Decimal("0.01"),
+        projected_cash_weight=Decimal("-0.005"),
+        minimum_cash_weight=Decimal("0.02"),
+    )
+    assert not _adjusted_cash_below_policy(
+        cash_weight=Decimal("0.03"),
+        projected_cash_weight=Decimal("-0.005"),
+        minimum_cash_weight=Decimal("0.02"),
     )
 
 

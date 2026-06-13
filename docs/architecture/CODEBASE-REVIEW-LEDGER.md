@@ -22051,3 +22051,34 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal execution-control helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-886: Cashflow projection policy input helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Bank-buyable control area: architecture, testing, and construction supportability.
+- Finding: `_cashflow_projection_policy_assessment` combined source projection availability,
+  currency/total-value guardrails, effective cash-weight derivation, projected cash-weight
+  calculation, adjusted-policy thresholding, and status assembly in one function. The behavior was
+  correct, but the source-owned cashflow projection policy semantics were harder to review directly
+  than the construction supportability contract deserves.
+- Action: extracted `_CashflowProjectionPolicyInputs`, `_cashflow_projection_policy_inputs`, and
+  `_adjusted_cash_below_policy` so the assessment reads as policy assembly rather than low-level
+  guard evaluation. Added direct helper coverage for effective cash-weight derivation and adjusted
+  cash-policy threshold behavior while preserving existing source-posture tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/services/construction_liquidity_supportability.py -s`; the focused
+  liquidity supportability suite reported 9 passed, and
+  `_cashflow_projection_policy_assessment` reduced from B(7) to A(2).
+- Residual risk: this slice improves internal construction-liquidity supportability
+  maintainability only. It does not certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-service maintainability
+  hardening with no operator-facing contract change.
