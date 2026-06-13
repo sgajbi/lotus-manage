@@ -20669,3 +20669,90 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM-quality lookback-window
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-838: Construction method enrichment selector map
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `method_enrichment_statuses` was the top current source-complexity hotspot after the
+  PM-quality lookback slice and encoded method-to-enrichment-status routing through repeated branch
+  checks, with only partial direct coverage over the supported construction methods.
+- Action: replaced the branch chain with an explicit construction-method enrichment selector map
+  while preserving solver-diagnostic status handling and empty posture for methods without an
+  enrichment overlay. Expanded direct tests to cover every mapped method and the solver-specific
+  diagnostic projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-839: Workflow gate route precedence table
+
+- Date: 2026-06-13
+- Scope: `src/core/common/workflow_gates.py`,
+  `tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `tests/unit/core/test_common_edge_coverage.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_select_gate_route` was the top current source-complexity hotspot after the
+  construction supportability selector slice and encoded workflow gate precedence through a branch
+  stack that made blocked, compliance, risk, approval, and execution routing order harder to audit.
+- Action: introduced an explicit workflow gate route context and precedence table while preserving
+  the existing decision order and default execution route. Expanded direct route tests to cover
+  blocked, compliance, risk, already-approved execution, mandate-approval, and clean execution
+  decisions alongside the existing end-to-end gate evaluation coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m ruff format --check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/workflow_gates.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_workflow_gates.py tests/unit/core/test_common_edge_coverage.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal workflow gate maintainability
+  refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-840: Drawdown source posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_drawdown_source_posture` was the top current source-complexity hotspot after the
+  workflow gate slice and repeated supportability-state handling already available elsewhere in
+  the risk-source adapter module.
+- Action: reused the shared supportability posture and degraded-value quality helpers, extracted
+  the drawdown-specific unavailable-measure predicate, and added direct tests for relative versus
+  absolute drawdown availability behavior while preserving existing risk-source adapter semantics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal risk-source adapter
+  maintainability refactoring and repo-local quality evidence.

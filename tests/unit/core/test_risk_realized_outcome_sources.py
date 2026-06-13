@@ -16,6 +16,7 @@ from src.core.outcomes.risk_sources import (
     _concentration_reason_codes,
     _concentration_source_snapshot,
     _concentration_source_posture,
+    _drawdown_measure_unavailable,
     _drawdown_source_posture,
     _historical_attribution_contributor,
     _historical_attribution_set,
@@ -1401,6 +1402,14 @@ def test_concentration_drawdown_and_rolling_posture_edges_are_source_safe() -> N
         value=None,
         measure_reason="RISK_DRAWDOWN_RELATIVE",
     ) == ("DEGRADED", "UNAVAILABLE")
+    assert _drawdown_measure_unavailable(
+        value=None,
+        measure_reason="RISK_DRAWDOWN_RELATIVE",
+    )
+    assert not _drawdown_measure_unavailable(
+        value=None,
+        measure_reason="RISK_DRAWDOWN_ABSOLUTE",
+    )
     assert _rolling_source_posture(
         supportability_state="unsupported",
         value=None,

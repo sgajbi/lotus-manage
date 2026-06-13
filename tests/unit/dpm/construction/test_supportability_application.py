@@ -451,21 +451,47 @@ def test_method_enrichment_statuses_project_method_specific_enrichment() -> None
         liquidity_context=_liquidity_context(),
     )
 
+    expected_statuses = {
+        ConstructionMethod.TAX_AWARE: enrichment.tax_status,
+        ConstructionMethod.MIN_TURNOVER: enrichment.turnover_status,
+        ConstructionMethod.COST_AWARE: enrichment.cost_status,
+        ConstructionMethod.LIQUIDITY_AWARE: enrichment.liquidity_status,
+        ConstructionMethod.CURRENCY_OVERLAY: enrichment.fx_status,
+        ConstructionMethod.RISK_AWARE: enrichment.risk_status,
+    }
+
+    for method, expected_status in expected_statuses.items():
+        assert method_enrichment_statuses(
+            method=method,
+            result=result,
+            enrichment=enrichment,
+        ) == [expected_status]
+
+
+def test_method_enrichment_statuses_project_solver_diagnostics() -> None:
+    result = _trade_result().model_copy(
+        update={
+            "diagnostics": _trade_result().diagnostics.model_copy(
+                update={"warnings": ["SOLVER_FALLBACK_USED"]}
+            )
+        }
+    )
+    enrichment = summarize_enrichment_posture(
+        result=result,
+        tax_required=False,
+        risk_required=False,
+        risk_context=None,
+        performance_context=None,
+        performance_required=False,
+        transaction_cost_context=None,
+        liquidity_context=None,
+    )
+
     assert method_enrichment_statuses(
-        method=ConstructionMethod.TAX_AWARE,
+        method=ConstructionMethod.SOLVER_CONSTRAINED,
         result=result,
         enrichment=enrichment,
-    ) == [enrichment.tax_status]
-    assert method_enrichment_statuses(
-        method=ConstructionMethod.LIQUIDITY_AWARE,
-        result=result,
-        enrichment=enrichment,
-    ) == [enrichment.liquidity_status]
-    assert method_enrichment_statuses(
-        method=ConstructionMethod.RISK_AWARE,
-        result=result,
-        enrichment=enrichment,
-    ) == [enrichment.risk_status]
+    ) == [ConstructionMethodStatus.DEGRADED]
 
 
 def test_method_enrichment_statuses_empty_for_method_without_overlay() -> None:

@@ -184,11 +184,38 @@ def test_select_gate_route_preserves_decision_precedence() -> None:
     assert _select_gate_route(
         status="READY",
         hard_fail_count=0,
+        soft_fail_count=1,
+        new_high=0,
+        new_medium=1,
+        options=EngineOptions(),
+        requires_mandate_approval=True,
+    ) == ("RISK_REVIEW_REQUIRED", "RISK_REVIEW")
+    assert _select_gate_route(
+        status="READY",
+        hard_fail_count=0,
         soft_fail_count=0,
         new_high=0,
         new_medium=0,
         options=EngineOptions(mandate_approval_already_obtained=True),
         requires_mandate_approval=True,
+    ) == ("EXECUTION_READY", "EXECUTE")
+    assert _select_gate_route(
+        status="READY",
+        hard_fail_count=0,
+        soft_fail_count=0,
+        new_high=0,
+        new_medium=0,
+        options=EngineOptions(),
+        requires_mandate_approval=True,
+    ) == ("MANDATE_APPROVAL_REQUIRED", "REQUEST_MANDATE_APPROVAL")
+    assert _select_gate_route(
+        status="READY",
+        hard_fail_count=0,
+        soft_fail_count=0,
+        new_high=0,
+        new_medium=0,
+        options=EngineOptions(),
+        requires_mandate_approval=False,
     ) == ("EXECUTION_READY", "EXECUTE")
 
 
