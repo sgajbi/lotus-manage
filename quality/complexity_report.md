@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T00:03:54+00:00`
+- Generated at: `2026-06-13T00:06:22+00:00`
 
-- Current ref: `22b56d4e`
+- Current ref: `2bd9ae72`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
-| 2 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
-| 3 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
-| 4 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
-| 5 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
-| 6 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
-| 7 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
-| 8 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
-| 9 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
-| 10 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
+| 1 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 2 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
+| 3 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
+| 4 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
+| 5 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
+| 6 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
+| 7 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
+| 8 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
+| 9 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
+| 10 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
 
 ### Most Complex Current Test Functions
 

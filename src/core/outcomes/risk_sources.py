@@ -708,21 +708,19 @@ def _drawdown_source_posture(
     supportability_state: str,
     value: Decimal | None,
     measure_reason: str,
-) -> tuple[
-    Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
-    Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
-]:
-    if supportability_state == "unsupported":
-        return "NOT_SUPPORTED", "NOT_SUPPORTED"
-    if supportability_state == "permission_blocked":
-        return "BLOCKED", "MISSING"
-    if supportability_state == "stale":
-        return "DEGRADED", "STALE"
-    if value is None and measure_reason != "RISK_DRAWDOWN_ABSOLUTE":
+) -> _RiskSourcePosture:
+    supportability_posture = _supportability_source_posture(supportability_state)
+    if supportability_posture is not None:
+        return supportability_posture
+    if _drawdown_measure_unavailable(value=value, measure_reason=measure_reason):
         return "DEGRADED", "UNAVAILABLE"
     if supportability_state != "ready":
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+        return "DEGRADED", _quality_for_degraded_value(value)
     return "READY", "COMPLETE"
+
+
+def _drawdown_measure_unavailable(*, value: Decimal | None, measure_reason: str) -> bool:
+    return value is None and measure_reason != "RISK_DRAWDOWN_ABSOLUTE"
 
 
 def _rolling_source_posture(
