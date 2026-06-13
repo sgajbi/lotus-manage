@@ -49,6 +49,7 @@ from src.core.proof_packs.source_analytics import (
     ProofPackSourceAnalytics,
     _authority_reason_codes,
     _authority_source_ref,
+    _degraded_context_reason_codes,
     _missing_regime_stress_governance_evidence,
     _performance_source_facts,
     _performance_source_metrics,
@@ -61,6 +62,7 @@ from src.core.proof_packs.source_analytics import (
     source_analytics_for_alternative,
     source_analytics_for_context,
 )
+from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
 from tests.shared.factories import (
@@ -2362,6 +2364,27 @@ def test_performance_source_analytics_helpers_project_facts_metrics_and_source_r
     assert source_ref.source_type == "PerformanceBenchmarkContext"
     assert source_ref.source_id == "performance-context-001"
     assert source_ref.content_hash == "sha256:performance-context"
+
+
+def test_degraded_context_reason_codes_preserve_source_reasons_before_fallback() -> None:
+    assert _degraded_context_reason_codes(
+        supportability_status=ConstructionMethodStatus.DEGRADED,
+        reason_codes=[],
+        degraded_reason="DPM_SOURCE_CONTEXT_DEGRADED",
+    ) == ["DPM_SOURCE_CONTEXT_DEGRADED"]
+    assert _degraded_context_reason_codes(
+        supportability_status=ConstructionMethodStatus.DEGRADED,
+        reason_codes=["SOURCE_OWNER_REASON"],
+        degraded_reason="DPM_SOURCE_CONTEXT_DEGRADED",
+    ) == ["SOURCE_OWNER_REASON"]
+    assert (
+        _degraded_context_reason_codes(
+            supportability_status=ConstructionMethodStatus.READY,
+            reason_codes=[],
+            degraded_reason="DPM_SOURCE_CONTEXT_DEGRADED",
+        )
+        == []
+    )
 
 
 def test_regime_scenario_pack_missing_governance_evidence_is_pending_review() -> None:

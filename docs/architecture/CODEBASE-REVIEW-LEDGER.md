@@ -21661,3 +21661,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-873: Proof-pack degraded source-context reasons
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: transaction-cost, client-restriction, and sustainability-preference source analytics
+  repeated the same degraded-context fallback rule: preserve source-owner reason codes when
+  present, otherwise add a Manage-local degraded reason for non-ready source posture. The repeated
+  branching made the source-owned evidence helpers harder to review consistently.
+- Action: extracted `_degraded_context_reason_codes` and reused it across the three helpers while
+  leaving source facts, metrics, hashes, and source refs unchanged. Added a direct helper test
+  proving fallback behavior for non-ready contexts, preservation of source-owner reasons, and empty
+  ready-context reasons.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -k "source_analytics_degraded_and_blocked_context_fallbacks or degraded_context_reason_codes or source_analytics" -q`,
+  and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  source-analytics suite reported 13 passed, `_transaction_cost_source_analytics` reduced from
+  B(9) to B(7), and the client-restriction and sustainability-preference helpers reduced from
+  B(8) to B(6).
+- Residual risk: this slice improves internal proof-pack source-analytics maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability hardening with no operator-facing contract change.

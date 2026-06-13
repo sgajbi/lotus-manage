@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T07:14:34+00:00`
+- Generated at: `2026-06-13T07:17:48+00:00`
 
-- Current ref: `ae2271f3`
+- Current ref: `ec413d64`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -37,11 +37,11 @@
 | 3 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
 | 4 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
 | 5 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 6 | _transaction_cost_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 49 |
-| 7 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
-| 8 | _sustainability_preference_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 47 |
-| 9 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
-| 10 | _client_restriction_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 44 |
+| 6 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
+| 7 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
+| 8 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
+| 9 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
+| 10 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
 
 ### Most Complex Current Test Functions
 

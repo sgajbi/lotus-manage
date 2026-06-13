@@ -256,9 +256,6 @@ def _transaction_cost_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_TRANSACTION_COST_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="transaction_cost",
         source_system=context.source_system,
@@ -291,7 +288,11 @@ def _transaction_cost_source_analytics(
                 point.observation_count for point in context.curve_points
             ),
         },
-        reason_codes=reason_codes,
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_TRANSACTION_COST_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="transaction_cost_context",
         content_hash=context.content_hash or content_hash,
@@ -307,9 +308,6 @@ def _client_restriction_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="client_restriction",
         source_system=context.source_system,
@@ -337,7 +335,11 @@ def _client_restriction_source_analytics(
             ],
         },
         metrics={"restriction_count": context.restriction_count},
-        reason_codes=reason_codes,
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="client_restriction_context",
         content_hash=context.content_hash or content_hash,
@@ -353,9 +355,6 @@ def _sustainability_preference_source_analytics(
         return None
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY and not reason_codes:
-        reason_codes.append("DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED")
     source_ref = _source_ref(
         family="sustainability_preference",
         source_system=context.source_system,
@@ -386,7 +385,11 @@ def _sustainability_preference_source_analytics(
             ],
         },
         metrics={"preference_count": context.preference_count},
-        reason_codes=reason_codes,
+        reason_codes=_degraded_context_reason_codes(
+            supportability_status=context.supportability_status,
+            reason_codes=context.reason_codes,
+            degraded_reason="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED",
+        ),
         source_ref=source_ref,
         source_hash_key="sustainability_preference_context",
         content_hash=context.content_hash or content_hash,
@@ -436,6 +439,18 @@ def _regime_stress_source_analytics(
         source_hash_key="regime_stress_context",
         content_hash=content_hash,
     )
+
+
+def _degraded_context_reason_codes(
+    *,
+    supportability_status: ConstructionMethodStatus,
+    reason_codes: list[str],
+    degraded_reason: str,
+) -> list[str]:
+    resolved_reason_codes = list(reason_codes)
+    if supportability_status != ConstructionMethodStatus.READY and not resolved_reason_codes:
+        resolved_reason_codes.append(degraded_reason)
+    return resolved_reason_codes
 
 
 def _regime_stress_source_facts(
