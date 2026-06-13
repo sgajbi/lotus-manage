@@ -22944,3 +22944,33 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal outcome-review helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-916: PM-quality policy-selection predicates
+
+- Date: 2026-06-14
+- Scope: `src/api/routers/pm_operating_quality_models.py` and
+  `tests/unit/api/test_pm_operating_quality_api.py`.
+- Bank-buyable control area: API quality, PM operating-quality governance, and testing.
+- Finding: `validate_policy_selection` combined inline-policy detection, partial persisted-policy
+  reference detection, complete persisted-policy reference detection, and conflict validation in
+  one model validator. The behavior was correct, but PM operating-quality score-run request
+  validation is easier to review when each allowed policy-selection shape is named.
+- Action: extracted `_has_inline_pm_quality_policy`,
+  `_has_pm_quality_policy_reference_fragment`, and `_has_complete_pm_quality_policy_reference`,
+  then kept `validate_policy_selection` as the request-level error mapper. Added direct helper
+  tests for inline policy, policy-id-only, policy-version-only, complete reference, and absent
+  reference inputs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_models.py tests/unit/api/test_pm_operating_quality_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_models.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_api.py -q`,
+  and `python -m radon cc src/api/routers/pm_operating_quality_models.py -s`; the focused PM
+  operating-quality API suite reported 37 passed, the report-only complexity baseline had listed
+  `validate_policy_selection` at B(7), and current radon reports it at A(5).
+- Residual risk: this slice improves PM operating-quality request validation maintainability only.
+  It does not change API request semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal PM operating-quality API model
+  maintainability hardening with no operator-facing contract change.
