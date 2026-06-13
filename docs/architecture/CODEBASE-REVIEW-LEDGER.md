@@ -21131,3 +21131,64 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal campaign assignment-task
   transition maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-854: Proof-pack generation source dispatch helper
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/proof_pack_generate_routes.py`,
+  `tests/unit/dpm/api/test_proof_pack_api.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `generate_proof_pack` became the next current source-complexity hotspot after the
+  campaign assignment-task transition slice and mixed HTTP dependency orchestration,
+  source-specific request validation, rebalance-run proof-pack generation, selected-alternative
+  proof-pack generation, handoff reference enrichment, response shaping, and route error mapping in
+  one route function.
+- Action: extracted source-specific proof-pack request validation and service dispatch into a
+  router-local helper while preserving governed HTTP validation errors, source-specific service
+  calls, handoff enrichment, response URL shaping, and route error mapping. Added direct helper
+  coverage for missing source fields and rebalance-run versus selected-alternative dispatch
+  arguments.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/proof_pack_generate_routes.py tests/unit/dpm/api/test_proof_pack_api.py`,
+  `python -m ruff format --check src/api/routers/proof_pack_generate_routes.py tests/unit/dpm/api/test_proof_pack_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/proof_pack_generate_routes.py`,
+  `python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal proof-pack route
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-855: Regime-stress proof-pack source facts helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_regime_stress_source_analytics` became the next current source-complexity hotspot after
+  the proof-pack route dispatch slice and assembled source context validation, evidence posture,
+  reason-code posture, source refs, source facts, source metrics, and final analytics payload in
+  one function.
+- Action: extracted regime-stress source fact and metric projection into named helpers while
+  preserving source-owned `RegimeScenarioPackEvaluation:v1` identity, governance evidence
+  projection, effective-period and applicability posture, and source-supplied loss-threshold
+  metrics. Added direct helper coverage for projected facts and metrics using the source context
+  contract shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability refactoring and repo-local quality evidence.

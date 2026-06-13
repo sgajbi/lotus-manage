@@ -70,44 +70,15 @@ def generate_proof_pack(
     proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
 ) -> DpmProofPackGenerateResponse:
     try:
-        if request.source_type == "REBALANCE_RUN":
-            if not request.rebalance_run_id:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail="DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED",
-                )
-            proof_pack = proof_pack_service.generate_proof_pack_from_run(
-                rebalance_run_id=request.rebalance_run_id,
-                actor_id=request.actor_id,
-                reason=request.reason,
-                correlation_id=x_correlation_id,
-                mandate_id=request.mandate_id,
-                idempotency_key=idempotency_key,
-                run_service=run_service,
-                mandate_repository=mandate_repository,
-                proof_pack_repository=proof_pack_repository,
-                direct_regime_stress_context=request.regime_stress_context,
-            )
-        else:
-            if not request.alternative_set_id or not request.selected_alternative_id:
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                    detail="DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED",
-                )
-            proof_pack = proof_pack_service.generate_proof_pack_from_selected_alternative(
-                alternative_set_id=request.alternative_set_id,
-                selected_alternative_id=request.selected_alternative_id,
-                actor_id=request.actor_id,
-                reason=request.reason,
-                correlation_id=x_correlation_id,
-                mandate_id=request.mandate_id,
-                idempotency_key=idempotency_key,
-                construction_repository=construction_repository,
-                run_service=run_service,
-                mandate_repository=mandate_repository,
-                proof_pack_repository=proof_pack_repository,
-                direct_regime_stress_context=request.regime_stress_context,
-            )
+        proof_pack = _generate_initial_proof_pack(
+            request=request,
+            idempotency_key=idempotency_key,
+            correlation_id=x_correlation_id,
+            run_service=run_service,
+            construction_repository=construction_repository,
+            mandate_repository=mandate_repository,
+            proof_pack_repository=proof_pack_repository,
+        )
         proof_pack = proof_pack_service.ensure_handoff_refs(
             proof_pack=proof_pack,
             proof_pack_repository=proof_pack_repository,
@@ -124,6 +95,56 @@ def generate_proof_pack(
         raise
     except PROOF_PACK_ROUTE_ERRORS as exc:
         raise proof_pack_http_exception(exc) from exc
+
+
+def _generate_initial_proof_pack(
+    *,
+    request: DpmProofPackGenerateRequest,
+    idempotency_key: str,
+    correlation_id: str | None,
+    run_service: DpmRunSupportService,
+    construction_repository: ConstructionRepository,
+    mandate_repository: DpmMandateRepository,
+    proof_pack_repository: DpmProofPackRepository,
+) -> DpmPreTradeProofPack:
+    if request.source_type == "REBALANCE_RUN":
+        if not request.rebalance_run_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail="DPM_PROOF_PACK_REBALANCE_RUN_ID_REQUIRED",
+            )
+        return proof_pack_service.generate_proof_pack_from_run(
+            rebalance_run_id=request.rebalance_run_id,
+            actor_id=request.actor_id,
+            reason=request.reason,
+            correlation_id=correlation_id,
+            mandate_id=request.mandate_id,
+            idempotency_key=idempotency_key,
+            run_service=run_service,
+            mandate_repository=mandate_repository,
+            proof_pack_repository=proof_pack_repository,
+            direct_regime_stress_context=request.regime_stress_context,
+        )
+
+    if not request.alternative_set_id or not request.selected_alternative_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="DPM_PROOF_PACK_SELECTED_ALTERNATIVE_SOURCE_REQUIRED",
+        )
+    return proof_pack_service.generate_proof_pack_from_selected_alternative(
+        alternative_set_id=request.alternative_set_id,
+        selected_alternative_id=request.selected_alternative_id,
+        actor_id=request.actor_id,
+        reason=request.reason,
+        correlation_id=correlation_id,
+        mandate_id=request.mandate_id,
+        idempotency_key=idempotency_key,
+        construction_repository=construction_repository,
+        run_service=run_service,
+        mandate_repository=mandate_repository,
+        proof_pack_repository=proof_pack_repository,
+        direct_regime_stress_context=request.regime_stress_context,
+    )
 
 
 def _to_generate_response(

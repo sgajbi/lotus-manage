@@ -53,6 +53,8 @@ from src.core.proof_packs.source_analytics import (
     _performance_source_metrics,
     _regime_source_reason_posture,
     _regime_stress_governance_posture_facts,
+    _regime_stress_source_facts,
+    _regime_stress_source_metrics,
     _risk_source_facts,
     _risk_source_metrics,
     source_analytics_for_alternative,
@@ -2322,6 +2324,57 @@ def test_regime_stress_governance_posture_helpers_project_missing_evidence() -> 
         "cio_approval",
         "effective_period",
         "applicability",
+    }
+
+
+def test_regime_stress_source_helpers_project_facts_and_metrics() -> None:
+    context = AuthoritativeRegimeStressContext(
+        supportability_status="READY",
+        source_system="lotus-risk",
+        source_product_version="v1",
+        scenario_pack_id="CIO_REGIME_2026_Q4",
+        worst_case_loss_pct=Decimal("0.0600"),
+        maximum_allowed_loss_pct=Decimal("0.1200"),
+        cio_approval_status="APPROVED",
+        cio_approval_ref="CIO-APPROVAL-2026-Q4",
+        approved_by="cio_001",
+        approved_at="2026-09-15T08:30:00Z",
+        effective_from=date(2026, 10, 1),
+        effective_to=date(2026, 12, 31),
+        effective_period_status="ACTIVE",
+        applicability_status="APPLICABLE",
+        applicability_scope=["MANDATE"],
+        portfolio_applicability_ref="portfolio-applicability-001",
+        methodology_ref="risk-methodology-regime-v3",
+        applicable_portfolio_ids=["pf_001"],
+        applicable_mandate_ids=["mandate_001"],
+    )
+
+    facts = _regime_stress_source_facts(
+        context=context,
+        evidence_posture={
+            "facts": {
+                "cio_approval": "PROJECTED",
+                "effective_period": "PROJECTED",
+                "applicability": "PROJECTED",
+                "source_reason_posture": "READY",
+            }
+        },
+    )
+
+    assert facts["source_system"] == "lotus-risk"
+    assert facts["source_product_name"] == "RegimeScenarioPackEvaluation"
+    assert facts["scenario_pack_id"] == "CIO_REGIME_2026_Q4"
+    assert facts["approved_at"] == "2026-09-15T08:30:00Z"
+    assert facts["effective_from"] == "2026-10-01"
+    assert facts["effective_to"] == "2026-12-31"
+    assert facts["approval_evidence_projected"] is True
+    assert facts["effective_period_projected"] is True
+    assert facts["applicability_evidence_projected"] is True
+    assert facts["scenario_evidence_posture"]["source_reason_posture"] == "READY"
+    assert _regime_stress_source_metrics(context) == {
+        "worst_case_loss_pct": Decimal("0.0600"),
+        "maximum_allowed_loss_pct": Decimal("0.1200"),
     }
 
 
