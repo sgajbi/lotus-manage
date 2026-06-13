@@ -241,11 +241,15 @@ def _monitoring_exception_matches(
     state: Optional[str],
 ) -> bool:
     return (
-        (monitoring_run_id is None or row.monitoring_run_id == monitoring_run_id)
-        and (mandate_id is None or row.mandate_id == mandate_id)
-        and (portfolio_id is None or row.portfolio_id == portfolio_id)
-        and (state is None or row.state == state)
+        _matches_optional_filter(row.monitoring_run_id, monitoring_run_id)
+        and _matches_optional_filter(row.mandate_id, mandate_id)
+        and _matches_optional_filter(row.portfolio_id, portfolio_id)
+        and _matches_optional_filter(row.state, state)
     )
+
+
+def _matches_optional_filter(value: object, expected: object | None) -> bool:
+    return expected is None or value == expected
 
 
 def _monitoring_exception_page(

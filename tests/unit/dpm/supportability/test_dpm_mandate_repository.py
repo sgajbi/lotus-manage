@@ -301,6 +301,20 @@ def test_in_memory_monitoring_exception_helpers_filter_sort_and_page() -> None:
         cursor="UNKNOWN_CURSOR",
     )
 
+    assert mandate_in_memory._monitoring_exception_matches(
+        selected_new,
+        monitoring_run_id=None,
+        mandate_id=twin.mandate_id,
+        portfolio_id=twin.portfolio_id,
+        state="ACTIVE",
+    )
+    assert not mandate_in_memory._monitoring_exception_matches(
+        selected_new,
+        monitoring_run_id="dmr_unrelated",
+        mandate_id=twin.mandate_id,
+        portfolio_id=twin.portfolio_id,
+        state="ACTIVE",
+    )
     assert [row.exception_id for row in filtered] == ["me_selected_new", "me_selected_old"]
     assert [row.exception_id for row in page] == ["me_selected_new"]
     assert next_cursor == "me_selected_new"

@@ -20987,3 +20987,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk-source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-849: Mandate monitoring exception filter predicate
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/mandates/in_memory.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_monitoring_exception_matches` was the top current source-complexity hotspot after the
+  rolling risk window selection slice and repeated nullable equality logic for monitoring-run,
+  mandate, portfolio, and exception-state filters.
+- Action: extracted a generic nullable filter matcher and rewired the monitoring exception
+  predicate through that helper while preserving filtering, sorting, pagination, and repository
+  behavior. Added direct predicate coverage for wildcard filtering and mismatched monitoring-run
+  rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m ruff format --check src/infrastructure/mandates/in_memory.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/mandates/in_memory.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_mandate_repository.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal mandate supportability repository
+  maintainability refactoring and repo-local quality evidence.
