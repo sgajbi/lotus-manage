@@ -28,17 +28,27 @@ def policy_pack_catalog_required_in_profile() -> bool:
 def validate_persistence_profile_guardrails() -> None:
     if app_persistence_profile_name() != _PRODUCTION_PROFILE:
         return
+    guardrail_error = _persistence_profile_guardrail_error()
+    if guardrail_error is not None:
+        raise RuntimeError(guardrail_error)
+
+
+def _persistence_profile_guardrail_error() -> str | None:
     if supportability_store_backend_name() != "POSTGRES":
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES")
+        return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES"
     if not supportability_postgres_dsn():
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN")
-    if (
-        policy_pack_catalog_required_in_profile()
-        and policy_pack_catalog_backend_name() != "POSTGRES"
-    ):
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES")
-    if policy_pack_catalog_required_in_profile() and not _explicit_policy_pack_postgres_dsn():
-        raise RuntimeError("PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN")
+        return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"
+    return _policy_pack_catalog_guardrail_error(required=policy_pack_catalog_required_in_profile())
+
+
+def _policy_pack_catalog_guardrail_error(*, required: bool) -> str | None:
+    if not required:
+        return None
+    if policy_pack_catalog_backend_name() != "POSTGRES":
+        return "PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES"
+    if not _explicit_policy_pack_postgres_dsn():
+        return "PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN"
+    return None
 
 
 def _env_flag(name: str, default: bool) -> bool:

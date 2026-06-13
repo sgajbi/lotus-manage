@@ -20929,3 +20929,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM operating-quality model
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-847: Persistence-profile guardrail error helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/persistence_profile.py`, `tests/unit/api/test_persistence_profile.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `validate_persistence_profile_guardrails` was the top current source-complexity hotspot
+  after the PM-quality policy validation slice and mixed production-profile branching, DPM
+  supportability-store checks, policy-pack catalog backend requirements, and explicit DSN
+  requirements in one API supportability guardrail.
+- Action: extracted explicit guardrail-error helpers for production persistence profile validation
+  and policy-pack catalog enforcement while preserving existing fail-fast error precedence and
+  runtime error strings. Added focused tests for policy-pack enablement flags plus the previously
+  uncovered DPM Postgres DSN and policy-pack Postgres DSN failure paths.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/persistence_profile.py tests/unit/api/test_persistence_profile.py`,
+  `python -m ruff format --check src/api/persistence_profile.py tests/unit/api/test_persistence_profile.py`,
+  `python -m mypy --config-file mypy.ini src/api/persistence_profile.py`,
+  `python -m pytest tests/unit/api/test_persistence_profile.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal production persistence-profile
+  guardrail maintainability refactoring and repo-local quality evidence.

@@ -17,6 +17,17 @@ def test_policy_pack_catalog_required_in_profile() -> None:
     assert profile.policy_pack_catalog_required_in_profile() is False
 
 
+def test_policy_pack_catalog_required_when_runtime_or_admin_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    assert profile.policy_pack_catalog_required_in_profile() is True
+
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "false")
+    monkeypatch.setenv("DPM_POLICY_PACK_ADMIN_APIS_ENABLED", "on")
+    assert profile.policy_pack_catalog_required_in_profile() is True
+
+
 def test_validate_persistence_profile_noop_for_local(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -34,6 +45,17 @@ def test_validate_persistence_profile_requires_dpm_postgres(
         profile.validate_persistence_profile_guardrails()
 
 
+def test_validate_persistence_profile_requires_dpm_postgres_dsn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
+    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
+    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "")
+
+    with pytest.raises(RuntimeError, match="PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"):
+        profile.validate_persistence_profile_guardrails()
+
+
 def test_validate_persistence_profile_requires_policy_pack_postgres_when_enabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -44,6 +66,23 @@ def test_validate_persistence_profile_requires_policy_pack_postgres_when_enabled
     monkeypatch.setattr(profile, "policy_pack_catalog_backend_name", lambda: "ENV_JSON")
 
     with pytest.raises(RuntimeError, match="PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES"):
+        profile.validate_persistence_profile_guardrails()
+
+
+def test_validate_persistence_profile_requires_policy_pack_postgres_dsn_when_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
+    monkeypatch.setenv("DPM_POLICY_PACKS_ENABLED", "true")
+    monkeypatch.delenv("DPM_POLICY_PACK_POSTGRES_DSN", raising=False)
+    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
+    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
+    monkeypatch.setattr(profile, "policy_pack_catalog_backend_name", lambda: "POSTGRES")
+
+    with pytest.raises(
+        RuntimeError,
+        match="PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN",
+    ):
         profile.validate_persistence_profile_guardrails()
 
 
