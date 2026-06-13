@@ -2477,6 +2477,13 @@ def test_regime_stress_source_helpers_project_facts_and_metrics() -> None:
         (["REGIME_SCENARIO_PORTFOLIO_INAPPLICABLE"], "INAPPLICABLE"),
         (["REGIME_SCENARIO_OUTSIDE_EFFECTIVE_PERIOD"], "EFFECTIVE_PERIOD_EXCEPTION"),
         (["REGIME_SCENARIO_CONTRIBUTION_PARTIAL"], "CONTRIBUTION_PARTIAL"),
+        (
+            [
+                "REGIME_SCENARIO_CONTRIBUTION_PARTIAL",
+                "REGIME_SCENARIO_PORTFOLIO_INAPPLICABLE",
+            ],
+            "INAPPLICABLE",
+        ),
         (["REGIME_SCENARIO_WITHIN_POLICY"], "READY"),
     ],
 )

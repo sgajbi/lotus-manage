@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 from pydantic import ValidationError
 
@@ -25,6 +25,17 @@ _RegimeStressSourceReasonPosture = Literal[
     "INAPPLICABLE",
     "EFFECTIVE_PERIOD_EXCEPTION",
     "CONTRIBUTION_PARTIAL",
+]
+_INAPPLICABLE_REASON_MARKERS = ("INAPPLICABLE", "NOT_APPLICABLE")
+_EFFECTIVE_PERIOD_REASON_MARKERS = (
+    "STALE",
+    "EXPIRED",
+    "OUTSIDE_EFFECTIVE",
+    "EFFECTIVE_PERIOD_EXCEPTION",
+)
+_RegimeStressSourceReasonClassifier = tuple[
+    _RegimeStressSourceReasonPosture,
+    Callable[[str], bool],
 ]
 
 ProofPackAnalyticsFamily = Literal[
@@ -539,20 +550,42 @@ def _missing_regime_stress_governance_evidence(
 def _regime_source_reason_posture(
     reason_codes: list[str],
 ) -> _RegimeStressSourceReasonPosture:
-    normalized_reason_codes = {reason.upper() for reason in reason_codes}
-    if any(
-        "INAPPLICABLE" in reason or "NOT_APPLICABLE" in reason for reason in normalized_reason_codes
-    ):
-        return "INAPPLICABLE"
-    if any(
-        marker in reason
-        for reason in normalized_reason_codes
-        for marker in ["STALE", "EXPIRED", "OUTSIDE_EFFECTIVE", "EFFECTIVE_PERIOD_EXCEPTION"]
-    ):
-        return "EFFECTIVE_PERIOD_EXCEPTION"
-    if any("CONTRIBUTION" in reason and "PARTIAL" in reason for reason in normalized_reason_codes):
-        return "CONTRIBUTION_PARTIAL"
+    normalized_reason_codes = _normalized_reason_codes(reason_codes)
+    for posture, matches in _regime_source_reason_classifiers():
+        if any(matches(reason) for reason in normalized_reason_codes):
+            return posture
     return "READY"
+
+
+def _regime_source_reason_classifiers() -> tuple[_RegimeStressSourceReasonClassifier, ...]:
+    return (
+        ("INAPPLICABLE", _is_inapplicable_regime_reason),
+        ("EFFECTIVE_PERIOD_EXCEPTION", _is_effective_period_regime_reason),
+        ("CONTRIBUTION_PARTIAL", _is_partial_contribution_regime_reason),
+    )
+
+
+def _normalized_reason_codes(reason_codes: list[str]) -> set[str]:
+    return {reason.upper() for reason in reason_codes}
+
+
+def _is_inapplicable_regime_reason(reason: str) -> bool:
+    return _reason_contains_any_marker(reason=reason, markers=_INAPPLICABLE_REASON_MARKERS)
+
+
+def _is_effective_period_regime_reason(reason: str) -> bool:
+    return _reason_contains_any_marker(
+        reason=reason,
+        markers=_EFFECTIVE_PERIOD_REASON_MARKERS,
+    )
+
+
+def _is_partial_contribution_regime_reason(reason: str) -> bool:
+    return "CONTRIBUTION" in reason and "PARTIAL" in reason
+
+
+def _reason_contains_any_marker(*, reason: str, markers: tuple[str, ...]) -> bool:
+    return any(marker in reason for marker in markers)
 
 
 def _regime_applicability_projected(context: AuthoritativeRegimeStressContext) -> bool:

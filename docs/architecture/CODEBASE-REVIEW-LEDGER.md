@@ -21632,3 +21632,32 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness or replace GitHub Actions execution on the opened PR and merged `main`.
 - Wiki decision: no wiki source change required; this is internal CI enforcement alignment with no
   operator-facing runbook or API contract change.
+
+## BACKEND-REVIEW-20260613-872: Regime source reason posture classifiers
+
+- Date: 2026-06-13
+- Scope: `src/core/proof_packs/source_analytics.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_regime_source_reason_posture` embedded regime inapplicability,
+  effective-period exception, and partial-contribution marker matching directly in one helper.
+  The behavior was correct, but the marker precedence was harder to review than the
+  source-owned scenario/regime supportability contract deserves.
+- Action: extracted named marker tuples, predicate helpers, and an ordered classifier table for
+  regime source reason posture while preserving the existing precedence. Added a direct
+  mixed-reason test proving inapplicable source posture still takes precedence over partial
+  contribution posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -k "regime_source_reason_posture or regime_scenario_source_reason_codes_drive_section_posture" -q`,
+  and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
+  source posture suite reported 8 passed and `_regime_source_reason_posture` reduced from C(11)
+  to A(4).
+- Residual risk: this slice improves internal proof-pack source-analytics maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
+  maintainability hardening with no operator-facing contract change.
