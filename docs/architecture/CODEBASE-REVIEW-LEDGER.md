@@ -22472,3 +22472,33 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal repository helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-900: Expected outcome handoff linkage helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/snapshots.py` and
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`.
+- Bank-buyable control area: architecture, outcome evidence lineage, and testing.
+- Finding: `_resolve_handoff` combined optional handoff lookup preconditions, wave handoff search,
+  wave identity validation, selected-item membership validation, and the no-external-execution
+  boundary in one helper. The behavior was correct, but the expected-outcome handoff guardrails
+  were harder to review than source-backed outcome evidence assembly should be.
+- Action: extracted `_handoff_lookup_required`, `_find_handoff`, and
+  `_validate_handoff_linkage` so lookup and boundary decisions are independently testable before
+  snapshot assembly continues. Added direct tests for optional lookup, missing handoffs, valid
+  linkage, missing selected-item membership, and external execution claims.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff format --check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/outcomes/snapshots.py -s`; the focused expected-outcome snapshot
+  suite reported 26 passed, `_resolve_handoff` reduced to A(5) under radon, and the refreshed
+  quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves expected-outcome handoff lineage maintainability only. It does
+  not change outcome-review semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-evidence helper
+  maintainability hardening with no operator-facing contract change.

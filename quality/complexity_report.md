@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T12:56:00+00:00`
+- Generated at: `2026-06-13T13:13:35+00:00`
 
-- Report source snapshot: `5509a558+worktree`
+- Report source snapshot: `dcd1a5c5+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
-| 2 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
-| 3 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
-| 4 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
-| 5 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
-| 6 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
-| 7 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
-| 8 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
-| 9 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
-| 10 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 1 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
+| 2 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
+| 3 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 4 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
+| 5 | _validate_summary_invocation_inputs | src/core/pm_quality/summary_history.py | 7 | 18 |
+| 6 | _risk_event_cohort_from_response | src/infrastructure/risk_authority/client.py | 7 | 18 |
+| 7 | command_center_supportability_state | src/api/services/mandate_command_center.py | 7 | 17 |
+| 8 | _score_run_scope_mismatch_reasons | src/core/pm_quality/scoring.py | 7 | 16 |
+| 9 | validate_definition | src/core/waves/campaign_definitions.py | 7 | 16 |
+| 10 | _resolve_proof_pack_correlation_id | src/core/proof_packs/builder.py | 7 | 15 |
 
 ### Most Complex Current Test Functions
 
