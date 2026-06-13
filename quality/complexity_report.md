@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T16:25:34+00:00`
+- Generated at: `2026-06-13T16:28:02+00:00`
 
-- Report source snapshot: `ef1ce9ec`
+- Report source snapshot: `8fe9311b`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | stateful_execution_publishable | src/api/services/integration_capabilities_service.py | 7 | 11 |
-| 2 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 3 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 4 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 5 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 6 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 7 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 8 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
-| 9 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
-| 10 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
+| 1 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
+| 2 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 3 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 4 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 5 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 6 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 7 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
+| 8 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
+| 9 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
+| 10 | generate_targets_solver | src/core/target_generation.py | 6 | 68 |
 
 ### Most Complex Current Test Functions
 
