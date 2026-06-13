@@ -90,7 +90,6 @@ class DpmWaveSourceRef(BaseModel):
                 "source_table": "portfolio_mandate_bindings",
             }
         ],
-        exclude_if=lambda value: value is None,
     )
 
 

@@ -21342,3 +21342,36 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is repo-native CI gate hardening for existing
   backend service-boundary governance.
+
+## BACKEND-REVIEW-20260613-861: Core execution acknowledgement source helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`, `src/core/waves/models.py`,
+  `tests/unit/dpm/waves/test_wave_domain.py`, and quality reports.
+- Finding: `realized_execution_acknowledgement_source_from_response` became the next current
+  source-complexity hotspot after the rebalance group-constraint slice and mixed Core metadata
+  extraction, fail-closed supportability posture parsing, deterministic source identity assembly,
+  source state/quality mapping, reason-code expansion, and snapshot construction in one adapter.
+  Focused tests also surfaced a deprecated Pydantic `Field(exclude_if=...)` warning in wave source
+  refs that did not change default serialization but weakened local signal quality.
+- Action: extracted execution-acknowledgement posture extraction, source-id assembly,
+  fail-closed state/quality mapping, and reason-code assembly into focused helpers while preserving
+  external OMS acknowledgement non-promotion semantics. Added direct helper coverage for
+  deterministic identity, reason-code expansion, empty selector defaults, and fail-closed mapping.
+  Removed the deprecated `exclude_if` field kwarg from `DpmWaveSourceRef` and added direct
+  serialization coverage for the existing null optional-field posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py src/core/waves/models.py tests/unit/dpm/waves/test_wave_domain.py`,
+  `python -m ruff format --check src/core/outcomes/core_sources.py tests/unit/core/test_core_realized_outcome_sources.py src/core/waves/models.py tests/unit/dpm/waves/test_wave_domain.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/core_sources.py src/core/waves/models.py`,
+  `python -m pytest tests/unit/core/test_core_realized_outcome_sources.py tests/unit/dpm/waves/test_wave_domain.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/service_boundary_gate.py`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal source-adapter maintainability
+  and local warning-signal hardening.

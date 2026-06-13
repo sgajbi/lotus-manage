@@ -15,8 +15,13 @@ from src.core.outcomes import (
 from src.core.outcomes.core_sources import (
     _cash_movement_bucket_matches,
     _cash_movement_buckets,
+    _core_metadata,
     _currency_total_matches,
     _currency_total_rows,
+    _execution_acknowledgement_posture,
+    _execution_acknowledgement_reason_codes,
+    _execution_acknowledgement_source_id,
+    _execution_acknowledgement_state_quality,
     _normalized_currency_filter,
     _raise_on_invalid_currency_total_selection,
     _transaction_cashflow_value,
@@ -749,6 +754,68 @@ def test_external_order_execution_acknowledgement_blocks_rfc42_execution_dimensi
     )
     assert snapshot.source_hashes[source.source_id] == (
         "sha256:external-order-execution-acknowledgement"
+    )
+
+
+def test_execution_acknowledgement_helpers_build_deterministic_identity_and_reasons() -> None:
+    response = _external_order_execution_acknowledgement_response()
+    metadata = _core_metadata(response)
+
+    posture = _execution_acknowledgement_posture(response, metadata=metadata)
+    source_id = _execution_acknowledgement_source_id(
+        metadata=metadata,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        posture=posture,
+    )
+    reason_codes = _execution_acknowledgement_reason_codes(
+        metadata=metadata,
+        posture=posture,
+    )
+
+    assert source_id == (
+        "ExternalOrderExecutionAcknowledgement:v1:PB_SG_GLOBAL_BAL_001:2026-05-06:"
+        "external_order_execution_acknowledgement:execution_intent=intent_rebalance_001:"
+        "orders=ORD-001,ORD-002:sha256:external-order-execution-acknowledgement"
+    )
+    assert reason_codes[:6] == [
+        "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
+        "CORE_PRODUCT_EXTERNALORDEREXECUTIONACKNOWLEDGEMENT",
+        "CORE_PRODUCT_VERSION_V1",
+        "EXECUTION_ACKNOWLEDGEMENT_SUPPORTABILITY_UNAVAILABLE",
+        "EXTERNAL_OMS_SOURCE_NOT_INGESTED",
+        "EXECUTION_ACKNOWLEDGEMENT_COUNT_0",
+    ]
+    assert (
+        "EXECUTION_ACKNOWLEDGEMENT_MISSING_DATA_EXTERNAL_OMS_ORDER_EXECUTION_ACKNOWLEDGEMENT"
+        in reason_codes
+    )
+    assert "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_OMS_ACKNOWLEDGEMENT" in reason_codes
+
+
+def test_execution_acknowledgement_helpers_default_empty_selector_identity() -> None:
+    response = _external_order_execution_acknowledgement_response()
+    response["execution_intent_id"] = ""
+    response["order_reference_ids"] = []
+    metadata = _core_metadata(response)
+
+    posture = _execution_acknowledgement_posture(response, metadata=metadata)
+
+    assert _execution_acknowledgement_source_id(
+        metadata=metadata,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        posture=posture,
+    ) == (
+        "ExternalOrderExecutionAcknowledgement:v1:PB_SG_GLOBAL_BAL_001:2026-05-06:"
+        "external_order_execution_acknowledgement:execution_intent=none:orders=none:"
+        "sha256:external-order-execution-acknowledgement"
+    )
+
+
+def test_execution_acknowledgement_state_quality_preserves_fail_closed_mapping() -> None:
+    assert _execution_acknowledgement_state_quality("UNAVAILABLE") == ("BLOCKED", "MISSING")
+    assert _execution_acknowledgement_state_quality("DEGRADED") == (
+        "DEGRADED",
+        "UNAVAILABLE",
     )
 
 

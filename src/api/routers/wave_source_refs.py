@@ -10,7 +10,7 @@ from src.core.waves import DpmWaveSourceRef
 def source_refs_payload(refs: Iterable[DpmWaveSourceRef]) -> list[dict[str, object]]:
     def _ref_payload(ref: DpmWaveSourceRef | Mapping[str, object]) -> dict[str, object]:
         if hasattr(ref, "model_dump"):
-            payload = ref.model_dump(mode="json")
+            payload = ref.model_dump(mode="json", exclude_none=True)
             if isinstance(payload, dict):
                 return cast(dict[str, object], payload)
         if isinstance(ref, Mapping):
