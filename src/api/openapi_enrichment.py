@@ -331,29 +331,38 @@ def _example_from_schema(
     if has_declared_example:
         return declared_example
 
-    has_ref_example, ref_example = _ref_example_from_schema(prop_schema, schemas, seen_refs)
-    if has_ref_example:
-        return ref_example
-
-    has_composite_example, composite_example = _composite_example_from_schema(
-        prop_name,
-        prop_schema,
-        schemas,
-        seen_refs,
-    )
-    if has_composite_example:
-        return composite_example
-
-    has_collection_example, collection_example = _collection_example_from_schema(
+    schema_example = _resolved_schema_example(
         prop_name=prop_name,
         prop_schema=prop_schema,
         schemas=schemas,
         seen_refs=seen_refs,
     )
-    if has_collection_example:
-        return collection_example
+    if schema_example is not None:
+        return schema_example
 
     return _infer_example(prop_name, prop_schema)
+
+
+def _resolved_schema_example(
+    *,
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> Any | None:
+    for matched, example in (
+        _ref_example_from_schema(prop_schema, schemas, seen_refs),
+        _composite_example_from_schema(prop_name, prop_schema, schemas, seen_refs),
+        _collection_example_from_schema(
+            prop_name=prop_name,
+            prop_schema=prop_schema,
+            schemas=schemas,
+            seen_refs=seen_refs,
+        ),
+    ):
+        if matched:
+            return example
+    return None
 
 
 def _ensure_json_content_example(

@@ -22237,3 +22237,30 @@ and improves internal transaction-cost source posture maintainability only.
   or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal infrastructure helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-892: OpenAPI schema example strategy dispatcher
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: `_example_from_schema` performed declared-example, `$ref`, composite, collection, and
+  fallback example resolution directly in one helper. The behavior was correct, but the generated
+  Swagger example strategy order was harder to review than the OpenAPI quality gate deserves.
+- Action: extracted `_resolved_schema_example` as a strategy dispatcher for `$ref`, composite, and
+  collection examples while preserving declared-example precedence and fallback inference. Added
+  direct coverage for ref, oneOf array, map/additionalProperties, and no-match strategy behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment suite
+  reported 29 passed, and `_example_from_schema` reduced from B(7) to A(5) under radon.
+- Residual risk: this slice improves OpenAPI enrichment maintainability only. It does not change
+  API schema truth, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  maintainability hardening with no operator-facing contract change.
