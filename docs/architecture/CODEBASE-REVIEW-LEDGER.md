@@ -21750,3 +21750,32 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal supportability read-model
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-876: Wave proof-pack posture projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/wave_proof_pack_posture.py` and
+  `tests/unit/dpm/waves/test_wave_proof_pack_posture.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `proof_pack_posture_for_wave` combined proof-pack ref projection, ready/degraded
+  counts, external-execution claim detection, and boundary payload assembly in one helper. The
+  behavior was correct, but the proof-pack posture read model was harder to review than the
+  no-execution/no-client-communication boundary evidence deserves.
+- Action: extracted proof-pack ref, ref collection, count, and external-execution claim helpers
+  while preserving the public posture payload. Added a direct helper test proving linked/state-only
+  ref projection, ready/degraded counts, omission of unlinked items without proof-pack posture, and
+  external-execution claim detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_proof_pack_posture.py tests/unit/dpm/waves/test_wave_proof_pack_posture.py`,
+  `python -m ruff format --check src/api/services/wave_proof_pack_posture.py tests/unit/dpm/waves/test_wave_proof_pack_posture.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_proof_pack_posture.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_proof_pack_posture.py -q`, and
+  `python -m radon cc src/api/services/wave_proof_pack_posture.py -s`; the focused wave
+  proof-pack posture suite reported 4 passed and `proof_pack_posture_for_wave` reduced from C(12)
+  to A(3).
+- Residual risk: this slice improves internal wave proof-pack posture maintainability only. It
+  does not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal read-model maintainability
+  hardening with no operator-facing contract change.
