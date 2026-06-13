@@ -3,6 +3,8 @@
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.waves.models import DpmRebalanceWaveItem, DpmWaveSourceRef, WaveItemState
 
+_SourceReadinessClassification = tuple[WaveItemState, list[str], dict[str, object]]
+
 
 def classify_wave_item_source_readiness(
     *,
@@ -73,57 +75,117 @@ def _state_from_health(
     *,
     health: DpmMandateHealthSnapshot,
     wave_as_of_date: str,
-) -> tuple[WaveItemState, list[str], dict[str, object]]:
-    if health.as_of_date.isoformat() < wave_as_of_date:
-        return (
-            "SOURCE_DEGRADED",
-            ["MANDATE_HEALTH_STALE"],
-            {
-                "source_owner": "lotus-manage",
-                "required_action": "REFRESH_MANDATE_HEALTH",
-                "health_as_of_date": health.as_of_date.isoformat(),
-                "wave_as_of_date": wave_as_of_date,
-            },
-        )
+) -> _SourceReadinessClassification:
+    if _health_is_stale(health=health, wave_as_of_date=wave_as_of_date):
+        return _stale_health_classification(health=health, wave_as_of_date=wave_as_of_date)
     health_state = health.health_state.value
-    if health_state == "BLOCKED" or health.source_readiness_state in {
+    if _health_blocks_source_readiness(health=health, health_state=health_state):
+        return _blocked_health_classification(health=health, health_state=health_state)
+    if _health_degrades_source_readiness(health=health):
+        return _degraded_health_classification(health=health, health_state=health_state)
+    if health_state == "PENDING_REVIEW":
+        return _review_required_health_classification(health=health, health_state=health_state)
+    return _ready_health_classification(health=health, health_state=health_state)
+
+
+def _health_is_stale(
+    *,
+    health: DpmMandateHealthSnapshot,
+    wave_as_of_date: str,
+) -> bool:
+    return health.as_of_date.isoformat() < wave_as_of_date
+
+
+def _health_blocks_source_readiness(
+    *,
+    health: DpmMandateHealthSnapshot,
+    health_state: str,
+) -> bool:
+    return health_state == "BLOCKED" or health.source_readiness_state in {
         "INCOMPLETE",
         "UNAVAILABLE",
-    }:
-        return (
-            "SOURCE_BLOCKED",
-            ["MANDATE_HEALTH_BLOCKED", f"SOURCE_READINESS_{health.source_readiness_state}"],
-            {
-                "source_owner": "lotus-manage",
-                "source_owner_upstream": "lotus-core",
-                "required_action": "FIX_SOURCE_DATA",
-                "health_state": health_state,
-                "source_readiness_state": health.source_readiness_state,
-            },
-        )
-    if health.source_readiness_state == "DEGRADED":
-        return (
-            "SOURCE_DEGRADED",
-            ["SOURCE_READINESS_DEGRADED"],
-            {
-                "source_owner": "lotus-manage",
-                "source_owner_upstream": "lotus-core",
-                "required_action": "REVIEW_SOURCE_DEGRADATION",
-                "health_state": health_state,
-                "source_readiness_state": health.source_readiness_state,
-            },
-        )
-    if health_state == "PENDING_REVIEW":
-        return (
-            "REVIEW_REQUIRED",
-            ["MANDATE_HEALTH_PENDING_REVIEW"],
-            {
-                "source_owner": "lotus-manage",
-                "required_action": health.recommended_action.value,
-                "health_state": health_state,
-                "source_readiness_state": health.source_readiness_state,
-            },
-        )
+    }
+
+
+def _health_degrades_source_readiness(*, health: DpmMandateHealthSnapshot) -> bool:
+    return health.source_readiness_state == "DEGRADED"
+
+
+def _stale_health_classification(
+    *,
+    health: DpmMandateHealthSnapshot,
+    wave_as_of_date: str,
+) -> _SourceReadinessClassification:
+    return (
+        "SOURCE_DEGRADED",
+        ["MANDATE_HEALTH_STALE"],
+        {
+            "source_owner": "lotus-manage",
+            "required_action": "REFRESH_MANDATE_HEALTH",
+            "health_as_of_date": health.as_of_date.isoformat(),
+            "wave_as_of_date": wave_as_of_date,
+        },
+    )
+
+
+def _blocked_health_classification(
+    *,
+    health: DpmMandateHealthSnapshot,
+    health_state: str,
+) -> _SourceReadinessClassification:
+    return (
+        "SOURCE_BLOCKED",
+        ["MANDATE_HEALTH_BLOCKED", f"SOURCE_READINESS_{health.source_readiness_state}"],
+        {
+            "source_owner": "lotus-manage",
+            "source_owner_upstream": "lotus-core",
+            "required_action": "FIX_SOURCE_DATA",
+            "health_state": health_state,
+            "source_readiness_state": health.source_readiness_state,
+        },
+    )
+
+
+def _degraded_health_classification(
+    *,
+    health: DpmMandateHealthSnapshot,
+    health_state: str,
+) -> _SourceReadinessClassification:
+    return (
+        "SOURCE_DEGRADED",
+        ["SOURCE_READINESS_DEGRADED"],
+        {
+            "source_owner": "lotus-manage",
+            "source_owner_upstream": "lotus-core",
+            "required_action": "REVIEW_SOURCE_DEGRADATION",
+            "health_state": health_state,
+            "source_readiness_state": health.source_readiness_state,
+        },
+    )
+
+
+def _review_required_health_classification(
+    *,
+    health: DpmMandateHealthSnapshot,
+    health_state: str,
+) -> _SourceReadinessClassification:
+    return (
+        "REVIEW_REQUIRED",
+        ["MANDATE_HEALTH_PENDING_REVIEW"],
+        {
+            "source_owner": "lotus-manage",
+            "required_action": health.recommended_action.value,
+            "health_state": health_state,
+            "source_readiness_state": health.source_readiness_state,
+        },
+    )
+
+
+def _ready_health_classification(
+    *,
+    health: DpmMandateHealthSnapshot,
+    health_state: str,
+) -> _SourceReadinessClassification:
     return (
         "SOURCE_READY",
         ["SOURCE_READINESS_READY"],

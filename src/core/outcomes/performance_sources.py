@@ -503,42 +503,77 @@ def _attribution_value(
     currency: str | None,
 ) -> tuple[Decimal | None, str, str]:
     if measure.startswith("reconciliation_"):
-        reconciliation = _read_mapping(period_result.get("reconciliation"))
-        source_field = {
-            "reconciliation_total_active_return": "total_active_return",
-            "reconciliation_sum_of_effects": "sum_of_effects",
-            "reconciliation_residual": "residual",
-        }[measure]
-        value = reconciliation.get(source_field)
-        return (
-            _decimal_from_percentage_points(value, context=f"attribution {measure}")
-            if value is not None
-            else None,
-            "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION",
-            "reconciliation",
-        )
-
-    if measure.startswith("level_"):
-        level, dimension = _attribution_level(
+        return _reconciliation_attribution_value(
             period_result=period_result,
+            measure=measure,
+        )
+    if measure.startswith("level_"):
+        return _level_attribution_value(
+            period_result=period_result,
+            measure=measure,
             level_dimension=level_dimension,
         )
-        source_field = {
-            "level_allocation_total": "allocation_total_pct",
-            "level_selection_total": "selection_total_pct",
-            "level_interaction_total": "interaction_total_pct",
-            "level_total_effect": "total_effect_pct",
-        }[measure]
-        value = level.get(source_field)
-        selector = _reason_token(dimension)
-        return (
-            _decimal_from_percentage_points(value, context=f"attribution {measure}")
-            if value is not None
-            else None,
-            f"PERFORMANCE_ATTRIBUTION_LEVEL_{selector}",
-            f"level:{selector.lower()}",
-        )
+    return _currency_attribution_value(
+        period_result=period_result,
+        measure=measure,
+        currency=currency,
+    )
 
+
+def _reconciliation_attribution_value(
+    *,
+    period_result: dict[str, Any],
+    measure: AttributionOutcomeMeasure,
+) -> tuple[Decimal | None, str, str]:
+    reconciliation = _read_mapping(period_result.get("reconciliation"))
+    source_field = {
+        "reconciliation_total_active_return": "total_active_return",
+        "reconciliation_sum_of_effects": "sum_of_effects",
+        "reconciliation_residual": "residual",
+    }[measure]
+    value = reconciliation.get(source_field)
+    return (
+        _decimal_from_percentage_points(value, context=f"attribution {measure}")
+        if value is not None
+        else None,
+        "PERFORMANCE_ATTRIBUTION_SELECTOR_RECONCILIATION",
+        "reconciliation",
+    )
+
+
+def _level_attribution_value(
+    *,
+    period_result: dict[str, Any],
+    measure: AttributionOutcomeMeasure,
+    level_dimension: str | None,
+) -> tuple[Decimal | None, str, str]:
+    level, dimension = _attribution_level(
+        period_result=period_result,
+        level_dimension=level_dimension,
+    )
+    source_field = {
+        "level_allocation_total": "allocation_total_pct",
+        "level_selection_total": "selection_total_pct",
+        "level_interaction_total": "interaction_total_pct",
+        "level_total_effect": "total_effect_pct",
+    }[measure]
+    value = level.get(source_field)
+    selector = _reason_token(dimension)
+    return (
+        _decimal_from_percentage_points(value, context=f"attribution {measure}")
+        if value is not None
+        else None,
+        f"PERFORMANCE_ATTRIBUTION_LEVEL_{selector}",
+        f"level:{selector.lower()}",
+    )
+
+
+def _currency_attribution_value(
+    *,
+    period_result: dict[str, Any],
+    measure: AttributionOutcomeMeasure,
+    currency: str | None,
+) -> tuple[Decimal | None, str, str]:
     currency_result, currency_code = _attribution_currency(
         period_result=period_result,
         currency=currency,

@@ -23122,3 +23122,91 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-922: Historical attribution source adapter helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/risk_sources.py` and
+  `tests/unit/core/test_risk_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, source-owned risk evidence mapping, and testing.
+- Finding: `realized_historical_attribution_source_from_attribution_response` mixed response
+  extraction, fail-closed ready-value validation, source snapshot assembly, source-id creation, and
+  reason-code projection. The behavior was correct, but historical attribution evidence is easier
+  to audit when fail-closed validation, reason codes, and snapshot assembly are named and tested
+  directly.
+- Action: extracted `_ensure_ready_historical_attribution_value`,
+  `_historical_attribution_reason_codes`, and `_historical_attribution_source_snapshot`, then kept
+  `realized_historical_attribution_source_from_attribution_response` as the adapter orchestration
+  boundary. Added direct assertions for ready-value fail-closed behavior, historical attribution
+  reason-code projection, and snapshot identity/date projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`, and
+  `python -m radon cc src/core/outcomes/risk_sources.py -s`; the focused risk realized outcome
+  source suite reported 53 passed, and radon reports
+  `realized_historical_attribution_source_from_attribution_response` at A(3) after this extraction.
+- Residual risk: this slice improves risk source-owned historical attribution adapter
+  maintainability only. It does not change source evidence semantics, certify global bank-buyable
+  readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal source adapter maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-923: Performance attribution selector helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/performance_sources.py` and
+  `tests/unit/core/test_performance_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, source-owned performance evidence mapping, and testing.
+- Finding: `_attribution_value` handled reconciliation, attribution-level, and currency-selector
+  branches inline. The behavior was correct, but performance attribution source evidence is easier
+  to maintain when each selector family has a named helper and direct tests for value conversion,
+  selector reason, and selector token projection.
+- Action: extracted `_reconciliation_attribution_value`, `_level_attribution_value`, and
+  `_currency_attribution_value`, then kept `_attribution_value` as the selector dispatcher. Added
+  direct helper assertions for reconciliation active return, asset-class level total effect, and
+  USD currency total effect.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/performance_sources.py tests/unit/core/test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/performance_sources.py`,
+  `python -m pytest tests/unit/core/test_performance_realized_outcome_sources.py -q`, and
+  `python -m radon cc src/core/outcomes/performance_sources.py -s`; the focused performance
+  realized outcome source suite reported 29 passed, and radon reports `_attribution_value` at A(3)
+  after this extraction.
+- Residual risk: this slice improves performance source-owned attribution adapter maintainability
+  only. It does not change source evidence semantics, certify global bank-buyable readiness,
+  runtime evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal source adapter maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-924: Wave source-readiness classification helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/waves/source_readiness.py` and
+  `tests/unit/dpm/waves/test_source_readiness.py`.
+- Bank-buyable control area: architecture, wave source-readiness supportability, and testing.
+- Finding: `_state_from_health` encoded stale, blocked, degraded, review-required, and ready
+  classification branches inline. The behavior was correct, but wave source-readiness posture is
+  easier to audit when each branch has a named predicate or classification builder and direct
+  tests for diagnostic projection.
+- Action: extracted `_health_is_stale`, `_health_blocks_source_readiness`,
+  `_health_degrades_source_readiness`, and the five named classification builders for stale,
+  blocked, degraded, review-required, and ready health. Added direct helper assertions for each
+  branch while preserving existing end-to-end wave item classification tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/source_readiness.py tests/unit/dpm/waves/test_source_readiness.py`,
+  `python -m ruff format --check src/core/waves/source_readiness.py tests/unit/dpm/waves/test_source_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_readiness.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_readiness.py -q`, and
+  `python -m radon cc src/core/waves/source_readiness.py -s`; the focused source-readiness suite
+  reported 4 passed, and radon reports `_state_from_health` at A(5) after this extraction.
+- Residual risk: this slice improves wave source-readiness classification maintainability only. It
+  does not change wave semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal wave source-readiness
+  maintainability hardening with no operator-facing contract change.
