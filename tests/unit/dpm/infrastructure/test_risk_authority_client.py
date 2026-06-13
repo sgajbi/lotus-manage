@@ -15,6 +15,7 @@ from src.infrastructure.risk_authority.client import (
     _concentration_breach_count,
     _concentration_breach_inputs,
     _concentration_reason_codes,
+    _concentration_response_sections,
     _post_with_retries,
     _risk_event_affected_portfolios,
     _risk_event_cohort_from_response,
@@ -200,6 +201,40 @@ def test_concentration_breach_helpers_count_source_threshold_breaches() -> None:
     assert inputs.top_issuer_weight_proposed == Decimal("0.41")
     assert inputs.hhi_proposed == Decimal("2600")
     assert _concentration_breach_count(inputs) == 3
+
+
+def test_concentration_response_sections_preserve_source_metadata() -> None:
+    response = _risk_response(coverage_status="partial")
+    metadata = response["metadata"]
+    assert isinstance(metadata, dict)
+    metadata["methodology_version"] = "concentration.v3"
+    metadata["request_fingerprint"] = "sha256:concentration-request"
+
+    sections = _concentration_response_sections(response)
+
+    assert sections.metadata["methodology_version"] == "concentration.v3"
+    assert sections.request_fingerprint == "sha256:concentration-request"
+    assert sections.supportability_state == "ready"
+    assert sections.supportability_reason == "calculation_complete"
+    assert sections.issuer_coverage_status == "partial"
+    assert sections.risk_proxy["hhi_delta"] == 100.0
+
+
+def test_concentration_response_sections_default_missing_supportability() -> None:
+    response = _risk_response()
+    metadata = response["metadata"]
+    assert isinstance(metadata, dict)
+    metadata.pop("calculation_supportability")
+    issuer = response["issuer_concentration"]
+    assert isinstance(issuer, dict)
+    issuer.pop("coverage_status")
+
+    sections = _concentration_response_sections(response)
+
+    assert sections.supportability_state == "degraded"
+    assert sections.supportability_reason == "calculation_supportability_missing"
+    assert sections.request_fingerprint == ""
+    assert sections.issuer_coverage_status is None
 
 
 def test_concentration_reason_codes_project_supportability_coverage_and_breaches() -> None:

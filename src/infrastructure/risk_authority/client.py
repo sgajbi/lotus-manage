@@ -67,6 +67,18 @@ class _ConcentrationBreachInputs:
     hhi_proposed: Decimal
 
 
+@dataclass(frozen=True)
+class _ConcentrationResponseSections:
+    metadata: dict[str, Any]
+    risk_proxy: dict[str, Any]
+    single_position: dict[str, Any]
+    issuer: dict[str, Any]
+    supportability_state: str
+    supportability_reason: str
+    request_fingerprint: str
+    issuer_coverage_status: Any
+
+
 class LotusRiskAuthorityClient:
     """Bounded client for lotus-risk authority outputs used by construction.
 
@@ -253,37 +265,51 @@ def _regime_scenario_payload(
 
 
 def _risk_context_from_concentration_response(body: dict[str, Any]) -> AuthoritativeRiskContext:
-    metadata = _dict_section(body, "metadata")
-    supportability = _dict_section(metadata, "calculation_supportability")
-    request_fingerprint = str(metadata.get("request_fingerprint") or "")
-    risk_proxy = _dict_section(body, "risk_proxy")
-    single_position = _dict_section(body, "single_position_concentration")
-    issuer = _dict_section(body, "issuer_concentration")
-    state = str(supportability.get("state", "degraded"))
-    reason = str(supportability.get("reason", "calculation_supportability_missing"))
-    coverage_status = issuer.get("coverage_status")
+    sections = _concentration_response_sections(body)
     breach_inputs = _concentration_breach_inputs(
-        risk_proxy=risk_proxy,
-        single_position=single_position,
-        issuer=issuer,
+        risk_proxy=sections.risk_proxy,
+        single_position=sections.single_position,
+        issuer=sections.issuer,
     )
     breaches = _concentration_breach_count(breach_inputs)
     return AuthoritativeRiskContext(
-        supportability_status=_risk_status_from_supportability(state),
+        supportability_status=_risk_status_from_supportability(sections.supportability_state),
         source_system=str(body.get("source_service") or "lotus-risk"),
         source_product_name="ConcentrationAnalysis",
-        source_product_version=str(metadata.get("methodology_version") or "v1"),
-        source_id=request_fingerprint or None,
-        content_hash=request_fingerprint or None,
+        source_product_version=str(sections.metadata.get("methodology_version") or "v1"),
+        source_id=sections.request_fingerprint or None,
+        content_hash=sections.request_fingerprint or None,
         concentration_breaches=breaches,
-        concentration_hhi_delta=Decimal(str(risk_proxy.get("hhi_delta", "0"))),
+        concentration_hhi_delta=Decimal(str(sections.risk_proxy.get("hhi_delta", "0"))),
         top_position_weight_proposed=breach_inputs.top_position_weight_proposed,
-        issuer_coverage_status=str(coverage_status) if coverage_status is not None else None,
+        issuer_coverage_status=(
+            str(sections.issuer_coverage_status)
+            if sections.issuer_coverage_status is not None
+            else None
+        ),
         reason_codes=_concentration_reason_codes(
-            supportability_reason=reason,
-            issuer_coverage_status=coverage_status,
+            supportability_reason=sections.supportability_reason,
+            issuer_coverage_status=sections.issuer_coverage_status,
             breaches=breaches,
         ),
+    )
+
+
+def _concentration_response_sections(body: dict[str, Any]) -> _ConcentrationResponseSections:
+    metadata = _dict_section(body, "metadata")
+    supportability = _dict_section(metadata, "calculation_supportability")
+    issuer = _dict_section(body, "issuer_concentration")
+    return _ConcentrationResponseSections(
+        metadata=metadata,
+        risk_proxy=_dict_section(body, "risk_proxy"),
+        single_position=_dict_section(body, "single_position_concentration"),
+        issuer=issuer,
+        supportability_state=str(supportability.get("state", "degraded")),
+        supportability_reason=str(
+            supportability.get("reason", "calculation_supportability_missing")
+        ),
+        request_fingerprint=str(metadata.get("request_fingerprint") or ""),
+        issuer_coverage_status=issuer.get("coverage_status"),
     )
 
 

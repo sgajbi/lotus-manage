@@ -22321,3 +22321,32 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API-governance helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-895: Risk concentration response section normalization
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/risk_authority/client.py` and
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`.
+- Bank-buyable control area: architecture, downstream boundary clarity, and testing.
+- Finding: `_risk_context_from_concentration_response` combined source response section extraction,
+  supportability defaulting, source fingerprint preservation, issuer coverage projection, breach
+  counting, and `AuthoritativeRiskContext` construction. The behavior was correct, but the mapper
+  remained a top source hotspot and made the risk-authority boundary harder to review.
+- Action: extracted `_ConcentrationResponseSections` and `_concentration_response_sections` so
+  source-response shape and supportability defaults are normalized before context construction.
+  Added direct tests for populated source metadata and missing supportability defaults.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m ruff format --check src/infrastructure/risk_authority/client.py tests/unit/dpm/infrastructure/test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/risk_authority/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/risk_authority/client.py -s`; the focused risk-authority
+  suite reported 31 passed, `_risk_context_from_concentration_response` reduced from B(7) to B(6)
+  under radon, and the refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves source-owned concentration response mapping maintainability
+  only. It does not change source methodology, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal risk-authority mapping
+  maintainability hardening with no operator-facing contract change.
