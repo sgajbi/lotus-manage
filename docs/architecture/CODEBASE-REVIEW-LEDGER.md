@@ -22568,7 +22568,7 @@ and improves internal transaction-cost source posture maintainability only.
 
 - Date: 2026-06-13
 - Scope: `src/core/proof_packs/source_analytics.py` and
-  `tests/unit/dpm/proof_packs/test_source_analytics.py`.
+  `tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`.
 - Bank-buyable control area: architecture, source-owned proof-pack lineage, and testing.
 - Finding: `source_analytics_for_context` encoded proof-pack analytics family dispatch as a
   conditional chain. The behavior was correct, but every new source-owned analytics family would
@@ -22579,10 +22579,10 @@ and improves internal transaction-cost source posture maintainability only.
   source-hash key while empty contexts still short-circuit without dispatch.
 - Status: hardened.
 - Evidence:
-  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_source_analytics.py`,
-  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_source_analytics.py`,
+  `python -m ruff check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`,
+  `python -m ruff format --check src/core/proof_packs/source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`,
   `python -m mypy --config-file mypy.ini src/core/proof_packs/source_analytics.py`,
-  `python -m pytest tests/unit/dpm/proof_packs/test_source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`,
   and `python -m radon cc src/core/proof_packs/source_analytics.py -s`; the focused proof-pack
   suites reported 103 passed and `source_analytics_for_context` reduced from B(7) to A(2) under
   radon.
