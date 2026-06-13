@@ -1630,57 +1630,77 @@ def _source_refs(
 ) -> list[DpmProofPackSourceRef]:
     refs = []
     if run is not None:
-        result = RebalanceResult.model_validate(run.result_json)
-        refs.append(
-            DpmProofPackSourceRef(
-                source_system="lotus-manage",
-                source_type="DPM_REBALANCE_RUN",
-                source_id=run.rebalance_run_id,
-                supportability_state=result.status,
-                content_hash=source_hashes.get("rebalance_run"),
-            )
-        )
+        refs.append(_run_source_ref(run=run, source_hashes=source_hashes))
     if alternative_set is not None:
-        refs.append(
-            DpmProofPackSourceRef(
-                source_system="lotus-manage",
-                source_type="DPM_CONSTRUCTION_ALTERNATIVE_SET",
-                source_id=alternative_set.alternative_set_id,
-                supportability_state=str(alternative_set.status),
-                content_hash=source_hashes.get("alternative_set"),
-            )
-        )
+        refs.append(_alternative_set_source_ref(alternative_set, source_hashes=source_hashes))
     if selected_alternative is not None:
         refs.append(
-            DpmProofPackSourceRef(
-                source_system="lotus-manage",
-                source_type="DPM_CONSTRUCTION_ALTERNATIVE",
-                source_id=selected_alternative.alternative_id,
-                supportability_state=str(selected_alternative.method_status),
-                content_hash=source_hashes.get("selected_alternative"),
-            )
+            _selected_alternative_source_ref(selected_alternative, source_hashes=source_hashes)
         )
     if mandate_twin is not None:
-        refs.append(
-            DpmProofPackSourceRef(
-                source_system="lotus-manage",
-                source_type="DPM_MANDATE_DIGITAL_TWIN",
-                source_id=mandate_twin.mandate_id,
-                supportability_state="READY" if not mandate_twin.field_gap_codes else "DEGRADED",
-                content_hash=source_hashes.get("mandate_twin"),
-            )
-        )
+        refs.append(_mandate_twin_source_ref(mandate_twin, source_hashes=source_hashes))
     if mandate_health is not None:
-        refs.append(
-            DpmProofPackSourceRef(
-                source_system="lotus-manage",
-                source_type="DPM_MANDATE_HEALTH_SNAPSHOT",
-                source_id=mandate_health.health_snapshot_id,
-                supportability_state=mandate_health.health_state.value,
-                content_hash=source_hashes.get("mandate_health"),
-            )
-        )
+        refs.append(_mandate_health_source_ref(mandate_health, source_hashes=source_hashes))
     return refs
+
+
+def _run_source_ref(*, run: DpmRunRecord, source_hashes: dict[str, str]) -> DpmProofPackSourceRef:
+    result = RebalanceResult.model_validate(run.result_json)
+    return DpmProofPackSourceRef(
+        source_system="lotus-manage",
+        source_type="DPM_REBALANCE_RUN",
+        source_id=run.rebalance_run_id,
+        supportability_state=result.status,
+        content_hash=source_hashes.get("rebalance_run"),
+    )
+
+
+def _alternative_set_source_ref(
+    alternative_set: ConstructionAlternativeSet, *, source_hashes: dict[str, str]
+) -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-manage",
+        source_type="DPM_CONSTRUCTION_ALTERNATIVE_SET",
+        source_id=alternative_set.alternative_set_id,
+        supportability_state=str(alternative_set.status),
+        content_hash=source_hashes.get("alternative_set"),
+    )
+
+
+def _selected_alternative_source_ref(
+    selected_alternative: ConstructionAlternative, *, source_hashes: dict[str, str]
+) -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-manage",
+        source_type="DPM_CONSTRUCTION_ALTERNATIVE",
+        source_id=selected_alternative.alternative_id,
+        supportability_state=str(selected_alternative.method_status),
+        content_hash=source_hashes.get("selected_alternative"),
+    )
+
+
+def _mandate_twin_source_ref(
+    mandate_twin: DpmMandateDigitalTwin, *, source_hashes: dict[str, str]
+) -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-manage",
+        source_type="DPM_MANDATE_DIGITAL_TWIN",
+        source_id=mandate_twin.mandate_id,
+        supportability_state="READY" if not mandate_twin.field_gap_codes else "DEGRADED",
+        content_hash=source_hashes.get("mandate_twin"),
+    )
+
+
+def _mandate_health_source_ref(
+    mandate_health: DpmMandateHealthSnapshot, *, source_hashes: dict[str, str]
+) -> DpmProofPackSourceRef:
+    return DpmProofPackSourceRef(
+        source_system="lotus-manage",
+        source_type="DPM_MANDATE_HEALTH_SNAPSHOT",
+        source_id=mandate_health.health_snapshot_id,
+        supportability_state=mandate_health.health_state.value,
+        content_hash=source_hashes.get("mandate_health"),
+    )
 
 
 def _mandate_health_state(snapshot: DpmMandateHealthSnapshot) -> ProofPackSectionState:

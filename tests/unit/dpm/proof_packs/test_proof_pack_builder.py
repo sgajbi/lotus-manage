@@ -1590,6 +1590,50 @@ def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs(
     )
 
 
+def test_source_refs_preserve_manage_artifact_and_mandate_supportability() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_refs",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+    mandate_twin = _mandate_twin().model_copy(update={"field_gap_codes": ["MISSING_REVIEW"]})
+    mandate_health = calculate_mandate_health(DpmMandateHealthInput(twin=mandate_twin))
+
+    refs = builder_module._source_refs(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=alternative,
+        source_hashes={
+            "rebalance_run": "sha256:run",
+            "alternative_set": "sha256:set",
+            "selected_alternative": "sha256:alternative",
+            "mandate_twin": "sha256:twin",
+            "mandate_health": "sha256:health",
+        },
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+    )
+
+    refs_by_type = {ref.source_type: ref for ref in refs}
+    assert list(refs_by_type) == [
+        "DPM_REBALANCE_RUN",
+        "DPM_CONSTRUCTION_ALTERNATIVE_SET",
+        "DPM_CONSTRUCTION_ALTERNATIVE",
+        "DPM_MANDATE_DIGITAL_TWIN",
+        "DPM_MANDATE_HEALTH_SNAPSHOT",
+    ]
+    assert refs_by_type["DPM_REBALANCE_RUN"].supportability_state == result.status
+    assert refs_by_type["DPM_MANDATE_DIGITAL_TWIN"].supportability_state == "DEGRADED"
+    assert refs_by_type["DPM_MANDATE_HEALTH_SNAPSHOT"].source_id == (
+        mandate_health.health_snapshot_id
+    )
+    assert refs_by_type["DPM_MANDATE_HEALTH_SNAPSHOT"].content_hash == "sha256:health"
+
+
 def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
     mandate_twin = _mandate_twin()
     kwargs = {
