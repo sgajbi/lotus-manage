@@ -1437,6 +1437,10 @@ def test_concentration_drawdown_and_rolling_posture_edges_are_source_safe() -> N
 def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
     assert _rolling_window_result(period_result={}, window_length=None) == ({}, "unknown")
     assert _rolling_window_result(
+        period_result={"window_results": [{"value": "latest"}]},
+        window_length=None,
+    ) == ({"value": "latest"}, "unknown")
+    assert _rolling_window_result(
         period_result={"window_results": [{"window_length": 63, "value": "old"}]},
         window_length=126,
     ) == ({}, 126)

@@ -584,13 +584,32 @@ def _rolling_window_result(
 ) -> tuple[dict[str, Any], int | str]:
     window_results = period_result.get("window_results")
     if not isinstance(window_results, list):
-        return {}, window_length or "unknown"
+        return {}, _fallback_requested_window(window_length)
     for window_result in window_results:
         window_mapping = _read_mapping(window_result)
         resolved_window = window_mapping.get("window_length")
-        if window_length is None or resolved_window == window_length:
-            return window_mapping, resolved_window if resolved_window is not None else "unknown"
-    return {}, window_length or "unknown"
+        if _rolling_window_matches_request(
+            resolved_window=resolved_window,
+            requested_window=window_length,
+        ):
+            return window_mapping, _resolved_window_length(resolved_window)
+    return {}, _fallback_requested_window(window_length)
+
+
+def _rolling_window_matches_request(
+    *,
+    resolved_window: object,
+    requested_window: int | None,
+) -> bool:
+    return requested_window is None or resolved_window == requested_window
+
+
+def _fallback_requested_window(window_length: int | None) -> int | str:
+    return window_length or "unknown"
+
+
+def _resolved_window_length(window_length: Any) -> int | str:
+    return window_length if window_length is not None else "unknown"
 
 
 def _rolling_context_reason(
