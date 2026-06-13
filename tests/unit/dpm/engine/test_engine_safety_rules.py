@@ -5,6 +5,7 @@ from src.core.rebalance.intents import (
     _TaxBudgetAccumulator,
     _TaxBudgetLotAllowance,
     _apply_tax_budget_lot_allowance,
+    _available_holding_constraint_applies,
     _clamped_sell_quantity,
     _current_instrument_value_and_unit_value,
     _hifo_sorted_lots,
@@ -21,6 +22,7 @@ from src.core.rebalance.intents import (
     _tax_budget_limited_quantity_from_lots,
     _tax_budget_limited_sell_quantity,
     _tax_budget_sale_allowance,
+    _tax_budget_constraint_applies,
     _trade_notional_threshold,
     generate_intents,
 )
@@ -250,6 +252,37 @@ def test_security_intent_constraints_include_sell_safety_and_tax_budget_labels()
         sell_quantity_before_tax=Decimal("8"),
         tax_awareness_enabled=True,
     ) == ["MIN_NOTIONAL", "AVAILABLE_HOLDING", "TAX_BUDGET"]
+
+
+def test_security_intent_constraint_predicates_are_sell_side_only() -> None:
+    assert _available_holding_constraint_applies(
+        side="SELL",
+        quantity=Decimal("5"),
+        requested_quantity=Decimal("10"),
+    )
+    assert not _available_holding_constraint_applies(
+        side="BUY",
+        quantity=Decimal("5"),
+        requested_quantity=Decimal("10"),
+    )
+    assert _tax_budget_constraint_applies(
+        side="SELL",
+        quantity=Decimal("5"),
+        sell_quantity_before_tax=Decimal("8"),
+        tax_awareness_enabled=True,
+    )
+    assert not _tax_budget_constraint_applies(
+        side="SELL",
+        quantity=Decimal("5"),
+        sell_quantity_before_tax=Decimal("8"),
+        tax_awareness_enabled=False,
+    )
+    assert not _tax_budget_constraint_applies(
+        side="BUY",
+        quantity=Decimal("5"),
+        sell_quantity_before_tax=Decimal("8"),
+        tax_awareness_enabled=True,
+    )
 
 
 def test_suppress_dust_trade_records_below_min_notional_intent() -> None:

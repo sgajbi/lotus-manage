@@ -27,6 +27,13 @@ from src.core.waves.campaign_operating_boundaries import (
 )
 from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
 
+CampaignOperatingQueueStatus = Literal["READY_TO_LAUNCH", "ATTENTION_REQUIRED", "CLOSED"]
+CampaignOperatingQueuePosture = tuple[CampaignOperatingQueueStatus, list[str]]
+CAMPAIGN_DISCOVERY_EXPIRY_REASON_CODES = {
+    "EXPIRED": "CAMPAIGN_DEFINITION_EXPIRED",
+    "INVALID": "CAMPAIGN_DEFINITION_EXPIRY_INVALID",
+}
+
 
 class DpmBulkReviewCampaignOperatingQueueItem(BaseModel):
     """Operator queue row for one persisted bulk-review campaign definition."""
@@ -200,20 +207,45 @@ def _classify_queue_posture(
     definition: DpmBulkReviewCampaignDefinition,
     readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
     discovery: DpmBulkReviewCampaignDiscoveryItem,
-) -> tuple[Literal["READY_TO_LAUNCH", "ATTENTION_REQUIRED", "CLOSED"], list[str]]:
-    if definition.status in {"RETIRED", "SUPERSEDED"}:
-        return "CLOSED", [f"CAMPAIGN_DEFINITION_{definition.status}"]
+) -> CampaignOperatingQueuePosture:
+    closed_posture = _closed_queue_posture(definition=definition)
+    if closed_posture is not None:
+        return closed_posture
     if readiness.preview_create_allowed:
         return "READY_TO_LAUNCH", ["CAMPAIGN_DEFINITION_READY_TO_LAUNCH"]
 
+    return "ATTENTION_REQUIRED", _attention_queue_reason_codes(
+        readiness=readiness,
+        discovery=discovery,
+    )
+
+
+def _closed_queue_posture(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+) -> CampaignOperatingQueuePosture | None:
+    if definition.status not in {"RETIRED", "SUPERSEDED"}:
+        return None
+    return "CLOSED", [f"CAMPAIGN_DEFINITION_{definition.status}"]
+
+
+def _attention_queue_reason_codes(
+    *,
+    readiness: DpmBulkReviewCampaignDefinitionPreviewReadiness,
+    discovery: DpmBulkReviewCampaignDiscoveryItem,
+) -> list[str]:
     reasons = list(readiness.reason_codes)
-    if discovery.expiry_state == "EXPIRED" and "CAMPAIGN_DEFINITION_EXPIRED" not in reasons:
-        reasons.append("CAMPAIGN_DEFINITION_EXPIRED")
-    if discovery.expiry_state == "INVALID" and "CAMPAIGN_DEFINITION_EXPIRY_INVALID" not in reasons:
-        reasons.append("CAMPAIGN_DEFINITION_EXPIRY_INVALID")
+    expiry_reason = CAMPAIGN_DISCOVERY_EXPIRY_REASON_CODES.get(discovery.expiry_state)
+    if expiry_reason is not None:
+        _append_reason_once(reasons=reasons, reason_code=expiry_reason)
     if not reasons:
         reasons.append("CAMPAIGN_DEFINITION_REVIEW_REQUIRED")
-    return "ATTENTION_REQUIRED", reasons
+    return reasons
+
+
+def _append_reason_once(*, reasons: list[str], reason_code: str) -> None:
+    if reason_code not in reasons:
+        reasons.append(reason_code)
 
 
 def _hash_payload(payload: dict[str, object]) -> str:

@@ -50,23 +50,40 @@ def enterprise_policy_version() -> str:
 
 
 def validate_enterprise_runtime_config() -> list[str]:
-    issues: list[str] = []
-    if not enterprise_policy_version().strip():
-        issues.append("missing_policy_version")
-
-    rotation_days = _env_int("ENTERPRISE_SECRET_ROTATION_DAYS", 90)
-    if rotation_days <= 0 or rotation_days > 90:
-        issues.append("secret_rotation_days_out_of_range")
-
-    if (
-        _env_enabled("ENTERPRISE_ENFORCE_AUTHZ", "false")
-        and not os.getenv("ENTERPRISE_PRIMARY_KEY_ID", "").strip()
-    ):
-        issues.append("missing_primary_key_id")
-
+    issues = _enterprise_runtime_config_issues()
     if issues and _env_enabled("ENTERPRISE_ENFORCE_RUNTIME_CONFIG", "false"):
         raise RuntimeError(f"enterprise_runtime_config_invalid:{','.join(issues)}")
     return issues
+
+
+def _enterprise_runtime_config_issues() -> list[str]:
+    issue_candidates = (
+        _policy_version_issue(),
+        _secret_rotation_issue(),
+        _authz_key_material_issue(),
+    )
+    return [issue for issue in issue_candidates if issue is not None]
+
+
+def _policy_version_issue() -> str | None:
+    if enterprise_policy_version().strip():
+        return None
+    return "missing_policy_version"
+
+
+def _secret_rotation_issue() -> str | None:
+    rotation_days = _env_int("ENTERPRISE_SECRET_ROTATION_DAYS", 90)
+    if 0 < rotation_days <= 90:
+        return None
+    return "secret_rotation_days_out_of_range"
+
+
+def _authz_key_material_issue() -> str | None:
+    if not _env_enabled("ENTERPRISE_ENFORCE_AUTHZ", "false"):
+        return None
+    if os.getenv("ENTERPRISE_PRIMARY_KEY_ID", "").strip():
+        return None
+    return "missing_primary_key_id"
 
 
 def load_feature_flags() -> dict[str, dict[str, dict[str, bool]]]:

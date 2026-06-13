@@ -20756,3 +20756,89 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal risk-source adapter
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-841: Security intent constraint predicates
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/intents.py`,
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `_security_intent_constraints` was the top current source-complexity hotspot after the
+  drawdown source posture slice and mixed min-notional, sell safety, and tax-budget constraint
+  label decisions in one helper.
+- Action: extracted named sell-side available-holding and tax-budget constraint predicates while
+  preserving min-notional, available-holding, and tax-budget label ordering. Added direct tests
+  proving the predicates are sell-side only and respect disabled tax awareness.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal rebalance intent safety
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-842: Campaign operating queue posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_operating_queue.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_classify_queue_posture` was the top current source-complexity hotspot after the
+  security intent constraint slice and mixed terminal campaign-definition handling, preview
+  readiness, discovery expiry reason enrichment, and fallback review-required semantics in one
+  helper.
+- Action: extracted explicit closed-posture and attention-reason helpers, centralized discovery
+  expiry reason-code mapping, and preserved ready-to-launch precedence and bounded queue status
+  results. Added direct tests for closed-state precedence and expiry reason de-duplication through
+  real campaign definition/readiness/discovery models.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_operating_queue.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_operating_queue.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_operating_queue.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal campaign operating queue
+  maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-843: Enterprise runtime config issue helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `validate_enterprise_runtime_config` was the top current source-complexity hotspot after
+  the campaign operating queue slice and mixed policy-version validation, secret-rotation bounds,
+  authz key-material requirements, and fail-fast enforcement in one helper.
+- Action: extracted named runtime-config issue helpers for policy version, secret rotation, and
+  authz key material, then made the public validator assemble those bounded issues before applying
+  enforcement. Added direct tests for both failing and passing helper states while preserving the
+  existing runtime enforcement behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python -m ruff format --check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/api/enterprise_readiness.py`,
+  `python -m pytest tests/unit/api/test_enterprise_readiness_hardening.py tests/unit/api/test_enterprise_readiness.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal enterprise runtime
+  security/config maintainability refactoring and repo-local quality evidence.

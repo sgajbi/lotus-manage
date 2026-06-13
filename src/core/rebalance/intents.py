@@ -118,16 +118,44 @@ def _security_intent_constraints(
     tax_awareness_enabled: bool,
 ) -> list[str]:
     applied_constraints = ["MIN_NOTIONAL"] if threshold else []
-    if side == "SELL" and quantity < requested_quantity:
+    if _available_holding_constraint_applies(
+        side=side,
+        quantity=quantity,
+        requested_quantity=requested_quantity,
+    ):
         applied_constraints.append("AVAILABLE_HOLDING")
-    if (
+    if _tax_budget_constraint_applies(
+        side=side,
+        quantity=quantity,
+        sell_quantity_before_tax=sell_quantity_before_tax,
+        tax_awareness_enabled=tax_awareness_enabled,
+    ):
+        applied_constraints.append("TAX_BUDGET")
+    return applied_constraints
+
+
+def _available_holding_constraint_applies(
+    *,
+    side: Literal["BUY", "SELL"],
+    quantity: Decimal,
+    requested_quantity: Decimal,
+) -> bool:
+    return side == "SELL" and quantity < requested_quantity
+
+
+def _tax_budget_constraint_applies(
+    *,
+    side: Literal["BUY", "SELL"],
+    quantity: Decimal,
+    sell_quantity_before_tax: Decimal | None,
+    tax_awareness_enabled: bool,
+) -> bool:
+    return (
         side == "SELL"
         and tax_awareness_enabled
         and sell_quantity_before_tax is not None
         and quantity < sell_quantity_before_tax
-    ):
-        applied_constraints.append("TAX_BUDGET")
-    return applied_constraints
+    )
 
 
 def _suppress_dust_trade(
