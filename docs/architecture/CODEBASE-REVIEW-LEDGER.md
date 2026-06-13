@@ -21402,3 +21402,20 @@ and improves internal transaction-cost source posture maintainability only.
   and `make dead-code-gate`.
 - Wiki decision: no wiki source change required; this is repo-local CI enforcement and quality
   scorecard truth.
+
+## BACKEND-REVIEW-20260613-863: Repo context CI gate posture update
+
+- Date: 2026-06-13
+- Scope: `REPOSITORY-ENGINEERING-CONTEXT.md`.
+- Finding: PR #508 promoted architecture, complexity, dependency-hygiene, and dead-code gates to
+  enforced CI checks, but the repository-local engineering context still only described the older
+  active gate set. Future agents rely on this context during ramp-up and PR planning.
+- Action: updated the validation and CI expectations section to state that the four quality gates
+  are active in Remote Feature Lane, Pull Request Merge Gate, and Main Releasability while the
+  separate Quality Baseline workflow remains report-only for expanded trend capture.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests/unit/test_documentation_current_state.py tests/unit/test_ci_workflow_gate_enforcement.py -q`,
+  `git diff --check`,
+  and wiki drift check with `DiffCount 0`.
+- Wiki decision: no wiki source change required; this is repo-local agent/context ramp-up truth.

@@ -964,16 +964,19 @@ Use these commands as the primary local contract:
 Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
-2. PR-grade validation includes coverage-backed full test execution,
-3. host/runtime coexistence assumptions matter for canonical front-office startup,
-4. README changes should preserve the local Docker runtime contract language enforced by
+2. architecture, complexity, dependency-hygiene, and dead-code gates are active in Remote Feature
+   Lane, Pull Request Merge Gate, and Main Releasability; the separate Quality Baseline workflow
+   remains report-only for expanded trend capture,
+3. PR-grade validation includes coverage-backed full test execution,
+4. host/runtime coexistence assumptions matter for canonical front-office startup,
+5. README changes should preserve the local Docker runtime contract language enforced by
    `tests/unit/test_local_docker_runtime_contract.py`,
-5. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
+6. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
    `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
-6. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
+7. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
    `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
    debug paths.
-7. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
+8. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
    closure, post-merge audit, and move-on to the next RFC. Run `git fetch origin --prune` and
    `git branch -r --no-merged origin/main`, inspect unmerged branches touching `docs/rfcs/`,
    `wiki/`, `README.md`, `REPOSITORY-ENGINEERING-CONTEXT.md`, `AGENTS.md`, contracts, standards,
