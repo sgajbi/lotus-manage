@@ -18,6 +18,7 @@ from src.core.outcomes.risk_sources import (
     _concentration_source_posture,
     _drawdown_measure_unavailable,
     _drawdown_source_posture,
+    _ensure_ready_rolling_metric_value,
     _historical_attribution_contributor,
     _historical_attribution_set,
     _historical_attribution_source_id,
@@ -30,6 +31,9 @@ from src.core.outcomes.risk_sources import (
     _risk_source_posture,
     _rolling_context_unavailable,
     _rolling_context_reason,
+    _rolling_metric_value,
+    _rolling_reason_codes,
+    _rolling_source_id,
     _rolling_source_posture,
     _rolling_window_result,
     _supportability_source_posture,
@@ -1436,6 +1440,65 @@ def test_concentration_drawdown_and_rolling_posture_edges_are_source_safe() -> N
 
 
 def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
+    assert _rolling_metric_value(
+        metric_summary={"latest": "0.42"},
+        statistic="latest",
+    ) == Decimal("0.42")
+    assert (
+        _rolling_metric_value(
+            metric_summary={},
+            statistic="p95",
+        )
+        is None
+    )
+    _ensure_ready_rolling_metric_value(
+        source_state="DEGRADED",
+        value=None,
+        metric="ROLLING_VOLATILITY",
+        statistic="latest",
+        period="YTD",
+        resolved_window_length=21,
+    )
+    with pytest.raises(RiskOutcomeSourceError, match="missing a numeric"):
+        _ensure_ready_rolling_metric_value(
+            source_state="READY",
+            value=None,
+            metric="ROLLING_VOLATILITY",
+            statistic="latest",
+            period="YTD",
+            resolved_window_length=21,
+        )
+    assert (
+        _rolling_source_id(
+            request_fingerprint="sha256:rolling-request",
+            period="YTD",
+            resolved_window_length=21,
+            metric="ROLLING_BETA",
+            statistic="p95",
+        )
+        == "sha256:rolling-request:YTD:rolling:21:ROLLING_BETA:p95"
+    )
+    assert _rolling_reason_codes(
+        source_state="DEGRADED",
+        supportability_state="stale",
+        supportability_reason="calculation_stale",
+        period="YTD",
+        metric="ROLLING_SHARPE",
+        statistic="latest",
+        resolved_window_length="unknown",
+        input_mode="stateless",
+        context_reason="RISK_ROLLING_RISK_FREE_UNAVAILABLE",
+    ) == [
+        "RISK_SOURCE_DEGRADED",
+        "RISK_SUPPORTABILITY_STALE",
+        "RISK_REASON_CALCULATION_STALE",
+        "RISK_PERIOD_YTD",
+        "RISK_ROLLING_METRIC_ROLLING_SHARPE",
+        "RISK_ROLLING_STATISTIC_LATEST",
+        "RISK_ROLLING_WINDOW_unknown",
+        "RISK_ROLLING_INPUT_MODE_STATELESS",
+        "RISK_ROLLING_RISK_FREE_UNAVAILABLE",
+    ]
     assert _rolling_window_result(period_result={}, window_length=None) == ({}, "unknown")
     assert _rolling_window_result(
         period_result={"window_results": [{"value": "latest"}]},

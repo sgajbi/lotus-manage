@@ -260,11 +260,7 @@ def realized_rolling_risk_source_from_rolling_response(
     metric_summary = _read_mapping(
         _read_mapping(selected_window.get("metric_summaries")).get(metric)
     )
-    value = (
-        _decimal_value(metric_summary.get(statistic))
-        if metric_summary.get(statistic) is not None
-        else None
-    )
+    value = _rolling_metric_value(metric_summary=metric_summary, statistic=statistic)
     supportability_state, supportability_reason = _supportability(metadata)
     context_reason = _rolling_context_reason(period_result=period_result, metric=metric)
     source_state, quality = _rolling_source_posture(
@@ -272,19 +268,26 @@ def realized_rolling_risk_source_from_rolling_response(
         value=value,
         context_reason=context_reason,
     )
-    if source_state == "READY" and value is None:
-        raise RiskOutcomeSourceError(
-            "lotus-risk rolling response is missing a numeric "
-            f"{metric} {statistic} value for {period} window {resolved_window_length}"
-        )
+    _ensure_ready_rolling_metric_value(
+        source_state=source_state,
+        value=value,
+        metric=metric,
+        statistic=statistic,
+        period=period,
+        resolved_window_length=resolved_window_length,
+    )
 
     input_mode = _read_text(response.get("input_mode")) or "unknown"
     return DpmRealizedSourceSnapshot(
         dimension="RISK_REDUCTION",
         source_system="lotus-risk",
         source_type="ROLLING_RISK_METRICS_REPORT",
-        source_id=(
-            f"{request_fingerprint}:{period}:rolling:{resolved_window_length}:{metric}:{statistic}"
+        source_id=_rolling_source_id(
+            request_fingerprint=request_fingerprint,
+            period=period,
+            resolved_window_length=resolved_window_length,
+            metric=metric,
+            statistic=statistic,
         ),
         value=value if source_state != "NOT_SUPPORTED" else None,
         unit="ratio",
@@ -293,17 +296,17 @@ def realized_rolling_risk_source_from_rolling_response(
         observed_at=_read_text(metric_summary.get("latest_observation_date")),
         as_of_date=_read_text(scope.get("as_of_date")),
         content_hash=request_fingerprint,
-        reason_codes=[
-            _primary_reason(source_state),
-            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
-            f"RISK_REASON_{supportability_reason.upper()}",
-            f"RISK_PERIOD_{period}",
-            f"RISK_ROLLING_METRIC_{metric}",
-            f"RISK_ROLLING_STATISTIC_{statistic.upper()}",
-            f"RISK_ROLLING_WINDOW_{resolved_window_length}",
-            f"RISK_ROLLING_INPUT_MODE_{input_mode.upper()}",
-            context_reason,
-        ],
+        reason_codes=_rolling_reason_codes(
+            source_state=source_state,
+            supportability_state=supportability_state,
+            supportability_reason=supportability_reason,
+            period=period,
+            metric=metric,
+            statistic=statistic,
+            resolved_window_length=resolved_window_length,
+            input_mode=input_mode,
+            context_reason=context_reason,
+        ),
     )
 
 
@@ -591,6 +594,68 @@ def _rolling_window_result(
         ):
             return window_mapping, _resolved_window_length(resolved_window)
     return {}, _fallback_requested_window(window_length)
+
+
+def _rolling_source_id(
+    *,
+    request_fingerprint: str,
+    period: str,
+    resolved_window_length: int | str,
+    metric: RollingRiskOutcomeMetric,
+    statistic: RollingRiskOutcomeStatistic,
+) -> str:
+    return f"{request_fingerprint}:{period}:rolling:{resolved_window_length}:{metric}:{statistic}"
+
+
+def _rolling_metric_value(
+    *,
+    metric_summary: dict[str, Any],
+    statistic: RollingRiskOutcomeStatistic,
+) -> Decimal | None:
+    raw_value = metric_summary.get(statistic)
+    return _decimal_value(raw_value) if raw_value is not None else None
+
+
+def _ensure_ready_rolling_metric_value(
+    *,
+    source_state: _RiskSourceState,
+    value: Decimal | None,
+    metric: RollingRiskOutcomeMetric,
+    statistic: RollingRiskOutcomeStatistic,
+    period: str,
+    resolved_window_length: int | str,
+) -> None:
+    if source_state != "READY" or value is not None:
+        return
+    raise RiskOutcomeSourceError(
+        "lotus-risk rolling response is missing a numeric "
+        f"{metric} {statistic} value for {period} window {resolved_window_length}"
+    )
+
+
+def _rolling_reason_codes(
+    *,
+    source_state: _RiskSourceState,
+    supportability_state: str,
+    supportability_reason: str,
+    period: str,
+    metric: RollingRiskOutcomeMetric,
+    statistic: RollingRiskOutcomeStatistic,
+    resolved_window_length: int | str,
+    input_mode: str,
+    context_reason: str,
+) -> list[str]:
+    return [
+        _primary_reason(source_state),
+        f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+        f"RISK_REASON_{supportability_reason.upper()}",
+        f"RISK_PERIOD_{period}",
+        f"RISK_ROLLING_METRIC_{metric}",
+        f"RISK_ROLLING_STATISTIC_{statistic.upper()}",
+        f"RISK_ROLLING_WINDOW_{resolved_window_length}",
+        f"RISK_ROLLING_INPUT_MODE_{input_mode.upper()}",
+        context_reason,
+    ]
 
 
 def _historical_attribution_source_id(
