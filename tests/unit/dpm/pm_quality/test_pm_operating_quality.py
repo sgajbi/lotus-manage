@@ -1357,3 +1357,58 @@ def test_pm_quality_governance_evidence_rejects_stale_or_unauthorized_policy() -
             generated_by="ops",
             correlation_id="corr-004",
         )
+
+
+def test_pm_quality_governance_expiry_helper_projects_active_posture() -> None:
+    active = scoring._governance_expiry_evaluation(
+        expires_on="2026-06-30",
+        as_of_date="2026-05-12",
+    )
+    no_expiry = scoring._governance_expiry_evaluation(
+        expires_on=None,
+        as_of_date="2026-05-12",
+    )
+
+    assert active.expires_on == "2026-06-30"
+    assert active.reason_codes == ["PM_QUALITY_GOVERNANCE_ACTIVE"]
+    assert no_expiry.expires_on is None
+    assert no_expiry.reason_codes == []
+
+
+def test_pm_quality_governance_expiry_helper_rejects_invalid_or_expired_dates() -> None:
+    with pytest.raises(
+        DpmPmQualityValidationError,
+        match="PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID",
+    ):
+        scoring._governance_expiry_evaluation(
+            expires_on="not-a-date",
+            as_of_date="2026-05-12",
+        )
+
+    with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_GOVERNANCE_EXPIRED"):
+        scoring._governance_expiry_evaluation(
+            expires_on="2026-05-01",
+            as_of_date="2026-05-12",
+        )
+
+
+def test_pm_quality_actor_entitlement_helper_projects_authorization_state() -> None:
+    authorized = scoring._actor_entitlement_evaluation(
+        entitled_actor_ids=[" ops ", ""],
+        generated_by="ops",
+    )
+    not_supplied = scoring._actor_entitlement_evaluation(
+        entitled_actor_ids=[],
+        generated_by="ops",
+    )
+
+    assert authorized.state == "AUTHORIZED"
+    assert authorized.reason_codes == ["PM_QUALITY_ACTOR_AUTHORIZED"]
+    assert not_supplied.state == "NOT_SUPPLIED"
+    assert not_supplied.reason_codes == []
+
+    with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_ACTOR_NOT_ENTITLED"):
+        scoring._actor_entitlement_evaluation(
+            entitled_actor_ids=["ops"],
+            generated_by="unauthorized",
+        )

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T11:31:13+00:00`
+- Generated at: `2026-06-13T11:55:24+00:00`
 
-- Report source snapshot: `0eb99cb3+worktree`
+- Report source snapshot: `240df935+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 2 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 3 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
-| 4 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
-| 5 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
-| 6 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
-| 7 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
-| 8 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
-| 9 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
-| 10 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
+| 1 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
+| 2 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
+| 3 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 4 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
+| 5 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
+| 6 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
+| 7 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
+| 8 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
+| 9 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
+| 10 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
 
 ### Most Complex Current Test Functions
 

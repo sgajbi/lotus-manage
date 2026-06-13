@@ -22143,3 +22143,150 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API router helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-889: PM-quality governance posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, governance controls, and testing.
+- Finding: `_governance_evidence` combined required approval validation, governance expiry
+  parsing, active-expiry reason-code projection, actor entitlement normalization, entitlement
+  failure handling, and evidence assembly in one helper. The behavior was correct, but the
+  governance and entitlement rules were harder to review directly than the PM operating-quality
+  control contract deserves.
+- Action: extracted `_GovernanceExpiryEvaluation`, `_ActorEntitlementEvaluation`,
+  `_governance_expiry_evaluation`, and `_actor_entitlement_evaluation` while preserving existing
+  validation error codes and governance evidence payload shape. Added direct tests for active and
+  absent expiry, invalid and expired dates, authorized actors, unsupplied entitlement allow-lists,
+  and unauthorized actor rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  27 passed, and `_governance_evidence` reduced from B(9) to A(2) under radon.
+- Residual risk: this slice improves internal PM-quality governance maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality governance helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-890: Rebalance execution cash projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/test_engine_settlement_awareness.py`, and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Bank-buyable control area: architecture, execution supportability, and testing.
+- Finding: settlement ladder projection and projected-cash FX intent generation mixed balance
+  projection, breach detection, overdraft warning decisions, missing-FX handling, funding-map
+  projection, and diagnostics mutation in branch-heavy helpers. The behavior was correct, but the
+  execution supportability decisions were harder to review directly than the settlement and funding
+  controls deserve.
+- Action: extracted `_SettlementLadderProjection`, `_ProjectedCashFxResolution`,
+  `_settlement_ladder_projection`, `_settlement_ladder_projection_for_currency`, and
+  `_projected_cash_fx_resolution`, plus small projection-flattening helpers. Removed the now-stale
+  `_append_cash_ladder_point` helper. Added direct tests for per-currency settlement points,
+  breaches, overdraft utilization, missing-FX blocking posture, and funding FX intent projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_settlement_awareness.py tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/execution.py -s`; the focused execution suites reported
+  29 passed, `_append_settlement_ladder_points` reduced from B(7) to A(2), and
+  `_append_projected_cash_fx_intents` reduced from B(7) to B(6) under radon.
+- Residual risk: this slice improves internal rebalance execution supportability maintainability
+  only. It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal execution helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-891: Rebalance-run filter query assembly helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/rebalance_runs/run_query.py` and
+  `tests/unit/dpm/supportability/test_run_query.py`.
+- Bank-buyable control area: architecture, query maintainability, and testing.
+- Finding: `build_run_filter_query` combined scalar filter assembly, backend-specific placeholder
+  rendering, cursor pagination SQL, ordered argument projection, and final `WHERE` rendering in one
+  helper shared by SQLite and Postgres repositories. The behavior was correct, but the query-shape
+  contract was harder to review than a shared supportability repository helper should be.
+- Action: extracted `_RunFilterParts`, `_run_scalar_filter_query`, and
+  `_run_cursor_filter_query` so scalar filters and cursor pagination can be reviewed independently
+  while preserving existing placeholder and argument ordering. Added direct tests for scalar
+  clause ordering, ISO datetime argument projection, cursor argument repetition, and cursor SQL
+  shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/run_query.py tests/unit/dpm/supportability/test_run_query.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/run_query.py tests/unit/dpm/supportability/test_run_query.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/run_query.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_run_query.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/rebalance_runs/run_query.py -s`; the focused run-query
+  suite reported 5 passed, and `build_run_filter_query` reduced from B(7) to A(2).
+- Residual risk: this slice improves shared query assembly maintainability only. It does not
+  change repository pagination semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-892: OpenAPI schema example strategy dispatcher
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: `_example_from_schema` performed declared-example, `$ref`, composite, collection, and
+  fallback example resolution directly in one helper. The behavior was correct, but the generated
+  Swagger example strategy order was harder to review than the OpenAPI quality gate deserves.
+- Action: extracted `_resolved_schema_example` as a strategy dispatcher for `$ref`, composite, and
+  collection examples while preserving declared-example precedence and fallback inference. Added
+  direct coverage for ref, oneOf array, map/additionalProperties, and no-match strategy behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment suite
+  reported 29 passed, and `_example_from_schema` reduced from B(7) to A(5) under radon.
+- Residual risk: this slice improves OpenAPI enrichment maintainability only. It does not change
+  API schema truth, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-893: OpenAPI explicit-null example preservation
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: PR review identified that `_resolved_schema_example` collapsed the existing
+  `(matched, example)` helper contract into an optional example value. That made an explicit
+  `example: null` resolved through a `$ref` indistinguishable from no schema-derived example,
+  allowing fallback inference to fabricate a non-null sample.
+- Action: restored the dispatcher to return `(matched, example)` and updated `_example_from_schema`
+  to use the matched flag. Added direct regression coverage proving a referenced schema with
+  `example: null` remains a matched null example.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`, and
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`; the focused OpenAPI
+  enrichment helper suite reported 30 passed.
+- Residual risk: this slice preserves generated OpenAPI example semantics only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  correctness hardening with no operator-facing contract change.

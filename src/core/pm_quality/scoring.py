@@ -77,6 +77,18 @@ class _FairnessPosture:
     reason_codes: list[str]
 
 
+@dataclass(frozen=True)
+class _GovernanceExpiryEvaluation:
+    expires_on: str | None
+    reason_codes: list[str]
+
+
+@dataclass(frozen=True)
+class _ActorEntitlementEvaluation:
+    state: Literal["AUTHORIZED", "NOT_SUPPLIED"]
+    reason_codes: list[str]
+
+
 _PM_QUALITY_STATE_RANK: dict[str, int] = {
     "BLOCKED": 6,
     "BREACHED": 5,
@@ -898,25 +910,16 @@ def _governance_evidence(
         raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED")
 
     reason_codes = ["PM_QUALITY_GOVERNANCE_APPROVED", "PM_QUALITY_FAIRNESS_REVIEWED"]
-    if governance.expires_on is not None:
-        try:
-            expires_on = date.fromisoformat(governance.expires_on)
-            run_as_of = date.fromisoformat(as_of_date)
-        except ValueError as exc:
-            raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID") from exc
-        if expires_on < run_as_of:
-            raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRED")
-        reason_codes.append("PM_QUALITY_GOVERNANCE_ACTIVE")
-
-    actor_entitlement_state: Literal["AUTHORIZED", "NOT_SUPPLIED"] = "NOT_SUPPLIED"
-    entitled_actor_ids = {
-        actor_id.strip() for actor_id in governance.entitled_actor_ids if actor_id.strip()
-    }
-    if entitled_actor_ids:
-        if generated_by not in entitled_actor_ids:
-            raise DpmPmQualityValidationError("PM_QUALITY_ACTOR_NOT_ENTITLED")
-        actor_entitlement_state = "AUTHORIZED"
-        reason_codes.append("PM_QUALITY_ACTOR_AUTHORIZED")
+    expiry = _governance_expiry_evaluation(
+        expires_on=governance.expires_on,
+        as_of_date=as_of_date,
+    )
+    entitlement = _actor_entitlement_evaluation(
+        entitled_actor_ids=governance.entitled_actor_ids,
+        generated_by=generated_by,
+    )
+    reason_codes.extend(expiry.reason_codes)
+    reason_codes.extend(entitlement.reason_codes)
 
     return DpmPmQualityGovernanceEvidence(
         approval_ref=governance.approval_ref,
@@ -925,10 +928,46 @@ def _governance_evidence(
         fairness_review_ref=governance.fairness_review_ref,
         fairness_reviewed_by=governance.fairness_reviewed_by,
         fairness_reviewed_at=governance.fairness_reviewed_at,
-        expires_on=governance.expires_on,
-        actor_entitlement_state=actor_entitlement_state,
+        expires_on=expiry.expires_on,
+        actor_entitlement_state=entitlement.state,
         reason_codes=reason_codes,
         source_refs=governance.source_refs,
+    )
+
+
+def _governance_expiry_evaluation(
+    *,
+    expires_on: str | None,
+    as_of_date: str,
+) -> _GovernanceExpiryEvaluation:
+    if expires_on is None:
+        return _GovernanceExpiryEvaluation(expires_on=None, reason_codes=[])
+    try:
+        expiry_date = date.fromisoformat(expires_on)
+        run_as_of = date.fromisoformat(as_of_date)
+    except ValueError as exc:
+        raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID") from exc
+    if expiry_date < run_as_of:
+        raise DpmPmQualityValidationError("PM_QUALITY_GOVERNANCE_EXPIRED")
+    return _GovernanceExpiryEvaluation(
+        expires_on=expires_on,
+        reason_codes=["PM_QUALITY_GOVERNANCE_ACTIVE"],
+    )
+
+
+def _actor_entitlement_evaluation(
+    *,
+    entitled_actor_ids: list[str],
+    generated_by: str,
+) -> _ActorEntitlementEvaluation:
+    entitled = {actor_id.strip() for actor_id in entitled_actor_ids if actor_id.strip()}
+    if not entitled:
+        return _ActorEntitlementEvaluation(state="NOT_SUPPLIED", reason_codes=[])
+    if generated_by not in entitled:
+        raise DpmPmQualityValidationError("PM_QUALITY_ACTOR_NOT_ENTITLED")
+    return _ActorEntitlementEvaluation(
+        state="AUTHORIZED",
+        reason_codes=["PM_QUALITY_ACTOR_AUTHORIZED"],
     )
 
 
