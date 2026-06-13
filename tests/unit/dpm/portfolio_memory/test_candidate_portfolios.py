@@ -1,6 +1,10 @@
 import pytest
 
 from src.core.portfolio_memory.candidate_portfolios import (
+    _campaign_definition_candidate_ids,
+    _explicit_candidate_ids,
+    _mandate_exception_candidate_ids,
+    _pm_quality_candidate_ids,
     candidate_portfolio_ids,
     candidate_portfolio_ids_from_sources,
 )
@@ -75,6 +79,33 @@ def test_candidate_portfolio_ids_default_optional_repositories_to_empty_sources(
     )
 
     assert candidates == [PORTFOLIO_ID]
+
+
+def test_candidate_portfolio_source_helpers_preserve_family_boundaries() -> None:
+    proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    campaign_repository.save_definition(definition=_campaign_definition())
+    pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
+    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    repositories = PortfolioMemorySourceRepositories(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        campaign_definition_repository=campaign_repository,
+        pm_quality_score_run_repository=pm_quality_repository,
+    )
+
+    assert _explicit_candidate_ids([" PB_MANUAL_001 ", "", "PB_MANUAL_002"]) == {
+        "PB_MANUAL_001",
+        "PB_MANUAL_002",
+    }
+    assert _mandate_exception_candidate_ids(repositories, 100) == {PORTFOLIO_ID}
+    assert _campaign_definition_candidate_ids(repositories, 100) == {PORTFOLIO_ID}
+    assert _pm_quality_candidate_ids(repositories, 100) == {
+        PORTFOLIO_ID,
+        "PB_SG_GLOBAL_INC_002",
+    }
 
 
 @pytest.mark.parametrize(

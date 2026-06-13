@@ -21779,3 +21779,33 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal read-model maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-877: Portfolio-memory candidate source-family helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/portfolio_memory/candidate_portfolios.py` and
+  `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `candidate_portfolio_ids_from_sources` aggregated explicit portfolio ids, proof-pack
+  portfolios, wave item portfolios, outcome reviews, mandate monitoring exceptions, campaign
+  candidates, and PM-quality book-scope evidence in one function. The behavior was correct, but the
+  source-family boundaries were harder to inspect than the portfolio-memory search contract
+  requires.
+- Action: extracted one helper per candidate source family plus an explicit-input cleanup helper,
+  leaving the public candidate merge and sorting behavior unchanged. Added a direct helper test for
+  manual-id normalization, mandate exception candidates, campaign definition candidates, and
+  PM-quality member-scope candidates.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/candidate_portfolios.py tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`,
+  `python -m ruff format --check src/core/portfolio_memory/candidate_portfolios.py tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/candidate_portfolios.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py -q`, and
+  `python -m radon cc src/core/portfolio_memory/candidate_portfolios.py -s`; the focused
+  portfolio-memory candidate suite reported 6 passed and `candidate_portfolio_ids_from_sources`
+  reduced from C(17) to A(1).
+- Residual risk: this slice improves internal portfolio-memory source aggregation
+  maintainability only. It does not certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal portfolio-memory
+  maintainability hardening with no operator-facing contract change.
