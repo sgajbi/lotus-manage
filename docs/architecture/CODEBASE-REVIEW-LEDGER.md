@@ -20784,3 +20784,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal rebalance intent safety
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-842: Campaign operating queue posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/campaign_operating_queue.py`,
+  `tests/unit/dpm/waves/test_campaign_discovery.py`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`.
+- Finding: `_classify_queue_posture` was the top current source-complexity hotspot after the
+  security intent constraint slice and mixed terminal campaign-definition handling, preview
+  readiness, discovery expiry reason enrichment, and fallback review-required semantics in one
+  helper.
+- Action: extracted explicit closed-posture and attention-reason helpers, centralized discovery
+  expiry reason-code mapping, and preserved ready-to-launch precedence and bounded queue status
+  results. Added direct tests for closed-state precedence and expiry reason de-duplication through
+  real campaign definition/readiness/discovery models.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_operating_queue.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_operating_queue.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_operating_queue.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal campaign operating queue
+  maintainability refactoring and repo-local quality evidence.

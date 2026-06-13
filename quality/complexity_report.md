@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T00:18:05+00:00`
+- Generated at: `2026-06-13T00:23:52+00:00`
 
-- Current ref: `0d12a9dd`
+- Current ref: `61b57d25`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
-| 2 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
-| 3 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
-| 4 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
-| 5 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
-| 6 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
-| 7 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
-| 8 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
-| 9 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
-| 10 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
+| 1 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
+| 2 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
+| 3 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
+| 4 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
+| 5 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
+| 6 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
+| 7 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
+| 8 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
+| 9 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
+| 10 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
 
 ### Most Complex Current Test Functions
 

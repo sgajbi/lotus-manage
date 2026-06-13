@@ -27,6 +27,9 @@ from src.core.waves.campaign_definition_readiness import (
 )
 from src.core.waves.campaign_operating_queue import (
     DpmBulkReviewCampaignOperatingQueuePage,
+    _attention_queue_reason_codes,
+    _classify_queue_posture,
+    _closed_queue_posture,
     build_bulk_review_campaign_operating_queue_item,
     build_bulk_review_campaign_operating_queue_page,
 )
@@ -325,6 +328,50 @@ def test_campaign_operating_queue_classifies_ready_and_attention_rows() -> None:
     assert attention_item.queue_status == "ATTENTION_REQUIRED"
     assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in attention_item.queue_reason_codes
     assert "NO_OMS_EXECUTION_CLAIM" in attention_item.operating_boundaries
+
+
+def test_campaign_operating_queue_posture_helpers_preserve_precedence() -> None:
+    retired_definition = _definition().model_copy(update={"status": "RETIRED"})
+    retired_discovery = build_bulk_review_campaign_discovery_item(
+        definition=retired_definition,
+        active_on=date(2026, 5, 16),
+    )
+    retired_readiness = build_bulk_review_campaign_definition_preview_readiness(
+        definition=retired_definition,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+    )
+
+    assert _closed_queue_posture(definition=retired_definition) == (
+        "CLOSED",
+        ["CAMPAIGN_DEFINITION_RETIRED"],
+    )
+    assert _classify_queue_posture(
+        definition=retired_definition,
+        readiness=retired_readiness,
+        discovery=retired_discovery,
+    ) == ("CLOSED", ["CAMPAIGN_DEFINITION_RETIRED"])
+
+
+def test_campaign_operating_queue_attention_reasons_are_deduplicated() -> None:
+    expired_definition = _definition(expires_on="2026-05-01")
+    expired_discovery = build_bulk_review_campaign_discovery_item(
+        definition=expired_definition,
+        active_on=date(2026, 5, 16),
+    )
+    expired_readiness = build_bulk_review_campaign_definition_preview_readiness(
+        definition=expired_definition,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+    )
+
+    reasons = _attention_queue_reason_codes(
+        readiness=expired_readiness,
+        discovery=expired_discovery,
+    )
+
+    assert reasons.count("CAMPAIGN_DEFINITION_EXPIRED") == 1
+    assert "BULK_REVIEW_CAMPAIGN_EXPIRED" in reasons
 
 
 def test_campaign_operating_queue_page_filters_expired_rows_and_counts_statuses() -> None:
