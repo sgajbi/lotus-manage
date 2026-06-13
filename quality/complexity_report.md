@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T02:30:34+00:00`
+- Generated at: `2026-06-13T04:37:23+00:00`
 
-- Current ref: `a226f316`
+- Current ref: `b4ace7a0`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
-| 2 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
-| 3 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
-| 4 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
-| 5 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
-| 6 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
-| 7 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
-| 8 | build_health_input_from_core_sources | src/core/mandates.py | 7 | 57 |
-| 9 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
-| 10 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
+| 1 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
+| 2 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
+| 3 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
+| 4 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
+| 5 | _apply_migrations_locked | src/infrastructure/postgres_migrations.py | 7 | 59 |
+| 6 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
+| 7 | build_health_input_from_core_sources | src/core/mandates.py | 7 | 57 |
+| 8 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
+| 9 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
+| 10 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
 
 ### Most Complex Current Test Functions
 

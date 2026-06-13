@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-13T02:30:34+00:00`
+- Generated at: `2026-06-13T04:37:23+00:00`
 
-- Current ref: `a226f316`
+- Current ref: `b4ace7a0`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -13,7 +13,7 @@
 | Unit tests | Active gate | `make check` runs `tests/unit`. |
 | OpenAPI governance | Active gate | `scripts/openapi_quality_gate.py`. |
 | API vocabulary | Active gate | `scripts/api_vocabulary_inventory.py --validate-only`. |
-| Service boundary leakage | Report plus focused scans | Current service boundary findings: 0. |
+| Service boundary | Active gate | `scripts/service_boundary_gate.py`. |
 | Router infrastructure imports | Baseline debt | Current router infra imports: 0. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 0. |
 | Complexity | Report-only baseline | `quality/complexity_report.md`; add thresholds after baseline review. |
