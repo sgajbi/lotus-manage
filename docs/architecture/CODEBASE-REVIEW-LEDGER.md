@@ -21500,3 +21500,29 @@ and improves internal transaction-cost source posture maintainability only.
   product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack builder
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-867: Postgres wave save helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/waves/postgres.py` and
+  `tests/unit/dpm/waves/test_wave_domain.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `PostgresDpmWaveRepository.save_wave` still mixed idempotency conflict detection,
+  durable wave insertion, idempotency marker insertion, event insertion, and commit orchestration in
+  one repository method. The behavior was correct, but the persistence contract was harder to
+  review than necessary for durable DPM wave creation and replay safety.
+- Action: extracted repository-local helpers for idempotency conflict detection, durable wave row
+  insertion, and idempotency marker insertion while leaving transaction orchestration in
+  `save_wave`. Added focused helper tests for no-key idempotency behavior, durable create payload
+  persistence, event persistence, and duplicate wave-id rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/waves/postgres.py tests/unit/dpm/waves/test_wave_domain.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_domain.py -q`,
+  and `python -m radon cc src/infrastructure/waves/postgres.py -s`; the focused wave domain suite
+  reported 21 passed and `PostgresDpmWaveRepository.save_wave` reduced from B(7) to A(1).
+- Residual risk: this slice improves internal DPM wave persistence maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure maintainability
+  hardening with no operator-facing contract change.

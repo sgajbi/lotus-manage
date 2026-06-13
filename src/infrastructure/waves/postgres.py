@@ -33,58 +33,19 @@ class PostgresDpmWaveRepository:
         request_hash: str | None,
     ) -> None:
         with closing(self._connect()) as connection:
-            if idempotency_key is not None:
-                existing = connection.execute(
-                    """
-                    SELECT wave_id, request_hash
-                    FROM dpm_rebalance_wave_idempotency
-                    WHERE idempotency_key = %s
-                    """,
-                    (idempotency_key,),
-                ).fetchone()
-                if existing is not None and (
-                    existing["wave_id"] != wave.wave_id or existing["request_hash"] != request_hash
-                ):
-                    raise DpmWaveIdempotencyConflictError("DPM_WAVE_IDEMPOTENCY_CONFLICT")
-
-            result = connection.execute(
-                """
-                INSERT INTO dpm_rebalance_waves (
-                    wave_id,
-                    state,
-                    trigger_type,
-                    as_of_date,
-                    created_at,
-                    created_by,
-                    correlation_id,
-                    version,
-                    wave_json,
-                    retention_policy
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (wave_id) DO NOTHING
-                """,
-                _wave_row_args(wave),
+            _raise_if_idempotency_conflict(
+                connection=connection,
+                wave=wave,
+                idempotency_key=idempotency_key,
+                request_hash=request_hash,
             )
-            if result.rowcount != 1:
-                raise DpmWaveAlreadyExistsError("DPM_WAVE_ALREADY_EXISTS")
-            if idempotency_key is not None:
-                connection.execute(
-                    """
-                    INSERT INTO dpm_rebalance_wave_idempotency (
-                        idempotency_key,
-                        wave_id,
-                        request_hash,
-                        created_at
-                    ) VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (idempotency_key) DO NOTHING
-                    """,
-                    (
-                        idempotency_key,
-                        wave.wave_id,
-                        request_hash,
-                        datetime.now(timezone.utc),
-                    ),
-                )
+            _insert_wave_row(connection=connection, wave=wave)
+            _insert_idempotency_marker(
+                connection=connection,
+                wave=wave,
+                idempotency_key=idempotency_key,
+                request_hash=request_hash,
+            )
             _insert_new_events(connection=connection, wave=wave)
             connection.commit()
 
@@ -199,6 +160,80 @@ def _wave_row_args(wave: DpmRebalanceWave) -> tuple[Any, ...]:
         wave.version,
         dump_model_json(wave),
         wave.retention_policy,
+    )
+
+
+def _raise_if_idempotency_conflict(
+    *,
+    connection: Any,
+    wave: DpmRebalanceWave,
+    idempotency_key: str | None,
+    request_hash: str | None,
+) -> None:
+    if idempotency_key is None:
+        return
+    existing = connection.execute(
+        """
+        SELECT wave_id, request_hash
+        FROM dpm_rebalance_wave_idempotency
+        WHERE idempotency_key = %s
+        """,
+        (idempotency_key,),
+    ).fetchone()
+    if existing is not None and (
+        existing["wave_id"] != wave.wave_id or existing["request_hash"] != request_hash
+    ):
+        raise DpmWaveIdempotencyConflictError("DPM_WAVE_IDEMPOTENCY_CONFLICT")
+
+
+def _insert_wave_row(*, connection: Any, wave: DpmRebalanceWave) -> None:
+    result = connection.execute(
+        """
+        INSERT INTO dpm_rebalance_waves (
+            wave_id,
+            state,
+            trigger_type,
+            as_of_date,
+            created_at,
+            created_by,
+            correlation_id,
+            version,
+            wave_json,
+            retention_policy
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (wave_id) DO NOTHING
+        """,
+        _wave_row_args(wave),
+    )
+    if result.rowcount != 1:
+        raise DpmWaveAlreadyExistsError("DPM_WAVE_ALREADY_EXISTS")
+
+
+def _insert_idempotency_marker(
+    *,
+    connection: Any,
+    wave: DpmRebalanceWave,
+    idempotency_key: str | None,
+    request_hash: str | None,
+) -> None:
+    if idempotency_key is None:
+        return
+    connection.execute(
+        """
+        INSERT INTO dpm_rebalance_wave_idempotency (
+            idempotency_key,
+            wave_id,
+            request_hash,
+            created_at
+        ) VALUES (%s, %s, %s, %s)
+        ON CONFLICT (idempotency_key) DO NOTHING
+        """,
+        (
+            idempotency_key,
+            wave.wave_id,
+            request_hash,
+            datetime.now(timezone.utc),
+        ),
     )
 
 

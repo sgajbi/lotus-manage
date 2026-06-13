@@ -345,6 +345,50 @@ def _postgres_repository(fake: _FakeWaveConnection) -> PostgresDpmWaveRepository
     return repository
 
 
+def test_postgres_wave_idempotency_conflict_helper_is_noop_without_key() -> None:
+    fake = _FakeWaveConnection()
+
+    postgres_module._raise_if_idempotency_conflict(  # noqa: SLF001
+        connection=fake,
+        wave=_wave(),
+        idempotency_key=None,
+        request_hash=None,
+    )
+
+    assert fake.queries == []
+
+
+def test_postgres_wave_insert_helpers_preserve_durable_create_contract() -> None:
+    fake = _FakeWaveConnection()
+    wave = apply_wave_transition(
+        wave=_wave(),
+        to_state="PREVIEWED",
+        event=_event("DRAFT", "PREVIEWED"),
+    )
+
+    postgres_module._insert_wave_row(connection=fake, wave=wave)  # noqa: SLF001
+    postgres_module._insert_idempotency_marker(  # noqa: SLF001
+        connection=fake,
+        wave=wave,
+        idempotency_key="idem-1",
+        request_hash="hash-1",
+    )
+    postgres_module._insert_new_events(connection=fake, wave=wave)  # noqa: SLF001
+
+    assert fake.waves[wave.wave_id]["state"] == "PREVIEWED"
+    assert fake.idempotency["idem-1"]["wave_id"] == wave.wave_id
+    assert sorted(fake.events) == ["evt-draft-previewed"]
+
+
+def test_postgres_wave_insert_helper_rejects_duplicate_wave_id() -> None:
+    fake = _FakeWaveConnection()
+    wave = _wave()
+    postgres_module._insert_wave_row(connection=fake, wave=wave)  # noqa: SLF001
+
+    with pytest.raises(DpmWaveAlreadyExistsError):
+        postgres_module._insert_wave_row(connection=fake, wave=wave)  # noqa: SLF001
+
+
 def test_postgres_wave_repository_roundtrip_idempotency_and_update() -> None:
     fake = _FakeWaveConnection()
     repository = _postgres_repository(fake)
