@@ -416,41 +416,29 @@ class DpmRunSupportService:
         if run is None:
             raise DpmRunNotFoundError("DPM_RUN_NOT_FOUND")
 
-        artifact = self._resolve_run_artifact(run=run) if include_artifact else None
-        async_operation = None
-        if include_async_operation:
-            operation = self._repository.get_operation_by_correlation(
-                correlation_id=run.correlation_id
-            )
-            if operation is not None:
-                async_operation = to_async_status(operation)
-
-        idempotency_history = None
-        if include_idempotency_history and run.idempotency_key is not None:
-            history = self._repository.list_idempotency_history(idempotency_key=run.idempotency_key)
-            idempotency_history = to_idempotency_history_response(
-                idempotency_key=run.idempotency_key,
-                history=history,
-            )
-
-        decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
-        decisions = sorted(decisions, key=lambda item: item.decided_at)
-        workflow_history = DpmRunWorkflowHistoryResponse(
-            run_id=rebalance_run_id,
-            decisions=[to_workflow_decision_response(decision) for decision in decisions],
-        )
-
-        edges = self._repository.list_lineage_edges(entity_id=rebalance_run_id)
-        edges = sorted(
-            edges,
-            key=lambda edge: (
-                edge.created_at,
-                edge.source_entity_id,
-                edge.edge_type,
-                edge.target_entity_id,
+        artifact = self._support_bundle_artifact(run=run, include_artifact=include_artifact)
+        async_operation = _support_bundle_async_operation(
+            run=run,
+            operation=self._support_bundle_operation_record(
+                run=run,
+                include_async_operation=include_async_operation,
             ),
         )
-        lineage = to_lineage_response(entity_id=rebalance_run_id, edges=edges, next_cursor=None)
+        idempotency_history = _support_bundle_idempotency_history(
+            run=run,
+            history=self._support_bundle_idempotency_records(
+                run=run,
+                include_idempotency_history=include_idempotency_history,
+            ),
+        )
+        workflow_history = _support_bundle_workflow_history(
+            rebalance_run_id=rebalance_run_id,
+            decisions=self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id),
+        )
+        lineage = _support_bundle_lineage(
+            rebalance_run_id=rebalance_run_id,
+            edges=self._repository.list_lineage_edges(entity_id=rebalance_run_id),
+        )
 
         return DpmRunSupportBundleResponse(
             run=to_lookup_response(run),
@@ -460,6 +448,33 @@ class DpmRunSupportService:
             lineage=lineage,
             idempotency_history=idempotency_history,
         )
+
+    def _support_bundle_artifact(
+        self, *, run: DpmRunRecord, include_artifact: bool
+    ) -> Optional[DpmRunArtifactResponse]:
+        if not include_artifact:
+            return None
+        return self._resolve_run_artifact(run=run)
+
+    def _support_bundle_operation_record(
+        self,
+        *,
+        run: DpmRunRecord,
+        include_async_operation: bool,
+    ) -> Optional[DpmAsyncOperationRecord]:
+        if not include_async_operation:
+            return None
+        return self._repository.get_operation_by_correlation(correlation_id=run.correlation_id)
+
+    def _support_bundle_idempotency_records(
+        self,
+        *,
+        run: DpmRunRecord,
+        include_idempotency_history: bool,
+    ) -> Optional[list[DpmRunIdempotencyHistoryRecord]]:
+        if not include_idempotency_history or run.idempotency_key is None:
+            return None
+        return self._repository.list_idempotency_history(idempotency_key=run.idempotency_key)
 
     def get_run_support_bundle_by_correlation(
         self,
@@ -853,6 +868,55 @@ class DpmRunSupportService:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _support_bundle_async_operation(
+    *,
+    run: DpmRunRecord,
+    operation: Optional[DpmAsyncOperationRecord],
+) -> Optional[DpmAsyncOperationStatusResponse]:
+    if operation is None or operation.correlation_id != run.correlation_id:
+        return None
+    return to_async_status(operation)
+
+
+def _support_bundle_idempotency_history(
+    *,
+    run: DpmRunRecord,
+    history: Optional[list[DpmRunIdempotencyHistoryRecord]],
+) -> Optional[DpmRunIdempotencyHistoryResponse]:
+    if run.idempotency_key is None or history is None:
+        return None
+    return to_idempotency_history_response(
+        idempotency_key=run.idempotency_key,
+        history=history,
+    )
+
+
+def _support_bundle_workflow_history(
+    *,
+    rebalance_run_id: str,
+    decisions: list[DpmRunWorkflowDecisionRecord],
+) -> DpmRunWorkflowHistoryResponse:
+    return DpmRunWorkflowHistoryResponse(
+        run_id=rebalance_run_id,
+        decisions=[
+            to_workflow_decision_response(decision)
+            for decision in sorted(decisions, key=lambda item: item.decided_at)
+        ],
+    )
+
+
+def _support_bundle_lineage(
+    *,
+    rebalance_run_id: str,
+    edges: list[DpmLineageEdgeRecord],
+) -> DpmLineageResponse:
+    return to_lineage_response(
+        entity_id=rebalance_run_id,
+        edges=_sort_lineage_edges(edges),
+        next_cursor=None,
+    )
 
 
 def _sort_lineage_edges(edges: list[DpmLineageEdgeRecord]) -> list[DpmLineageEdgeRecord]:

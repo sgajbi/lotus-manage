@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T09:52:20+00:00`
+- Generated at: `2026-06-13T10:09:36+00:00`
 
-- Report source snapshot: `41500362+worktree`
+- Report source snapshot: `0fa63555+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | get_run_support_bundle | src/core/rebalance_runs/service.py | 7 | 58 |
-| 2 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
-| 3 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
-| 4 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 5 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
-| 6 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
-| 7 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
-| 8 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 9 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 10 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 1 | resolve_stateful_source_context | src/api/services/rebalance_stateful_source_context.py | 7 | 54 |
+| 2 | _pre_run_section_payload | src/core/proof_packs/builder.py | 7 | 51 |
+| 3 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
+| 4 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
+| 5 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
+| 6 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
+| 7 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
+| 8 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
+| 9 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 10 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
 
 ### Most Complex Current Test Functions
 
