@@ -109,6 +109,14 @@ class _CashflowProjectionPolicyAssessment:
     adjusted_cash_below_policy: bool
 
 
+@dataclass(frozen=True)
+class _CashflowProjectionPolicyInputs:
+    projection: AuthoritativeLiquidityCashflowProjection
+    currency_mismatch: bool
+    total_value_unavailable: bool
+    effective_cash_weight: Decimal | None
+
+
 def _cashflow_projection_policy_assessment(
     *,
     result: RebalanceResult,
@@ -119,6 +127,46 @@ def _cashflow_projection_policy_assessment(
     projection = context.cashflow_projection
     if projection is None:
         return None
+    inputs = _cashflow_projection_policy_inputs(
+        result=result,
+        projection=projection,
+        cash_weight=cash_weight,
+        derive_cash_weight=derive_cash_weight,
+    )
+    projected_weight = _policy_projected_cashflow_weight(
+        result=result,
+        context=context,
+        cash_weight=inputs.effective_cash_weight,
+        currency_mismatch=inputs.currency_mismatch,
+        total_value_unavailable=inputs.total_value_unavailable,
+    )
+    below_policy = _adjusted_cash_below_policy(
+        cash_weight=inputs.effective_cash_weight,
+        projected_cash_weight=projected_weight,
+        minimum_cash_weight=context.minimum_cash_weight,
+    )
+    status = _cashflow_projection_assessed_status(
+        projection=inputs.projection,
+        currency_mismatch=inputs.currency_mismatch,
+        total_value_unavailable=inputs.total_value_unavailable,
+        below_policy=below_policy,
+    )
+    return _CashflowProjectionPolicyAssessment(
+        status=status,
+        currency_mismatch=inputs.currency_mismatch,
+        post_trade_total_value_unavailable=inputs.total_value_unavailable,
+        projected_cash_weight=projected_weight,
+        adjusted_cash_below_policy=below_policy,
+    )
+
+
+def _cashflow_projection_policy_inputs(
+    *,
+    result: RebalanceResult,
+    projection: AuthoritativeLiquidityCashflowProjection,
+    cash_weight: Decimal | None,
+    derive_cash_weight: bool,
+) -> _CashflowProjectionPolicyInputs:
     currency_mismatch = _cashflow_projection_currency_mismatch(
         result=result,
         projection=projection,
@@ -131,30 +179,24 @@ def _cashflow_projection_policy_assessment(
         if derive_cash_weight and cash_weight is None
         else cash_weight
     )
-    projected_weight = _policy_projected_cashflow_weight(
-        result=result,
-        context=context,
-        cash_weight=effective_cash_weight,
-        currency_mismatch=currency_mismatch,
-        total_value_unavailable=total_value_unavailable,
-    )
-    below_policy = (
-        effective_cash_weight is not None
-        and projected_weight is not None
-        and effective_cash_weight + projected_weight < context.minimum_cash_weight
-    )
-    status = _cashflow_projection_assessed_status(
+    return _CashflowProjectionPolicyInputs(
         projection=projection,
         currency_mismatch=currency_mismatch,
         total_value_unavailable=total_value_unavailable,
-        below_policy=below_policy,
+        effective_cash_weight=effective_cash_weight,
     )
-    return _CashflowProjectionPolicyAssessment(
-        status=status,
-        currency_mismatch=currency_mismatch,
-        post_trade_total_value_unavailable=total_value_unavailable,
-        projected_cash_weight=projected_weight,
-        adjusted_cash_below_policy=below_policy,
+
+
+def _adjusted_cash_below_policy(
+    *,
+    cash_weight: Decimal | None,
+    projected_cash_weight: Decimal | None,
+    minimum_cash_weight: Decimal,
+) -> bool:
+    return (
+        cash_weight is not None
+        and projected_cash_weight is not None
+        and cash_weight + projected_cash_weight < minimum_cash_weight
     )
 
 

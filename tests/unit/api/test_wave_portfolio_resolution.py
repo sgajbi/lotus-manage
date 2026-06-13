@@ -9,6 +9,7 @@ from src.api.routers.wave_portfolio_resolution import (
     _require_tactical_house_view_source_refs,
     _required_tactical_house_view,
     _tactical_house_view_authority_request_for_wave,
+    resolve_portfolio_inputs_for_request,
 )
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.services import wave_service
@@ -86,6 +87,24 @@ def test_tactical_house_view_authority_request_for_wave_maps_source_context() ->
     assert authority_request.candidate_portfolios[0]["portfolio_id"] == ("PB_SG_GLOBAL_BAL_001")
     assert authority_request.eligible_portfolio_types == ["DISCRETIONARY", "DPM"]
     assert authority_request.min_exposure_weight == Decimal("0.05")
+
+
+def test_portfolio_resolution_dispatch_preserves_explicit_portfolio_payloads() -> None:
+    request = _tactical_house_view_request(
+        trigger_type="EXPLICIT_PORTFOLIO_LIST",
+        tactical_house_view=None,
+    )
+
+    resolved = resolve_portfolio_inputs_for_request(
+        request=request,
+        correlation_id="corr-wave-dispatch",
+        advise_authority_client=None,
+        risk_authority_client=None,
+        campaign_definition_repository=object(),
+        core_resolver_factory=object,
+    )
+
+    assert resolved == [portfolio.model_dump(mode="json") for portfolio in request.portfolios]
 
 
 def test_tactical_house_view_resolution_helpers_reject_missing_source_evidence() -> None:

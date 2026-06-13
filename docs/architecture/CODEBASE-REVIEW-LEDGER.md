@@ -22022,3 +22022,124 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is CI warning remediation with no
   operator-facing product contract change.
+
+## BACKEND-REVIEW-20260613-885: Rebalance turnover budget selection helper
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance/turnover.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`.
+- Bank-buyable control area: architecture, testing, and portfolio execution supportability.
+- Finding: `apply_turnover_limit` combined turnover-cap policy dispatch, ranked selection,
+  dropped-intent diagnostic projection, and warning mutation in one function. The behavior was
+  correct, but the budget-selection rule was harder to review directly than a mandate execution
+  constraint should be.
+- Action: extracted a typed `_TurnoverSelection`, a pure `_select_turnover_budget_intents` helper,
+  and `_ranked_turnover_intents` while preserving the public turnover-cap behavior and diagnostic
+  payload shape. Added direct helper coverage proving ranked exact-fit selection, missing-notional
+  omission, dropped-intent projection, and governed base-currency notional evidence.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python -m ruff format --check src/core/rebalance/turnover.py tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/turnover.py`,
+  `python -m pytest tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py tests/unit/dpm/engine/test_engine_turnover_control.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/rebalance/turnover.py -s`; the focused turnover suites reported
+  18 passed, and `apply_turnover_limit` reduced from B(7) to A(4).
+- Residual risk: this slice improves internal turnover-control maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal execution-control helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-886: Cashflow projection policy input helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_liquidity_supportability.py` and
+  `tests/unit/dpm/construction/test_liquidity_supportability.py`.
+- Bank-buyable control area: architecture, testing, and construction supportability.
+- Finding: `_cashflow_projection_policy_assessment` combined source projection availability,
+  currency/total-value guardrails, effective cash-weight derivation, projected cash-weight
+  calculation, adjusted-policy thresholding, and status assembly in one function. The behavior was
+  correct, but the source-owned cashflow projection policy semantics were harder to review directly
+  than the construction supportability contract deserves.
+- Action: extracted `_CashflowProjectionPolicyInputs`, `_cashflow_projection_policy_inputs`, and
+  `_adjusted_cash_below_policy` so the assessment reads as policy assembly rather than low-level
+  guard evaluation. Added direct helper coverage for effective cash-weight derivation and adjusted
+  cash-policy threshold behavior while preserving existing source-posture tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m ruff format --check src/api/services/construction_liquidity_supportability.py tests/unit/dpm/construction/test_liquidity_supportability.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_liquidity_supportability.py`,
+  `python -m pytest tests/unit/dpm/construction/test_liquidity_supportability.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/services/construction_liquidity_supportability.py -s`; the focused
+  liquidity supportability suite reported 9 passed, and
+  `_cashflow_projection_policy_assessment` reduced from B(7) to A(2).
+- Residual risk: this slice improves internal construction-liquidity supportability
+  maintainability only. It does not certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-service maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-887: Wave portfolio resolution dispatch table
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/wave_portfolio_resolution.py` and
+  `tests/unit/api/test_wave_portfolio_resolution.py`.
+- Bank-buyable control area: architecture, API quality, and testing.
+- Finding: `resolve_portfolio_inputs_for_request` encoded each wave trigger branch directly in the
+  public router helper. The behavior was correct, but the dispatch structure made it harder to
+  distinguish trigger routing from the router-owned HTTP/source-authority error handling that must
+  remain near the API boundary.
+- Action: introduced `_PortfolioResolutionContext` and a trigger-handler table for explicit
+  portfolio lists, PM-book review, CIO model change, risk event, tactical house view, and bulk
+  review campaign resolution. Kept source-unavailable and source-dependency HTTP exception mapping
+  in the router helpers. Added direct public-entry coverage proving explicit-list dispatch
+  preserves the request portfolio payloads.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_portfolio_resolution.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/routers/wave_portfolio_resolution.py -s`; the focused wave
+  portfolio-resolution suite reported 3 passed, and `resolve_portfolio_inputs_for_request`
+  reduced from B(9) to A(1) under radon.
+- Residual risk: this slice improves router dispatch maintainability only. It does not change wave
+  trigger semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API router maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-888: PM operating-quality score-run builder helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/routers/pm_operating_quality_score_run_builder.py` and
+  `tests/unit/api/test_pm_operating_quality_score_run_builder.py`.
+- Bank-buyable control area: architecture, API quality, and testing.
+- Finding: `build_score_run` combined policy resolution, optional source-owned PM-book scope
+  materialization, inline evidence assembly, outcome-review lookup, missing-review HTTP mapping,
+  and core score-run validation mapping in one router helper. The behavior was correct, but the
+  evidence assembly and outcome-review lookup rules were harder to test directly than the
+  PM-operating-quality supportability contract deserves.
+- Action: extracted `_ScoreRunEvidenceInputs`, `_score_run_evidence_inputs`, and
+  `_outcome_reviews_for_request` while preserving router-owned HTTP exception mapping and core
+  PM-quality scoring behavior. Added focused helper tests proving inline evidence is copied without
+  PM-book materialization and missing outcome-review ids map to the existing bounded `404` detail.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/pm_operating_quality_score_run_builder.py tests/unit/api/test_pm_operating_quality_score_run_builder.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_score_run_builder.py tests/unit/api/test_pm_operating_quality_score_run_builder.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_score_run_builder.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_score_run_builder.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/routers/pm_operating_quality_score_run_builder.py -s`; the focused
+  builder suite reported 2 passed, and `build_score_run` reduced from B(7) to A(4).
+- Residual risk: this slice improves internal PM-quality score-run builder maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API router helper
+  maintainability hardening with no operator-facing contract change.

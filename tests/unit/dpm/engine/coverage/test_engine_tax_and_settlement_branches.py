@@ -103,6 +103,40 @@ def test_turnover_helper_calculates_budget_proposed_and_rank_key():
     ) == [high_score, low_notional, missing_notional]
 
 
+def test_turnover_budget_selection_is_pure_and_records_dropped_intents():
+    high_score = _security_intent(
+        intent_id="oi_high",
+        instrument_id="B",
+        notional_base=Decimal("200"),
+    )
+    exact_fit = _security_intent(
+        intent_id="oi_fit",
+        instrument_id="A",
+        notional_base=Decimal("100"),
+    )
+    over_budget = _security_intent(
+        intent_id="oi_drop",
+        instrument_id="C",
+        notional_base=Decimal("100"),
+    )
+    missing_notional = _security_intent(
+        intent_id="oi_missing",
+        instrument_id="D",
+        notional_base=None,
+    )
+
+    selection = turnover_module._select_turnover_budget_intents(
+        intents=[exact_fit, missing_notional, high_score, over_budget],
+        budget=Decimal("300"),
+        portfolio_value_base=Decimal("1000"),
+        base_currency="USD",
+    )
+
+    assert [intent.instrument_id for intent in selection.selected] == ["B", "A"]
+    assert [item.instrument_id for item in selection.dropped] == ["C"]
+    assert selection.dropped[0].potential_notional == Money(amount=Decimal("100"), currency="USD")
+
+
 def test_turnover_drop_helper_records_governed_diagnostic_payload():
     intent = _security_intent(
         intent_id="oi_drop",

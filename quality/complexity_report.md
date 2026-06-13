@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T10:58:56+00:00`
+- Generated at: `2026-06-13T11:31:13+00:00`
 
-- Report source snapshot: `bf8fba18+worktree`
+- Report source snapshot: `0eb99cb3+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | apply_turnover_limit | src/core/rebalance/turnover.py | 7 | 51 |
-| 2 | _cashflow_projection_policy_assessment | src/api/services/construction_liquidity_supportability.py | 7 | 47 |
-| 3 | resolve_portfolio_inputs_for_request | src/api/routers/wave_portfolio_resolution.py | 7 | 46 |
-| 4 | build_score_run | src/api/routers/pm_operating_quality_score_run_builder.py | 7 | 43 |
-| 5 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 6 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 7 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
-| 8 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
-| 9 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
-| 10 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
+| 1 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
+| 2 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
+| 3 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 4 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
+| 5 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
+| 6 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
+| 7 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
+| 8 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 9 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
+| 10 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
 
 ### Most Complex Current Test Functions
 
