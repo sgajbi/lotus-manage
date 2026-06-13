@@ -21721,3 +21721,32 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-875: Wave supportability payload classification helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/wave_supportability_payload.py` and
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `wave_supportability_payload` combined supportability issue collection, severity
+  aggregation, state/reason classification, and payload assembly in one helper. The behavior was
+  correct, but the wave supportability read model was harder to review and test directly than the
+  bank-buyable supportability posture expects.
+- Action: extracted `_wave_supportability_issues`, `_issue_counts_by_severity`, and
+  `_supportability_state_reason` while preserving the public payload shape and operator-action
+  behavior. Added a direct helper test covering issue collection, severity counts, and blocked /
+  degraded / ready state precedence.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_supportability_payload.py tests/unit/dpm/waves/test_wave_supportability_payload.py`,
+  `python -m ruff format --check src/api/services/wave_supportability_payload.py tests/unit/dpm/waves/test_wave_supportability_payload.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_supportability_payload.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_supportability_payload.py -q`, and
+  `python -m radon cc src/api/services/wave_supportability_payload.py -s`; the focused wave
+  supportability suite reported 5 passed and `wave_supportability_payload` reduced from C(11) to
+  A(1).
+- Residual risk: this slice improves internal wave supportability payload maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability read-model
+  maintainability hardening with no operator-facing contract change.

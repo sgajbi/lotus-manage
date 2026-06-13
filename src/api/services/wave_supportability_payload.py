@@ -4,36 +4,44 @@ from src.api.services.wave_supportability_diagnostics import (
 )
 from src.core.waves import DpmRebalanceWave
 
+_ISSUE_SEVERITIES = ("CRITICAL", "WARNING", "INFO")
 
-def wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
-    issues = [
+
+def _wave_supportability_issues(wave: DpmRebalanceWave) -> list[dict[str, object]]:
+    return [
         issue
         for index, item in enumerate(wave.items, start=1)
         if (issue := supportability_issue(wave_id=wave.wave_id, item=item, item_index=index))
         is not None
     ]
-    blocked_count = sum(1 for issue in issues if issue["severity"] == "CRITICAL")
-    degraded_count = sum(1 for issue in issues if issue["severity"] == "WARNING")
-    if blocked_count:
-        state = "blocked"
-        reason = "wave_blocked_items"
-    elif degraded_count:
-        state = "degraded"
-        reason = "wave_degraded_items"
-    else:
-        state = "ready"
-        reason = "wave_supportability_ready"
+
+
+def _issue_counts_by_severity(issues: list[dict[str, object]]) -> dict[str, int]:
+    return {
+        severity.lower(): sum(1 for issue in issues if issue["severity"] == severity)
+        for severity in _ISSUE_SEVERITIES
+    }
+
+
+def _supportability_state_reason(issue_counts: dict[str, int]) -> tuple[str, str]:
+    if issue_counts["critical"]:
+        return "blocked", "wave_blocked_items"
+    if issue_counts["warning"]:
+        return "degraded", "wave_degraded_items"
+    return "ready", "wave_supportability_ready"
+
+
+def wave_supportability_payload(wave: DpmRebalanceWave) -> dict[str, object]:
+    issues = _wave_supportability_issues(wave)
+    issue_counts = _issue_counts_by_severity(issues)
+    state, reason = _supportability_state_reason(issue_counts)
     return {
         "wave_id": wave.wave_id,
         "wave_state": wave.state,
         "supportability_state": state,
         "reason": reason,
         "item_count": len(wave.items),
-        "issue_counts": {
-            "critical": blocked_count,
-            "warning": degraded_count,
-            "info": sum(1 for issue in issues if issue["severity"] == "INFO"),
-        },
+        "issue_counts": issue_counts,
         "issues": issues,
         "operator_actions": operator_actions(state=state, issues=issues),
     }
