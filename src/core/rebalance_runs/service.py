@@ -337,15 +337,7 @@ class DpmRunSupportService:
     def get_lineage(self, *, entity_id: str) -> DpmLineageResponse:
         self._cleanup_expired_supportability()
         edges = self._repository.list_lineage_edges(entity_id=entity_id)
-        edges = sorted(
-            edges,
-            key=lambda edge: (
-                edge.created_at,
-                edge.source_entity_id,
-                edge.edge_type,
-                edge.target_entity_id,
-            ),
-        )
+        edges = _sort_lineage_edges(edges)
         return to_lineage_response(entity_id=entity_id, edges=edges, next_cursor=None)
 
     def get_lineage_filtered(
@@ -360,34 +352,13 @@ class DpmRunSupportService:
     ) -> DpmLineageResponse:
         self._cleanup_expired_supportability()
         edges = self._repository.list_lineage_edges(entity_id=entity_id)
-        edges = sorted(
-            edges,
-            key=lambda edge: (
-                edge.created_at,
-                edge.source_entity_id,
-                edge.edge_type,
-                edge.target_entity_id,
-            ),
+        edges = _filter_lineage_edges(
+            edges=_sort_lineage_edges(edges),
+            edge_type=edge_type,
+            created_from=created_from,
+            created_to=created_to,
         )
-        if edge_type is not None:
-            edges = [edge for edge in edges if edge.edge_type == edge_type]
-        if created_from is not None:
-            edges = [edge for edge in edges if edge.created_at >= created_from]
-        if created_to is not None:
-            edges = [edge for edge in edges if edge.created_at <= created_to]
-
-        if cursor is not None:
-            cursor_index = next(
-                (index for index, row in enumerate(edges) if lineage_cursor(row) == cursor),
-                None,
-            )
-            if cursor_index is None:
-                edges = []
-            else:
-                edges = edges[cursor_index + 1 :]
-
-        page = edges[:limit]
-        next_cursor = lineage_cursor(page[-1]) if len(edges) > limit else None
+        page, next_cursor = _page_lineage_edges(edges=edges, cursor=cursor, limit=limit)
         return to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
 
     def get_supportability_summary(
@@ -882,6 +853,75 @@ class DpmRunSupportService:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _sort_lineage_edges(edges: list[DpmLineageEdgeRecord]) -> list[DpmLineageEdgeRecord]:
+    return sorted(
+        edges,
+        key=lambda edge: (
+            edge.created_at,
+            edge.source_entity_id,
+            edge.edge_type,
+            edge.target_entity_id,
+        ),
+    )
+
+
+def _filter_lineage_edges(
+    *,
+    edges: list[DpmLineageEdgeRecord],
+    edge_type: Optional[str],
+    created_from: Optional[datetime],
+    created_to: Optional[datetime],
+) -> list[DpmLineageEdgeRecord]:
+    return [
+        edge
+        for edge in edges
+        if _matches_lineage_edge_type(edge=edge, edge_type=edge_type)
+        and _is_lineage_edge_in_window(
+            edge=edge,
+            created_from=created_from,
+            created_to=created_to,
+        )
+    ]
+
+
+def _matches_lineage_edge_type(
+    *,
+    edge: DpmLineageEdgeRecord,
+    edge_type: Optional[str],
+) -> bool:
+    return edge_type is None or edge.edge_type == edge_type
+
+
+def _is_lineage_edge_in_window(
+    *,
+    edge: DpmLineageEdgeRecord,
+    created_from: Optional[datetime],
+    created_to: Optional[datetime],
+) -> bool:
+    if created_from is not None and edge.created_at < created_from:
+        return False
+    if created_to is not None and edge.created_at > created_to:
+        return False
+    return True
+
+
+def _page_lineage_edges(
+    *,
+    edges: list[DpmLineageEdgeRecord],
+    cursor: Optional[str],
+    limit: int,
+) -> tuple[list[DpmLineageEdgeRecord], Optional[str]]:
+    if cursor is not None:
+        cursor_index = next(
+            (index for index, row in enumerate(edges) if lineage_cursor(row) == cursor),
+            None,
+        )
+        edges = [] if cursor_index is None else edges[cursor_index + 1 :]
+    page = edges[:limit]
+    next_cursor = lineage_cursor(page[-1]) if len(edges) > limit else None
+    return page, next_cursor
 
 
 def _resolve_action_register_supportability(

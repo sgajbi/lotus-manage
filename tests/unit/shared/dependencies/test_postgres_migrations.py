@@ -97,6 +97,40 @@ def test_apply_postgres_migrations_detects_checksum_mismatch(monkeypatch, tmp_pa
     assert connection.unlock_calls == [_migration_lock_key(namespace="custom")]
 
 
+def test_load_applied_migration_checksums_detects_duplicate_version_conflict():
+    class _DuplicateRowConnection:
+        def execute(self, *_args, **_kwargs):
+            return _FakeCursor(
+                rows=[
+                    {"version": "dpm:0001", "checksum": "checksum-old"},
+                    {"version": "dpm:0001", "checksum": "checksum-new"},
+                ]
+            )
+
+    with pytest.raises(RuntimeError) as exc:
+        migrations_module._load_applied_migration_checksums(  # noqa: SLF001
+            connection=_DuplicateRowConnection(),
+            namespace="dpm",
+        )
+
+    assert str(exc.value) == "POSTGRES_MIGRATION_CHECKSUM_MISMATCH:dpm:0001"
+
+
+def test_insert_schema_migration_record_stores_namespace_scoped_version(tmp_path: Path):
+    sql_path = tmp_path / "0002_test.sql"
+    sql_path.write_text("CREATE TABLE sample_table (id TEXT PRIMARY KEY);")
+    migration = PostgresMigration(version="0002", sql_path=sql_path, checksum="checksum-2")
+    connection = _FakeConnection()
+
+    migrations_module._insert_schema_migration_record(  # noqa: SLF001
+        connection=connection,
+        namespace="custom",
+        migration=migration,
+    )
+
+    assert connection.schema_migrations[("custom", "custom:0002")] == "checksum-2"
+
+
 def test_migration_lock_key_is_stable_and_namespace_scoped():
     assert _migration_lock_key(namespace="dpm") == _migration_lock_key(namespace="dpm")
     assert _migration_lock_key(namespace="dpm") != _migration_lock_key(namespace="policy_packs")

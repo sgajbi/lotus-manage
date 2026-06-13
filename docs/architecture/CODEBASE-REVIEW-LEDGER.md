@@ -21553,3 +21553,82 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal application-service
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-869: Postgres migration application helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/postgres_migrations.py` and
+  `tests/unit/shared/dependencies/test_postgres_migrations.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `_apply_migrations_locked` still mixed schema-migration table creation, applied-row
+  normalization, checksum conflict detection, SQL execution, schema-migration metadata insertion,
+  and commit handling in one infrastructure helper. The behavior was correct, but the
+  forward-only migration contract was harder to review than necessary for production-safe schema
+  rollout.
+- Action: extracted helpers for schema-migration table creation, applied checksum loading,
+  checksum mismatch detection, and migration metadata insertion while preserving lock,
+  rollback, SQL execution, and commit behavior. Added direct tests for duplicate stored-version
+  checksum conflicts and namespace-scoped migration record insertion.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/postgres_migrations.py tests/unit/shared/dependencies/test_postgres_migrations.py`,
+  `python -m ruff format --check src/infrastructure/postgres_migrations.py tests/unit/shared/dependencies/test_postgres_migrations.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/postgres_migrations.py`,
+  `python -m pytest tests/unit/shared/dependencies/test_postgres_migrations.py -q`,
+  and `python -m radon cc src/infrastructure/postgres_migrations.py -s`; the focused Postgres
+  migration suite reported 6 passed and `_apply_migrations_locked` reduced from B(7) to A(3).
+- Residual risk: this slice improves internal migration maintainability only. It does not certify
+  global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure migration
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-870: Run lineage filtering helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/rebalance_runs/service.py` and
+  `tests/unit/dpm/supportability/test_dpm_lineage_service.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `DpmRunSupportService.get_lineage_filtered` mixed repository read orchestration,
+  deterministic sorting, edge-type filtering, date-window filtering, cursor resolution, page
+  slicing, and next-cursor construction in one service method. The behavior was correct, but the
+  method concentrated lineage paging semantics in a harder-to-review supportability path.
+- Action: extracted lineage sorting, filter predicates, date-window filtering, and cursor paging
+  helpers while keeping repository access and response construction in the service method. Added
+  direct tests for deterministic edge ordering, edge-type/date-window filtering, cursor-after-edge
+  pagination, and missing-cursor empty-page behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `python -m ruff format --check src/core/rebalance_runs/service.py tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance_runs/service.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_dpm_lineage_service.py -q`,
+  and `python -m radon cc src/core/rebalance_runs/service.py -s`; the focused lineage suite
+  reported 3 passed and `DpmRunSupportService.get_lineage_filtered` reduced from C(15) to A(1).
+- Residual risk: this slice improves internal supportability lineage maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability-service
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-871: Main releasability service-boundary enforcement
+
+- Date: 2026-06-13
+- Scope: `.github/workflows/main-releasability.yml`.
+- Bank-buyable control area: CI measurement and architecture enforcement.
+- Finding: the Feature Lane and PR Merge Gate enforced `make service-boundary-gate`, but the Main
+  Releasability Gate did not repeat the same service-boundary check after merge. That left a small
+  governance asymmetry in the final releasability lane for the already-remediated service-layer
+  boundary rule.
+- Action: added `Service Boundary Gate` to the Main Releasability lint/typecheck/security job,
+  directly after the OpenAPI and API vocabulary gates and before migration smoke, matching the
+  intended API/architecture governance sequence used in the PR lane.
+- Status: hardened.
+- Evidence: `python -c "import yaml; yaml.safe_load(open('.github/workflows/main-releasability.yml', encoding='utf-8')); print('YAML syntax ok')"`,
+  `python scripts/service_boundary_gate.py`, and `git diff --check` passed locally. Local
+  `actionlint` was not installed; GitHub workflow lint remains the authoritative actionlint
+  validation for the PR.
+- Residual risk: this improves CI enforcement alignment only. It does not certify global
+  bank-buyable readiness or replace GitHub Actions execution on the opened PR and merged `main`.
+- Wiki decision: no wiki source change required; this is internal CI enforcement alignment with no
+  operator-facing runbook or API contract change.
