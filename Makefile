@@ -4,7 +4,7 @@ COVERAGE_FAIL_UNDER ?= 99
 
 install:
 	python -m pip install --upgrade pip
-	pip install -e ".[dev]"
+	pip install -e ".[dev,quality]"
 	pre-commit install
 
 install-ci:

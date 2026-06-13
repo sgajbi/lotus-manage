@@ -23276,12 +23276,15 @@ and improves internal transaction-cost source posture maintainability only.
   than the documented bank-buyable engineering posture.
 - Action: aligned `make check` with the documented active gate set by adding
   `typecheck-tests-critical`, `architecture-gate`, `complexity-gate`, `dependency-hygiene-gate`,
-  and `dead-code-gate`; refreshed the gate documentation to include the critical-test typecheck.
+  and `dead-code-gate`; aligned `make install` with the expanded local check dependencies by
+  installing the `quality` extra; refreshed the gate documentation to include the critical-test
+  typecheck.
 - Status: hardened.
 - Evidence: `make architecture-gate`, `make complexity-gate`, `make dependency-hygiene-gate`,
-  `make dead-code-gate`, and the expanded `make check`; the expanded local gate completed with
-  ruff, mypy, critical-test mypy, OpenAPI, vocabulary, service-boundary, mesh-contract,
-  import-linter, complexity, deptry, vulture, and 2743 unit tests passing.
+  `make dead-code-gate`, `make -n install`, `make -n check`, and the expanded `make check`; the
+  expanded local gate completed with ruff, mypy, critical-test mypy, OpenAPI, vocabulary,
+  service-boundary, mesh-contract, import-linter, complexity, deptry, vulture, and 2743 unit tests
+  passing.
 - Residual risk: this slice improves local pre-PR enforcement parity only. It does not introduce
   stricter xenon thresholds because current module-level complexity still has known C-ranked
   residuals; those remain visible in reports and should be reduced before threshold promotion.
