@@ -47,51 +47,98 @@ def candidate_portfolio_ids_from_sources(
     source_scan_limit = validate_portfolio_memory_source_scan_limit(
         source_scan_limit=source_scan_limit
     )
-    candidates: set[str] = {
-        portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()
-    }
-    candidates.update(
+    candidates = _explicit_candidate_ids(portfolio_ids)
+    candidates.update(_proof_pack_candidate_ids(repositories, source_scan_limit))
+    candidates.update(_wave_candidate_ids(repositories, source_scan_limit))
+    candidates.update(_outcome_review_candidate_ids(repositories, source_scan_limit))
+    candidates.update(_mandate_exception_candidate_ids(repositories, source_scan_limit))
+    candidates.update(_campaign_definition_candidate_ids(repositories, source_scan_limit))
+    candidates.update(_pm_quality_candidate_ids(repositories, source_scan_limit))
+    return sorted(candidates)
+
+
+def _explicit_candidate_ids(portfolio_ids: list[str] | None) -> set[str]:
+    return {portfolio_id.strip() for portfolio_id in (portfolio_ids or []) if portfolio_id.strip()}
+
+
+def _proof_pack_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    return {
         proof_pack.portfolio_id
         for proof_pack in repositories.proof_pack_repository.list_proof_packs(
             limit=source_scan_limit
         )
-    )
-    candidates.update(
+    }
+
+
+def _wave_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    return {
         item.portfolio_id
         for wave in repositories.wave_repository.list_waves(limit=source_scan_limit)
         for item in wave.items
-    )
-    candidates.update(
+    }
+
+
+def _outcome_review_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    return {
         review.portfolio_id
         for review in repositories.outcome_review_repository.list_outcome_reviews(
             limit=source_scan_limit
         )
+    }
+
+
+def _mandate_exception_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    if repositories.mandate_repository is None:
+        return set()
+    exceptions, _cursor = repositories.mandate_repository.list_monitoring_exceptions(
+        monitoring_run_id=None,
+        mandate_id=None,
+        portfolio_id=None,
+        state=None,
+        limit=source_scan_limit,
+        cursor=None,
     )
-    if repositories.mandate_repository is not None:
-        exceptions, _cursor = repositories.mandate_repository.list_monitoring_exceptions(
-            monitoring_run_id=None,
-            mandate_id=None,
-            portfolio_id=None,
-            state=None,
-            limit=source_scan_limit,
-            cursor=None,
+    return {exception.portfolio_id for exception in exceptions}
+
+
+def _campaign_definition_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    if repositories.campaign_definition_repository is None:
+        return set()
+    return {
+        candidate.portfolio_id
+        for definition in repositories.campaign_definition_repository.list_definitions(
+            limit=source_scan_limit
         )
-        candidates.update(exception.portfolio_id for exception in exceptions)
-    if repositories.campaign_definition_repository is not None:
-        candidates.update(
-            candidate.portfolio_id
-            for definition in repositories.campaign_definition_repository.list_definitions(
-                limit=source_scan_limit
-            )
-            for candidate in definition.candidates
+        for candidate in definition.candidates
+    }
+
+
+def _pm_quality_candidate_ids(
+    repositories: PortfolioMemorySourceRepositories,
+    source_scan_limit: int,
+) -> set[str]:
+    if repositories.pm_quality_score_run_repository is None:
+        return set()
+    return {
+        portfolio_id
+        for score_run in repositories.pm_quality_score_run_repository.list_score_runs(
+            limit=source_scan_limit
         )
-    if repositories.pm_quality_score_run_repository is not None:
-        candidates.update(
-            portfolio_id
-            for score_run in repositories.pm_quality_score_run_repository.list_score_runs(
-                limit=source_scan_limit
-            )
-            if score_run.book_scope_evidence is not None
-            for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids
-        )
-    return sorted(candidates)
+        if score_run.book_scope_evidence is not None
+        for portfolio_id in score_run.book_scope_evidence.member_portfolio_ids
+    }

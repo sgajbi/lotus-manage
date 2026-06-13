@@ -21721,3 +21721,91 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-analytics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-875: Wave supportability payload classification helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/wave_supportability_payload.py` and
+  `tests/unit/dpm/waves/test_wave_supportability_payload.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `wave_supportability_payload` combined supportability issue collection, severity
+  aggregation, state/reason classification, and payload assembly in one helper. The behavior was
+  correct, but the wave supportability read model was harder to review and test directly than the
+  bank-buyable supportability posture expects.
+- Action: extracted `_wave_supportability_issues`, `_issue_counts_by_severity`, and
+  `_supportability_state_reason` while preserving the public payload shape and operator-action
+  behavior. Added a direct helper test covering issue collection, severity counts, and blocked /
+  degraded / ready state precedence.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_supportability_payload.py tests/unit/dpm/waves/test_wave_supportability_payload.py`,
+  `python -m ruff format --check src/api/services/wave_supportability_payload.py tests/unit/dpm/waves/test_wave_supportability_payload.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_supportability_payload.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_supportability_payload.py -q`, and
+  `python -m radon cc src/api/services/wave_supportability_payload.py -s`; the focused wave
+  supportability suite reported 5 passed and `wave_supportability_payload` reduced from C(11) to
+  A(1).
+- Residual risk: this slice improves internal wave supportability payload maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal supportability read-model
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-876: Wave proof-pack posture projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/wave_proof_pack_posture.py` and
+  `tests/unit/dpm/waves/test_wave_proof_pack_posture.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `proof_pack_posture_for_wave` combined proof-pack ref projection, ready/degraded
+  counts, external-execution claim detection, and boundary payload assembly in one helper. The
+  behavior was correct, but the proof-pack posture read model was harder to review than the
+  no-execution/no-client-communication boundary evidence deserves.
+- Action: extracted proof-pack ref, ref collection, count, and external-execution claim helpers
+  while preserving the public posture payload. Added a direct helper test proving linked/state-only
+  ref projection, ready/degraded counts, omission of unlinked items without proof-pack posture, and
+  external-execution claim detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_proof_pack_posture.py tests/unit/dpm/waves/test_wave_proof_pack_posture.py`,
+  `python -m ruff format --check src/api/services/wave_proof_pack_posture.py tests/unit/dpm/waves/test_wave_proof_pack_posture.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_proof_pack_posture.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_proof_pack_posture.py -q`, and
+  `python -m radon cc src/api/services/wave_proof_pack_posture.py -s`; the focused wave
+  proof-pack posture suite reported 4 passed and `proof_pack_posture_for_wave` reduced from C(12)
+  to A(3).
+- Residual risk: this slice improves internal wave proof-pack posture maintainability only. It
+  does not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal read-model maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-877: Portfolio-memory candidate source-family helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/portfolio_memory/candidate_portfolios.py` and
+  `tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `candidate_portfolio_ids_from_sources` aggregated explicit portfolio ids, proof-pack
+  portfolios, wave item portfolios, outcome reviews, mandate monitoring exceptions, campaign
+  candidates, and PM-quality book-scope evidence in one function. The behavior was correct, but the
+  source-family boundaries were harder to inspect than the portfolio-memory search contract
+  requires.
+- Action: extracted one helper per candidate source family plus an explicit-input cleanup helper,
+  leaving the public candidate merge and sorting behavior unchanged. Added a direct helper test for
+  manual-id normalization, mandate exception candidates, campaign definition candidates, and
+  PM-quality member-scope candidates.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/portfolio_memory/candidate_portfolios.py tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`,
+  `python -m ruff format --check src/core/portfolio_memory/candidate_portfolios.py tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/candidate_portfolios.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_candidate_portfolios.py -q`, and
+  `python -m radon cc src/core/portfolio_memory/candidate_portfolios.py -s`; the focused
+  portfolio-memory candidate suite reported 6 passed and `candidate_portfolio_ids_from_sources`
+  reduced from C(17) to A(1).
+- Residual risk: this slice improves internal portfolio-memory source aggregation
+  maintainability only. It does not certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal portfolio-memory
+  maintainability hardening with no operator-facing contract change.
