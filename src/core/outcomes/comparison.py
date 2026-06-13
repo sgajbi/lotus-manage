@@ -74,6 +74,35 @@ def compare_outcome_dimension(
 
     source_refs = _dimension_source_refs(dimension_input)
     supportability_state = _source_supportability_state(dimension_input)
+    if source_result := _source_supportability_result(
+        dimension_input=dimension_input,
+        source_refs=source_refs,
+        supportability_state=supportability_state,
+    ):
+        return source_result
+
+    expected = dimension_input.expected.value
+    realized = dimension_input.realized.value
+    if _dimension_values_missing(dimension_input):
+        return _missing_value_result(dimension_input, source_refs=source_refs)
+    assert expected is not None
+    assert realized is not None
+
+    return _compared_dimension_result(
+        dimension_input=dimension_input,
+        source_refs=source_refs,
+        supportability_state=supportability_state,
+        expected=expected,
+        realized=realized,
+    )
+
+
+def _source_supportability_result(
+    *,
+    dimension_input: DpmOutcomeDimensionInput,
+    source_refs: list[DpmOutcomeSourceRef],
+    supportability_state: OutcomeDimensionState,
+) -> DpmOutcomeDimensionResult | None:
     if supportability_state == "NOT_SUPPORTED":
         return _result(
             dimension_input,
@@ -90,20 +119,31 @@ def compare_outcome_dimension(
             source_refs=source_refs,
             explanation="Mandatory source evidence is missing, conflicting, or invalid.",
         )
+    return None
 
-    expected = dimension_input.expected.value
-    realized = dimension_input.realized.value
-    if _dimension_values_missing(dimension_input):
-        return _result(
-            dimension_input,
-            state="BLOCKED",
-            reason_code=_blocked_reason(dimension_input.dimension),
-            source_refs=source_refs,
-            explanation="Expected and realized values are mandatory for deterministic comparison.",
-        )
-    assert expected is not None
-    assert realized is not None
 
+def _missing_value_result(
+    dimension_input: DpmOutcomeDimensionInput,
+    *,
+    source_refs: list[DpmOutcomeSourceRef],
+) -> DpmOutcomeDimensionResult:
+    return _result(
+        dimension_input,
+        state="BLOCKED",
+        reason_code=_blocked_reason(dimension_input.dimension),
+        source_refs=source_refs,
+        explanation="Expected and realized values are mandatory for deterministic comparison.",
+    )
+
+
+def _compared_dimension_result(
+    *,
+    dimension_input: DpmOutcomeDimensionInput,
+    source_refs: list[DpmOutcomeSourceRef],
+    supportability_state: OutcomeDimensionState,
+    expected: Decimal,
+    realized: Decimal,
+) -> DpmOutcomeDimensionResult:
     variance = realized - expected
     pressure = _variance_pressure(
         expected=expected,
@@ -173,15 +213,15 @@ def _variance_pressure(
 def _source_supportability_state(
     dimension_input: DpmOutcomeDimensionInput,
 ) -> OutcomeDimensionState:
-    source_states = [
+    source_states = {
         dimension_input.expected.supportability.state,
         dimension_input.realized.supportability.state,
-    ]
-    if any(state in _NOT_SUPPORTED_STATES for state in source_states):
+    }
+    if source_states & _NOT_SUPPORTED_STATES:
         return "NOT_SUPPORTED"
-    if any(state in _BLOCKING_STATES for state in source_states):
+    if source_states & _BLOCKING_STATES:
         return "BLOCKED"
-    if any(state in _DEGRADED_STATES for state in source_states):
+    if source_states & _DEGRADED_STATES:
         return "DEGRADED"
     return "READY"
 

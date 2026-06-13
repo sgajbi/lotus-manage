@@ -23210,3 +23210,31 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal wave source-readiness
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-925: Outcome comparison result helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/outcomes/comparison.py` and
+  `tests/unit/core/test_outcome_comparison.py`.
+- Bank-buyable control area: architecture, outcome review supportability, and testing.
+- Finding: `compare_outcome_dimension` mixed source supportability short-circuiting, missing-value
+  blocking, variance classification, and result construction in one path. The behavior was covered,
+  but outcome review supportability is easier to audit when terminal source states, missing
+  mandatory values, and deterministic variance comparison each have named helpers and direct tests.
+- Action: extracted `_source_supportability_result`, `_missing_value_result`, and
+  `_compared_dimension_result`; simplified `_source_supportability_state` with set-based precedence
+  checks; and added direct helper tests while preserving the public comparison behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m ruff format --check src/core/outcomes/comparison.py tests/unit/core/test_outcome_comparison.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/comparison.py`,
+  `python -m pytest tests/unit/core/test_outcome_comparison.py -q`, and
+  `python -m radon cc src/core/outcomes/comparison.py -s`; the focused outcome comparison suite
+  reported 18 passed, and radon reports every function in `comparison.py` at A-grade after this
+  extraction.
+- Residual risk: this slice improves outcome comparison maintainability only. It does not change
+  outcome review semantics, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome comparison
+  maintainability hardening with no operator-facing contract change.
