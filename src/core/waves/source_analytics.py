@@ -37,59 +37,108 @@ def aggregate_wave_source_analytics(
 ) -> list[DpmWaveSourceAnalyticsSummary]:
     summaries: list[DpmWaveSourceAnalyticsSummary] = []
     for family in ("risk", "performance"):
-        item_summaries = [
-            _mapping(_mapping(item.diagnostics.get("source_analytics")).get(family))
-            for item in items
-        ]
-        item_summaries = [summary for summary in item_summaries if summary]
-        if not item_summaries:
+        family_item_summaries = _family_item_source_analytics(
+            items=items,
+            family=family,
+        )
+        if not family_item_summaries:
             continue
-        state_counts = Counter(
-            str(summary.get("supportability_state", "DEGRADED")).upper()
-            for summary in item_summaries
-        )
-        refs = [
-            ref
-            for summary in item_summaries
-            for ref in cast(list[dict[str, object]], summary.get("source_refs", []))
-        ]
-        measures: dict[str, list[str]] = {}
-        for summary in item_summaries:
-            for measure, values in _mapping(summary.get("source_measures")).items():
-                measure_values = measures.setdefault(str(measure), [])
-                measure_values.extend(str(value) for value in cast(list[object], values))
-        summaries.append(
-            DpmWaveSourceAnalyticsSummary(
-                source_family=cast(Literal["RISK", "PERFORMANCE"], family.upper()),
-                supportability_state=_worst_source_state(list(state_counts)),
-                item_count=len(item_summaries),
-                ready_item_count=state_counts.get("READY", 0),
-                degraded_item_count=state_counts.get("DEGRADED", 0),
-                blocked_item_count=state_counts.get("BLOCKED", 0),
-                pending_review_item_count=state_counts.get("PENDING_REVIEW", 0),
-                source_systems=sorted(
-                    {
-                        str(source_system)
-                        for summary in item_summaries
-                        for source_system in cast(list[object], summary.get("source_systems", []))
-                    }
-                ),
-                source_refs=[
-                    DpmWaveSourceRef.model_validate(ref) for ref in _dedupe_source_ref_dicts(refs)
-                ],
-                reason_codes=sorted(
-                    {
-                        str(reason_code)
-                        for summary in item_summaries
-                        for reason_code in cast(list[object], summary.get("reason_codes", []))
-                    }
-                ),
-                source_measures={
-                    measure: sorted(set(values)) for measure, values in sorted(measures.items())
-                },
-            )
-        )
+        summaries.append(_aggregate_family_source_analytics(family, family_item_summaries))
     return summaries
+
+
+def _family_item_source_analytics(
+    *,
+    items: list[DpmRebalanceWaveItem],
+    family: str,
+) -> list[dict[str, object]]:
+    return [
+        item_summary
+        for item in items
+        if (item_summary := _item_source_analytics(item=item, family=family))
+    ]
+
+
+def _item_source_analytics(
+    *,
+    item: DpmRebalanceWaveItem,
+    family: str,
+) -> dict[str, object]:
+    source_analytics = _mapping(item.diagnostics.get("source_analytics"))
+    return _mapping(source_analytics.get(family))
+
+
+def _aggregate_family_source_analytics(
+    family: str,
+    item_summaries: list[dict[str, object]],
+) -> DpmWaveSourceAnalyticsSummary:
+    state_counts = _source_state_counts(item_summaries)
+    refs = _source_ref_dicts_from_summaries(item_summaries)
+    measures = _source_measure_values_from_summaries(item_summaries)
+    return DpmWaveSourceAnalyticsSummary(
+        source_family=cast(Literal["RISK", "PERFORMANCE"], family.upper()),
+        supportability_state=_worst_source_state(list(state_counts)),
+        item_count=len(item_summaries),
+        ready_item_count=state_counts.get("READY", 0),
+        degraded_item_count=state_counts.get("DEGRADED", 0),
+        blocked_item_count=state_counts.get("BLOCKED", 0),
+        pending_review_item_count=state_counts.get("PENDING_REVIEW", 0),
+        source_systems=_source_systems_from_summaries(item_summaries),
+        source_refs=[
+            DpmWaveSourceRef.model_validate(ref) for ref in _dedupe_source_ref_dicts(refs)
+        ],
+        reason_codes=_reason_codes_from_summaries(item_summaries),
+        source_measures={
+            measure: sorted(set(values)) for measure, values in sorted(measures.items())
+        },
+    )
+
+
+def _source_state_counts(item_summaries: list[dict[str, object]]) -> Counter[str]:
+    return Counter(
+        str(summary.get("supportability_state", "DEGRADED")).upper() for summary in item_summaries
+    )
+
+
+def _source_ref_dicts_from_summaries(
+    item_summaries: list[dict[str, object]],
+) -> list[dict[str, object]]:
+    return [
+        ref
+        for summary in item_summaries
+        for ref in cast(list[dict[str, object]], summary.get("source_refs", []))
+    ]
+
+
+def _source_systems_from_summaries(item_summaries: list[dict[str, object]]) -> list[str]:
+    return sorted(
+        {
+            str(source_system)
+            for summary in item_summaries
+            for source_system in cast(list[object], summary.get("source_systems", []))
+        }
+    )
+
+
+def _reason_codes_from_summaries(item_summaries: list[dict[str, object]]) -> list[str]:
+    return sorted(
+        {
+            str(reason_code)
+            for summary in item_summaries
+            for reason_code in cast(list[object], summary.get("reason_codes", []))
+        }
+    )
+
+
+def _source_measure_values_from_summaries(
+    item_summaries: list[dict[str, object]],
+) -> dict[str, list[str]]:
+    measures: dict[str, list[str]] = {}
+    for summary in item_summaries:
+        for measure, values in _mapping(summary.get("source_measures")).items():
+            measure_values = measures.setdefault(str(measure), [])
+            measure_values.extend(str(value) for value in cast(list[object], values))
+    return measures
 
 
 def _source_analytics_from_alternative(
@@ -130,33 +179,13 @@ def _merge_item_source_analytics(
     candidates: list[dict[str, object]],
 ) -> dict[str, object]:
     states = [str(candidate.get("supportability_state", "DEGRADED")) for candidate in candidates]
-    refs = [
-        ref
-        for candidate in candidates
-        for ref in cast(list[dict[str, object]], candidate.get("source_refs", []))
-    ]
-    measures: dict[str, list[str]] = {}
-    for candidate in candidates:
-        for measure, values in _mapping(candidate.get("source_measures")).items():
-            measure_values = measures.setdefault(str(measure), [])
-            measure_values.extend(str(value) for value in cast(list[object], values))
+    refs = _source_ref_dicts_from_summaries(candidates)
+    measures = _source_measure_values_from_summaries(candidates)
     return {
         "supportability_state": _worst_source_state(states),
-        "source_systems": sorted(
-            {
-                str(source_system)
-                for candidate in candidates
-                for source_system in cast(list[object], candidate.get("source_systems", []))
-            }
-        ),
+        "source_systems": _source_systems_from_summaries(candidates),
         "source_refs": _dedupe_source_ref_dicts(refs),
-        "reason_codes": sorted(
-            {
-                str(reason_code)
-                for candidate in candidates
-                for reason_code in cast(list[object], candidate.get("reason_codes", []))
-            }
-        ),
+        "reason_codes": _reason_codes_from_summaries(candidates),
         "source_measures": {
             measure: sorted(set(values)) for measure, values in sorted(measures.items())
         },

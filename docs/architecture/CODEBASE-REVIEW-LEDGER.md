@@ -21419,3 +21419,30 @@ and improves internal transaction-cost source posture maintainability only.
   `git diff --check`,
   and wiki drift check with `DiffCount 0`.
 - Wiki decision: no wiki source change required; this is repo-local agent/context ramp-up truth.
+
+## BACKEND-REVIEW-20260613-864: Wave source analytics aggregation helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/waves/source_analytics.py` and
+  `tests/unit/dpm/waves/test_source_analytics.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `aggregate_wave_source_analytics` remained a source-analytics complexity hotspot and
+  duplicated source-system, source-ref, reason-code, and measure rollup logic already needed by
+  item-level source analytics merging. The behavior was correct, but the aggregation path was
+  harder to review than the source-owned risk/performance evidence contract requires.
+- Action: extracted family selection, state counting, source-ref collection, source-system
+  collection, reason-code collection, and source-measure rollup helpers, then reused those helpers
+  from both wave-level and item-level aggregation. Added focused tests proving independent
+  risk/performance family rollup and fail-closed skipping of missing or malformed diagnostics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m ruff format --check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_analytics.py -q`,
+  and `python -m radon cc src/core/waves/source_analytics.py -s`.
+- Residual risk: this slice improves internal source-analytics maintainability only. It does not
+  certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench product
+  behavior.
+- Wiki decision: no wiki source change required; this is internal wave source-analytics
+  maintainability hardening with no operator-facing contract change.
