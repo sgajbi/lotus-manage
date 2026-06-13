@@ -23264,3 +23264,26 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal solver target-generation
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-927: Local check gate alignment
+
+- Date: 2026-06-14
+- Scope: `Makefile`, `quality/ci_quality_gates.md`, and this ledger.
+- Bank-buyable control area: CI measurement, local gate parity, and operational evidence.
+- Finding: `quality/ci_quality_gates.md` documented architecture, complexity, dependency-hygiene,
+  and dead-code scans as active `make check` gates, and Feature Lane already ran those checks, but
+  the local `make check` target did not include them. The local pre-PR gate was therefore narrower
+  than the documented bank-buyable engineering posture.
+- Action: aligned `make check` with the documented active gate set by adding
+  `typecheck-tests-critical`, `architecture-gate`, `complexity-gate`, `dependency-hygiene-gate`,
+  and `dead-code-gate`; refreshed the gate documentation to include the critical-test typecheck.
+- Status: hardened.
+- Evidence: `make architecture-gate`, `make complexity-gate`, `make dependency-hygiene-gate`,
+  `make dead-code-gate`, and the expanded `make check`; the expanded local gate completed with
+  ruff, mypy, critical-test mypy, OpenAPI, vocabulary, service-boundary, mesh-contract,
+  import-linter, complexity, deptry, vulture, and 2743 unit tests passing.
+- Residual risk: this slice improves local pre-PR enforcement parity only. It does not introduce
+  stricter xenon thresholds because current module-level complexity still has known C-ranked
+  residuals; those remain visible in reports and should be reduced before threshold promotion.
+- Wiki decision: no wiki source change required; this is repository-local CI command and quality
+  documentation alignment with no operator-facing contract change.

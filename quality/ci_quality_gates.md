@@ -20,6 +20,7 @@ The following commands are active repository gates:
   - `python scripts/check_monetary_float_usage.py`
   - `make no-alias-gate`
   - `make typecheck` (`python -m mypy --config-file mypy.ini`)
+  - `make typecheck-tests-critical`
   - `python scripts/openapi_quality_gate.py`
   - `python scripts/api_vocabulary_inventory.py --validate-only`
   - `make mesh-contract-validate`
