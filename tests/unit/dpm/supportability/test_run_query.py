@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from src.core.rebalance_runs.models import DpmRunRecord
-from src.infrastructure.rebalance_runs.run_query import build_run_filter_query, run_page
+from src.infrastructure.rebalance_runs.run_query import (
+    _run_cursor_filter_query,
+    _run_scalar_filter_query,
+    build_run_filter_query,
+    run_page,
+)
 
 
 def _run(run_id: str, created_at: datetime) -> DpmRunRecord:
@@ -65,6 +70,42 @@ def test_build_run_filter_query_returns_empty_filter_without_constraints() -> No
 
     assert query.where_sql == ""
     assert query.args == ()
+
+
+def test_run_filter_parts_preserve_scalar_and_cursor_argument_order() -> None:
+    created_from = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    created_to = created_from + timedelta(hours=1)
+
+    scalar = _run_scalar_filter_query(
+        placeholder="%s",
+        status_expression="result_json::jsonb ->> 'status'",
+        created_from=created_from,
+        created_to=created_to,
+        status="READY",
+        request_hash="sha256:req-run-query",
+        portfolio_id="pf-run-query",
+    )
+    cursor = _run_cursor_filter_query(
+        placeholder="%s",
+        cursor="rr-query-cursor",
+    )
+
+    assert scalar.where_clauses == (
+        "created_at >= %s",
+        "created_at <= %s",
+        "portfolio_id = %s",
+        "request_hash = %s",
+        "result_json::jsonb ->> 'status' = %s",
+    )
+    assert scalar.args == (
+        "2026-02-20T12:00:00+00:00",
+        "2026-02-20T13:00:00+00:00",
+        "pf-run-query",
+        "sha256:req-run-query",
+        "READY",
+    )
+    assert cursor.args == ("rr-query-cursor", "rr-query-cursor", "rr-query-cursor")
+    assert "rebalance_run_id < %s" in cursor.where_clauses[0]
 
 
 def test_run_page_returns_next_cursor_for_overfetched_results() -> None:

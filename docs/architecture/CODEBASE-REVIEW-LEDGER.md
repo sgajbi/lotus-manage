@@ -22207,3 +22207,33 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal execution helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-891: Rebalance-run filter query assembly helpers
+
+- Date: 2026-06-13
+- Scope: `src/infrastructure/rebalance_runs/run_query.py` and
+  `tests/unit/dpm/supportability/test_run_query.py`.
+- Bank-buyable control area: architecture, query maintainability, and testing.
+- Finding: `build_run_filter_query` combined scalar filter assembly, backend-specific placeholder
+  rendering, cursor pagination SQL, ordered argument projection, and final `WHERE` rendering in one
+  helper shared by SQLite and Postgres repositories. The behavior was correct, but the query-shape
+  contract was harder to review than a shared supportability repository helper should be.
+- Action: extracted `_RunFilterParts`, `_run_scalar_filter_query`, and
+  `_run_cursor_filter_query` so scalar filters and cursor pagination can be reviewed independently
+  while preserving existing placeholder and argument ordering. Added direct tests for scalar
+  clause ordering, ISO datetime argument projection, cursor argument repetition, and cursor SQL
+  shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/rebalance_runs/run_query.py tests/unit/dpm/supportability/test_run_query.py`,
+  `python -m ruff format --check src/infrastructure/rebalance_runs/run_query.py tests/unit/dpm/supportability/test_run_query.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/rebalance_runs/run_query.py`,
+  `python -m pytest tests/unit/dpm/supportability/test_run_query.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/infrastructure/rebalance_runs/run_query.py -s`; the focused run-query
+  suite reported 5 passed, and `build_run_filter_query` reduced from B(7) to A(2).
+- Residual risk: this slice improves shared query assembly maintainability only. It does not
+  change repository pagination semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure helper
+  maintainability hardening with no operator-facing contract change.
