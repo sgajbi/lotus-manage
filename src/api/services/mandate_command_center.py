@@ -36,17 +36,46 @@ def command_center_supportability_state(
     completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
     partial_reasons: list[str],
 ) -> CommandCenterSupportabilityPosture:
-    if latest_run is None or completeness == "EMPTY":
-        return "EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
+    empty_posture = _empty_command_center_supportability(
+        latest_run=latest_run,
+        completeness=completeness,
+    )
+    if empty_posture is not None:
+        return empty_posture
+    assert latest_run is not None
 
     source_posture = _source_readiness_supportability_posture(
         source_readiness_summary=latest_run.source_readiness_summary
     )
     if source_posture is not None:
         return source_posture
+    partial_posture = _partial_command_center_supportability(
+        completeness=completeness,
+        partial_reasons=partial_reasons,
+    )
+    if partial_posture is not None:
+        return partial_posture
+    return "READY", "COMMAND_CENTER_READY"
+
+
+def _empty_command_center_supportability(
+    *,
+    latest_run: DpmMonitoringRun | None,
+    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
+) -> CommandCenterSupportabilityPosture | None:
+    if latest_run is None or completeness == "EMPTY":
+        return "EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS"
+    return None
+
+
+def _partial_command_center_supportability(
+    *,
+    completeness: Literal["COMPLETE", "PARTIAL", "EMPTY"],
+    partial_reasons: list[str],
+) -> CommandCenterSupportabilityPosture | None:
     if completeness == "PARTIAL" or partial_reasons:
         return "PARTIAL", partial_reasons[0] if partial_reasons else "COMMAND_CENTER_PARTIAL"
-    return "READY", "COMMAND_CENTER_READY"
+    return None
 
 
 def _source_readiness_supportability_posture(

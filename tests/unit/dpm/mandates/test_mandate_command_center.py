@@ -1,7 +1,9 @@
 from datetime import date, datetime, timezone
 
 from src.api.services.mandate_command_center import (
+    _empty_command_center_supportability,
     _normalized_source_readiness_states,
+    _partial_command_center_supportability,
     _source_readiness_blocks_command_center,
     _source_readiness_degrades_command_center,
     _source_readiness_supportability_posture,
@@ -98,6 +100,40 @@ def test_command_center_supportability_state_maps_empty_and_source_postures() ->
         completeness="COMPLETE",
         partial_reasons=[],
     ) == ("READY", "COMMAND_CENTER_READY")
+
+
+def test_command_center_empty_and_partial_supportability_helpers_preserve_reasons() -> None:
+    assert _empty_command_center_supportability(
+        latest_run=None,
+        completeness="COMPLETE",
+    ) == ("EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
+    assert _empty_command_center_supportability(
+        latest_run=_run(),
+        completeness="EMPTY",
+    ) == ("EMPTY", "NO_MONITORING_RUN_FOR_COMMAND_CENTER_FILTERS")
+    assert (
+        _empty_command_center_supportability(
+            latest_run=_run(),
+            completeness="COMPLETE",
+        )
+        is None
+    )
+
+    assert _partial_command_center_supportability(
+        completeness="PARTIAL",
+        partial_reasons=["PM_BOOK_DISCOVERY_NOT_YET_SOURCED"],
+    ) == ("PARTIAL", "PM_BOOK_DISCOVERY_NOT_YET_SOURCED")
+    assert _partial_command_center_supportability(
+        completeness="PARTIAL",
+        partial_reasons=[],
+    ) == ("PARTIAL", "COMMAND_CENTER_PARTIAL")
+    assert (
+        _partial_command_center_supportability(
+            completeness="COMPLETE",
+            partial_reasons=[],
+        )
+        is None
+    )
 
 
 def test_command_center_source_readiness_helpers_preserve_precedence() -> None:

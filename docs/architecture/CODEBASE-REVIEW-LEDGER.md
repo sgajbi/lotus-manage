@@ -22679,3 +22679,33 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal infrastructure adapter helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-907: Command-center supportability posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/services/mandate_command_center.py` and
+  `tests/unit/dpm/mandates/test_mandate_command_center.py`.
+- Bank-buyable control area: architecture, command-center supportability, and testing.
+- Finding: `command_center_supportability_state` combined empty-result handling, source-readiness
+  fail-closed posture, partial-data reason selection, and ready-state defaulting in one policy
+  mapper. The behavior was correct, but the command-center supportability contract was harder to
+  review than an operator-facing supportability surface should be.
+- Action: extracted `_empty_command_center_supportability` and
+  `_partial_command_center_supportability` so empty and partial posture decisions are named and
+  directly testable before source-readiness and ready-state roll-up. Added direct tests for empty
+  latest-run handling, explicit empty completeness, partial reason preservation, fallback partial
+  reason selection, and complete-state pass-through.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m ruff format --check src/api/services/mandate_command_center.py tests/unit/dpm/mandates/test_mandate_command_center.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/mandate_command_center.py`,
+  `python -m pytest tests/unit/dpm/mandates/test_mandate_command_center.py -q`,
+  and `python -m radon cc src/api/services/mandate_command_center.py -s`; the focused mandate
+  command-center suite reported 15 passed and `command_center_supportability_state` reduced from
+  B(7) to A(5) under radon.
+- Residual risk: this slice improves command-center supportability maintainability only. It does
+  not change command-center API semantics, certify global bank-buyable readiness, runtime evidence,
+  or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal command-center supportability
+  helper maintainability hardening with no operator-facing contract change.
