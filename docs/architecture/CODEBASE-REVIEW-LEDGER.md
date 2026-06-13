@@ -23182,3 +23182,31 @@ and improves internal transaction-cost source posture maintainability only.
   runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal source adapter maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260614-924: Wave source-readiness classification helpers
+
+- Date: 2026-06-14
+- Scope: `src/core/waves/source_readiness.py` and
+  `tests/unit/dpm/waves/test_source_readiness.py`.
+- Bank-buyable control area: architecture, wave source-readiness supportability, and testing.
+- Finding: `_state_from_health` encoded stale, blocked, degraded, review-required, and ready
+  classification branches inline. The behavior was correct, but wave source-readiness posture is
+  easier to audit when each branch has a named predicate or classification builder and direct
+  tests for diagnostic projection.
+- Action: extracted `_health_is_stale`, `_health_blocks_source_readiness`,
+  `_health_degrades_source_readiness`, and the five named classification builders for stale,
+  blocked, degraded, review-required, and ready health. Added direct helper assertions for each
+  branch while preserving existing end-to-end wave item classification tests.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/source_readiness.py tests/unit/dpm/waves/test_source_readiness.py`,
+  `python -m ruff format --check src/core/waves/source_readiness.py tests/unit/dpm/waves/test_source_readiness.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_readiness.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_readiness.py -q`, and
+  `python -m radon cc src/core/waves/source_readiness.py -s`; the focused source-readiness suite
+  reported 4 passed, and radon reports `_state_from_health` at A(5) after this extraction.
+- Residual risk: this slice improves wave source-readiness classification maintainability only. It
+  does not change wave semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal wave source-readiness
+  maintainability hardening with no operator-facing contract change.

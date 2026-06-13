@@ -10,7 +10,17 @@ from src.core.mandates import (
     calculate_mandate_health,
 )
 from src.core.waves.models import DpmRebalanceWaveItem
-from src.core.waves.source_readiness import classify_wave_item_source_readiness
+from src.core.waves.source_readiness import (
+    _blocked_health_classification,
+    _degraded_health_classification,
+    _health_blocks_source_readiness,
+    _health_degrades_source_readiness,
+    _health_is_stale,
+    _ready_health_classification,
+    _review_required_health_classification,
+    _stale_health_classification,
+    classify_wave_item_source_readiness,
+)
 
 
 def _twin(*, lineage_record_id: str | None = "core-binding-001") -> DpmMandateDigitalTwin:
@@ -47,6 +57,85 @@ def _item() -> DpmRebalanceWaveItem:
         portfolio_id="PB_SG_GLOBAL_BAL_001",
         state="CANDIDATE",
     )
+
+
+def test_source_readiness_health_classification_helpers_preserve_posture() -> None:
+    twin = _twin(lineage_record_id=None)
+    ready_health = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"CASH": Decimal("0.05")},
+            target_weights={"CASH": Decimal("0.05")},
+            cash_weight=Decimal("0.05"),
+        )
+    )
+    stale_health = ready_health.model_copy(update={"as_of_date": date(2026, 5, 2)})
+    blocked_health = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"CASH": Decimal("0.05")},
+            target_weights={"CASH": Decimal("0.05")},
+            cash_weight=Decimal("0.05"),
+            source_readiness_state="UNAVAILABLE",
+        )
+    )
+    degraded_health = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"CASH": Decimal("0.05")},
+            target_weights={"CASH": Decimal("0.05")},
+            cash_weight=Decimal("0.05"),
+            source_readiness_state="DEGRADED",
+        )
+    )
+    review_health = calculate_mandate_health(
+        DpmMandateHealthInput(
+            twin=twin,
+            current_weights={"CASH": Decimal("0.05")},
+            target_weights={"CASH": Decimal("0.05")},
+            cash_weight=Decimal("0.05"),
+            approval_required=True,
+        )
+    )
+
+    assert _health_is_stale(health=stale_health, wave_as_of_date="2026-05-03")
+    assert _stale_health_classification(
+        health=stale_health,
+        wave_as_of_date="2026-05-03",
+    ) == (
+        "SOURCE_DEGRADED",
+        ["MANDATE_HEALTH_STALE"],
+        {
+            "source_owner": "lotus-manage",
+            "required_action": "REFRESH_MANDATE_HEALTH",
+            "health_as_of_date": "2026-05-02",
+            "wave_as_of_date": "2026-05-03",
+        },
+    )
+    assert _health_blocks_source_readiness(
+        health=blocked_health,
+        health_state=blocked_health.health_state.value,
+    )
+    assert _blocked_health_classification(
+        health=blocked_health,
+        health_state=blocked_health.health_state.value,
+    )[0:2] == (
+        "SOURCE_BLOCKED",
+        ["MANDATE_HEALTH_BLOCKED", "SOURCE_READINESS_UNAVAILABLE"],
+    )
+    assert _health_degrades_source_readiness(health=degraded_health)
+    assert _degraded_health_classification(
+        health=degraded_health,
+        health_state=degraded_health.health_state.value,
+    )[0:2] == ("SOURCE_DEGRADED", ["SOURCE_READINESS_DEGRADED"])
+    assert _review_required_health_classification(
+        health=review_health,
+        health_state=review_health.health_state.value,
+    )[0:2] == ("REVIEW_REQUIRED", ["MANDATE_HEALTH_PENDING_REVIEW"])
+    assert _ready_health_classification(
+        health=ready_health,
+        health_state=ready_health.health_state.value,
+    )[0:2] == ("SOURCE_READY", ["SOURCE_READINESS_READY"])
 
 
 def test_source_readiness_blocks_missing_twin_without_synthetic_readiness() -> None:
