@@ -703,6 +703,8 @@ def test_approval_requirements_section_payload_blocks_for_blocked_run() -> None:
 
 def test_approval_section_state_uses_gate_required_review_and_blocked_precedence() -> None:
     result = _ready_rebalance_result()
+    review_result = result.model_copy(update={"status": "PENDING_REVIEW"})
+    blocked_result = result.model_copy(update={"status": "BLOCKED"})
     review_gate = GateDecision(
         gate="MANDATE_APPROVAL_REQUIRED",
         recommended_next_step="REQUEST_MANDATE_APPROVAL",
@@ -724,11 +726,21 @@ def test_approval_section_state_uses_gate_required_review_and_blocked_precedence
     assert builder_module._approval_section_state(result=result, gate=blocked_gate) == "BLOCKED"
     assert (
         builder_module._approval_section_state(
-            result=result.model_copy(update={"status": "BLOCKED"}),
+            result=blocked_result,
             gate=review_gate,
         )
         == "BLOCKED"
     )
+    assert builder_module._run_blocks_approval(blocked_result)
+    assert builder_module._run_blocks_approval(result) is False
+    assert builder_module._gate_blocks_approval(blocked_gate)
+    assert builder_module._gate_blocks_approval(review_gate) is False
+    assert builder_module._gate_blocks_approval(None) is False
+    assert builder_module._run_requires_approval_review(review_result)
+    assert builder_module._run_requires_approval_review(result) is False
+    assert builder_module._gate_requires_approval_review(review_gate)
+    assert builder_module._gate_requires_approval_review(blocked_gate) is False
+    assert builder_module._gate_requires_approval_review(None) is False
 
 
 def test_approval_support_helpers_serialize_ordered_facts_and_reason_codes() -> None:
@@ -971,6 +983,21 @@ def test_selected_alternative_section_payload_projects_method_trace() -> None:
     assert facts["constraint_trace"]
     assert metrics == alternative.comparison_metrics.model_dump(mode="json")
     assert reason_codes == []
+    assert builder_module._selected_alternative_method_state(alternative) == "READY"
+    assert builder_module._selected_alternative_reason_codes(alternative) == []
+    degraded_alternative = alternative.model_copy(update={"method_status": "DEGRADED"})
+    assert builder_module._selected_alternative_method_state(degraded_alternative) == "DEGRADED"
+    assert builder_module._selected_alternative_reason_codes(degraded_alternative) == [
+        "DPM_SELECTED_METHOD_NOT_READY"
+    ]
+    assert (
+        builder_module._selected_alternative_facts(
+            alternative_set=alternative_set,
+            selected_alternative=alternative,
+            selection=selection,
+        )["selected_alternative_id"]
+        == alternative.alternative_id
+    )
 
 
 def test_decision_timeline_orders_source_workflow_and_generated_events() -> None:
@@ -1205,6 +1232,15 @@ def test_eligibility_and_restrictions_section_payload_reports_universe_exclusion
     assert facts["excluded"][0]["instrument_id"] == "PRIVATE_CREDIT_FUND"
     assert metrics == {"excluded_count": 1}
     assert reason_codes == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
+    excluded = result.universe.excluded
+    assert builder_module._eligibility_state_from_universe_exclusions(excluded) == "PENDING_REVIEW"
+    assert builder_module._excluded_instrument_facts(excluded)[0]["instrument_id"] == (
+        "PRIVATE_CREDIT_FUND"
+    )
+    assert builder_module._eligibility_reason_codes(
+        base_reason_codes=[],
+        excluded=excluded,
+    ) == ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"]
 
 
 def test_eligibility_and_restrictions_section_payload_merges_restriction_context() -> None:
@@ -1274,6 +1310,12 @@ def test_eligibility_and_restrictions_section_payload_merges_restriction_context
         "CLIENT_RESTRICTION_PROFILE_READY",
         "DPM_UNIVERSE_EXCLUSIONS_PRESENT",
     ]
+    restriction_payload = builder_module._eligibility_payload_with_restriction_context(
+        restriction_context=restriction,
+        excluded=result.universe.excluded,
+    )
+    assert restriction_payload[0] == "PENDING_REVIEW"
+    assert restriction_payload[2]["source_product_name"] == "ClientRestrictionProfile"
 
 
 def test_run_source_context_section_payload_dispatches_source_context_sections() -> None:

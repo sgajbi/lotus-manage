@@ -34,7 +34,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import GateDecision, RebalanceResult
+from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -877,11 +877,27 @@ def _approval_workflow_decision_facts(
 def _approval_section_state(
     *, result: RebalanceResult, gate: GateDecision | None
 ) -> ProofPackSectionState:
-    if result.status == "BLOCKED" or (gate is not None and gate.gate == "BLOCKED"):
+    if _run_blocks_approval(result) or _gate_blocks_approval(gate):
         return "BLOCKED"
-    if result.status == "PENDING_REVIEW" or (gate is not None and gate.gate.endswith("REQUIRED")):
+    if _run_requires_approval_review(result) or _gate_requires_approval_review(gate):
         return "PENDING_REVIEW"
     return "READY"
+
+
+def _run_blocks_approval(result: RebalanceResult) -> bool:
+    return result.status == "BLOCKED"
+
+
+def _gate_blocks_approval(gate: GateDecision | None) -> bool:
+    return gate is not None and gate.gate == "BLOCKED"
+
+
+def _run_requires_approval_review(result: RebalanceResult) -> bool:
+    return result.status == "PENDING_REVIEW"
+
+
+def _gate_requires_approval_review(gate: GateDecision | None) -> bool:
+    return gate is not None and gate.gate.endswith("REQUIRED")
 
 
 def _approval_gate_fact(gate: GateDecision | None) -> dict[str, Any] | None:
@@ -977,31 +993,55 @@ def _selected_alternative_section_payload(
             {},
             ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
         )
-    selected_state = (
-        "READY"
-        if selected_alternative.method_status == "READY"
-        else cast(ProofPackSectionState, str(selected_alternative.method_status))
-    )
     return (
-        selected_state,
+        _selected_alternative_method_state(selected_alternative),
         "Selected construction alternative captured with method and trace evidence.",
-        {
-            "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
-            "selected_alternative_id": selected_alternative.alternative_id,
-            "selection_id": selection.selection_id if selection else None,
-            "method": selected_alternative.method,
-            "method_status": selected_alternative.method_status,
-            "summary": selected_alternative.summary,
-            "objective_trace": [
-                item.model_dump(mode="json") for item in selected_alternative.objective_trace
-            ],
-            "constraint_trace": [
-                item.model_dump(mode="json") for item in selected_alternative.constraint_trace
-            ],
-        },
+        _selected_alternative_facts(
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
+        ),
         selected_alternative.comparison_metrics.model_dump(mode="json"),
-        [] if selected_alternative.method_status == "READY" else ["DPM_SELECTED_METHOD_NOT_READY"],
+        _selected_alternative_reason_codes(selected_alternative),
     )
+
+
+def _selected_alternative_method_state(
+    selected_alternative: ConstructionAlternative,
+) -> ProofPackSectionState:
+    if selected_alternative.method_status == "READY":
+        return "READY"
+    return cast(ProofPackSectionState, str(selected_alternative.method_status))
+
+
+def _selected_alternative_reason_codes(
+    selected_alternative: ConstructionAlternative,
+) -> list[str]:
+    if selected_alternative.method_status == "READY":
+        return []
+    return ["DPM_SELECTED_METHOD_NOT_READY"]
+
+
+def _selected_alternative_facts(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative,
+    selection: ConstructionAlternativeSelection | None,
+) -> dict[str, Any]:
+    return {
+        "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
+        "selected_alternative_id": selected_alternative.alternative_id,
+        "selection_id": selection.selection_id if selection else None,
+        "method": selected_alternative.method,
+        "method_status": selected_alternative.method_status,
+        "summary": selected_alternative.summary,
+        "objective_trace": [
+            item.model_dump(mode="json") for item in selected_alternative.objective_trace
+        ],
+        "constraint_trace": [
+            item.model_dump(mode="json") for item in selected_alternative.constraint_trace
+        ],
+    }
 
 
 def _source_readiness_section_payload(
@@ -1073,32 +1113,69 @@ def _eligibility_and_restrictions_section_payload(
     restriction_context = source_analytics.get("client_restriction")
     excluded = result.universe.excluded
     if restriction_context is not None:
-        reason_codes = list(restriction_context.reason_codes)
-        if excluded:
-            reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
-        return (
-            _lowest_section_state(
-                [
-                    restriction_context.state,
-                    "PENDING_REVIEW" if excluded else "READY",
-                ]
-            ),
-            "Eligibility evidence and source-owned client restriction profile are attached.",
-            {
-                **restriction_context.facts,
-                "excluded": [item.model_dump(mode="json") for item in excluded],
-            },
-            {**restriction_context.metrics, "excluded_count": len(excluded)},
-            sorted(set(reason_codes)),
+        return _eligibility_payload_with_restriction_context(
+            restriction_context=restriction_context,
+            excluded=excluded,
         )
 
+    return _eligibility_payload_from_universe_exclusions(excluded)
+
+
+def _eligibility_payload_with_restriction_context(
+    *,
+    restriction_context: ProofPackSourceAnalytics,
+    excluded: list[ExcludedInstrument],
+) -> _SectionPayload:
     return (
-        "READY" if not excluded else "PENDING_REVIEW",
-        "Eligibility and restriction evidence captured from source run universe.",
-        {"excluded": [item.model_dump(mode="json") for item in excluded]},
-        {"excluded_count": len(excluded)},
-        ["DPM_UNIVERSE_EXCLUSIONS_PRESENT"] if excluded else [],
+        _lowest_section_state(
+            [
+                restriction_context.state,
+                _eligibility_state_from_universe_exclusions(excluded),
+            ]
+        ),
+        "Eligibility evidence and source-owned client restriction profile are attached.",
+        {**restriction_context.facts, "excluded": _excluded_instrument_facts(excluded)},
+        {**restriction_context.metrics, "excluded_count": len(excluded)},
+        _eligibility_reason_codes(
+            base_reason_codes=restriction_context.reason_codes,
+            excluded=excluded,
+        ),
     )
+
+
+def _eligibility_payload_from_universe_exclusions(
+    excluded: list[ExcludedInstrument],
+) -> _SectionPayload:
+    return (
+        _eligibility_state_from_universe_exclusions(excluded),
+        "Eligibility and restriction evidence captured from source run universe.",
+        {"excluded": _excluded_instrument_facts(excluded)},
+        {"excluded_count": len(excluded)},
+        _eligibility_reason_codes(base_reason_codes=[], excluded=excluded),
+    )
+
+
+def _eligibility_state_from_universe_exclusions(
+    excluded: list[ExcludedInstrument],
+) -> ProofPackSectionState:
+    return "PENDING_REVIEW" if excluded else "READY"
+
+
+def _excluded_instrument_facts(
+    excluded: list[ExcludedInstrument],
+) -> list[dict[str, Any]]:
+    return [item.model_dump(mode="json") for item in excluded]
+
+
+def _eligibility_reason_codes(
+    *,
+    base_reason_codes: list[str],
+    excluded: list[ExcludedInstrument],
+) -> list[str]:
+    reason_codes = list(base_reason_codes)
+    if excluded:
+        reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
+    return sorted(set(reason_codes))
 
 
 def _decision_summary_section_payload(
