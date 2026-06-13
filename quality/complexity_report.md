@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T01:30:38+00:00`
+- Generated at: `2026-06-13T01:34:55+00:00`
 
-- Current ref: `725e93dc`
+- Current ref: `01bbfe2a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
-| 2 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
-| 3 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
-| 4 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
-| 5 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
-| 6 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
-| 7 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
-| 8 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
-| 9 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
-| 10 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
+| 1 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
+| 2 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
+| 3 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
+| 4 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
+| 5 | realized_attribution_source_from_attribution_response | src/core/outcomes/performance_sources.py | 7 | 66 |
+| 6 | apply_group_constraints | src/core/rebalance/targets.py | 7 | 66 |
+| 7 | realized_execution_acknowledgement_source_from_response | src/core/outcomes/core_sources.py | 7 | 62 |
+| 8 | _source_refs | src/core/proof_packs/builder.py | 7 | 62 |
+| 9 | save_wave | src/infrastructure/waves/postgres.py | 7 | 62 |
+| 10 | execute_batch_scenarios | src/api/services/rebalance_batch_execution.py | 7 | 60 |
 
 ### Most Complex Current Test Functions
 
