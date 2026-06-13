@@ -1,3 +1,5 @@
+from typing import Callable
+
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_esg_supportability import with_esg_restriction_constraints
 from src.api.services.construction_method_readiness import (
@@ -22,6 +24,23 @@ from src.core.construction.models import (
 from src.core.construction.status import lowest_construction_status
 from src.core.construction.vocabulary import ConstructionMethod, ConstructionMethodStatus
 from src.core.models import RebalanceResult
+
+_EnrichmentStatusSelector = Callable[
+    [ConstructionEnrichmentSummary],
+    ConstructionMethodStatus,
+]
+
+_METHOD_ENRICHMENT_STATUS_SELECTORS: dict[
+    ConstructionMethod,
+    _EnrichmentStatusSelector,
+] = {
+    ConstructionMethod.TAX_AWARE: lambda enrichment: enrichment.tax_status,
+    ConstructionMethod.MIN_TURNOVER: lambda enrichment: enrichment.turnover_status,
+    ConstructionMethod.COST_AWARE: lambda enrichment: enrichment.cost_status,
+    ConstructionMethod.LIQUIDITY_AWARE: lambda enrichment: enrichment.liquidity_status,
+    ConstructionMethod.CURRENCY_OVERLAY: lambda enrichment: enrichment.fx_status,
+    ConstructionMethod.RISK_AWARE: lambda enrichment: enrichment.risk_status,
+}
 
 
 def apply_construction_supportability(
@@ -170,20 +189,11 @@ def method_enrichment_statuses(
     result: RebalanceResult,
     enrichment: ConstructionEnrichmentSummary,
 ) -> list[ConstructionMethodStatus]:
-    if method == ConstructionMethod.TAX_AWARE:
-        return [enrichment.tax_status]
-    if method == ConstructionMethod.MIN_TURNOVER:
-        return [enrichment.turnover_status]
-    if method == ConstructionMethod.COST_AWARE:
-        return [enrichment.cost_status]
+    selector = _METHOD_ENRICHMENT_STATUS_SELECTORS.get(method)
+    if selector is not None:
+        return [selector(enrichment)]
     if method == ConstructionMethod.SOLVER_CONSTRAINED:
         return [solver_method_status(result=result)]
-    if method == ConstructionMethod.LIQUIDITY_AWARE:
-        return [enrichment.liquidity_status]
-    if method == ConstructionMethod.CURRENCY_OVERLAY:
-        return [enrichment.fx_status]
-    if method == ConstructionMethod.RISK_AWARE:
-        return [enrichment.risk_status]
     return []
 
 

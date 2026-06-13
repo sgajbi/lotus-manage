@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-12T17:32:00+00:00`
+- Generated at: `2026-06-13T00:01:13+00:00`
 
-- Current ref: `5afc06c6`
+- Current ref: `4e731b72`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | method_enrichment_statuses | src/api/services/construction_supportability_application.py | 8 | 21 |
-| 2 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
-| 3 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
-| 4 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
-| 5 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
-| 6 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
-| 7 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
-| 8 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
-| 9 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
-| 10 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
+| 1 | _select_gate_route | src/core/common/workflow_gates.py | 8 | 21 |
+| 2 | _drawdown_source_posture | src/core/outcomes/risk_sources.py | 8 | 20 |
+| 3 | _security_intent_constraints | src/core/rebalance/intents.py | 8 | 20 |
+| 4 | _classify_queue_posture | src/core/waves/campaign_operating_queue.py | 8 | 19 |
+| 5 | validate_enterprise_runtime_config | src/api/enterprise_readiness.py | 8 | 18 |
+| 6 | command_center_supportability_state | src/api/services/mandate_command_center.py | 8 | 17 |
+| 7 | _semantic_string_example_for_key | src/api/openapi_enrichment.py | 8 | 15 |
+| 8 | validate_policy | src/core/pm_quality/models.py | 8 | 15 |
+| 9 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
+| 10 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
 
 ### Most Complex Current Test Functions
 

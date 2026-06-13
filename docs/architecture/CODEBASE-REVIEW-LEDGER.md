@@ -20669,3 +20669,32 @@ and improves internal transaction-cost source posture maintainability only.
   and `git restore quality/baseline_report.md`.
 - Wiki decision: no wiki source change required; this is internal PM-quality lookback-window
   maintainability refactoring and repo-local quality evidence.
+
+## BACKEND-REVIEW-20260613-838: Construction method enrichment selector map
+
+- Date: 2026-06-13
+- Scope: `src/api/services/construction_supportability_application.py`,
+  `tests/unit/dpm/construction/test_supportability_application.py`,
+  `quality/refactor_health_report.md`, `quality/quality_scorecard.md`, and
+  `quality/complexity_report.md`.
+- Finding: `method_enrichment_statuses` was the top current source-complexity hotspot after the
+  PM-quality lookback slice and encoded method-to-enrichment-status routing through repeated branch
+  checks, with only partial direct coverage over the supported construction methods.
+- Action: replaced the branch chain with an explicit construction-method enrichment selector map
+  while preserving solver-diagnostic status handling and empty posture for methods without an
+  enrichment overlay. Expanded direct tests to cover every mapped method and the solver-specific
+  diagnostic projection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m ruff format --check src/api/services/construction_supportability_application.py tests/unit/dpm/construction/test_supportability_application.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/construction_supportability_application.py`,
+  `python -m pytest tests/unit/dpm/construction/test_supportability_application.py`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/api_vocabulary_inventory.py --validate-only`,
+  `python scripts/engineering_health_report.py`,
+  `git diff --check`,
+  service leakage scan,
+  and `git restore quality/baseline_report.md`.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  maintainability refactoring and repo-local quality evidence.
