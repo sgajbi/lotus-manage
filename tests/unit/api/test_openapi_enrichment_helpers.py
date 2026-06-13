@@ -9,6 +9,8 @@ from src.api.openapi_enrichment import (
     _ensure_operation_default_error_response,
     _ensure_operation_examples,
     _ensure_metrics_paths_examples,
+    _ensure_request_body_example,
+    _ensure_response_body_example,
     _ensure_property_documentation,
     _infer_description,
     _infer_example,
@@ -387,6 +389,67 @@ def test_openapi_enrichment_resolved_schema_example_preserves_declared_null() ->
         )
         is None
     )
+
+
+def test_openapi_enrichment_request_body_example_helper_enriches_json_content() -> None:
+    operation = {
+        "requestBody": {
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Payload"}}}
+        }
+    }
+
+    _ensure_request_body_example(
+        operation=operation,
+        schemas={"Payload": {"type": "object", "properties": {"portfolio_id": {"type": "string"}}}},
+        example_name="custom_request",
+    )
+
+    assert operation["requestBody"]["content"]["application/json"]["examples"]["default"] == {
+        "summary": "Example request payload.",
+        "value": {"portfolio_id": "DEMO_DPM_EUR_001"},
+    }
+
+
+def test_openapi_enrichment_request_body_example_helper_skips_non_json_content() -> None:
+    operation = {"requestBody": {"content": {"text/plain": {"schema": {"type": "string"}}}}}
+
+    _ensure_request_body_example(
+        operation=operation,
+        schemas={},
+        example_name="plain_request",
+    )
+
+    assert operation == {"requestBody": {"content": {"text/plain": {"schema": {"type": "string"}}}}}
+
+
+def test_openapi_enrichment_response_body_example_helper_enriches_success_and_errors() -> None:
+    success_response = {"content": {"application/json": {"schema": {"type": "string"}}}}
+    conflict_response = {"description": "Conflict detected."}
+
+    _ensure_response_body_example(
+        response=success_response,
+        status_code="200",
+        schemas={},
+        example_name="success_response",
+    )
+    _ensure_response_body_example(
+        response=conflict_response,
+        status_code="409",
+        schemas={},
+        example_name="conflict_response",
+    )
+
+    assert success_response["content"]["application/json"]["examples"]["default"] == {
+        "summary": "Example response payload.",
+        "value": "sample_success_response",
+    }
+    assert conflict_response["content"]["application/json"]["examples"]["default"]["value"] == {
+        "type": "about:blank",
+        "title": "Conflict",
+        "status": 409,
+        "detail": "Conflict detected.",
+        "correlation_id": "corr_1234abcd",
+    }
 
 
 def test_openapi_enrichment_adds_operation_level_examples_and_errors() -> None:

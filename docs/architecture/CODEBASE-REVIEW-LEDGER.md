@@ -22290,3 +22290,34 @@ and improves internal transaction-cost source posture maintainability only.
   behavior.
 - Wiki decision: no wiki source change required; this is internal API-governance helper
   correctness hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-894: OpenAPI operation example enrichment helpers
+
+- Date: 2026-06-13
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, contract governance, and testing.
+- Finding: `_ensure_operation_examples` still coordinated request-body example enrichment,
+  response-body example enrichment, and error-response content enrichment directly. The behavior was
+  correct, but the generated OpenAPI operation example path remained a top source hotspot in the
+  quality report and was harder to review than the API governance layer should be.
+- Action: extracted `_ensure_request_body_example` and `_ensure_response_body_example` so request
+  and response enrichment can be reviewed and tested independently while preserving the existing
+  operation-level orchestration. Added direct helper coverage for JSON request enrichment,
+  non-JSON no-op behavior, success response examples, and structured error response examples.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment helper
+  suite reported 33 passed, `_ensure_operation_examples` reduced to A(3) under radon, and the
+  refreshed quality report no longer lists it in the top source hotspots.
+- Residual risk: this slice improves OpenAPI enrichment maintainability only. It does not change
+  API schema truth, certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal API-governance helper
+  maintainability hardening with no operator-facing contract change.

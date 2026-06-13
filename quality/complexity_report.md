@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T11:55:24+00:00`
+- Generated at: `2026-06-13T12:24:16+00:00`
 
-- Report source snapshot: `240df935+worktree`
+- Report source snapshot: `252e02be+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
-| 2 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
-| 3 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
-| 4 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
-| 5 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
-| 6 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
-| 7 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
-| 8 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
-| 9 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
-| 10 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 1 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
+| 2 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 3 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
+| 4 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
+| 5 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
+| 6 | _resolve_handoff | src/core/outcomes/snapshots.py | 7 | 23 |
+| 7 | _analytics_source_ref | src/core/waves/source_analytics.py | 7 | 22 |
+| 8 | liquidity_status | src/api/services/construction_liquidity_supportability.py | 7 | 21 |
+| 9 | source_analytics_for_context | src/core/proof_packs/source_analytics.py | 7 | 20 |
+| 10 | sustainability_allocation_breaches | src/api/services/construction_sustainability_supportability.py | 7 | 19 |
 
 ### Most Complex Current Test Functions
 
