@@ -32,12 +32,14 @@ from src.core.mandates import (
     _benchmark_assignment_source_lineage,
     _benchmark_assignment_source_record_id,
     _build_digital_twin_source_lineage,
+    _health_input_source_readiness,
     _mandate_twin_constraint_set,
     _mandate_binding_profile_gap_codes,
     _mandate_twin_preferences,
     _mandate_optional_source_product_gap_codes,
     _mandate_source_schedule_gap_codes,
     _mandate_twin_field_gap_codes,
+    _market_data_source_readiness,
     _optional_digital_twin_source_lineage,
     calculate_mandate_health,
     build_health_input_from_core_sources,
@@ -838,6 +840,57 @@ def test_build_health_input_from_market_data_coverage_preserves_degraded_sources
     assert health_input.source_readiness_state == "DEGRADED"
     assert health_input.degraded_source_families == ["MARKET_DATA_COVERAGE"]
     assert health_input.stale_source_families == ["EQ_US_AAPL", "USD/SGD"]
+
+
+def test_market_data_source_readiness_projects_missing_stale_and_degraded_sources() -> None:
+    readiness = _market_data_source_readiness(
+        _market_data_coverage(
+            supportability={
+                "state": "DEGRADED",
+                "reason": "MARKET_DATA_PARTIAL",
+                "requested_price_count": 2,
+                "resolved_price_count": 1,
+                "requested_fx_count": 1,
+                "resolved_fx_count": 0,
+                "missing_instrument_ids": ["FI_US_TREASURY_10Y"],
+                "missing_currency_pairs": ["USD/SGD"],
+                "stale_instrument_ids": ["EQ_US_AAPL"],
+                "stale_currency_pairs": ["EUR/SGD"],
+            }
+        )
+    )
+
+    assert readiness.state == "DEGRADED"
+    assert readiness.missing_source_families == ["FI_US_TREASURY_10Y", "USD/SGD"]
+    assert readiness.degraded_source_families == ["MARKET_DATA_COVERAGE"]
+    assert readiness.stale_source_families == ["EQ_US_AAPL", "EUR/SGD"]
+
+
+def test_health_input_source_readiness_degrades_ready_only_for_unavailable_optionals() -> None:
+    ready_readiness = _health_input_source_readiness(
+        market_data_coverage=None,
+        unavailable_source_families=["CLIENT_RESTRICTION_PROFILE"],
+    )
+    incomplete_readiness = _health_input_source_readiness(
+        market_data_coverage=_market_data_coverage(
+            supportability={
+                "state": "INCOMPLETE",
+                "reason": "PRICE_MISSING",
+                "requested_price_count": 2,
+                "resolved_price_count": 1,
+                "requested_fx_count": 0,
+                "resolved_fx_count": 0,
+                "missing_instrument_ids": ["EQ_US_AAPL"],
+            }
+        ),
+        unavailable_source_families=["SUSTAINABILITY_PREFERENCE_PROFILE"],
+    )
+
+    assert ready_readiness.state == "DEGRADED"
+    assert ready_readiness.degraded_source_families == ["CLIENT_RESTRICTION_PROFILE"]
+    assert incomplete_readiness.state == "INCOMPLETE"
+    assert incomplete_readiness.missing_source_families == ["EQ_US_AAPL"]
+    assert incomplete_readiness.degraded_source_families == ["SUSTAINABILITY_PREFERENCE_PROFILE"]
 
 
 def test_build_health_input_uses_source_backed_profile_and_cashflow_risk_signals() -> None:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from enum import Enum
@@ -78,6 +79,15 @@ _DigitalTwinLineageSourceProduct: TypeAlias = (
     | DpmCoreLiquidityReserveRequirementResponse
     | DpmCorePlannedWithdrawalScheduleResponse
 )
+_SourceReadinessState: TypeAlias = Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"]
+
+
+@dataclass(frozen=True)
+class _MandateSourceReadinessProjection:
+    state: _SourceReadinessState
+    missing_source_families: list[str]
+    degraded_source_families: list[str]
+    stale_source_families: list[str]
 
 
 def _bounded_ratio(value: Decimal, *, field_name: str) -> Decimal:
@@ -866,6 +876,53 @@ def compile_mandate_digital_twin_from_core(
     )
 
 
+def _market_data_source_readiness(
+    market_data_coverage: Optional[DpmCoreMarketDataCoverageWindowResponse],
+) -> _MandateSourceReadinessProjection:
+    if market_data_coverage is None:
+        return _MandateSourceReadinessProjection(
+            state="READY",
+            missing_source_families=[],
+            degraded_source_families=[],
+            stale_source_families=[],
+        )
+    supportability = market_data_coverage.supportability
+    degraded_sources = ["MARKET_DATA_COVERAGE"] if supportability.state == "DEGRADED" else []
+    return _MandateSourceReadinessProjection(
+        state=supportability.state,
+        missing_source_families=[
+            *supportability.missing_instrument_ids,
+            *supportability.missing_currency_pairs,
+        ],
+        degraded_source_families=degraded_sources,
+        stale_source_families=[
+            *supportability.stale_instrument_ids,
+            *supportability.stale_currency_pairs,
+        ],
+    )
+
+
+def _health_input_source_readiness(
+    *,
+    market_data_coverage: Optional[DpmCoreMarketDataCoverageWindowResponse],
+    unavailable_source_families: Optional[list[str]],
+) -> _MandateSourceReadinessProjection:
+    market_data_readiness = _market_data_source_readiness(market_data_coverage)
+    unavailable_families = unavailable_source_families or []
+    state = market_data_readiness.state
+    if unavailable_families and state == "READY":
+        state = "DEGRADED"
+    return _MandateSourceReadinessProjection(
+        state=state,
+        missing_source_families=market_data_readiness.missing_source_families,
+        degraded_source_families=[
+            *market_data_readiness.degraded_source_families,
+            *unavailable_families,
+        ],
+        stale_source_families=market_data_readiness.stale_source_families,
+    )
+
+
 def build_health_input_from_core_sources(
     *,
     twin: DpmMandateDigitalTwin,
@@ -878,32 +935,20 @@ def build_health_input_from_core_sources(
     portfolio_cashflow_projection: Optional[DpmCorePortfolioCashflowProjectionResponse] = None,
     unavailable_source_families: Optional[list[str]] = None,
 ) -> DpmMandateHealthInput:
-    missing_sources: list[str] = []
-    degraded_sources: list[str] = []
-    stale_sources: list[str] = []
-    readiness_state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = "READY"
-    if market_data_coverage is not None:
-        readiness_state = market_data_coverage.supportability.state
-        missing_sources.extend(market_data_coverage.supportability.missing_instrument_ids)
-        missing_sources.extend(market_data_coverage.supportability.missing_currency_pairs)
-        stale_sources.extend(market_data_coverage.supportability.stale_instrument_ids)
-        stale_sources.extend(market_data_coverage.supportability.stale_currency_pairs)
-        if readiness_state == "DEGRADED":
-            degraded_sources.append("MARKET_DATA_COVERAGE")
-    if unavailable_source_families:
-        degraded_sources.extend(unavailable_source_families)
-        if readiness_state == "READY":
-            readiness_state = "DEGRADED"
+    source_readiness = _health_input_source_readiness(
+        market_data_coverage=market_data_coverage,
+        unavailable_source_families=unavailable_source_families,
+    )
 
     return DpmMandateHealthInput(
         twin=twin,
         target_weights={
             target.instrument_id: target.target_weight for target in model_targets.targets
         },
-        source_readiness_state=readiness_state,
-        missing_source_families=missing_sources,
-        degraded_source_families=degraded_sources,
-        stale_source_families=stale_sources,
+        source_readiness_state=source_readiness.state,
+        missing_source_families=source_readiness.missing_source_families,
+        degraded_source_families=source_readiness.degraded_source_families,
+        stale_source_families=source_readiness.stale_source_families,
         restricted_target_instruments=_restricted_model_targets(
             model_targets=model_targets,
             client_restriction_profile=client_restriction_profile,

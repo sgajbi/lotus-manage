@@ -21835,3 +21835,31 @@ and improves internal transaction-cost source posture maintainability only.
   readiness, runtime evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal quality-evidence hardening with
   no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-879: Mandate health source-readiness projection helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/mandates.py` and `tests/unit/dpm/core/test_mandate_health.py`.
+- Bank-buyable control area: architecture and testing.
+- Finding: `build_health_input_from_core_sources` combined market-data readiness projection,
+  unavailable optional-source degradation, target-weight projection, source-backed restriction and
+  sustainability signals, projected cashflow fields, and health-input assembly in one helper. The
+  behavior was correct, but the source-readiness precedence was harder to review directly than the
+  mandate-health supportability contract requires.
+- Action: extracted `_market_data_source_readiness` and `_health_input_source_readiness` with an
+  explicit typed projection object while preserving the public health-input payload. Added direct
+  tests proving missing/stale market-data projection, degraded market-data family tagging, and
+  optional-source unavailability degrading only an otherwise ready source posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m ruff format --check src/core/mandates.py tests/unit/dpm/core/test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src/core/mandates.py`,
+  `python -m pytest tests/unit/dpm/core/test_mandate_health.py -q`, and
+  `python -m radon cc src/core/mandates.py -s`; the focused mandate-health suite reported
+  40 passed and `build_health_input_from_core_sources` reduced from B(8) to A(4).
+- Residual risk: this slice improves internal mandate-health source-readiness maintainability only.
+  It does not certify global bank-buyable readiness, runtime evidence, or downstream
+  Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal domain helper maintainability
+  hardening with no operator-facing contract change.
