@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T11:31:13+00:00`
+- Generated at: `2026-06-13T11:47:36+00:00`
 
-- Report source snapshot: `0eb99cb3+worktree`
+- Report source snapshot: `9294f909+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _governance_evidence | src/core/pm_quality/scoring.py | 7 | 43 |
-| 2 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
-| 3 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
-| 4 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
-| 5 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
-| 6 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
-| 7 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
-| 8 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
-| 9 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
-| 10 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
+| 1 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 7 | 38 |
+| 2 | build_run_filter_query | src/infrastructure/rebalance_runs/run_query.py | 7 | 38 |
+| 3 | _example_from_schema | src/api/openapi_enrichment.py | 7 | 37 |
+| 4 | _append_settlement_ladder_points | src/core/rebalance/execution.py | 7 | 36 |
+| 5 | _ensure_operation_examples | src/api/openapi_enrichment.py | 7 | 33 |
+| 6 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 7 | 33 |
+| 7 | _apply_single_position_max_weight | src/core/rebalance/targets.py | 7 | 31 |
+| 8 | purge_mandate_records_before | src/infrastructure/mandates/in_memory.py | 7 | 31 |
+| 9 | build_bulk_review_campaign_definition_assignment_action_page | src/core/waves/campaign_assignment_actions.py | 7 | 27 |
+| 10 | save_proof_pack | src/infrastructure/proof_packs/in_memory.py | 7 | 24 |
 
 ### Most Complex Current Test Functions
 

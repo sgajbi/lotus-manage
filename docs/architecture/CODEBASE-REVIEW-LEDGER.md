@@ -22143,3 +22143,34 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal API router helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260613-889: PM-quality governance posture helpers
+
+- Date: 2026-06-13
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, governance controls, and testing.
+- Finding: `_governance_evidence` combined required approval validation, governance expiry
+  parsing, active-expiry reason-code projection, actor entitlement normalization, entitlement
+  failure handling, and evidence assembly in one helper. The behavior was correct, but the
+  governance and entitlement rules were harder to review directly than the PM operating-quality
+  control contract deserves.
+- Action: extracted `_GovernanceExpiryEvaluation`, `_ActorEntitlementEvaluation`,
+  `_governance_expiry_evaluation`, and `_actor_entitlement_evaluation` while preserving existing
+  validation error codes and governance evidence payload shape. Added direct tests for active and
+  absent expiry, invalid and expired dates, authorized actors, unsupplied entitlement allow-lists,
+  and unauthorized actor rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`,
+  `python scripts/engineering_health_report.py`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  27 passed, and `_governance_evidence` reduced from B(9) to A(2) under radon.
+- Residual risk: this slice improves internal PM-quality governance maintainability only. It does
+  not certify global bank-buyable readiness, runtime evidence, or downstream Gateway/Workbench
+  product behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality governance helper
+  maintainability hardening with no operator-facing contract change.
