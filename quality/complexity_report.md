@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T16:28:02+00:00`
+- Generated at: `2026-06-13T16:45:55+00:00`
 
-- Report source snapshot: `8fe9311b`
+- Report source snapshot: `6f5e1429`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _roll_up_state | src/core/outcomes/comparison.py | 7 | 11 |
-| 2 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
-| 3 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
-| 4 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
-| 5 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 6 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 7 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
-| 8 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
-| 9 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
-| 10 | generate_targets_solver | src/core/target_generation.py | 6 | 68 |
+| 1 | validate_policy_selection | src/api/routers/pm_operating_quality_models.py | 7 | 8 |
+| 2 | _state_from_source | src/core/outcomes/realized_sources.py | 7 | 8 |
+| 3 | _approval_section_state | src/core/proof_packs/builder.py | 7 | 8 |
+| 4 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
+| 5 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 6 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 6 | 85 |
+| 7 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
+| 8 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
+| 9 | generate_targets_solver | src/core/target_generation.py | 6 | 68 |
+| 10 | _attribution_value | src/core/outcomes/performance_sources.py | 6 | 65 |
 
 ### Most Complex Current Test Functions
 
