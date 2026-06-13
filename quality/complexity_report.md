@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T00:55:06+00:00`
+- Generated at: `2026-06-13T00:57:53+00:00`
 
-- Current ref: `1c52d1f4`
+- Current ref: `61127b34`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | validate_persistence_profile_guardrails | src/api/persistence_profile.py | 8 | 14 |
-| 2 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
-| 3 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
-| 4 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
-| 5 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
-| 6 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
-| 7 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
-| 8 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
-| 9 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
-| 10 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
+| 1 | _rolling_window_result | src/core/outcomes/risk_sources.py | 8 | 14 |
+| 2 | _monitoring_exception_matches | src/infrastructure/mandates/in_memory.py | 8 | 14 |
+| 3 | run_simulation | src/core/rebalance/engine.py | 7 | 144 |
+| 4 | realized_historical_attribution_source_from_attribution_response | src/core/outcomes/risk_sources.py | 7 | 88 |
+| 5 | generate_targets_solver | src/core/target_generation.py | 7 | 85 |
+| 6 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 7 | 77 |
+| 7 | generate_proof_pack | src/api/routers/proof_pack_generate_routes.py | 7 | 76 |
+| 8 | _regime_stress_source_analytics | src/core/proof_packs/source_analytics.py | 7 | 73 |
+| 9 | realized_rolling_risk_source_from_rolling_response | src/core/outcomes/risk_sources.py | 7 | 71 |
+| 10 | _resolve_tactical_house_view_portfolios | src/api/routers/wave_portfolio_resolution.py | 7 | 66 |
 
 ### Most Complex Current Test Functions
 
