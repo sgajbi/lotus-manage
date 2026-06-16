@@ -23499,3 +23499,23 @@ and improves internal transaction-cost source posture maintainability only.
   external workflow ownership, OMS posture, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal read-model maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-936: Campaign assignment hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the campaign assignment task helper extractions, the checked-in quality reports
+  needed to reflect the updated branch head and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `669949b7` and the current top-ten source hotspot list no longer includes
+  `transition_bulk_review_campaign_definition_assignment_task`,
+  `open_bulk_review_campaign_definition_assignment_task`, or
+  `build_bulk_review_campaign_definition_assignment_task_page`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
