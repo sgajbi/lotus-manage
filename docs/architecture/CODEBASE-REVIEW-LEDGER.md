@@ -23411,3 +23411,111 @@ and improves internal transaction-cost source posture maintainability only.
   into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-933: Campaign assignment task transition helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow supportability, and testing.
+- Finding: `transition_bulk_review_campaign_definition_assignment_task` mixed active-definition
+  validation, transition request normalization, assignment-task lookup, replay detection,
+  transition mutation, and definition replacement in one orchestration path. The behavior was
+  covered through public workflow tests, but these boundaries are distinct supportability decisions
+  that should be independently auditable.
+- Action: extracted helpers for active-definition validation, transition request normalization,
+  assignment-task lookup, and assignment-task replacement; added direct helper tests while
+  preserving the public transition behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`, and
+  `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 95 passed, and radon reports
+  `transition_bulk_review_campaign_definition_assignment_task` at A(4).
+- Residual risk: this slice improves internal campaign assignment-task maintainability only.
+  Existing adjacent B-grade helpers in `campaign_assignment_tasks.py` remain visible for future
+  slices; this slice does not change API contracts, assignment-task semantics, external workflow
+  ownership, OMS posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal workflow maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-934: Campaign assignment task open helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow supportability, and testing.
+- Finding: `open_bulk_review_campaign_definition_assignment_task` still combined active-definition
+  validation, open-task request normalization, assignment-task construction, idempotent replay
+  detection, duplicate-ref conflict detection, append mutation, and definition revalidation in one
+  path. That kept the open-task lifecycle harder to review than the surrounding transition helpers.
+- Action: extracted helpers for open-task request normalization, idempotent open-task replay,
+  duplicate-ref conflict detection, and assignment-task append/revalidation; added direct tests for
+  normalization, required-field failures, replay/conflict behavior, and content-hash revalidation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`, and
+  `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 103 passed, and radon reports
+  `open_bulk_review_campaign_definition_assignment_task` at A(3).
+- Residual risk: this slice improves internal campaign assignment-task maintainability only. The
+  assignment-task page builder remains a visible B-grade helper for a future focused slice; this
+  slice does not change API contracts, assignment-task semantics, external workflow ownership, OMS
+  posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal workflow maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-935: Campaign assignment task page helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow supportability, and testing.
+- Finding: `build_bulk_review_campaign_definition_assignment_task_page` still owned sorting,
+  status filtering, pagination, open-count calculation, and response assembly inline. That made the
+  assignment-task read-model page harder to review and kept list behavior coupled to response
+  construction.
+- Action: extracted helpers for latest-first sorting, status filtering, page slicing, and open-task
+  counting; added direct helper tests with deterministic timestamps and closed/open statuses while
+  preserving the public page contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`, and
+  `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 104 passed, and radon reports
+  `build_bulk_review_campaign_definition_assignment_task_page` at A(1).
+- Residual risk: this slice improves internal assignment-task read-model maintainability only. The
+  `DpmBulkReviewCampaignDefinitionAssignmentTaskPage` validator remains B-grade because it
+  centralizes response invariants; this slice does not change API contracts, pagination semantics,
+  external workflow ownership, OMS posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal read-model maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-936: Campaign assignment hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the campaign assignment task helper extractions, the checked-in quality reports
+  needed to reflect the updated branch head and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `669949b7` and the current top-ten source hotspot list no longer includes
+  `transition_bulk_review_campaign_definition_assignment_task`,
+  `open_bulk_review_campaign_definition_assignment_task`, or
+  `build_bulk_review_campaign_definition_assignment_task_page`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

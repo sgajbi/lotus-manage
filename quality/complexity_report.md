@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-16T23:04:44+00:00`
+- Generated at: `2026-06-16T23:26:52+00:00`
 
-- Report source snapshot: `c36b80f0`
+- Report source snapshot: `669949b7`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -34,14 +34,14 @@
 | --- | --- | --- | --- | --- |
 | 1 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
 | 2 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 3 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
-| 4 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
-| 5 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
-| 6 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
-| 7 | open_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 57 |
-| 8 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
-| 9 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
-| 10 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
+| 3 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
+| 4 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
+| 5 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
+| 6 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
+| 7 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
+| 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
+| 9 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
+| 10 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
 
 ### Most Complex Current Test Functions
 
