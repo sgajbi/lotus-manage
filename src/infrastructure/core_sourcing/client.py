@@ -515,9 +515,11 @@ class DpmCoreResolverClient:
             consumer_system="lotus-manage",
             correlation_id=correlation_id,
         )
-        held_instrument_ids = [position.instrument_id for position in portfolio_snapshot.positions]
-        target_instrument_ids = [target.instrument_id for target in model_targets.targets]
-        requested_instrument_ids = sorted(set(held_instrument_ids + target_instrument_ids))
+        held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
+        requested_instrument_ids = _requested_execution_instrument_ids(
+            portfolio_snapshot=portfolio_snapshot,
+            model_targets=model_targets,
+        )
 
         eligibility = self.resolve_instrument_eligibility(
             security_ids=requested_instrument_ids,
@@ -540,12 +542,10 @@ class DpmCoreResolverClient:
                 portfolio_snapshot=portfolio_snapshot,
                 response=tax_lots,
             )
+        currency_pairs = _execution_context_currency_pairs(portfolio_snapshot)
         market_data = self.resolve_market_data_coverage(
             instrument_ids=requested_instrument_ids,
-            currency_pairs=_required_currency_pairs(
-                portfolio_snapshot=portfolio_snapshot,
-                base_currency=portfolio_snapshot.base_currency,
-            ),
+            currency_pairs=currency_pairs,
             as_of_date=stateful_input.as_of,
             valuation_currency=portfolio_snapshot.base_currency,
             tenant_id=stateful_input.tenant_id,
@@ -587,15 +587,7 @@ class DpmCoreResolverClient:
             horizon_days=365,
             correlation_id=correlation_id,
         )
-        exposure_currencies = sorted(
-            {
-                source_currency
-                for source_currency, _ in _required_currency_pairs(
-                    portfolio_snapshot=portfolio_snapshot,
-                    base_currency=portfolio_snapshot.base_currency,
-                )
-            }
-        )
+        exposure_currencies = _execution_context_exposure_currencies(currency_pairs)
         external_hedge_execution_readiness = self._try_resolve_external_hedge_execution_readiness(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -674,35 +666,18 @@ class DpmCoreResolverClient:
             market_data_snapshot=build_market_data_snapshot_from_core_coverage(market_data),
             model_portfolio=build_model_portfolio_from_core_targets(model_targets),
             shelf_entries=build_shelf_entries_from_core_eligibility(eligibility),
-            policy_context=DpmCorePolicyContext(
-                recommended_policy_pack_id=(
-                    stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
-                ),
-                tenant_id=policy_context.tenant_id,
-                booking_center_code=policy_context.booking_center_code,
-                mandate_id=policy_context.mandate_id,
+            policy_context=_execution_context_policy(
+                stateful_input=stateful_input,
+                policy_context=policy_context,
             ),
-            source_lineage=DpmCoreSourceLineage(
-                portfolio_snapshot_id=portfolio_snapshot.snapshot_id
-                or f"core-snapshot:{stateful_input.portfolio_id}:{stateful_input.as_of.isoformat()}",
-                market_data_snapshot_id=(
-                    f"market-data-coverage:{stateful_input.as_of.isoformat()}"
-                ),
-                model_portfolio_id=model_targets.model_portfolio_id,
-                model_portfolio_version=model_targets.model_portfolio_version,
-                shelf_version=eligibility.lineage.get("contract_version"),
-                integration_policy_version=mandate.lineage.get("contract_version"),
-                source_lineage_bundle_id=(
-                    f"rfc-087:{stateful_input.portfolio_id}:{stateful_input.as_of.isoformat()}"
-                ),
+            source_lineage=_execution_context_lineage(
+                stateful_input=stateful_input,
+                portfolio_snapshot=portfolio_snapshot,
+                model_targets=model_targets,
+                eligibility=eligibility,
+                mandate=mandate,
             ),
-            supportability=DpmCoreSupportability(
-                state="READY",
-                reason="DPM_CORE_CONTEXT_READY",
-                freshness_bucket="current",
-                missing_source_families=[],
-                degraded_source_families=[],
-            ),
+            supportability=_ready_execution_context_supportability(),
             transaction_cost_curve=transaction_cost_curve,
             portfolio_cashflow_projection=portfolio_cashflow_projection,
             client_income_needs_schedule=client_income_needs_schedule,
@@ -1663,6 +1638,81 @@ def _core_snapshot_base_currency(payload: Mapping[str, Any]) -> str:
 
 def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
     return str(row.get("security_id") or row.get("instrument_id") or "").strip()
+
+
+def _held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
+    return [position.instrument_id for position in portfolio_snapshot.positions]
+
+
+def _requested_execution_instrument_ids(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+) -> list[str]:
+    held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
+    target_instrument_ids = [target.instrument_id for target in model_targets.targets]
+    return sorted(set(held_instrument_ids + target_instrument_ids))
+
+
+def _execution_context_currency_pairs(
+    portfolio_snapshot: PortfolioSnapshot,
+) -> list[tuple[str, str]]:
+    return _required_currency_pairs(
+        portfolio_snapshot=portfolio_snapshot,
+        base_currency=portfolio_snapshot.base_currency,
+    )
+
+
+def _execution_context_exposure_currencies(
+    currency_pairs: list[tuple[str, str]],
+) -> list[str]:
+    return sorted({source_currency for source_currency, _ in currency_pairs})
+
+
+def _execution_context_policy(
+    *,
+    stateful_input: DpmStatefulInput,
+    policy_context: DpmCorePolicyContext,
+) -> DpmCorePolicyContext:
+    return DpmCorePolicyContext(
+        recommended_policy_pack_id=(
+            stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
+        ),
+        tenant_id=policy_context.tenant_id,
+        booking_center_code=policy_context.booking_center_code,
+        mandate_id=policy_context.mandate_id,
+    )
+
+
+def _execution_context_lineage(
+    *,
+    stateful_input: DpmStatefulInput,
+    portfolio_snapshot: PortfolioSnapshot,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+    eligibility: DpmCoreInstrumentEligibilityBulkResponse,
+    mandate: DpmCoreMandateBindingResponse,
+) -> DpmCoreSourceLineage:
+    as_of_date = stateful_input.as_of.isoformat()
+    return DpmCoreSourceLineage(
+        portfolio_snapshot_id=portfolio_snapshot.snapshot_id
+        or f"core-snapshot:{stateful_input.portfolio_id}:{as_of_date}",
+        market_data_snapshot_id=f"market-data-coverage:{as_of_date}",
+        model_portfolio_id=model_targets.model_portfolio_id,
+        model_portfolio_version=model_targets.model_portfolio_version,
+        shelf_version=eligibility.lineage.get("contract_version"),
+        integration_policy_version=mandate.lineage.get("contract_version"),
+        source_lineage_bundle_id=f"rfc-087:{stateful_input.portfolio_id}:{as_of_date}",
+    )
+
+
+def _ready_execution_context_supportability() -> DpmCoreSupportability:
+    return DpmCoreSupportability(
+        state="READY",
+        reason="DPM_CORE_CONTEXT_READY",
+        freshness_bucket="current",
+        missing_source_families=[],
+        degraded_source_families=[],
+    )
 
 
 def _map_core_snapshot_row(

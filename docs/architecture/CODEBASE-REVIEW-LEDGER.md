@@ -23519,3 +23519,34 @@ and improves internal transaction-cost source posture maintainability only.
   baselines into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-937: Core sourcing execution-context helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`.
+- Bank-buyable control area: architecture, source-data supportability, and testing.
+- Finding: `DpmCoreResolverClient.resolve_execution_context` mixed source-product orchestration
+  with requested-instrument identity derivation, FX exposure currency derivation, policy-pack
+  override assembly, source-lineage assembly, and ready supportability construction. These are
+  stable source-data supportability contracts that should be independently auditable.
+- Action: extracted pure helpers for requested execution instruments, required currency pairs,
+  exposure currencies, policy context override, source-lineage construction, and ready
+  supportability; added direct helper tests using the existing synthetic Core source-product
+  payloads while preserving the composed resolver behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 63 passed, and radon reports
+  `DpmCoreResolverClient.resolve_execution_context` at A(4).
+- Residual risk: this slice improves internal core-sourcing resolver maintainability only. The
+  source-product retry helper and core-snapshot row mapping helpers remain visible B-grade
+  candidates for future slices; this slice does not change Core API contracts, source-product
+  ordering, retry behavior, stateful sourcing feature flags, external execution posture, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data resolver
+  maintainability hardening with no operator-facing contract change.
