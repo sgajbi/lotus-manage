@@ -4,12 +4,28 @@ from decimal import Decimal
 import httpx
 import pytest
 
-from src.core.dpm_source_context import DpmCoreExternalFXForwardCurveResponse, DpmStatefulInput
+from src.core.dpm_source_context import (
+    DpmCoreExternalFXForwardCurveResponse,
+    DpmCoreInstrumentEligibilityBulkResponse,
+    DpmCoreMandateBindingResponse,
+    DpmCoreModelPortfolioTargetResponse,
+    DpmCorePolicyContext,
+    DpmStatefulInput,
+)
 from src.infrastructure.core_sourcing import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
+)
+from src.infrastructure.core_sourcing.client import (
+    _execution_context_currency_pairs,
+    _execution_context_exposure_currencies,
+    _execution_context_lineage,
+    _execution_context_policy,
+    _portfolio_snapshot_from_core_snapshot,
+    _ready_execution_context_supportability,
+    _requested_execution_instrument_ids,
 )
 
 
@@ -1044,6 +1060,60 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     if path.endswith("/sustainability-preference-profile"):
         return httpx.Response(200, json=_sustainability_preference_profile_payload())
     return httpx.Response(404, json={"detail": "unexpected path"})
+
+
+def test_core_execution_context_helpers_build_source_ids_policy_and_supportability():
+    stateful_input = _stateful_input().model_copy(update={"policy_pack_id": "POLICY_OVERRIDE"})
+    portfolio_snapshot = _portfolio_snapshot_from_core_snapshot(
+        _core_snapshot_payload()
+    ).model_copy(update={"snapshot_id": None})
+    model_targets = DpmCoreModelPortfolioTargetResponse.model_validate(
+        _model_portfolio_target_payload()
+    )
+    eligibility = DpmCoreInstrumentEligibilityBulkResponse.model_validate(
+        _instrument_eligibility_payload()
+    )
+    mandate = DpmCoreMandateBindingResponse.model_validate(_mandate_binding_payload())
+    policy_context = DpmCorePolicyContext(
+        recommended_policy_pack_id="POLICY_FROM_MANDATE",
+        tenant_id="tenant_001",
+        booking_center_code="SG",
+        mandate_id="mandate_balanced_discretionary",
+    )
+
+    requested_instrument_ids = _requested_execution_instrument_ids(
+        portfolio_snapshot=portfolio_snapshot,
+        model_targets=model_targets,
+    )
+    currency_pairs = _execution_context_currency_pairs(portfolio_snapshot)
+    lineage = _execution_context_lineage(
+        stateful_input=stateful_input,
+        portfolio_snapshot=portfolio_snapshot,
+        model_targets=model_targets,
+        eligibility=eligibility,
+        mandate=mandate,
+    )
+    resolved_policy = _execution_context_policy(
+        stateful_input=stateful_input,
+        policy_context=policy_context,
+    )
+    supportability = _ready_execution_context_supportability()
+
+    assert requested_instrument_ids == ["EQ_US_AAPL", "FI_US_TREASURY_10Y"]
+    assert currency_pairs == [("USD", "SGD")]
+    assert _execution_context_exposure_currencies(currency_pairs) == ["USD"]
+    assert resolved_policy.recommended_policy_pack_id == "POLICY_OVERRIDE"
+    assert resolved_policy.tenant_id == "tenant_001"
+    assert lineage.portfolio_snapshot_id == "core-snapshot:PB_SG_GLOBAL_BAL_001:2026-03-25"
+    assert lineage.market_data_snapshot_id == "market-data-coverage:2026-03-25"
+    assert lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
+    assert lineage.shelf_version == "rfc_087_v1"
+    assert lineage.integration_policy_version == "rfc_087_v1"
+    assert lineage.source_lineage_bundle_id == "rfc-087:PB_SG_GLOBAL_BAL_001:2026-03-25"
+    assert supportability.state == "READY"
+    assert supportability.reason == "DPM_CORE_CONTEXT_READY"
+    assert supportability.missing_source_families == []
+    assert supportability.degraded_source_families == []
 
 
 def test_core_resolver_posts_selector_payload_and_correlation_header():

@@ -9,10 +9,16 @@ from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverConfig,
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
+    _cash_balance_currencies,
+    _core_snapshot_row_currency,
+    _final_source_product_attempt,
     _map_core_snapshot_row,
     _portfolio_snapshot_from_core_snapshot,
     _portfolio_positions_and_cash_from_core_rows,
+    _position_market_value_currencies,
     _required_currency_pairs,
+    _required_non_base_currencies,
+    _should_retry_transient_source_status,
     _source_product_payload_with_retries,
 )
 
@@ -181,6 +187,48 @@ def test_source_product_retry_helper_exhausts_transient_status_safely() -> None:
         )
 
     assert calls["count"] == 2
+
+
+@pytest.mark.parametrize(
+    ("attempt_index", "attempts", "expected"),
+    [
+        (0, 2, False),
+        (1, 2, True),
+        (0, 1, True),
+    ],
+)
+def test_final_source_product_attempt_identifies_retry_boundary(
+    attempt_index: int,
+    attempts: int,
+    expected: bool,
+) -> None:
+    assert _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts) is expected
+
+
+@pytest.mark.parametrize(
+    ("status_code", "attempt_index", "attempts", "expected"),
+    [
+        (503, 0, 2, True),
+        (502, 1, 2, False),
+        (504, 0, 1, False),
+        (500, 0, 2, False),
+        (429, 0, 2, False),
+    ],
+)
+def test_should_retry_transient_source_status_only_before_final_attempt(
+    status_code: int,
+    attempt_index: int,
+    attempts: int,
+    expected: bool,
+) -> None:
+    assert (
+        _should_retry_transient_source_status(
+            httpx.Response(status_code, json={"detail": "source posture"}),
+            attempt_index=attempt_index,
+            attempts=attempts,
+        )
+        is expected
+    )
 
 
 def test_core_resolver_source_product_helpers_preserve_selector_transport_shape() -> None:
@@ -357,6 +405,11 @@ def test_core_snapshot_row_mapper_preserves_position_market_value_currency() -> 
     assert mapped_row.position.market_value.currency == "USD"
 
 
+def test_core_snapshot_row_currency_normalizes_or_falls_back_to_base_currency() -> None:
+    assert _core_snapshot_row_currency({"currency": "sgd"}, base_currency="USD") == "SGD"
+    assert _core_snapshot_row_currency({}, base_currency="eur") == "EUR"
+
+
 def test_core_snapshot_rows_aggregate_cash_by_currency() -> None:
     positions, cash_by_currency = _portfolio_positions_and_cash_from_core_rows(
         [
@@ -369,6 +422,40 @@ def test_core_snapshot_rows_aggregate_cash_by_currency() -> None:
 
     assert [position.instrument_id for position in positions] == ["EQ_EU"]
     assert cash_by_currency == {"USD": Decimal("25")}
+
+
+def test_core_snapshot_currency_helpers_return_uppercase_non_base_families() -> None:
+    snapshot = _portfolio_snapshot_from_core_snapshot(
+        {
+            "portfolio_id": "PF_TEST",
+            "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "USD"},
+            "sections": {
+                "positions_baseline": [
+                    {
+                        "instrument_id": "EQ_US",
+                        "quantity": "10",
+                        "currency": "usd",
+                        "market_value_local": "100",
+                    },
+                    {
+                        "instrument_id": "EQ_EU",
+                        "quantity": "5",
+                        "currency": "eur",
+                        "market_value_local": "50",
+                    },
+                    {"instrument_id": "CASH_GBP", "quantity": "100", "currency": "gbp"},
+                ]
+            },
+        }
+    )
+
+    assert _position_market_value_currencies(snapshot.positions) == {"EUR", "USD"}
+    assert _cash_balance_currencies(snapshot.cash_balances) == {"GBP"}
+    assert _required_non_base_currencies(
+        portfolio_snapshot=snapshot,
+        base_currency="USD",
+    ) == {"EUR", "GBP"}
 
 
 def test_required_currency_pairs_ignores_base_currency_and_missing_market_values() -> None:

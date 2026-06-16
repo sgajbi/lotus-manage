@@ -95,6 +95,22 @@ def _source_product_request(
     return cast(httpx.Response, client.get(url, params=selector, headers=headers))
 
 
+def _final_source_product_attempt(*, attempt_index: int, attempts: int) -> bool:
+    return attempt_index + 1 >= attempts
+
+
+def _should_retry_transient_source_status(
+    response: httpx.Response,
+    *,
+    attempt_index: int,
+    attempts: int,
+) -> bool:
+    return (
+        response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
+        and not _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts)
+    )
+
+
 def _source_product_payload_with_retries(
     client: Any,
     *,
@@ -118,10 +134,14 @@ def _source_product_payload_with_retries(
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             last_error = exc
-            if attempt + 1 >= attempts:
+            if _final_source_product_attempt(attempt_index=attempt, attempts=attempts):
                 raise DpmCoreResolverUnavailableError(unavailable_code) from exc
             continue
-        if response.status_code in _TRANSIENT_SOURCE_STATUS_CODES and attempt + 1 < attempts:
+        if _should_retry_transient_source_status(
+            response,
+            attempt_index=attempt,
+            attempts=attempts,
+        ):
             continue
         _raise_for_source_product_status(
             response,
@@ -515,9 +535,11 @@ class DpmCoreResolverClient:
             consumer_system="lotus-manage",
             correlation_id=correlation_id,
         )
-        held_instrument_ids = [position.instrument_id for position in portfolio_snapshot.positions]
-        target_instrument_ids = [target.instrument_id for target in model_targets.targets]
-        requested_instrument_ids = sorted(set(held_instrument_ids + target_instrument_ids))
+        held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
+        requested_instrument_ids = _requested_execution_instrument_ids(
+            portfolio_snapshot=portfolio_snapshot,
+            model_targets=model_targets,
+        )
 
         eligibility = self.resolve_instrument_eligibility(
             security_ids=requested_instrument_ids,
@@ -540,12 +562,10 @@ class DpmCoreResolverClient:
                 portfolio_snapshot=portfolio_snapshot,
                 response=tax_lots,
             )
+        currency_pairs = _execution_context_currency_pairs(portfolio_snapshot)
         market_data = self.resolve_market_data_coverage(
             instrument_ids=requested_instrument_ids,
-            currency_pairs=_required_currency_pairs(
-                portfolio_snapshot=portfolio_snapshot,
-                base_currency=portfolio_snapshot.base_currency,
-            ),
+            currency_pairs=currency_pairs,
             as_of_date=stateful_input.as_of,
             valuation_currency=portfolio_snapshot.base_currency,
             tenant_id=stateful_input.tenant_id,
@@ -587,15 +607,7 @@ class DpmCoreResolverClient:
             horizon_days=365,
             correlation_id=correlation_id,
         )
-        exposure_currencies = sorted(
-            {
-                source_currency
-                for source_currency, _ in _required_currency_pairs(
-                    portfolio_snapshot=portfolio_snapshot,
-                    base_currency=portfolio_snapshot.base_currency,
-                )
-            }
-        )
+        exposure_currencies = _execution_context_exposure_currencies(currency_pairs)
         external_hedge_execution_readiness = self._try_resolve_external_hedge_execution_readiness(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -674,35 +686,18 @@ class DpmCoreResolverClient:
             market_data_snapshot=build_market_data_snapshot_from_core_coverage(market_data),
             model_portfolio=build_model_portfolio_from_core_targets(model_targets),
             shelf_entries=build_shelf_entries_from_core_eligibility(eligibility),
-            policy_context=DpmCorePolicyContext(
-                recommended_policy_pack_id=(
-                    stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
-                ),
-                tenant_id=policy_context.tenant_id,
-                booking_center_code=policy_context.booking_center_code,
-                mandate_id=policy_context.mandate_id,
+            policy_context=_execution_context_policy(
+                stateful_input=stateful_input,
+                policy_context=policy_context,
             ),
-            source_lineage=DpmCoreSourceLineage(
-                portfolio_snapshot_id=portfolio_snapshot.snapshot_id
-                or f"core-snapshot:{stateful_input.portfolio_id}:{stateful_input.as_of.isoformat()}",
-                market_data_snapshot_id=(
-                    f"market-data-coverage:{stateful_input.as_of.isoformat()}"
-                ),
-                model_portfolio_id=model_targets.model_portfolio_id,
-                model_portfolio_version=model_targets.model_portfolio_version,
-                shelf_version=eligibility.lineage.get("contract_version"),
-                integration_policy_version=mandate.lineage.get("contract_version"),
-                source_lineage_bundle_id=(
-                    f"rfc-087:{stateful_input.portfolio_id}:{stateful_input.as_of.isoformat()}"
-                ),
+            source_lineage=_execution_context_lineage(
+                stateful_input=stateful_input,
+                portfolio_snapshot=portfolio_snapshot,
+                model_targets=model_targets,
+                eligibility=eligibility,
+                mandate=mandate,
             ),
-            supportability=DpmCoreSupportability(
-                state="READY",
-                reason="DPM_CORE_CONTEXT_READY",
-                freshness_bucket="current",
-                missing_source_families=[],
-                degraded_source_families=[],
-            ),
+            supportability=_ready_execution_context_supportability(),
             transaction_cost_curve=transaction_cost_curve,
             portfolio_cashflow_projection=portfolio_cashflow_projection,
             client_income_needs_schedule=client_income_needs_schedule,
@@ -1665,6 +1660,126 @@ def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
     return str(row.get("security_id") or row.get("instrument_id") or "").strip()
 
 
+def _core_snapshot_row_quantity(row: Mapping[str, Any]) -> Decimal:
+    return Decimal(str(row.get("quantity") or "0"))
+
+
+def _core_snapshot_row_currency(row: Mapping[str, Any], *, base_currency: str) -> str:
+    return str(row.get("currency") or base_currency).upper()
+
+
+def _core_snapshot_row_market_value(row: Mapping[str, Any]) -> Decimal | None:
+    market_value = row.get("market_value_local")
+    if market_value is None:
+        return None
+    return Decimal(str(market_value))
+
+
+def _core_snapshot_row_is_cash(instrument_id: str) -> bool:
+    return instrument_id.startswith("CASH_")
+
+
+def _cash_core_snapshot_row(
+    *,
+    currency: str,
+    quantity: Decimal,
+) -> _CoreSnapshotMappedRow:
+    return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
+
+
+def _position_core_snapshot_row(
+    *,
+    instrument_id: str,
+    quantity: Decimal,
+    currency: str,
+    market_value: Decimal | None,
+) -> _CoreSnapshotMappedRow:
+    return _CoreSnapshotMappedRow(
+        position=Position(
+            instrument_id=instrument_id,
+            quantity=quantity,
+            market_value=(
+                Money(amount=market_value, currency=currency) if market_value is not None else None
+            ),
+        )
+    )
+
+
+def _held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
+    return [position.instrument_id for position in portfolio_snapshot.positions]
+
+
+def _requested_execution_instrument_ids(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+) -> list[str]:
+    held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
+    target_instrument_ids = [target.instrument_id for target in model_targets.targets]
+    return sorted(set(held_instrument_ids + target_instrument_ids))
+
+
+def _execution_context_currency_pairs(
+    portfolio_snapshot: PortfolioSnapshot,
+) -> list[tuple[str, str]]:
+    return _required_currency_pairs(
+        portfolio_snapshot=portfolio_snapshot,
+        base_currency=portfolio_snapshot.base_currency,
+    )
+
+
+def _execution_context_exposure_currencies(
+    currency_pairs: list[tuple[str, str]],
+) -> list[str]:
+    return sorted({source_currency for source_currency, _ in currency_pairs})
+
+
+def _execution_context_policy(
+    *,
+    stateful_input: DpmStatefulInput,
+    policy_context: DpmCorePolicyContext,
+) -> DpmCorePolicyContext:
+    return DpmCorePolicyContext(
+        recommended_policy_pack_id=(
+            stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
+        ),
+        tenant_id=policy_context.tenant_id,
+        booking_center_code=policy_context.booking_center_code,
+        mandate_id=policy_context.mandate_id,
+    )
+
+
+def _execution_context_lineage(
+    *,
+    stateful_input: DpmStatefulInput,
+    portfolio_snapshot: PortfolioSnapshot,
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+    eligibility: DpmCoreInstrumentEligibilityBulkResponse,
+    mandate: DpmCoreMandateBindingResponse,
+) -> DpmCoreSourceLineage:
+    as_of_date = stateful_input.as_of.isoformat()
+    return DpmCoreSourceLineage(
+        portfolio_snapshot_id=portfolio_snapshot.snapshot_id
+        or f"core-snapshot:{stateful_input.portfolio_id}:{as_of_date}",
+        market_data_snapshot_id=f"market-data-coverage:{as_of_date}",
+        model_portfolio_id=model_targets.model_portfolio_id,
+        model_portfolio_version=model_targets.model_portfolio_version,
+        shelf_version=eligibility.lineage.get("contract_version"),
+        integration_policy_version=mandate.lineage.get("contract_version"),
+        source_lineage_bundle_id=f"rfc-087:{stateful_input.portfolio_id}:{as_of_date}",
+    )
+
+
+def _ready_execution_context_supportability() -> DpmCoreSupportability:
+    return DpmCoreSupportability(
+        state="READY",
+        reason="DPM_CORE_CONTEXT_READY",
+        freshness_bucket="current",
+        missing_source_families=[],
+        degraded_source_families=[],
+    )
+
+
 def _map_core_snapshot_row(
     row: Mapping[str, Any],
     *,
@@ -1674,23 +1789,32 @@ def _map_core_snapshot_row(
     if not instrument_id:
         return None
 
-    quantity = Decimal(str(row.get("quantity") or "0"))
-    currency = str(row.get("currency") or base_currency).upper()
-    if instrument_id.startswith("CASH_"):
-        return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
+    quantity = _core_snapshot_row_quantity(row)
+    currency = _core_snapshot_row_currency(row, base_currency=base_currency)
+    if _core_snapshot_row_is_cash(instrument_id):
+        return _cash_core_snapshot_row(currency=currency, quantity=quantity)
 
-    market_value = row.get("market_value_local")
-    return _CoreSnapshotMappedRow(
-        position=Position(
-            instrument_id=instrument_id,
-            quantity=quantity,
-            market_value=(
-                Money(amount=Decimal(str(market_value)), currency=currency)
-                if market_value is not None
-                else None
-            ),
-        )
+    return _position_core_snapshot_row(
+        instrument_id=instrument_id,
+        quantity=quantity,
+        currency=currency,
+        market_value=_core_snapshot_row_market_value(row),
     )
+
+
+def _merge_core_snapshot_mapped_row(
+    *,
+    positions: list[Position],
+    cash_by_currency: dict[str, Decimal],
+    mapped_row: _CoreSnapshotMappedRow,
+) -> None:
+    if mapped_row.position is not None:
+        positions.append(mapped_row.position)
+        return
+    if mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
+        cash_by_currency[mapped_row.cash_currency] = (
+            cash_by_currency.get(mapped_row.cash_currency, Decimal("0")) + mapped_row.cash_amount
+        )
 
 
 def _portfolio_positions_and_cash_from_core_rows(
@@ -1704,13 +1828,11 @@ def _portfolio_positions_and_cash_from_core_rows(
         mapped_row = _map_core_snapshot_row(row, base_currency=base_currency)
         if mapped_row is None:
             continue
-        if mapped_row.position is not None:
-            positions.append(mapped_row.position)
-        elif mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
-            cash_by_currency[mapped_row.cash_currency] = (
-                cash_by_currency.get(mapped_row.cash_currency, Decimal("0"))
-                + mapped_row.cash_amount
-            )
+        _merge_core_snapshot_mapped_row(
+            positions=positions,
+            cash_by_currency=cash_by_currency,
+            mapped_row=mapped_row,
+        )
 
     return positions, cash_by_currency
 
@@ -1743,10 +1865,34 @@ def _required_currency_pairs(
     base_currency: str,
 ) -> list[tuple[str, str]]:
     base = base_currency.upper()
-    currencies = {
+    return sorted(
+        (currency, base)
+        for currency in _required_non_base_currencies(
+            portfolio_snapshot=portfolio_snapshot,
+            base_currency=base,
+        )
+    )
+
+
+def _position_market_value_currencies(
+    positions: list[Position],
+) -> set[str]:
+    return {
         position.market_value.currency.upper()
-        for position in portfolio_snapshot.positions
+        for position in positions
         if position.market_value is not None
     }
-    currencies.update(cash.currency.upper() for cash in portfolio_snapshot.cash_balances)
-    return sorted((currency, base) for currency in currencies if currency != base)
+
+
+def _cash_balance_currencies(cash_balances: list[CashBalance]) -> set[str]:
+    return {cash.currency.upper() for cash in cash_balances}
+
+
+def _required_non_base_currencies(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    base_currency: str,
+) -> set[str]:
+    currencies = _position_market_value_currencies(portfolio_snapshot.positions)
+    currencies.update(_cash_balance_currencies(portfolio_snapshot.cash_balances))
+    return {currency for currency in currencies if currency != base_currency}

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-16T23:26:52+00:00`
+- Generated at: `2026-06-16T23:48:48+00:00`
 
-- Report source snapshot: `669949b7`
+- Report source snapshot: `83ff760f`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
-| 2 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 3 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
-| 4 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
-| 5 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
-| 6 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
-| 7 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
-| 8 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
-| 9 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
-| 10 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
+| 1 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
+| 2 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
+| 3 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
+| 4 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
+| 5 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
+| 6 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
+| 7 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
+| 8 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
+| 9 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
+| 10 | resolve_cio_model_change_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 47 |
 
 ### Most Complex Current Test Functions
 

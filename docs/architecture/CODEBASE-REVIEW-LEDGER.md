@@ -23519,3 +23519,108 @@ and improves internal transaction-cost source posture maintainability only.
   baselines into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-937: Core sourcing execution-context helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py`.
+- Bank-buyable control area: architecture, source-data supportability, and testing.
+- Finding: `DpmCoreResolverClient.resolve_execution_context` mixed source-product orchestration
+  with requested-instrument identity derivation, FX exposure currency derivation, policy-pack
+  override assembly, source-lineage assembly, and ready supportability construction. These are
+  stable source-data supportability contracts that should be independently auditable.
+- Action: extracted pure helpers for requested execution instruments, required currency pairs,
+  exposure currencies, policy context override, source-lineage construction, and ready
+  supportability; added direct helper tests using the existing synthetic Core source-product
+  payloads while preserving the composed resolver behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 63 passed, and radon reports
+  `DpmCoreResolverClient.resolve_execution_context` at A(4).
+- Residual risk: this slice improves internal core-sourcing resolver maintainability only. The
+  source-product retry helper and core-snapshot row mapping helpers remain visible B-grade
+  candidates for future slices; this slice does not change Core API contracts, source-product
+  ordering, retry behavior, stateful sourcing feature flags, external execution posture, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data resolver
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-938: Core sourcing retry decision helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Bank-buyable control area: resilience, source-data supportability, and testing.
+- Finding: `_source_product_payload_with_retries` embedded final-attempt detection and transient
+  source-status retry decisions inside the transport retry loop. The behavior was covered by
+  higher-level retry tests, but the retry boundary itself was not directly auditable.
+- Action: extracted helpers for final-attempt detection and transient-status retry eligibility;
+  added direct tests for retryable `502`/`503`/`504` status handling, final-attempt suppression,
+  and non-transient status handling while preserving the existing bounded retry behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 71 passed, and radon reports `_source_product_payload_with_retries` at A(5).
+- Residual risk: this slice improves internal retry-decision maintainability only. Core-snapshot
+  row mapping helpers remain visible B-grade candidates for future slices; this slice does not
+  change timeout policy, max-attempt configuration, downstream status mapping, Core source-product
+  request shape, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data resilience
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-939: Core snapshot mapping helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Bank-buyable control area: architecture, source-data mapping supportability, and testing.
+- Finding: core snapshot row mapping helpers combined identifier checks, quantity parsing,
+  currency normalization, cash-row classification, position market-value construction, cash
+  aggregation, and required FX-pair derivation inline. These are source-product mapping
+  boundaries that should be named and tested independently.
+- Action: extracted helpers for row quantity, row currency, market value, cash/position row
+  construction, mapped-row merging, position/cash currency extraction, and non-base currency
+  derivation; added direct tests for row currency fallback and uppercase non-base currency family
+  extraction while preserving the existing snapshot transformation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 73 passed, and radon reports `_map_core_snapshot_row`,
+  `_portfolio_positions_and_cash_from_core_rows`, and `_required_currency_pairs` at A-grade.
+- Residual risk: this slice improves internal Core snapshot mapping maintainability only. It does
+  not change Core source-product payload semantics, cash classification rules, valuation
+  methodology, FX requirements, stateful sourcing feature flags, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data mapping
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-940: Core sourcing hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the core sourcing helper extractions, the checked-in quality reports needed to
+  reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `83ff760f`, record 2581 test functions, and the current top-ten source hotspot list no longer
+  includes `resolve_execution_context`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
