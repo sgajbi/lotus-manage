@@ -333,6 +333,30 @@ def test_http_access_log_uses_route_template_not_sensitive_path_values():
     assert "sha256:sensitive-request-hash" not in json.dumps(extra_fields)
 
 
+def test_route_template_restores_api_prefix_without_path_values():
+    assert (
+        observability_module._route_template_with_request_prefix(
+            route_path="/rebalance/runs/by-request-hash/{request_hash}",
+            request_path="/api/v1/rebalance/runs/by-request-hash/sha256:sensitive-request-hash",
+        )
+        == "/api/v1/rebalance/runs/by-request-hash/{request_hash}"
+    )
+    assert (
+        observability_module._route_template_with_request_prefix(
+            route_path="/api/v1/rebalance/runs/by-request-hash/{request_hash}",
+            request_path="/api/v1/rebalance/runs/by-request-hash/sha256:sensitive-request-hash",
+        )
+        == "/api/v1/rebalance/runs/by-request-hash/{request_hash}"
+    )
+    assert (
+        observability_module._route_template_with_request_prefix(
+            route_path="/metrics",
+            request_path="/metrics",
+        )
+        == "/metrics"
+    )
+
+
 def test_traceparent_header_propagates_trace_id():
     client = TestClient(app)
     upstream_trace_id = "1234567890abcdef1234567890abcdef"

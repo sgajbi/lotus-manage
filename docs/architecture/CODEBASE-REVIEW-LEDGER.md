@@ -23366,3 +23366,30 @@ and improves internal transaction-cost source posture maintainability only.
   baselines into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-931: HTTP access route-template CI hardening
+
+- Date: 2026-06-17
+- Scope: `src/api/observability.py`, `tests/unit/dpm/api/test_observability_api.py`, and this
+  ledger.
+- Bank-buyable control area: observability, CI reliability, and sensitive-data logging controls.
+- Finding: GitHub Feature Lane on Python 3.12 exposed an environment-sensitive route-template
+  shape where `request.scope["route"].path` omitted the `/api/v1` include-router prefix while
+  `request.scope["path"]` retained it. The access log still avoided sensitive path values, but the
+  endpoint template contract differed between local and CI runs.
+- Action: added `_route_template_with_request_prefix` so API request paths restore the stable
+  `/api/v1` prefix without using raw path parameter values, and added a direct regression test for
+  the CI shape plus the already-prefixed and non-API cases.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m ruff format --check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/observability.py`,
+  `python -m pytest tests/unit/dpm/api/test_observability_api.py::test_http_access_log_uses_route_template_not_sensitive_path_values tests/unit/dpm/api/test_observability_api.py::test_route_template_restores_api_prefix_without_path_values -q`,
+  and `python -m radon cc src/api/observability.py -s`; focused observability tests reported
+  2 passed, `_route_template` remains A(4), and the new prefix helper is A(3).
+- Residual risk: this slice hardens the HTTP access-log route-template contract only. It does not
+  change API behavior, logging payload fields beyond endpoint template normalization, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal observability and CI reliability
+  hardening with no operator-facing contract change.
