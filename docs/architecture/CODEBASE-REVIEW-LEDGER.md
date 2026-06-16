@@ -23346,3 +23346,23 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal outcome-source maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-930: Refactor evidence refresh
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement, maintainability evidence, and operational evidence.
+- Finding: after the wave simulation and RiskMetricsReport helper extractions, the checked-in
+  quality reports still reflected an older source snapshot and listed the now-remediated functions
+  as current source hotspots.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`
+  so the source snapshot, LOC/test counts, and source-hotspot table reflect the current branch.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed complexity report is now
+  sourced from `1c1955c2` and no longer lists `simulate_item` or
+  `realized_risk_source_from_risk_metrics_report` in the top-ten current source hotspots.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

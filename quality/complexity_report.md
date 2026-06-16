@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-13T18:20:09+00:00`
+- Generated at: `2026-06-16T22:58:51+00:00`
 
-- Report source snapshot: `3e4fe1b3`
+- Report source snapshot: `1c1955c2`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -34,14 +34,14 @@
 | --- | --- | --- | --- | --- |
 | 1 | resolve_execution_context | src/infrastructure/core_sourcing/client.py | 6 | 233 |
 | 2 | generate_intents | src/core/rebalance/intents.py | 6 | 102 |
-| 3 | simulate_item | src/api/services/wave_simulation_item.py | 6 | 72 |
-| 4 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
-| 5 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
-| 6 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
-| 7 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
-| 8 | open_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 57 |
-| 9 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
-| 10 | realized_risk_source_from_risk_metrics_report | src/core/outcomes/risk_sources.py | 6 | 53 |
+| 3 | transition_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 70 |
+| 4 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
+| 5 | _proof_pack_build_context | src/core/proof_packs/builder.py | 6 | 61 |
+| 6 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
+| 7 | open_bulk_review_campaign_definition_assignment_task | src/core/waves/campaign_assignment_tasks.py | 6 | 57 |
+| 8 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
+| 9 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
+| 10 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
 
 ### Most Complex Current Test Functions
 
