@@ -23411,3 +23411,33 @@ and improves internal transaction-cost source posture maintainability only.
   into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-933: Campaign assignment task transition helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow supportability, and testing.
+- Finding: `transition_bulk_review_campaign_definition_assignment_task` mixed active-definition
+  validation, transition request normalization, assignment-task lookup, replay detection,
+  transition mutation, and definition replacement in one orchestration path. The behavior was
+  covered through public workflow tests, but these boundaries are distinct supportability decisions
+  that should be independently auditable.
+- Action: extracted helpers for active-definition validation, transition request normalization,
+  assignment-task lookup, and assignment-task replacement; added direct helper tests while
+  preserving the public transition behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`, and
+  `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 95 passed, and radon reports
+  `transition_bulk_review_campaign_definition_assignment_task` at A(4).
+- Residual risk: this slice improves internal campaign assignment-task maintainability only.
+  Existing adjacent B-grade helpers in `campaign_assignment_tasks.py` remain visible for future
+  slices; this slice does not change API contracts, assignment-task semantics, external workflow
+  ownership, OMS posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal workflow maintainability
+  hardening with no operator-facing contract change.

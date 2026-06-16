@@ -57,6 +57,14 @@ class _TransitionTaskFields(BaseModel):
     next_due_at: datetime | None
 
 
+class _TransitionRequestFields(BaseModel):
+    task_ref: str
+    transition_ref: str
+    transitioned_by: str
+    transition_reason: str
+    correlation_id: str
+
+
 _CLOSED_STATUSES = {"RESOLVED", "CANCELLED"}
 _STATUS_TRANSITIONS: dict[
     CampaignAssignmentTaskTransitionType, tuple[set[str], CampaignAssignmentTaskStatus]
@@ -126,8 +134,7 @@ def open_bulk_review_campaign_definition_assignment_task(
     due_at: datetime | None = None,
     source_refs: list[DpmWaveSourceRef] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
-    if definition.status != "ACTIVE":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED")
+    _validate_active_assignment_task_definition(definition)
     normalized_ref = _required_text(task_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED")
     normalized_opened_by = _required_text(
         opened_by, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTOR_REQUIRED"
@@ -186,34 +193,27 @@ def transition_bulk_review_campaign_definition_assignment_task(
     due_at: datetime | None = None,
     source_refs: list[DpmWaveSourceRef] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
-    if definition.status != "ACTIVE":
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED")
-    normalized_ref = _required_text(task_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED")
-    normalized_transition_ref = _required_text(
-        transition_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_REQUIRED"
-    )
-    normalized_transitioned_by = _required_text(
-        transitioned_by, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_ACTOR_REQUIRED"
-    )
-    normalized_reason = _required_text(
-        transition_reason, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REASON_REQUIRED"
-    )
-    normalized_correlation = _required_text(
-        correlation_id, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_CORRELATION_REQUIRED"
+    _validate_active_assignment_task_definition(definition)
+    normalized = _transition_request_fields(
+        task_ref=task_ref,
+        transition_ref=transition_ref,
+        transitioned_by=transitioned_by,
+        transition_reason=transition_reason,
+        correlation_id=correlation_id,
     )
 
-    task_index = _assignment_task_index(definition=definition, task_ref=normalized_ref)
-    if task_index is None:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND")
-    task = definition.assignment_tasks[task_index]
+    task_index, task = _assignment_task_for_ref(
+        definition=definition,
+        task_ref=normalized.task_ref,
+    )
     replayed_definition = _replayed_transition_definition(
         definition=definition,
         task=task,
-        transition_ref=normalized_transition_ref,
+        transition_ref=normalized.transition_ref,
         transition_type=transition_type,
-        transitioned_by=normalized_transitioned_by,
-        transition_reason=normalized_reason,
-        correlation_id=normalized_correlation,
+        transitioned_by=normalized.transitioned_by,
+        transition_reason=normalized.transition_reason,
+        correlation_id=normalized.correlation_id,
         assigned_actor_ids=assigned_actor_ids,
         escalation_tier=escalation_tier,
         sla_posture=sla_posture,
@@ -226,10 +226,10 @@ def transition_bulk_review_campaign_definition_assignment_task(
     replacement = _transitioned_task(
         task=task,
         transition_type=transition_type,
-        transition_ref=normalized_transition_ref,
-        transitioned_by=normalized_transitioned_by,
-        transition_reason=normalized_reason,
-        correlation_id=normalized_correlation,
+        transition_ref=normalized.transition_ref,
+        transitioned_by=normalized.transitioned_by,
+        transition_reason=normalized.transition_reason,
+        correlation_id=normalized.correlation_id,
         assigned_actor_ids=assigned_actor_ids,
         escalation_tier=escalation_tier,
         sla_posture=sla_posture,
@@ -237,10 +237,59 @@ def transition_bulk_review_campaign_definition_assignment_task(
         source_refs=source_refs or [],
     )
 
+    return _definition_with_replaced_assignment_task(
+        definition=definition,
+        task_index=task_index,
+        task=replacement,
+    )
+
+
+def _transition_request_fields(
+    *,
+    task_ref: str,
+    transition_ref: str,
+    transitioned_by: str,
+    transition_reason: str,
+    correlation_id: str,
+) -> _TransitionRequestFields:
+    return _TransitionRequestFields(
+        task_ref=_required_text(task_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED"),
+        transition_ref=_required_text(
+            transition_ref,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_REQUIRED",
+        ),
+        transitioned_by=_required_text(
+            transitioned_by,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_ACTOR_REQUIRED",
+        ),
+        transition_reason=_required_text(
+            transition_reason,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REASON_REQUIRED",
+        ),
+        correlation_id=_required_text(
+            correlation_id,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_CORRELATION_REQUIRED",
+        ),
+    )
+
+
+def _definition_with_replaced_assignment_task(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task_index: int,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+) -> DpmBulkReviewCampaignDefinition:
     tasks = list(definition.assignment_tasks)
-    tasks[task_index] = replacement
+    tasks[task_index] = task
     updated = definition.model_copy(update={"assignment_tasks": tasks, "content_hash": ""})
     return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
+
+
+def _validate_active_assignment_task_definition(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> None:
+    if definition.status != "ACTIVE":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED")
 
 
 def build_bulk_review_campaign_definition_assignment_task_page(
@@ -392,6 +441,17 @@ def _assignment_task_index(
         ),
         None,
     )
+
+
+def _assignment_task_for_ref(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task_ref: str,
+) -> tuple[int, DpmBulkReviewCampaignDefinitionAssignmentTask]:
+    task_index = _assignment_task_index(definition=definition, task_ref=task_ref)
+    if task_index is None:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND")
+    return task_index, definition.assignment_tasks[task_index]
 
 
 def _assignment_task_transition(

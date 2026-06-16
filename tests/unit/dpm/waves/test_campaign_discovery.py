@@ -64,8 +64,10 @@ from src.core.waves.campaign_assignment_actions import (
 )
 from src.core.waves.campaign_assignment_tasks import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
+    _assignment_task_for_ref,
     _assignment_task_index,
     _assignment_task_transition,
+    _definition_with_replaced_assignment_task,
     _optional_transition_replay_fields_match,
     _replayed_transition_definition,
     _required_transition_replay_fields,
@@ -77,9 +79,11 @@ from src.core.waves.campaign_assignment_tasks import (
     _transition_requires_actor_ids,
     _transition_requires_due_at,
     _transition_requires_open_assignees,
+    _transition_request_fields,
     _transition_sla_posture_replay_match,
     _transition_task_fields,
     _validate_transition_field_requirements,
+    _validate_active_assignment_task_definition,
     _validate_transition_allowed,
     build_bulk_review_campaign_definition_assignment_task_page,
     open_bulk_review_campaign_definition_assignment_task,
@@ -1542,6 +1546,15 @@ def test_campaign_assignment_tasks_validate_open_request(
         open_bulk_review_campaign_definition_assignment_task(**request)
 
 
+def test_validate_active_assignment_task_definition_rejects_inactive_definition() -> None:
+    _validate_active_assignment_task_definition(_definition())
+
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTIVE_REQUIRED"):
+        _validate_active_assignment_task_definition(
+            _definition().model_copy(update={"status": "DRAFT"})
+        )
+
+
 def test_campaign_assignment_tasks_reject_invalid_transitions_and_closed_mutation() -> None:
     opened = open_bulk_review_campaign_definition_assignment_task(
         definition=_definition(),
@@ -1641,6 +1654,30 @@ def test_campaign_assignment_tasks_replay_and_conflict_on_task_ref() -> None:
         )
 
 
+def test_assignment_task_for_ref_returns_index_and_task_or_not_found() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+
+    index, task = _assignment_task_for_ref(
+        definition=opened,
+        task_ref="BRC-TASK-2026-05-001",
+    )
+
+    assert index == 0
+    assert task.task_ref == "BRC-TASK-2026-05-001"
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND"):
+        _assignment_task_for_ref(definition=opened, task_ref="missing-task")
+
+
 @pytest.mark.parametrize(
     ("overrides", "reason_code"),
     [
@@ -1689,6 +1726,98 @@ def test_campaign_assignment_tasks_validate_transition_required_fields(
 
     with pytest.raises(ValueError, match=reason_code):
         transition_bulk_review_campaign_definition_assignment_task(**request)
+
+
+def test_campaign_assignment_task_transition_request_fields_are_normalized() -> None:
+    fields = _transition_request_fields(
+        task_ref=" BRC-TASK-2026-05-001 ",
+        transition_ref=" BRC-TASK-2026-05-001:ack ",
+        transitioned_by=" pm_001 ",
+        transition_reason=" Assigned PM acknowledged the task. ",
+        correlation_id=" corr-campaign-assignment-task-transition-001 ",
+    )
+
+    assert fields.task_ref == "BRC-TASK-2026-05-001"
+    assert fields.transition_ref == "BRC-TASK-2026-05-001:ack"
+    assert fields.transitioned_by == "pm_001"
+    assert fields.transition_reason == "Assigned PM acknowledged the task."
+    assert fields.correlation_id == "corr-campaign-assignment-task-transition-001"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        ({"task_ref": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED"),
+        (
+            {"transition_ref": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_REQUIRED",
+        ),
+        (
+            {"transitioned_by": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_ACTOR_REQUIRED",
+        ),
+        (
+            {"transition_reason": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REASON_REQUIRED",
+        ),
+        (
+            {"correlation_id": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_CORRELATION_REQUIRED",
+        ),
+    ],
+)
+def test_campaign_assignment_task_transition_request_fields_reject_missing_text(
+    overrides: dict[str, str],
+    reason_code: str,
+) -> None:
+    request = {
+        "task_ref": "BRC-TASK-2026-05-001",
+        "transition_ref": "BRC-TASK-2026-05-001:ack",
+        "transitioned_by": "pm_001",
+        "transition_reason": "Assigned PM acknowledged the task.",
+        "correlation_id": "corr-campaign-assignment-task-transition-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        _transition_request_fields(**request)
+
+
+def test_definition_with_replaced_assignment_task_preserves_other_tasks() -> None:
+    first_opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    second_opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=first_opened,
+        task_ref="BRC-TASK-2026-05-002",
+        task_type="ESCALATION",
+        opened_by="ops",
+        task_reason="Campaign requires escalation review.",
+        assigned_actor_ids=["ops_001"],
+        escalation_tier="OPS",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-task-002",
+    )
+    replacement = second_opened.assignment_tasks[0].model_copy(
+        update={"status": "ACKNOWLEDGED", "content_hash": "sha256:replacement"}
+    )
+
+    updated = _definition_with_replaced_assignment_task(
+        definition=second_opened,
+        task_index=0,
+        task=replacement,
+    )
+
+    assert updated.assignment_tasks[0].status == "ACKNOWLEDGED"
+    assert updated.assignment_tasks[1] == second_opened.assignment_tasks[1]
+    assert updated.content_hash
 
 
 def test_campaign_assignment_tasks_validate_transition_edges() -> None:
