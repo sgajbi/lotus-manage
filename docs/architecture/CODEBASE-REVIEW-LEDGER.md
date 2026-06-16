@@ -23606,3 +23606,21 @@ and improves internal transaction-cost source posture maintainability only.
   methodology, FX requirements, stateful sourcing feature flags, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-data mapping
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-940: Core sourcing hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the core sourcing helper extractions, the checked-in quality reports needed to
+  reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `83ff760f`, record 2581 test functions, and the current top-ten source hotspot list no longer
+  includes `resolve_execution_context`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
