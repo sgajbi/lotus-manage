@@ -23393,3 +23393,21 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal observability and CI reliability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-932: Post-CI-fix evidence refresh
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the access-log route-template hardening commit, the checked-in quality reports
+  needed to reflect the updated branch head, LOC count, and test-function count.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `c36b80f0` and record 819 Python files, 175422 total Python LOC, 2566 test functions, zero
+  service-boundary findings, and zero router infrastructure imports.
+- Residual risk: this slice updates report truth only. It does not promote report-only baselines
+  into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
