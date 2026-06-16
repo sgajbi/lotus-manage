@@ -345,14 +345,14 @@ def build_bulk_review_campaign_definition_assignment_task_page(
     limit: int = 50,
     offset: int = 0,
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
-    tasks = sorted(
-        definition.assignment_tasks,
-        key=lambda task: task.opened_at,
-        reverse=True,
+    page = _assignment_task_page_slice(
+        tasks=_filtered_assignment_tasks(
+            tasks=_assignment_tasks_sorted_latest(definition.assignment_tasks),
+            status_filter=status_filter,
+        ),
+        limit=limit,
+        offset=offset,
     )
-    if status_filter is not None:
-        tasks = [task for task in tasks if task.status == status_filter]
-    page = tasks[offset : offset + limit]
     return DpmBulkReviewCampaignDefinitionAssignmentTaskPage(
         campaign_id=definition.campaign_id,
         campaign_version=definition.campaign_version,
@@ -360,13 +360,42 @@ def build_bulk_review_campaign_definition_assignment_task_page(
         status_counts=_count_by(definition.assignment_tasks, "status"),
         escalation_tier_counts=_count_by(definition.assignment_tasks, "escalation_tier"),
         sla_posture_counts=_count_by(definition.assignment_tasks, "sla_posture"),
-        open_task_count=sum(
-            1 for task in definition.assignment_tasks if task.status not in _CLOSED_STATUSES
-        ),
+        open_task_count=_open_assignment_task_count(definition.assignment_tasks),
         count=len(page),
         limit=limit,
         offset=offset,
     )
+
+
+def _assignment_tasks_sorted_latest(
+    tasks: list[DpmBulkReviewCampaignDefinitionAssignmentTask],
+) -> list[DpmBulkReviewCampaignDefinitionAssignmentTask]:
+    return sorted(tasks, key=lambda task: task.opened_at, reverse=True)
+
+
+def _filtered_assignment_tasks(
+    *,
+    tasks: list[DpmBulkReviewCampaignDefinitionAssignmentTask],
+    status_filter: CampaignAssignmentTaskStatus | None,
+) -> list[DpmBulkReviewCampaignDefinitionAssignmentTask]:
+    if status_filter is None:
+        return tasks
+    return [task for task in tasks if task.status == status_filter]
+
+
+def _assignment_task_page_slice(
+    *,
+    tasks: list[DpmBulkReviewCampaignDefinitionAssignmentTask],
+    limit: int,
+    offset: int,
+) -> list[DpmBulkReviewCampaignDefinitionAssignmentTask]:
+    return tasks[offset : offset + limit]
+
+
+def _open_assignment_task_count(
+    tasks: list[DpmBulkReviewCampaignDefinitionAssignmentTask],
+) -> int:
+    return sum(1 for task in tasks if task.status not in _CLOSED_STATUSES)
 
 
 def _build_task(

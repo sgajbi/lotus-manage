@@ -66,10 +66,14 @@ from src.core.waves.campaign_assignment_tasks import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
     _assignment_task_for_ref,
     _assignment_task_index,
+    _assignment_task_page_slice,
     _assignment_task_transition,
+    _assignment_tasks_sorted_latest,
     _definition_with_appended_assignment_task,
     _definition_with_replaced_assignment_task,
+    _filtered_assignment_tasks,
     _open_task_request_fields,
+    _open_assignment_task_count,
     _optional_transition_replay_fields_match,
     _replayed_open_task_definition,
     _replayed_transition_definition,
@@ -1086,6 +1090,52 @@ def test_campaign_assignment_tasks_open_transition_and_page_current_state() -> N
     assert page.status_counts == {"ACKNOWLEDGED": 1}
     assert page.escalation_tier_counts == {"OPS": 1}
     assert page.sla_posture_counts == {"ATTENTION": 1}
+
+
+def test_assignment_task_page_helpers_sort_filter_page_and_count_open_tasks() -> None:
+    first_opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    second_opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=first_opened,
+        task_ref="BRC-TASK-2026-05-002",
+        task_type="ESCALATION",
+        opened_by="ops",
+        task_reason="Campaign requires escalation review.",
+        assigned_actor_ids=["ops_001"],
+        escalation_tier="OPS",
+        sla_posture="ATTENTION",
+        correlation_id="corr-campaign-assignment-task-002",
+    )
+    older_open_task = second_opened.assignment_tasks[0].model_copy(
+        update={"opened_at": datetime(2026, 5, 10, tzinfo=timezone.utc)}
+    )
+    newer_closed_task = second_opened.assignment_tasks[1].model_copy(
+        update={
+            "opened_at": datetime(2026, 5, 11, tzinfo=timezone.utc),
+            "status": "RESOLVED",
+        }
+    )
+    tasks = [older_open_task, newer_closed_task]
+
+    sorted_tasks = _assignment_tasks_sorted_latest(tasks)
+
+    assert [task.task_ref for task in sorted_tasks] == [
+        "BRC-TASK-2026-05-002",
+        "BRC-TASK-2026-05-001",
+    ]
+    assert _filtered_assignment_tasks(tasks=sorted_tasks, status_filter="OPEN") == [older_open_task]
+    assert _filtered_assignment_tasks(tasks=sorted_tasks, status_filter=None) == sorted_tasks
+    assert _assignment_task_page_slice(tasks=sorted_tasks, limit=1, offset=1) == [older_open_task]
+    assert _open_assignment_task_count(tasks) == 1
 
 
 def test_campaign_workflow_automation_classifies_candidates_active_tasks_and_blocks() -> None:
