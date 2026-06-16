@@ -23577,3 +23577,32 @@ and improves internal transaction-cost source posture maintainability only.
   request shape, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-data resilience
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-939: Core snapshot mapping helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Bank-buyable control area: architecture, source-data mapping supportability, and testing.
+- Finding: core snapshot row mapping helpers combined identifier checks, quantity parsing,
+  currency normalization, cash-row classification, position market-value construction, cash
+  aggregation, and required FX-pair derivation inline. These are source-product mapping
+  boundaries that should be named and tested independently.
+- Action: extracted helpers for row quantity, row currency, market value, cash/position row
+  construction, mapped-row merging, position/cash currency extraction, and non-base currency
+  derivation; added direct tests for row currency fallback and uppercase non-base currency family
+  extraction while preserving the existing snapshot transformation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 73 passed, and radon reports `_map_core_snapshot_row`,
+  `_portfolio_positions_and_cash_from_core_rows`, and `_required_currency_pairs` at A-grade.
+- Residual risk: this slice improves internal Core snapshot mapping maintainability only. It does
+  not change Core source-product payload semantics, cash classification rules, valuation
+  methodology, FX requirements, stateful sourcing feature flags, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data mapping
+  maintainability hardening with no operator-facing contract change.

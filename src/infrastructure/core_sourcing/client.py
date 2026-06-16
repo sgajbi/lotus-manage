@@ -1660,6 +1660,51 @@ def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
     return str(row.get("security_id") or row.get("instrument_id") or "").strip()
 
 
+def _core_snapshot_row_quantity(row: Mapping[str, Any]) -> Decimal:
+    return Decimal(str(row.get("quantity") or "0"))
+
+
+def _core_snapshot_row_currency(row: Mapping[str, Any], *, base_currency: str) -> str:
+    return str(row.get("currency") or base_currency).upper()
+
+
+def _core_snapshot_row_market_value(row: Mapping[str, Any]) -> Decimal | None:
+    market_value = row.get("market_value_local")
+    if market_value is None:
+        return None
+    return Decimal(str(market_value))
+
+
+def _core_snapshot_row_is_cash(instrument_id: str) -> bool:
+    return instrument_id.startswith("CASH_")
+
+
+def _cash_core_snapshot_row(
+    *,
+    currency: str,
+    quantity: Decimal,
+) -> _CoreSnapshotMappedRow:
+    return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
+
+
+def _position_core_snapshot_row(
+    *,
+    instrument_id: str,
+    quantity: Decimal,
+    currency: str,
+    market_value: Decimal | None,
+) -> _CoreSnapshotMappedRow:
+    return _CoreSnapshotMappedRow(
+        position=Position(
+            instrument_id=instrument_id,
+            quantity=quantity,
+            market_value=(
+                Money(amount=market_value, currency=currency) if market_value is not None else None
+            ),
+        )
+    )
+
+
 def _held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
     return [position.instrument_id for position in portfolio_snapshot.positions]
 
@@ -1744,23 +1789,32 @@ def _map_core_snapshot_row(
     if not instrument_id:
         return None
 
-    quantity = Decimal(str(row.get("quantity") or "0"))
-    currency = str(row.get("currency") or base_currency).upper()
-    if instrument_id.startswith("CASH_"):
-        return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
+    quantity = _core_snapshot_row_quantity(row)
+    currency = _core_snapshot_row_currency(row, base_currency=base_currency)
+    if _core_snapshot_row_is_cash(instrument_id):
+        return _cash_core_snapshot_row(currency=currency, quantity=quantity)
 
-    market_value = row.get("market_value_local")
-    return _CoreSnapshotMappedRow(
-        position=Position(
-            instrument_id=instrument_id,
-            quantity=quantity,
-            market_value=(
-                Money(amount=Decimal(str(market_value)), currency=currency)
-                if market_value is not None
-                else None
-            ),
-        )
+    return _position_core_snapshot_row(
+        instrument_id=instrument_id,
+        quantity=quantity,
+        currency=currency,
+        market_value=_core_snapshot_row_market_value(row),
     )
+
+
+def _merge_core_snapshot_mapped_row(
+    *,
+    positions: list[Position],
+    cash_by_currency: dict[str, Decimal],
+    mapped_row: _CoreSnapshotMappedRow,
+) -> None:
+    if mapped_row.position is not None:
+        positions.append(mapped_row.position)
+        return
+    if mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
+        cash_by_currency[mapped_row.cash_currency] = (
+            cash_by_currency.get(mapped_row.cash_currency, Decimal("0")) + mapped_row.cash_amount
+        )
 
 
 def _portfolio_positions_and_cash_from_core_rows(
@@ -1774,13 +1828,11 @@ def _portfolio_positions_and_cash_from_core_rows(
         mapped_row = _map_core_snapshot_row(row, base_currency=base_currency)
         if mapped_row is None:
             continue
-        if mapped_row.position is not None:
-            positions.append(mapped_row.position)
-        elif mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
-            cash_by_currency[mapped_row.cash_currency] = (
-                cash_by_currency.get(mapped_row.cash_currency, Decimal("0"))
-                + mapped_row.cash_amount
-            )
+        _merge_core_snapshot_mapped_row(
+            positions=positions,
+            cash_by_currency=cash_by_currency,
+            mapped_row=mapped_row,
+        )
 
     return positions, cash_by_currency
 
@@ -1813,10 +1865,34 @@ def _required_currency_pairs(
     base_currency: str,
 ) -> list[tuple[str, str]]:
     base = base_currency.upper()
-    currencies = {
+    return sorted(
+        (currency, base)
+        for currency in _required_non_base_currencies(
+            portfolio_snapshot=portfolio_snapshot,
+            base_currency=base,
+        )
+    )
+
+
+def _position_market_value_currencies(
+    positions: list[Position],
+) -> set[str]:
+    return {
         position.market_value.currency.upper()
-        for position in portfolio_snapshot.positions
+        for position in positions
         if position.market_value is not None
     }
-    currencies.update(cash.currency.upper() for cash in portfolio_snapshot.cash_balances)
-    return sorted((currency, base) for currency in currencies if currency != base)
+
+
+def _cash_balance_currencies(cash_balances: list[CashBalance]) -> set[str]:
+    return {cash.currency.upper() for cash in cash_balances}
+
+
+def _required_non_base_currencies(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    base_currency: str,
+) -> set[str]:
+    currencies = _position_market_value_currencies(portfolio_snapshot.positions)
+    currencies.update(_cash_balance_currencies(portfolio_snapshot.cash_balances))
+    return {currency for currency in currencies if currency != base_currency}
