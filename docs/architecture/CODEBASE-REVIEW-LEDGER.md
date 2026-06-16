@@ -23290,3 +23290,31 @@ and improves internal transaction-cost source posture maintainability only.
   residuals; those remain visible in reports and should be reduced before threshold promotion.
 - Wiki decision: no wiki source change required; this is repository-local CI command and quality
   documentation alignment with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-928: Wave simulation item result helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/services/wave_simulation_item.py` and
+  `tests/unit/dpm/waves/test_wave_simulation_item.py`.
+- Bank-buyable control area: architecture, wave simulation supportability, and testing.
+- Finding: `simulate_item` mixed simulation-input lookup, request/context normalization,
+  missing-input projection, construction-generation failure projection, and simulated-item
+  diagnostic construction in one service path. The behavior was covered, but these are distinct
+  supportability decisions that are easier to audit when each has a named helper and direct tests.
+- Action: extracted helpers for simulation-input lookup, request/context normalization, missing
+  construction input blocking, construction-generation failure blocking, and simulated-item
+  construction while preserving public wave simulation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m ruff format --check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_simulation_item.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_simulation_item.py -q`, and
+  `python -m radon cc src/api/services/wave_simulation_item.py -s`; the focused wave simulation
+  item suite reported 11 passed, and radon reports every function in `wave_simulation_item.py` at
+  A-grade with `simulate_item` reduced to A(4).
+- Residual risk: this slice improves internal wave simulation maintainability only. It does not
+  change API contracts, construction semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal service maintainability
+  hardening with no operator-facing contract change.
