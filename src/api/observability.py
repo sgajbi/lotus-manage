@@ -184,6 +184,7 @@ _SENSITIVE_LOG_FIELD_NAMES = frozenset(
     }
 )
 _LATENCY_BUCKETS_MS = (10, 50, 100, 250, 500, 1000)
+_API_ROUTE_PREFIX = "/api/v1"
 
 
 def _safe_metric_label(value: str, *, allowed_values: frozenset[str], fallback: str) -> str:
@@ -209,7 +210,21 @@ def _status_family(status_code: int) -> str:
 def _route_template(request: Request) -> str:
     route = request.scope.get("route")
     route_path = getattr(route, "path", None)
-    return route_path if isinstance(route_path, str) and route_path else "unmatched"
+    if not isinstance(route_path, str) or not route_path:
+        return "unmatched"
+    request_path = request.scope.get("path")
+    return _route_template_with_request_prefix(
+        route_path=route_path,
+        request_path=request_path if isinstance(request_path, str) else "",
+    )
+
+
+def _route_template_with_request_prefix(*, route_path: str, request_path: str) -> str:
+    if route_path.startswith(_API_ROUTE_PREFIX):
+        return route_path
+    if request_path.startswith(f"{_API_ROUTE_PREFIX}/"):
+        return f"{_API_ROUTE_PREFIX}{route_path}"
+    return route_path
 
 
 def _safe_log_extra_fields(extra_fields: dict[str, Any]) -> dict[str, Any]:

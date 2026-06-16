@@ -18,6 +18,7 @@ from src.core.outcomes.risk_sources import (
     _concentration_source_posture,
     _drawdown_measure_unavailable,
     _drawdown_source_posture,
+    _ensure_ready_risk_metric_value,
     _ensure_ready_historical_attribution_value,
     _ensure_ready_rolling_metric_value,
     _historical_attribution_contributor,
@@ -31,6 +32,7 @@ from src.core.outcomes.risk_sources import (
     _primary_reason,
     _quality_for_degraded_value,
     _relative_drawdown_value,
+    _risk_metrics_source_snapshot,
     _risk_source_posture,
     _rolling_context_unavailable,
     _rolling_context_reason,
@@ -488,6 +490,49 @@ def test_risk_metrics_report_adapter_wraps_source_truth_without_recalculation() 
         "RISK_PERIOD_YTD",
         "RISK_METRIC_VOLATILITY",
     ]
+
+
+def test_risk_metrics_source_snapshot_records_source_posture() -> None:
+    source = _risk_metrics_source_snapshot(
+        request_fingerprint="sha256:risk-metrics-request",
+        period="YTD",
+        metric="VAR",
+        value=Decimal("-1.775"),
+        source_state="READY",
+        quality="COMPLETE",
+        as_of_date="2026-05-06",
+        supportability_state="ready",
+        supportability_reason="calculation_complete",
+    )
+
+    assert source.source_id == "sha256:risk-metrics-request:YTD:VAR"
+    assert source.value == Decimal("-1.775")
+    assert source.unit == "percentage_point"
+    assert source.as_of_date == "2026-05-06"
+    assert source.reason_codes == [
+        "RISK_SOURCE_READY",
+        "RISK_SUPPORTABILITY_READY",
+        "RISK_REASON_CALCULATION_COMPLETE",
+        "RISK_PERIOD_YTD",
+        "RISK_METRIC_VAR",
+    ]
+
+
+def test_ensure_ready_risk_metric_value_rejects_missing_ready_value() -> None:
+    with pytest.raises(RiskOutcomeSourceError, match="numeric VOLATILITY value"):
+        _ensure_ready_risk_metric_value(
+            source_state="READY",
+            value=None,
+            metric="VOLATILITY",
+            period="YTD",
+        )
+
+    _ensure_ready_risk_metric_value(
+        source_state="DEGRADED",
+        value=None,
+        metric="VOLATILITY",
+        period="YTD",
+    )
 
 
 def test_concentration_adapter_wraps_source_owned_hhi_without_recalculation() -> None:

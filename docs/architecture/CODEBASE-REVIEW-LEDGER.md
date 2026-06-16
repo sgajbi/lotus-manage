@@ -23290,3 +23290,124 @@ and improves internal transaction-cost source posture maintainability only.
   residuals; those remain visible in reports and should be reduced before threshold promotion.
 - Wiki decision: no wiki source change required; this is repository-local CI command and quality
   documentation alignment with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-928: Wave simulation item result helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/services/wave_simulation_item.py` and
+  `tests/unit/dpm/waves/test_wave_simulation_item.py`.
+- Bank-buyable control area: architecture, wave simulation supportability, and testing.
+- Finding: `simulate_item` mixed simulation-input lookup, request/context normalization,
+  missing-input projection, construction-generation failure projection, and simulated-item
+  diagnostic construction in one service path. The behavior was covered, but these are distinct
+  supportability decisions that are easier to audit when each has a named helper and direct tests.
+- Action: extracted helpers for simulation-input lookup, request/context normalization, missing
+  construction input blocking, construction-generation failure blocking, and simulated-item
+  construction while preserving public wave simulation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m ruff format --check src/api/services/wave_simulation_item.py tests/unit/dpm/waves/test_wave_simulation_item.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_simulation_item.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_simulation_item.py -q`, and
+  `python -m radon cc src/api/services/wave_simulation_item.py -s`; the focused wave simulation
+  item suite reported 11 passed, and radon reports every function in `wave_simulation_item.py` at
+  A-grade with `simulate_item` reduced to A(4).
+- Residual risk: this slice improves internal wave simulation maintainability only. It does not
+  change API contracts, construction semantics, certify global bank-buyable readiness, runtime
+  evidence, or downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal service maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-929: Risk metrics source snapshot helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/outcomes/risk_sources.py` and
+  `tests/unit/core/test_risk_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, source-owned risk evidence supportability, and testing.
+- Finding: `realized_risk_source_from_risk_metrics_report` mixed lotus-risk response adaptation,
+  ready-value validation, and realized-source snapshot construction in one function. The behavior
+  was covered, but ready-value enforcement and source snapshot construction are reusable evidence
+  boundaries that should be independently auditable.
+- Action: extracted `_ensure_ready_risk_metric_value` and `_risk_metrics_source_snapshot`, added
+  direct helper tests, and kept the public RiskMetricsReport adapter behavior unchanged.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`, and
+  `python -m radon cc src/core/outcomes/risk_sources.py -s`; the focused risk realized outcome
+  source suite reported 55 passed, radon reports `realized_risk_source_from_risk_metrics_report`
+  at A(4), and the new risk metrics snapshot helper at A(1).
+- Residual risk: this slice improves internal risk-source maintainability only. Existing unrelated
+  B-grade helpers in `risk_sources.py` remain visible as future source hotspots; this slice does not
+  change source-owned risk semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-source maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-930: Refactor evidence refresh
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement, maintainability evidence, and operational evidence.
+- Finding: after the wave simulation and RiskMetricsReport helper extractions, the checked-in
+  quality reports still reflected an older source snapshot and listed the now-remediated functions
+  as current source hotspots.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`
+  so the source snapshot, LOC/test counts, and source-hotspot table reflect the current branch.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed complexity report is now
+  sourced from `1c1955c2` and no longer lists `simulate_item` or
+  `realized_risk_source_from_risk_metrics_report` in the top-ten current source hotspots.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-931: HTTP access route-template CI hardening
+
+- Date: 2026-06-17
+- Scope: `src/api/observability.py`, `tests/unit/dpm/api/test_observability_api.py`, and this
+  ledger.
+- Bank-buyable control area: observability, CI reliability, and sensitive-data logging controls.
+- Finding: GitHub Feature Lane on Python 3.12 exposed an environment-sensitive route-template
+  shape where `request.scope["route"].path` omitted the `/api/v1` include-router prefix while
+  `request.scope["path"]` retained it. The access log still avoided sensitive path values, but the
+  endpoint template contract differed between local and CI runs.
+- Action: added `_route_template_with_request_prefix` so API request paths restore the stable
+  `/api/v1` prefix without using raw path parameter values, and added a direct regression test for
+  the CI shape plus the already-prefixed and non-API cases.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m ruff format --check src/api/observability.py tests/unit/dpm/api/test_observability_api.py`,
+  `python -m mypy --config-file mypy.ini src/api/observability.py`,
+  `python -m pytest tests/unit/dpm/api/test_observability_api.py::test_http_access_log_uses_route_template_not_sensitive_path_values tests/unit/dpm/api/test_observability_api.py::test_route_template_restores_api_prefix_without_path_values -q`,
+  and `python -m radon cc src/api/observability.py -s`; focused observability tests reported
+  2 passed, `_route_template` remains A(4), and the new prefix helper is A(3).
+- Residual risk: this slice hardens the HTTP access-log route-template contract only. It does not
+  change API behavior, logging payload fields beyond endpoint template normalization, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal observability and CI reliability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-932: Post-CI-fix evidence refresh
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the access-log route-template hardening commit, the checked-in quality reports
+  needed to reflect the updated branch head, LOC count, and test-function count.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `c36b80f0` and record 819 Python files, 175422 total Python LOC, 2566 test functions, zero
+  service-boundary findings, and zero router infrastructure imports.
+- Residual risk: this slice updates report truth only. It does not promote report-only baselines
+  into stricter thresholds or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
