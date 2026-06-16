@@ -113,30 +113,23 @@ def realized_risk_source_from_risk_metrics_report(
         supportability_state=supportability_state,
         value=value,
     )
-    if source_state == "READY" and value is None:
-        raise RiskOutcomeSourceError(
-            f"lotus-risk metrics report is missing a numeric {metric} value for {period}"
-        )
+    _ensure_ready_risk_metric_value(
+        source_state=source_state,
+        value=value,
+        metric=metric,
+        period=period,
+    )
 
-    return DpmRealizedSourceSnapshot(
-        dimension="RISK_REDUCTION",
-        source_system="lotus-risk",
-        source_type="RISK_METRICS_REPORT",
-        source_id=f"{request_fingerprint}:{period}:{metric}",
+    return _risk_metrics_source_snapshot(
+        request_fingerprint=request_fingerprint,
+        period=period,
+        metric=metric,
         value=value if source_state != "NOT_SUPPORTED" else None,
-        unit=_metric_unit(metric),
         source_state=source_state,
         quality=quality,
-        observed_at=None,
         as_of_date=_read_text(scope.get("as_of_date")),
-        content_hash=request_fingerprint,
-        reason_codes=[
-            _primary_reason(source_state),
-            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
-            f"RISK_REASON_{supportability_reason.upper()}",
-            f"RISK_PERIOD_{period}",
-            f"RISK_METRIC_{metric}",
-        ],
+        supportability_state=supportability_state,
+        supportability_reason=supportability_reason,
     )
 
 
@@ -428,6 +421,54 @@ def _drawdown_value(
     if absolute_drawdown is not None:
         return absolute_drawdown
     return _relative_drawdown_value(result=result)
+
+
+def _ensure_ready_risk_metric_value(
+    *,
+    source_state: _RiskSourceState,
+    value: Decimal | None,
+    metric: RiskOutcomeMeasure,
+    period: str,
+) -> None:
+    if source_state != "READY" or value is not None:
+        return
+    raise RiskOutcomeSourceError(
+        f"lotus-risk metrics report is missing a numeric {metric} value for {period}"
+    )
+
+
+def _risk_metrics_source_snapshot(
+    *,
+    request_fingerprint: str,
+    period: str,
+    metric: RiskOutcomeMeasure,
+    value: Decimal | None,
+    source_state: _RiskSourceState,
+    quality: _RiskSourceQuality,
+    as_of_date: str | None,
+    supportability_state: str,
+    supportability_reason: str,
+) -> DpmRealizedSourceSnapshot:
+    return DpmRealizedSourceSnapshot(
+        dimension="RISK_REDUCTION",
+        source_system="lotus-risk",
+        source_type="RISK_METRICS_REPORT",
+        source_id=f"{request_fingerprint}:{period}:{metric}",
+        value=value,
+        unit=_metric_unit(metric),
+        source_state=source_state,
+        quality=quality,
+        observed_at=None,
+        as_of_date=as_of_date,
+        content_hash=request_fingerprint,
+        reason_codes=[
+            _primary_reason(source_state),
+            f"RISK_SUPPORTABILITY_{supportability_state.upper()}",
+            f"RISK_REASON_{supportability_reason.upper()}",
+            f"RISK_PERIOD_{period}",
+            f"RISK_METRIC_{metric}",
+        ],
+    )
 
 
 def _absolute_drawdown_value(

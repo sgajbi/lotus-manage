@@ -23318,3 +23318,31 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, or downstream Gateway/Workbench product behavior.
 - Wiki decision: no wiki source change required; this is internal service maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-929: Risk metrics source snapshot helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/outcomes/risk_sources.py` and
+  `tests/unit/core/test_risk_realized_outcome_sources.py`.
+- Bank-buyable control area: architecture, source-owned risk evidence supportability, and testing.
+- Finding: `realized_risk_source_from_risk_metrics_report` mixed lotus-risk response adaptation,
+  ready-value validation, and realized-source snapshot construction in one function. The behavior
+  was covered, but ready-value enforcement and source snapshot construction are reusable evidence
+  boundaries that should be independently auditable.
+- Action: extracted `_ensure_ready_risk_metric_value` and `_risk_metrics_source_snapshot`, added
+  direct helper tests, and kept the public RiskMetricsReport adapter behavior unchanged.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src/core/outcomes/risk_sources.py tests/unit/core/test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/risk_sources.py`,
+  `python -m pytest tests/unit/core/test_risk_realized_outcome_sources.py -q`, and
+  `python -m radon cc src/core/outcomes/risk_sources.py -s`; the focused risk realized outcome
+  source suite reported 55 passed, radon reports `realized_risk_source_from_risk_metrics_report`
+  at A(4), and the new risk metrics snapshot helper at A(1).
+- Residual risk: this slice improves internal risk-source maintainability only. Existing unrelated
+  B-grade helpers in `risk_sources.py` remain visible as future source hotspots; this slice does not
+  change source-owned risk semantics, certify global bank-buyable readiness, runtime evidence, or
+  downstream Gateway/Workbench product behavior.
+- Wiki decision: no wiki source change required; this is internal outcome-source maintainability
+  hardening with no operator-facing contract change.
