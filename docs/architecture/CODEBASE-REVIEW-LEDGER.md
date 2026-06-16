@@ -23550,3 +23550,30 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-data resolver
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-938: Core sourcing retry decision helpers
+
+- Date: 2026-06-17
+- Scope: `src/infrastructure/core_sourcing/client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`.
+- Bank-buyable control area: resilience, source-data supportability, and testing.
+- Finding: `_source_product_payload_with_retries` embedded final-attempt detection and transient
+  source-status retry decisions inside the transport retry loop. The behavior was covered by
+  higher-level retry tests, but the retry boundary itself was not directly auditable.
+- Action: extracted helpers for final-attempt detection and transient-status retry eligibility;
+  added direct tests for retryable `502`/`503`/`504` status handling, final-attempt suppression,
+  and non-transient status handling while preserving the existing bounded retry behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src/infrastructure/core_sourcing/client.py tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/infrastructure/core_sourcing/client.py`,
+  `python -m pytest tests/unit/dpm/infrastructure/test_core_sourcing_client.py tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py -q`, and
+  `python -m radon cc src/infrastructure/core_sourcing/client.py -s`; the focused core sourcing
+  suite reported 71 passed, and radon reports `_source_product_payload_with_retries` at A(5).
+- Residual risk: this slice improves internal retry-decision maintainability only. Core-snapshot
+  row mapping helpers remain visible B-grade candidates for future slices; this slice does not
+  change timeout policy, max-attempt configuration, downstream status mapping, Core source-product
+  request shape, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data resilience
+  maintainability hardening with no operator-facing contract change.

@@ -9,10 +9,12 @@ from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverConfig,
     DpmCoreResolverError,
     DpmCoreResolverUnavailableError,
+    _final_source_product_attempt,
     _map_core_snapshot_row,
     _portfolio_snapshot_from_core_snapshot,
     _portfolio_positions_and_cash_from_core_rows,
     _required_currency_pairs,
+    _should_retry_transient_source_status,
     _source_product_payload_with_retries,
 )
 
@@ -181,6 +183,48 @@ def test_source_product_retry_helper_exhausts_transient_status_safely() -> None:
         )
 
     assert calls["count"] == 2
+
+
+@pytest.mark.parametrize(
+    ("attempt_index", "attempts", "expected"),
+    [
+        (0, 2, False),
+        (1, 2, True),
+        (0, 1, True),
+    ],
+)
+def test_final_source_product_attempt_identifies_retry_boundary(
+    attempt_index: int,
+    attempts: int,
+    expected: bool,
+) -> None:
+    assert _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts) is expected
+
+
+@pytest.mark.parametrize(
+    ("status_code", "attempt_index", "attempts", "expected"),
+    [
+        (503, 0, 2, True),
+        (502, 1, 2, False),
+        (504, 0, 1, False),
+        (500, 0, 2, False),
+        (429, 0, 2, False),
+    ],
+)
+def test_should_retry_transient_source_status_only_before_final_attempt(
+    status_code: int,
+    attempt_index: int,
+    attempts: int,
+    expected: bool,
+) -> None:
+    assert (
+        _should_retry_transient_source_status(
+            httpx.Response(status_code, json={"detail": "source posture"}),
+            attempt_index=attempt_index,
+            attempts=attempts,
+        )
+        is expected
+    )
 
 
 def test_core_resolver_source_product_helpers_preserve_selector_transport_shape() -> None:

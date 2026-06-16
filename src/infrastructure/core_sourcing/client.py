@@ -95,6 +95,22 @@ def _source_product_request(
     return cast(httpx.Response, client.get(url, params=selector, headers=headers))
 
 
+def _final_source_product_attempt(*, attempt_index: int, attempts: int) -> bool:
+    return attempt_index + 1 >= attempts
+
+
+def _should_retry_transient_source_status(
+    response: httpx.Response,
+    *,
+    attempt_index: int,
+    attempts: int,
+) -> bool:
+    return (
+        response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
+        and not _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts)
+    )
+
+
 def _source_product_payload_with_retries(
     client: Any,
     *,
@@ -118,10 +134,14 @@ def _source_product_payload_with_retries(
             )
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             last_error = exc
-            if attempt + 1 >= attempts:
+            if _final_source_product_attempt(attempt_index=attempt, attempts=attempts):
                 raise DpmCoreResolverUnavailableError(unavailable_code) from exc
             continue
-        if response.status_code in _TRANSIENT_SOURCE_STATUS_CODES and attempt + 1 < attempts:
+        if _should_retry_transient_source_status(
+            response,
+            attempt_index=attempt,
+            attempts=attempts,
+        ):
             continue
         _raise_for_source_product_status(
             response,
