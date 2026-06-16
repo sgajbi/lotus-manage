@@ -65,6 +65,14 @@ class _TransitionRequestFields(BaseModel):
     correlation_id: str
 
 
+class _OpenTaskRequestFields(BaseModel):
+    task_ref: str
+    opened_by: str
+    task_reason: str
+    assigned_actor_ids: list[str]
+    correlation_id: str
+
+
 _CLOSED_STATUSES = {"RESOLVED", "CANCELLED"}
 _STATUS_TRANSITIONS: dict[
     CampaignAssignmentTaskTransitionType, tuple[set[str], CampaignAssignmentTaskStatus]
@@ -135,47 +143,32 @@ def open_bulk_review_campaign_definition_assignment_task(
     source_refs: list[DpmWaveSourceRef] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
     _validate_active_assignment_task_definition(definition)
-    normalized_ref = _required_text(task_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED")
-    normalized_opened_by = _required_text(
-        opened_by, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTOR_REQUIRED"
+    normalized = _open_task_request_fields(
+        task_ref=task_ref,
+        opened_by=opened_by,
+        task_reason=task_reason,
+        assigned_actor_ids=assigned_actor_ids,
+        correlation_id=correlation_id,
     )
-    normalized_reason = _required_text(
-        task_reason, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REASON_REQUIRED"
-    )
-    normalized_correlation = _required_text(
-        correlation_id, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CORRELATION_REQUIRED"
-    )
-    normalized_actor_ids = _normalize_actor_ids(assigned_actor_ids)
-    if not normalized_actor_ids:
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
 
     task = _build_task(
         definition=definition,
-        task_ref=normalized_ref,
+        task_ref=normalized.task_ref,
         task_type=task_type,
-        opened_by=normalized_opened_by,
-        task_reason=normalized_reason,
-        assigned_actor_ids=normalized_actor_ids,
+        opened_by=normalized.opened_by,
+        task_reason=normalized.task_reason,
+        assigned_actor_ids=normalized.assigned_actor_ids,
         escalation_tier=escalation_tier,
         sla_posture=sla_posture,
         due_at=due_at,
-        correlation_id=normalized_correlation,
+        correlation_id=normalized.correlation_id,
         source_refs=source_refs or [],
     )
-    existing_by_ref = {existing.task_ref: existing for existing in definition.assignment_tasks}
-    existing = existing_by_ref.get(task.task_ref)
-    if existing is not None:
-        if existing.content_hash == task.content_hash:
-            return definition
-        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT")
+    replayed_definition = _replayed_open_task_definition(definition=definition, task=task)
+    if replayed_definition is not None:
+        return replayed_definition
 
-    updated = definition.model_copy(
-        update={
-            "assignment_tasks": [*definition.assignment_tasks, task],
-            "content_hash": "",
-        }
-    )
-    return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
+    return _definition_with_appended_assignment_task(definition=definition, task=task)
 
 
 def transition_bulk_review_campaign_definition_assignment_task(
@@ -273,6 +266,32 @@ def _transition_request_fields(
     )
 
 
+def _open_task_request_fields(
+    *,
+    task_ref: str,
+    opened_by: str,
+    task_reason: str,
+    assigned_actor_ids: list[str],
+    correlation_id: str,
+) -> _OpenTaskRequestFields:
+    normalized_actor_ids = _normalize_actor_ids(assigned_actor_ids)
+    if not normalized_actor_ids:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED")
+    return _OpenTaskRequestFields(
+        task_ref=_required_text(task_ref, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED"),
+        opened_by=_required_text(opened_by, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTOR_REQUIRED"),
+        task_reason=_required_text(
+            task_reason,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REASON_REQUIRED",
+        ),
+        assigned_actor_ids=normalized_actor_ids,
+        correlation_id=_required_text(
+            correlation_id,
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CORRELATION_REQUIRED",
+        ),
+    )
+
+
 def _definition_with_replaced_assignment_task(
     *,
     definition: DpmBulkReviewCampaignDefinition,
@@ -283,6 +302,33 @@ def _definition_with_replaced_assignment_task(
     tasks[task_index] = task
     updated = definition.model_copy(update={"assignment_tasks": tasks, "content_hash": ""})
     return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
+
+
+def _definition_with_appended_assignment_task(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+) -> DpmBulkReviewCampaignDefinition:
+    updated = definition.model_copy(
+        update={
+            "assignment_tasks": [*definition.assignment_tasks, task],
+            "content_hash": "",
+        }
+    )
+    return DpmBulkReviewCampaignDefinition.model_validate(updated.model_dump(mode="python"))
+
+
+def _replayed_open_task_definition(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    task: DpmBulkReviewCampaignDefinitionAssignmentTask,
+) -> DpmBulkReviewCampaignDefinition | None:
+    task_index = _assignment_task_index(definition=definition, task_ref=task.task_ref)
+    if task_index is None:
+        return None
+    if definition.assignment_tasks[task_index].content_hash == task.content_hash:
+        return definition
+    raise ValueError("BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT")
 
 
 def _validate_active_assignment_task_definition(

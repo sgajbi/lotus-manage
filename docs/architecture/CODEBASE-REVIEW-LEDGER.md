@@ -23441,3 +23441,32 @@ and improves internal transaction-cost source posture maintainability only.
   ownership, OMS posture, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal workflow maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-934: Campaign assignment task open helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_tasks.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign workflow supportability, and testing.
+- Finding: `open_bulk_review_campaign_definition_assignment_task` still combined active-definition
+  validation, open-task request normalization, assignment-task construction, idempotent replay
+  detection, duplicate-ref conflict detection, append mutation, and definition revalidation in one
+  path. That kept the open-task lifecycle harder to review than the surrounding transition helpers.
+- Action: extracted helpers for open-task request normalization, idempotent open-task replay,
+  duplicate-ref conflict detection, and assignment-task append/revalidation; added direct tests for
+  normalization, required-field failures, replay/conflict behavior, and content-hash revalidation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_tasks.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_tasks.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py -q`, and
+  `python -m radon cc src/core/waves/campaign_assignment_tasks.py -s`; the focused campaign
+  discovery suite reported 103 passed, and radon reports
+  `open_bulk_review_campaign_definition_assignment_task` at A(3).
+- Residual risk: this slice improves internal campaign assignment-task maintainability only. The
+  assignment-task page builder remains a visible B-grade helper for a future focused slice; this
+  slice does not change API contracts, assignment-task semantics, external workflow ownership, OMS
+  posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal workflow maintainability
+  hardening with no operator-facing contract change.

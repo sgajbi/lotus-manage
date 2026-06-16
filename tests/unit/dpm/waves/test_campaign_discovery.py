@@ -67,8 +67,11 @@ from src.core.waves.campaign_assignment_tasks import (
     _assignment_task_for_ref,
     _assignment_task_index,
     _assignment_task_transition,
+    _definition_with_appended_assignment_task,
     _definition_with_replaced_assignment_task,
+    _open_task_request_fields,
     _optional_transition_replay_fields_match,
+    _replayed_open_task_definition,
     _replayed_transition_definition,
     _required_transition_replay_fields,
     _source_ref_payloads,
@@ -1678,6 +1681,82 @@ def test_assignment_task_for_ref_returns_index_and_task_or_not_found() -> None:
         _assignment_task_for_ref(definition=opened, task_ref="missing-task")
 
 
+def test_campaign_assignment_task_open_request_fields_are_normalized() -> None:
+    fields = _open_task_request_fields(
+        task_ref=" BRC-TASK-2026-05-001 ",
+        opened_by=" ops ",
+        task_reason=" Campaign requires PM acknowledgement. ",
+        assigned_actor_ids=[" pm_002 ", "pm_001", "pm_001", " "],
+        correlation_id=" corr-campaign-assignment-task-001 ",
+    )
+
+    assert fields.task_ref == "BRC-TASK-2026-05-001"
+    assert fields.opened_by == "ops"
+    assert fields.task_reason == "Campaign requires PM acknowledgement."
+    assert fields.assigned_actor_ids == ["pm_001", "pm_002"]
+    assert fields.correlation_id == "corr-campaign-assignment-task-001"
+
+
+@pytest.mark.parametrize(
+    ("overrides", "reason_code"),
+    [
+        ({"task_ref": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_REQUIRED"),
+        ({"opened_by": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ACTOR_REQUIRED"),
+        ({"task_reason": " "}, "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REASON_REQUIRED"),
+        (
+            {"assigned_actor_ids": [" "]},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_ASSIGNEES_REQUIRED",
+        ),
+        (
+            {"correlation_id": " "},
+            "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_CORRELATION_REQUIRED",
+        ),
+    ],
+)
+def test_campaign_assignment_task_open_request_fields_reject_missing_input(
+    overrides: dict[str, object],
+    reason_code: str,
+) -> None:
+    request = {
+        "task_ref": "BRC-TASK-2026-05-001",
+        "opened_by": "ops",
+        "task_reason": "Campaign requires PM acknowledgement.",
+        "assigned_actor_ids": ["pm_001"],
+        "correlation_id": "corr-campaign-assignment-task-001",
+    } | overrides
+
+    with pytest.raises(ValueError, match=reason_code):
+        _open_task_request_fields(**request)
+
+
+def test_replayed_open_task_definition_returns_definition_or_conflicts() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    existing_task = opened.assignment_tasks[0]
+
+    assert _replayed_open_task_definition(definition=opened, task=existing_task) is opened
+    assert (
+        _replayed_open_task_definition(
+            definition=_definition(),
+            task=existing_task,
+        )
+        is None
+    )
+
+    conflicting_task = existing_task.model_copy(update={"content_hash": "sha256:conflict"})
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT"):
+        _replayed_open_task_definition(definition=opened, task=conflicting_task)
+
+
 @pytest.mark.parametrize(
     ("overrides", "reason_code"),
     [
@@ -1818,6 +1897,30 @@ def test_definition_with_replaced_assignment_task_preserves_other_tasks() -> Non
     assert updated.assignment_tasks[0].status == "ACKNOWLEDGED"
     assert updated.assignment_tasks[1] == second_opened.assignment_tasks[1]
     assert updated.content_hash
+
+
+def test_definition_with_appended_assignment_task_revalidates_content_hash() -> None:
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=_definition(),
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    source_definition = _definition()
+
+    updated = _definition_with_appended_assignment_task(
+        definition=source_definition,
+        task=opened.assignment_tasks[0],
+    )
+
+    assert updated.assignment_tasks == opened.assignment_tasks
+    assert updated.content_hash
+    assert updated.content_hash != source_definition.content_hash
 
 
 def test_campaign_assignment_tasks_validate_transition_edges() -> None:
