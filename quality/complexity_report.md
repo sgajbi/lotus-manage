@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T04:02:16+00:00`
+- Generated at: `2026-06-17T04:19:42+00:00`
 
-- Report source snapshot: `054a7737`
+- Report source snapshot: `6d419e6a`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
-| 2 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
-| 3 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
-| 4 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
-| 5 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
-| 6 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
-| 7 | _roll_up_expected_supportability | src/core/outcomes/snapshots.py | 6 | 36 |
-| 8 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
-| 9 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
-| 10 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
+| 1 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
+| 2 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
+| 3 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
+| 4 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
+| 5 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
+| 6 | _roll_up_expected_supportability | src/core/outcomes/snapshots.py | 6 | 36 |
+| 7 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
+| 8 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
+| 9 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
+| 10 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
 
 ### Most Complex Current Test Functions
 

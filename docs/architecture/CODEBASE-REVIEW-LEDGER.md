@@ -24206,3 +24206,55 @@ and improves internal transaction-cost source posture maintainability only.
   proof-pack, or rebalance-intent hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-963: Portfolio memory search facet helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/portfolio_memory/search_facets.py` and
+  `tests/unit/dpm/portfolio_memory/test_search_facets.py`.
+- Bank-buyable control area: architecture, source-lineage search supportability, and testing.
+- Finding: `build_search_facet_counts` mixed matching-event facet accumulation, referenced
+  source-lineage expansion, row-level represented source-system coverage, and deterministic count
+  sorting in one function. That kept portfolio-memory search facets harder to inspect even though
+  event lineage counts and row coverage counts are distinct supportability concepts.
+- Action: extracted helpers for matching-event facet counting, represented source-system row
+  coverage counting, count incrementing, and deterministic sorting; added direct tests that pin
+  matching-event direct/reference lineage counts separately from row-level memory coverage while
+  preserving the public `build_search_facet_counts` response shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/portfolio_memory/search_facets.py tests/unit/dpm/portfolio_memory/test_search_facets.py`,
+  `python -m ruff check src/core/portfolio_memory/search_facets.py tests/unit/dpm/portfolio_memory/test_search_facets.py`,
+  `python -m ruff format --check src/core/portfolio_memory/search_facets.py tests/unit/dpm/portfolio_memory/test_search_facets.py`,
+  `python -m mypy --config-file mypy.ini src/core/portfolio_memory/search_facets.py`,
+  `python -m pytest tests/unit/dpm/portfolio_memory/test_search_facets.py -q`,
+  and `python -m radon cc src/core/portfolio_memory/search_facets.py -s`; the focused facet suite
+  reported 3 passed, and radon reports `build_search_facet_counts` reduced from B(7) to A(4) with
+  every function in the module at A grade.
+- Residual risk: this slice improves portfolio-memory search facet maintainability only. It does
+  not change search filtering semantics, pagination, API contracts, source-owner boundaries,
+  global discovery posture, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal portfolio-memory search
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-964: Portfolio memory search facet reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the portfolio-memory search facet helper extraction, the checked-in quality
+  reports needed to reflect the updated branch head, test-function count, and current source
+  hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `6d419e6a`, record 820 Python files, 2620 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `build_search_facet_counts`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining OpenAPI enrichment,
+  enterprise-readiness, execution, PM-quality, outcome snapshot, source-context, proof-pack,
+  rebalance-intent, or workflow-gate hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
