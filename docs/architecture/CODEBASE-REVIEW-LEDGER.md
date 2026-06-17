@@ -23781,3 +23781,86 @@ and improves internal transaction-cost source posture maintainability only.
   hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-947: Risk-event portfolio resolution helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/routers/wave_portfolio_resolution.py`,
+  `src/api/routers/wave_risk_event_validation.py`, and
+  `tests/unit/api/test_wave_portfolio_resolution.py`.
+- Bank-buyable control area: architecture, source-authority supportability, and testing.
+- Finding: `_resolve_risk_event_portfolios` still combined request validation, source-authority
+  availability checks, lotus-risk authority call construction, source cohort readiness gating, and
+  resolved-portfolio projection in one router helper. That kept the RISK_EVENT source-owned cohort
+  path harder to review than the surrounding named trigger resolvers.
+- Action: extracted named router-owned helpers for risk-event authority request construction,
+  required risk authority client selection, lotus-risk affected cohort invocation, and cohort
+  readiness gating; added direct tests for risk-event authority input mapping and the incomplete or
+  empty source-cohort failure paths; tightened the risk-event cohort protocol to include the
+  `reason_codes` field required by readiness errors.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py`,
+  `python -m pytest tests/unit/api/test_wave_portfolio_resolution.py tests/unit/api/test_wave_risk_event_validation.py -q`,
+  and `python -m radon cc src/api/routers/wave_portfolio_resolution.py -s`; the focused API helper
+  suites reported 14 passed, and radon reports `_resolve_risk_event_portfolios` reduced from B(6)
+  to A(1).
+- Residual risk: this slice improves RISK_EVENT router helper maintainability only. It does not
+  change lotus-risk authority semantics, resolved portfolio payload schemas, source-ref lineage,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-resolution supportability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-948: Core source resolver request helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/routers/wave_core_source_resolution.py` and
+  `tests/unit/api/test_wave_core_source_resolution.py`.
+- Bank-buyable control area: architecture, source-authority supportability, and testing.
+- Finding: `resolve_pm_book_portfolios` and `resolve_cio_model_change_portfolios` each combined
+  caller-supplied portfolio rejection, required selector normalization, lotus-core resolver
+  invocation, source-readiness gating, empty-cohort blocking, and resolved portfolio projection.
+  That left two source-owned cohort discovery paths B-grade and harder to audit than their
+  projection helpers.
+- Action: extracted domain-specific request-shaping dataclasses and helpers for PM-book membership
+  and CIO model-change affected cohort queries; separated lotus-core resolver invocation from
+  source-readiness checks; added direct tests for normalized source-query construction and
+  incomplete or empty source-cohort rejection for both flows.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_core_source_resolution.py tests/unit/api/test_wave_core_source_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_core_source_resolution.py tests/unit/api/test_wave_core_source_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_core_source_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_core_source_resolution.py tests/unit/api/test_wave_pm_book_projection.py tests/unit/api/test_wave_cio_model_change_projection.py -q`,
+  and `python -m radon cc src/api/routers/wave_core_source_resolution.py -s`; the focused core
+  source resolver and projection suites reported 14 passed, and radon reports both
+  `resolve_pm_book_portfolios` and `resolve_cio_model_change_portfolios` reduced from B(6) to A(1).
+- Residual risk: this slice improves router-side source resolver maintainability only. It does not
+  change lotus-core resolver semantics, source product contracts, projection payload schemas,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-resolution supportability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-949: Source resolver hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the risk-event, PM-book, and CIO model-change source resolver helper extractions,
+  the checked-in quality reports needed to reflect the updated branch head, test-function count,
+  and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `05c33ddc`, record 820 Python files, 2598 test functions, keep service boundary findings and
+  router infrastructure imports at 0, and the current top-ten source hotspot list no longer
+  includes `_resolve_risk_event_portfolios`, `resolve_pm_book_portfolios`, or
+  `resolve_cio_model_change_portfolios`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining PM-quality/rebalance/wave
+  campaign/search/OpenAPI/observability hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
