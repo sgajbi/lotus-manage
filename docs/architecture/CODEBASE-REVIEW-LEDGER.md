@@ -24258,3 +24258,54 @@ and improves internal transaction-cost source posture maintainability only.
   rebalance-intent, or workflow-gate hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-965: OpenAPI collection example helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/openapi_enrichment.py` and
+  `tests/unit/api/test_openapi_enrichment_helpers.py`.
+- Bank-buyable control area: API quality, documentation supportability, and testing.
+- Finding: `_collection_example_from_schema` combined object-property expansion, array-item
+  example generation, object-map handling, default object examples, and the no-match return path in
+  one dispatcher. That made OpenAPI example enrichment harder to audit even though each schema
+  shape has distinct supportability behavior.
+- Action: extracted helpers for property-object examples, array examples, and object/map examples;
+  added direct helper tests for each schema shape while preserving generated OpenAPI examples and
+  the existing enrichment entry point.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src/api/openapi_enrichment.py tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/api/openapi_enrichment.py`,
+  `python -m pytest tests/unit/api/test_openapi_enrichment_helpers.py -q`,
+  `python scripts/openapi_quality_gate.py`, and
+  `python -m radon cc src/api/openapi_enrichment.py -s`; the focused OpenAPI enrichment helper
+  suite reported 36 passed, the OpenAPI quality gate passed, and radon reports
+  `_collection_example_from_schema` reduced from B(8) to A(3).
+- Residual risk: this slice improves OpenAPI enrichment maintainability only. It does not change
+  public route contracts, response schemas, vocabulary policy, generated operation coverage,
+  runtime behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment hardening
+  with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-966: OpenAPI collection example reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the OpenAPI collection-example helper extraction, the checked-in quality reports
+  needed to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `982fadf2`, record 820 Python files, 2621 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `_collection_example_from_schema`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining enterprise-readiness, execution,
+  PM-quality, outcome snapshot, source-context, proof-pack, rebalance-intent, workflow-gate, or
+  wave source-analytics hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
