@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-17T00:09:55+00:00`
+- Generated at: `2026-06-17T00:29:44+00:00`
 
 - Baseline ref: `origin/main`
 
-- Report source snapshot: `d1a4e33c`
+- Report source snapshot: `927a03e1`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,8 +13,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 819 | 819 | +0 |
-| Total Python LOC | 176142 | 176444 | +302 |
-| Test functions | 2581 | 2586 | +5 |
+| Total Python LOC | 176444 | 176584 | +140 |
+| Test functions | 2586 | 2589 | +3 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -37,21 +37,6 @@
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 6408 |
 | 2 | tests/unit/dpm/api/test_api_rebalance.py | 3318 |
-| 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 2908 |
-| 4 | tests/unit/dpm/waves/test_campaign_discovery.py | 2794 |
-| 5 | tests/unit/test_documentation_current_state.py | 2721 |
-| 6 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2600 |
-| 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2531 |
-| 8 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2410 |
-| 9 | src/core/dpm_source_context.py | 1918 |
-| 10 | src/core/proof_packs/builder.py | 1900 |
-
-### current branch
-
-| Rank | File | Lines |
-| --- | --- | --- |
-| 1 | tests/unit/dpm/api/test_waves_api.py | 6408 |
-| 2 | tests/unit/dpm/api/test_api_rebalance.py | 3318 |
 | 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 2966 |
 | 4 | tests/unit/dpm/waves/test_campaign_discovery.py | 2794 |
 | 5 | tests/unit/test_documentation_current_state.py | 2721 |
@@ -59,6 +44,21 @@
 | 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2531 |
 | 8 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2410 |
 | 9 | src/core/proof_packs/builder.py | 1939 |
+| 10 | src/core/dpm_source_context.py | 1918 |
+
+### current branch
+
+| Rank | File | Lines |
+| --- | --- | --- |
+| 1 | tests/unit/dpm/api/test_waves_api.py | 6408 |
+| 2 | tests/unit/dpm/api/test_api_rebalance.py | 3318 |
+| 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3066 |
+| 4 | tests/unit/dpm/waves/test_campaign_discovery.py | 2794 |
+| 5 | tests/unit/test_documentation_current_state.py | 2721 |
+| 6 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2600 |
+| 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2531 |
+| 8 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2410 |
+| 9 | src/core/proof_packs/builder.py | 1979 |
 | 10 | src/core/dpm_source_context.py | 1918 |
 
 ## Largest Functions

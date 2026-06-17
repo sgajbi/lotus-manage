@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T00:09:55+00:00`
+- Generated at: `2026-06-17T00:29:44+00:00`
 
-- Report source snapshot: `d1a4e33c`
+- Report source snapshot: `927a03e1`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _section_payload | src/core/proof_packs/builder.py | 6 | 65 |
-| 2 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
-| 3 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
-| 4 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
-| 5 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
-| 6 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
-| 7 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
-| 8 | resolve_cio_model_change_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 47 |
-| 9 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
-| 10 | value_position | src/core/valuation.py | 6 | 45 |
+| 1 | _resolve_risk_event_portfolios | src/api/routers/wave_portfolio_resolution.py | 6 | 57 |
+| 2 | resolve_pm_book_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 53 |
+| 3 | _signals_from_outcome_reviews | src/core/pm_quality/scoring.py | 6 | 52 |
+| 4 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
+| 5 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
+| 6 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
+| 7 | resolve_cio_model_change_portfolios | src/api/routers/wave_core_source_resolution.py | 6 | 47 |
+| 8 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
+| 9 | value_position | src/core/valuation.py | 6 | 45 |
+| 10 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
 
 ### Most Complex Current Test Functions
 

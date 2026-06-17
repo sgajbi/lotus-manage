@@ -23759,3 +23759,25 @@ and improves internal transaction-cost source posture maintainability only.
   schemas, external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack policy-evidence
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-946: Proof-pack dispatch hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the proof-pack section dispatch and rule-result projection helper extractions, the
+  checked-in quality reports needed to reflect the updated branch head, test-function count, and
+  current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `927a03e1`, record 2589 test functions, keep service boundary findings and router
+  infrastructure imports at 0, and the current top-ten source hotspot list no longer includes
+  `_section_payload`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining router/source/PM-quality/rebalance
+  hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
