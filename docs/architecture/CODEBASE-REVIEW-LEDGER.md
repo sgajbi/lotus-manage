@@ -24727,3 +24727,57 @@ and improves internal transaction-cost source posture maintainability only.
   global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-983: Wave source analytics fallback helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/source_analytics.py` and
+  `tests/unit/dpm/waves/test_source_analytics.py`.
+- Bank-buyable control area: architecture, source-lineage supportability, and testing.
+- Finding: `_source_analytics_from_alternative` combined authority-context lookup,
+  supportability fallback, source-system fallback, source-ref assembly, reason-code fallback, and
+  source-measure projection in one mapper. That made source-owned risk/performance evidence
+  fallback rules harder to inspect even though the emitted analytics payload is deterministic.
+- Action: extracted `_alternative_source_context`, `_alternative_source_supportability_state`,
+  `_alternative_source_system`, and `_alternative_source_reason_codes` to name the source
+  analytics fallback rules; added direct tests for enrichment fallback preservation and malformed
+  source-context skipping while preserving existing aggregate source analytics behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m ruff check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m ruff format --check src/core/waves/source_analytics.py tests/unit/dpm/waves/test_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/source_analytics.py`,
+  `python -m pytest tests/unit/dpm/waves/test_source_analytics.py`, and
+  `python -m radon cc src/core/waves/source_analytics.py -s`; the focused wave source analytics
+  suite reported 8 passed, and radon reports `_source_analytics_from_alternative` reduced from
+  B(6) to A(2) with the extracted fallback helpers at A(1) to A(3).
+- Residual risk: this slice improves internal wave source-analytics maintainability only. It does
+  not change source-owned risk or performance methodology, API contracts, wave lifecycle
+  behavior, proof-pack enrichment, downstream gateway/workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal source analytics
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-984: Wave source analytics reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the wave source analytics fallback-helper extraction, the checked-in quality
+  reports needed to reflect the updated branch head, test-function count, and current source
+  hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `696d2f7b+worktree`, record 821 Python files, 2644 test functions, keep service boundary
+  findings and router infrastructure imports at 0, and the current top-ten source hotspot list no
+  longer includes `_source_analytics_from_alternative`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining projected cash-FX intent, async
+  payload, target-cash, workflow-decision query, risk-authority client, outcome core-source,
+  proof-pack governance, advise-authority client, or campaign-definition repository hotspots, or
+  certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
