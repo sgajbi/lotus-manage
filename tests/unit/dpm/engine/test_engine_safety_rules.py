@@ -3,6 +3,8 @@ from decimal import Decimal
 from src.core.rebalance.engine import _generate_fx_and_simulate, run_simulation
 from src.core.rebalance.intents import (
     _TaxBudgetAccumulator,
+    _TargetIntentContext,
+    _append_security_trade_intent,
     _TaxBudgetLotAllowance,
     _apply_tax_budget_lot_allowance,
     _available_holding_constraint_applies,
@@ -16,6 +18,7 @@ from src.core.rebalance.intents import (
     _sell_quantity_after_safety_limits,
     _suppress_dust_trade,
     _target_trade_delta,
+    _target_intent_context,
     _target_weight_by_instrument,
     _tax_impact_from_budget,
     _tax_budget_lot_allowance,
@@ -351,6 +354,142 @@ def test_target_weight_by_instrument_projects_latest_target_weight() -> None:
         "EQ_1": Decimal("0.60"),
         "EQ_2": Decimal("0.25"),
     }
+
+
+def test_target_intent_context_returns_buy_context_for_supported_target() -> None:
+    portfolio = portfolio_snapshot(
+        portfolio_id="pf_buy_context",
+        base_currency="SGD",
+        positions=[],
+        cash_balances=[cash("SGD", "1000")],
+    )
+    market_data = market_data_snapshot(prices=[price("EQ_1", "10", "SGD")], fx_rates=[])
+    diagnostics = empty_diagnostics()
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=None,
+    )
+
+    context = _target_intent_context(
+        instrument_id="EQ_1",
+        target_weight=Decimal("0.50"),
+        portfolio=portfolio,
+        market_data=market_data,
+        shelf=[shelf_entry("EQ_1", status="APPROVED")],
+        options=EngineOptions(),
+        total_val=Decimal("1000"),
+        dq_log=diagnostics.data_quality,
+        diagnostics=diagnostics,
+        suppressed=diagnostics.suppressed_intents,
+        tax_budget=tax_budget,
+    )
+
+    assert context == _TargetIntentContext(
+        instrument_id="EQ_1",
+        side="BUY",
+        requested_quantity=Decimal("50"),
+        quantity=Decimal("50"),
+        unit_value=Decimal("10"),
+        base_rate=Decimal("1"),
+        price_currency="SGD",
+        threshold=None,
+        sell_quantity_before_tax=None,
+    )
+    assert diagnostics.suppressed_intents == []
+
+
+def test_target_intent_context_records_suppressed_dust_trade() -> None:
+    portfolio = portfolio_snapshot(
+        portfolio_id="pf_dust_context",
+        base_currency="SGD",
+        positions=[],
+        cash_balances=[cash("SGD", "1000")],
+    )
+    market_data = market_data_snapshot(prices=[price("EQ_1", "10", "SGD")], fx_rates=[])
+    diagnostics = empty_diagnostics()
+    tax_budget = _TaxBudgetAccumulator(
+        total_realized_gain_base=Decimal("0"),
+        total_realized_loss_base=Decimal("0"),
+        tax_budget_used_base=Decimal("0"),
+        tax_budget_limit_base=None,
+    )
+
+    context = _target_intent_context(
+        instrument_id="EQ_1",
+        target_weight=Decimal("0.05"),
+        portfolio=portfolio,
+        market_data=market_data,
+        shelf=[shelf_entry("EQ_1", status="APPROVED")],
+        options=EngineOptions(
+            suppress_dust_trades=True,
+            min_trade_notional=Money(amount=Decimal("100"), currency="SGD"),
+        ),
+        total_val=Decimal("1000"),
+        dq_log=diagnostics.data_quality,
+        diagnostics=diagnostics,
+        suppressed=diagnostics.suppressed_intents,
+        tax_budget=tax_budget,
+    )
+
+    assert context is None
+    assert len(diagnostics.suppressed_intents) == 1
+    assert diagnostics.suppressed_intents[0].instrument_id == "EQ_1"
+    assert diagnostics.suppressed_intents[0].intended_notional == Money(
+        amount=Decimal("50"),
+        currency="SGD",
+    )
+
+
+def test_append_security_trade_intent_numbers_positive_contexts_only() -> None:
+    intents: list[SecurityTradeIntent] = []
+    positive_context = _TargetIntentContext(
+        instrument_id="EQ_1",
+        side="BUY",
+        requested_quantity=Decimal("10"),
+        quantity=Decimal("10"),
+        unit_value=Decimal("5"),
+        base_rate=Decimal("1"),
+        price_currency="SGD",
+        threshold=None,
+        sell_quantity_before_tax=None,
+    )
+    zero_context = _TargetIntentContext(
+        instrument_id="EQ_2",
+        side="BUY",
+        requested_quantity=Decimal("0"),
+        quantity=Decimal("0"),
+        unit_value=Decimal("5"),
+        base_rate=Decimal("1"),
+        price_currency="SGD",
+        threshold=None,
+        sell_quantity_before_tax=None,
+    )
+
+    _append_security_trade_intent(
+        intents=intents,
+        context=positive_context,
+        portfolio_base_currency="SGD",
+        tax_awareness_enabled=False,
+    )
+    _append_security_trade_intent(
+        intents=intents,
+        context=zero_context,
+        portfolio_base_currency="SGD",
+        tax_awareness_enabled=False,
+    )
+    _append_security_trade_intent(
+        intents=intents,
+        context=positive_context,
+        portfolio_base_currency="SGD",
+        tax_awareness_enabled=False,
+    )
+
+    assert [(intent.intent_id, intent.instrument_id) for intent in intents] == [
+        ("oi_1", "EQ_1"),
+        ("oi_2", "EQ_1"),
+    ]
 
 
 def test_sell_quantity_after_safety_limits_bypasses_non_sell_quantity() -> None:

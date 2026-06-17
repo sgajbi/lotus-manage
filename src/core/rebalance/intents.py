@@ -208,6 +208,19 @@ class _SellQuantityDecision:
     sell_quantity_before_tax: Decimal | None
 
 
+@dataclass(frozen=True)
+class _TargetIntentContext:
+    instrument_id: str
+    side: Literal["BUY", "SELL"]
+    requested_quantity: Decimal
+    quantity: Decimal
+    unit_value: Decimal
+    base_rate: Decimal
+    price_currency: str
+    threshold: Money | None
+    sell_quantity_before_tax: Decimal | None
+
+
 def _target_trade_delta(
     *,
     target_instrument_value: Decimal,
@@ -492,6 +505,109 @@ def _security_trade_intent(
     )
 
 
+def _target_intent_context(
+    *,
+    instrument_id: str,
+    target_weight: Decimal,
+    portfolio: PortfolioSnapshot,
+    market_data: MarketDataSnapshot,
+    shelf: list[ShelfEntry],
+    options: EngineOptions,
+    total_val: Decimal,
+    dq_log: dict[str, list[str]],
+    diagnostics: DiagnosticsData,
+    suppressed: list[SuppressedIntent],
+    tax_budget: _TaxBudgetAccumulator,
+) -> _TargetIntentContext | None:
+    market_context = _intent_market_context(
+        instrument_id=instrument_id,
+        portfolio=portfolio,
+        market_data=market_data,
+        dq_log=dq_log,
+    )
+    if market_context is None:
+        return None
+    price_ent, rate, curr = market_context
+
+    curr_instr_val, unit_value = _current_instrument_value_and_unit_value(
+        position=curr,
+        price=price_ent,
+    )
+    target_instr_val = (total_val * target_weight) / rate
+    trade_delta = _target_trade_delta(
+        target_instrument_value=target_instr_val,
+        current_instrument_value=curr_instr_val,
+        unit_value=unit_value,
+    )
+    sell_quantity = _sell_quantity_after_safety_limits(
+        instrument_id=instrument_id,
+        side=trade_delta.side,
+        requested_quantity=trade_delta.raw_quantity,
+        position=curr,
+        options=options,
+        sell_price=unit_value,
+        price_currency=price_ent.currency,
+        base_rate=rate,
+        market_data=market_data,
+        dq_log=dq_log,
+        tax_budget=tax_budget,
+        diagnostics=diagnostics,
+    )
+    shelf_ent = next((s for s in shelf if s.instrument_id == instrument_id), None)
+    threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
+    notional = sell_quantity.quantity * unit_value
+
+    if _suppress_dust_trade(
+        instrument_id=instrument_id,
+        notional=notional,
+        notional_currency=price_ent.currency,
+        threshold=threshold,
+        options=options,
+        suppressed=suppressed,
+    ):
+        return None
+
+    return _TargetIntentContext(
+        instrument_id=instrument_id,
+        side=trade_delta.side,
+        requested_quantity=trade_delta.raw_quantity,
+        quantity=sell_quantity.quantity,
+        unit_value=unit_value,
+        base_rate=rate,
+        price_currency=price_ent.currency,
+        threshold=threshold,
+        sell_quantity_before_tax=sell_quantity.sell_quantity_before_tax,
+    )
+
+
+def _append_security_trade_intent(
+    *,
+    intents: list[SecurityTradeIntent],
+    context: _TargetIntentContext,
+    portfolio_base_currency: str,
+    tax_awareness_enabled: bool,
+) -> None:
+    if context.quantity <= Decimal("0"):
+        return
+
+    intents.append(
+        _security_trade_intent(
+            intent_id=f"oi_{len(intents) + 1}",
+            side=context.side,
+            instrument_id=context.instrument_id,
+            quantity=context.quantity,
+            unit_value=context.unit_value,
+            base_rate=context.base_rate,
+            price_currency=context.price_currency,
+            portfolio_base_currency=portfolio_base_currency,
+            threshold=context.threshold,
+            requested_quantity=context.requested_quantity,
+            sell_quantity_before_tax=context.sell_quantity_before_tax,
+            tax_awareness_enabled=tax_awareness_enabled,
+        )
+    )
+
+
 def _tax_impact_from_budget(
     *,
     tax_budget: _TaxBudgetAccumulator,
@@ -551,78 +667,28 @@ def generate_intents(
 
     target_dict = _target_weight_by_instrument(targets)
     for i_id, target_w in target_dict.items():
-        market_context = _intent_market_context(
+        intent_context = _target_intent_context(
             instrument_id=i_id,
             portfolio=portfolio,
             market_data=market_data,
-            dq_log=dq_log,
-        )
-        if market_context is None:
-            continue
-        price_ent, rate, curr = market_context
-
-        curr_instr_val, unit_value = _current_instrument_value_and_unit_value(
-            position=curr,
-            price=price_ent,
-        )
-
-        target_instr_val = (total_val * target_w) / rate
-
-        trade_delta = _target_trade_delta(
-            target_instrument_value=target_instr_val,
-            current_instrument_value=curr_instr_val,
-            unit_value=unit_value,
-        )
-        side = trade_delta.side
-        requested_quantity = trade_delta.raw_quantity
-        sell_quantity = _sell_quantity_after_safety_limits(
-            instrument_id=i_id,
-            side=side,
-            requested_quantity=requested_quantity,
-            position=curr,
+            shelf=shelf,
             options=options,
-            sell_price=unit_value,
-            price_currency=price_ent.currency,
-            base_rate=rate,
-            market_data=market_data,
+            total_val=total_val,
+            target_weight=target_w,
             dq_log=dq_log,
             tax_budget=tax_budget,
             diagnostics=diagnostics,
-        )
-        quantity = sell_quantity.quantity
-
-        notional = quantity * unit_value
-
-        shelf_ent = next((s for s in shelf if s.instrument_id == i_id), None)
-        threshold = _trade_notional_threshold(options=options, shelf_entry=shelf_ent)
-
-        if _suppress_dust_trade(
-            instrument_id=i_id,
-            notional=notional,
-            notional_currency=price_ent.currency,
-            threshold=threshold,
-            options=options,
             suppressed=suppressed,
-        ):
+        )
+        if intent_context is None:
             continue
 
-        if quantity > 0:
-            intents.append(
-                _security_trade_intent(
-                    intent_id=f"oi_{len(intents) + 1}",
-                    side=side,
-                    instrument_id=i_id,
-                    quantity=quantity,
-                    unit_value=unit_value,
-                    base_rate=rate,
-                    price_currency=price_ent.currency,
-                    portfolio_base_currency=portfolio.base_currency,
-                    threshold=threshold,
-                    requested_quantity=requested_quantity,
-                    sell_quantity_before_tax=sell_quantity.sell_quantity_before_tax,
-                    tax_awareness_enabled=options.enable_tax_awareness,
-                )
-            )
+        _append_security_trade_intent(
+            intents=intents,
+            context=intent_context,
+            portfolio_base_currency=portfolio.base_currency,
+            tax_awareness_enabled=options.enable_tax_awareness,
+        )
 
     tax_impact = None
     if options.enable_tax_awareness:

@@ -23624,3 +23624,31 @@ and improves internal transaction-cost source posture maintainability only.
   baselines into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-941: Rebalance intent target-context helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Bank-buyable control area: architecture, portfolio construction supportability, and testing.
+- Finding: `generate_intents` still owned per-target market-context resolution, target/current
+  value comparison, safety-limit application, dust suppression, and intent append mechanics inline.
+  That kept the top-level intent generator harder to audit even though most underlying decisions
+  already had focused helpers.
+- Action: extracted a target intent context helper and a security-trade append helper; added direct
+  tests for supported buy-context assembly, dust suppression, zero-quantity skipping, and stable
+  intent numbering while preserving the existing public generation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`, and
+  `python -m radon cc src/core/rebalance/intents.py -s`; the focused rebalance safety suite
+  reported 36 passed, and radon reports `generate_intents` at A(4) with
+  `_target_intent_context` at A(5).
+- Residual risk: this slice improves internal rebalance intent maintainability only. It does not
+  change target-weight methodology, tax-budget behavior, turnover controls, execution posture,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal portfolio-construction
+  maintainability hardening with no operator-facing contract change.
