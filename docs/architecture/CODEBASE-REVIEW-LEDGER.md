@@ -24411,3 +24411,56 @@ and improves internal transaction-cost source posture maintainability only.
   or target-cash hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-971: PM operating quality review action helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/routers/pm_operating_quality_review_action_builder.py` and
+  `tests/unit/api/test_pm_operating_quality_review_action_builder.py`.
+- Bank-buyable control area: architecture, API error translation, auditability, and testing.
+- Finding: `build_review_action` combined score-run target lookup, fairness-analysis target
+  lookup, stable HTTP not-found translation, domain review-action construction, validation-error
+  translation, and fallback correlation-id selection inside one router helper. That made the
+  review-action route adapter harder to inspect even though each step has a narrow responsibility.
+- Action: extracted target resolution helpers for score-run and fairness-analysis review targets,
+  isolated review-action construction with validation translation, and added direct unit tests for
+  both target families, both stable missing-target HTTP codes, header correlation-id use, actor-id
+  fallback, and domain validation-error mapping.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/api/routers/pm_operating_quality_review_action_builder.py tests/unit/api/test_pm_operating_quality_review_action_builder.py`,
+  `python -m ruff check src/api/routers/pm_operating_quality_review_action_builder.py tests/unit/api/test_pm_operating_quality_review_action_builder.py`,
+  `python -m ruff format --check src/api/routers/pm_operating_quality_review_action_builder.py tests/unit/api/test_pm_operating_quality_review_action_builder.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/pm_operating_quality_review_action_builder.py tests/unit/api/test_pm_operating_quality_review_action_builder.py`,
+  `python -m pytest tests/unit/api/test_pm_operating_quality_review_action_builder.py -q`,
+  and `python -m radon cc src/api/routers/pm_operating_quality_review_action_builder.py -s`; the
+  focused review-action builder suite reported 5 passed, and radon reports `build_review_action`
+  reduced from B(6) to A(1) with every extracted helper at A grade.
+- Residual risk: this slice improves PM operating quality review-action adapter maintainability
+  only. It does not change route contracts, repository behavior, PM-quality scoring, fairness
+  analysis methodology, broader approval workflow boundaries, review-action persistence semantics,
+  or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal PM operating quality router
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-972: PM operating quality review action reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the PM operating quality review-action helper extraction, the checked-in quality
+  reports needed to reflect the updated branch head, test-function count, and current source
+  hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `abd76e4c`, record 821 Python files, 2628 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `build_review_action`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining outcome snapshot, source-context,
+  proof-pack, rebalance-intent, workflow-gate, wave source-analytics, async payload, target-cash, or
+  workflow-decision query hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
