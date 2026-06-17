@@ -23652,3 +23652,32 @@ and improves internal transaction-cost source posture maintainability only.
   external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal portfolio-construction
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-942: Proof-pack build-context source evidence helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack evidence supportability, and testing.
+- Finding: `_proof_pack_build_context` still mixed timestamp resolution, source hash assembly,
+  source analytics enrichment, source-ref assembly, run-result hydration, run-artifact hashing,
+  proof-pack id resolution, portfolio resolution, and correlation resolution. That made the
+  proof-pack evidence context harder to review as an auditable supportability boundary.
+- Action: extracted source-evidence context assembly, run-result hydration, and run-artifact hash
+  helpers; added direct tests for analytics hash/ref enrichment and run evidence hydration while
+  preserving the existing proof-pack build contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 98 passed, and radon reports `_proof_pack_build_context` at A(2) with
+  `_proof_pack_source_context` at A(3).
+- Residual risk: this slice improves internal proof-pack evidence-context maintainability only.
+  Additional B-grade proof-pack section helpers remain visible candidates for future slices; this
+  slice does not change proof-pack schemas, content-hash semantics, source analytics facts,
+  source-ref meaning, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack supportability
+  hardening with no operator-facing contract change.

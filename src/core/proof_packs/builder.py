@@ -134,6 +134,13 @@ class _ProofPackBuildContext:
     correlation_id: str
 
 
+@dataclass(frozen=True)
+class _ProofPackSourceContext:
+    source_hashes: dict[str, str]
+    source_analytics: dict[str, ProofPackSourceAnalytics]
+    source_refs: list[DpmProofPackSourceRef]
+
+
 def build_proof_pack_from_run(
     *,
     run: DpmRunRecord,
@@ -355,6 +362,48 @@ def _proof_pack_build_context(
     direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
 ) -> _ProofPackBuildContext:
     resolved_created_at = created_at or datetime.now(timezone.utc)
+    source_context = _proof_pack_source_context(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        mandate_twin=mandate_twin,
+        mandate_health=mandate_health,
+        direct_regime_stress_context=direct_regime_stress_context,
+    )
+    result = _rebalance_result_from_run(run)
+    return _ProofPackBuildContext(
+        created_at=resolved_created_at,
+        generated_at=resolved_created_at.isoformat(),
+        result=result,
+        run_artifact_hash=_run_artifact_hash(run),
+        source_hashes=source_context.source_hashes,
+        source_analytics=source_context.source_analytics,
+        source_refs=source_context.source_refs,
+        proof_pack_id=_proof_pack_id(
+            source_type=source_type,
+            run=run,
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+        ),
+        portfolio_id=_resolve_portfolio_id(run=run, alternative_set=alternative_set),
+        correlation_id=_resolve_proof_pack_correlation_id(
+            correlation_id=correlation_id,
+            selection=selection,
+            run=run,
+            created_at=resolved_created_at,
+        ),
+    )
+
+
+def _proof_pack_source_context(
+    *,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    direct_regime_stress_context: AuthoritativeRegimeStressContext | None,
+) -> _ProofPackSourceContext:
     source_hashes = _source_hashes(
         run=run,
         alternative_set=alternative_set,
@@ -377,31 +426,21 @@ def _proof_pack_build_context(
         mandate_health=mandate_health,
     )
     source_refs.extend(analytics.source_ref for analytics in source_analytics.values())
-    run_artifact = build_dpm_run_artifact(run=run) if run is not None else None
-    return _ProofPackBuildContext(
-        created_at=resolved_created_at,
-        generated_at=resolved_created_at.isoformat(),
-        result=RebalanceResult.model_validate(run.result_json) if run is not None else None,
-        run_artifact_hash=(
-            run_artifact.evidence.hashes.artifact_hash if run_artifact is not None else None
-        ),
+    return _ProofPackSourceContext(
         source_hashes=source_hashes,
         source_analytics=source_analytics,
         source_refs=source_refs,
-        proof_pack_id=_proof_pack_id(
-            source_type=source_type,
-            run=run,
-            alternative_set=alternative_set,
-            selected_alternative=selected_alternative,
-        ),
-        portfolio_id=_resolve_portfolio_id(run=run, alternative_set=alternative_set),
-        correlation_id=_resolve_proof_pack_correlation_id(
-            correlation_id=correlation_id,
-            selection=selection,
-            run=run,
-            created_at=resolved_created_at,
-        ),
     )
+
+
+def _rebalance_result_from_run(run: DpmRunRecord | None) -> RebalanceResult | None:
+    return RebalanceResult.model_validate(run.result_json) if run is not None else None
+
+
+def _run_artifact_hash(run: DpmRunRecord | None) -> str | None:
+    if run is None:
+        return None
+    return build_dpm_run_artifact(run=run).evidence.hashes.artifact_hash
 
 
 def _resolve_proof_pack_correlation_id(
