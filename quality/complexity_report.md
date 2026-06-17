@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T01:50:54+00:00`
+- Generated at: `2026-06-17T02:09:12+00:00`
 
-- Report source snapshot: `979d0260`
+- Report source snapshot: `3ea6b511`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
-| 2 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
-| 3 | value_position | src/core/valuation.py | 6 | 45 |
-| 4 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
-| 5 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
-| 6 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
-| 7 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
-| 8 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
-| 9 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
-| 10 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
+| 1 | value_position | src/core/valuation.py | 6 | 45 |
+| 2 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
+| 3 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
+| 4 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
+| 5 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
+| 6 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
+| 7 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
+| 8 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
+| 9 | _roll_up_expected_supportability | src/core/outcomes/snapshots.py | 6 | 36 |
+| 10 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
 
 ### Most Complex Current Test Functions
 
