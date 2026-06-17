@@ -24309,3 +24309,55 @@ and improves internal transaction-cost source posture maintainability only.
   wave source-analytics hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-967: Enterprise audit middleware helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/enterprise_readiness.py` and
+  `tests/unit/api/test_enterprise_readiness_hardening.py`.
+- Bank-buyable control area: security, auditability, observability supportability, and testing.
+- Finding: `build_enterprise_audit_middleware` kept payload-size parsing, authorization-denial
+  audit emission, denial response construction, policy-version response headers, and successful
+  write-audit emission inside the nested middleware function. That made the enterprise audit path
+  harder to inspect even though each step is deterministic and independently testable.
+- Action: extracted helpers for request content-length parsing, write-payload limit checks, audit
+  identity projection, denied-write audit emission, authorization-denied responses, policy-version
+  header attachment, and successful write-audit emission; added direct helper tests while
+  preserving middleware behavior and existing FastAPI registration.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m ruff check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m ruff format --check src/api/enterprise_readiness.py tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py`,
+  `python -m mypy --config-file mypy.ini src/api/enterprise_readiness.py`,
+  `python -m pytest tests/unit/api/test_enterprise_readiness.py tests/unit/api/test_enterprise_readiness_hardening.py -q`,
+  and `python -m radon cc src/api/enterprise_readiness.py -s`; the focused enterprise readiness
+  suites reported 19 passed, and radon reports `build_enterprise_audit_middleware` at A(1) with
+  every middleware helper at A grade.
+- Residual risk: this slice improves enterprise audit middleware maintainability only. It does not
+  change authorization policy, audit event schema, redaction policy, runtime configuration
+  semantics, route contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal enterprise-readiness
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-968: Enterprise audit middleware reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the enterprise audit middleware helper extraction, the checked-in quality reports
+  needed to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `dfe98e3e`, record 820 Python files, 2622 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `build_enterprise_audit_middleware` or the nested
+  `middleware` entry from `src/api/enterprise_readiness.py`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining execution, PM-quality, outcome
+  snapshot, source-context, proof-pack, rebalance-intent, workflow-gate, wave source-analytics, or
+  async payload hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
