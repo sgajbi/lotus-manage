@@ -584,6 +584,66 @@ def test_pm_quality_outcome_review_signal_helpers_project_handoff_evidence() -> 
     assert handoff.source_refs == [review_ref, report_ref, ai_ref]
 
 
+def test_pm_quality_indicator_result_helpers_block_missing_required_evidence() -> None:
+    weight = DpmPmQualityWeight(
+        indicator="SOURCE_QUALITY",
+        weight=Decimal("100"),
+        minimum_evidence_count=2,
+    )
+    source_ref = _source_ref()
+    signal = scoring._PmQualitySignal(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("90"),
+        state="READY",
+        reason_codes=["SOURCE_READY"],
+        source_refs=[source_ref],
+    )
+
+    result = scoring._indicator_result(weight, [signal])
+
+    assert scoring._indicator_signals(weight=weight, signals=[signal]) == [signal]
+    assert result.score is None
+    assert result.state == "BLOCKED"
+    assert result.evidence_count == 1
+    assert result.reason_codes == ["SOURCE_QUALITY_REQUIRED_EVIDENCE_MISSING"]
+    assert result.source_refs == []
+
+
+def test_pm_quality_indicator_result_helpers_project_evaluated_signal_posture() -> None:
+    weight = DpmPmQualityWeight(indicator="SOURCE_QUALITY", weight=Decimal("100"))
+    source_ref = _source_ref()
+    ready_signal = scoring._PmQualitySignal(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("90"),
+        state="READY",
+        reason_codes=["SOURCE_READY"],
+        source_refs=[source_ref],
+    )
+    degraded_signal = scoring._PmQualitySignal(
+        indicator="SOURCE_QUALITY",
+        score=Decimal("70"),
+        state="DEGRADED",
+        reason_codes=["SOURCE_DEGRADED"],
+        source_refs=[source_ref],
+    )
+
+    result = scoring._indicator_result(weight, [ready_signal, degraded_signal])
+
+    assert result.score == Decimal("80.00")
+    assert result.state == "DEGRADED"
+    assert result.evidence_count == 2
+    assert result.reason_codes == ["SOURCE_DEGRADED", "SOURCE_READY"]
+    assert result.source_refs == [source_ref]
+
+
+def test_pm_quality_indicator_reason_codes_fall_back_to_evaluated_code() -> None:
+    weight = DpmPmQualityWeight(indicator="OUTCOME_DISCIPLINE", weight=Decimal("100"))
+
+    assert scoring._indicator_reason_codes(weight=weight, signals=[]) == [
+        "OUTCOME_DISCIPLINE_EVALUATED"
+    ]
+
+
 def test_pm_quality_score_run_source_ref_helper_collects_scope_and_governance_refs() -> None:
     indicator_ref = DpmOutcomeSourceRef(
         source_system="lotus-risk",

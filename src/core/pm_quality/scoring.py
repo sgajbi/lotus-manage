@@ -591,35 +591,58 @@ def _indicator_result(
     weight: DpmPmQualityWeight,
     signals: list[_PmQualitySignal],
 ) -> DpmPmQualityIndicatorResult:
-    indicator_signals = [signal for signal in signals if signal.indicator == weight.indicator]
+    indicator_signals = _indicator_signals(weight=weight, signals=signals)
     if len(indicator_signals) < weight.minimum_evidence_count:
-        return DpmPmQualityIndicatorResult(
-            indicator=weight.indicator,
-            score=None,
-            weight=weight.weight,
-            state="BLOCKED",
-            evidence_count=len(indicator_signals),
-            reason_codes=[f"{weight.indicator}_REQUIRED_EVIDENCE_MISSING"],
-            source_refs=[],
-        )
+        return _blocked_indicator_result(weight=weight, evidence_count=len(indicator_signals))
 
-    scores = [signal.score for signal in indicator_signals]
-    score = _mean(scores)
-    states = [signal.state for signal in indicator_signals]
-    state = _worst_state(states)
-    reason_codes = sorted(
-        {reason for signal in indicator_signals for reason in signal.reason_codes}
-    )
-    refs = _dedupe_refs([ref for signal in indicator_signals for ref in signal.source_refs])
     return DpmPmQualityIndicatorResult(
         indicator=weight.indicator,
-        score=score,
+        score=_mean([signal.score for signal in indicator_signals]),
         weight=weight.weight,
-        state=state,
+        state=_worst_state([signal.state for signal in indicator_signals]),
         evidence_count=len(indicator_signals),
-        reason_codes=reason_codes or [f"{weight.indicator}_EVALUATED"],
-        source_refs=refs,
+        reason_codes=_indicator_reason_codes(weight=weight, signals=indicator_signals),
+        source_refs=_indicator_source_refs(indicator_signals),
     )
+
+
+def _indicator_signals(
+    *,
+    weight: DpmPmQualityWeight,
+    signals: list[_PmQualitySignal],
+) -> list[_PmQualitySignal]:
+    return [signal for signal in signals if signal.indicator == weight.indicator]
+
+
+def _blocked_indicator_result(
+    *,
+    weight: DpmPmQualityWeight,
+    evidence_count: int,
+) -> DpmPmQualityIndicatorResult:
+    return DpmPmQualityIndicatorResult(
+        indicator=weight.indicator,
+        score=None,
+        weight=weight.weight,
+        state="BLOCKED",
+        evidence_count=evidence_count,
+        reason_codes=[f"{weight.indicator}_REQUIRED_EVIDENCE_MISSING"],
+        source_refs=[],
+    )
+
+
+def _indicator_reason_codes(
+    *,
+    weight: DpmPmQualityWeight,
+    signals: list[_PmQualitySignal],
+) -> list[str]:
+    reason_codes = sorted({reason for signal in signals for reason in signal.reason_codes})
+    return reason_codes or [f"{weight.indicator}_EVALUATED"]
+
+
+def _indicator_source_refs(
+    signals: list[_PmQualitySignal],
+) -> list[DpmOutcomeSourceRef]:
+    return _dedupe_refs([ref for signal in signals for ref in signal.source_refs])
 
 
 def _weighted_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:

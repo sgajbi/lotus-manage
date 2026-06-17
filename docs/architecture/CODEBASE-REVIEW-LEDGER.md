@@ -23893,3 +23893,31 @@ and improves internal transaction-cost source posture maintainability only.
   methodology, external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal PM-quality source-signal
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-951: PM-quality indicator result helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, scoring supportability, and testing.
+- Finding: `_indicator_result` combined indicator signal filtering, required-evidence blocking,
+  score averaging, worst-state selection, reason-code aggregation, and source-ref de-duplication.
+  That kept PM operating-quality indicator projection harder to review than the surrounding
+  policy scoring helpers.
+- Action: extracted helpers for indicator-specific signal selection, blocked indicator results,
+  evaluated reason-code projection, and indicator source-ref de-duplication; added direct tests for
+  missing required evidence, evaluated degraded posture, reason-code fallback, and source-ref
+  de-duplication.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  37 passed, and radon reports `_indicator_result` reduced from C(11) to A(4).
+- Residual risk: this slice improves PM-quality indicator projection maintainability only. It does
+  not change PM operating-quality policy semantics, score thresholds, source-state ranking,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability hardening with no operator-facing contract change.
