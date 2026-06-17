@@ -367,53 +367,82 @@ def _signals_from_outcome_reviews(
 ) -> list[_PmQualitySignal]:
     signals: list[_PmQualitySignal] = []
     for review in outcome_reviews:
-        review_ref = DpmOutcomeSourceRef(
-            source_system="lotus-manage",
-            source_type="PostTradeOutcomeReview",
-            source_id=review.outcome_review_id,
-            source_version=review.outcome_review_version,
-            content_hash=review.content_hash,
-        )
-        dimension_scores = [_state_score(result.state) for result in review.dimension_results]
-        if dimension_scores:
-            signals.append(
-                _PmQualitySignal(
-                    indicator="OUTCOME_DISCIPLINE",
-                    score=_mean(dimension_scores),
-                    state=review.state,
-                    reason_codes=sorted(
-                        {result.reason_code for result in review.dimension_results}
-                    ),
-                    source_refs=[review_ref],
-                    as_of_date=review.review_window.as_of_date,
-                )
-            )
-        signals.append(
-            _PmQualitySignal(
-                indicator="SOURCE_QUALITY",
-                score=_state_score(review.supportability.state),
-                state=review.supportability.state,
-                reason_codes=review.supportability.reason_codes
-                or ["OUTCOME_REVIEW_SOURCE_POSTURE"],
-                source_refs=[review_ref, *review.source_lineage],
-                as_of_date=review.review_window.as_of_date,
-            )
-        )
-        if review.report_input_ref or review.ai_evidence_ref:
-            refs = [
-                ref for ref in [review.report_input_ref, review.ai_evidence_ref] if ref is not None
-            ]
-            signals.append(
-                _PmQualitySignal(
-                    indicator="EVIDENCE_COMPLETENESS",
-                    score=Decimal("100"),
-                    state="READY",
-                    reason_codes=["OUTCOME_REVIEW_HANDOFF_EVIDENCE_AVAILABLE"],
-                    source_refs=[review_ref, *refs],
-                    as_of_date=review.review_window.as_of_date,
-                )
-            )
+        review_ref = _outcome_review_ref(review)
+        outcome_signal = _outcome_discipline_signal(review=review, review_ref=review_ref)
+        if outcome_signal is not None:
+            signals.append(outcome_signal)
+        signals.append(_outcome_source_quality_signal(review=review, review_ref=review_ref))
+        handoff_signal = _outcome_handoff_evidence_signal(review=review, review_ref=review_ref)
+        if handoff_signal is not None:
+            signals.append(handoff_signal)
     return signals
+
+
+def _outcome_review_ref(review: DpmPostTradeOutcomeReview) -> DpmOutcomeSourceRef:
+    return DpmOutcomeSourceRef(
+        source_system="lotus-manage",
+        source_type="PostTradeOutcomeReview",
+        source_id=review.outcome_review_id,
+        source_version=review.outcome_review_version,
+        content_hash=review.content_hash,
+    )
+
+
+def _outcome_discipline_signal(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    review_ref: DpmOutcomeSourceRef,
+) -> _PmQualitySignal | None:
+    dimension_scores = [_state_score(result.state) for result in review.dimension_results]
+    if not dimension_scores:
+        return None
+    return _PmQualitySignal(
+        indicator="OUTCOME_DISCIPLINE",
+        score=_mean(dimension_scores),
+        state=review.state,
+        reason_codes=sorted({result.reason_code for result in review.dimension_results}),
+        source_refs=[review_ref],
+        as_of_date=review.review_window.as_of_date,
+    )
+
+
+def _outcome_source_quality_signal(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    review_ref: DpmOutcomeSourceRef,
+) -> _PmQualitySignal:
+    return _PmQualitySignal(
+        indicator="SOURCE_QUALITY",
+        score=_state_score(review.supportability.state),
+        state=review.supportability.state,
+        reason_codes=review.supportability.reason_codes or ["OUTCOME_REVIEW_SOURCE_POSTURE"],
+        source_refs=[review_ref, *review.source_lineage],
+        as_of_date=review.review_window.as_of_date,
+    )
+
+
+def _outcome_handoff_evidence_signal(
+    *,
+    review: DpmPostTradeOutcomeReview,
+    review_ref: DpmOutcomeSourceRef,
+) -> _PmQualitySignal | None:
+    refs = _outcome_handoff_refs(review)
+    if not refs:
+        return None
+    return _PmQualitySignal(
+        indicator="EVIDENCE_COMPLETENESS",
+        score=Decimal("100"),
+        state="READY",
+        reason_codes=["OUTCOME_REVIEW_HANDOFF_EVIDENCE_AVAILABLE"],
+        source_refs=[review_ref, *refs],
+        as_of_date=review.review_window.as_of_date,
+    )
+
+
+def _outcome_handoff_refs(
+    review: DpmPostTradeOutcomeReview,
+) -> list[DpmOutcomeSourceRef]:
+    return [ref for ref in [review.report_input_ref, review.ai_evidence_ref] if ref is not None]
 
 
 def _validate_lookback_window(
@@ -562,35 +591,58 @@ def _indicator_result(
     weight: DpmPmQualityWeight,
     signals: list[_PmQualitySignal],
 ) -> DpmPmQualityIndicatorResult:
-    indicator_signals = [signal for signal in signals if signal.indicator == weight.indicator]
+    indicator_signals = _indicator_signals(weight=weight, signals=signals)
     if len(indicator_signals) < weight.minimum_evidence_count:
-        return DpmPmQualityIndicatorResult(
-            indicator=weight.indicator,
-            score=None,
-            weight=weight.weight,
-            state="BLOCKED",
-            evidence_count=len(indicator_signals),
-            reason_codes=[f"{weight.indicator}_REQUIRED_EVIDENCE_MISSING"],
-            source_refs=[],
-        )
+        return _blocked_indicator_result(weight=weight, evidence_count=len(indicator_signals))
 
-    scores = [signal.score for signal in indicator_signals]
-    score = _mean(scores)
-    states = [signal.state for signal in indicator_signals]
-    state = _worst_state(states)
-    reason_codes = sorted(
-        {reason for signal in indicator_signals for reason in signal.reason_codes}
-    )
-    refs = _dedupe_refs([ref for signal in indicator_signals for ref in signal.source_refs])
     return DpmPmQualityIndicatorResult(
         indicator=weight.indicator,
-        score=score,
+        score=_mean([signal.score for signal in indicator_signals]),
         weight=weight.weight,
-        state=state,
+        state=_worst_state([signal.state for signal in indicator_signals]),
         evidence_count=len(indicator_signals),
-        reason_codes=reason_codes or [f"{weight.indicator}_EVALUATED"],
-        source_refs=refs,
+        reason_codes=_indicator_reason_codes(weight=weight, signals=indicator_signals),
+        source_refs=_indicator_source_refs(indicator_signals),
     )
+
+
+def _indicator_signals(
+    *,
+    weight: DpmPmQualityWeight,
+    signals: list[_PmQualitySignal],
+) -> list[_PmQualitySignal]:
+    return [signal for signal in signals if signal.indicator == weight.indicator]
+
+
+def _blocked_indicator_result(
+    *,
+    weight: DpmPmQualityWeight,
+    evidence_count: int,
+) -> DpmPmQualityIndicatorResult:
+    return DpmPmQualityIndicatorResult(
+        indicator=weight.indicator,
+        score=None,
+        weight=weight.weight,
+        state="BLOCKED",
+        evidence_count=evidence_count,
+        reason_codes=[f"{weight.indicator}_REQUIRED_EVIDENCE_MISSING"],
+        source_refs=[],
+    )
+
+
+def _indicator_reason_codes(
+    *,
+    weight: DpmPmQualityWeight,
+    signals: list[_PmQualitySignal],
+) -> list[str]:
+    reason_codes = sorted({reason for signal in signals for reason in signal.reason_codes})
+    return reason_codes or [f"{weight.indicator}_EVALUATED"]
+
+
+def _indicator_source_refs(
+    signals: list[_PmQualitySignal],
+) -> list[DpmOutcomeSourceRef]:
+    return _dedupe_refs([ref for signal in signals for ref in signal.source_refs])
 
 
 def _weighted_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:

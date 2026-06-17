@@ -23864,3 +23864,81 @@ and improves internal transaction-cost source posture maintainability only.
   campaign/search/OpenAPI/observability hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-950: PM-quality outcome-review signal helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, source-lineage supportability, and testing.
+- Finding: `_signals_from_outcome_reviews` combined post-trade outcome-review source-ref
+  projection, outcome-discipline scoring, source-quality posture scoring, optional report/AI
+  handoff evidence projection, and list assembly. That kept PM operating-quality source signal
+  mapping harder to audit despite the surrounding score-run orchestration already being
+  policy-driven.
+- Action: extracted pure helpers for outcome-review refs, outcome-discipline signals,
+  source-quality signals, optional handoff evidence signals, and handoff refs; added direct tests
+  for review source posture, fallback source-quality reason codes, and report/AI handoff evidence
+  projection while preserving the existing score-run output shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  34 passed, and radon reports `_signals_from_outcome_reviews` at A(4).
+- Residual risk: this slice improves PM-quality source signal maintainability only. It does not
+  change PM operating-quality policy semantics, score thresholds, source-owned outcome review
+  methodology, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal PM-quality source-signal
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-951: PM-quality indicator result helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, scoring supportability, and testing.
+- Finding: `_indicator_result` combined indicator signal filtering, required-evidence blocking,
+  score averaging, worst-state selection, reason-code aggregation, and source-ref de-duplication.
+  That kept PM operating-quality indicator projection harder to review than the surrounding
+  policy scoring helpers.
+- Action: extracted helpers for indicator-specific signal selection, blocked indicator results,
+  evaluated reason-code projection, and indicator source-ref de-duplication; added direct tests for
+  missing required evidence, evaluated degraded posture, reason-code fallback, and source-ref
+  de-duplication.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  37 passed, and radon reports `_indicator_result` reduced from C(11) to A(4).
+- Residual risk: this slice improves PM-quality indicator projection maintainability only. It does
+  not change PM operating-quality policy semantics, score thresholds, source-state ranking,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal PM-quality scoring
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-952: PM-quality scoring reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the PM-quality outcome-review signal and indicator-result helper extractions, the
+  checked-in quality reports needed to reflect the updated branch head, test-function count, and
+  current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `801b4b6e`, record 820 Python files, 2604 test functions, keep service boundary findings and
+  router infrastructure imports at 0, and the current top-ten source hotspot list no longer
+  includes `_signals_from_outcome_reviews`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining rebalance, campaign, search,
+  OpenAPI, enterprise-readiness, or execution hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
