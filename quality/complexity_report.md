@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T01:31:58+00:00`
+- Generated at: `2026-06-17T01:50:54+00:00`
 
-- Report source snapshot: `8be6baf4`
+- Report source snapshot: `979d0260`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
-| 2 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
-| 3 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
-| 4 | value_position | src/core/valuation.py | 6 | 45 |
-| 5 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
-| 6 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
-| 7 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
-| 8 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
-| 9 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
-| 10 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
+| 1 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
+| 2 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
+| 3 | value_position | src/core/valuation.py | 6 | 45 |
+| 4 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
+| 5 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
+| 6 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
+| 7 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
+| 8 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
+| 9 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
+| 10 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
 
 ### Most Complex Current Test Functions
 
