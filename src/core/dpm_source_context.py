@@ -1713,41 +1713,52 @@ def _shelf_attribute_value(value: object) -> str:
     return str(value)
 
 
+def _eligible_core_eligibility_records(
+    response: DpmCoreInstrumentEligibilityBulkResponse,
+) -> list[DpmCoreInstrumentEligibilityRecord]:
+    return [record for record in response.eligibility if record.found]
+
+
+def _shelf_entry_attributes_from_core_eligibility(
+    record: DpmCoreInstrumentEligibilityRecord,
+) -> dict[str, str]:
+    return {
+        "buy_allowed": _shelf_attribute_value(record.buy_allowed),
+        "sell_allowed": _shelf_attribute_value(record.sell_allowed),
+        "eligibility_status": record.eligibility_status,
+        "country_of_risk": _shelf_attribute_value(record.country_of_risk),
+        "settlement_calendar_id": _shelf_attribute_value(record.settlement_calendar_id),
+        "ultimate_parent_issuer_id": _shelf_attribute_value(record.ultimate_parent_issuer_id),
+        "restriction_reason_codes": ",".join(record.restriction_reason_codes),
+        "source_record_id": _shelf_attribute_value(record.source_record_id),
+    }
+
+
+def _shelf_entry_from_core_eligibility(
+    record: DpmCoreInstrumentEligibilityRecord,
+) -> ShelfEntry:
+    return ShelfEntry(
+        instrument_id=record.security_id,
+        status=record.product_shelf_status,
+        asset_class=record.asset_class or "UNKNOWN",
+        issuer_id=record.issuer_id,
+        liquidity_tier=record.liquidity_tier,
+        settlement_days=record.settlement_days if record.settlement_days is not None else 2,
+        attributes=_shelf_entry_attributes_from_core_eligibility(record),
+    )
+
+
 def build_shelf_entries_from_core_eligibility(
     response: DpmCoreInstrumentEligibilityBulkResponse,
 ) -> list[ShelfEntry]:
     if response.supportability.state not in {"READY", "DEGRADED"}:
         raise DpmCoreContextIncompleteError(response.supportability.reason)
 
-    eligible_records = [record for record in response.eligibility if record.found]
+    eligible_records = _eligible_core_eligibility_records(response)
     if not eligible_records:
         raise DpmCoreContextIncompleteError("DPM_CORE_INSTRUMENT_ELIGIBILITY_EMPTY")
 
-    shelf_entries: list[ShelfEntry] = []
-    for record in eligible_records:
-        shelf_entries.append(
-            ShelfEntry(
-                instrument_id=record.security_id,
-                status=record.product_shelf_status,
-                asset_class=record.asset_class or "UNKNOWN",
-                issuer_id=record.issuer_id,
-                liquidity_tier=record.liquidity_tier,
-                settlement_days=record.settlement_days if record.settlement_days is not None else 2,
-                attributes={
-                    "buy_allowed": _shelf_attribute_value(record.buy_allowed),
-                    "sell_allowed": _shelf_attribute_value(record.sell_allowed),
-                    "eligibility_status": record.eligibility_status,
-                    "country_of_risk": _shelf_attribute_value(record.country_of_risk),
-                    "settlement_calendar_id": _shelf_attribute_value(record.settlement_calendar_id),
-                    "ultimate_parent_issuer_id": _shelf_attribute_value(
-                        record.ultimate_parent_issuer_id
-                    ),
-                    "restriction_reason_codes": ",".join(record.restriction_reason_codes),
-                    "source_record_id": _shelf_attribute_value(record.source_record_id),
-                },
-            )
-        )
-    return shelf_entries
+    return [_shelf_entry_from_core_eligibility(record) for record in eligible_records]
 
 
 def build_portfolio_snapshot_with_core_tax_lots(
