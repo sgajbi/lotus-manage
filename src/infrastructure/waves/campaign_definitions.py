@@ -16,6 +16,19 @@ from src.infrastructure.mandates.serialization import dump_model_json, load_mode
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
+def _load_campaign_definition_payload(
+    payload: str | dict[str, Any],
+) -> DpmBulkReviewCampaignDefinition:
+    try:
+        return load_model_json(DpmBulkReviewCampaignDefinition, payload)
+    except ValueError as exc:
+        if "BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH" not in str(exc):
+            raise
+        legacy_payload = json.loads(payload) if isinstance(payload, str) else deepcopy(payload)
+        legacy_payload["content_hash"] = ""
+        return DpmBulkReviewCampaignDefinition.model_validate(legacy_payload)
+
+
 class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDefinitionRepository):
     def __init__(self) -> None:
         self._lock = Lock()
@@ -261,7 +274,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             ).fetchone()
         if row is None:
             return None
-        return load_model_json(DpmBulkReviewCampaignDefinition, _payload(row))
+        return _load_campaign_definition_payload(_payload(row))
 
     def list_definitions(
         self,
@@ -295,7 +308,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 """,
                 tuple(args),
             ).fetchall()
-        return [load_model_json(DpmBulkReviewCampaignDefinition, _payload(row)) for row in rows]
+        return [_load_campaign_definition_payload(_payload(row)) for row in rows]
 
     def retire_definition(
         self,
@@ -314,7 +327,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.status == "RETIRED":
                 connection.rollback()
                 return existing
@@ -358,7 +371,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.status == "SUPERSEDED":
                 connection.rollback()
                 return existing
@@ -402,7 +415,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.content_hash == definition.content_hash:
                 connection.rollback()
                 return existing
@@ -450,7 +463,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.content_hash == definition.content_hash:
                 connection.rollback()
                 return existing
@@ -498,7 +511,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.content_hash == definition.content_hash:
                 connection.rollback()
                 return existing
@@ -546,7 +559,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.content_hash == definition.content_hash:
                 connection.rollback()
                 return existing
@@ -594,7 +607,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             if persisted is None:
                 connection.rollback()
                 return None
-            existing = load_model_json(DpmBulkReviewCampaignDefinition, _payload(persisted))
+            existing = _load_campaign_definition_payload(_payload(persisted))
             if existing.content_hash == definition.content_hash:
                 connection.rollback()
                 return existing

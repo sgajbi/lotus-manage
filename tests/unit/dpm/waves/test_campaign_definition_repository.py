@@ -68,6 +68,7 @@ from src.infrastructure.waves.campaign_definitions import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
     PostgresDpmBulkReviewCampaignDefinitionRepository,
     _import_psycopg,
+    _load_campaign_definition_payload,
     _payload,
 )
 import src.infrastructure.waves.campaign_definitions as campaign_definition_infra
@@ -196,6 +197,18 @@ def test_campaign_definition_content_hash_helper_applies_and_rejects_mismatch() 
     mismatched = _definition().model_copy(update={"content_hash": "sha256:bad"})
     with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH"):
         _apply_campaign_definition_content_hash(mismatched)
+
+
+def test_campaign_definition_loader_tolerates_legacy_stored_hash() -> None:
+    definition = _definition()
+    legacy_payload = definition.model_dump(mode="json")
+    legacy_payload["content_hash"] = "sha256:legacy-campaign-definition-hash"
+
+    loaded = _load_campaign_definition_payload(legacy_payload)
+
+    assert loaded.campaign_id == definition.campaign_id
+    assert loaded.campaign_version == definition.campaign_version
+    assert loaded.content_hash == definition.content_hash
 
 
 def test_campaign_definition_hash_preserves_pre_approval_decision_payloads() -> None:
