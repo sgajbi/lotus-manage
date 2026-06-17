@@ -45,6 +45,9 @@ from src.core.waves.campaign_workflow_board import (
 )
 from src.core.waves.campaign_assignment_plan import (
     DpmBulkReviewCampaignAssignmentPlanPage,
+    _assignment_plan_counts,
+    _assignment_plan_page_payload,
+    _filtered_assignment_plan_items,
     build_bulk_review_campaign_assignment_plan_item,
     build_bulk_review_campaign_assignment_plan_page,
 )
@@ -729,6 +732,65 @@ def test_campaign_assignment_plan_page_filters_tier_and_counts() -> None:
     assert page.sla_posture_counts == {"ATTENTION": 1}
     assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
     assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_assignment_plan_helpers_filter_and_count_rows() -> None:
+    ready = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    approval_required = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    unauthorized = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(entitled_actor_ids=["ops"]),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    filtered = _filtered_assignment_plan_items(
+        items=[ready, approval_required, unauthorized],
+        include_closed=False,
+        escalation_tier=None,
+        next_action="REVIEW_ACTOR_ENTITLEMENT",
+    )
+
+    assert [item.campaign_id for item in filtered] == [unauthorized.campaign_id]
+    assert _assignment_plan_counts([ready, approval_required, unauthorized], "escalation_tier") == {
+        "PM": 1,
+        "GOVERNANCE": 1,
+        "OPS": 1,
+    }
+    assert _assignment_plan_counts([ready, approval_required, unauthorized], "sla_posture") == {
+        "ON_TRACK": 1,
+        "ATTENTION": 1,
+        "BREACHED_OR_BLOCKED": 1,
+    }
+
+
+def test_campaign_assignment_plan_page_payload_hashes_filtered_rows() -> None:
+    assignment_plan = build_bulk_review_campaign_assignment_plan_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    payload = _assignment_plan_page_payload(items=[assignment_plan], limit=25, offset=5)
+
+    assert payload["product_name"] == "BulkReviewCampaignAssignmentPlan"
+    assert payload["limit"] == 25
+    assert payload["offset"] == 5
+    assert payload["count"] == 1
+    assert payload["escalation_tier_counts"] == {"GOVERNANCE": 1}
+    assert payload["sla_posture_counts"] == {"ATTENTION": 1}
+    assert str(payload["content_hash"]).startswith("sha256:")
 
 
 def test_campaign_assignment_actions_record_append_only_posture() -> None:
