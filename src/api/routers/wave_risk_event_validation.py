@@ -65,6 +65,9 @@ class RiskEventAffectedCohort(Protocol):
     def calculation_supportability(self) -> str: ...
 
     @property
+    def reason_codes(self) -> tuple[str, ...]: ...
+
+    @property
     def affected_portfolios(self) -> tuple[RiskEventAffectedPortfolio, ...]: ...
 
 

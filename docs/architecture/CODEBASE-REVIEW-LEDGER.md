@@ -23781,3 +23781,34 @@ and improves internal transaction-cost source posture maintainability only.
   hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-947: Risk-event portfolio resolution helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/routers/wave_portfolio_resolution.py`,
+  `src/api/routers/wave_risk_event_validation.py`, and
+  `tests/unit/api/test_wave_portfolio_resolution.py`.
+- Bank-buyable control area: architecture, source-authority supportability, and testing.
+- Finding: `_resolve_risk_event_portfolios` still combined request validation, source-authority
+  availability checks, lotus-risk authority call construction, source cohort readiness gating, and
+  resolved-portfolio projection in one router helper. That kept the RISK_EVENT source-owned cohort
+  path harder to review than the surrounding named trigger resolvers.
+- Action: extracted named router-owned helpers for risk-event authority request construction,
+  required risk authority client selection, lotus-risk affected cohort invocation, and cohort
+  readiness gating; added direct tests for risk-event authority input mapping and the incomplete or
+  empty source-cohort failure paths; tightened the risk-event cohort protocol to include the
+  `reason_codes` field required by readiness errors.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py tests/unit/api/test_wave_portfolio_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_portfolio_resolution.py src/api/routers/wave_risk_event_validation.py`,
+  `python -m pytest tests/unit/api/test_wave_portfolio_resolution.py tests/unit/api/test_wave_risk_event_validation.py -q`,
+  and `python -m radon cc src/api/routers/wave_portfolio_resolution.py -s`; the focused API helper
+  suites reported 14 passed, and radon reports `_resolve_risk_event_portfolios` reduced from B(6)
+  to A(1).
+- Residual risk: this slice improves RISK_EVENT router helper maintainability only. It does not
+  change lotus-risk authority semantics, resolved portfolio payload schemas, source-ref lineage,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-resolution supportability
+  hardening with no operator-facing contract change.

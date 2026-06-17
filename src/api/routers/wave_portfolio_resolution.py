@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
 
 from src.api.routers.wave_campaign_definition_resolution import (
@@ -18,10 +19,13 @@ from src.api.routers.wave_date_validation import parse_wave_as_of_date
 from src.api.routers.wave_portfolio_type_validation import (
     normalize_required_portfolio_types,
 )
-from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.routers.wave_request_models import DpmTacticalHouseViewInput
+from src.api.routers.wave_request_models import DpmWavePortfolioInput
+from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.routers.wave_required_text_validation import normalize_required_text
 from src.api.routers.wave_risk_event_validation import (
+    RiskEventAffectedCohort,
+    RiskEventCandidatePayloads,
     build_risk_event_candidate_payloads,
     build_risk_event_resolved_portfolios,
 )
@@ -54,6 +58,14 @@ class _PortfolioResolutionContext:
     risk_authority_client: RiskAuthorityClient | None
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository
     core_resolver_factory: Callable[[], object]
+
+
+@dataclass(frozen=True)
+class _RiskEventAuthorityRequest:
+    risk_event_id: str
+    as_of_date: date
+    candidate_payloads: RiskEventCandidatePayloads[DpmWavePortfolioInput]
+    minimum_impact_score: Decimal
 
 
 def resolve_portfolio_inputs_for_request(
@@ -257,6 +269,25 @@ def _resolve_risk_event_portfolios(
     correlation_id: str,
     risk_authority_client: RiskAuthorityClient | None,
 ) -> list[dict[str, object]]:
+    authority_request = _risk_event_authority_request_for_wave(request)
+    risk_authority = _required_risk_event_authority_client(risk_authority_client)
+    cohort = _risk_event_affected_cohort(
+        risk_authority_client=risk_authority,
+        authority_request=authority_request,
+        correlation_id=correlation_id,
+    )
+    _require_risk_event_cohort_ready(cohort)
+
+    return build_risk_event_resolved_portfolios(
+        cohort=cohort,
+        candidate_by_portfolio_id=authority_request.candidate_payloads.candidate_by_portfolio_id,
+        fallback_risk_event_id=authority_request.risk_event_id,
+    )
+
+
+def _risk_event_authority_request_for_wave(
+    request: DpmWavePreviewRequest,
+) -> _RiskEventAuthorityRequest:
     risk_event_id = normalize_required_text(
         request.risk_event_id,
         required_code="RISK_EVENT_ID_REQUIRED",
@@ -267,21 +298,38 @@ def _resolve_risk_event_portfolios(
             "RISK_EVENT_CANDIDATE_PORTFOLIOS_REQUIRED",
             "RISK_EVENT requires candidate portfolios with source-supplied exposure weights.",
         )
-    as_of_date = parse_wave_as_of_date(request.as_of_date)
-    if risk_authority_client is None:
-        raise source_unavailable_http_exception(
-            code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",
-            message="DPM_RISK_BASE_URL is not configured.",
-        )
-
     candidate_payloads = build_risk_event_candidate_payloads(request.portfolios)
+    return _RiskEventAuthorityRequest(
+        risk_event_id=risk_event_id,
+        as_of_date=parse_wave_as_of_date(request.as_of_date),
+        candidate_payloads=candidate_payloads,
+        minimum_impact_score=Decimal(str(request.minimum_impact_score)),
+    )
 
+
+def _required_risk_event_authority_client(
+    risk_authority_client: RiskAuthorityClient | None,
+) -> RiskAuthorityClient:
+    if risk_authority_client is not None:
+        return risk_authority_client
+    raise source_unavailable_http_exception(
+        code="DPM_RISK_EVENT_COHORT_UNAVAILABLE",
+        message="DPM_RISK_BASE_URL is not configured.",
+    )
+
+
+def _risk_event_affected_cohort(
+    *,
+    risk_authority_client: RiskAuthorityClient,
+    authority_request: _RiskEventAuthorityRequest,
+    correlation_id: str,
+) -> RiskEventAffectedCohort:
     try:
-        cohort = risk_authority_client.risk_event_affected_cohort(
-            risk_event_id=risk_event_id,
-            as_of_date=as_of_date,
-            portfolios=candidate_payloads.risk_portfolios,
-            minimum_impact_score=Decimal(str(request.minimum_impact_score)),
+        return risk_authority_client.risk_event_affected_cohort(
+            risk_event_id=authority_request.risk_event_id,
+            as_of_date=authority_request.as_of_date,
+            portfolios=authority_request.candidate_payloads.risk_portfolios,
+            minimum_impact_score=authority_request.minimum_impact_score,
             correlation_id=correlation_id,
         )
     except RiskAuthorityUnavailableError as exc:
@@ -291,6 +339,8 @@ def _resolve_risk_event_portfolios(
             rejected_code="LOTUS_RISK_EVENT_COHORT_REJECTED",
         ) from exc
 
+
+def _require_risk_event_cohort_ready(cohort: RiskEventAffectedCohort) -> None:
     if cohort.calculation_supportability != "ready":
         raise source_dependency_failed_http_exception(
             code="DPM_RISK_EVENT_COHORT_INCOMPLETE",
@@ -302,9 +352,3 @@ def _resolve_risk_event_portfolios(
             code="DPM_RISK_EVENT_COHORT_EMPTY",
             message="Risk-event affected cohort returned no affected portfolios.",
         )
-
-    return build_risk_event_resolved_portfolios(
-        cohort=cohort,
-        candidate_by_portfolio_id=candidate_payloads.candidate_by_portfolio_id,
-        fallback_risk_event_id=risk_event_id,
-    )
