@@ -23681,3 +23681,25 @@ and improves internal transaction-cost source posture maintainability only.
   source-ref meaning, external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack supportability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-943: Rebalance and proof-pack hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the rebalance-intent and proof-pack build-context helper extractions, the checked-in
+  quality reports needed to reflect the updated branch head, test-function count, and current
+  source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `d1a4e33c`, record 2586 test functions, keep service boundary findings and router
+  infrastructure imports at 0, and the current top-ten source hotspot list no longer includes
+  `generate_intents` or `_proof_pack_build_context`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining B-grade proof-pack/router/source
+  hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
