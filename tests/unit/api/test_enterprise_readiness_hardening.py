@@ -1,15 +1,20 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.testclient import TestClient
 import pytest
 
 from src.api.enterprise_readiness import (
+    _attach_policy_version_header,
+    _audit_identity_from_request,
     _authz_key_material_issue,
+    _authorization_denied_response,
     _has_service_identity,
+    _request_content_length,
     _missing_required_headers,
     _normalized_headers,
     _policy_version_issue,
     _provided_capabilities,
     _secret_rotation_issue,
+    _write_payload_too_large,
     _write_authorization_required,
     authorize_write_request,
     build_enterprise_audit_middleware,
@@ -17,6 +22,29 @@ from src.api.enterprise_readiness import (
     redact_sensitive,
     validate_enterprise_runtime_config,
 )
+
+
+def _request(
+    *,
+    method: str = "POST",
+    path: str = "/write",
+    headers: dict[str, str] | None = None,
+) -> Request:
+    raw_headers = [
+        (name.lower().encode("latin-1"), value.encode("latin-1"))
+        for name, value in (headers or {}).items()
+    ]
+    return Request(
+        {
+            "type": "http",
+            "method": method,
+            "path": path,
+            "headers": raw_headers,
+            "scheme": "http",
+            "server": ("testserver", 80),
+            "client": ("testclient", 50000),
+        }
+    )
 
 
 def _enterprise_app() -> FastAPI:
@@ -168,6 +196,36 @@ def test_enterprise_middleware_treats_invalid_content_length_as_zero(monkeypatch
     )
 
     assert response.status_code == 200
+
+
+def test_enterprise_middleware_helpers_parse_size_and_audit_identity(monkeypatch) -> None:
+    monkeypatch.setenv("ENTERPRISE_POLICY_VERSION", "2.1.0")
+    request = _request(
+        headers={
+            "content-length": "6",
+            "X-Actor-Id": "actor",
+            "X-Tenant-Id": "tenant",
+            "X-Role": "operator",
+            "X-Correlation-Id": "corr",
+        }
+    )
+    invalid_length_request = _request(headers={"content-length": "not-a-number"})
+
+    identity = _audit_identity_from_request(request)
+    response = Response()
+    denied_response = _authorization_denied_response("missing_service_identity")
+    _attach_policy_version_header(response)
+
+    assert _request_content_length(request) == 6
+    assert _request_content_length(invalid_length_request) == 0
+    assert _write_payload_too_large(request, max_write_payload_bytes=5)
+    assert not _write_payload_too_large(request, max_write_payload_bytes=6)
+    assert identity.actor_id == "actor"
+    assert identity.tenant_id == "tenant"
+    assert identity.role == "operator"
+    assert identity.correlation_id == "corr"
+    assert response.headers["X-Enterprise-Policy-Version"] == "2.1.0"
+    assert denied_response.status_code == 403
 
 
 def test_enterprise_middleware_denies_and_audits_unauthorized_write(monkeypatch, caplog) -> None:

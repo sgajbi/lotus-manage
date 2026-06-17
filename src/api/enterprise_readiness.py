@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable
 
@@ -23,6 +24,14 @@ _REDACT_FIELDS = {
     "account_number",
     "client_email",
 }
+
+
+@dataclass(frozen=True)
+class _AuditIdentity:
+    actor_id: str
+    tenant_id: str
+    role: str
+    correlation_id: str | None
 
 
 def _env_enabled(name: str, default: str = "true") -> bool:
@@ -203,43 +212,85 @@ def emit_audit_event(
     )
 
 
+def _request_content_length(request: Request) -> int:
+    try:
+        return int(request.headers.get("content-length", "0"))
+    except ValueError:
+        return 0
+
+
+def _write_payload_too_large(request: Request, *, max_write_payload_bytes: int) -> bool:
+    return (
+        request.method in _WRITE_METHODS
+        and _request_content_length(request) > max_write_payload_bytes
+    )
+
+
+def _audit_identity_from_request(request: Request) -> _AuditIdentity:
+    return _AuditIdentity(
+        actor_id=request.headers.get("X-Actor-Id", "unknown"),
+        tenant_id=request.headers.get("X-Tenant-Id", "default"),
+        role=request.headers.get("X-Role", "unknown"),
+        correlation_id=request.headers.get("X-Correlation-Id"),
+    )
+
+
+def _emit_denied_write_audit(request: Request, *, reason: str | None) -> None:
+    identity = _audit_identity_from_request(request)
+    emit_audit_event(
+        action=f"DENY {request.method} {request.url.path}",
+        actor_id=identity.actor_id,
+        tenant_id=identity.tenant_id,
+        role=identity.role,
+        correlation_id=identity.correlation_id,
+        metadata={"reason": reason},
+    )
+
+
+def _authorization_denied_response(reason: str | None) -> JSONResponse:
+    return JSONResponse(
+        status_code=403,
+        content={"detail": "authorization_policy_denied", "reason": reason},
+    )
+
+
+def _attach_policy_version_header(response: Response) -> None:
+    response.headers["X-Enterprise-Policy-Version"] = enterprise_policy_version()
+
+
+def _emit_write_audit_if_needed(request: Request, response: Response) -> None:
+    if request.method not in _WRITE_METHODS:
+        return
+    identity = _audit_identity_from_request(request)
+    emit_audit_event(
+        action=f"{request.method} {request.url.path}",
+        actor_id=identity.actor_id,
+        tenant_id=identity.tenant_id,
+        role=identity.role,
+        correlation_id=identity.correlation_id,
+        metadata={"status_code": response.status_code},
+    )
+
+
 def build_enterprise_audit_middleware() -> MiddlewareCallable:
     async def middleware(request: Request, call_next: MiddlewareNext) -> Response:
         max_write_payload_bytes = _env_int("ENTERPRISE_MAX_WRITE_PAYLOAD_BYTES", 1_048_576)
-        try:
-            content_length = int(request.headers.get("content-length", "0"))
-        except ValueError:
-            content_length = 0
-        if request.method in _WRITE_METHODS and content_length > max_write_payload_bytes:
+        if _write_payload_too_large(
+            request,
+            max_write_payload_bytes=max_write_payload_bytes,
+        ):
             return JSONResponse(status_code=413, content={"detail": "payload_too_large"})
 
         authorized, reason = authorize_write_request(
             request.method, request.url.path, dict(request.headers)
         )
         if not authorized:
-            emit_audit_event(
-                action=f"DENY {request.method} {request.url.path}",
-                actor_id=request.headers.get("X-Actor-Id", "unknown"),
-                tenant_id=request.headers.get("X-Tenant-Id", "default"),
-                role=request.headers.get("X-Role", "unknown"),
-                correlation_id=request.headers.get("X-Correlation-Id"),
-                metadata={"reason": reason},
-            )
-            return JSONResponse(
-                status_code=403, content={"detail": "authorization_policy_denied", "reason": reason}
-            )
+            _emit_denied_write_audit(request, reason=reason)
+            return _authorization_denied_response(reason)
 
         response = await call_next(request)
-        response.headers["X-Enterprise-Policy-Version"] = enterprise_policy_version()
-        if request.method in _WRITE_METHODS:
-            emit_audit_event(
-                action=f"{request.method} {request.url.path}",
-                actor_id=request.headers.get("X-Actor-Id", "unknown"),
-                tenant_id=request.headers.get("X-Tenant-Id", "default"),
-                role=request.headers.get("X-Role", "unknown"),
-                correlation_id=request.headers.get("X-Correlation-Id"),
-                metadata={"status_code": response.status_code},
-            )
+        _attach_policy_version_header(response)
+        _emit_write_audit_if_needed(request, response)
         return response
 
     return middleware
