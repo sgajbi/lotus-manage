@@ -3,7 +3,11 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemorySearchItem,
     DpmPortfolioMemorySourceRef,
 )
-from src.core.portfolio_memory.search_facets import build_search_facet_counts
+from src.core.portfolio_memory.search_facets import (
+    _count_matching_event_facets,
+    _count_represented_source_systems,
+    build_search_facet_counts,
+)
 
 
 def test_build_search_facet_counts_uses_matching_events_and_row_coverage() -> None:
@@ -76,3 +80,76 @@ def test_build_search_facet_counts_uses_matching_events_and_row_coverage() -> No
         "lotus-manage": 1,
         "lotus-report": 1,
     }
+
+
+def test_count_matching_event_facets_includes_direct_and_referenced_lineage() -> None:
+    event = DpmPortfolioMemoryEvent(
+        event_id="memory:facet:lineage",
+        event_type="PM_QUALITY_SCORE_RUN",
+        event_time="2026-05-31T11:00:00+00:00",
+        actor="pm_quality",
+        source_system="lotus-manage",
+        source_type="PM_QUALITY_SCORE",
+        source_id="score-run-001",
+        status="READY",
+        supportability_state="READY",
+        summary="PM quality score run recorded.",
+        reason_codes=["PM_QUALITY_SCORE_READY"],
+        source_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-core",
+                source_type="PortfolioManagerBookMembership",
+                source_id="pm-book-001",
+            )
+        ],
+        artifact_refs=[
+            DpmPortfolioMemorySourceRef(
+                source_system="lotus-report",
+                source_type="REPORT_INPUT",
+                source_id="report-input-001",
+            )
+        ],
+        content_hash="sha256:lineage",
+    )
+
+    counts = _count_matching_event_facets([event])
+
+    assert counts.event_type_counts == {"PM_QUALITY_SCORE_RUN": 1}
+    assert counts.supportability_state_counts == {"READY": 1}
+    assert counts.source_system_counts == {
+        "lotus-core": 1,
+        "lotus-manage": 1,
+        "lotus-report": 1,
+    }
+    assert counts.source_type_counts == {
+        "PM_QUALITY_SCORE": 1,
+        "PortfolioManagerBookMembership": 1,
+        "REPORT_INPUT": 1,
+    }
+
+
+def test_count_represented_source_systems_counts_row_level_memory_coverage() -> None:
+    search_item = DpmPortfolioMemorySearchItem(
+        portfolio_id="PB_SEARCH_002",
+        event_count=2,
+        supportability_state="READY",
+        event_type_counts={"PM_QUALITY_SCORE_RUN": 2},
+        source_systems=["lotus-core", "lotus-manage"],
+        reason_codes=["PM_QUALITY_SCORE_READY"],
+        latest_event_time="2026-05-31T11:00:00+00:00",
+        latest_event_type="PM_QUALITY_SCORE_RUN",
+        matching_event_count=2,
+        latest_matching_event_time="2026-05-31T11:00:00+00:00",
+        latest_matching_event_type="PM_QUALITY_SCORE_RUN",
+        latest_matching_event_id="memory:facet:lineage",
+        latest_matching_event_identity="identity",
+        latest_matching_event_source_system="lotus-manage",
+        latest_matching_event_source_type="PM_QUALITY_SCORE",
+        latest_matching_event_source_id="score-run-001",
+        latest_matching_event_content_hash="sha256:lineage",
+        content_hash="sha256:memory",
+    )
+
+    counts = _count_represented_source_systems([(search_item, [])])
+
+    assert counts == {"lotus-core": 1, "lotus-manage": 1}
