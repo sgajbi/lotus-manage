@@ -147,18 +147,22 @@ def _source_analytics_from_alternative(
     alternative_diagnostics: dict[str, object],
     family: str,
 ) -> dict[str, object] | None:
-    authority_context = _mapping(alternative_diagnostics.get("authority_context"))
-    source_context = _mapping(authority_context.get(f"{family}_context"))
+    source_context = _alternative_source_context(
+        alternative_diagnostics=alternative_diagnostics,
+        family=family,
+    )
     if not source_context:
         return None
     enrichment_summary = _mapping(alternative_diagnostics.get("enrichment_summary"))
-    status_key = f"{family}_status"
-    supportability_state = str(
-        source_context.get("supportability_status")
-        or enrichment_summary.get(status_key)
-        or "DEGRADED"
-    ).upper()
-    source_system = str(source_context.get("source_system") or f"lotus-{family}")
+    supportability_state = _alternative_source_supportability_state(
+        source_context=source_context,
+        enrichment_summary=enrichment_summary,
+        family=family,
+    )
+    source_system = _alternative_source_system(
+        source_context=source_context,
+        family=family,
+    )
     source_ref = _analytics_source_ref(
         source_context=source_context,
         source_system=source_system,
@@ -169,10 +173,52 @@ def _source_analytics_from_alternative(
         "supportability_state": supportability_state,
         "source_systems": [source_system],
         "source_refs": [source_ref.model_dump(mode="json")],
-        "reason_codes": _string_list(source_context.get("reason_codes"))
-        or _string_list(enrichment_summary.get("reason_codes")),
+        "reason_codes": _alternative_source_reason_codes(
+            source_context=source_context,
+            enrichment_summary=enrichment_summary,
+        ),
         "source_measures": _source_measures(source_context=source_context, family=family),
     }
+
+
+def _alternative_source_context(
+    *,
+    alternative_diagnostics: dict[str, object],
+    family: str,
+) -> dict[str, object]:
+    authority_context = _mapping(alternative_diagnostics.get("authority_context"))
+    return _mapping(authority_context.get(f"{family}_context"))
+
+
+def _alternative_source_supportability_state(
+    *,
+    source_context: dict[str, object],
+    enrichment_summary: dict[str, object],
+    family: str,
+) -> str:
+    return str(
+        source_context.get("supportability_status")
+        or enrichment_summary.get(f"{family}_status")
+        or "DEGRADED"
+    ).upper()
+
+
+def _alternative_source_system(
+    *,
+    source_context: dict[str, object],
+    family: str,
+) -> str:
+    return str(source_context.get("source_system") or f"lotus-{family}")
+
+
+def _alternative_source_reason_codes(
+    *,
+    source_context: dict[str, object],
+    enrichment_summary: dict[str, object],
+) -> list[str]:
+    return _string_list(source_context.get("reason_codes")) or _string_list(
+        enrichment_summary.get("reason_codes")
+    )
 
 
 def _merge_item_source_analytics(
