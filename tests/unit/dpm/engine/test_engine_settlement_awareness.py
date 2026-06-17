@@ -2,6 +2,8 @@ from decimal import Decimal
 
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance.execution import (
+    _apply_fx_spot_settlement_flow,
+    _apply_security_trade_settlement_flow,
     _append_settlement_ladder_points,
     _settlement_ladder_projection_for_currency,
     _settlement_cash_flows,
@@ -165,6 +167,76 @@ def test_settlement_cash_flows_apply_security_and_fx_settlement_days() -> None:
         Decimal("-80"),
         Decimal("-55"),
         Decimal("30"),
+    ]
+    assert flows["EUR"] == [
+        Decimal("0"),
+        Decimal("0"),
+        Decimal("50"),
+        Decimal("0"),
+    ]
+
+
+def test_security_trade_settlement_flow_applies_side_and_instrument_settlement_day() -> None:
+    flows: dict[str, list[Decimal]] = {}
+
+    _apply_security_trade_settlement_flow(
+        flows=flows,
+        intent=SecurityTradeIntent(
+            intent_id="oi_sell_slow",
+            instrument_id="SLOW_FUND",
+            side="SELL",
+            quantity=Decimal("1"),
+            notional=Money(amount=Decimal("30"), currency="USD"),
+            notional_base=Money(amount=Decimal("30"), currency="USD"),
+        ),
+        settlement_days_by_instrument={"SLOW_FUND": 3},
+        horizon_days=3,
+    )
+    _apply_security_trade_settlement_flow(
+        flows=flows,
+        intent=SecurityTradeIntent(
+            intent_id="oi_buy_fast",
+            instrument_id="FAST_STOCK",
+            side="BUY",
+            quantity=Decimal("2"),
+            notional=Money(amount=Decimal("80"), currency="USD"),
+            notional_base=Money(amount=Decimal("80"), currency="USD"),
+        ),
+        settlement_days_by_instrument={"FAST_STOCK": 1},
+        horizon_days=3,
+    )
+
+    assert flows["USD"] == [
+        Decimal("0"),
+        Decimal("-80"),
+        Decimal("0"),
+        Decimal("30"),
+    ]
+
+
+def test_fx_spot_settlement_flow_applies_sell_and_buy_currency_on_fx_day() -> None:
+    flows: dict[str, list[Decimal]] = {}
+
+    _apply_fx_spot_settlement_flow(
+        flows=flows,
+        intent=FxSpotIntent(
+            intent_id="oi_fx_eur",
+            pair="EUR/USD",
+            buy_currency="EUR",
+            buy_amount=Decimal("50"),
+            sell_currency="USD",
+            sell_amount_estimated=Decimal("55"),
+            rationale=IntentRationale(code="FUNDING", message="Fund EUR purchase."),
+        ),
+        horizon_days=3,
+        fx_settlement_days=2,
+    )
+
+    assert flows["USD"] == [
+        Decimal("0"),
+        Decimal("0"),
+        Decimal("-55"),
+        Decimal("0"),
     ]
     assert flows["EUR"] == [
         Decimal("0"),
