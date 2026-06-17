@@ -14,10 +14,17 @@ from src.core.models import (
     PositionSummary,
     Price,
     ShelfEntry,
+    ValuationMode,
 )
 from src.core.valuation import (
     _allocation_by_attribute_metrics,
     _position_allocation_maps,
+    _position_price,
+    _position_price_money,
+    _position_price_value,
+    _position_valuation_currency,
+    _position_value_in_base_ccy,
+    _position_value_in_instrument_ccy,
     _safe_total_value,
     _valued_position_summaries,
     _cash_value_in_base,
@@ -102,6 +109,74 @@ def test_valued_position_summaries_records_missing_price_and_fx_gaps() -> None:
         "price_missing": ["MISSING_PRICE"],
         "fx_missing": ["EUR/USD"],
     }
+
+
+def test_position_valuation_helpers_apply_calculated_price_and_fx() -> None:
+    position = Position(instrument_id="EUR_STOCK", quantity=Decimal("2"))
+    price = Price(instrument_id="EUR_STOCK", price=Decimal("50"), currency="EUR")
+    market_data = market_data_snapshot(
+        prices=[price],
+        fx_rates=[fx("EUR/USD", "1.2")],
+    )
+    options = EngineOptions(valuation_mode=ValuationMode.CALCULATED)
+
+    selected_price = _position_price(position=position, market_data=market_data)
+    price_value = _position_price_value(price=selected_price)
+    instrument_currency = _position_valuation_currency(
+        position=position,
+        price=selected_price,
+        base_ccy="USD",
+        options=options,
+    )
+    instrument_value = _position_value_in_instrument_ccy(
+        position=position,
+        price_value=price_value,
+        options=options,
+    )
+
+    assert selected_price == price
+    assert instrument_currency == "EUR"
+    assert price_value == Decimal("50")
+    assert instrument_value == Decimal("100")
+    assert _position_value_in_base_ccy(
+        market_data=market_data,
+        instrument_value=instrument_value,
+        instrument_currency=instrument_currency,
+        base_ccy="USD",
+    ) == Decimal("120.0")
+    assert _position_price_money(price=selected_price, currency=instrument_currency) == Money(
+        amount=Decimal("50"),
+        currency="EUR",
+    )
+
+
+def test_position_valuation_helpers_prefer_trusted_snapshot_market_value() -> None:
+    position = Position(
+        instrument_id="EUR_STOCK",
+        quantity=Decimal("2"),
+        market_value=Money(amount=Decimal("125"), currency="CHF"),
+    )
+    price = Price(instrument_id="EUR_STOCK", price=Decimal("50"), currency="EUR")
+    options = EngineOptions(valuation_mode=ValuationMode.TRUST_SNAPSHOT)
+
+    instrument_currency = _position_valuation_currency(
+        position=position,
+        price=price,
+        base_ccy="USD",
+        options=options,
+    )
+    instrument_value = _position_value_in_instrument_ccy(
+        position=position,
+        price_value=price.price,
+        options=options,
+    )
+
+    assert instrument_currency == "CHF"
+    assert instrument_value == Decimal("125")
+    assert _position_price_money(price=price, currency=instrument_currency) == Money(
+        amount=Decimal("50"),
+        currency="CHF",
+    )
 
 
 def test_position_allocation_maps_apply_shelf_asset_class_and_attributes() -> None:

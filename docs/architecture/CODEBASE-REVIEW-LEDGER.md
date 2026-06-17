@@ -24103,3 +24103,55 @@ and improves internal transaction-cost source posture maintainability only.
   snapshot, or source-context hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-959: Position valuation helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/valuation.py` and
+  `tests/unit/dpm/engine/test_engine_valuation_service.py`.
+- Bank-buyable control area: architecture, deterministic valuation behavior, and testing.
+- Finding: `ValuationService.value_position` combined price lookup, valuation-mode currency
+  selection, instrument-currency value selection, FX conversion, and response-model construction
+  in one method. That made position valuation behavior harder to inspect and test directly despite
+  each step being deterministic and side-effect free.
+- Action: extracted focused valuation helpers for price selection, price value defaulting,
+  trusted-snapshot currency and market-value selection, base-currency conversion, and price-money
+  projection; added direct tests for calculated price/FX behavior and trusted snapshot market-value
+  behavior while preserving the existing response shape and trusted-snapshot price-money
+  projection semantics.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format --check src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m ruff check src/core/valuation.py tests/unit/dpm/engine/test_engine_valuation_service.py`,
+  `python -m mypy --config-file mypy.ini src/core/valuation.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_valuation_service.py -q`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_core_flows.py tests/unit/dpm/engine/coverage/test_engine_universe_data_quality.py -q`,
+  and `python -m radon cc src/core/valuation.py -s`; the focused valuation suite reported
+  10 passed, the adjacent engine suites reported 16 passed, and radon reports
+  `ValuationService.value_position` at A(1) after extraction.
+- Residual risk: this slice improves valuation maintainability only. It does not change valuation
+  methodology, public API contracts, DPM engine orchestration, missing-market-data handling, or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal valuation maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-960: Valuation reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the valuation helper extraction, the checked-in quality reports needed to reflect
+  the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `c00c1dcb`, record 820 Python files, 2614 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `ValuationService.value_position`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining wave-search, portfolio-memory facet,
+  OpenAPI enrichment, enterprise-readiness, execution, PM-quality, outcome snapshot, or
+  source-context hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
