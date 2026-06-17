@@ -148,7 +148,33 @@ def build_bulk_review_campaign_assignment_plan_page(
     limit: int,
     offset: int,
 ) -> DpmBulkReviewCampaignAssignmentPlanPage:
-    items = [
+    items = _filtered_assignment_plan_items(
+        items=_assignment_plan_items(
+            definitions=definitions,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+        ),
+        include_closed=include_closed,
+        escalation_tier=escalation_tier,
+        next_action=next_action,
+    )
+    payload = _assignment_plan_page_payload(
+        items=items,
+        limit=limit,
+        offset=offset,
+    )
+    return DpmBulkReviewCampaignAssignmentPlanPage.model_validate(payload)
+
+
+def _assignment_plan_items(
+    *,
+    definitions: list[DpmBulkReviewCampaignDefinition],
+    requested_as_of_date: str | None,
+    actor_id: str | None,
+    active_on: date | None,
+) -> list[DpmBulkReviewCampaignAssignmentPlanItem]:
+    return [
         build_bulk_review_campaign_assignment_plan_item(
             definition=definition,
             requested_as_of_date=requested_as_of_date or definition.as_of_date,
@@ -157,21 +183,93 @@ def build_bulk_review_campaign_assignment_plan_page(
         )
         for definition in definitions
     ]
-    if not include_closed:
-        items = [item for item in items if item.workflow_board.board_status != "CLOSED"]
-    if escalation_tier is not None:
-        items = [item for item in items if item.escalation_tier == escalation_tier]
-    if next_action is not None:
-        items = [item for item in items if item.next_action == next_action]
 
-    escalation_tier_counts: dict[str, int] = {}
-    sla_posture_counts: dict[str, int] = {}
-    for item in items:
-        escalation_tier_counts[item.escalation_tier] = (
-            escalation_tier_counts.get(item.escalation_tier, 0) + 1
+
+def _filtered_assignment_plan_items(
+    *,
+    items: list[DpmBulkReviewCampaignAssignmentPlanItem],
+    include_closed: bool,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+    next_action: CampaignWorkflowNextAction | None,
+) -> list[DpmBulkReviewCampaignAssignmentPlanItem]:
+    return [
+        item
+        for item in items
+        if _assignment_plan_item_matches(
+            item=item,
+            include_closed=include_closed,
+            escalation_tier=escalation_tier,
+            next_action=next_action,
         )
-        sla_posture_counts[item.sla_posture] = sla_posture_counts.get(item.sla_posture, 0) + 1
+    ]
 
+
+def _assignment_plan_item_matches(
+    *,
+    item: DpmBulkReviewCampaignAssignmentPlanItem,
+    include_closed: bool,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+    next_action: CampaignWorkflowNextAction | None,
+) -> bool:
+    return all(
+        (
+            _assignment_plan_closed_filter_matches(item=item, include_closed=include_closed),
+            _assignment_plan_escalation_filter_matches(
+                item=item,
+                escalation_tier=escalation_tier,
+            ),
+            _assignment_plan_next_action_filter_matches(item=item, next_action=next_action),
+        )
+    )
+
+
+def _assignment_plan_closed_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignAssignmentPlanItem,
+    include_closed: bool,
+) -> bool:
+    if include_closed:
+        return True
+    return item.workflow_board.board_status != "CLOSED"
+
+
+def _assignment_plan_escalation_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignAssignmentPlanItem,
+    escalation_tier: CampaignAssignmentEscalationTier | None,
+) -> bool:
+    if escalation_tier is None:
+        return True
+    return item.escalation_tier == escalation_tier
+
+
+def _assignment_plan_next_action_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignAssignmentPlanItem,
+    next_action: CampaignWorkflowNextAction | None,
+) -> bool:
+    if next_action is None:
+        return True
+    return item.next_action == next_action
+
+
+def _assignment_plan_counts(
+    items: list[DpmBulkReviewCampaignAssignmentPlanItem],
+    field_name: Literal["escalation_tier", "sla_posture"],
+) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        value = getattr(item, field_name)
+        counts[value] = counts.get(value, 0) + 1
+    return counts
+
+
+def _assignment_plan_page_payload(
+    *,
+    items: list[DpmBulkReviewCampaignAssignmentPlanItem],
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
     payload: dict[str, object] = {
         "product_name": "BulkReviewCampaignAssignmentPlan",
         "product_version": "v1",
@@ -179,12 +277,12 @@ def build_bulk_review_campaign_assignment_plan_page(
         "limit": limit,
         "offset": offset,
         "count": len(items),
-        "escalation_tier_counts": escalation_tier_counts,
-        "sla_posture_counts": sla_posture_counts,
+        "escalation_tier_counts": _assignment_plan_counts(items, "escalation_tier"),
+        "sla_posture_counts": _assignment_plan_counts(items, "sla_posture"),
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
-    return DpmBulkReviewCampaignAssignmentPlanPage.model_validate(payload)
+    return payload
 
 
 def _classify_assignment_plan(

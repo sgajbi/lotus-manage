@@ -23993,3 +23993,55 @@ and improves internal transaction-cost source posture maintainability only.
   OpenAPI, enterprise-readiness, or execution hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-955: Campaign assignment-plan page helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_assignment_plan.py` and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign supportability, and testing.
+- Finding: `build_bulk_review_campaign_assignment_plan_page` combined assignment-plan item
+  projection, closed-row filtering, escalation-tier filtering, next-action filtering, page count
+  aggregation, payload assembly, and content hashing in one page-builder function. That made the
+  read-only campaign assignment plan harder to review even though each step is deterministic and
+  independently testable.
+- Action: extracted helpers for assignment-plan row projection, filter matching, count
+  aggregation, and page-payload construction; added direct helper tests for next-action filtering,
+  escalation/SLA counts, and hashed page payload construction while preserving the external page
+  model and API route behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_assignment_plan.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_assignment_plan.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_assignment_plan.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py tests/unit/dpm/api/test_waves_api.py -q`,
+  and `python -m radon cc src/core/waves/campaign_assignment_plan.py -s`; the focused wave
+  core/API suites reported 238 passed, and radon reports
+  `build_bulk_review_campaign_assignment_plan_page` reduced from C(14) to A(1) with every
+  function in the module at A grade.
+- Residual risk: this slice improves read-only campaign assignment-plan maintainability only. It
+  does not change campaign assignment semantics, workflow-board derivation, API contracts,
+  external workflow ownership, maker-checker controls, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal campaign read-model
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-956: Campaign assignment-plan reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the campaign assignment-plan helper extraction, the checked-in quality reports
+  needed to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `979d0260`, record 820 Python files, 2610 test functions, keep service boundary findings and
+  router infrastructure imports at 0, and the current top-ten source hotspot list no longer
+  includes `build_bulk_review_campaign_assignment_plan_page`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining campaign workflow automation,
+  campaign workflow board, valuation, search, OpenAPI, enterprise-readiness, execution, or
+  PM-quality review-action builder hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
