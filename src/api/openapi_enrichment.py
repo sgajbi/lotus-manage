@@ -241,6 +241,36 @@ def _collection_example_from_schema(
     schemas: dict[str, Any],
     seen_refs: set[str],
 ) -> tuple[bool, Any]:
+    for matched, example in (
+        _properties_example_from_schema(
+            prop_schema=prop_schema,
+            schemas=schemas,
+            seen_refs=seen_refs,
+        ),
+        _array_example_from_schema(
+            prop_name=prop_name,
+            prop_schema=prop_schema,
+            schemas=schemas,
+            seen_refs=seen_refs,
+        ),
+        _object_example_from_schema(
+            prop_name=prop_name,
+            prop_schema=prop_schema,
+            schemas=schemas,
+            seen_refs=seen_refs,
+        ),
+    ):
+        if matched:
+            return True, example
+    return False, None
+
+
+def _properties_example_from_schema(
+    *,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
     properties = prop_schema.get("properties")
     if isinstance(properties, dict):
         return True, {
@@ -253,7 +283,16 @@ def _collection_example_from_schema(
             for child_name, child_schema in properties.items()
             if isinstance(child_schema, dict)
         }
+    return False, None
 
+
+def _array_example_from_schema(
+    *,
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
     schema_type = prop_schema.get("type")
     if schema_type == "array":
         item_schema = prop_schema.get("items", {})
@@ -262,6 +301,17 @@ def _collection_example_from_schema(
                 _example_from_schema(f"{prop_name}_item", item_schema, schemas, seen_refs)
             ]
         return True, []
+    return False, None
+
+
+def _object_example_from_schema(
+    *,
+    prop_name: str,
+    prop_schema: dict[str, Any],
+    schemas: dict[str, Any],
+    seen_refs: set[str],
+) -> tuple[bool, Any]:
+    schema_type = prop_schema.get("type")
     if schema_type == "object":
         additional_properties = prop_schema.get("additionalProperties")
         if isinstance(additional_properties, dict):
