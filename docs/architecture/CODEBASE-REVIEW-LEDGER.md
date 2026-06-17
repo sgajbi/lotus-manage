@@ -23703,3 +23703,32 @@ and improves internal transaction-cost source posture maintainability only.
   hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-944: Proof-pack section dispatch helper
+
+- Date: 2026-06-17
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack supportability, and testing.
+- Finding: `_section_payload` still combined pre-run section dispatch, missing-source-run blocking,
+  run-bound dispatch, source-context dispatch, governance dispatch, and unhandled-section
+  assertion in one helper. That kept the proof-pack section dispatch boundary harder to review
+  despite the individual section payload helpers already being named and tested.
+- Action: extracted the run-present section dispatch into `_run_present_section_payload`; added
+  direct tests for run-bound, source-context, governance, and unhandled-section routing while
+  preserving existing section payload text, metrics, and reason-code behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 100 passed, and radon reports `_section_payload` at A(3) with
+  `_run_present_section_payload` at A(4).
+- Residual risk: this slice improves internal proof-pack section dispatch maintainability only.
+  Several proof-pack payload helpers remain B-grade candidates for future focused slices; this
+  slice does not change proof-pack schemas, section ordering, content hashes beyond equivalent
+  regenerated bodies, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack supportability
+  hardening with no operator-facing contract change.

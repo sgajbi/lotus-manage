@@ -1454,6 +1454,30 @@ def _section_payload(
         return pre_run_payload
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+
+    return _run_present_section_payload(
+        section_type=section_type,
+        result=result,
+        run=run,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        source_ref_count=source_ref_count,
+        source_analytics=source_analytics,
+        workflow_decisions=workflow_decisions,
+    )
+
+
+def _run_present_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> _SectionPayload:
     run_bound_payload = _run_bound_section_payload(
         section_type=section_type,
         result=result,

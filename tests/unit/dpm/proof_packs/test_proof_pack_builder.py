@@ -1361,6 +1361,65 @@ def test_run_source_context_section_payload_ignores_unhandled_sections() -> None
     )
 
 
+def test_run_present_section_payload_dispatches_run_source_and_governance_sections() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+
+    before_state = builder_module._run_present_section_payload(
+        section_type="before_state",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=0,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+    source_context = builder_module._run_present_section_payload(
+        section_type="scenario_and_regime_evidence",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=0,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+    governance = builder_module._run_present_section_payload(
+        section_type="lineage",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=2,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+
+    assert before_state[0] == "READY"
+    assert before_state[1] == "Before-state summary captured from source run artifact."
+    assert source_context[0] == "DEGRADED"
+    assert source_context[4] == ["DPM_SCENARIO_CONTEXT_MISSING"]
+    assert governance[0] == "READY"
+    assert governance[3] == {"source_ref_count": 2}
+
+
+def test_run_present_section_payload_rejects_unhandled_section_type() -> None:
+    result = _ready_rebalance_result()
+
+    with pytest.raises(AssertionError, match="Unhandled proof-pack section type"):
+        builder_module._run_present_section_payload(
+            section_type="unsupported",
+            result=result,
+            run=_run_record(result=result),
+            selected_alternative=None,
+            selection=None,
+            source_ref_count=0,
+            source_analytics={},
+            workflow_decisions=[],
+        )
+
+
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
     run = _run_record()
     decision = DpmRunWorkflowDecisionRecord(
