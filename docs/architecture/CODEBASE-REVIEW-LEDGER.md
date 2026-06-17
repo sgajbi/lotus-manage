@@ -24045,3 +24045,61 @@ and improves internal transaction-cost source posture maintainability only.
   PM-quality review-action builder hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-957: Campaign workflow page helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/waves/campaign_workflow_board.py`,
+  `src/core/waves/campaign_workflow_automation.py`, and
+  `tests/unit/dpm/waves/test_campaign_discovery.py`.
+- Bank-buyable control area: architecture, campaign supportability, and testing.
+- Finding: `build_bulk_review_campaign_workflow_board_page` and
+  `build_bulk_review_campaign_workflow_automation_page` each combined row projection,
+  closed-row filtering, requested status/action filtering, page count aggregation, payload
+  assembly, and content hashing in one page-builder function. That kept two read-only campaign
+  workflow projections harder to inspect even though each step is deterministic and testable.
+- Action: extracted helpers for workflow-board and workflow-automation row projection, filter
+  matching, count aggregation, and page-payload construction; added direct helper tests for
+  filtered rows, status/action counts, capability-posture preservation, and hashed page payloads
+  while preserving external page models and API route behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/waves/campaign_workflow_board.py src/core/waves/campaign_workflow_automation.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m ruff format --check src/core/waves/campaign_workflow_board.py src/core/waves/campaign_workflow_automation.py tests/unit/dpm/waves/test_campaign_discovery.py`,
+  `python -m mypy --config-file mypy.ini src/core/waves/campaign_workflow_board.py src/core/waves/campaign_workflow_automation.py`,
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py tests/unit/dpm/api/test_waves_api.py -q`,
+  and `python -m radon cc src/core/waves/campaign_workflow_board.py src/core/waves/campaign_workflow_automation.py -s`;
+  the focused wave core/API suites reported 240 passed, and radon reports
+  `build_bulk_review_campaign_workflow_board_page` and
+  `build_bulk_review_campaign_workflow_automation_page` at A(1) with every function in both
+  modules at A grade.
+- Residual risk: this slice improves read-only campaign workflow maintainability only. It does
+  not change workflow-board next-action semantics, automation readiness classification,
+  assignment-task mutation behavior, external workflow ownership boundaries, API contracts, or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal campaign read-model
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-958: Campaign workflow reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the campaign workflow-board and workflow-automation helper extractions, the
+  checked-in quality reports needed to reflect the updated branch head, test-function count, and
+  current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `3ea6b511`, record 820 Python files, 2612 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes
+  `build_bulk_review_campaign_workflow_board_page` or
+  `build_bulk_review_campaign_workflow_automation_page`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining valuation, wave-search,
+  portfolio-memory facet, OpenAPI enrichment, enterprise-readiness, execution, PM-quality, outcome
+  snapshot, or source-context hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
