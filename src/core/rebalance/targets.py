@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal, TypeAlias, cast
 
@@ -15,6 +16,15 @@ from src.core.models import (
 from src.core.target_generation import build_target_trace, generate_targets_solver
 
 _GroupConstraintStatus: TypeAlias = Literal["READY", "BLOCKED"]
+_TargetGenerationStatus: TypeAlias = Literal["READY", "BLOCKED", "PENDING_REVIEW"]
+
+
+@dataclass(frozen=True)
+class _TargetWeightPosture:
+    total_weight: Decimal
+    locked_weight: Decimal
+    tradeable_weight: Decimal
+    available_tradeable_weight: Decimal
 
 
 def _build_shelf_attr_indexes(
@@ -329,26 +339,62 @@ def _cap_tradeable_targets_to_available_weight(
     *,
     eligible_targets: dict[str, Decimal],
     buy_set: set[str],
-) -> str:
-    total_w = sum(eligible_targets.values())
-    if total_w <= Decimal("1.0001"):
+) -> _TargetGenerationStatus:
+    posture = _target_weight_posture(eligible_targets=eligible_targets, buy_set=buy_set)
+    if posture.total_weight <= Decimal("1.0001"):
         return "READY"
 
-    tradeable_keys = [k for k in eligible_targets if k in buy_set]
-    locked_w = sum(v for k, v in eligible_targets.items() if k not in buy_set)
-    available_space = max(Decimal("0.0"), Decimal("1.0") - locked_w)
-    status = "PENDING_REVIEW" if locked_w > Decimal("1.0") else "READY"
+    status: _TargetGenerationStatus = (
+        "PENDING_REVIEW" if posture.locked_weight > Decimal("1.0") else "READY"
+    )
+    _scale_tradeable_targets(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        tradeable_weight=posture.tradeable_weight,
+        available_tradeable_weight=posture.available_tradeable_weight,
+    )
+    if posture.tradeable_weight > posture.available_tradeable_weight:
+        return "PENDING_REVIEW"
+    return status
 
-    tradeable_w = sum(eligible_targets[k] for k in tradeable_keys)
-    if tradeable_w <= available_space:
-        return status
 
-    if tradeable_w > Decimal("0.0"):
-        scale = available_space / tradeable_w
-        for k in tradeable_keys:
-            eligible_targets[k] *= scale
+def _target_weight_posture(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+) -> _TargetWeightPosture:
+    total_weight = sum(eligible_targets.values(), Decimal("0.0"))
+    locked_weight = sum(
+        (
+            weight
+            for instrument_id, weight in eligible_targets.items()
+            if instrument_id not in buy_set
+        ),
+        Decimal("0.0"),
+    )
+    tradeable_weight = total_weight - locked_weight
+    return _TargetWeightPosture(
+        total_weight=total_weight,
+        locked_weight=locked_weight,
+        tradeable_weight=tradeable_weight,
+        available_tradeable_weight=max(Decimal("0.0"), Decimal("1.0") - locked_weight),
+    )
 
-    return "PENDING_REVIEW"
+
+def _scale_tradeable_targets(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    tradeable_weight: Decimal,
+    available_tradeable_weight: Decimal,
+) -> None:
+    if tradeable_weight <= available_tradeable_weight or tradeable_weight <= Decimal("0.0"):
+        return
+
+    scale = available_tradeable_weight / tradeable_weight
+    for instrument_id in eligible_targets:
+        if instrument_id in buy_set:
+            eligible_targets[instrument_id] *= scale
 
 
 def _apply_single_position_max_weight(
@@ -445,6 +491,48 @@ def _apply_min_cash_buffer(
     return "PENDING_REVIEW"
 
 
+def _target_generation_status(
+    current: _TargetGenerationStatus,
+    candidate: _TargetGenerationStatus,
+) -> _TargetGenerationStatus:
+    if candidate == "BLOCKED" or current == "BLOCKED":
+        return "BLOCKED"
+    if candidate == "PENDING_REVIEW" or current == "PENDING_REVIEW":
+        return "PENDING_REVIEW"
+    return "READY"
+
+
+def _heuristic_target_control_status(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    options: EngineOptions,
+) -> _TargetGenerationStatus:
+    status: _TargetGenerationStatus = _cap_tradeable_targets_to_available_weight(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+    )
+
+    if options.single_position_max_weight is not None:
+        status = _target_generation_status(
+            status,
+            _apply_single_position_max_weight(
+                eligible_targets=eligible_targets,
+                buy_set=buy_set,
+                max_weight=options.single_position_max_weight,
+            ),
+        )
+
+    return _target_generation_status(
+        status,
+        _apply_min_cash_buffer(
+            eligible_targets=eligible_targets,
+            buy_set=buy_set,
+            min_cash_buffer_pct=options.min_cash_buffer_pct,
+        ),
+    )
+
+
 def generate_targets_heuristic(
     model: ModelPortfolio,
     eligible_targets: dict[str, Decimal],
@@ -456,41 +544,28 @@ def generate_targets_heuristic(
     base_ccy: str,
     diagnostics: DiagnosticsData,
 ) -> tuple[list[Any], str]:
-    status = "READY"
     buy_set = set(buy_list)
 
-    status = redistribute_sell_only_excess(
-        eligible_targets=eligible_targets,
-        buy_set=buy_set,
-        sell_only_excess=sell_only_excess,
+    status: _TargetGenerationStatus = cast(
+        _TargetGenerationStatus,
+        redistribute_sell_only_excess(
+            eligible_targets=eligible_targets,
+            buy_set=buy_set,
+            sell_only_excess=sell_only_excess,
+        ),
     )
 
     group_status = apply_group_constraints(eligible_targets, buy_list, shelf, options, diagnostics)
     if group_status == "BLOCKED":
         return [], "BLOCKED"
 
-    cap_status = _cap_tradeable_targets_to_available_weight(
-        eligible_targets=eligible_targets,
-        buy_set=buy_set,
-    )
-    if cap_status == "PENDING_REVIEW":
-        status = "PENDING_REVIEW"
-
-    if options.single_position_max_weight is not None:
-        single_position_status = _apply_single_position_max_weight(
+    status = _target_generation_status(
+        status,
+        _heuristic_target_control_status(
             eligible_targets=eligible_targets,
             buy_set=buy_set,
-            max_weight=options.single_position_max_weight,
-        )
-        if single_position_status == "PENDING_REVIEW":
-            status = "PENDING_REVIEW"
-
-    cash_buffer_status = _apply_min_cash_buffer(
-        eligible_targets=eligible_targets,
-        buy_set=buy_set,
-        min_cash_buffer_pct=options.min_cash_buffer_pct,
+            options=options,
+        ),
     )
-    if cash_buffer_status == "PENDING_REVIEW":
-        status = "PENDING_REVIEW"
 
     return build_target_trace(model, eligible_targets, buy_list, total_val, base_ccy), status

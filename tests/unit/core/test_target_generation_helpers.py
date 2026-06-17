@@ -8,7 +8,12 @@ from src.core.models import (
     ModelTarget,
     ShelfEntry,
 )
-from src.core.rebalance.targets import _apply_group_constraint
+from src.core.rebalance.targets import (
+    _apply_group_constraint,
+    _heuristic_target_control_status,
+    _target_generation_status,
+    _target_weight_posture,
+)
 from src.core.target_generation import (
     _apply_solver_values,
     _build_solver_problem,
@@ -261,6 +266,85 @@ def test_apply_group_constraint_blocks_when_no_redistribution_recipient() -> Non
     assert status == "BLOCKED"
     assert "NO_ELIGIBLE_REDISTRIBUTION_DESTINATION" in diagnostics.warnings
     assert diagnostics.group_constraint_events[0].status == "BLOCKED"
+
+
+def test_target_weight_posture_separates_tradeable_and_locked_capacity() -> None:
+    posture = _target_weight_posture(
+        eligible_targets={
+            "BUY_1": Decimal("0.45"),
+            "BUY_2": Decimal("0.25"),
+            "LOCKED": Decimal("0.20"),
+        },
+        buy_set={"BUY_1", "BUY_2"},
+    )
+
+    assert posture.total_weight == Decimal("0.90")
+    assert posture.locked_weight == Decimal("0.20")
+    assert posture.tradeable_weight == Decimal("0.70")
+    assert posture.available_tradeable_weight == Decimal("0.80")
+
+
+def test_target_generation_status_preserves_worst_target_posture() -> None:
+    assert _target_generation_status("READY", "PENDING_REVIEW") == "PENDING_REVIEW"
+    assert _target_generation_status("PENDING_REVIEW", "READY") == "PENDING_REVIEW"
+    assert _target_generation_status("READY", "BLOCKED") == "BLOCKED"
+    assert _target_generation_status("BLOCKED", "READY") == "BLOCKED"
+
+
+def test_heuristic_target_control_status_scales_overweight_tradeable_targets() -> None:
+    eligible_targets = {
+        "BUY_1": Decimal("0.80"),
+        "BUY_2": Decimal("0.40"),
+        "LOCKED": Decimal("0.20"),
+    }
+
+    status = _heuristic_target_control_status(
+        eligible_targets=eligible_targets,
+        buy_set={"BUY_1", "BUY_2"},
+        options=EngineOptions(),
+    )
+
+    assert status == "PENDING_REVIEW"
+    assert eligible_targets["LOCKED"] == Decimal("0.20")
+    assert abs(eligible_targets["BUY_1"] - Decimal("0.5333333333333333333333333333")) < Decimal(
+        "0.000000000000000000000000001"
+    )
+    assert abs(eligible_targets["BUY_2"] - Decimal("0.2666666666666666666666666667")) < Decimal(
+        "0.000000000000000000000000001"
+    )
+
+
+def test_heuristic_target_control_status_preserves_pending_review_for_caps_and_cash_buffer() -> (
+    None
+):
+    eligible_targets = {
+        "BUY_1": Decimal("0.80"),
+        "BUY_2": Decimal("0.15"),
+        "LOCKED": Decimal("0.04"),
+    }
+
+    status = _heuristic_target_control_status(
+        eligible_targets=eligible_targets,
+        buy_set={"BUY_1", "BUY_2"},
+        options=EngineOptions(
+            single_position_max_weight=Decimal("0.50"),
+            min_cash_buffer_pct=Decimal("0.10"),
+        ),
+    )
+
+    assert status == "PENDING_REVIEW"
+    assert eligible_targets["BUY_1"] <= Decimal("0.50")
+    assert (
+        sum(
+            (
+                weight
+                for instrument_id, weight in eligible_targets.items()
+                if instrument_id in {"BUY_1", "BUY_2"}
+            ),
+            Decimal("0.0"),
+        )
+        - Decimal("0.86")
+    ) < Decimal("0.000000000000000000000000001")
 
 
 def test_apply_solver_values_quantizes_and_fails_closed_without_values() -> None:

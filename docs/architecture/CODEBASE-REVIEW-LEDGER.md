@@ -23942,3 +23942,34 @@ and improves internal transaction-cost source posture maintainability only.
   OpenAPI, enterprise-readiness, or execution hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-953: Heuristic target-generation control helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/rebalance/targets.py` and
+  `tests/unit/core/test_target_generation_helpers.py`.
+- Bank-buyable control area: architecture, deterministic rebalance behavior, and testing.
+- Finding: `generate_targets_heuristic` combined sell-only excess redistribution, group
+  constraints, tradeable target normalization, single-position capping, cash-buffer enforcement,
+  and worst-status projection in one orchestration function. That kept target-generation posture
+  harder to audit despite the individual control helpers already being deterministic and
+  side-effect scoped.
+- Action: extracted target-weight posture, tradeable scaling, worst-status selection, and
+  heuristic target-control status helpers; added direct tests for tradeable versus locked capacity
+  projection, status precedence, overweight tradeable normalization, and combined cap/cash-buffer
+  pending-review behavior while preserving the existing target trace output contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/targets.py tests/unit/core/test_target_generation_helpers.py`,
+  `python -m ruff format --check src/core/rebalance/targets.py tests/unit/core/test_target_generation_helpers.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/targets.py`,
+  `python -m pytest tests/unit/core/test_target_generation_helpers.py -q`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_core_flows.py tests/unit/core/test_target_generation_solver_fallbacks.py -q`,
+  and `python -m radon cc src/core/rebalance/targets.py -s`; the focused helper suite reported
+  19 passed, the nearby engine/solver behavior suites reported 24 passed, and radon reports
+  `generate_targets_heuristic` reduced from B(6) to A(2).
+- Residual risk: this slice improves heuristic target-generation maintainability only. It does not
+  change rebalance methodology, target trace response models, solver behavior, downstream
+  contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance target-generation
+  maintainability hardening with no operator-facing contract change.
