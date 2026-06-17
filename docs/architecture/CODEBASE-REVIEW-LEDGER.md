@@ -24361,3 +24361,53 @@ and improves internal transaction-cost source posture maintainability only.
   async payload hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-969: Settlement cash-flow helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/test_engine_settlement_awareness.py`.
+- Bank-buyable control area: architecture, resilience, settlement supportability, and testing.
+- Finding: `_apply_intent_settlement_flows` combined intent ordering, security-trade cash-flow
+  settlement, FX-spot cash-flow settlement, notional absence handling, settlement-day lookup, and
+  currency ladder initialization in one dispatcher. That made the settlement-awareness path harder
+  to inspect even though security settlement and FX settlement have distinct cash-flow rules.
+- Action: extracted security-trade settlement-flow, security-trade signed-amount, and FX-spot
+  settlement-flow helpers; added direct helper tests for security-side settlement timing and FX
+  sell/buy currency movement while preserving the existing end-to-end settlement cash-flow shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python -m ruff check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python -m ruff format --check src/core/rebalance/execution.py tests/unit/dpm/engine/test_engine_settlement_awareness.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/execution.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_settlement_awareness.py -q`,
+  and `python -m radon cc src/core/rebalance/execution.py -s`; the focused settlement-awareness
+  suite reported 8 passed, and radon reports `_apply_intent_settlement_flows` reduced from B(6) to
+  A(4) with the extracted settlement-flow helpers at A grade.
+- Residual risk: this slice improves settlement cash-flow maintainability only. It does not change
+  settlement policy, overdraft policy, FX generation, order dependency linking, reconciliation,
+  execution behavior, route contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance execution
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-970: Settlement cash-flow reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the settlement cash-flow helper extraction, the checked-in quality reports needed
+  to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `1776aa5f`, record 820 Python files, 2624 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `_apply_intent_settlement_flows`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining PM-quality, outcome snapshot,
+  source-context, proof-pack, rebalance-intent, workflow-gate, wave source-analytics, async payload,
+  or target-cash hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

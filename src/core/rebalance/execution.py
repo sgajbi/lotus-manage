@@ -148,36 +148,69 @@ def _apply_intent_settlement_flows(
     options: EngineOptions,
 ) -> None:
     for intent in sorted(intents, key=lambda item: item.intent_id):
-        if intent.intent_type == "SECURITY_TRADE":
-            if intent.notional is None:
-                continue
-            settlement_day = settlement_days_by_instrument.get(intent.instrument_id, 2)
-            _ensure_settlement_currency(
+        if isinstance(intent, SecurityTradeIntent):
+            _apply_security_trade_settlement_flow(
                 flows=flows,
-                currency=intent.notional.currency,
+                intent=intent,
+                settlement_days_by_instrument=settlement_days_by_instrument,
                 horizon_days=horizon_days,
             )
-            signed_flow = (
-                intent.notional.amount if intent.side == "SELL" else -intent.notional.amount
+        elif isinstance(intent, FxSpotIntent):
+            _apply_fx_spot_settlement_flow(
+                flows=flows,
+                intent=intent,
+                horizon_days=horizon_days,
+                fx_settlement_days=options.fx_settlement_days,
             )
-            flows[intent.notional.currency][settlement_day] += signed_flow
-            continue
 
-        if intent.intent_type != "FX_SPOT":
-            continue
 
-        _ensure_settlement_currency(
-            flows=flows,
-            currency=intent.sell_currency,
-            horizon_days=horizon_days,
-        )
-        _ensure_settlement_currency(
-            flows=flows,
-            currency=intent.buy_currency,
-            horizon_days=horizon_days,
-        )
-        flows[intent.sell_currency][options.fx_settlement_days] -= intent.sell_amount_estimated
-        flows[intent.buy_currency][options.fx_settlement_days] += intent.buy_amount
+def _apply_security_trade_settlement_flow(
+    *,
+    flows: dict[str, list[Decimal]],
+    intent: SecurityTradeIntent,
+    settlement_days_by_instrument: dict[str, int],
+    horizon_days: int,
+) -> None:
+    if intent.notional is None:
+        return
+
+    settlement_day = settlement_days_by_instrument.get(intent.instrument_id, 2)
+    currency = intent.notional.currency
+    _ensure_settlement_currency(
+        flows=flows,
+        currency=currency,
+        horizon_days=horizon_days,
+    )
+    flows[currency][settlement_day] += _security_trade_settlement_amount(intent)
+
+
+def _security_trade_settlement_amount(intent: SecurityTradeIntent) -> Decimal:
+    if intent.notional is None:
+        return Decimal("0")
+    if intent.side == "SELL":
+        return intent.notional.amount
+    return -intent.notional.amount
+
+
+def _apply_fx_spot_settlement_flow(
+    *,
+    flows: dict[str, list[Decimal]],
+    intent: FxSpotIntent,
+    horizon_days: int,
+    fx_settlement_days: int,
+) -> None:
+    _ensure_settlement_currency(
+        flows=flows,
+        currency=intent.sell_currency,
+        horizon_days=horizon_days,
+    )
+    _ensure_settlement_currency(
+        flows=flows,
+        currency=intent.buy_currency,
+        horizon_days=horizon_days,
+    )
+    flows[intent.sell_currency][fx_settlement_days] -= intent.sell_amount_estimated
+    flows[intent.buy_currency][fx_settlement_days] += intent.buy_amount
 
 
 def _append_settlement_ladder_points(
