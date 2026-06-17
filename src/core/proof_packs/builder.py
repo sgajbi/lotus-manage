@@ -34,7 +34,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult
+from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult, RuleResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -800,14 +800,30 @@ def _tax_impact_section_payload(*, result: RebalanceResult) -> _SectionPayload:
 
 
 def _rule_results_section_payload(*, result: RebalanceResult) -> _SectionPayload:
-    failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
+    failed = _failed_rule_results(result)
     return (
-        "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
+        _rule_results_section_state(failed),
         "Rule results captured from manage policy engine.",
         {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
-        {"fail_count": len(failed)},
-        [rule.reason_code for rule in failed],
+        _rule_results_metrics(failed),
+        _rule_results_reason_codes(failed),
     )
+
+
+def _failed_rule_results(result: RebalanceResult) -> list[RuleResult]:
+    return [rule for rule in result.rule_results if rule.status == "FAIL"]
+
+
+def _rule_results_section_state(failed_rules: list[RuleResult]) -> ProofPackSectionState:
+    return "BLOCKED" if any(rule.severity == "HARD" for rule in failed_rules) else "READY"
+
+
+def _rule_results_metrics(failed_rules: list[RuleResult]) -> dict[str, int]:
+    return {"fail_count": len(failed_rules)}
+
+
+def _rule_results_reason_codes(failed_rules: list[RuleResult]) -> list[str]:
+    return [rule.reason_code for rule in failed_rules]
 
 
 def _proof_pack_governance_section_payload(

@@ -23732,3 +23732,30 @@ and improves internal transaction-cost source posture maintainability only.
   regenerated bodies, external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack supportability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-945: Proof-pack rule-result projection helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack policy evidence, and testing.
+- Finding: `_rule_results_section_payload` combined failed-rule selection, hard-fail state
+  classification, fail-count metrics, reason-code projection, and section assembly. That kept
+  proof-pack policy evidence projection less directly auditable than the surrounding payload
+  helpers.
+- Action: extracted helpers for failed-rule selection, section-state classification, metrics, and
+  reason-code projection; added direct tests for mixed pass/soft-fail/hard-fail rule results while
+  preserving existing section payload shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 101 passed, and radon reports `_rule_results_section_payload` at A(2).
+- Residual risk: this slice improves internal proof-pack rule-result projection maintainability
+  only. It does not change policy rule semantics, hard/soft severity interpretation, proof-pack
+  schemas, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack policy-evidence
+  maintainability hardening with no operator-facing contract change.
