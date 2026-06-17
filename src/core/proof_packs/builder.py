@@ -34,7 +34,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult
+from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult, RuleResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -800,14 +800,30 @@ def _tax_impact_section_payload(*, result: RebalanceResult) -> _SectionPayload:
 
 
 def _rule_results_section_payload(*, result: RebalanceResult) -> _SectionPayload:
-    failed = [rule for rule in result.rule_results if rule.status == "FAIL"]
+    failed = _failed_rule_results(result)
     return (
-        "BLOCKED" if any(rule.severity == "HARD" for rule in failed) else "READY",
+        _rule_results_section_state(failed),
         "Rule results captured from manage policy engine.",
         {"rule_results": [rule.model_dump(mode="json") for rule in result.rule_results]},
-        {"fail_count": len(failed)},
-        [rule.reason_code for rule in failed],
+        _rule_results_metrics(failed),
+        _rule_results_reason_codes(failed),
     )
+
+
+def _failed_rule_results(result: RebalanceResult) -> list[RuleResult]:
+    return [rule for rule in result.rule_results if rule.status == "FAIL"]
+
+
+def _rule_results_section_state(failed_rules: list[RuleResult]) -> ProofPackSectionState:
+    return "BLOCKED" if any(rule.severity == "HARD" for rule in failed_rules) else "READY"
+
+
+def _rule_results_metrics(failed_rules: list[RuleResult]) -> dict[str, int]:
+    return {"fail_count": len(failed_rules)}
+
+
+def _rule_results_reason_codes(failed_rules: list[RuleResult]) -> list[str]:
+    return [rule.reason_code for rule in failed_rules]
 
 
 def _proof_pack_governance_section_payload(
@@ -1454,6 +1470,30 @@ def _section_payload(
         return pre_run_payload
     if result is None:
         return ("BLOCKED", "Source rebalance run is missing.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
+
+    return _run_present_section_payload(
+        section_type=section_type,
+        result=result,
+        run=run,
+        selected_alternative=selected_alternative,
+        selection=selection,
+        source_ref_count=source_ref_count,
+        source_analytics=source_analytics,
+        workflow_decisions=workflow_decisions,
+    )
+
+
+def _run_present_section_payload(
+    *,
+    section_type: ProofPackSectionType,
+    result: RebalanceResult,
+    run: DpmRunRecord | None,
+    selected_alternative: ConstructionAlternative | None,
+    selection: ConstructionAlternativeSelection | None,
+    source_ref_count: int,
+    source_analytics: dict[str, ProofPackSourceAnalytics],
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
+) -> _SectionPayload:
     run_bound_payload = _run_bound_section_payload(
         section_type=section_type,
         result=result,

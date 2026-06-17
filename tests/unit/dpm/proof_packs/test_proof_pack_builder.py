@@ -595,6 +595,47 @@ def test_rule_results_section_payload_blocks_on_hard_failed_policy_rule() -> Non
     assert reason_codes == ["DPM_NO_SHORTING"]
 
 
+def test_rule_result_projection_helpers_classify_failed_policy_rules() -> None:
+    hard_fail = RuleResult(
+        rule_id="NO_SHORTING",
+        severity="HARD",
+        status="FAIL",
+        measured=Decimal("-1"),
+        threshold={"minimum_weight": Decimal("0")},
+        reason_code="DPM_NO_SHORTING",
+    )
+    soft_fail = RuleResult(
+        rule_id="CASH_BUFFER",
+        severity="SOFT",
+        status="FAIL",
+        measured=Decimal("0.01"),
+        threshold={"minimum_weight": Decimal("0.03")},
+        reason_code="DPM_CASH_BUFFER_LOW",
+    )
+    pass_rule = RuleResult(
+        rule_id="MAX_WEIGHT",
+        severity="HARD",
+        status="PASS",
+        measured=Decimal("0.10"),
+        threshold={"maximum_weight": Decimal("0.20")},
+        reason_code="DPM_MAX_WEIGHT_OK",
+    )
+    result = _ready_rebalance_result().model_copy(
+        update={"rule_results": [pass_rule, soft_fail, hard_fail]}
+    )
+
+    failed_rules = builder_module._failed_rule_results(result)
+
+    assert [rule.rule_id for rule in failed_rules] == ["CASH_BUFFER", "NO_SHORTING"]
+    assert builder_module._rule_results_section_state(failed_rules) == "BLOCKED"
+    assert builder_module._rule_results_section_state([soft_fail]) == "READY"
+    assert builder_module._rule_results_metrics(failed_rules) == {"fail_count": 2}
+    assert builder_module._rule_results_reason_codes(failed_rules) == [
+        "DPM_CASH_BUFFER_LOW",
+        "DPM_NO_SHORTING",
+    ]
+
+
 def test_run_bound_section_payload_dispatches_state_policy_and_diagnostics() -> None:
     result = _ready_rebalance_result().model_copy(update={"intents": []})
 
@@ -1359,6 +1400,65 @@ def test_run_source_context_section_payload_ignores_unhandled_sections() -> None
         )
         is None
     )
+
+
+def test_run_present_section_payload_dispatches_run_source_and_governance_sections() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+
+    before_state = builder_module._run_present_section_payload(
+        section_type="before_state",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=0,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+    source_context = builder_module._run_present_section_payload(
+        section_type="scenario_and_regime_evidence",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=0,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+    governance = builder_module._run_present_section_payload(
+        section_type="lineage",
+        result=result,
+        run=run,
+        selected_alternative=None,
+        selection=None,
+        source_ref_count=2,
+        source_analytics={},
+        workflow_decisions=[],
+    )
+
+    assert before_state[0] == "READY"
+    assert before_state[1] == "Before-state summary captured from source run artifact."
+    assert source_context[0] == "DEGRADED"
+    assert source_context[4] == ["DPM_SCENARIO_CONTEXT_MISSING"]
+    assert governance[0] == "READY"
+    assert governance[3] == {"source_ref_count": 2}
+
+
+def test_run_present_section_payload_rejects_unhandled_section_type() -> None:
+    result = _ready_rebalance_result()
+
+    with pytest.raises(AssertionError, match="Unhandled proof-pack section type"):
+        builder_module._run_present_section_payload(
+            section_type="unsupported",
+            result=result,
+            run=_run_record(result=result),
+            selected_alternative=None,
+            selection=None,
+            source_ref_count=0,
+            source_analytics={},
+            workflow_decisions=[],
+        )
 
 
 def test_direct_run_proof_pack_generates_every_section_with_truthful_states() -> None:
