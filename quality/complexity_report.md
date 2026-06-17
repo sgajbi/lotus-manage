@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T04:54:32+00:00`
+- Generated at: `2026-06-17T05:12:42+00:00`
 
-- Report source snapshot: `dfe98e3e`
+- Report source snapshot: `1776aa5f`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
-| 2 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
-| 3 | _roll_up_expected_supportability | src/core/outcomes/snapshots.py | 6 | 36 |
-| 4 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
-| 5 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
-| 6 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
-| 7 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
-| 8 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
-| 9 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
-| 10 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
+| 1 | build_review_action | src/api/routers/pm_operating_quality_review_action_builder.py | 6 | 37 |
+| 2 | _roll_up_expected_supportability | src/core/outcomes/snapshots.py | 6 | 36 |
+| 3 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
+| 4 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
+| 5 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
+| 6 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
+| 7 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
+| 8 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
+| 9 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
+| 10 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
 
 ### Most Complex Current Test Functions
 
