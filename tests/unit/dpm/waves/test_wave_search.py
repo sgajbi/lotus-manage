@@ -1,6 +1,12 @@
 from datetime import datetime, timezone
 
-from src.api.services.wave_search import search_wave_summaries
+from src.api.services.wave_search import (
+    _latest_wave_event,
+    _matches_supportability_state,
+    _searchable_wave_summary,
+    _wave_summary,
+    search_wave_summaries,
+)
 from src.core.waves import (
     DpmRebalanceWave,
     DpmRebalanceWaveEvent,
@@ -39,7 +45,17 @@ def _wave(
     wave_id: str,
     item_state: str,
     event_reason: str = "WAVE_CREATED",
+    with_event: bool = True,
 ) -> DpmRebalanceWave:
+    events = []
+    if with_event:
+        events.append(
+            DpmRebalanceWaveEvent.model_construct(
+                event_type="STATE_TRANSITION",
+                reason_code=event_reason,
+            )
+        )
+
     return DpmRebalanceWave.model_construct(
         wave_id=wave_id,
         state="SOURCE_CHECKED",
@@ -65,12 +81,7 @@ def _wave(
             review_required_item_count=0,
             source_degraded_item_count=0,
         ),
-        events=[
-            DpmRebalanceWaveEvent.model_construct(
-                event_type="STATE_TRANSITION",
-                reason_code=event_reason,
-            )
-        ],
+        events=events,
     )
 
 
@@ -112,6 +123,71 @@ def test_search_wave_summaries_filters_by_supportability_state() -> None:
 
     assert [summary["wave_id"] for summary in summaries] == ["dwv_blocked"]
     assert summaries[0]["supportability_state"] == "blocked"
+
+
+def test_searchable_wave_summary_filters_non_matching_supportability_state() -> None:
+    summary = _searchable_wave_summary(
+        wave=_wave(wave_id="dwv_ready", item_state="SOURCE_READY"),
+        supportability_state="blocked",
+    )
+
+    assert summary is None
+
+
+def test_wave_summary_projects_latest_event_fields() -> None:
+    wave = _wave(
+        wave_id="dwv_degraded",
+        item_state="SOURCE_DEGRADED",
+        event_reason="SOURCE_RECHECK_REQUIRED",
+    )
+    supportability = {
+        "supportability_state": "degraded",
+        "reason": "wave_degraded_items",
+    }
+
+    summary = _wave_summary(wave=wave, supportability=supportability)
+
+    assert summary["wave_id"] == "dwv_degraded"
+    assert summary["item_count"] == 1
+    assert summary["supportability_state"] == "degraded"
+    assert summary["supportability_reason"] == "wave_degraded_items"
+    assert summary["latest_event_type"] == "STATE_TRANSITION"
+    assert summary["latest_event_reason_code"] == "SOURCE_RECHECK_REQUIRED"
+
+
+def test_wave_summary_projects_empty_latest_event_fields() -> None:
+    wave = _wave(
+        wave_id="dwv_no_event",
+        item_state="SOURCE_READY",
+        with_event=False,
+    )
+    supportability = {
+        "supportability_state": "ready",
+        "reason": "wave_supportability_ready",
+    }
+
+    summary = _wave_summary(wave=wave, supportability=supportability)
+
+    assert _latest_wave_event(wave) is None
+    assert summary["latest_event_type"] is None
+    assert summary["latest_event_reason_code"] is None
+
+
+def test_matches_supportability_state_allows_unfiltered_and_exact_match() -> None:
+    supportability = {"supportability_state": "ready"}
+
+    assert _matches_supportability_state(
+        supportability=supportability,
+        supportability_state=None,
+    )
+    assert _matches_supportability_state(
+        supportability=supportability,
+        supportability_state="ready",
+    )
+    assert not _matches_supportability_state(
+        supportability=supportability,
+        supportability_state="blocked",
+    )
 
 
 def test_wave_search_exports_only_search_builder() -> None:

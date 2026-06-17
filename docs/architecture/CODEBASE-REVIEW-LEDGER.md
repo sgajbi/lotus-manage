@@ -24155,3 +24155,54 @@ and improves internal transaction-cost source posture maintainability only.
   source-context hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-961: Wave search summary helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/services/wave_search.py` and
+  `tests/unit/dpm/waves/test_wave_search.py`.
+- Bank-buyable control area: architecture, read-model supportability, and testing.
+- Finding: `search_wave_summaries` combined repository filter forwarding, supportability-state
+  filtering, latest-event selection, and wave-search response projection in one service function.
+  That kept a small but user-facing read model harder to inspect and made edge cases such as
+  eventless waves visible only through the final response projection.
+- Action: extracted helpers for searchable summary construction, supportability-state matching,
+  wave summary projection, and latest-event selection; added direct tests for supportability
+  filtering, latest-event projection, eventless wave projection, and match semantics while
+  preserving the existing public service export and route-facing response behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format --check src/api/services/wave_search.py tests/unit/dpm/waves/test_wave_search.py`,
+  `python -m ruff check src/api/services/wave_search.py tests/unit/dpm/waves/test_wave_search.py`,
+  `python -m mypy --config-file mypy.ini src/api/services/wave_search.py`,
+  `python -m pytest tests/unit/dpm/waves/test_wave_search.py -q`,
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_wave_service_public_surface.py -q`,
+  and `python -m radon cc src/api/services/wave_search.py -s`; the focused wave-search suite
+  reported 7 passed, the nearby API/service suites reported 133 passed, and radon reports
+  `search_wave_summaries` reduced from B(6) to A(3) with every function in the module at A grade.
+- Residual risk: this slice improves wave search maintainability only. It does not change
+  repository paging/filter semantics, wave supportability classification, route contracts,
+  campaign workflow behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal wave-search maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-962: Wave search reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the wave search helper extraction, the checked-in quality reports needed to
+  reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `054a7737`, record 820 Python files, 2618 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `search_wave_summaries`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining portfolio-memory facet, OpenAPI
+  enrichment, enterprise-readiness, execution, PM-quality, outcome snapshot, source-context,
+  proof-pack, or rebalance-intent hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
