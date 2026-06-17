@@ -23812,3 +23812,33 @@ and improves internal transaction-cost source posture maintainability only.
   external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-resolution supportability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-948: Core source resolver request helpers
+
+- Date: 2026-06-17
+- Scope: `src/api/routers/wave_core_source_resolution.py` and
+  `tests/unit/api/test_wave_core_source_resolution.py`.
+- Bank-buyable control area: architecture, source-authority supportability, and testing.
+- Finding: `resolve_pm_book_portfolios` and `resolve_cio_model_change_portfolios` each combined
+  caller-supplied portfolio rejection, required selector normalization, lotus-core resolver
+  invocation, source-readiness gating, empty-cohort blocking, and resolved portfolio projection.
+  That left two source-owned cohort discovery paths B-grade and harder to audit than their
+  projection helpers.
+- Action: extracted domain-specific request-shaping dataclasses and helpers for PM-book membership
+  and CIO model-change affected cohort queries; separated lotus-core resolver invocation from
+  source-readiness checks; added direct tests for normalized source-query construction and
+  incomplete or empty source-cohort rejection for both flows.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/api/routers/wave_core_source_resolution.py tests/unit/api/test_wave_core_source_resolution.py`,
+  `python -m ruff format --check src/api/routers/wave_core_source_resolution.py tests/unit/api/test_wave_core_source_resolution.py`,
+  `python -m mypy --config-file mypy.ini src/api/routers/wave_core_source_resolution.py`,
+  `python -m pytest tests/unit/api/test_wave_core_source_resolution.py tests/unit/api/test_wave_pm_book_projection.py tests/unit/api/test_wave_cio_model_change_projection.py -q`,
+  and `python -m radon cc src/api/routers/wave_core_source_resolution.py -s`; the focused core
+  source resolver and projection suites reported 14 passed, and radon reports both
+  `resolve_pm_book_portfolios` and `resolve_cio_model_change_portfolios` reduced from B(6) to A(1).
+- Residual risk: this slice improves router-side source resolver maintainability only. It does not
+  change lotus-core resolver semantics, source product contracts, projection payload schemas,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-resolution supportability
+  hardening with no operator-facing contract change.
