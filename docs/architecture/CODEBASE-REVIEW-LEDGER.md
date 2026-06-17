@@ -23864,3 +23864,32 @@ and improves internal transaction-cost source posture maintainability only.
   campaign/search/OpenAPI/observability hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-950: PM-quality outcome-review signal helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/pm_quality/scoring.py` and
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`.
+- Bank-buyable control area: architecture, source-lineage supportability, and testing.
+- Finding: `_signals_from_outcome_reviews` combined post-trade outcome-review source-ref
+  projection, outcome-discipline scoring, source-quality posture scoring, optional report/AI
+  handoff evidence projection, and list assembly. That kept PM operating-quality source signal
+  mapping harder to audit despite the surrounding score-run orchestration already being
+  policy-driven.
+- Action: extracted pure helpers for outcome-review refs, outcome-discipline signals,
+  source-quality signals, optional handoff evidence signals, and handoff refs; added direct tests
+  for review source posture, fallback source-quality reason codes, and report/AI handoff evidence
+  projection while preserving the existing score-run output shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m ruff format --check src/core/pm_quality/scoring.py tests/unit/dpm/pm_quality/test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src/core/pm_quality/scoring.py`,
+  `python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py -q`, and
+  `python -m radon cc src/core/pm_quality/scoring.py -s`; the focused PM-quality suite reported
+  34 passed, and radon reports `_signals_from_outcome_reviews` at A(4).
+- Residual risk: this slice improves PM-quality source signal maintainability only. It does not
+  change PM operating-quality policy semantics, score thresholds, source-owned outcome review
+  methodology, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal PM-quality source-signal
+  hardening with no operator-facing contract change.

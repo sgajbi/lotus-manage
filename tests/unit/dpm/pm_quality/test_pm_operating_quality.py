@@ -513,6 +513,77 @@ def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs()
     assert any(ref.source_type == "DPM_OUTCOME_REPORT_INPUT" for ref in score_run.source_refs)
 
 
+def test_pm_quality_outcome_review_signal_helpers_project_review_source_posture() -> None:
+    review = _review()
+    review_ref = scoring._outcome_review_ref(review)
+
+    discipline = scoring._outcome_discipline_signal(review=review, review_ref=review_ref)
+    source_quality = scoring._outcome_source_quality_signal(review=review, review_ref=review_ref)
+
+    assert discipline is not None
+    assert discipline.indicator == "OUTCOME_DISCIPLINE"
+    assert discipline.state == review.state
+    assert discipline.as_of_date == review.review_window.as_of_date
+    assert discipline.source_refs == [review_ref]
+    assert discipline.reason_codes == sorted(
+        {result.reason_code for result in review.dimension_results}
+    )
+
+    assert source_quality.indicator == "SOURCE_QUALITY"
+    assert source_quality.state == review.supportability.state
+    assert source_quality.reason_codes == review.supportability.reason_codes
+    assert source_quality.source_refs == [review_ref, *review.source_lineage]
+
+
+def test_pm_quality_outcome_review_signal_helpers_handle_missing_handoff_evidence() -> None:
+    review = _review().model_copy(
+        update={
+            "supportability": _review().supportability.model_copy(update={"reason_codes": []}),
+            "report_input_ref": None,
+            "ai_evidence_ref": None,
+        }
+    )
+    review_ref = scoring._outcome_review_ref(review)
+
+    assert scoring._outcome_handoff_refs(review) == []
+    assert scoring._outcome_handoff_evidence_signal(review=review, review_ref=review_ref) is None
+    assert scoring._outcome_source_quality_signal(
+        review=review, review_ref=review_ref
+    ).reason_codes == ["OUTCOME_REVIEW_SOURCE_POSTURE"]
+
+
+def test_pm_quality_outcome_review_signal_helpers_project_handoff_evidence() -> None:
+    report_ref = DpmOutcomeSourceRef(
+        source_system="lotus-report",
+        source_type="DPM_OUTCOME_REPORT_INPUT",
+        source_id="report_001",
+        content_hash="sha256:report",
+    )
+    ai_ref = DpmOutcomeSourceRef(
+        source_system="lotus-ai",
+        source_type="DPM_OUTCOME_AI_EVIDENCE_INPUT",
+        source_id="ai_001",
+        content_hash="sha256:ai",
+    )
+    review = _review().model_copy(
+        update={
+            "report_input_ref": report_ref,
+            "ai_evidence_ref": ai_ref,
+        }
+    )
+    review_ref = scoring._outcome_review_ref(review)
+
+    handoff = scoring._outcome_handoff_evidence_signal(review=review, review_ref=review_ref)
+
+    assert scoring._outcome_handoff_refs(review) == [report_ref, ai_ref]
+    assert handoff is not None
+    assert handoff.indicator == "EVIDENCE_COMPLETENESS"
+    assert handoff.score == Decimal("100")
+    assert handoff.state == "READY"
+    assert handoff.reason_codes == ["OUTCOME_REVIEW_HANDOFF_EVIDENCE_AVAILABLE"]
+    assert handoff.source_refs == [review_ref, report_ref, ai_ref]
+
+
 def test_pm_quality_score_run_source_ref_helper_collects_scope_and_governance_refs() -> None:
     indicator_ref = DpmOutcomeSourceRef(
         source_system="lotus-risk",
