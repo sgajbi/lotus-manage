@@ -22,6 +22,7 @@ from src.core.rebalance.intents import (
     _target_weight_by_instrument,
     _tax_impact_from_budget,
     _tax_budget_lot_allowance,
+    _tax_budget_allowance_stops_lot_scan,
     _tax_budget_limited_quantity_from_lots,
     _tax_budget_limited_sell_quantity,
     _tax_budget_sale_allowance,
@@ -713,6 +714,47 @@ def test_tax_budget_limited_quantity_from_lots_skips_empty_lots_and_stops_on_par
     assert allowed_quantity == Decimal("5")
     assert tax_budget.total_realized_gain_base == Decimal("50")
     assert tax_budget.tax_budget_used_base == Decimal("50")
+
+
+def test_tax_budget_allowance_stops_lot_scan_for_depleted_remaining_quantity() -> None:
+    assert _tax_budget_allowance_stops_lot_scan(
+        allowance=None,
+        remaining_quantity=Decimal("0"),
+    )
+    assert not _tax_budget_allowance_stops_lot_scan(
+        allowance=None,
+        remaining_quantity=Decimal("2"),
+    )
+
+
+def test_tax_budget_allowance_stops_lot_scan_for_zero_or_partial_allowance() -> None:
+    assert _tax_budget_allowance_stops_lot_scan(
+        allowance=_TaxBudgetLotAllowance(
+            requested_quantity=Decimal("5"),
+            allowed_quantity=Decimal("0"),
+            realized_base=Decimal("0"),
+        ),
+        remaining_quantity=Decimal("5"),
+    )
+    assert _tax_budget_allowance_stops_lot_scan(
+        allowance=_TaxBudgetLotAllowance(
+            requested_quantity=Decimal("5"),
+            allowed_quantity=Decimal("2"),
+            realized_base=Decimal("20"),
+        ),
+        remaining_quantity=Decimal("3"),
+    )
+
+
+def test_tax_budget_allowance_continues_lot_scan_for_full_allowance() -> None:
+    assert not _tax_budget_allowance_stops_lot_scan(
+        allowance=_TaxBudgetLotAllowance(
+            requested_quantity=Decimal("5"),
+            allowed_quantity=Decimal("5"),
+            realized_base=Decimal("50"),
+        ),
+        remaining_quantity=Decimal("5"),
+    )
 
 
 def test_tax_budget_lot_allowance_returns_zero_when_gain_budget_exhausted() -> None:

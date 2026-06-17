@@ -307,6 +307,18 @@ def _tax_budget_sale_allowance(
     )
 
 
+def _tax_budget_allowance_stops_lot_scan(
+    *,
+    allowance: _TaxBudgetLotAllowance | None,
+    remaining_quantity: Decimal,
+) -> bool:
+    if allowance is None:
+        return remaining_quantity <= Decimal("0")
+    if allowance.allowed_quantity <= Decimal("0"):
+        return True
+    return allowance.allowed_quantity < allowance.requested_quantity
+
+
 def _tax_budget_limited_quantity_from_lots(
     *,
     sorted_lots: list[tuple[Any, Decimal]],
@@ -327,17 +339,21 @@ def _tax_budget_limited_quantity_from_lots(
             tax_budget=tax_budget,
         )
         if allowance is None:
-            if remaining <= Decimal("0"):
+            if _tax_budget_allowance_stops_lot_scan(
+                allowance=allowance,
+                remaining_quantity=remaining,
+            ):
                 break
             continue
-        if allowance.allowed_quantity <= Decimal("0"):
-            break
 
         _apply_tax_budget_lot_allowance(allowance=allowance, tax_budget=tax_budget)
         allowed_qty += allowance.allowed_quantity
         remaining -= allowance.allowed_quantity
 
-        if allowance.allowed_quantity < allowance.requested_quantity:
+        if _tax_budget_allowance_stops_lot_scan(
+            allowance=allowance,
+            remaining_quantity=remaining,
+        ):
             break
 
     return allowed_qty
