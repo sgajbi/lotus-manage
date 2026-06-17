@@ -40,6 +40,9 @@ from src.core.waves.campaign_approval_inbox import (
 )
 from src.core.waves.campaign_workflow_board import (
     DpmBulkReviewCampaignWorkflowBoardPage,
+    _filtered_workflow_board_items,
+    _workflow_board_counts,
+    _workflow_board_page_payload,
     build_bulk_review_campaign_workflow_board_item,
     build_bulk_review_campaign_workflow_board_page,
 )
@@ -53,6 +56,9 @@ from src.core.waves.campaign_assignment_plan import (
 )
 from src.core.waves.campaign_workflow_automation import (
     DpmBulkReviewCampaignWorkflowAutomationPage,
+    _filtered_workflow_automation_items,
+    _workflow_automation_counts,
+    _workflow_automation_page_payload,
     build_bulk_review_campaign_workflow_automation_item,
     build_bulk_review_campaign_workflow_automation_page,
 )
@@ -667,6 +673,56 @@ def test_campaign_workflow_board_page_filters_next_action_and_counts() -> None:
     assert page.count == 1
     assert page.status_counts == {"ATTENTION_FOR_ACTOR": 1}
     assert page.next_action_counts == {"RECORD_APPROVAL_DECISION": 1}
+    assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
+    assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_workflow_board_helpers_filter_count_and_hash_rows() -> None:
+    ready = build_bulk_review_campaign_workflow_board_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    approval_required = build_bulk_review_campaign_workflow_board_item(
+        definition=_definition(approval_ref=None, approved_by=None, approved_at=None),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition().model_dump(mode="python"),
+            "campaign_id": "campaign-holdings-retired-board-20260510",
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-board",
+            "content_hash": "",
+        }
+    )
+    closed = build_bulk_review_campaign_workflow_board_item(
+        definition=retired,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+    )
+
+    filtered = _filtered_workflow_board_items(
+        items=[ready, approval_required, closed],
+        include_closed=False,
+        board_status="ATTENTION_FOR_ACTOR",
+        next_action=None,
+    )
+    status_counts, next_action_counts = _workflow_board_counts(filtered)
+    payload = _workflow_board_page_payload(items=filtered, limit=50, offset=0)
+    page = DpmBulkReviewCampaignWorkflowBoardPage.model_validate(payload)
+
+    assert [item.campaign_id for item in filtered] == [approval_required.campaign_id]
+    assert status_counts == {"ATTENTION_FOR_ACTOR": 1}
+    assert next_action_counts == {"RECORD_APPROVAL_DECISION": 1}
+    assert page.count == 1
     assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
     assert page.content_hash.startswith("sha256:")
 
@@ -1395,6 +1451,54 @@ def test_campaign_workflow_automation_filters_actions_and_closed_rows() -> None:
     assert closed_item.proposed_task_ref is None
     assert filtered.count == 1
     assert filtered.items[0].campaign_id == "campaign-holdings-retired-automation-20260510"
+
+
+def test_campaign_workflow_automation_helpers_filter_count_and_hash_rows() -> None:
+    candidate = build_bulk_review_campaign_workflow_automation_item(
+        definition=_definition(),
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+    retired = DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition().model_dump(mode="python"),
+            "campaign_id": "campaign-holdings-retired-automation-helper-20260510",
+            "status": "RETIRED",
+            "retired_at": "2026-05-11T08:00:00Z",
+            "retired_by": "ops",
+            "retirement_reason": "Campaign completed.",
+            "retirement_correlation_id": "corr-campaign-definition-retire-automation-helper",
+            "content_hash": "",
+        }
+    )
+    closed = build_bulk_review_campaign_workflow_automation_item(
+        definition=retired,
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 10),
+    )
+
+    filtered = _filtered_workflow_automation_items(
+        items=[candidate, closed],
+        include_closed=True,
+        automation_status=None,
+        automation_action="NO_AUTOMATION_CLOSED",
+    )
+    status_counts, action_counts = _workflow_automation_counts(filtered)
+    payload = _workflow_automation_page_payload(items=filtered, limit=50, offset=0)
+    page = DpmBulkReviewCampaignWorkflowAutomationPage.model_validate(payload)
+
+    assert [item.campaign_id for item in filtered] == [
+        "campaign-holdings-retired-automation-helper-20260510"
+    ]
+    assert status_counts == {"CLOSED": 1}
+    assert action_counts == {"NO_AUTOMATION_CLOSED": 1}
+    assert page.count == 1
+    assert page.capability_posture.content_hash == candidate.capability_posture.content_hash
+    assert page.content_hash == hash_canonical_payload(
+        strip_keys(page.model_dump(mode="json"), exclude={"content_hash"})
+    )
 
 
 def test_campaign_operating_pages_reject_inconsistent_summary_metadata() -> None:

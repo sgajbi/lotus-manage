@@ -349,7 +349,30 @@ def build_bulk_review_campaign_workflow_automation_page(
     limit: int,
     offset: int,
 ) -> DpmBulkReviewCampaignWorkflowAutomationPage:
-    items = [
+    items = _filtered_workflow_automation_items(
+        items=_workflow_automation_items(
+            definitions=definitions,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+        ),
+        include_closed=include_closed,
+        automation_status=automation_status,
+        automation_action=automation_action,
+    )
+    return DpmBulkReviewCampaignWorkflowAutomationPage.model_validate(
+        _workflow_automation_page_payload(items=items, limit=limit, offset=offset)
+    )
+
+
+def _workflow_automation_items(
+    *,
+    definitions: list[DpmBulkReviewCampaignDefinition],
+    requested_as_of_date: str | None,
+    actor_id: str | None,
+    active_on: date | None,
+) -> list[DpmBulkReviewCampaignWorkflowAutomationItem]:
+    return [
         build_bulk_review_campaign_workflow_automation_item(
             definition=definition,
             requested_as_of_date=requested_as_of_date or definition.as_of_date,
@@ -358,19 +381,89 @@ def build_bulk_review_campaign_workflow_automation_page(
         )
         for definition in definitions
     ]
-    if not include_closed:
-        items = [item for item in items if item.automation_status != "CLOSED"]
-    if automation_status is not None:
-        items = [item for item in items if item.automation_status == automation_status]
-    if automation_action is not None:
-        items = [item for item in items if item.automation_action == automation_action]
 
+
+def _filtered_workflow_automation_items(
+    *,
+    items: list[DpmBulkReviewCampaignWorkflowAutomationItem],
+    include_closed: bool,
+    automation_status: CampaignWorkflowAutomationStatus | None,
+    automation_action: CampaignWorkflowAutomationAction | None,
+) -> list[DpmBulkReviewCampaignWorkflowAutomationItem]:
+    return [
+        item
+        for item in items
+        if _workflow_automation_item_matches(
+            item=item,
+            include_closed=include_closed,
+            automation_status=automation_status,
+            automation_action=automation_action,
+        )
+    ]
+
+
+def _workflow_automation_item_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowAutomationItem,
+    include_closed: bool,
+    automation_status: CampaignWorkflowAutomationStatus | None,
+    automation_action: CampaignWorkflowAutomationAction | None,
+) -> bool:
+    return (
+        _workflow_automation_closed_filter_matches(item=item, include_closed=include_closed)
+        and _workflow_automation_status_filter_matches(
+            item=item,
+            automation_status=automation_status,
+        )
+        and _workflow_automation_action_filter_matches(
+            item=item,
+            automation_action=automation_action,
+        )
+    )
+
+
+def _workflow_automation_closed_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowAutomationItem,
+    include_closed: bool,
+) -> bool:
+    return include_closed or item.automation_status != "CLOSED"
+
+
+def _workflow_automation_status_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowAutomationItem,
+    automation_status: CampaignWorkflowAutomationStatus | None,
+) -> bool:
+    return automation_status is None or item.automation_status == automation_status
+
+
+def _workflow_automation_action_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowAutomationItem,
+    automation_action: CampaignWorkflowAutomationAction | None,
+) -> bool:
+    return automation_action is None or item.automation_action == automation_action
+
+
+def _workflow_automation_counts(
+    items: list[DpmBulkReviewCampaignWorkflowAutomationItem],
+) -> tuple[dict[str, int], dict[str, int]]:
     status_counts: dict[str, int] = {}
     action_counts: dict[str, int] = {}
     for item in items:
         status_counts[item.automation_status] = status_counts.get(item.automation_status, 0) + 1
         action_counts[item.automation_action] = action_counts.get(item.automation_action, 0) + 1
+    return status_counts, action_counts
 
+
+def _workflow_automation_page_payload(
+    *,
+    items: list[DpmBulkReviewCampaignWorkflowAutomationItem],
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
+    status_counts, action_counts = _workflow_automation_counts(items)
     payload: dict[str, object] = {
         "product_name": "BulkReviewCampaignWorkflowAutomation",
         "product_version": "v1",
@@ -384,7 +477,7 @@ def build_bulk_review_campaign_workflow_automation_page(
         "content_hash": "",
     }
     payload["content_hash"] = _content_hash(payload)
-    return DpmBulkReviewCampaignWorkflowAutomationPage.model_validate(payload)
+    return payload
 
 
 def _classify_automation(

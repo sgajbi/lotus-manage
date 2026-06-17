@@ -174,7 +174,30 @@ def build_bulk_review_campaign_workflow_board_page(
     limit: int,
     offset: int,
 ) -> DpmBulkReviewCampaignWorkflowBoardPage:
-    items = [
+    items = _filtered_workflow_board_items(
+        items=_workflow_board_items(
+            definitions=definitions,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+        ),
+        include_closed=include_closed,
+        board_status=board_status,
+        next_action=next_action,
+    )
+    return DpmBulkReviewCampaignWorkflowBoardPage.model_validate(
+        _workflow_board_page_payload(items=items, limit=limit, offset=offset)
+    )
+
+
+def _workflow_board_items(
+    *,
+    definitions: list[DpmBulkReviewCampaignDefinition],
+    requested_as_of_date: str | None,
+    actor_id: str | None,
+    active_on: date | None,
+) -> list[DpmBulkReviewCampaignWorkflowBoardItem]:
+    return [
         build_bulk_review_campaign_workflow_board_item(
             definition=definition,
             requested_as_of_date=requested_as_of_date or definition.as_of_date,
@@ -183,19 +206,83 @@ def build_bulk_review_campaign_workflow_board_page(
         )
         for definition in definitions
     ]
-    if not include_closed:
-        items = [item for item in items if item.board_status != "CLOSED"]
-    if board_status is not None:
-        items = [item for item in items if item.board_status == board_status]
-    if next_action is not None:
-        items = [item for item in items if item.next_action == next_action]
 
+
+def _filtered_workflow_board_items(
+    *,
+    items: list[DpmBulkReviewCampaignWorkflowBoardItem],
+    include_closed: bool,
+    board_status: CampaignWorkflowBoardStatus | None,
+    next_action: CampaignWorkflowNextAction | None,
+) -> list[DpmBulkReviewCampaignWorkflowBoardItem]:
+    return [
+        item
+        for item in items
+        if _workflow_board_item_matches(
+            item=item,
+            include_closed=include_closed,
+            board_status=board_status,
+            next_action=next_action,
+        )
+    ]
+
+
+def _workflow_board_item_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowBoardItem,
+    include_closed: bool,
+    board_status: CampaignWorkflowBoardStatus | None,
+    next_action: CampaignWorkflowNextAction | None,
+) -> bool:
+    return (
+        _workflow_board_closed_filter_matches(item=item, include_closed=include_closed)
+        and _workflow_board_status_filter_matches(item=item, board_status=board_status)
+        and _workflow_board_next_action_filter_matches(item=item, next_action=next_action)
+    )
+
+
+def _workflow_board_closed_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowBoardItem,
+    include_closed: bool,
+) -> bool:
+    return include_closed or item.board_status != "CLOSED"
+
+
+def _workflow_board_status_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowBoardItem,
+    board_status: CampaignWorkflowBoardStatus | None,
+) -> bool:
+    return board_status is None or item.board_status == board_status
+
+
+def _workflow_board_next_action_filter_matches(
+    *,
+    item: DpmBulkReviewCampaignWorkflowBoardItem,
+    next_action: CampaignWorkflowNextAction | None,
+) -> bool:
+    return next_action is None or item.next_action == next_action
+
+
+def _workflow_board_counts(
+    items: list[DpmBulkReviewCampaignWorkflowBoardItem],
+) -> tuple[dict[str, int], dict[str, int]]:
     status_counts: dict[str, int] = {}
     next_action_counts: dict[str, int] = {}
     for item in items:
         status_counts[item.board_status] = status_counts.get(item.board_status, 0) + 1
         next_action_counts[item.next_action] = next_action_counts.get(item.next_action, 0) + 1
+    return status_counts, next_action_counts
 
+
+def _workflow_board_page_payload(
+    *,
+    items: list[DpmBulkReviewCampaignWorkflowBoardItem],
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
+    status_counts, next_action_counts = _workflow_board_counts(items)
     payload: dict[str, object] = {
         "product_name": "BulkReviewCampaignWorkflowBoard",
         "product_version": "v1",
@@ -208,7 +295,7 @@ def build_bulk_review_campaign_workflow_board_page(
         "content_hash": "",
     }
     payload["content_hash"] = _hash_payload(payload)
-    return DpmBulkReviewCampaignWorkflowBoardPage.model_validate(payload)
+    return payload
 
 
 def _classify_workflow_board_posture(
