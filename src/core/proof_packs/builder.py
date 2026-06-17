@@ -10,6 +10,7 @@ from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
+    ConstructionComparisonMetrics,
 )
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
@@ -1129,34 +1130,65 @@ def _turnover_and_cost_section_payload(
     source_analytics: dict[str, ProofPackSourceAnalytics],
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
     transaction_cost_context = source_analytics.get("transaction_cost")
-    metrics = (
-        selected_alternative.comparison_metrics.model_dump(mode="json")
-        if selected_alternative
-        else {}
+    metrics = _turnover_comparison_metrics(selected_alternative)
+    if transaction_cost_context is None:
+        return _turnover_payload_without_transaction_cost_context(metrics)
+    return _turnover_payload_with_transaction_cost_context(
+        metrics=metrics,
+        transaction_cost_context=transaction_cost_context,
     )
-    facts: dict[str, Any] = {}
-    reason_codes = [] if metrics else ["DPM_TURNOVER_COST_METRICS_MISSING"]
-    state: ProofPackSectionState = "READY" if metrics else "DEGRADED"
-    summary = "Turnover and cost evidence captured when construction metrics are available."
 
-    if transaction_cost_context is not None:
-        facts = transaction_cost_context.facts
-        metrics = {**metrics, **transaction_cost_context.metrics}
-        reason_codes.extend(transaction_cost_context.reason_codes)
-        state = _lowest_section_state([state, transaction_cost_context.state])
-        summary = (
-            "Turnover metrics and source-owned observed transaction-cost evidence are attached."
-        )
-    elif metrics:
-        reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
+
+def _turnover_comparison_metrics(
+    selected_alternative: ConstructionAlternative | None,
+) -> dict[str, Any]:
+    if selected_alternative is None:
+        return {}
+    return _turnover_comparison_metrics_payload(selected_alternative.comparison_metrics)
+
+
+def _turnover_comparison_metrics_payload(
+    comparison_metrics: ConstructionComparisonMetrics,
+) -> dict[str, Any]:
+    return comparison_metrics.model_dump(mode="json")
+
+
+def _turnover_base_posture(
+    metrics: dict[str, Any],
+) -> tuple[ProofPackSectionState, list[str]]:
+    if metrics:
+        return "READY", []
+    return "DEGRADED", ["DPM_TURNOVER_COST_METRICS_MISSING"]
+
+
+def _turnover_payload_without_transaction_cost_context(
+    metrics: dict[str, Any],
+) -> _SectionPayload:
+    state, reason_codes = _turnover_base_posture(metrics)
+    if metrics:
         state = "DEGRADED"
-
+        reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
     return (
         state,
-        summary,
-        facts,
+        "Turnover and cost evidence captured when construction metrics are available.",
+        {},
         metrics,
         sorted(set(reason_codes)),
+    )
+
+
+def _turnover_payload_with_transaction_cost_context(
+    *,
+    metrics: dict[str, Any],
+    transaction_cost_context: ProofPackSourceAnalytics,
+) -> _SectionPayload:
+    state, reason_codes = _turnover_base_posture(metrics)
+    return (
+        _lowest_section_state([state, transaction_cost_context.state]),
+        "Turnover metrics and source-owned observed transaction-cost evidence are attached.",
+        transaction_cost_context.facts,
+        {**metrics, **transaction_cost_context.metrics},
+        sorted(set([*reason_codes, *transaction_cost_context.reason_codes])),
     )
 
 

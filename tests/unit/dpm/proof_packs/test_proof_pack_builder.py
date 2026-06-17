@@ -1187,6 +1187,66 @@ def test_turnover_and_cost_section_payload_degrades_without_selected_metrics() -
     assert reason_codes == ["DPM_TURNOVER_COST_METRICS_MISSING"]
 
 
+def test_turnover_comparison_metrics_returns_selected_alternative_metrics() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+
+    metrics = builder_module._turnover_comparison_metrics(alternative)
+
+    assert metrics["turnover_weight"] == "1.0000"
+    assert metrics["trade_count"] == 2
+    assert metrics["estimated_transaction_cost"] is None
+
+
+def test_turnover_payload_without_transaction_cost_context_degrades_selected_metrics() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    metrics = builder_module._turnover_comparison_metrics(alternative)
+
+    state, summary, facts, payload_metrics, reason_codes = (
+        builder_module._turnover_payload_without_transaction_cost_context(metrics)
+    )
+
+    assert state == "DEGRADED"
+    assert summary == "Turnover and cost evidence captured when construction metrics are available."
+    assert facts == {}
+    assert payload_metrics["turnover_weight"] == "1.0000"
+    assert reason_codes == ["DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING"]
+
+
+def test_turnover_payload_with_transaction_cost_context_preserves_missing_metrics_reason() -> None:
+    transaction_cost = ProofPackSourceAnalytics(
+        family="transaction_cost",
+        state="READY",
+        summary="Observed transaction-cost evidence is attached.",
+        facts={"source_system": "lotus-core"},
+        metrics={"returned_curve_point_count": 1},
+        reason_codes=["TRANSACTION_COST_CURVE_READY"],
+        source_ref=_source_ref(),
+        source_hash_key="transaction_cost_context",
+        content_hash="sha256:transaction-cost-curve-proof",
+    )
+
+    state, summary, facts, metrics, reason_codes = (
+        builder_module._turnover_payload_with_transaction_cost_context(
+            metrics={},
+            transaction_cost_context=transaction_cost,
+        )
+    )
+
+    assert state == "DEGRADED"
+    assert (
+        summary
+        == "Turnover metrics and source-owned observed transaction-cost evidence are attached."
+    )
+    assert facts == {"source_system": "lotus-core"}
+    assert metrics == {"returned_curve_point_count": 1}
+    assert reason_codes == [
+        "DPM_TURNOVER_COST_METRICS_MISSING",
+        "TRANSACTION_COST_CURVE_READY",
+    ]
+
+
 def test_turnover_and_cost_section_payload_merges_source_cost_context() -> None:
     result = _ready_rebalance_result()
     alternative = build_rebalance_result_alternative(result=result)
