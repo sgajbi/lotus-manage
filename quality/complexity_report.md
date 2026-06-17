@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T01:12:19+00:00`
+- Generated at: `2026-06-17T01:31:58+00:00`
 
-- Report source snapshot: `801b4b6e`
+- Report source snapshot: `8be6baf4`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | generate_targets_heuristic | src/core/rebalance/targets.py | 6 | 49 |
-| 2 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
-| 3 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
-| 4 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
-| 5 | value_position | src/core/valuation.py | 6 | 45 |
-| 6 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
-| 7 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
-| 8 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
-| 9 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
-| 10 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
+| 1 | build_bulk_review_campaign_assignment_plan_page | src/core/waves/campaign_assignment_plan.py | 6 | 49 |
+| 2 | build_bulk_review_campaign_workflow_automation_page | src/core/waves/campaign_workflow_automation.py | 6 | 48 |
+| 3 | build_bulk_review_campaign_workflow_board_page | src/core/waves/campaign_workflow_board.py | 6 | 47 |
+| 4 | value_position | src/core/valuation.py | 6 | 45 |
+| 5 | search_wave_summaries | src/api/services/wave_search.py | 6 | 43 |
+| 6 | build_search_facet_counts | src/core/portfolio_memory/search_facets.py | 6 | 43 |
+| 7 | _collection_example_from_schema | src/api/openapi_enrichment.py | 6 | 41 |
+| 8 | build_enterprise_audit_middleware | src/api/enterprise_readiness.py | 6 | 40 |
+| 9 | _apply_intent_settlement_flows | src/core/rebalance/execution.py | 6 | 39 |
+| 10 | middleware | src/api/enterprise_readiness.py | 6 | 37 |
 
 ### Most Complex Current Test Functions
 
