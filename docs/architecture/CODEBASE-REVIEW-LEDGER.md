@@ -23624,3 +23624,82 @@ and improves internal transaction-cost source posture maintainability only.
   baselines into stricter thresholds or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-941: Rebalance intent target-context helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Bank-buyable control area: architecture, portfolio construction supportability, and testing.
+- Finding: `generate_intents` still owned per-target market-context resolution, target/current
+  value comparison, safety-limit application, dust suppression, and intent append mechanics inline.
+  That kept the top-level intent generator harder to audit even though most underlying decisions
+  already had focused helpers.
+- Action: extracted a target intent context helper and a security-trade append helper; added direct
+  tests for supported buy-context assembly, dust suppression, zero-quantity skipping, and stable
+  intent numbering while preserving the existing public generation behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`, and
+  `python -m radon cc src/core/rebalance/intents.py -s`; the focused rebalance safety suite
+  reported 36 passed, and radon reports `generate_intents` at A(4) with
+  `_target_intent_context` at A(5).
+- Residual risk: this slice improves internal rebalance intent maintainability only. It does not
+  change target-weight methodology, tax-budget behavior, turnover controls, execution posture,
+  external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal portfolio-construction
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-942: Proof-pack build-context source evidence helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack evidence supportability, and testing.
+- Finding: `_proof_pack_build_context` still mixed timestamp resolution, source hash assembly,
+  source analytics enrichment, source-ref assembly, run-result hydration, run-artifact hashing,
+  proof-pack id resolution, portfolio resolution, and correlation resolution. That made the
+  proof-pack evidence context harder to review as an auditable supportability boundary.
+- Action: extracted source-evidence context assembly, run-result hydration, and run-artifact hash
+  helpers; added direct tests for analytics hash/ref enrichment and run evidence hydration while
+  preserving the existing proof-pack build contract.
+- Status: hardened.
+- Evidence:
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 98 passed, and radon reports `_proof_pack_build_context` at A(2) with
+  `_proof_pack_source_context` at A(3).
+- Residual risk: this slice improves internal proof-pack evidence-context maintainability only.
+  Additional B-grade proof-pack section helpers remain visible candidates for future slices; this
+  slice does not change proof-pack schemas, content-hash semantics, source analytics facts,
+  source-ref meaning, external API contracts, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack supportability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-943: Rebalance and proof-pack hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`,
+  `quality/architecture_rules.md`, `quality/api_governance_rules.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the rebalance-intent and proof-pack build-context helper extractions, the checked-in
+  quality reports needed to reflect the updated branch head, test-function count, and current
+  source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `d1a4e33c`, record 2586 test functions, keep service boundary findings and router
+  infrastructure imports at 0, and the current top-ten source hotspot list no longer includes
+  `generate_intents` or `_proof_pack_build_context`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining B-grade proof-pack/router/source
+  hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

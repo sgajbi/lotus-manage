@@ -1718,6 +1718,64 @@ def test_proof_pack_build_context_attaches_direct_regime_source_hashes_and_refs(
     )
 
 
+def test_proof_pack_source_context_merges_analytics_hashes_and_refs() -> None:
+    result = _ready_rebalance_result()
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_context",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    ).model_copy(update={"generated_at": CREATED_AT})
+
+    source_context = builder_module._proof_pack_source_context(
+        run=_run_record(result=result),
+        alternative_set=alternative_set,
+        selected_alternative=alternative,
+        mandate_twin=None,
+        mandate_health=None,
+        direct_regime_stress_context=AuthoritativeRegimeStressContext(
+            supportability_status="READY",
+            source_system="lotus-risk",
+            scenario_pack_id="CIO_REGIME_CONTEXT_Q4",
+            worst_case_loss_pct=Decimal("0.0400"),
+            maximum_allowed_loss_pct=Decimal("0.1000"),
+            cio_approval_ref="CIO-APPROVAL-CONTEXT-Q4",
+            effective_from=date(2026, 10, 1),
+            reason_codes=["REGIME_SCENARIO_WITHIN_POLICY"],
+        ),
+    )
+
+    assert source_context.source_hashes["rebalance_run"].startswith("sha256:")
+    assert source_context.source_hashes["alternative_set"].startswith("sha256:")
+    assert source_context.source_hashes["selected_alternative"].startswith("sha256:")
+    assert source_context.source_hashes["regime_stress_context"].startswith("sha256:")
+    assert source_context.source_analytics["regime_stress"].facts["scenario_pack_id"] == (
+        "CIO_REGIME_CONTEXT_Q4"
+    )
+    assert any(
+        ref.source_system == "lotus-risk"
+        and ref.source_type == "RegimeScenarioPackEvaluation"
+        and ref.source_id == "CIO_REGIME_CONTEXT_Q4"
+        for ref in source_context.source_refs
+    )
+
+
+def test_run_artifact_hash_and_result_helpers_hydrate_run_evidence() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+
+    hydrated_result = builder_module._rebalance_result_from_run(run)
+    artifact_hash = builder_module._run_artifact_hash(run)
+
+    assert hydrated_result is not None
+    assert hydrated_result.rebalance_run_id == result.rebalance_run_id
+    assert artifact_hash is not None
+    assert artifact_hash.startswith("sha256:")
+    assert builder_module._rebalance_result_from_run(None) is None
+    assert builder_module._run_artifact_hash(None) is None
+
+
 def test_source_refs_preserve_manage_artifact_and_mandate_supportability() -> None:
     result = _ready_rebalance_result()
     run = _run_record(result=result)
