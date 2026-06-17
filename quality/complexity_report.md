@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T06:10:23+00:00`
+- Generated at: `2026-06-17T06:30:29+00:00`
 
-- Report source snapshot: `d129b616`
+- Report source snapshot: `91775b44`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
-| 2 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
-| 3 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
-| 4 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
-| 5 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
-| 6 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
-| 7 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
-| 8 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 9 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
-| 10 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
+| 1 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
+| 2 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
+| 3 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
+| 4 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
+| 5 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
+| 6 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
+| 7 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
+| 8 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
+| 9 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
+| 10 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
 
 ### Most Complex Current Test Functions
 
