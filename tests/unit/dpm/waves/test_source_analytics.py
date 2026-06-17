@@ -225,6 +225,70 @@ def test_family_item_source_analytics_skips_missing_and_non_mapping_diagnostics(
     ) == [{"supportability_state": "READY"}]
 
 
+def test_source_analytics_from_alternative_uses_enrichment_fallbacks() -> None:
+    alternative_set = ConstructionAlternativeSet(
+        alternative_set_id="cas_source_analytics_fallback",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of="2026-05-19",
+        status=ConstructionMethodStatus.DEGRADED,
+        alternatives=[],
+    )
+
+    analytics = source_analytics_module._source_analytics_from_alternative(
+        alternative_set=alternative_set,
+        alternative_diagnostics={
+            "authority_context": {
+                "risk_context": {
+                    "source_product_name": "RiskAuthorityContext",
+                    "tracking_error": Decimal("0.051"),
+                }
+            },
+            "enrichment_summary": {
+                "risk_status": "pending_review",
+                "reason_codes": ["RISK_SOURCE_REVIEW_REQUIRED"],
+            },
+        },
+        family="risk",
+    )
+
+    assert analytics == {
+        "supportability_state": "PENDING_REVIEW",
+        "source_systems": ["lotus-risk"],
+        "source_refs": [
+            {
+                "source_system": "lotus-risk",
+                "source_type": "RiskAuthorityContext",
+                "source_id": "cas_source_analytics_fallback",
+                "source_version": None,
+                "supportability_state": "DEGRADED",
+                "content_hash": None,
+                "selection_basis": None,
+            }
+        ],
+        "reason_codes": ["RISK_SOURCE_REVIEW_REQUIRED"],
+        "source_measures": {"tracking_error": ["0.051"]},
+    }
+
+
+def test_source_analytics_from_alternative_skips_missing_source_context() -> None:
+    alternative_set = ConstructionAlternativeSet(
+        alternative_set_id="cas_source_analytics_missing",
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        as_of="2026-05-19",
+        status=ConstructionMethodStatus.DEGRADED,
+        alternatives=[],
+    )
+
+    assert (
+        source_analytics_module._source_analytics_from_alternative(
+            alternative_set=alternative_set,
+            alternative_diagnostics={"authority_context": {"risk_context": "not-a-mapping"}},
+            family="risk",
+        )
+        is None
+    )
+
+
 def test_analytics_source_ref_preserves_source_product_metadata() -> None:
     source_ref = source_analytics_module._analytics_source_ref(
         source_context={
