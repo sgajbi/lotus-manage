@@ -417,24 +417,15 @@ def _roll_up_expected_supportability(
     wave_item: DpmRebalanceWaveItem | None,
     handoff: DpmWaveHandoffRef | None,
 ) -> DpmOutcomeSupportability:
-    states: list[OutcomeDimensionState] = [
-        _construction_state(alternative_set, selected_alternative),
-        _proof_pack_state(proof_pack.status),
-    ]
-    if wave_item:
-        states.append(_wave_item_state(wave_item))
-    if handoff:
-        states.append("READY")
-    if "BLOCKED" in states:
-        state: OutcomeDimensionState = "BLOCKED"
-    elif "PENDING_REVIEW" in states:
-        state = "PENDING_REVIEW"
-    elif "DEGRADED" in states:
-        state = "DEGRADED"
-    else:
-        state = "READY"
+    states = _expected_supportability_states(
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+        proof_pack=proof_pack,
+        wave_item=wave_item,
+        handoff=handoff,
+    )
     return DpmOutcomeSupportability(
-        state=state,
+        state=_highest_expected_supportability_state(states),
         reason_codes=_expected_reason_codes(
             alternative_set=alternative_set,
             selected_alternative=selected_alternative,
@@ -445,6 +436,37 @@ def _roll_up_expected_supportability(
         required_source=True,
         explanation="Expected snapshot supportability rolled up from manage pre-trade artifacts.",
     )
+
+
+def _expected_supportability_states(
+    *,
+    alternative_set: ConstructionAlternativeSet,
+    selected_alternative: ConstructionAlternative,
+    proof_pack: DpmPreTradeProofPack,
+    wave_item: DpmRebalanceWaveItem | None,
+    handoff: DpmWaveHandoffRef | None,
+) -> list[OutcomeDimensionState]:
+    states: list[OutcomeDimensionState] = [
+        _construction_state(alternative_set, selected_alternative),
+        _proof_pack_state(proof_pack.status),
+    ]
+    if wave_item is not None:
+        states.append(_wave_item_state(wave_item))
+    if handoff is not None:
+        states.append("READY")
+    return states
+
+
+def _highest_expected_supportability_state(
+    states: list[OutcomeDimensionState],
+) -> OutcomeDimensionState:
+    if "BLOCKED" in states:
+        return "BLOCKED"
+    if "PENDING_REVIEW" in states:
+        return "PENDING_REVIEW"
+    if "DEGRADED" in states:
+        return "DEGRADED"
+    return "READY"
 
 
 def _source_lineage(

@@ -13,9 +13,11 @@ from src.core.construction.vocabulary import ConstructionMethod, ConstructionMet
 from src.core.models import Money
 from src.core.outcomes.snapshots import (
     DpmExpectedSnapshotAssemblyError,
+    _expected_supportability_states,
     _find_handoff,
     _find_wave_item,
     _handoff_lookup_required,
+    _highest_expected_supportability_state,
     _highest_construction_outcome_state,
     _proof_pack_state,
     _validate_handoff_linkage,
@@ -314,6 +316,36 @@ def test_highest_construction_outcome_state_applies_supportability_precedence(
     expected: str | None,
 ) -> None:
     assert _highest_construction_outcome_state(*states) == expected
+
+
+@pytest.mark.parametrize(
+    ("states", "expected"),
+    [
+        (["READY", "DEGRADED"], "DEGRADED"),
+        (["DEGRADED", "PENDING_REVIEW"], "PENDING_REVIEW"),
+        (["PENDING_REVIEW", "BLOCKED"], "BLOCKED"),
+        (["READY", "READY"], "READY"),
+    ],
+)
+def test_highest_expected_supportability_state_applies_rollup_precedence(
+    states: list[str],
+    expected: str,
+) -> None:
+    assert _highest_expected_supportability_state(states) == expected
+
+
+def test_expected_supportability_states_include_construction_proof_pack_wave_and_handoff() -> None:
+    wave = _wave(item_state="SOURCE_DEGRADED")
+    wave_item = _find_wave_item(wave=wave, wave_item_id="dwi_outcome_001")
+    handoff = _find_handoff(wave=wave, handoff_ref_id="dwh_outcome_001")
+
+    assert _expected_supportability_states(
+        alternative_set=_alternative_set(source_supportability_state="PENDING_REVIEW"),
+        selected_alternative=_alternative_set().alternatives[0],
+        proof_pack=_proof_pack(status="BLOCKED"),
+        wave_item=wave_item,
+        handoff=handoff,
+    ) == ["PENDING_REVIEW", "BLOCKED", "DEGRADED", "READY"]
 
 
 def test_expected_snapshot_preserves_construction_proof_pack_wave_and_handoff_lineage() -> None:

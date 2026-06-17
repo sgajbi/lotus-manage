@@ -24464,3 +24464,55 @@ and improves internal transaction-cost source posture maintainability only.
   workflow-decision query hotspots, or certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-973: Expected outcome supportability roll-up helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/outcomes/snapshots.py` and
+  `tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`.
+- Bank-buyable control area: architecture, outcome evidence supportability, and testing.
+- Finding: `_roll_up_expected_supportability` combined evidence-state collection, supportability
+  precedence selection, reason-code assembly, and supportability DTO creation. That made the
+  expected-outcome snapshot path harder to inspect even though state collection and precedence are
+  deterministic, domain-level rules.
+- Action: extracted helpers for expected supportability state collection and highest-state
+  precedence selection; added direct tests for roll-up precedence and construction/proof-pack/wave/
+  handoff state collection while preserving the assembled expected-snapshot behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m ruff check src/core/outcomes/snapshots.py tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py`,
+  `python -m mypy --config-file mypy.ini src/core/outcomes/snapshots.py`,
+  `python -m pytest tests/unit/dpm/outcomes/test_expected_snapshot_assembly.py -q`,
+  and `python -m radon cc src/core/outcomes/snapshots.py -s`; the focused expected-snapshot suite
+  reported 31 passed, and radon reports `_roll_up_expected_supportability` reduced from B(6) to
+  A(1) with the extracted helpers at A grade.
+- Residual risk: this slice improves expected outcome snapshot supportability maintainability only.
+  It does not change outcome-review route contracts, source-lineage semantics, proof-pack
+  semantics, construction methodology, wave handoff behavior, supportability precedence, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal outcome evidence
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-974: Expected outcome supportability reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the expected outcome supportability helper extraction, the checked-in quality
+  reports needed to reflect the updated branch head, test-function count, and current source
+  hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `b992f8f6`, record 821 Python files, 2630 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `_roll_up_expected_supportability`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining source-context, proof-pack,
+  rebalance-intent, workflow-gate, wave source-analytics, async payload, target-cash,
+  workflow-decision query, or risk-authority client hotspots, or certify global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
