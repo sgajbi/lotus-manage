@@ -1,4 +1,5 @@
 from src.api.openapi_enrichment import (
+    _array_example_from_schema,
     _composite_example_from_schema,
     _collection_example_from_schema,
     _description_context,
@@ -22,7 +23,9 @@ from src.api.openapi_enrichment import (
     _number_example_for_key,
     _operation_has_error_response,
     _operation_tag_for_path,
+    _object_example_from_schema,
     _path_http_operations,
+    _properties_example_from_schema,
     _schema_example_schemas,
     _ref_example_from_schema,
     _resolved_schema_example,
@@ -239,6 +242,55 @@ def test_openapi_enrichment_collects_object_array_and_map_examples() -> None:
     ) == (True, {"sample_key": "sample_value"})
     assert _collection_example_from_schema(
         prop_name="value",
+        prop_schema={"type": "string"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (False, None)
+
+
+def test_openapi_enrichment_collection_helpers_separate_schema_shapes() -> None:
+    schemas = {
+        "Leaf": {
+            "type": "object",
+            "properties": {"currency": {"type": "string"}, "amount": {"type": "number"}},
+        }
+    }
+
+    assert _properties_example_from_schema(
+        prop_schema={
+            "properties": {
+                "leaf": {"$ref": "#/components/schemas/Leaf"},
+                "ignored": "bad",
+            }
+        },
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, {"leaf": {"currency": "USD", "amount": 10.5}})
+    assert _properties_example_from_schema(
+        prop_schema={"type": "object"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (False, None)
+    assert _array_example_from_schema(
+        prop_name="items",
+        prop_schema={"type": "array", "items": {"type": "integer"}},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, [10])
+    assert _array_example_from_schema(
+        prop_name="items",
+        prop_schema={"type": "string"},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (False, None)
+    assert _object_example_from_schema(
+        prop_name="metadata",
+        prop_schema={"type": "object", "additionalProperties": {"type": "boolean"}},
+        schemas=schemas,
+        seen_refs=set(),
+    ) == (True, {"sample_key": True})
+    assert _object_example_from_schema(
+        prop_name="metadata",
         prop_schema={"type": "string"},
         schemas=schemas,
         seen_refs=set(),
