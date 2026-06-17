@@ -24675,3 +24675,55 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-981: Workflow suitability gate reason helper
+
+- Date: 2026-06-17
+- Scope: `src/core/common/workflow_gates.py` and
+  `tests/unit/dpm/engine/test_engine_workflow_gates.py`.
+- Bank-buyable control area: architecture, workflow gate maintainability, and testing.
+- Finding: `_suitability_reasons` combined suitability issue filtering, severity-to-gate-reason
+  mapping, high/medium counter updates, and aggregate result assembly in one loop. That made the
+  compliance/risk workflow gate policy harder to inspect even though single-issue mapping is a
+  deterministic domain rule.
+- Action: extracted `_suitability_issue_reason` and a named `_SuitabilityIssueGateReason` result
+  to make per-issue workflow gate contribution explicit; added direct tests for new high and
+  medium issue mapping, non-new issue suppression, low-severity suppression, and aggregate count
+  preservation while keeping existing workflow gate decision precedence intact.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m ruff check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m ruff format --check src/core/common/workflow_gates.py tests/unit/dpm/engine/test_engine_workflow_gates.py`,
+  `python -m mypy --config-file mypy.ini src/core/common/workflow_gates.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_workflow_gates.py -q`, and
+  `python -m radon cc src/core/common/workflow_gates.py -s`; the focused workflow-gate suite
+  reported 11 passed, and radon reports `_suitability_reasons` reduced from B(6) to A(4) with the
+  extracted issue helper at A(4).
+- Residual risk: this slice improves internal workflow-gate suitability reason maintainability
+  only. It does not change gate precedence, API contracts, suitability methodology,
+  policy-pack semantics, approval workflows, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal workflow gate maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-982: Workflow suitability reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the workflow suitability gate helper extraction, the checked-in quality reports
+  needed to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `334b4435+worktree`, record 821 Python files, 2642 test functions, keep service boundary
+  findings and router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the
+  current top-ten source hotspot list no longer includes `_suitability_reasons`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining wave source-analytics, projected
+  cash-FX intent, async payload, target-cash, workflow-decision query, risk-authority client,
+  outcome core-source, proof-pack governance, or advise-authority client hotspots, or certify
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

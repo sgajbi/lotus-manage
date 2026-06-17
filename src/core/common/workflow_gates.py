@@ -9,6 +9,7 @@ from src.core.models import (
     GateDecisionSummary,
     GateReason,
     RuleResult,
+    SuitabilityIssue,
     SuitabilityResult,
 )
 
@@ -53,6 +54,13 @@ class _GateRouteDecision:
     gate: _GateName
     next_step: _NextStep
     applies: _GateRoutePredicate
+
+
+@dataclass(frozen=True)
+class _SuitabilityIssueGateReason:
+    reason: GateReason
+    high_count: int
+    medium_count: int
 
 
 _GATE_ROUTE_PRECEDENCE: tuple[_GateRouteDecision, ...] = (
@@ -156,29 +164,43 @@ def _suitability_reasons(
     new_high = 0
     new_medium = 0
     for issue in suitability.issues:
-        if issue.status_change != "NEW":
+        issue_reason = _suitability_issue_reason(issue)
+        if issue_reason is None:
             continue
-        if issue.severity == "HIGH":
-            new_high += 1
-            reasons.append(
-                GateReason(
-                    reason_code="NEW_HIGH_SUITABILITY_ISSUE",
-                    severity="HIGH",
-                    source="SUITABILITY",
-                    details={"issue_id": issue.issue_id, "issue_key": issue.issue_key},
-                )
-            )
-        elif issue.severity == "MEDIUM":
-            new_medium += 1
-            reasons.append(
-                GateReason(
-                    reason_code="NEW_MEDIUM_SUITABILITY_ISSUE",
-                    severity="MEDIUM",
-                    source="SUITABILITY",
-                    details={"issue_id": issue.issue_id, "issue_key": issue.issue_key},
-                )
-            )
+        reasons.append(issue_reason.reason)
+        new_high += issue_reason.high_count
+        new_medium += issue_reason.medium_count
     return reasons, new_high, new_medium
+
+
+def _suitability_issue_reason(
+    issue: SuitabilityIssue,
+) -> _SuitabilityIssueGateReason | None:
+    if issue.status_change != "NEW":
+        return None
+    if issue.severity == "HIGH":
+        return _SuitabilityIssueGateReason(
+            reason=GateReason(
+                reason_code="NEW_HIGH_SUITABILITY_ISSUE",
+                severity="HIGH",
+                source="SUITABILITY",
+                details={"issue_id": issue.issue_id, "issue_key": issue.issue_key},
+            ),
+            high_count=1,
+            medium_count=0,
+        )
+    if issue.severity == "MEDIUM":
+        return _SuitabilityIssueGateReason(
+            reason=GateReason(
+                reason_code="NEW_MEDIUM_SUITABILITY_ISSUE",
+                severity="MEDIUM",
+                source="SUITABILITY",
+                details={"issue_id": issue.issue_id, "issue_key": issue.issue_key},
+            ),
+            high_count=0,
+            medium_count=1,
+        )
+    return None
 
 
 def evaluate_gate_decision(

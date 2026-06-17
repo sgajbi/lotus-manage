@@ -4,6 +4,8 @@ from typing import Literal
 from src.core.common.workflow_gates import (
     _select_gate_route,
     _sorted_gate_reasons,
+    _suitability_issue_reason,
+    _suitability_reasons,
     evaluate_gate_decision,
 )
 from src.core.models import (
@@ -49,21 +51,12 @@ def _diagnostics(
 
 
 def _high_suitability_result() -> SuitabilityResult:
-    issue = SuitabilityIssue(
+    issue = _suitability_issue(
         issue_id="SUIT_ISSUER_MAX",
         issue_key="ISSUER_MAX|X",
         dimension="ISSUER",
         severity="HIGH",
         status_change="NEW",
-        summary="Issuer concentration exceeded",
-        details={},
-        evidence=SuitabilityEvidence(
-            as_of="md_1",
-            snapshot_ids=SuitabilityEvidenceSnapshotIds(
-                portfolio_snapshot_id="pf_1",
-                market_data_snapshot_id="md_1",
-            ),
-        ),
     )
     return SuitabilityResult(
         summary=SuitabilitySummary(
@@ -75,6 +68,140 @@ def _high_suitability_result() -> SuitabilityResult:
         issues=[issue],
         recommended_gate="COMPLIANCE_REVIEW",
     )
+
+
+def _suitability_issue(
+    *,
+    issue_id: str,
+    issue_key: str,
+    dimension: Literal[
+        "CONCENTRATION",
+        "ISSUER",
+        "LIQUIDITY",
+        "GOVERNANCE",
+        "CASH",
+        "DATA_QUALITY",
+    ],
+    severity: Literal["LOW", "MEDIUM", "HIGH"],
+    status_change: Literal["NEW", "PERSISTENT", "RESOLVED"],
+) -> SuitabilityIssue:
+    return SuitabilityIssue(
+        issue_id=issue_id,
+        issue_key=issue_key,
+        dimension=dimension,
+        severity=severity,
+        status_change=status_change,
+        summary=f"{dimension} suitability issue",
+        details={},
+        evidence=SuitabilityEvidence(
+            as_of="md_1",
+            snapshot_ids=SuitabilityEvidenceSnapshotIds(
+                portfolio_snapshot_id="pf_1",
+                market_data_snapshot_id="md_1",
+            ),
+        ),
+    )
+
+
+def test_suitability_issue_reason_maps_new_high_and_medium_issues() -> None:
+    high_reason = _suitability_issue_reason(
+        _suitability_issue(
+            issue_id="SUIT_HIGH",
+            issue_key="ISSUER_MAX|X",
+            dimension="ISSUER",
+            severity="HIGH",
+            status_change="NEW",
+        )
+    )
+    medium_reason = _suitability_issue_reason(
+        _suitability_issue(
+            issue_id="SUIT_MEDIUM",
+            issue_key="CONCENTRATION_MAX|Y",
+            dimension="CONCENTRATION",
+            severity="MEDIUM",
+            status_change="NEW",
+        )
+    )
+
+    assert high_reason is not None
+    assert high_reason.reason.reason_code == "NEW_HIGH_SUITABILITY_ISSUE"
+    assert high_reason.high_count == 1
+    assert high_reason.medium_count == 0
+    assert medium_reason is not None
+    assert medium_reason.reason.reason_code == "NEW_MEDIUM_SUITABILITY_ISSUE"
+    assert medium_reason.high_count == 0
+    assert medium_reason.medium_count == 1
+
+
+def test_suitability_issue_reason_ignores_non_new_or_low_issues() -> None:
+    assert (
+        _suitability_issue_reason(
+            _suitability_issue(
+                issue_id="SUIT_PERSISTENT",
+                issue_key="ISSUER_MAX|X",
+                dimension="ISSUER",
+                severity="HIGH",
+                status_change="PERSISTENT",
+            )
+        )
+        is None
+    )
+    assert (
+        _suitability_issue_reason(
+            _suitability_issue(
+                issue_id="SUIT_LOW",
+                issue_key="MIN_TRADE|Z",
+                dimension="LIQUIDITY",
+                severity="LOW",
+                status_change="NEW",
+            )
+        )
+        is None
+    )
+
+
+def test_suitability_reasons_aggregates_new_issue_counts() -> None:
+    reasons, new_high, new_medium = _suitability_reasons(
+        SuitabilityResult(
+            summary=SuitabilitySummary(
+                new_count=3,
+                resolved_count=0,
+                persistent_count=1,
+                highest_severity_new="HIGH",
+            ),
+            issues=[
+                _suitability_issue(
+                    issue_id="SUIT_HIGH",
+                    issue_key="ISSUER_MAX|X",
+                    dimension="ISSUER",
+                    severity="HIGH",
+                    status_change="NEW",
+                ),
+                _suitability_issue(
+                    issue_id="SUIT_MEDIUM",
+                    issue_key="CONCENTRATION_MAX|Y",
+                    dimension="CONCENTRATION",
+                    severity="MEDIUM",
+                    status_change="NEW",
+                ),
+                _suitability_issue(
+                    issue_id="SUIT_PERSISTENT",
+                    issue_key="ISSUER_MAX|X",
+                    dimension="ISSUER",
+                    severity="HIGH",
+                    status_change="PERSISTENT",
+                ),
+            ],
+            recommended_gate="COMPLIANCE_REVIEW",
+        )
+    )
+
+    assert [reason.reason_code for reason in reasons] == [
+        "NEW_HIGH_SUITABILITY_ISSUE",
+        "NEW_MEDIUM_SUITABILITY_ISSUE",
+    ]
+    assert new_high == 1
+    assert new_medium == 1
 
 
 def test_workflow_gate_blocked_dominates() -> None:
