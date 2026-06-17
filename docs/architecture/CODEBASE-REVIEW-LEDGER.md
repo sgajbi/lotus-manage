@@ -24569,3 +24569,57 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-977: Proof-pack turnover and cost payload helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/proof_packs/builder.py` and
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`.
+- Bank-buyable control area: architecture, proof-pack evidence supportability, and testing.
+- Finding: `_turnover_and_cost_section_payload` combined selected-alternative metric extraction,
+  missing-metric degradation, transaction-cost authority context merging, reason-code
+  de-duplication, and section-state precedence in one helper. That made the proof-pack turnover
+  and cost section harder to inspect even though each rule is deterministic and auditable.
+- Action: extracted helpers for selected construction comparison metrics, base turnover/cost
+  supportability posture, missing transaction-cost context payloads, and source-owned
+  transaction-cost context payloads; added direct tests for selected-metric projection,
+  authority-context-missing degradation, and preservation of missing-metric reason codes when
+  source-owned transaction-cost evidence is present.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m ruff format --check src/core/proof_packs/builder.py tests/unit/dpm/proof_packs/test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src/core/proof_packs/builder.py`,
+  `python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py -q`, and
+  `python -m radon cc src/core/proof_packs/builder.py -s`; the focused proof-pack builder suite
+  reported 104 passed, and radon reports `_turnover_and_cost_section_payload` reduced from B(6)
+  to A(2) with the extracted helpers at A grade.
+- Residual risk: this slice improves proof-pack turnover and cost section maintainability only. It
+  does not change proof-pack API contracts, construction alternative generation, source-owned
+  transaction-cost methodology, source analytics extraction, report rendering, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack section
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-978: Proof-pack turnover and cost reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the proof-pack turnover and cost helper extraction, the checked-in quality reports
+  needed to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `91775b44`, record 821 Python files, 2636 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `_turnover_and_cost_section_payload`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining rebalance-intent, workflow-gate, wave
+  source-analytics, async payload, target-cash, workflow-decision query, risk-authority client,
+  outcome core-source, or proof-pack governance hotspots, or certify global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
