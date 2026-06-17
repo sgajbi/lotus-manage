@@ -23842,3 +23842,25 @@ and improves internal transaction-cost source posture maintainability only.
   external API contracts, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-resolution supportability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-949: Source resolver hotspot reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the risk-event, PM-book, and CIO model-change source resolver helper extractions,
+  the checked-in quality reports needed to reflect the updated branch head, test-function count,
+  and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `05c33ddc`, record 820 Python files, 2598 test functions, keep service boundary findings and
+  router infrastructure imports at 0, and the current top-ten source hotspot list no longer
+  includes `_resolve_risk_event_portfolios`, `resolve_pm_book_portfolios`, or
+  `resolve_cio_model_change_portfolios`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining PM-quality/rebalance/wave
+  campaign/search/OpenAPI/observability hotspots, or certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
