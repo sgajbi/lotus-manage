@@ -24516,3 +24516,56 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-975: Core eligibility shelf mapping helpers
+
+- Date: 2026-06-17
+- Scope: `src/core/dpm_source_context.py` and `tests/unit/dpm/core/test_dpm_source_context.py`.
+- Bank-buyable control area: architecture, source-data contract mapping, and testing.
+- Finding: `build_shelf_entries_from_core_eligibility` combined core supportability gating,
+  found-record filtering, engine shelf-entry construction, default settlement behavior, and
+  string-normalized eligibility attributes in one mapper. That made the core-to-manage product
+  shelf handoff harder to inspect even though filtering and attribute assembly are pure,
+  deterministic source-data mapping rules.
+- Action: extracted helpers for found eligibility-record selection, shelf-entry attribute
+  assembly, and single-record `ShelfEntry` construction; added direct tests for found-record
+  filtering, default asset-class and settlement-day behavior, restriction-code joining, nullable
+  attribute normalization, and preserved boolean/string eligibility attributes.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m ruff check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m ruff format --check src/core/dpm_source_context.py tests/unit/dpm/core/test_dpm_source_context.py`,
+  `python -m mypy --config-file mypy.ini src/core/dpm_source_context.py`,
+  `python -m pytest tests/unit/dpm/core/test_dpm_source_context.py -q`, and
+  `python -m radon cc src/core/dpm_source_context.py -s`; the focused source-context suite
+  reported 29 passed, and radon reports `build_shelf_entries_from_core_eligibility` reduced from
+  B(6) to A(4) with the extracted helpers at A grade.
+- Residual risk: this slice improves core eligibility shelf mapping maintainability only. It does
+  not change the core sourcing HTTP client, eligibility product contract, shelf semantics,
+  construction engine behavior, source-lineage semantics, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-data mapper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-976: Core eligibility shelf mapping reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the core eligibility shelf mapping helper extraction, the checked-in quality
+  reports needed to reflect the updated branch head, test-function count, and current source
+  hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `d129b616`, record 821 Python files, 2633 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `build_shelf_entries_from_core_eligibility`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining proof-pack, rebalance-intent,
+  workflow-gate, wave source-analytics, async payload, target-cash, workflow-decision query,
+  risk-authority client, or outcome core-source hotspots, or certify global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

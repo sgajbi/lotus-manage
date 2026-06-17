@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T05:51:22+00:00`
+- Generated at: `2026-06-17T06:10:23+00:00`
 
-- Report source snapshot: `b992f8f6`
+- Report source snapshot: `d129b616`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_shelf_entries_from_core_eligibility | src/core/dpm_source_context.py | 6 | 35 |
-| 2 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
-| 3 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
-| 4 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
-| 5 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
-| 6 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
-| 7 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
-| 8 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
-| 9 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 10 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
+| 1 | _turnover_and_cost_section_payload | src/core/proof_packs/builder.py | 6 | 35 |
+| 2 | _tax_budget_limited_quantity_from_lots | src/core/rebalance/intents.py | 6 | 34 |
+| 3 | _suitability_reasons | src/core/common/workflow_gates.py | 6 | 32 |
+| 4 | _source_analytics_from_alternative | src/core/waves/source_analytics.py | 6 | 32 |
+| 5 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
+| 6 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
+| 7 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
+| 8 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
+| 9 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
+| 10 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
 
 ### Most Complex Current Test Functions
 

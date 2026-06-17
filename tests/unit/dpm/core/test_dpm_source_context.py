@@ -12,7 +12,10 @@ from src.core.dpm_source_context import (
     _core_coverage_fx_rates,
     _core_coverage_prices,
     _core_tax_lot_to_engine_lot,
+    _eligible_core_eligibility_records,
     _portfolio_position_with_tax_lots,
+    _shelf_entry_attributes_from_core_eligibility,
+    _shelf_entry_from_core_eligibility,
     build_batch_rebalance_request_from_core_context,
     build_core_resolver_payload,
     build_market_data_snapshot_from_core_coverage,
@@ -409,6 +412,94 @@ def test_core_instrument_eligibility_accepts_rfc087_record_aliases():
         "EQ_US_AAPL",
         "FO_PRIV_PRIVATE_CREDIT_A",
     ]
+
+
+def test_eligible_core_eligibility_records_keeps_only_found_records():
+    payload = _core_eligibility_payload()
+    payload["eligibility"].append(
+        {
+            "security_id": "UNKNOWN_SEC",
+            "found": False,
+            "eligibility_status": "UNKNOWN",
+            "product_shelf_status": "SUSPENDED",
+            "buy_allowed": False,
+            "sell_allowed": False,
+            "restriction_reason_codes": ["ELIGIBILITY_PROFILE_MISSING"],
+            "settlement_days": None,
+            "settlement_calendar_id": None,
+            "quality_status": "MISSING",
+        }
+    )
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(payload)
+
+    records = _eligible_core_eligibility_records(response)
+
+    assert [record.security_id for record in records] == [
+        "EQ_US_AAPL",
+        "FO_PRIV_PRIVATE_CREDIT_A",
+    ]
+
+
+def test_shelf_entry_from_core_eligibility_applies_defaults_and_attributes():
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(
+        _core_eligibility_payload(
+            eligibility=[
+                {
+                    "security_id": "ALT_FUND",
+                    "found": True,
+                    "eligibility_status": "SELL_ONLY",
+                    "product_shelf_status": "SELL_ONLY",
+                    "buy_allowed": False,
+                    "sell_allowed": True,
+                    "restriction_reason_codes": ["REVIEW_REQUIRED", "MIN_HOLD"],
+                    "settlement_days": None,
+                    "settlement_calendar_id": None,
+                    "issuer_id": "ALT_ISSUER",
+                    "asset_class": None,
+                    "country_of_risk": None,
+                    "source_record_id": None,
+                    "quality_status": "accepted",
+                }
+            ],
+            supportability={
+                "state": "READY",
+                "reason": "INSTRUMENT_ELIGIBILITY_READY",
+                "requested_count": 1,
+                "found_count": 1,
+                "missing_security_ids": [],
+            },
+        )
+    )
+
+    shelf_entry = _shelf_entry_from_core_eligibility(response.eligibility[0])
+
+    assert shelf_entry.instrument_id == "ALT_FUND"
+    assert shelf_entry.status == "SELL_ONLY"
+    assert shelf_entry.asset_class == "UNKNOWN"
+    assert shelf_entry.issuer_id == "ALT_ISSUER"
+    assert shelf_entry.settlement_days == 2
+    assert shelf_entry.attributes == {
+        "buy_allowed": "false",
+        "sell_allowed": "true",
+        "eligibility_status": "SELL_ONLY",
+        "country_of_risk": "",
+        "settlement_calendar_id": "",
+        "ultimate_parent_issuer_id": "",
+        "restriction_reason_codes": "REVIEW_REQUIRED,MIN_HOLD",
+        "source_record_id": "",
+    }
+
+
+def test_shelf_entry_attributes_from_core_eligibility_normalizes_string_values():
+    response = DpmCoreInstrumentEligibilityBulkResponse.model_validate(_core_eligibility_payload())
+
+    attributes = _shelf_entry_attributes_from_core_eligibility(response.eligibility[0])
+
+    assert attributes["buy_allowed"] == "true"
+    assert attributes["country_of_risk"] == "US"
+    assert attributes["settlement_calendar_id"] == "US_NYSE"
+    assert attributes["ultimate_parent_issuer_id"] == "APPLE_PARENT"
+    assert attributes["source_record_id"] == "AAPL-elig-20260401"
 
 
 def test_core_instrument_eligibility_rejects_missing_supportability():
