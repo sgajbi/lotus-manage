@@ -24623,3 +24623,55 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-979: Tax-budget lot-scan stop helper
+
+- Date: 2026-06-17
+- Scope: `src/core/rebalance/intents.py` and
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`.
+- Bank-buyable control area: architecture, tax-aware rebalance maintainability, and testing.
+- Finding: `_tax_budget_limited_quantity_from_lots` combined tax-lot allowance lookup, depleted-lot
+  continuation, exhausted-budget stop handling, accumulator mutation, remaining-quantity updates,
+  and partial-allowance stop handling in one loop. That made the tax-aware lot-scan branch policy
+  harder to inspect even though each stop rule is deterministic.
+- Action: extracted `_tax_budget_allowance_stops_lot_scan` to name the depleted, exhausted, and
+  partial-allowance stop policy; added direct tests for depleted remaining quantity, empty-lot
+  continuation, zero allowance, partial allowance, and full-allowance continuation while preserving
+  existing tax-budget sell-quantity behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m ruff format --check src/core/rebalance/intents.py tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `python -m mypy --config-file mypy.ini src/core/rebalance/intents.py`,
+  `python -m pytest tests/unit/dpm/engine/test_engine_safety_rules.py -q`, and
+  `python -m radon cc src/core/rebalance/intents.py -s`; the focused safety-rule suite reported
+  39 passed, and radon reports `_tax_budget_limited_quantity_from_lots` reduced from B(6) to A(5)
+  with the extracted stop helper at A(3).
+- Residual risk: this slice improves internal rebalance tax-budget lot-scan maintainability only.
+  It does not change tax methodology, API contracts, execution routing, source-lot ordering,
+  portfolio-memory evidence, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260617-980: Tax-budget lot-scan reports refreshed
+
+- Date: 2026-06-17
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the tax-budget lot-scan helper extraction, the checked-in quality reports needed
+  to reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts/engineering_health_report.py`; the refreshed reports are sourced from
+  `1c94bb1d+worktree`, record 821 Python files, 2639 test functions, keep service boundary
+  findings and router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the
+  current top-ten source hotspot list no longer includes `_tax_budget_limited_quantity_from_lots`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining workflow-gate, wave
+  source-analytics, async payload, target-cash, workflow-decision query, risk-authority client,
+  outcome core-source, or proof-pack governance hotspots, or certify global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
