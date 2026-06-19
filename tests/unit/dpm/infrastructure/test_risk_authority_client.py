@@ -14,8 +14,12 @@ from src.infrastructure.risk_authority import (
 from src.infrastructure.risk_authority.client import (
     _concentration_breach_count,
     _concentration_breach_inputs,
+    _concentration_hhi_delta,
     _concentration_reason_codes,
     _concentration_response_sections,
+    _concentration_source_product_version,
+    _concentration_source_system,
+    _issuer_coverage_status_text,
     _post_with_retries,
     _risk_event_affected_portfolios,
     _risk_event_cohort_from_response,
@@ -237,6 +241,24 @@ def test_concentration_response_sections_default_missing_supportability() -> Non
     assert sections.supportability_reason == "calculation_supportability_missing"
     assert sections.request_fingerprint == ""
     assert sections.issuer_coverage_status is None
+
+
+def test_concentration_source_identity_helpers_default_missing_metadata() -> None:
+    assert _concentration_source_system({}) == "lotus-risk"
+    assert _concentration_source_system({"source_service": " lotus-risk-authority "}) == (
+        "lotus-risk-authority"
+    )
+    assert _concentration_source_product_version({}) == "v1"
+    assert _concentration_source_product_version({"methodology_version": " concentration.v3 "}) == (
+        "concentration.v3"
+    )
+
+
+def test_concentration_metric_helpers_preserve_source_values() -> None:
+    assert _concentration_hhi_delta({"hhi_delta": "125.50"}) == Decimal("125.50")
+    assert _concentration_hhi_delta({}) == Decimal("0")
+    assert _issuer_coverage_status_text(" partial ") == "partial"
+    assert _issuer_coverage_status_text(None) is None
 
 
 def test_concentration_reason_codes_project_supportability_coverage_and_breaches() -> None:

@@ -25019,3 +25019,36 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream runtime behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal async execution parser hardening
   with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-993: Risk concentration source identity helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/risk_authority/client.py`,
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`, and `quality/`.
+- Bank-buyable control area: architecture, source-authority boundary clarity, and testing.
+- Finding: `_risk_context_from_concentration_response` mixed lotus-risk source identity,
+  methodology-version fallback, request-fingerprint preservation, HHI-delta projection, issuer
+  coverage projection, breach counting, and reason-code assembly in one infrastructure adapter
+  hotspot. That made source-owned concentration evidence mapping harder to review.
+- Action: extracted concentration source-system, source-product-version, HHI-delta, and issuer
+  coverage mapping helpers, reused the existing optional-text normalizer for source identity, and
+  added direct tests for default/trimmed source identity, default/trimmed methodology version,
+  HHI-delta projection, and optional issuer coverage posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\risk_authority\client.py tests\unit\dpm\infrastructure\test_risk_authority_client.py`,
+  `python -m ruff check src\infrastructure\risk_authority\client.py tests\unit\dpm\infrastructure\test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\risk_authority\client.py`,
+  `python -m pytest tests\unit\dpm\infrastructure\test_risk_authority_client.py -q`,
+  `python -m radon cc src\infrastructure\risk_authority\client.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused risk-authority suite reported 35
+  passed. Radon reports `_risk_context_from_concentration_response` reduced from B(6) to A(1),
+  with the extracted source mapping helpers at A(1) to A(2). The refreshed complexity report is
+  sourced from `dbe60f67+worktree` and the current top-ten source hotspot list no longer includes
+  `_risk_context_from_concentration_response`.
+- Residual risk: this slice improves risk-authority concentration adapter maintainability only. It
+  does not change lotus-risk methodology, concentration thresholds, request routing, retry/timeout
+  behavior, source-owned response contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter
+  maintainability hardening with no operator-facing contract change.
