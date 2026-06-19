@@ -27807,3 +27807,51 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance already cover this behavior-preserving module extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1304: Proof-pack run-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/run_sections.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: source run evidence, diagnostics posture, policy result evidence,
+  liquidity/cash supportability, FX funding supportability, and behavior-preserving source-file
+  hotspot burn-down.
+- Finding: after decision-artifact extraction, `src/core/proof_packs/builder.py` still carried
+  source run state, trade intent, after-state, liquidity/cash, FX funding, currency-overlay
+  fallback, drift impact, tax impact, and rule-result payload builders inline with orchestration.
+  These functions form a cohesive run-evidence section family and are directly characterized by
+  focused proof-pack builder tests.
+- Action: moved run-state, diagnostics, policy, and rule-result section payload builders into
+  `src/core/proof_packs/run_sections.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved missing trade-intent blocking, after-state blocked
+  reason codes, cash ladder breach handling, missing FX-pair handling, currency-overlay fallback,
+  direct-run drift fallback, missing tax-impact degradation, hard-rule blocking precedence, and
+  rule-result fail metrics. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,308 LOC to 1,127 LOC, the extracted
+  `run_sections.py` is 206 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains above 1,000 LOC, but the major
+  evidence-section families are now isolated. Remaining safe slices should focus on orchestration
+  helpers, source readiness/supportability, or proof-pack identity only where cohesive tests and
+  deterministic gate evidence keep the blast radius controlled.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
