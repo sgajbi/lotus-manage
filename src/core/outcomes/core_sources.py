@@ -797,28 +797,47 @@ def _transaction_dimension(measure: TransactionLedgerOutcomeMeasure) -> OutcomeD
 
 
 def _core_metadata(response: dict[str, Any]) -> _CoreSourceMetadata:
-    product_name = _read_required_text(response.get("product_name"), "product_name")
-    product_version = _read_required_text(response.get("product_version"), "product_version")
-    as_of_date = _read_required_text(
+    return {
+        "product_name": _core_product_name(response),
+        "product_version": _core_product_version(response),
+        "as_of_date": _core_as_of_date(response),
+        "observed_at": _core_observed_at(response),
+        "data_quality_status": _core_data_quality_status(response),
+        "content_hash": _core_content_hash(response),
+    }
+
+
+def _core_product_name(response: dict[str, Any]) -> str:
+    return _read_required_text(response.get("product_name"), "product_name")
+
+
+def _core_product_version(response: dict[str, Any]) -> str:
+    return _read_required_text(response.get("product_version"), "product_version")
+
+
+def _core_as_of_date(response: dict[str, Any]) -> str:
+    return _read_required_text(
         response.get("as_of_date") or response.get("resolved_as_of_date"),
         "as_of_date",
     )
-    generated_at = _read_text(response.get("generated_at"))
+
+
+def _core_observed_at(response: dict[str, Any]) -> str | None:
     latest_evidence = _read_text(response.get("latest_evidence_timestamp"))
-    data_quality_status = (_read_text(response.get("data_quality_status")) or "UNKNOWN").upper()
-    content_hash = (
+    generated_at = _read_text(response.get("generated_at"))
+    return latest_evidence or generated_at
+
+
+def _core_data_quality_status(response: dict[str, Any]) -> str:
+    return (_read_text(response.get("data_quality_status")) or "UNKNOWN").upper()
+
+
+def _core_content_hash(response: dict[str, Any]) -> str | None:
+    return (
         _read_text(response.get("source_batch_fingerprint"))
         or _read_text(response.get("snapshot_id"))
         or _read_text(response.get("correlation_id"))
     )
-    return {
-        "product_name": product_name,
-        "product_version": product_version,
-        "as_of_date": as_of_date,
-        "observed_at": latest_evidence or generated_at,
-        "data_quality_status": data_quality_status,
-        "content_hash": content_hash,
-    }
 
 
 def _source_id(

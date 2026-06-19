@@ -25340,3 +25340,40 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is internal API-boundary maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1002: Core source metadata projection helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned outcome evidence metadata, lineage fallback semantics,
+  and testing.
+- Finding: `_core_metadata` combined required source-product validation, as-of-date fallback,
+  observed-at fallback, data-quality defaulting, and content-hash fallback in one B-grade shared
+  lotus-core outcome adapter helper. That made source-evidence metadata semantics harder to audit
+  across cash, tax, cashflow, execution acknowledgement, and transaction adapters.
+- Action: extracted explicit helpers for core product name, product version, as-of date,
+  observed-at timestamp, data-quality status, and content hash; added direct tests for resolved
+  as-of-date fallback, generated-at fallback, `UNKNOWN` data-quality default, and snapshot-id hash
+  fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\core_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\core_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused core
+  realized outcome source suite reported 51 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_core_metadata` reduced from B(6) to A(1), with extracted metadata helpers at A(1) to A(3).
+  The refreshed complexity report is sourced from `76b3d524+worktree` and the current top-ten
+  source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves lotus-core realized outcome metadata maintainability only. It
+  does not change source-product contracts, value extraction, source-id semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-evidence adapter
+  maintainability hardening with no operator-facing contract change.

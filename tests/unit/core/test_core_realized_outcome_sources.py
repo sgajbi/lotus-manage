@@ -16,7 +16,11 @@ from src.core.outcomes import (
 from src.core.outcomes.core_sources import (
     _cash_movement_bucket_matches,
     _cash_movement_buckets,
+    _core_as_of_date,
+    _core_content_hash,
+    _core_data_quality_status,
     _core_metadata,
+    _core_observed_at,
     _currency_total_matches,
     _currency_total_rows,
     _execution_acknowledgement_posture,
@@ -793,6 +797,26 @@ def test_execution_acknowledgement_helpers_build_deterministic_identity_and_reas
         in reason_codes
     )
     assert "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_OMS_ACKNOWLEDGEMENT" in reason_codes
+
+
+def test_core_metadata_helpers_preserve_fallback_order() -> None:
+    response = _external_order_execution_acknowledgement_response()
+    response.pop("as_of_date")
+    response["resolved_as_of_date"] = "2026-05-07"
+    response["generated_at"] = "2026-05-07T08:00:00Z"
+    response.pop("latest_evidence_timestamp")
+    response.pop("data_quality_status")
+    response.pop("source_batch_fingerprint")
+    response["snapshot_id"] = "snapshot-fallback"
+
+    metadata = _core_metadata(response)
+
+    assert _core_as_of_date(response) == "2026-05-07"
+    assert _core_observed_at(response) == "2026-05-07T08:00:00Z"
+    assert _core_data_quality_status(response) == "UNKNOWN"
+    assert _core_content_hash(response) == "snapshot-fallback"
+    assert metadata["as_of_date"] == "2026-05-07"
+    assert metadata["content_hash"] == "snapshot-fallback"
 
 
 def test_execution_acknowledgement_helpers_default_empty_selector_identity() -> None:
