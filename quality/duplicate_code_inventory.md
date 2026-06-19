@@ -39,24 +39,6 @@
 
 ### Group 4
 
-- Fingerprint: `97f605e668b3d05093526f1e085ef07f8ed6b806e764a84b6ee5e2886e810cf6`
-
-| File | Function | Line | Lines |
-| --- | --- | --- | --- |
-| `src/infrastructure/rebalance_runs/in_memory.py` | `create_operation` | 509 | 10 |
-| `src/infrastructure/rebalance_runs/in_memory.py` | `update_operation` | 520 | 10 |
-
-### Group 5
-
-- Fingerprint: `99c928e5d1a1afc97bb9eaf92df49d4e16bc841f67d00b1e2eb0dbe82e5be389`
-
-| File | Function | Line | Lines |
-| --- | --- | --- | --- |
-| `src/infrastructure/rebalance_runs/postgres.py` | `create_operation` | 301 | 9 |
-| `src/infrastructure/rebalance_runs/postgres.py` | `update_operation` | 311 | 9 |
-
-### Group 6
-
 - Fingerprint: `de1163a135da66d809e4c3d60216165ef9c6080e3e6873225f1705165c9cd8d0`
 
 | File | Function | Line | Lines |

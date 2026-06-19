@@ -27404,3 +27404,45 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and duplicate-gate guidance cover this behavior-preserving common-helper
   consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1052: Rebalance-run operation persistence duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py`,
+  `src/infrastructure/rebalance_runs/postgres.py`, focused run-repository backend tests, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: async operation persistence correctness, repository conflict
+  semantics, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical `create_operation` and
+  `update_operation` bodies in both the in-memory and Postgres run repository backends. The
+  duplicated code preserved correct behavior, but it split operation correlation-conflict handling
+  and upsert semantics across separate create/update entry points in each backend.
+- Action: extracted backend-local shared helpers: `_save_operation` in the in-memory repository for
+  correlation conflict detection plus operation/correlation index persistence, and
+  `_create_or_update_operation` in the Postgres repository for conflict-wrapped upsert handling.
+  Kept the public `create_operation` and `update_operation` repository methods unchanged.
+  Regenerated the duplicate implementation baseline and inventory, reducing accepted exact
+  duplicate groups from 6 to 4 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_dpm_postgres_repository_scaffold.py -q`,
+  `python -m ruff format src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m ruff format --check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused run repository backend suites reported 59 passed. The duplicate
+  implementation gate now reports 4 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in campaign definition event recording, workflow
+  correlation routes, and RFC evidence script request helpers. The campaign definition groups are
+  now the largest duplicate hotspot and need a separate persistence-focused slice.
+- Wiki decision: no wiki source change required; this is internal repository maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving repository-helper
+  consolidation pattern.
