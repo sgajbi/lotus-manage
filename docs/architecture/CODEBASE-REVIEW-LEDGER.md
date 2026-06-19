@@ -29421,3 +29421,76 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2221: Core outcome source adapter modularization
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `src/core/outcomes/core_source_common.py`,
+  `src/core/outcomes/core_source_execution.py`, focused lotus-core realized outcome adapter tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC-0042 realized outcome evidence sourced from `lotus-core`
+  `HoldingsAsOf`, `TransactionLedgerWindow`, `PortfolioCashflowProjection`,
+  `PortfolioRealizedTaxSummary`, `PortfolioCashMovementSummary`, and
+  `ExternalOrderExecutionAcknowledgement` products.
+- Quality intake: `src/core/outcomes/core_sources.py` is the existing Manage-owned adapter facade
+  for source-owned lotus-core outcome evidence. `lotus-core` remains the business source of truth
+  for cash balances, transaction rows, cashflow projections, realized tax totals, cash movement
+  buckets, market/source metadata, and external execution acknowledgement posture; Manage only wraps
+  source-emitted evidence into bounded `DpmRealizedSourceSnapshot` values and fail-closed posture.
+  The code path is internal domain logic consumed by outcome-review assembly and tests, not a router
+  or direct API contract surface. The closest meaningful tests are
+  `tests/unit/core/test_core_realized_outcome_sources.py` and the documentation current-state guard
+  that records the realized-source slice. Repo-native validation uses focused pytest, ruff, source
+  mypy, architecture, duplicate-implementation, complexity, and generated-report freshness checks.
+  The measured quality signal is moving the B-rated, 927 LOC `core_sources.py` hotspot to A-rated
+  maintainability while preserving all public adapter imports, fail-closed source posture, source-id
+  construction, reason codes, value/unit selection, and helper compatibility.
+- Finding: `core_sources.py` mixed three responsibilities: common lotus-core response metadata and
+  parsing helpers, the external execution acknowledgement adapter, and cash/transaction/tax/cashflow
+  realized-source adapters. The common helpers and execution acknowledgement adapter are cohesive
+  extraction seams with direct behavior coverage and stable import callers.
+- Action: moved common source parsing, metadata, reason-code, identifier, quality-state, and decimal
+  parsing helpers into `src/core/outcomes/core_source_common.py`; moved the external execution
+  acknowledgement adapter and posture helpers into `src/core/outcomes/core_source_execution.py`;
+  kept `src/core/outcomes/core_sources.py` as the compatibility facade that re-exports existing
+  public adapters and private helper names used by current tests. No API contract, OpenAPI,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py tests\unit\test_documentation_current_state.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py`,
+  `python -m radon mi src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused lotus-core outcome-source tests
+  reported 51 passed; the combined focused outcome-source plus documentation current-state run
+  reported 79 passed. `src/core/outcomes/core_sources.py` moved from 927 LOC with B
+  maintainability 13.69 to 718 LOC with A maintainability 23.93 after the compatibility `__all__`
+  declaration; `src/core/outcomes/core_source_common.py` is 148 LOC with A maintainability 37.13,
+  and `src/core/outcomes/core_source_execution.py` is 139 LOC with A maintainability 53.04. The
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regression, static/type checks, focused source-adapter behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining B-rated source hotspots include `src/core/portfolio_memory/models.py`,
+  `src/core/pm_quality/scoring.py`, `src/core/pm_quality/models.py`,
+  `src/core/construction/models.py`, `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance/intents.py`, `src/core/waves/campaign_assignment_tasks.py`, and
+  `src/infrastructure/pm_quality/postgres.py`. Future slices should continue to pick cohesive,
+  directly tested behavior families rather than splitting model files or persistence code on size
+  alone.
+- Wiki decision: no wiki source change required; this is internal outcome-source modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement guidance already require measured, deterministic, behavior-preserving slices;
+  no platform skill-source change or bootstrap sync is needed for this repository-local slice.
