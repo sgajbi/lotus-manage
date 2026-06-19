@@ -14,7 +14,7 @@
 
 The following commands are active repository gates:
 
-- `make check`
+- `make static-quality-gates`
   - `python -m ruff check .`
   - `python -m ruff format --check .`
   - `python scripts/check_monetary_float_usage.py`
@@ -34,17 +34,21 @@ The following commands are active repository gates:
     action references, unexpected workflow permissions, and missing blocking quality-report checks)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
+
+- `make check`
+  - everything in `make static-quality-gates`
   - `python -m pytest tests/unit`
 
 - `make ci`
-  - everything in `make check`
+  - everything in `make static-quality-gates`
   - `make migration-smoke`
   - full suite with coverage gate (`test-all`, coverage fail-under 99%)
   - `make security-audit`
 
 - `make ci-local`
-  - repository lint/typecheck/build/runner sequence for unit/integration/e2e
-  - matrix-independent full-path smoke for local parity
+  - everything in `make static-quality-gates`
+  - `python -m pip check`
+  - matrix-style unit/integration/e2e coverage files and combined 99% coverage gate
 
 ## GitHub CI Lanes
 

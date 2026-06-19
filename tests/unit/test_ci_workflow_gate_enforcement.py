@@ -28,6 +28,23 @@ QUALITY_GATE_NAMES = [
     "Dependency Hygiene Gate",
     "Dead Code Gate",
 ]
+STATIC_QUALITY_GATE_TARGETS = {
+    "lint",
+    "no-alias-gate",
+    "typecheck",
+    "typecheck-tests-critical",
+    "openapi-gate",
+    "api-vocabulary-gate",
+    "service-boundary-gate",
+    "router-infrastructure-gate",
+    "mesh-contract-validate",
+    "architecture-gate",
+    "complexity-gate",
+    "dependency-hygiene-gate",
+    "dead-code-gate",
+    "workflow-policy-gate",
+    "quality-report-gate",
+}
 
 
 def _step_block(workflow_text: str, gate_name: str) -> str:
@@ -39,6 +56,27 @@ def _step_block(workflow_text: str, gate_name: str) -> str:
     return workflow_text[start:next_step]
 
 
+def _make_target_prerequisites(makefile_text: str, target_name: str) -> list[str]:
+    lines = makefile_text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(f"{target_name}:"):
+            continue
+        parts = []
+        current = line.partition(":")[2].strip()
+        parts.append(current.rstrip("\\").strip())
+        if not current.endswith("\\"):
+            return " ".join(parts).split()
+        for continuation in lines[index + 1 :]:
+            if not continuation.strip():
+                break
+            current = continuation.strip()
+            parts.append(current.rstrip("\\").strip())
+            if not current.endswith("\\"):
+                break
+        return " ".join(parts).split()
+    raise AssertionError(f"missing Makefile target: {target_name}")
+
+
 def test_feature_pr_and_main_quality_gates_are_enforced() -> None:
     for workflow_path in ENFORCED_WORKFLOWS:
         workflow_text = workflow_path.read_text(encoding="utf-8")
@@ -48,6 +86,18 @@ def test_feature_pr_and_main_quality_gates_are_enforced() -> None:
                 f"{workflow_path.as_posix()} keeps {gate_name} advisory; "
                 "remediated quality gates must fail the lane."
             )
+
+
+def test_local_ci_targets_reuse_static_quality_gate_pack() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+
+    static_gates = set(_make_target_prerequisites(makefile_text, "static-quality-gates"))
+    assert static_gates == STATIC_QUALITY_GATE_TARGETS
+    assert "static-quality-gates" in _make_target_prerequisites(makefile_text, "check")
+    assert "static-quality-gates" in _make_target_prerequisites(makefile_text, "ci")
+    assert "static-quality-gates" in _make_target_prerequisites(makefile_text, "ci-local")
+    assert "test-all" in _make_target_prerequisites(makefile_text, "ci")
+    assert "security-audit" in _make_target_prerequisites(makefile_text, "ci")
 
 
 def test_artifact_workflows_opt_into_node24_action_runtime() -> None:

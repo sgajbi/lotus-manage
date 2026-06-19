@@ -26669,3 +26669,55 @@ and improves internal transaction-cost source posture maintainability only.
   repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. The executable workflow policy gate is the durable
   future-agent guardrail for this recurring CI-governance pattern.
+
+## BACKEND-REVIEW-20260619-1036: Local CI static-gate parity
+
+- Date: 2026-06-19
+- Scope: `Makefile`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: local CI proof fidelity, PR Merge Gate parity, static quality
+  enforcement, and future-regression prevention for refactor slices before they reach GitHub.
+- Finding: `make check` included the remediated static quality gates, and PR Merge Gate enforced
+  critical test typecheck, architecture, complexity, dependency-hygiene, dead-code, workflow
+  policy, and quality-report freshness checks. `make ci` and `make ci-local`, however, did not
+  share one canonical static gate pack, so a future local PR-proof run could omit active static
+  gates that GitHub would later enforce.
+- Action: introduced `static-quality-gates` as the single Make target for lint, no-alias,
+  typecheck, critical-test typecheck, OpenAPI, API vocabulary, service-boundary,
+  router-infrastructure, mesh-contract, architecture, complexity, dependency-hygiene, dead-code,
+  workflow-policy, and quality-report freshness checks. Rewired `make check`, `make ci`, and
+  `make ci-local` to depend on that shared target, removed duplicated late `ci-local` gate calls,
+  and added a focused unit test that pins the shared static-gate dependency and the `ci` coverage
+  plus security-audit contract. Updated CI gate documentation and quality scorecard wording, then
+  regenerated reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\workflow_policy_gate.py`,
+  `make -n check`,
+  `make -n ci`,
+  `make -n ci-local`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 18
+  passed. The `make -n` evidence shows `check`, `ci`, and `ci-local` all execute the shared
+  static gate pack; `ci` still executes migration smoke, full coverage, and security audit; and
+  `ci-local` still executes matrix-style unit/integration/e2e coverage plus combined coverage.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice aligns local static-gate parity. It does not run the full heavyweight
+  `make ci` locally in this turn, add local actionlint binary execution, or inspect live GitHub
+  branch-protection settings.
+- Wiki decision: no wiki source change required; this is internal CI and repo-local quality-gate
+  documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The shared Make target plus unit test are the
+  durable future-agent guardrail for local CI parity.

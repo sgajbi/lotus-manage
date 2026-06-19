@@ -613,6 +613,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "`make workflow-policy-gate` blocks unpinned action refs, permission creep, and removal of blocking quality-report checks.",
         ],
         [
+            "Local CI parity",
+            "Active gate",
+            "`make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates.",
+        ],
+        [
             "Dead code",
             "Active gate",
             "`make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output.",
