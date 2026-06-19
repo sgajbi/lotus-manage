@@ -26772,3 +26772,59 @@ and improves internal transaction-cost source posture maintainability only.
   and PR template are the durable future-agent guidance; a broader Lotus-wide skill/context update
   remains a possible platform-level follow-up if the same PR-evidence drift pattern is found across
   other repositories.
+
+## BACKEND-REVIEW-20260619-1038: Shared coverage gate parity
+
+- Date: 2026-06-19
+- Scope: `scripts/coverage_gate.py`, `Makefile`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `tests/unit/test_coverage_gate.py`,
+  `scripts/engineering_health_report.py`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: coverage enforcement consistency, local/GitHub CI parity, agent
+  default command quality, and prevention of ad hoc CI implementation drift.
+- Finding: combined coverage enforcement was active, but the implementation was duplicated between
+  `make ci-local` and the GitHub PR/Main workflows. An existing `scripts/coverage_gate.py` was
+  hard-coded to root-level coverage files and a fixed 99 percent threshold, while workflows used
+  inline `python -m coverage combine` and `coverage report` commands. Future agents could update
+  one path without the others, weakening the confidence that local PR proof and GitHub proof enforce
+  the same coverage policy.
+- Action: upgraded `scripts/coverage_gate.py` into the shared coverage enforcement command with
+  configurable coverage directory, repeated coverage-file arguments, and `COVERAGE_FAIL_UNDER`
+  support. Added `make coverage-gate`, rewired `make ci-local` to call it after unit/integration/e2e
+  coverage data generation, and rewired PR Merge Gate and Main Releasability to call the same script
+  against downloaded `coverage-data` artifacts. Extended `workflow_policy_gate.py` so blocking
+  workflows fail policy validation if they bypass `scripts/coverage_gate.py` or reintroduce ad hoc
+  coverage combine/report commands. Added tests for Makefile parity, workflow parity, policy-gate
+  rejection of ad hoc coverage commands, and coverage-gate missing-artifact diagnostics. Updated the
+  quality scorecard and CI-gate documentation to make shared coverage parity visible.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `make -n coverage-gate`,
+  `make -n ci-local`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml']]; print('Parsed coverage workflows')"`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow, coverage-gate, and engineering-health suites
+  reported 25 passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary,
+  no-alias, service-boundary, router-infrastructure, workflow YAML parse, Makefile dry-run, and
+  whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice centralizes total coverage enforcement. It does not add changed-code
+  diff coverage, mutation testing, branch-protection introspection, or semantic test-quality
+  scoring for newly touched modules.
+- Wiki decision: no wiki source change required; this is internal CI command parity and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The shared coverage script, Make target, workflow
+  policy gate, and tests are the durable future-agent guardrail for this recurring CI pattern.

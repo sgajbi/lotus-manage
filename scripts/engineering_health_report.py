@@ -618,6 +618,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "`make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates.",
         ],
         [
+            "Coverage gate parity",
+            "Active gate",
+            "`scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate.",
+        ],
+        [
             "Dead code",
             "Active gate",
             "`make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output.",

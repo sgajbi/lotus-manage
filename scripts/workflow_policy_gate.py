@@ -12,6 +12,10 @@ BLOCKING_WORKFLOW_NAMES = {
     "pr-merge-gate.yml",
     "main-releasability.yml",
 }
+COVERAGE_WORKFLOW_NAMES = {
+    "pr-merge-gate.yml",
+    "main-releasability.yml",
+}
 EXPECTED_WORKFLOW_PERMISSIONS = {
     "feature-lane.yml": {"contents": "read"},
     "pr-merge-gate.yml": {"contents": "read"},
@@ -118,6 +122,26 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
     return []
 
 
+def coverage_gate_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    violations: list[str] = []
+    if "python scripts/coverage_gate.py --coverage-dir coverage-data" not in text:
+        violations.append(
+            f"{workflow_path.as_posix()}: blocking coverage workflow must use "
+            "scripts/coverage_gate.py"
+        )
+    if "python -m coverage combine coverage-data" in text or (
+        "python -m coverage report --fail-under" in text
+    ):
+        violations.append(
+            f"{workflow_path.as_posix()}: coverage enforcement must not duplicate ad hoc "
+            "coverage combine/report commands"
+        )
+    return violations
+
+
 def pr_template_policy_violations(template_path: Path = PR_TEMPLATE_PATH) -> list[str]:
     if not template_path.exists():
         return [f"{template_path.as_posix()}: PR template is missing"]
@@ -138,6 +162,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(permission_violations(workflow_path))
         violations.extend(action_reference_violations(workflow_path))
         violations.extend(quality_report_gate_violations(workflow_path))
+        violations.extend(coverage_gate_violations(workflow_path))
     violations.extend(pr_template_policy_violations())
     return violations
 

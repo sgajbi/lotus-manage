@@ -125,9 +125,7 @@ jobs:
           merge-multiple: true
           path: coverage-data
       - name: Enforce Coverage Floor
-        run: |
-          python -m coverage combine coverage-data
-          python -m coverage report --fail-under=${{ env.COVERAGE_FAIL_UNDER }}
+        run: python scripts/coverage_gate.py --coverage-dir coverage-data --fail-under ${{ env.COVERAGE_FAIL_UNDER }}
 
   docker-build:
     name: PR Merge Gate / Validate Docker Build

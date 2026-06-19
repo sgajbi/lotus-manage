@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-19T07:01:43+00:00`
+- Generated at: `2026-06-19T07:06:21+00:00`
 
-- Report source snapshot: `8d38542b+worktree`
+- Report source snapshot: `856412f2+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -20,6 +20,7 @@
 | Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance. |
 | Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, removal of blocking quality-report checks, and PR evidence drift. |
 | Local CI parity | Active gate | `make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates. |
+| Coverage gate parity | Active gate | `scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate. |
 | Dead code | Active gate | `make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output. |
 | Dependency architecture | Active gate | `make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry. |
 | Security depth | Partially active | `make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`. |

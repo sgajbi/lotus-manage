@@ -33,9 +33,11 @@ The following commands are active repository gates:
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
     action references, unexpected workflow permissions, missing blocking quality-report checks, and
     PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
-    and guidance decisions)
+    guidance decisions, and blocking workflow coverage-gate drift)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
+  - `make coverage-gate` (`python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)`;
+    combines unit/integration/e2e coverage artifacts and enforces the shared coverage floor)
 
 - `make check`
   - everything in `make static-quality-gates`
@@ -50,7 +52,7 @@ The following commands are active repository gates:
 - `make ci-local`
   - everything in `make static-quality-gates`
   - `python -m pip check`
-  - matrix-style unit/integration/e2e coverage files and combined 99% coverage gate
+  - matrix-style unit/integration/e2e coverage files and shared `make coverage-gate`
 
 ## GitHub CI Lanes
 
@@ -75,6 +77,7 @@ The following commands are active repository gates:
   - combined coverage floor (`99`)
   - workflow policy integrity
   - checked-in quality report freshness
+  - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
   - Docker build validation
 
 ### Main Releasability Gate

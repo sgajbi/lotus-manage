@@ -4,6 +4,7 @@ from pathlib import Path
 
 from scripts.workflow_policy_gate import (
     action_reference_violations,
+    coverage_gate_violations,
     evaluate_workflow_policy,
     permission_violations,
     pr_template_policy_violations,
@@ -78,6 +79,21 @@ def _make_target_prerequisites(makefile_text: str, target_name: str) -> list[str
     raise AssertionError(f"missing Makefile target: {target_name}")
 
 
+def _make_target_recipe(makefile_text: str, target_name: str) -> str:
+    lines = makefile_text.splitlines()
+    for index, line in enumerate(lines):
+        if not line.startswith(f"{target_name}:"):
+            continue
+        recipe_lines = []
+        for recipe_line in lines[index + 1 :]:
+            if recipe_line and not recipe_line.startswith(("\t", " ")):
+                break
+            if recipe_line.strip():
+                recipe_lines.append(recipe_line.strip())
+        return "\n".join(recipe_lines)
+    raise AssertionError(f"missing Makefile target: {target_name}")
+
+
 def test_feature_pr_and_main_quality_gates_are_enforced() -> None:
     for workflow_path in ENFORCED_WORKFLOWS:
         workflow_text = workflow_path.read_text(encoding="utf-8")
@@ -99,6 +115,34 @@ def test_local_ci_targets_reuse_static_quality_gate_pack() -> None:
     assert "static-quality-gates" in _make_target_prerequisites(makefile_text, "ci-local")
     assert "test-all" in _make_target_prerequisites(makefile_text, "ci")
     assert "security-audit" in _make_target_prerequisites(makefile_text, "ci")
+
+
+def test_local_ci_uses_shared_coverage_gate_script() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+
+    coverage_gate_recipe = _make_target_recipe(makefile_text, "coverage-gate")
+    ci_local_recipe = _make_target_recipe(makefile_text, "ci-local")
+
+    assert "python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)" in (
+        coverage_gate_recipe
+    )
+    assert "$(MAKE) coverage-gate" in ci_local_recipe
+    assert "python -m coverage combine" not in ci_local_recipe
+    assert "python -m coverage report" not in ci_local_recipe
+
+
+def test_blocking_workflows_use_shared_coverage_gate_script() -> None:
+    for workflow_path in [
+        Path(".github/workflows/pr-merge-gate.yml"),
+        Path(".github/workflows/main-releasability.yml"),
+    ]:
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+        assert (
+            "python scripts/coverage_gate.py --coverage-dir coverage-data --fail-under "
+            "${{ env.COVERAGE_FAIL_UNDER }}"
+        ) in workflow_text
+        assert "python -m coverage combine coverage-data" not in workflow_text
+        assert "python -m coverage report --fail-under" not in workflow_text
 
 
 def test_artifact_workflows_opt_into_node24_action_runtime() -> None:
@@ -226,4 +270,30 @@ def test_workflow_policy_gate_requires_blocking_quality_report_gate(tmp_path: Pa
     assert quality_report_gate_violations(workflow) == [
         f"{workflow.as_posix()}: quality report freshness gate must be blocking, "
         "not continue-on-error"
+    ]
+
+
+def test_workflow_policy_gate_rejects_ad_hoc_coverage_commands(tmp_path: Path) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  coverage:",
+                "    steps:",
+                "      - name: Enforce Coverage Floor",
+                "        run: |",
+                "          python -m coverage combine coverage-data",
+                "          python -m coverage report --fail-under=${{ env.COVERAGE_FAIL_UNDER }}",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert coverage_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: blocking coverage workflow must use scripts/coverage_gate.py",
+        f"{workflow.as_posix()}: coverage enforcement must not duplicate ad hoc coverage "
+        "combine/report commands",
     ]

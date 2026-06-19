@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 
@@ -58,8 +58,7 @@ ci-local: static-quality-gates check-deps
 	COVERAGE_FILE=.coverage.unit python -m pytest tests/unit --cov=src --cov-report=
 	COVERAGE_FILE=.coverage.integration python -m pytest tests/integration --cov=src --cov-report=
 	COVERAGE_FILE=.coverage.e2e python -m pytest tests/e2e --cov=src --cov-report=
-	python -m coverage combine .coverage.unit .coverage.integration .coverage.e2e
-	python -m coverage report --fail-under=$(COVERAGE_FAIL_UNDER)
+	$(MAKE) coverage-gate
 
 ci-local-docker:
 	docker compose -f docker-compose.ci-local.yml up --build --abort-on-container-exit --exit-code-from ci-local ci-local
@@ -124,6 +123,9 @@ workflow-policy-gate:
 
 quality-report-gate:
 	python scripts/engineering_health_report.py --check
+
+coverage-gate:
+	python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)
 
 
 monetary-float-guard:
