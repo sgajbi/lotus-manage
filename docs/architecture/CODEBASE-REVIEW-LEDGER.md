@@ -25485,3 +25485,39 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal repository query-shape
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1006: Historical attribution posture helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned risk attribution evidence, fail-closed posture
+  precedence, and testing.
+- Finding: `_historical_attribution_source_posture` combined supportability fail-closed handling,
+  period-error precedence, stale/degraded quality handling, and quality-flag degradation in one
+  B-grade helper. That made a source-owned risk attribution adapter harder to audit because the
+  ordering of blocked, stale, degraded, and ready outcomes was implicit in one branch chain.
+- Action: extracted fail-closed supportability, period-blocked, and quality-posture helpers while
+  preserving the existing precedence; added direct tests proving unsupported and stale
+  supportability precedence, period-error blocking, and quality-flag degradation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk realized outcome source
+  suite reported 56 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_historical_attribution_source_posture` reduced from B(6) to A(3), with extracted precedence
+  helpers at A(1) to A(4). The refreshed complexity report is sourced from `5c39a6f2+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves historical attribution posture maintainability only. It does
+  not change attribution value extraction, source-id construction, risk attribution methodology,
+  API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal risk source adapter
+  maintainability hardening with no operator-facing contract change.

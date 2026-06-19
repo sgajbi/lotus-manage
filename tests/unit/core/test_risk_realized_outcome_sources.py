@@ -24,6 +24,9 @@ from src.core.outcomes.risk_sources import (
     _historical_attribution_contributor,
     _historical_attribution_reason_codes,
     _historical_attribution_set,
+    _historical_attribution_fail_closed_posture,
+    _historical_attribution_period_blocked,
+    _historical_attribution_quality_posture,
     _historical_attribution_source_id,
     _historical_attribution_source_posture,
     _historical_attribution_source_snapshot,
@@ -1737,3 +1740,23 @@ def test_historical_attribution_posture_and_decimal_errors_are_fail_closed() -> 
     ) == ("DEGRADED", "PARTIAL")
     with pytest.raises(RiskOutcomeSourceError, match="non-numeric risk metric value"):
         _decimal_value("not-a-number")
+
+
+def test_historical_attribution_posture_helpers_preserve_precedence() -> None:
+    assert _historical_attribution_fail_closed_posture("unsupported") == (
+        "NOT_SUPPORTED",
+        "NOT_SUPPORTED",
+    )
+    assert _historical_attribution_fail_closed_posture("stale") is None
+    assert _historical_attribution_period_blocked("period unavailable")
+    assert not _historical_attribution_period_blocked(None)
+    assert _historical_attribution_quality_posture(
+        supportability_state="stale",
+        value=Decimal("1"),
+        quality_flags=[],
+    ) == ("DEGRADED", "STALE")
+    assert _historical_attribution_quality_posture(
+        supportability_state="ready",
+        value=Decimal("1"),
+        quality_flags=["ESTIMATED"],
+    ) == ("DEGRADED", "PARTIAL")

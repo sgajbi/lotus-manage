@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:54:41+00:00`
+- Generated at: `2026-06-19T04:58:50+00:00`
 
-- Report source snapshot: `2a65d171+worktree`
+- Report source snapshot: `5c39a6f2+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
-| 2 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
-| 3 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
-| 4 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
-| 5 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
-| 6 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
-| 7 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
-| 8 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
-| 9 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
-| 10 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
+| 1 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
+| 2 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
+| 3 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
+| 4 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
+| 5 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
+| 6 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
+| 7 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
+| 8 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
+| 9 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
+| 10 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
 
 ### Most Complex Current Test Functions
 

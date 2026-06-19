@@ -992,13 +992,34 @@ def _historical_attribution_source_posture(
     period_error: str | None,
     quality_flags: list[Any],
 ) -> _RiskSourcePosture:
-    supportability_posture = _supportability_source_posture(
-        supportability_state, include_stale=False
-    )
-    if supportability_posture is not None:
-        return supportability_posture
-    if period_error is not None:
+    fail_closed_posture = _historical_attribution_fail_closed_posture(supportability_state)
+    if fail_closed_posture is not None:
+        return fail_closed_posture
+    if _historical_attribution_period_blocked(period_error):
         return "BLOCKED", "MISSING"
+    return _historical_attribution_quality_posture(
+        supportability_state=supportability_state,
+        value=value,
+        quality_flags=quality_flags,
+    )
+
+
+def _historical_attribution_fail_closed_posture(
+    supportability_state: str,
+) -> _RiskSourcePosture | None:
+    return _supportability_source_posture(supportability_state, include_stale=False)
+
+
+def _historical_attribution_period_blocked(period_error: str | None) -> bool:
+    return period_error is not None
+
+
+def _historical_attribution_quality_posture(
+    *,
+    supportability_state: str,
+    value: Decimal | None,
+    quality_flags: list[Any],
+) -> _RiskSourcePosture:
     supportability_posture = _supportability_source_posture(supportability_state)
     if supportability_posture is not None:
         return supportability_posture
