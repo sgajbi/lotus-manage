@@ -28150,3 +28150,55 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing CI-enforcement
   governance already states the correct measured, deterministic gate-promotion policy, so no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1531: DPM source context market-data model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`, `src/core/dpm_source_context_market_data.py`, focused
+  DPM source-context/core-sourcing/mandate tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` `PortfolioTaxLotWindow:v1` and
+  `MarketDataCoverageWindow:v1` source-product contracts, tax-lot evidence, market price/FX
+  coverage evidence, source-owned supportability, and behavior-preserving source-context hotspot
+  burn-down.
+- Finding: after financial-planning model extraction, `src/core/dpm_source_context.py` still mixed
+  source-product model families with transformation helpers. The tax-lot and market-data coverage
+  Pydantic model group was cohesive, source-owned, and independent of broader DPM context assembly,
+  making it a low-risk extraction candidate with direct behavior coverage in source-context,
+  core-sourcing, mandate-health, and mandate API tests.
+- Action: moved `PortfolioTaxLotWindow:v1` and `MarketDataCoverageWindow:v1` model classes into
+  `src/core/dpm_source_context_market_data.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing caller imports and Pydantic/OpenAPI behavior remain
+  stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 136 passed.
+  `dpm_source_context.py` raw size moved from 1781 LOC to 1628 LOC, the extracted
+  `dpm_source_context_market_data.py` is 168 LOC with A maintainability, the architecture gate
+  passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups and no
+  new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. The existing measured,
+  deterministic repo-native gates already cover this change class: architecture-boundary drift,
+  duplicate implementation hotspots, complexity non-regression, static/type checks, focused
+  contract behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` still aggregates several independent
+  source-product contract families plus transformation helpers. The next measured source-context
+  slice should target external treasury/OMS models or separate transformation helpers only if the
+  move keeps imports stable and improves responsibility boundaries.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
