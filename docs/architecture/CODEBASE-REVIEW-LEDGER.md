@@ -25085,3 +25085,36 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is internal repository query-shape
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-995: Transaction money source fallback helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned outcome evidence mapping, currency handling, and
+  testing.
+- Finding: `_transaction_money_value` combined reporting-currency precedence, source-measure
+  validation, source-currency fallback, and reason-code suffix selection in one B-grade helper.
+  `_transaction_fx_pnl_value` carried a similar inline currency fallback path for base and local FX
+  P&L evidence. That made transaction-ledger source money mapping harder to review.
+- Action: extracted `_transaction_reporting_money` and `_transaction_source_currency`, reused the
+  currency fallback helper for transaction fee/tax and FX P&L paths, and added direct tests for
+  reporting-currency precedence plus first/fallback/default source-currency behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff format --check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\core_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\core_sources.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused core realized outcome source suite
+  reported 50 passed. Radon reports `_transaction_money_value` reduced from B(6) to A(3), and
+  `_transaction_fx_pnl_value` reduced from B(6) to A(3). The refreshed complexity report is
+  sourced from `62d78043+worktree` and the current top-ten source hotspot list no longer includes
+  `_transaction_money_value`.
+- Residual risk: this slice improves transaction-ledger money mapping maintainability only. It
+  does not change realized outcome methodology, source-ledger contracts, value precedence for
+  valid payloads, API contracts, downstream behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-evidence adapter
+  maintainability hardening with no operator-facing contract change.

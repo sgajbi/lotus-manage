@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 
 from src.core.outcomes import (
     CoreOutcomeSourceError,
@@ -26,6 +27,8 @@ from src.core.outcomes.core_sources import (
     _raise_on_invalid_currency_total_selection,
     _transaction_cashflow_value,
     _transaction_fx_pnl_value,
+    _transaction_reporting_money,
+    _transaction_source_currency,
 )
 from tests.unit.core.test_realized_outcome_sources import _window
 
@@ -1063,6 +1066,55 @@ def test_transaction_value_helpers_select_fx_and_cashflow_source_values() -> Non
     assert str(cashflow_value) == str(cashflow_transaction["cashflow"]["amount"])
     assert cashflow_unit == "USD"
     assert cashflow_reason == "TRANSACTION_VALUE_CASHFLOW_AMOUNT"
+
+
+def test_transaction_money_helpers_preserve_reporting_precedence_and_currency_fallbacks() -> None:
+    response = {"reporting_currency": "SGD"}
+    transaction = {
+        "trade_fee_reporting_currency": "24.97",
+        "trade_fee": "18.50",
+        "trade_currency": "USD",
+        "currency": "EUR",
+    }
+
+    reporting_value = _transaction_reporting_money(
+        response=response,
+        transaction=transaction,
+        reporting_field="trade_fee_reporting_currency",
+        reason="TRANSACTION_VALUE_TRADE_FEE",
+    )
+
+    assert reporting_value == (
+        Decimal("24.97"),
+        "SGD",
+        "TRANSACTION_VALUE_TRADE_FEE_REPORTING",
+    )
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "USD"
+    )
+    transaction["trade_currency"] = None
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "EUR"
+    )
+    transaction["currency"] = None
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "transaction_currency"
+    )
 
 
 def test_transaction_adapter_treats_missing_transaction_list_as_source_gap() -> None:

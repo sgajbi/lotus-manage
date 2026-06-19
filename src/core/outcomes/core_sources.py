@@ -691,23 +691,56 @@ def _transaction_money_value(
     source_currency_fields: tuple[str, str],
     reason: str,
 ) -> tuple[Decimal, str, str]:
-    reporting_value = transaction.get(reporting_field)
-    reporting_currency = _read_text(response.get("reporting_currency"))
-    if reporting_value is not None and reporting_currency is not None:
-        return _decimal_value(reporting_value), reporting_currency, f"{reason}_REPORTING"
+    reporting_money = _transaction_reporting_money(
+        response=response,
+        transaction=transaction,
+        reporting_field=reporting_field,
+        reason=reason,
+    )
+    if reporting_money is not None:
+        return reporting_money
 
     source_value = transaction.get(source_field)
     if source_value is None:
         raise CoreOutcomeSourceError(
             f"lotus-core transaction ledger response is missing {source_field}"
         )
-    first_currency_field, fallback_currency_field = source_currency_fields
     return (
         _decimal_value(source_value),
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=source_currency_fields,
+            fallback_currency="transaction_currency",
+        ),
+        f"{reason}_SOURCE",
+    )
+
+
+def _transaction_reporting_money(
+    *,
+    response: dict[str, Any],
+    transaction: dict[str, Any],
+    reporting_field: str,
+    reason: str,
+) -> tuple[Decimal, str, str] | None:
+    reporting_value = transaction.get(reporting_field)
+    reporting_currency = _read_text(response.get("reporting_currency"))
+    if reporting_value is None or reporting_currency is None:
+        return None
+    return _decimal_value(reporting_value), reporting_currency, f"{reason}_REPORTING"
+
+
+def _transaction_source_currency(
+    *,
+    transaction: dict[str, Any],
+    source_currency_fields: tuple[str, str],
+    fallback_currency: str,
+) -> str:
+    first_currency_field, fallback_currency_field = source_currency_fields
+    return (
         _read_text(transaction.get(first_currency_field))
         or _read_text(transaction.get(fallback_currency_field))
-        or "transaction_currency",
-        f"{reason}_SOURCE",
+        or fallback_currency
     )
 
 
@@ -716,16 +749,22 @@ def _transaction_fx_pnl_value(*, transaction: dict[str, Any]) -> tuple[Decimal, 
     if value is not None:
         return (
             _decimal_value(value),
-            _read_text(transaction.get("currency")) or "base_currency",
+            _transaction_source_currency(
+                transaction=transaction,
+                source_currency_fields=("currency", "currency"),
+                fallback_currency="base_currency",
+            ),
             "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE",
         )
     local_value = transaction.get("realized_fx_pnl_local")
     if local_value is not None:
         return (
             _decimal_value(local_value),
-            _read_text(transaction.get("trade_currency"))
-            or _read_text(transaction.get("currency"))
-            or "local_currency",
+            _transaction_source_currency(
+                transaction=transaction,
+                source_currency_fields=("trade_currency", "currency"),
+                fallback_currency="local_currency",
+            ),
             "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL",
         )
     raise CoreOutcomeSourceError(
