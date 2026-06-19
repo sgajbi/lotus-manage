@@ -41,6 +41,7 @@ from src.core.mandates import (
     _mandate_twin_field_gap_codes,
     _market_data_source_readiness,
     _optional_digital_twin_source_lineage,
+    _requires_sustainability_review,
     calculate_mandate_health,
     build_health_input_from_core_sources,
     compile_mandate_digital_twin_from_core,
@@ -940,6 +941,61 @@ def test_inactive_sustainability_preferences_do_not_create_review_posture() -> N
 
     assert twin.preferences.sustainability_strategy is None
     assert health_input.sustainability_review_required is False
+
+
+@pytest.mark.parametrize(
+    "preference_updates",
+    [
+        {"minimum_allocation": "0.20"},
+        {"maximum_allocation": "0.70"},
+        {"exclusion_codes": ["THERMAL_COAL"]},
+        {"positive_tilt_codes": ["LOW_CARBON"]},
+    ],
+)
+def test_sustainability_review_required_for_active_source_controls(
+    preference_updates: dict[str, object],
+) -> None:
+    base_preference = {
+        "preference_framework": "BANK_SUSTAINABILITY",
+        "preference_code": "SOURCE_CONTROL",
+        "preference_status": "ACTIVE",
+        "preference_source": "CLIENT_PROFILE",
+        "minimum_allocation": None,
+        "maximum_allocation": None,
+        "applies_to_asset_classes": ["EQUITY"],
+        "exclusion_codes": [],
+        "positive_tilt_codes": [],
+        "effective_from": "2026-04-01",
+        "preference_version": 1,
+    }
+    base_preference.update(preference_updates)
+
+    assert _requires_sustainability_review(
+        _sustainability_preference_profile(preferences=[base_preference])
+    )
+
+
+def test_sustainability_review_ignores_missing_inactive_and_control_free_preferences() -> None:
+    control_free_active = {
+        "preference_framework": "BANK_SUSTAINABILITY",
+        "preference_code": "DISCLOSURE_ONLY",
+        "preference_status": "ACTIVE",
+        "preference_source": "CLIENT_PROFILE",
+        "applies_to_asset_classes": ["EQUITY"],
+        "exclusion_codes": [],
+        "positive_tilt_codes": [],
+        "effective_from": "2026-04-01",
+        "preference_version": 1,
+    }
+
+    assert _requires_sustainability_review(None) is False
+    assert _requires_sustainability_review(_inactive_sustainability_preference_profile()) is False
+    assert (
+        _requires_sustainability_review(
+            _sustainability_preference_profile(preferences=[control_free_active])
+        )
+        is False
+    )
 
 
 def test_ready_mandate_has_all_ready_dimensions_and_no_recommended_action() -> None:

@@ -26276,3 +26276,43 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal observability implementation
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1027: Mandate sustainability review predicates
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, and `quality/`.
+- Bank-buyable control area: source-owned sustainability preference handling, mandate workflow
+  readiness, and no-local-ESG-approval boundaries.
+- Finding: `_requires_sustainability_review` combined missing-profile handling, active preference
+  detection, and four source-owned sustainability control families in one B-grade helper. Existing
+  end-to-end mandate health tests proved the review posture, but the exact source-control triggers
+  were not directly pinned.
+- Action: extracted active preference and review-control predicates using the concrete Core
+  `DpmCoreSustainabilityPreferenceEntry` source-product type while preserving review behavior.
+  Added focused tests proving active minimum-allocation, maximum-allocation, exclusion-code, and
+  positive-tilt controls require review, while missing profiles, inactive preferences, and
+  control-free active preferences do not.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\mandates.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff check src\core\mandates.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py`,
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py -q`,
+  `python -m radon cc src\core\mandates.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate health suite reported 45
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_requires_sustainability_review` reduced from
+  B(7) to A(3), with extracted predicates at A(1) to A(4). The refreshed complexity report is
+  sourced from `5ffabcff+worktree`, and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves sustainability review maintainability and source-control test
+  coverage only. It does not change ESG methodology, mandate-health scoring semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate domain-rule hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; the existing backend delivery
+  governance and codebase review ledger instructions covered this pattern cleanly.

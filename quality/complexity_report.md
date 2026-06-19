@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T06:02:57+00:00`
+- Generated at: `2026-06-19T06:07:03+00:00`
 
-- Report source snapshot: `2c33dd24+worktree`
+- Report source snapshot: `5ffabcff+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
-| 2 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
-| 3 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
-| 4 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
-| 5 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
-| 6 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
-| 7 | supportability_severity | src/api/services/wave_supportability_diagnostics.py | 6 | 10 |
-| 8 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
-| 9 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
-| 10 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 1 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
+| 2 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
+| 3 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
+| 4 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
+| 5 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
+| 6 | supportability_severity | src/api/services/wave_supportability_diagnostics.py | 6 | 10 |
+| 7 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
+| 8 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
+| 9 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 10 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
 
 ### Most Complex Current Test Functions
 

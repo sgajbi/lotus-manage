@@ -18,6 +18,7 @@ from src.core.dpm_source_context import (
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceEntry,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
 
@@ -1141,14 +1142,33 @@ def _requires_sustainability_review(
     if profile is None:
         return False
     return any(
-        preference.preference_status.upper() == "ACTIVE"
-        and (
-            preference.minimum_allocation is not None
-            or preference.maximum_allocation is not None
-            or bool(preference.exclusion_codes)
-            or bool(preference.positive_tilt_codes)
-        )
+        _active_sustainability_preference_requires_review(preference)
         for preference in profile.preferences
+    )
+
+
+def _active_sustainability_preference_requires_review(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return _sustainability_preference_is_active(
+        preference
+    ) and _sustainability_preference_has_review_controls(preference)
+
+
+def _sustainability_preference_is_active(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return preference.preference_status.upper() == "ACTIVE"
+
+
+def _sustainability_preference_has_review_controls(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return (
+        preference.minimum_allocation is not None
+        or preference.maximum_allocation is not None
+        or bool(preference.exclusion_codes)
+        or bool(preference.positive_tilt_codes)
     )
 
 
