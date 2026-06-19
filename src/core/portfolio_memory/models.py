@@ -982,14 +982,38 @@ def _validate_search_page_next_offset(
         returned_count=returned_count,
         has_more=has_more,
     )
-    if not has_more:
-        if next_offset is not None:
-            raise ValueError("next_offset must be null when has_more is false.")
+    if _search_page_is_terminal(has_more):
+        _validate_terminal_search_page_next_offset(next_offset)
         return
-    if next_offset is None or next_offset != expected_next_offset:
+    if not _next_offset_matches_expected(
+        next_offset=next_offset,
+        expected_next_offset=expected_next_offset,
+    ):
         raise ValueError("next_offset must equal offset plus returned_count.")
-    if next_offset <= offset:
+    assert next_offset is not None
+    if not _next_offset_advances(offset=offset, next_offset=next_offset):
         raise ValueError("next_offset must advance when has_more is true.")
+
+
+def _search_page_is_terminal(has_more: bool) -> bool:
+    return not has_more
+
+
+def _validate_terminal_search_page_next_offset(next_offset: int | None) -> None:
+    if next_offset is not None:
+        raise ValueError("next_offset must be null when has_more is false.")
+
+
+def _next_offset_matches_expected(
+    *,
+    next_offset: int | None,
+    expected_next_offset: int | None,
+) -> bool:
+    return next_offset is not None and next_offset == expected_next_offset
+
+
+def _next_offset_advances(*, offset: int, next_offset: int) -> bool:
+    return next_offset > offset
 
 
 def _validate_search_page_count_maps(

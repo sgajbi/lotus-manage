@@ -25671,3 +25671,39 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal supportability evidence
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1011: Portfolio-memory search next-offset helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory search pagination correctness, cursor integrity,
+  and testing.
+- Finding: `_validate_search_page_next_offset` combined terminal-page null checks,
+  non-terminal expected-offset checks, and advancement checks in one B-grade validator. That made
+  pagination cursor invariants harder to review independently from the enclosing search-page
+  metadata validator.
+- Action: extracted terminal-page detection, terminal next-offset validation,
+  expected-next-offset matching, and next-offset advancement helpers while preserving existing
+  error messages and pagination behavior; added direct tests for each helper path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_search_page.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory search page
+  suite reported 34 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_search_page_next_offset` reduced from B(6) to A(5), with extracted pagination helpers
+  at A(1) to A(2). The refreshed complexity report is sourced from `34c8d949+worktree` and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves portfolio-memory search pagination maintainability only. It
+  does not change search ranking, candidate selection, count-map aggregation, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal pagination invariant
+  maintainability hardening with no operator-facing contract change.
