@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 
@@ -15,10 +15,10 @@ pre-commit:
 	pre-commit run --all-files
 
 check: lint no-alias-gate typecheck typecheck-tests-critical openapi-gate api-vocabulary-gate \
-	service-boundary-gate mesh-contract-validate architecture-gate complexity-gate \
+	service-boundary-gate router-infrastructure-gate mesh-contract-validate architecture-gate complexity-gate \
 	dependency-hygiene-gate dead-code-gate test
 
-ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate service-boundary-gate migration-smoke test-all security-audit
+ci: lint no-alias-gate typecheck openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate migration-smoke test-all security-audit
 
 test:
 	$(MAKE) test-unit
@@ -62,6 +62,7 @@ ci-local: lint check-deps
 	$(MAKE) openapi-gate
 	$(MAKE) api-vocabulary-gate
 	$(MAKE) service-boundary-gate
+	$(MAKE) router-infrastructure-gate
 	$(MAKE) typecheck
 
 ci-local-docker:
@@ -89,6 +90,9 @@ api-vocabulary-gate:
 
 service-boundary-gate:
 	python scripts/service_boundary_gate.py
+
+router-infrastructure-gate:
+	python scripts/router_infrastructure_gate.py
 
 live-api-validate:
 	python scripts/validate_live_api.py --base-url $${LOTUS_MANAGE_BASE_URL:-http://127.0.0.1:8001}

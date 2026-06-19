@@ -70,6 +70,12 @@ jobs:
           set -o pipefail
           python scripts/service_boundary_gate.py 2>&1 | tee output/quality-baseline/service-boundary.txt
 
+      - name: Router Infrastructure Gate
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python scripts/router_infrastructure_gate.py 2>&1 | tee output/quality-baseline/router-infrastructure.txt
+
       - name: Complexity Baseline
         continue-on-error: true
         run: |

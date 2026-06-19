@@ -536,8 +536,8 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 ],
                 [
                     "Router infrastructure imports",
-                    "reported as known baseline debt",
-                    "1 - baseline",
+                    "`scripts/router_infrastructure_gate.py` plus this report",
+                    "2 - active/new-regression",
                 ],
                 [
                     "Complexity/maintainability",
@@ -584,8 +584,8 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ["Service boundary", "Active gate", "`scripts/service_boundary_gate.py`."],
         [
             "Router infrastructure imports",
-            "Baseline debt",
-            f"Current router infra imports: {len(context.current.router_infra_imports)}.",
+            "Active gate",
+            "`scripts/router_infrastructure_gate.py`.",
         ],
         [
             "OpenAPI 4xx/5xx response markers",
