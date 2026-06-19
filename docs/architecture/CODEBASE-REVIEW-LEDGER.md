@@ -28253,6 +28253,78 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2229: Rebalance run workflow projection helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/workflow_projection.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_workflow_service.py`, focused supportability/API
+  workflow tests, generated quality reports, and this ledger.
+- Bank-buyable control area: Manage-owned rebalance workflow status projection, append-only review
+  decision evidence, decision-history ordering, reviewer action response shape, and workflow
+  supportability surfaced through API-facing DPM run routes.
+- Quality intake: `DpmRunSupportService` is the existing owner for rebalance run workflow reads and
+  reviewer actions. The source of truth remains the persisted Manage run record plus append-only
+  workflow decisions; the path is API-facing through the rebalance workflow routes and internal
+  support-bundle composition. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_dpm_run_workflow_service.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/rebalance_runs/service.py` hotspot while preserving workflow status,
+  transition validation, latest-decision selection, history ordering, and API response shape.
+- Finding: after async-operation extraction, `src/core/rebalance_runs/service.py` still embedded
+  pure workflow projection and decision-record construction alongside repository lookup,
+  feature-flag guards, transition validation, persistence, cleanup, and exception mapping. The
+  projection and record-construction logic is deterministic, cohesive, and separately testable
+  without broadening the service boundary.
+- Action: added `src/core/rebalance_runs/workflow_projection.py` for latest-decision selection,
+  decision-history response assembly, current workflow response projection, workflow decision
+  record construction, and action response assembly. `DpmRunSupportService` now delegates those
+  pure helpers while retaining cleanup, repository access, workflow-required checks, transition
+  validation, append-only persistence, and public API behavior. Added focused helper tests for
+  ordering, latest-decision selection, disabled/not-required projection, and action response shape.
+  No API contract, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_workflow_service.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py tests\unit\dpm\supportability\test_dpm_run_workflow_service.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py tests\unit\dpm\supportability\test_dpm_run_workflow_service.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py src\core\rebalance_runs\workflow.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused workflow/supportability/API
+  tests reported 173 passed. `src/core/rebalance_runs/service.py` moved from 924 LOC with C
+  maintainability 8.13 to 916 LOC with C maintainability 8.84, and the extracted
+  `src/core/rebalance_runs/workflow_projection.py` is 105 LOC with A maintainability 61.90. The
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused workflow behavior, API contract behavior,
+  and quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals under the CI-enforcement governance standard.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 916 LOC because
+  it still owns run persistence orchestration, idempotency lookup, workflow persistence,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should keep
+  targeting one cohesive behavior family at a time, likely run lookup/list projection or
+  supportability summary assembly, only where focused tests preserve not-found semantics,
+  idempotency mapping, lineage, and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal workflow modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
 ## BACKEND-REVIEW-20260619-1604: DPM source context external treasury model extraction
 
 - Date: 2026-06-19

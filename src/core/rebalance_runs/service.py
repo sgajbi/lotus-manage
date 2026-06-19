@@ -66,6 +66,13 @@ from src.core.rebalance_runs.workflow import (
     resolve_workflow_transition,
     workflow_required_for_run_status,
 )
+from src.core.rebalance_runs.workflow_projection import (
+    build_workflow_action_response,
+    build_workflow_decision_record,
+    build_workflow_history_response,
+    build_workflow_response,
+    latest_workflow_decision,
+)
 from src.core.models import RebalanceResult
 
 __all__ = [
@@ -605,10 +612,9 @@ class DpmRunSupportService:
         self._cleanup_expired_supportability()
         self._get_required_run(rebalance_run_id=rebalance_run_id)
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
-        decisions = sorted(decisions, key=lambda item: item.decided_at)
-        return DpmRunWorkflowHistoryResponse(
-            run_id=rebalance_run_id,
-            decisions=[to_workflow_decision_response(decision) for decision in decisions],
+        return build_workflow_history_response(
+            rebalance_run_id=rebalance_run_id,
+            decisions=decisions,
         )
 
     def get_workflow_history_by_correlation(
@@ -688,23 +694,21 @@ class DpmRunSupportService:
         if next_status is None:
             raise DpmWorkflowTransitionError("DPM_WORKFLOW_INVALID_TRANSITION")
 
-        decision = DpmRunWorkflowDecisionRecord(
-            decision_id=f"dwd_{uuid.uuid4().hex[:12]}",
-            run_id=rebalance_run_id,
+        decision = build_workflow_decision_record(
+            rebalance_run_id=rebalance_run_id,
             action=action,
             reason_code=reason_code,
             comment=comment,
             actor_id=actor_id,
-            decided_at=_utc_now(),
             correlation_id=correlation_id,
+            decided_at=_utc_now(),
         )
         self._repository.append_workflow_decision(decision)
-        return DpmRunWorkflowResponse(
-            run_id=rebalance_run_id,
+        return build_workflow_action_response(
+            rebalance_run_id=rebalance_run_id,
             run_status=run_status,
             workflow_status=next_status,
-            requires_review=True,
-            latest_decision=to_workflow_decision_response(decision),
+            decision=decision,
         )
 
     def apply_workflow_action_by_correlation(
@@ -799,31 +803,19 @@ class DpmRunSupportService:
         return mapping
 
     def _to_workflow_response(self, *, run: DpmRunRecord) -> DpmRunWorkflowResponse:
-        run_status = str(run.result_json.get("status", ""))
         latest_decision = self._latest_workflow_decision(rebalance_run_id=run.rebalance_run_id)
-        workflow_status = self._resolve_workflow_status(
-            run_status=run_status,
+        return build_workflow_response(
+            run=run,
             latest_decision=latest_decision,
-        )
-        return DpmRunWorkflowResponse(
-            run_id=run.rebalance_run_id,
-            run_status=run_status,
-            workflow_status=workflow_status,
-            requires_review=self._workflow_required_for_run_status(run_status=run_status),
-            latest_decision=(
-                to_workflow_decision_response(latest_decision)
-                if latest_decision is not None
-                else None
-            ),
+            workflow_enabled=self._workflow_enabled,
+            requires_review_for_statuses=self._workflow_requires_review_for_statuses,
         )
 
     def _latest_workflow_decision(
         self, *, rebalance_run_id: str
     ) -> Optional[DpmRunWorkflowDecisionRecord]:
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
-        if not decisions:
-            return None
-        return max(decisions, key=lambda item: item.decided_at)
+        return latest_workflow_decision(decisions)
 
     def _workflow_required_for_run_status(self, *, run_status: str) -> bool:
         return workflow_required_for_run_status(
