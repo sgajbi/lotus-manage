@@ -2024,6 +2024,23 @@ def test_source_refs_preserve_manage_artifact_and_mandate_supportability() -> No
     assert refs_by_type["DPM_MANDATE_HEALTH_SNAPSHOT"].content_hash == "sha256:health"
 
 
+def test_source_refs_omit_absent_optional_sources() -> None:
+    source_ref = _source_ref()
+
+    assert (
+        builder_module._source_refs(
+            run=None,
+            alternative_set=None,
+            selected_alternative=None,
+            source_hashes={},
+            mandate_twin=None,
+            mandate_health=None,
+        )
+        == []
+    )
+    assert builder_module._present_source_refs([None, source_ref, None]) == [source_ref]
+
+
 def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
     mandate_twin = _mandate_twin()
     kwargs = {

@@ -1943,20 +1943,81 @@ def _source_refs(
     mandate_twin: DpmMandateDigitalTwin | None,
     mandate_health: DpmMandateHealthSnapshot | None,
 ) -> list[DpmProofPackSourceRef]:
-    refs = []
-    if run is not None:
-        refs.append(_run_source_ref(run=run, source_hashes=source_hashes))
-    if alternative_set is not None:
-        refs.append(_alternative_set_source_ref(alternative_set, source_hashes=source_hashes))
-    if selected_alternative is not None:
-        refs.append(
-            _selected_alternative_source_ref(selected_alternative, source_hashes=source_hashes)
-        )
-    if mandate_twin is not None:
-        refs.append(_mandate_twin_source_ref(mandate_twin, source_hashes=source_hashes))
-    if mandate_health is not None:
-        refs.append(_mandate_health_source_ref(mandate_health, source_hashes=source_hashes))
-    return refs
+    return _present_source_refs(
+        [
+            _optional_run_source_ref(run=run, source_hashes=source_hashes),
+            _optional_alternative_set_source_ref(
+                alternative_set=alternative_set,
+                source_hashes=source_hashes,
+            ),
+            _optional_selected_alternative_source_ref(
+                selected_alternative=selected_alternative,
+                source_hashes=source_hashes,
+            ),
+            _optional_mandate_twin_source_ref(
+                mandate_twin=mandate_twin,
+                source_hashes=source_hashes,
+            ),
+            _optional_mandate_health_source_ref(
+                mandate_health=mandate_health,
+                source_hashes=source_hashes,
+            ),
+        ]
+    )
+
+
+def _present_source_refs(
+    refs: list[DpmProofPackSourceRef | None],
+) -> list[DpmProofPackSourceRef]:
+    return [ref for ref in refs if ref is not None]
+
+
+def _optional_run_source_ref(
+    *, run: DpmRunRecord | None, source_hashes: dict[str, str]
+) -> DpmProofPackSourceRef | None:
+    if run is None:
+        return None
+    return _run_source_ref(run=run, source_hashes=source_hashes)
+
+
+def _optional_alternative_set_source_ref(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    source_hashes: dict[str, str],
+) -> DpmProofPackSourceRef | None:
+    if alternative_set is None:
+        return None
+    return _alternative_set_source_ref(alternative_set, source_hashes=source_hashes)
+
+
+def _optional_selected_alternative_source_ref(
+    *,
+    selected_alternative: ConstructionAlternative | None,
+    source_hashes: dict[str, str],
+) -> DpmProofPackSourceRef | None:
+    if selected_alternative is None:
+        return None
+    return _selected_alternative_source_ref(selected_alternative, source_hashes=source_hashes)
+
+
+def _optional_mandate_twin_source_ref(
+    *,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    source_hashes: dict[str, str],
+) -> DpmProofPackSourceRef | None:
+    if mandate_twin is None:
+        return None
+    return _mandate_twin_source_ref(mandate_twin, source_hashes=source_hashes)
+
+
+def _optional_mandate_health_source_ref(
+    *,
+    mandate_health: DpmMandateHealthSnapshot | None,
+    source_hashes: dict[str, str],
+) -> DpmProofPackSourceRef | None:
+    if mandate_health is None:
+        return None
+    return _mandate_health_source_ref(mandate_health, source_hashes=source_hashes)
 
 
 def _run_source_ref(*, run: DpmRunRecord, source_hashes: dict[str, str]) -> DpmProofPackSourceRef:

@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:43:37+00:00`
+- Generated at: `2026-06-19T04:48:20+00:00`
 
-- Report source snapshot: `76b3d524+worktree`
+- Report source snapshot: `4b8727a4+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
-| 2 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
-| 3 | build_operation_filter_query | src/infrastructure/rebalance_runs/operation_query.py | 6 | 23 |
-| 4 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
-| 5 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
-| 6 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
-| 7 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
-| 8 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
-| 9 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
-| 10 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
+| 1 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
+| 2 | build_operation_filter_query | src/infrastructure/rebalance_runs/operation_query.py | 6 | 23 |
+| 3 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
+| 4 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
+| 5 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
+| 6 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
+| 7 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
+| 8 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
+| 9 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
+| 10 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
 
 ### Most Complex Current Test Functions
 

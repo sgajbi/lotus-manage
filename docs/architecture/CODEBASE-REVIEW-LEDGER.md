@@ -25377,3 +25377,39 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-evidence adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1003: Proof-pack optional source-ref helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack source lineage assembly, supportability evidence, and
+  testing.
+- Finding: `_source_refs` combined ordered optional source-ref collection for rebalance runs,
+  construction alternative sets, selected alternatives, mandate twins, and mandate health
+  snapshots in one B-grade helper. That made proof-pack lineage ordering and absent-source
+  handling harder to audit.
+- Action: extracted optional source-ref builders for each source domain plus a present-ref filter,
+  preserving the existing source-ref order and source hash semantics; added direct tests proving
+  absent optional sources are omitted and candidate filtering preserves present refs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused proof-pack
+  builder suite reported 107 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `_source_refs` reduced from
+  B(6) to A(1), with extracted optional source-ref helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `4b8727a4+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves proof-pack source-ref collection maintainability only. It
+  does not change source-ref models, content-hash semantics, proof-pack section payloads, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack lineage
+  maintainability hardening with no operator-facing contract change.
