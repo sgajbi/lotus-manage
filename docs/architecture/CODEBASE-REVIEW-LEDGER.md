@@ -27214,3 +27214,58 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance cover this behavior-preserving fairness-analysis decomposition
   pattern.
+
+## BACKEND-REVIEW-20260619-1048: Exact duplicate implementation CI gate promotion
+
+- Date: 2026-06-19
+- Scope: `scripts/duplicate_implementation_gate.py`, `Makefile`, blocking GitHub workflows,
+  workflow policy, PR evidence template, quality reports, repository engineering context, and this
+  ledger.
+- Bank-buyable control area: CI-enforced maintainability, agent-driven implementation guardrails,
+  duplicate implementation drift prevention, and deterministic quality evidence.
+- Finding: duplicate implementation hotspots were a known refactor concern but had no repo-native
+  deterministic non-regression gate. Existing active gates covered architecture boundaries,
+  complexity, dead code, dependency hygiene, OpenAPI, vocabulary, no-alias, contract validation,
+  workflow policy, and security audit, but future agent work could still introduce exact cloned
+  first-party implementation bodies without a direct blocking signal.
+- Action: added an exact normalized Python function-body duplicate detector over `src/` and
+  `scripts/`, generated a current-state baseline with 10 accepted duplicate groups, and promoted a
+  non-regression gate through `make duplicate-implementation-gate`. Wired the gate into
+  `make static-quality-gates`, Remote Feature Lane, Pull Request Merge Gate, Main Releasability,
+  workflow-policy drift checks, PR validation evidence, CI quality documentation, and repository
+  engineering context. Kept broader/fuzzy similarity out of blocking CI because false positives,
+  thresholds, lane placement, and exception policy are not yet proven.
+- Status: hardened.
+- Evidence:
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `python -m pytest tests\unit\scripts\test_duplicate_implementation_gate.py -q`,
+  `python -m ruff format scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m ruff check scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m ruff format --check scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m mypy --config-file mypy.ini scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `make duplicate-implementation-gate`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused gate tests reported 4 passed. The promoted gate reported
+  10 accepted exact duplicate groups and no new groups. Workflow policy, quality-report freshness,
+  changed-file lint/format/type checks, and whitespace checks passed.
+- Aggregate-gate note: `make static-quality-gates` was attempted and stopped at
+  `python -m ruff format --check .` because existing unrelated files
+  `src\core\rebalance\engine.py` and
+  `tests\unit\dpm\engine\test_engine_wrapper_helpers.py` would be reformatted. The changed files
+  in this slice pass focused format checks; unrelated source/test formatting was left untouched to
+  avoid cosmetic churn.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: the gate blocks exact normalized non-trivial Python function-body clones only. It
+  intentionally does not block fuzzy similarity, small helper duplication, test fixture repetition,
+  generated-code similarity, or broader semantic duplication until those signals have stable
+  baselines and low-noise exception policy. Existing 10 accepted groups remain visible in
+  `quality/duplicate_code_inventory.md` and should be burned down through targeted refactors.
+- Wiki decision: no wiki source change required; this is internal CI enforcement and
+  developer/agent guardrail truth, reflected in repo-local quality docs and repository engineering
+  context rather than operator-facing wiki material.
+- Guidance decision: no platform-owned skill or deployed local skill update required. The existing
+  `lotus-ci-enforcement-governance` skill already covered this pattern; repo-local engineering
+  context was updated as source truth, and no local `AGENTS.md` or `.codex` skill was hand-edited.

@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-19T07:39:20+00:00`
+- Generated at: `2026-06-19T07:46:23+00:00`
 
-- Report source snapshot: `59c67e63+worktree`
+- Report source snapshot: `c5e23c08+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -17,6 +17,7 @@
 | Router infrastructure imports | Active gate | `scripts/router_infrastructure_gate.py`. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 0. |
 | Complexity | Active source C gate | `make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only. |
+| Duplicate implementation hotspots | Active exact-duplicate non-regression gate | `make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups. |
 | Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance. |
 | Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, coverage-gate drift, and PR evidence drift. |
 | Local CI parity | Active gate | `make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates. |

@@ -18,6 +18,7 @@
 - Local PR parity gate: [ ] `make ci-local`
 - Workflow policy: [ ] `make workflow-policy-gate`
 - Quality report freshness: [ ] `make quality-report-gate`
+- Duplicate implementation gate: [ ] `make duplicate-implementation-gate`
 - Coverage gate: [ ] `make coverage-gate`
 - OpenAPI contract: [ ] `make openapi-gate`
 - API vocabulary: [ ] `make api-vocabulary-gate`

@@ -964,9 +964,10 @@ Use these commands as the primary local contract:
 Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
-2. architecture, complexity, dependency-hygiene, and dead-code gates are active in Remote Feature
-   Lane, Pull Request Merge Gate, and Main Releasability; the separate Quality Baseline workflow
-   remains report-only for expanded trend capture,
+2. architecture, complexity, exact duplicate implementation non-regression, dependency-hygiene,
+   and dead-code gates are active in Remote Feature Lane, Pull Request Merge Gate, and Main
+   Releasability; the separate Quality Baseline workflow remains report-only for expanded trend
+   capture,
 3. PR-grade validation includes coverage-backed full test execution,
 4. host/runtime coexistence assumptions matter for canonical front-office startup,
 5. README changes should preserve the local Docker runtime contract language enforced by

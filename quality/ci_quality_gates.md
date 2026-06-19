@@ -28,6 +28,9 @@ The following commands are active repository gates:
   - `make mesh-contract-validate`
   - `make architecture-gate` (`python -m importlinter.cli import-linter lint --config .importlinter`)
   - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
+  - `make duplicate-implementation-gate` (`python scripts/duplicate_implementation_gate.py`;
+    blocks newly introduced exact non-trivial first-party Python function-body duplicates against
+    `quality/duplicate_implementation_baseline.json`)
   - `make dependency-hygiene-gate` (`python -m deptry src tests`)
   - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
@@ -63,6 +66,7 @@ The following commands are active repository gates:
   - `ruff` + `mypy` + `no-alias` + `openapi` + `api-vocabulary` + `security-audit`
   - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
+  - `duplicate-implementation-gate` for exact duplicate implementation non-regression
   - unit tests
 
 ### PR Merge Gate
@@ -72,6 +76,7 @@ The following commands are active repository gates:
   - same static/type/openapi/vocabulary/security gates as Feature Lane
   - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
+  - `duplicate-implementation-gate` for exact duplicate implementation non-regression
   - migration smoke
   - matrix unit/integration/e2e tests with coverage upload
   - combined coverage floor (`99`)

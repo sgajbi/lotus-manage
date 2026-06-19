@@ -35,6 +35,7 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
     "workflow_policy": "`make workflow-policy-gate`",
     "quality_report": "`make quality-report-gate`",
     "coverage_gate": "`make coverage-gate`",
+    "duplicate_implementation": "`make duplicate-implementation-gate`",
     "openapi": "`make openapi-gate`",
     "api_vocabulary": "`make api-vocabulary-gate`",
     "no_alias": "`make no-alias-gate`",
@@ -123,6 +124,27 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
     return []
 
 
+def duplicate_implementation_gate_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name not in BLOCKING_WORKFLOW_NAMES:
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    if "make duplicate-implementation-gate" not in text:
+        return [
+            f"{workflow_path.as_posix()}: blocking workflow must run "
+            "make duplicate-implementation-gate"
+        ]
+    start = text.index("make duplicate-implementation-gate")
+    step_start = text.rfind("\n      - name:", 0, start)
+    step_end = text.find("\n      - name:", start)
+    step_block = text[step_start:] if step_end == -1 else text[step_start:step_end]
+    if "continue-on-error" in step_block:
+        return [
+            f"{workflow_path.as_posix()}: duplicate implementation gate must be blocking, "
+            "not continue-on-error"
+        ]
+    return []
+
+
 def coverage_gate_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
         return []
@@ -163,6 +185,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(permission_violations(workflow_path))
         violations.extend(action_reference_violations(workflow_path))
         violations.extend(quality_report_gate_violations(workflow_path))
+        violations.extend(duplicate_implementation_gate_violations(workflow_path))
         violations.extend(coverage_gate_violations(workflow_path))
     violations.extend(pr_template_policy_violations())
     return violations

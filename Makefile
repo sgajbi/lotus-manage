@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 
@@ -16,7 +16,7 @@ pre-commit:
 
 static-quality-gates: lint no-alias-gate typecheck typecheck-tests-critical openapi-gate api-vocabulary-gate \
 	service-boundary-gate router-infrastructure-gate mesh-contract-validate architecture-gate complexity-gate \
-	dependency-hygiene-gate dead-code-gate workflow-policy-gate quality-report-gate
+	duplicate-implementation-gate dependency-hygiene-gate dead-code-gate workflow-policy-gate quality-report-gate
 
 check: static-quality-gates test
 
@@ -111,6 +111,9 @@ architecture-gate:
 complexity-gate:
 	python -m radon cc src -s -n C
 	python -m radon mi src -s
+
+duplicate-implementation-gate:
+	python scripts/duplicate_implementation_gate.py
 
 dependency-hygiene-gate:
 	python -m deptry src tests

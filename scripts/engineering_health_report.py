@@ -550,6 +550,11 @@ def build_baseline_report(context: HealthReportContext) -> str:
                     "2 - active source C gate; broader metrics baseline",
                 ],
                 [
+                    "Duplicate implementation hotspots",
+                    "`quality/duplicate_code_inventory.md` and `make duplicate-implementation-gate`",
+                    "2 - active exact-duplicate non-regression gate",
+                ],
+                [
                     "Dead code",
                     "`make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml`",
                     "2 - active/new-regression",
@@ -601,6 +606,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "Complexity",
             "Active source C gate",
             "`make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only.",
+        ],
+        [
+            "Duplicate implementation hotspots",
+            "Active exact-duplicate non-regression gate",
+            "`make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups.",
         ],
         [
             "Quality report freshness",

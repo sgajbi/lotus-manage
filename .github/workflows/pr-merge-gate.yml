@@ -61,6 +61,8 @@ jobs:
         run: make architecture-gate
       - name: Complexity Gate
         run: make complexity-gate
+      - name: Duplicate Implementation Gate
+        run: make duplicate-implementation-gate
       - name: Dependency Hygiene Gate
         run: make dependency-hygiene-gate
       - name: Dead Code Gate
