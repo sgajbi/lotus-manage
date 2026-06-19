@@ -7,32 +7,10 @@
   "min_lines": 8,
   "accepted_duplicate_groups": [
     {
-      "fingerprint": "3bcc7cf6f60fca55c4be481bcafefe56cb4e893206e780f08778de34a32808da",
-      "occurrence_identities": [
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_approval_decision",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_assignment_action",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_assignment_task",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_launch",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_maker_checker_control"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
       "fingerprint": "847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c",
       "occurrence_identities": [
         "scripts/generate_rfc0041_wave_evidence.py:_request",
         "scripts/generate_rfc0042_outcome_evidence.py:_request"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
-      "fingerprint": "de1163a135da66d809e4c3d60216165ef9c6080e3e6873225f1705165c9cd8d0",
-      "occurrence_identities": [
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_approval_decision",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_assignment_action",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_assignment_task",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_launch",
-        "src/infrastructure/waves/campaign_definitions.py:record_definition_maker_checker_control"
       ],
       "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
     }

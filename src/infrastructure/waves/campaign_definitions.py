@@ -119,95 +119,57 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
         with self._lock:
-            existing = self._definitions.get(key)
-            if existing is None:
-                return None
-            if existing.content_hash == definition.content_hash:
-                return deepcopy(existing)
-            if existing.status != "ACTIVE":
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            self._definitions[key] = deepcopy(definition)
-            return deepcopy(definition)
+            return self._record_active_definition_update(definition)
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
         with self._lock:
-            existing = self._definitions.get(key)
-            if existing is None:
-                return None
-            if existing.content_hash == definition.content_hash:
-                return deepcopy(existing)
-            if existing.status != "ACTIVE":
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            self._definitions[key] = deepcopy(definition)
-            return deepcopy(definition)
+            return self._record_active_definition_update(definition)
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
         with self._lock:
-            existing = self._definitions.get(key)
-            if existing is None:
-                return None
-            if existing.content_hash == definition.content_hash:
-                return deepcopy(existing)
-            if existing.status != "ACTIVE":
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            self._definitions[key] = deepcopy(definition)
-            return deepcopy(definition)
+            return self._record_active_definition_update(definition)
 
     def record_definition_assignment_task(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
         with self._lock:
-            existing = self._definitions.get(key)
-            if existing is None:
-                return None
-            if existing.content_hash == definition.content_hash:
-                return deepcopy(existing)
-            if existing.status != "ACTIVE":
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            self._definitions[key] = deepcopy(definition)
-            return deepcopy(definition)
+            return self._record_active_definition_update(definition)
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
         with self._lock:
-            existing = self._definitions.get(key)
-            if existing is None:
-                return None
-            if existing.content_hash == definition.content_hash:
-                return deepcopy(existing)
-            if existing.status != "ACTIVE":
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            self._definitions[key] = deepcopy(definition)
-            return deepcopy(definition)
+            return self._record_active_definition_update(definition)
+
+    def _record_active_definition_update(
+        self,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        key = (definition.campaign_id, definition.campaign_version)
+        existing = self._definitions.get(key)
+        if existing is None:
+            return None
+        if existing.content_hash == definition.content_hash:
+            return deepcopy(existing)
+        if existing.status != "ACTIVE":
+            raise DpmBulkReviewCampaignDefinitionConflictError(
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
+            )
+        self._definitions[key] = deepcopy(definition)
+        return deepcopy(definition)
 
 
 def _paged_definitions(
@@ -445,196 +407,38 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        with closing(self._connect()) as connection:
-            persisted = connection.execute(
-                """
-                SELECT status, content_hash, payload_json
-                FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
-                """,
-                (definition.campaign_id, definition.campaign_version),
-            ).fetchone()
-            if persisted is None:
-                connection.rollback()
-                return None
-            existing = _load_campaign_definition_payload(_payload(persisted))
-            if existing.content_hash == definition.content_hash:
-                connection.rollback()
-                return existing
-            if existing.status != "ACTIVE":
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            updated = connection.execute(
-                """
-                UPDATE dpm_bulk_review_campaign_definitions
-                SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
-                """,
-                (
-                    definition.content_hash,
-                    dump_model_json(definition),
-                    definition.campaign_id,
-                    definition.campaign_version,
-                ),
-            )
-            rowcount = getattr(updated, "rowcount", 1)
-            if rowcount != 1:
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            connection.commit()
-            return definition
+        return self._record_active_definition_update(definition)
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        with closing(self._connect()) as connection:
-            persisted = connection.execute(
-                """
-                SELECT status, content_hash, payload_json
-                FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
-                """,
-                (definition.campaign_id, definition.campaign_version),
-            ).fetchone()
-            if persisted is None:
-                connection.rollback()
-                return None
-            existing = _load_campaign_definition_payload(_payload(persisted))
-            if existing.content_hash == definition.content_hash:
-                connection.rollback()
-                return existing
-            if existing.status != "ACTIVE":
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            updated = connection.execute(
-                """
-                UPDATE dpm_bulk_review_campaign_definitions
-                SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
-                """,
-                (
-                    definition.content_hash,
-                    dump_model_json(definition),
-                    definition.campaign_id,
-                    definition.campaign_version,
-                ),
-            )
-            rowcount = getattr(updated, "rowcount", 1)
-            if rowcount != 1:
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            connection.commit()
-            return definition
+        return self._record_active_definition_update(definition)
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        with closing(self._connect()) as connection:
-            persisted = connection.execute(
-                """
-                SELECT status, content_hash, payload_json
-                FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
-                """,
-                (definition.campaign_id, definition.campaign_version),
-            ).fetchone()
-            if persisted is None:
-                connection.rollback()
-                return None
-            existing = _load_campaign_definition_payload(_payload(persisted))
-            if existing.content_hash == definition.content_hash:
-                connection.rollback()
-                return existing
-            if existing.status != "ACTIVE":
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            updated = connection.execute(
-                """
-                UPDATE dpm_bulk_review_campaign_definitions
-                SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
-                """,
-                (
-                    definition.content_hash,
-                    dump_model_json(definition),
-                    definition.campaign_id,
-                    definition.campaign_version,
-                ),
-            )
-            rowcount = getattr(updated, "rowcount", 1)
-            if rowcount != 1:
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            connection.commit()
-            return definition
+        return self._record_active_definition_update(definition)
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        with closing(self._connect()) as connection:
-            persisted = connection.execute(
-                """
-                SELECT status, content_hash, payload_json
-                FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
-                """,
-                (definition.campaign_id, definition.campaign_version),
-            ).fetchone()
-            if persisted is None:
-                connection.rollback()
-                return None
-            existing = _load_campaign_definition_payload(_payload(persisted))
-            if existing.content_hash == definition.content_hash:
-                connection.rollback()
-                return existing
-            if existing.status != "ACTIVE":
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            updated = connection.execute(
-                """
-                UPDATE dpm_bulk_review_campaign_definitions
-                SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
-                """,
-                (
-                    definition.content_hash,
-                    dump_model_json(definition),
-                    definition.campaign_id,
-                    definition.campaign_version,
-                ),
-            )
-            rowcount = getattr(updated, "rowcount", 1)
-            if rowcount != 1:
-                connection.rollback()
-                raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
-                )
-            connection.commit()
-            return definition
+        return self._record_active_definition_update(definition)
 
     def record_definition_assignment_task(
         self,
         *,
+        definition: DpmBulkReviewCampaignDefinition,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_active_definition_update(definition)
+
+    def _record_active_definition_update(
+        self,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with closing(self._connect()) as connection:

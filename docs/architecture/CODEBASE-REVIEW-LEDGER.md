@@ -27489,3 +27489,50 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and duplicate-gate guidance cover this behavior-preserving route-helper
   consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1054: Campaign definition active-update duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/campaign_definitions.py`, focused campaign definition
+  repository tests, duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: bulk-review campaign definition persistence correctness,
+  lifecycle-conflict consistency, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed repeated active-definition update mechanics
+  across launch, approval-decision, assignment-action, assignment-task, and maker-checker-control
+  recording methods. The duplicate logic existed in both in-memory and Postgres campaign
+  definition repositories, including same-content idempotency, missing-definition handling,
+  active-status enforcement, content-hash/payload update, rowcount conflict mapping, and commit or
+  rollback behavior.
+- Action: extracted backend-local `_record_active_definition_update` helpers for the in-memory and
+  Postgres repositories, then delegated all five public record methods through the shared helper
+  in each backend. Preserved public repository method names, return behavior, idempotent
+  same-content behavior, lifecycle conflict codes, and Postgres transaction handling. Regenerated
+  the duplicate implementation baseline and inventory, reducing accepted exact duplicate groups
+  from 3 to 1 with no new groups; the only remaining accepted duplicate group is the RFC evidence
+  script request helper.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m ruff check src\infrastructure\waves\campaign_definitions.py`,
+  `python -m ruff format --check src\infrastructure\waves\campaign_definitions.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\campaign_definitions.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python -m radon cc src\infrastructure\waves\campaign_definitions.py -s`,
+  and `git diff --check`. Focused campaign definition repository suites reported 60 passed. The
+  duplicate implementation gate now reports 1 accepted exact duplicate group and no new groups.
+  Radon reports all five public active-definition record methods at A(1), with extracted helpers
+  at A-level complexity.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: the remaining accepted exact duplicate group is script-only:
+  `scripts/generate_rfc0041_wave_evidence.py:_request` and
+  `scripts/generate_rfc0042_outcome_evidence.py:_request`. Production-code exact duplicates from
+  the current gate baseline have been burned down.
+- Wiki decision: no wiki source change required; this is internal repository maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving persistence-helper
+  consolidation pattern.

@@ -9,33 +9,9 @@
 
 ### Group 1
 
-- Fingerprint: `3bcc7cf6f60fca55c4be481bcafefe56cb4e893206e780f08778de34a32808da`
-
-| File | Function | Line | Lines |
-| --- | --- | --- | --- |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_approval_decision` | 491 | 47 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_assignment_action` | 539 | 47 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_assignment_task` | 635 | 47 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_launch` | 443 | 47 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_maker_checker_control` | 587 | 47 |
-
-### Group 2
-
 - Fingerprint: `847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c`
 
 | File | Function | Line | Lines |
 | --- | --- | --- | --- |
 | `scripts/generate_rfc0041_wave_evidence.py` | `_request` | 46 | 16 |
 | `scripts/generate_rfc0042_outcome_evidence.py` | `_request` | 46 | 16 |
-
-### Group 3
-
-- Fingerprint: `de1163a135da66d809e4c3d60216165ef9c6080e3e6873225f1705165c9cd8d0`
-
-| File | Function | Line | Lines |
-| --- | --- | --- | --- |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_approval_decision` | 136 | 18 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_assignment_action` | 155 | 18 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_assignment_task` | 174 | 18 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_launch` | 117 | 18 |
-| `src/infrastructure/waves/campaign_definitions.py` | `record_definition_maker_checker_control` | 193 | 18 |
