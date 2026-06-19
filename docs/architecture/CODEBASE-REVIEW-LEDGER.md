@@ -26438,3 +26438,49 @@ and improves internal transaction-cost source posture maintainability only.
   hardening with no operator-facing contract change.
 - Guidance decision: no skill, context, or playbook update required; existing backend governance
   and review-ledger guidance covered the hotspot/policy-table refactor pattern cleanly.
+
+## BACKEND-REVIEW-20260619-1031: Shared AI handoff guardrails
+
+- Date: 2026-06-19
+- Scope: `src/core/common/ai_guardrails.py`, `src/core/outcomes/handoffs.py`,
+  `src/core/proof_packs/handoffs.py`, `tests/unit/core/test_ai_guardrails.py`, and `quality/`.
+- Bank-buyable control area: AI evidence handoff sensitive-field removal, report/AI payload
+  redaction consistency, and no-sensitive-data guardrails for proof-pack and outcome-review
+  downstream consumers.
+- Finding: proof-pack and outcome-review handoff modules duplicated the same forbidden AI field
+  vocabulary, sanitizer recursion, and forbidden-field scanner. The duplicated
+  `_find_forbidden_field_names` helpers were both B-grade hotspots, increasing the risk that future
+  sensitive-field hardening would be applied to one handoff path but not the other.
+- Action: extracted shared `sanitize_for_ai` and `forbidden_field_names` helpers plus the common
+  forbidden-field vocabulary into `src/core/common/ai_guardrails.py`. Rewired proof-pack and
+  outcome handoffs through the shared helper while preserving their existing public
+  `assert_no_ai_forbidden_fields` functions and domain-specific error codes. Added focused common
+  guardrail tests for nested dictionaries/lists, forbidden parent-field removal, allowed-value
+  preservation, and non-string key handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py`,
+  `python -m ruff check src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py`,
+  `python -m mypy --config-file mypy.ini src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py`,
+  `python -m pytest tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py -q`,
+  `python -m radon cc src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused AI guardrail, outcome handoff, and proof-pack handoff suites
+  reported 13 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports shared guardrail helpers at A(2)
+  to A(4), and the local handoff `_sanitize_for_ai` wrappers at A(1). The refreshed complexity
+  report is sourced from `edc388bd+worktree`, and the current top-ten source hotspot list no longer
+  includes either duplicated `_find_forbidden_field_names` helper.
+- Residual risk: this slice improves AI handoff guardrail reuse and direct common-helper coverage
+  only. It does not change proof-pack or outcome handoff public contracts, forbidden action lists,
+  evidence hash exclusions, downstream report/AI behavior, Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal security/maintainability
+  hardening with unchanged operator-facing handoff contracts.
+- Guidance decision: no skill, context, or playbook update required; the recurring pattern is
+  already covered by backend governance and review-ledger guidance, and the shared helper plus tests
+  are sufficient durable implementation guidance for future handoff modules.
