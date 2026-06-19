@@ -27616,3 +27616,47 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance cover this behavior-preserving module extraction pattern.
+
+## BACKEND-REVIEW-20260619-1135: Proof-pack source-identity module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/source_identity.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack source lineage integrity, source hash determinism,
+  source-owned analytics refs, and behavior-preserving source-file hotspot burn-down.
+- Finding: after the mandate-context extraction, `src/core/proof_packs/builder.py` still carried
+  source hash, source analytics, and source-ref assembly inline with proof-pack orchestration.
+  This cluster is cohesive source-identity behavior and already covered by focused tests for hash
+  ordering, omitted optional sources, source-ref supportability, direct regime-stress fallback, and
+  deterministic proof-pack hashing.
+- Action: moved proof-pack source context assembly, source hash candidates, source analytics
+  selection, source-ref construction, and optional source-ref filtering into
+  `src/core/proof_packs/source_identity.py`. Kept builder-local compatibility aliases for existing
+  private tests and call sites while preserving source hash ordering, source-owned analytics hash
+  injection, Manage artifact source types, mandate supportability states, and optional-source
+  omission behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 2,156 LOC to 1,885 LOC, and the extracted
+  `source_identity.py` is 299 LOC with A maintainability. The duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, though the
+  source identity and mandate context responsibilities are now isolated. Future safe slices should
+  continue with cohesive section families rather than broad rewrites.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and CI-enforcement guidance cover this behavior-preserving extraction pattern.
