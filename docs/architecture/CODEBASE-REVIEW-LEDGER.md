@@ -26316,3 +26316,43 @@ and improves internal transaction-cost source posture maintainability only.
   no operator-facing contract change.
 - Guidance decision: no skill, context, or playbook update required; the existing backend delivery
   governance and codebase review ledger instructions covered this pattern cleanly.
+
+## BACKEND-REVIEW-20260619-1028: OpenAPI composite example option helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, and `quality/`.
+- Bank-buyable control area: OpenAPI example generation, contract readability, and API governance
+  evidence for generated documentation.
+- Finding: `_composite_example_from_schema` combined composite-family lookup, option iteration,
+  null-schema filtering, and example generation in one B-grade helper. Existing tests covered a
+  `oneOf` nullable reference path, but did not pin composite-family precedence or all-null fallback
+  behavior.
+- Action: extracted composite option lookup and first non-null option selection helpers while
+  preserving emitted examples. Strengthened focused tests to cover `oneOf` null-skipping,
+  `anyOf` fallback after null-only `oneOf`, `allOf` precedence over `oneOf`, all-null composites,
+  and non-composite schemas.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff check src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py`,
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py -q`,
+  `python -m radon cc src\api\openapi_enrichment.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused OpenAPI enrichment helper suite
+  reported 37 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/
+  router leakage scan returned no findings. Radon reports `_composite_example_from_schema` reduced
+  from B(6) to A(2), with extracted option helpers at A(3) to A(4). The refreshed complexity
+  report is sourced from `faee5d20+worktree`, and the current top-ten source hotspot list no
+  longer includes the targeted helper.
+- Residual risk: this slice improves OpenAPI example-generation maintainability and focused helper
+  coverage only. It does not change API route behavior, schema ownership, OpenAPI governance
+  thresholds, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and OpenAPI helper tests cover this repeatable pattern.

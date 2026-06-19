@@ -371,6 +371,30 @@ def test_openapi_enrichment_composite_example_helper_uses_first_non_null_option(
         set(),
     ) == (True, {"currency": "USD", "amount": 10.5})
     assert _composite_example_from_schema(
+        "choice",
+        {
+            "oneOf": [{"type": "null"}],
+            "anyOf": [{"type": "string"}],
+        },
+        schemas,
+        set(),
+    ) == (True, "sample_choice")
+    assert _composite_example_from_schema(
+        "choice",
+        {
+            "allOf": [{"type": "integer"}],
+            "oneOf": [{"type": "string"}],
+        },
+        schemas,
+        set(),
+    ) == (True, 10)
+    assert _composite_example_from_schema(
+        "choice",
+        {"anyOf": [{"type": "null"}]},
+        schemas,
+        set(),
+    ) == (False, None)
+    assert _composite_example_from_schema(
         "plain",
         {"type": "string"},
         schemas,

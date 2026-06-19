@@ -384,14 +384,33 @@ def _composite_example_from_schema(
     schemas: dict[str, Any],
     seen_refs: set[str],
 ) -> tuple[bool, Any]:
-    for composite_key in ("allOf", "oneOf", "anyOf"):
-        options = prop_schema.get(composite_key)
-        if not isinstance(options, list):
-            continue
-        for option in options:
-            if isinstance(option, dict) and option.get("type") != "null":
-                return True, _example_from_schema(prop_name, option, schemas, seen_refs)
+    option = _first_composite_example_option(prop_schema)
+    if option is not None:
+        return True, _example_from_schema(prop_name, option, schemas, seen_refs)
     return False, None
+
+
+def _first_composite_example_option(prop_schema: dict[str, Any]) -> dict[str, Any] | None:
+    for options in _composite_schema_options(prop_schema):
+        option = _first_non_null_schema_option(options)
+        if option is not None:
+            return option
+    return None
+
+
+def _composite_schema_options(prop_schema: dict[str, Any]) -> list[list[Any]]:
+    return [
+        options
+        for composite_key in ("allOf", "oneOf", "anyOf")
+        if isinstance(options := prop_schema.get(composite_key), list)
+    ]
+
+
+def _first_non_null_schema_option(options: list[Any]) -> dict[str, Any] | None:
+    for option in options:
+        if isinstance(option, dict) and option.get("type") != "null":
+            return option
+    return None
 
 
 def _example_from_schema(
