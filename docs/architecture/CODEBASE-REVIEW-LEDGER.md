@@ -25266,3 +25266,39 @@ and improves internal transaction-cost source posture maintainability only.
   API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal service-layer maintainability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1000: Wave supportability issue projection helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/wave_supportability_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and `quality/`.
+- Bank-buyable control area: wave supportability diagnostics, operator action evidence, and
+  testing.
+- Finding: `supportability_issue` combined completed-state suppression, degraded proof-pack
+  exception handling, severity lookup, fallback reason-code resolution, source-owner routing, and
+  remediation payload assembly in one B-grade API service helper. That made wave supportability
+  diagnostics harder to audit.
+- Action: extracted supportability issue emission gating, proof-pack state lookup, payload
+  assembly, and fallback reason-code resolution; added direct tests proving degraded proof-pack
+  issues are emitted and fallback reason codes/remediation are preserved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m ruff check src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\wave_supportability_diagnostics.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_supportability_diagnostics.py -q`,
+  `python -m radon cc src\api\services\wave_supportability_diagnostics.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused wave
+  supportability diagnostics suite reported 4 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `supportability_issue` reduced from B(6) to A(3), with extracted helpers at A(1) to A(3). The
+  refreshed complexity report is sourced from `7b0b3047+worktree` and the current top-ten source
+  hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves supportability issue projection maintainability only. It does
+  not change wave state transitions, severity taxonomy, remediation taxonomy, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal service-layer diagnostics
+  maintainability hardening with no operator-facing contract change.

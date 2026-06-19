@@ -7,24 +7,57 @@ def supportability_issue(
     item: DpmRebalanceWaveItem,
     item_index: int,
 ) -> dict[str, object] | None:
-    if item.state in {"APPROVED", "STAGED", "HANDOFF_READY", "PROOF_PACK_READY", "SIMULATED"}:
-        if (
-            item.state != "PROOF_PACK_READY"
-            or item.diagnostics.get("proof_pack_state") != "DEGRADED"
-        ):
-            return None
+    if not _should_emit_supportability_issue(item):
+        return None
     severity = supportability_severity(item)
     if severity is None:
         return None
-    reason_codes = item.reason_codes or [supportability_reason(item)]
+    return _supportability_issue_payload(
+        wave_id=wave_id,
+        item=item,
+        item_index=item_index,
+        severity=severity,
+    )
+
+
+def _should_emit_supportability_issue(item: DpmRebalanceWaveItem) -> bool:
+    if item.state not in _COMPLETED_WAVE_ITEM_STATES:
+        return True
+    return item.state == "PROOF_PACK_READY" and _proof_pack_state(item) == "DEGRADED"
+
+
+def _proof_pack_state(item: DpmRebalanceWaveItem) -> object:
+    return item.diagnostics.get("proof_pack_state")
+
+
+def _supportability_issue_payload(
+    *,
+    wave_id: str,
+    item: DpmRebalanceWaveItem,
+    item_index: int,
+    severity: str,
+) -> dict[str, object]:
     return {
         "support_ref": f"wave:{wave_id}:item:{item_index}",
         "item_state": item.state,
         "severity": severity,
         "source_owner": supportability_source_owner(item),
-        "reason_codes": reason_codes,
+        "reason_codes": _supportability_reason_codes(item),
         "remediation_route": supportability_remediation(item),
     }
+
+
+def _supportability_reason_codes(item: DpmRebalanceWaveItem) -> list[str]:
+    return item.reason_codes or [supportability_reason(item)]
+
+
+_COMPLETED_WAVE_ITEM_STATES = {
+    "APPROVED",
+    "STAGED",
+    "HANDOFF_READY",
+    "PROOF_PACK_READY",
+    "SIMULATED",
+}
 
 
 def supportability_severity(item: DpmRebalanceWaveItem) -> str | None:

@@ -1,4 +1,6 @@
 from src.api.services.wave_supportability_diagnostics import (
+    _should_emit_supportability_issue,
+    _supportability_reason_codes,
     operator_actions,
     supportability_issue,
 )
@@ -25,6 +27,22 @@ def test_supportability_issue_excludes_completed_items_without_degraded_proof_pa
         supportability_issue(wave_id="dwv_1", item=_item(state="HANDOFF_READY"), item_index=1)
         is None
     )
+
+
+def test_supportability_issue_includes_degraded_proof_pack_and_fallback_reason() -> None:
+    item = _item(
+        state="PROOF_PACK_READY",
+        diagnostics={"proof_pack_state": "DEGRADED"},
+    )
+
+    issue = supportability_issue(wave_id="dwv_1", item=item, item_index=3)
+
+    assert _should_emit_supportability_issue(item)
+    assert _supportability_reason_codes(item) == ["PROOF_PACK_DEGRADED"]
+    assert issue is not None
+    assert issue["severity"] == "WARNING"
+    assert issue["reason_codes"] == ["PROOF_PACK_DEGRADED"]
+    assert issue["remediation_route"] == "REVIEW_DEGRADED_PROOF_PACK"
 
 
 def test_supportability_issue_preserves_explicit_owner_and_action() -> None:
