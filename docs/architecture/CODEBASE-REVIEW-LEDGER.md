@@ -28408,3 +28408,56 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1658: Core sourcing resolver config extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/resolver_config.py`,
+  `src/infrastructure/core_sourcing/errors.py`, focused core-sourcing client tests, generated
+  quality reports, and this ledger.
+- Bank-buyable control area: deterministic Core resolver endpoint configuration, unavailable
+  source signaling, and HTTP source-orchestration boundaries for DPM portfolio context hydration.
+- Finding: `src/infrastructure/core_sourcing/client.py` still owned resolver exceptions, endpoint
+  path-template defaults, URL resolution, HTTP execution, payload parsing, retry handling, and
+  source-context assembly in one large infrastructure module. The resolver config and exception
+  family are cohesive, behavior-covered, and reusable across source-client construction, while
+  keeping them inline made the client harder to review for transport and orchestration changes.
+- Action: moved resolver exception types into `src/infrastructure/core_sourcing/errors.py` and
+  resolver path-template configuration into
+  `src/infrastructure/core_sourcing/resolver_config.py`; introduced a shared URL-resolution helper
+  to remove repeated base/path assembly while preserving the existing unavailable reason codes.
+  Kept compatibility re-exports from `src/infrastructure/core_sourcing/client.py` so existing
+  imports remain stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1724 LOC with C maintainability to 1456 LOC with B
+  maintainability, the extracted `resolver_config.py` is 280 LOC with A maintainability, and
+  `errors.py` is 6 LOC with A maintainability. The architecture gate passed, and the duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused resolver behavior
+  tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large transport and
+  orchestration module at 1456 LOC. Future slices should target cohesive HTTP/payload parsing or
+  source-product hydration families only where focused tests can preserve upstream unavailable
+  signaling, retry behavior, and source-context payload semantics.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
