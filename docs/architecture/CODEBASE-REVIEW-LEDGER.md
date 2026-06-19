@@ -27707,3 +27707,56 @@ and improves internal transaction-cost source posture maintainability only.
   `lotus-ci-enforcement-governance` guidance already covers measured, deterministic, low-noise
   enforcement and does not require platform skill-source changes or bootstrap sync for this
   repository-local refactor slice.
+
+## BACKEND-REVIEW-20260619-1219: Proof-pack alternative-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/alternative_sections.py`,
+  `src/core/proof_packs/section_state.py`, `src/core/proof_packs/source_analytics.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: selected construction alternative evidence, transaction-cost source
+  context supportability, client-restriction eligibility posture, shared proof-pack section-state
+  ranking, and behavior-preserving source-file hotspot burn-down.
+- Finding: after governance extraction, `src/core/proof_packs/builder.py` still carried selected
+  alternative evidence projection, turnover/cost payload construction, and eligibility/restriction
+  posture logic inline with proof-pack orchestration. The same section-state severity ordering also
+  existed locally in `source_analytics.py`, leaving a small duplicated invariant that could drift
+  as additional source-owned analytics are added.
+- Action: moved selected-alternative, turnover/cost, and eligibility/restriction section builders
+  into `src/core/proof_packs/alternative_sections.py`; centralized proof-pack section severity
+  ranking in `src/core/proof_packs/section_state.py`; updated source analytics to use the shared
+  helper; and kept builder-local compatibility aliases for the existing private test surface.
+  Preserved selected method readiness, method trace facts, missing selected-alternative degradation,
+  transaction-cost authority reason-code behavior, merged source-owned cost metrics, universe
+  exclusion posture, client-restriction facts, and sorted reason-code outputs. Regenerated quality
+  reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\source_analytics.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,703 LOC to 1,514 LOC, the extracted
+  `alternative_sections.py` is 222 LOC with A maintainability, `section_state.py` is 15 LOC with A
+  maintainability, the architecture gate passed, and the duplicate implementation gate remains at
+  0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, but selected
+  alternative, turnover/cost, eligibility/restrictions, governance, source identity, and mandate
+  context responsibilities are now isolated. Future slices should continue with remaining cohesive
+  proof-pack section families and avoid broad orchestration rewrites.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and CI-enforcement guidance already cover shared deterministic helper
+  extraction and measured hotspot burn-down; no platform skill-source change or bootstrap sync is
+  needed for this repository-local slice.

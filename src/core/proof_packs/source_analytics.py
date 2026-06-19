@@ -19,6 +19,7 @@ from src.core.construction.models import (
 )
 from src.core.construction.vocabulary import ConstructionMethodStatus
 from src.core.proof_packs.models import DpmProofPackSourceRef, ProofPackSectionState
+from src.core.proof_packs.section_state import lowest_section_state
 
 _RegimeStressSourceReasonPosture = Literal[
     "READY",
@@ -476,7 +477,7 @@ def _regime_stress_source_analytics(
     )
     return ProofPackSourceAnalytics(
         family="regime_stress",
-        state=_lowest_section_state(
+        state=lowest_section_state(
             [
                 _section_state(context.supportability_status),
                 evidence_posture["state"],
@@ -584,7 +585,7 @@ def _regime_stress_evidence_posture(
         posture_states.append(source_state)
 
     return {
-        "state": _lowest_section_state(posture_states),
+        "state": lowest_section_state(posture_states),
         "reason_codes": sorted(reason_codes),
         "facts": posture_facts,
     }
@@ -711,16 +712,6 @@ def _section_state(status: ConstructionMethodStatus) -> ProofPackSectionState:
     if status == ConstructionMethodStatus.PENDING_REVIEW:
         return "PENDING_REVIEW"
     return "DEGRADED"
-
-
-def _lowest_section_state(states: list[ProofPackSectionState]) -> ProofPackSectionState:
-    order: dict[ProofPackSectionState, int] = {
-        "READY": 0,
-        "PENDING_REVIEW": 1,
-        "DEGRADED": 2,
-        "BLOCKED": 3,
-    }
-    return max(states, key=lambda state: order[state])
 
 
 def _mapping(value: Any) -> dict[str, Any]:

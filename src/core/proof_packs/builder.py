@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.models import (
@@ -10,8 +10,8 @@ from src.core.construction.models import (
     ConstructionAlternative,
     ConstructionAlternativeSelection,
     ConstructionAlternativeSet,
-    ConstructionComparisonMetrics,
 )
+from src.core.proof_packs import alternative_sections as _alternative_sections
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackDecisionSummary,
@@ -38,7 +38,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import ExcludedInstrument, RebalanceResult, RuleResult
+from src.core.models import RebalanceResult, RuleResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -117,6 +117,34 @@ _source_hash_candidates = _source_identity.source_hash_candidates
 _source_hashes = _source_identity.source_hashes_for_proof_pack
 _source_refs = _source_identity.source_refs_for_proof_pack
 _supportability_section_payload = _governance_sections.supportability_section_payload
+_eligibility_and_restrictions_section_payload = (
+    _alternative_sections.eligibility_and_restrictions_section_payload
+)
+_eligibility_payload_from_universe_exclusions = (
+    _alternative_sections.eligibility_payload_from_universe_exclusions
+)
+_eligibility_payload_with_restriction_context = (
+    _alternative_sections.eligibility_payload_with_restriction_context
+)
+_eligibility_reason_codes = _alternative_sections.eligibility_reason_codes
+_eligibility_state_from_universe_exclusions = (
+    _alternative_sections.eligibility_state_from_universe_exclusions
+)
+_excluded_instrument_facts = _alternative_sections.excluded_instrument_facts
+_selected_alternative_facts = _alternative_sections.selected_alternative_facts
+_selected_alternative_method_state = _alternative_sections.selected_alternative_method_state
+_selected_alternative_reason_codes = _alternative_sections.selected_alternative_reason_codes
+_selected_alternative_section_payload = _alternative_sections.selected_alternative_section_payload
+_turnover_and_cost_section_payload = _alternative_sections.turnover_and_cost_section_payload
+_turnover_base_posture = _alternative_sections.turnover_base_posture
+_turnover_comparison_metrics = _alternative_sections.turnover_comparison_metrics
+_turnover_comparison_metrics_payload = _alternative_sections.turnover_comparison_metrics_payload
+_turnover_payload_with_transaction_cost_context = (
+    _alternative_sections.turnover_payload_with_transaction_cost_context
+)
+_turnover_payload_without_transaction_cost_context = (
+    _alternative_sections.turnover_payload_without_transaction_cost_context
+)
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -809,71 +837,6 @@ def _rule_results_reason_codes(failed_rules: list[RuleResult]) -> list[str]:
     return [rule.reason_code for rule in failed_rules]
 
 
-def _selected_alternative_section_payload(
-    *,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-    selection: ConstructionAlternativeSelection | None,
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    if selected_alternative is None:
-        return (
-            "DEGRADED",
-            "Direct-run proof pack has no selected construction alternative.",
-            {},
-            {},
-            ["DPM_DIRECT_RUN_NO_SELECTED_ALTERNATIVE"],
-        )
-    return (
-        _selected_alternative_method_state(selected_alternative),
-        "Selected construction alternative captured with method and trace evidence.",
-        _selected_alternative_facts(
-            alternative_set=alternative_set,
-            selected_alternative=selected_alternative,
-            selection=selection,
-        ),
-        selected_alternative.comparison_metrics.model_dump(mode="json"),
-        _selected_alternative_reason_codes(selected_alternative),
-    )
-
-
-def _selected_alternative_method_state(
-    selected_alternative: ConstructionAlternative,
-) -> ProofPackSectionState:
-    if selected_alternative.method_status == "READY":
-        return "READY"
-    return cast(ProofPackSectionState, str(selected_alternative.method_status))
-
-
-def _selected_alternative_reason_codes(
-    selected_alternative: ConstructionAlternative,
-) -> list[str]:
-    if selected_alternative.method_status == "READY":
-        return []
-    return ["DPM_SELECTED_METHOD_NOT_READY"]
-
-
-def _selected_alternative_facts(
-    *,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative,
-    selection: ConstructionAlternativeSelection | None,
-) -> dict[str, Any]:
-    return {
-        "alternative_set_id": alternative_set.alternative_set_id if alternative_set else None,
-        "selected_alternative_id": selected_alternative.alternative_id,
-        "selection_id": selection.selection_id if selection else None,
-        "method": selected_alternative.method,
-        "method_status": selected_alternative.method_status,
-        "summary": selected_alternative.summary,
-        "objective_trace": [
-            item.model_dump(mode="json") for item in selected_alternative.objective_trace
-        ],
-        "constraint_trace": [
-            item.model_dump(mode="json") for item in selected_alternative.constraint_trace
-        ],
-    }
-
-
 def _source_readiness_section_payload(
     *,
     result: RebalanceResult | None,
@@ -896,147 +859,6 @@ def _source_readiness_section_payload(
         {},
         reason_codes,
     )
-
-
-def _turnover_and_cost_section_payload(
-    *,
-    selected_alternative: ConstructionAlternative | None,
-    source_analytics: dict[str, ProofPackSourceAnalytics],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    transaction_cost_context = source_analytics.get("transaction_cost")
-    metrics = _turnover_comparison_metrics(selected_alternative)
-    if transaction_cost_context is None:
-        return _turnover_payload_without_transaction_cost_context(metrics)
-    return _turnover_payload_with_transaction_cost_context(
-        metrics=metrics,
-        transaction_cost_context=transaction_cost_context,
-    )
-
-
-def _turnover_comparison_metrics(
-    selected_alternative: ConstructionAlternative | None,
-) -> dict[str, Any]:
-    if selected_alternative is None:
-        return {}
-    return _turnover_comparison_metrics_payload(selected_alternative.comparison_metrics)
-
-
-def _turnover_comparison_metrics_payload(
-    comparison_metrics: ConstructionComparisonMetrics,
-) -> dict[str, Any]:
-    return comparison_metrics.model_dump(mode="json")
-
-
-def _turnover_base_posture(
-    metrics: dict[str, Any],
-) -> tuple[ProofPackSectionState, list[str]]:
-    if metrics:
-        return "READY", []
-    return "DEGRADED", ["DPM_TURNOVER_COST_METRICS_MISSING"]
-
-
-def _turnover_payload_without_transaction_cost_context(
-    metrics: dict[str, Any],
-) -> _SectionPayload:
-    state, reason_codes = _turnover_base_posture(metrics)
-    if metrics:
-        state = "DEGRADED"
-        reason_codes.append("DPM_TRANSACTION_COST_AUTHORITY_CONTEXT_MISSING")
-    return (
-        state,
-        "Turnover and cost evidence captured when construction metrics are available.",
-        {},
-        metrics,
-        sorted(set(reason_codes)),
-    )
-
-
-def _turnover_payload_with_transaction_cost_context(
-    *,
-    metrics: dict[str, Any],
-    transaction_cost_context: ProofPackSourceAnalytics,
-) -> _SectionPayload:
-    state, reason_codes = _turnover_base_posture(metrics)
-    return (
-        _lowest_section_state([state, transaction_cost_context.state]),
-        "Turnover metrics and source-owned observed transaction-cost evidence are attached.",
-        transaction_cost_context.facts,
-        {**metrics, **transaction_cost_context.metrics},
-        sorted(set([*reason_codes, *transaction_cost_context.reason_codes])),
-    )
-
-
-def _eligibility_and_restrictions_section_payload(
-    *,
-    result: RebalanceResult,
-    source_analytics: dict[str, ProofPackSourceAnalytics],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    restriction_context = source_analytics.get("client_restriction")
-    excluded = result.universe.excluded
-    if restriction_context is not None:
-        return _eligibility_payload_with_restriction_context(
-            restriction_context=restriction_context,
-            excluded=excluded,
-        )
-
-    return _eligibility_payload_from_universe_exclusions(excluded)
-
-
-def _eligibility_payload_with_restriction_context(
-    *,
-    restriction_context: ProofPackSourceAnalytics,
-    excluded: list[ExcludedInstrument],
-) -> _SectionPayload:
-    return (
-        _lowest_section_state(
-            [
-                restriction_context.state,
-                _eligibility_state_from_universe_exclusions(excluded),
-            ]
-        ),
-        "Eligibility evidence and source-owned client restriction profile are attached.",
-        {**restriction_context.facts, "excluded": _excluded_instrument_facts(excluded)},
-        {**restriction_context.metrics, "excluded_count": len(excluded)},
-        _eligibility_reason_codes(
-            base_reason_codes=restriction_context.reason_codes,
-            excluded=excluded,
-        ),
-    )
-
-
-def _eligibility_payload_from_universe_exclusions(
-    excluded: list[ExcludedInstrument],
-) -> _SectionPayload:
-    return (
-        _eligibility_state_from_universe_exclusions(excluded),
-        "Eligibility and restriction evidence captured from source run universe.",
-        {"excluded": _excluded_instrument_facts(excluded)},
-        {"excluded_count": len(excluded)},
-        _eligibility_reason_codes(base_reason_codes=[], excluded=excluded),
-    )
-
-
-def _eligibility_state_from_universe_exclusions(
-    excluded: list[ExcludedInstrument],
-) -> ProofPackSectionState:
-    return "PENDING_REVIEW" if excluded else "READY"
-
-
-def _excluded_instrument_facts(
-    excluded: list[ExcludedInstrument],
-) -> list[dict[str, Any]]:
-    return [item.model_dump(mode="json") for item in excluded]
-
-
-def _eligibility_reason_codes(
-    *,
-    base_reason_codes: list[str],
-    excluded: list[ExcludedInstrument],
-) -> list[str]:
-    reason_codes = list(base_reason_codes)
-    if excluded:
-        reason_codes.append("DPM_UNIVERSE_EXCLUSIONS_PRESENT")
-    return sorted(set(reason_codes))
 
 
 def _decision_summary_section_payload(
@@ -1579,17 +1401,6 @@ def _aggregate_status(counts: dict[str, int]) -> ProofPackStatus:
     if counts.get("DEGRADED", 0) > 0:
         return "DEGRADED"
     return "READY"
-
-
-def _lowest_section_state(states: list[ProofPackSectionState]) -> ProofPackSectionState:
-    state_order = {
-        "BLOCKED": 0,
-        "DEGRADED": 1,
-        "PENDING_REVIEW": 2,
-        "READY": 3,
-        "NOT_APPLICABLE": 4,
-    }
-    return min(states, key=lambda item: state_order[item])
 
 
 def _source_supportability(
