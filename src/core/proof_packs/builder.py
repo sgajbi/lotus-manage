@@ -30,6 +30,7 @@ from src.core.proof_packs.mandate_context import (
 )
 from src.core.proof_packs import governance_sections as _governance_sections
 from src.core.proof_packs import run_sections as _run_sections
+from src.core.proof_packs import section_payloads as _section_payloads
 from src.core.proof_packs import source_identity as _source_identity
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
@@ -182,6 +183,10 @@ _run_source_supportability = _identity.run_source_supportability
 _selected_alternative_source_proof_pack_id = _identity.selected_alternative_source_proof_pack_id
 _selection_correlation_id = _identity.selection_correlation_id
 _source_supportability = _identity.source_supportability
+_adapter_section_payload = _section_payloads.adapter_section_payload
+_decision_summary_section_payload = _section_payloads.decision_summary_section_payload
+_source_analytics_section_payload = _section_payloads.source_analytics_section_payload
+_source_readiness_section_payload = _section_payloads.source_readiness_section_payload
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -605,91 +610,6 @@ def _build_section(
     ).model_dump(mode="json")
     payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
     return DpmProofPackSection.model_validate(payload)
-
-
-def _source_analytics_section_payload(
-    *,
-    source_analytics: dict[str, ProofPackSourceAnalytics],
-    family: ProofPackAnalyticsFamily,
-    missing_summary: str,
-    missing_reason_code: str,
-    sort_reason_codes: bool = False,
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    analytics = source_analytics.get(family)
-    if analytics is None:
-        return ("DEGRADED", missing_summary, {}, {}, [missing_reason_code])
-    reason_codes = list(analytics.reason_codes)
-    if sort_reason_codes:
-        reason_codes = sorted(set(reason_codes))
-    return (
-        analytics.state,
-        analytics.summary,
-        analytics.facts,
-        analytics.metrics,
-        reason_codes,
-    )
-
-
-def _adapter_section_payload(
-    *,
-    summary: str,
-    adapter_contract: str,
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    return (
-        "READY",
-        summary,
-        {"adapter_contract": adapter_contract},
-        {},
-        [],
-    )
-
-
-def _source_readiness_section_payload(
-    *,
-    result: RebalanceResult | None,
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
-    if result is None:
-        return ("BLOCKED", "No source run is available.", {}, {}, ["DPM_SOURCE_RUN_MISSING"])
-
-    source_state = result.lineage.source_supportability_state
-    reason_codes = (
-        [] if source_state in {None, "READY", "ready"} else ["DPM_SOURCE_READINESS_DEGRADED"]
-    )
-    return (
-        "READY" if not reason_codes else "DEGRADED",
-        "Source readiness captured from run lineage.",
-        {
-            "input_mode": result.lineage.input_mode,
-            "source_system": result.lineage.source_system,
-            "source_supportability_state": source_state,
-        },
-        {},
-        reason_codes,
-    )
-
-
-def _decision_summary_section_payload(
-    *,
-    result: RebalanceResult | None,
-    selected_alternative: ConstructionAlternative | None,
-    reason: str | None,
-    created_by: str,
-) -> _SectionPayload:
-    reason_codes = [] if reason else ["DPM_PROOF_PACK_REASON_MISSING"]
-    return (
-        "READY" if reason else "DEGRADED",
-        "Decision evidence assembled from manage run and actor rationale.",
-        {
-            "actor": created_by,
-            "reason": reason,
-            "source_run_status": result.status if result is not None else None,
-            "selected_alternative_id": (
-                selected_alternative.alternative_id if selected_alternative else None
-            ),
-        },
-        {},
-        reason_codes,
-    )
 
 
 def _pre_run_source_analytics_payload(

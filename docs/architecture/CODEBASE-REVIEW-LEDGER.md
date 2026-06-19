@@ -27905,3 +27905,49 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance already cover this behavior-preserving extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1348: Proof-pack generic section-payload extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/section_payloads.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack source analytics payloads, source readiness posture,
+  adapter contract evidence, decision summary section evidence, and behavior-preserving source-file
+  hotspot burn-down.
+- Finding: after identity extraction, `src/core/proof_packs/builder.py` still carried generic
+  section payload helpers for source analytics families, adapter placeholder contracts, source
+  readiness, and decision summary section facts inline with orchestration. These helpers are
+  cohesive payload-formatting behavior, directly characterized by focused proof-pack tests, and do
+  not need to remain in the orchestration module.
+- Action: moved generic section payload helpers into `src/core/proof_packs/section_payloads.py`,
+  kept builder-local compatibility aliases for the existing private test surface, and preserved
+  missing source analytics degradation, optional reason-code sorting for scenario/regime evidence,
+  adapter contract facts, source-readiness degraded state mapping, missing source-run blocking, and
+  decision-summary actor/reason/selected-alternative facts. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 990 LOC to 910 LOC, the extracted
+  `section_payloads.py` is 98 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now primarily orchestration and proof-pack
+  assembly. Remaining extractions should be smaller and justified by clear ownership boundaries,
+  such as supportability aggregation or content hashing, rather than arbitrary LOC reduction.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
