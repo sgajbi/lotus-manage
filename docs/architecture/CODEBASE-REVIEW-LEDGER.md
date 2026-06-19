@@ -27165,3 +27165,52 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance cover this behavior-preserving scoring decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1047: PM-quality fairness analysis decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality fairness-analysis maintainability,
+  supervisory-control evidence explainability, and behavior-preserving fairness posture assembly.
+- Finding: the PM-quality fairness path still concentrated blocked-segment posture, comparable
+  segment checks, spread classification, score-run reference projection, segment scorable-score
+  evaluation, segment result assembly, fairness-analysis source-ref collection, hash payload
+  construction, and identifier generation in large helpers. Radon reported
+  `_fairness_analysis` as B(8), `_fairness_segment_result` as B(7), and
+  `_fairness_analysis_posture` as B(6).
+- Action: introduced a typed internal `_FairnessSegmentEvaluation` value and extracted blocked
+  segment selection, comparable-segment posture, spread posture, score-run refs, segment
+  evaluation, scorable score filtering, blocked/ready segment evaluation constructors,
+  fairness-analysis source-ref collection, fairness-analysis hash payload construction, optional
+  decimal serialization, and fairness-analysis id generation. Preserved fairness blocked
+  precedence, comparable-segment requirements, spread threshold semantics, reason-code output,
+  content hashing, and immutable fairness-analysis contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py`,
+  `python -m ruff format src\core\pm_quality\scoring.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py`,
+  `python -m radon cc src\core\pm_quality\scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality domain/API suites reported 88 passed. Radon improved
+  `_fairness_analysis` from B(8) to A(1), `_fairness_segment_result` from B(7) to A(1), and
+  `_fairness_analysis_posture` from B(6) to A(3). Quality-report freshness, OpenAPI quality, API
+  vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces PM-quality fairness-analysis assembly hotspots only. Remaining
+  B-level PM-quality hotspots include lookback-window validation and score-run source-ref
+  collection; broader unrelated source hotspots remain in API services, portfolio memory,
+  rebalance, proof-pack, and infrastructure modules.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving fairness-analysis decomposition
+  pattern.
