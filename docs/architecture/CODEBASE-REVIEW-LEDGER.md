@@ -25157,3 +25157,40 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack builder
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-997: Advise-authority tactical cohort parser helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/advise_authority/client.py`,
+  `tests/unit/dpm/infrastructure/test_advise_authority_client.py`, and `quality/`.
+- Bank-buyable control area: authority boundary parsing, source-owned advisory evidence mapping,
+  and testing.
+- Finding: `_tactical_house_view_cohort_from_response` combined fail-closed response validation,
+  affected-portfolio parsing, source-ref validation, source-product defaulting, supportability
+  reason-code fallback, and dataclass construction in one B-grade adapter helper. That made the
+  lotus-advise authority boundary harder to audit.
+- Action: separated response orchestration from cohort dataclass construction, extracted optional
+  source-product text defaulting, and added direct helper tests for custom and default optional
+  source text while preserving existing invalid-shape and transport-failure coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\advise_authority\client.py tests\unit\dpm\infrastructure\test_advise_authority_client.py`,
+  `python -m ruff check src\infrastructure\advise_authority\client.py tests\unit\dpm\infrastructure\test_advise_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\advise_authority\client.py`,
+  `python -m pytest tests\unit\dpm\infrastructure\test_advise_authority_client.py -q`,
+  `python -m radon cc src\infrastructure\advise_authority\client.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused
+  advise-authority client suite reported 17 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_tactical_house_view_cohort_from_response` reduced from B(6) to A(2), with extracted cohort
+  construction at A(4). The refreshed complexity report is sourced from `b30f31c6+worktree` and
+  the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves lotus-advise tactical cohort parser maintainability only. It
+  does not change authority request semantics, retry/timeout behavior, advisory methodology,
+  source-owned response contracts, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter
+  maintainability hardening with no operator-facing contract change.
