@@ -27855,3 +27855,53 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance already cover this behavior-preserving extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1326: Proof-pack identity module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/identity.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack identity determinism, source metadata resolution,
+  correlation fallback ordering, source supportability projection, and behavior-preserving
+  source-file hotspot burn-down.
+- Finding: after run-section extraction, `src/core/proof_packs/builder.py` still carried proof-pack
+  ID construction, source validation errors, correlation-id fallback logic, portfolio/as-of
+  resolution, source supportability projection, and alternative-set source status mapping inline
+  with orchestration. These helpers form a cohesive identity/source-metadata boundary and are
+  covered by focused proof-pack tests for missing-source validation, stable run IDs, selected
+  alternative IDs, correlation fallback precedence, and source supportability null handling.
+- Action: moved proof-pack identity, correlation, source supportability, portfolio, and as-of
+  helpers into `src/core/proof_packs/identity.py`; kept public ID helpers exported from the builder
+  and preserved builder-local compatibility aliases for the existing private test surface. Preserved
+  `DPM_PROOF_PACK_SOURCE_MISSING` failures, selected correlation precedence, run correlation
+  fallback, generated correlation IDs, run-source proof-pack ID derivation, selected-alternative
+  proof-pack ID derivation, source supportability nulls, and alternative-set status projection.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\identity.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\identity.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\identity.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,127 LOC to 990 LOC, the extracted
+  `identity.py` is 173 LOC with A maintainability, the architecture gate passed, and the duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now below 1,000 LOC and mostly retains
+  orchestration, source analytics dispatch, source readiness, section construction, and
+  supportability aggregation. Future slices should avoid hollow abstractions and only extract
+  remaining helpers where ownership is clear and focused tests characterize behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.

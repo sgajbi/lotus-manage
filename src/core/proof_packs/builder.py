@@ -13,6 +13,7 @@ from src.core.construction.models import (
 )
 from src.core.proof_packs import alternative_sections as _alternative_sections
 from src.core.proof_packs import decision_artifacts as _decision_artifacts
+from src.core.proof_packs import identity as _identity
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
     DpmProofPackEvidenceRef,
@@ -72,21 +73,14 @@ _SECTION_TITLES: dict[ProofPackSectionType, str] = {
 }
 
 
-def proof_pack_id_for_rebalance_run(*, rebalance_run_id: str) -> str:
-    return rebalance_run_id.replace("rr_", "dpp_", 1)
-
-
-def proof_pack_id_for_selected_alternative(
-    *, alternative_set_id: str, selected_alternative_id: str
-) -> str:
-    return f"dpp_{alternative_set_id}_{selected_alternative_id}"
+proof_pack_id_for_rebalance_run = _identity.proof_pack_id_for_rebalance_run
+proof_pack_id_for_selected_alternative = _identity.proof_pack_id_for_selected_alternative
 
 
 _SECTION_ORDER: list[ProofPackSectionType] = list(_SECTION_TITLES)
 
 
-class ProofPackSourceValidationError(ValueError):
-    pass
+ProofPackSourceValidationError = _identity.ProofPackSourceValidationError
 
 
 _SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
@@ -175,6 +169,19 @@ _run_policy_section_payload = _run_sections.run_policy_section_payload
 _run_state_section_payload = _run_sections.run_state_section_payload
 _tax_impact_section_payload = _run_sections.tax_impact_section_payload
 _trade_intents_section_payload = _run_sections.trade_intents_section_payload
+_alternative_set_status = _identity.alternative_set_status
+_as_of_date = _identity.as_of_date
+_candidate_proof_pack_id = _identity.candidate_proof_pack_id
+_generated_proof_pack_correlation_id = _identity.generated_proof_pack_correlation_id
+_proof_pack_id = _identity.proof_pack_id
+_resolve_portfolio_id = _identity.resolve_portfolio_id
+_resolve_proof_pack_correlation_id = _identity.resolve_proof_pack_correlation_id
+_run_correlation_id = _identity.run_correlation_id
+_run_source_proof_pack_id = _identity.run_source_proof_pack_id
+_run_source_supportability = _identity.run_source_supportability
+_selected_alternative_source_proof_pack_id = _identity.selected_alternative_source_proof_pack_id
+_selection_correlation_id = _identity.selection_correlation_id
+_source_supportability = _identity.source_supportability
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -482,39 +489,6 @@ def _run_artifact_hash(run: DpmRunRecord | None) -> str | None:
     if run is None:
         return None
     return build_dpm_run_artifact(run=run).evidence.hashes.artifact_hash
-
-
-def _resolve_proof_pack_correlation_id(
-    *,
-    correlation_id: str | None,
-    selection: ConstructionAlternativeSelection | None,
-    run: DpmRunRecord | None,
-    created_at: datetime,
-) -> str:
-    return next(
-        candidate
-        for candidate in [
-            correlation_id,
-            _selection_correlation_id(selection),
-            _run_correlation_id(run),
-            _generated_proof_pack_correlation_id(created_at),
-        ]
-        if candidate
-    )
-
-
-def _selection_correlation_id(selection: ConstructionAlternativeSelection | None) -> str | None:
-    if selection is None or not selection.correlation_id:
-        return None
-    return selection.correlation_id
-
-
-def _run_correlation_id(run: DpmRunRecord | None) -> str | None:
-    return run.correlation_id if run is not None else None
-
-
-def _generated_proof_pack_correlation_id(created_at: datetime) -> str:
-    return f"proof-pack-{created_at.strftime('%Y%m%d%H%M%S')}"
 
 
 def _proof_pack_sections(
@@ -1014,114 +988,3 @@ def _aggregate_status(counts: dict[str, int]) -> ProofPackStatus:
     if counts.get("DEGRADED", 0) > 0:
         return "DEGRADED"
     return "READY"
-
-
-def _source_supportability(
-    *,
-    result: RebalanceResult | None,
-    alternative_set: ConstructionAlternativeSet | None,
-) -> dict[str, Any]:
-    return {
-        **_run_source_supportability(result),
-        "alternative_set_status": _alternative_set_status(alternative_set),
-    }
-
-
-def _run_source_supportability(result: RebalanceResult | None) -> dict[str, Any]:
-    if result is None:
-        return {
-            "run_status": None,
-            "input_mode": None,
-            "source_system": None,
-            "source_supportability_state": None,
-        }
-    return {
-        "run_status": result.status,
-        "input_mode": result.lineage.input_mode,
-        "source_system": result.lineage.source_system,
-        "source_supportability_state": result.lineage.source_supportability_state,
-    }
-
-
-def _alternative_set_status(alternative_set: ConstructionAlternativeSet | None) -> str | None:
-    if alternative_set is None:
-        return None
-    return str(alternative_set.status)
-
-
-def _resolve_portfolio_id(
-    *,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-) -> str:
-    if alternative_set is not None:
-        return alternative_set.portfolio_id
-    if run is not None:
-        return run.portfolio_id
-    raise ProofPackSourceValidationError("DPM_PROOF_PACK_SOURCE_MISSING")
-
-
-def _as_of_date(
-    *,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-) -> str:
-    if alternative_set is not None:
-        return alternative_set.as_of
-    if run is not None:
-        return run.created_at.date().isoformat()
-    raise ProofPackSourceValidationError("DPM_PROOF_PACK_SOURCE_MISSING")
-
-
-def _proof_pack_id(
-    *,
-    source_type: ProofPackSourceType,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-) -> str:
-    proof_pack_id = _candidate_proof_pack_id(
-        source_type=source_type,
-        run=run,
-        alternative_set=alternative_set,
-        selected_alternative=selected_alternative,
-    )
-    if proof_pack_id is not None:
-        return proof_pack_id
-    raise ProofPackSourceValidationError("DPM_PROOF_PACK_SOURCE_MISSING")
-
-
-def _candidate_proof_pack_id(
-    *,
-    source_type: ProofPackSourceType,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-) -> str | None:
-    if source_type == "REBALANCE_RUN":
-        return _run_source_proof_pack_id(run)
-    if source_type == "SELECTED_ALTERNATIVE":
-        return _selected_alternative_source_proof_pack_id(
-            alternative_set=alternative_set,
-            selected_alternative=selected_alternative,
-        )
-    return None
-
-
-def _run_source_proof_pack_id(run: DpmRunRecord | None) -> str | None:
-    if run is None:
-        return None
-    return proof_pack_id_for_rebalance_run(rebalance_run_id=run.rebalance_run_id)
-
-
-def _selected_alternative_source_proof_pack_id(
-    *,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-) -> str | None:
-    if alternative_set is None or selected_alternative is None:
-        return None
-    return proof_pack_id_for_selected_alternative(
-        alternative_set_id=alternative_set.alternative_set_id,
-        selected_alternative_id=selected_alternative.alternative_id,
-    )
