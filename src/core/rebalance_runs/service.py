@@ -25,7 +25,6 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryResponse,
     DpmRunIdempotencyLookupResponse,
     DpmRunIdempotencyRecord,
-    DpmRunListItemResponse,
     DpmRunListResponse,
     DpmRunLookupResponse,
     DpmRunRecord,
@@ -48,6 +47,7 @@ from src.core.rebalance_runs.serializers import (
     to_idempotency_history_response,
     to_lineage_response,
     to_lookup_response,
+    to_run_list_response,
     to_workflow_decision_response,
 )
 from src.core.rebalance_runs.support_bundle import (
@@ -237,21 +237,7 @@ class DpmRunSupportService:
             limit=limit,
             cursor=cursor,
         )
-        return DpmRunListResponse(
-            items=[
-                DpmRunListItemResponse(
-                    rebalance_run_id=row.rebalance_run_id,
-                    correlation_id=row.correlation_id,
-                    request_hash=row.request_hash,
-                    idempotency_key=row.idempotency_key,
-                    portfolio_id=row.portfolio_id,
-                    status=str(row.result_json.get("status", "")),
-                    created_at=row.created_at.isoformat(),
-                )
-                for row in rows
-            ],
-            next_cursor=next_cursor,
-        )
+        return to_run_list_response(runs=rows, next_cursor=next_cursor)
 
     def get_idempotency_lookup(self, *, idempotency_key: str) -> DpmRunIdempotencyLookupResponse:
         self._cleanup_expired_supportability()

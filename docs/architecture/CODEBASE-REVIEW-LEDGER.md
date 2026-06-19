@@ -28254,6 +28254,76 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2234: Rebalance run list serialization extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`, `src/core/rebalance_runs/serializers.py`,
+  `tests/unit/dpm/supportability/test_run_serializers.py`, focused supportability/API tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: Manage-owned DPM run lookup/list supportability APIs, persisted run
+  record projection, run status exposure, idempotency-key posture, and cursor-backed run inventory
+  evidence used by operator-facing supportability routes.
+- Quality intake: `DpmRunSupportService` owns cleanup, repository filtering, not-found semantics,
+  and API-facing run inventory orchestration; `src/core/rebalance_runs/serializers.py` already
+  owns run lookup DTO projection. The source of truth remains persisted `DpmRunRecord` rows and
+  repository list cursors. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_run_serializers.py`,
+  `tests/unit/dpm/supportability/test_dpm_supportability_retention_service.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving run list filtering, paging,
+  retention cleanup, idempotency posture, and API response shape.
+- Finding: `src/core/rebalance_runs/service.py` still constructed run-list response DTOs inline,
+  despite `src/core/rebalance_runs/serializers.py` already owning lookup serialization for the same
+  record type. This mixed orchestration and projection, increasing service size without adding
+  domain authority.
+- Action: added `to_run_list_item_response` and `to_run_list_response` to
+  `src/core/rebalance_runs/serializers.py`; updated `DpmRunSupportService.list_runs` to delegate
+  pure DTO assembly while retaining cleanup, repository filter delegation, cursor handling, and
+  exception behavior. Added focused serializer tests for nullable idempotency keys, status
+  projection from persisted result JSON, ISO timestamp rendering, item ordering, and cursor
+  preservation. No API contract, repository contract, runtime behavior, or CI gate behavior was
+  changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_run_serializers.py tests\unit\dpm\supportability\test_dpm_supportability_retention_service.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused run-list/supportability/API
+  tests reported 162 passed. `src/core/rebalance_runs/service.py` moved from 916 LOC with C
+  maintainability 8.84 to 902 LOC with C maintainability 8.97, and
+  `src/core/rebalance_runs/serializers.py` remains A-grade at 157 LOC with maintainability 58.43.
+  The architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused run-list behavior, API behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals under the CI-enforcement governance standard.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 902 LOC because
+  it still owns run persistence orchestration, idempotency lookup/history, workflow persistence,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should target
+  one cohesive behavior family at a time, likely idempotency lookup/history projection or
+  supportability summary assembly, only where focused tests preserve not-found semantics, lineage,
+  and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal run-list serialization
+  modularity and quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
 ## BACKEND-REVIEW-20260619-2229: Rebalance run workflow projection helper extraction
 
 - Date: 2026-06-19
