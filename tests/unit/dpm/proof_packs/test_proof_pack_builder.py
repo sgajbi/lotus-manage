@@ -1218,6 +1218,50 @@ def test_source_readiness_section_payload_degrades_on_lineage_state() -> None:
     assert reason_codes == ["DPM_SOURCE_READINESS_DEGRADED"]
 
 
+def test_source_supportability_projects_run_lineage_and_alternative_status() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "lineage": result.lineage.model_copy(
+                update={
+                    "input_mode": "stateful",
+                    "source_system": "lotus-core",
+                    "source_supportability_state": "DEGRADED",
+                }
+            )
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_supportability",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[build_rebalance_result_alternative(result=result)],
+    )
+
+    supportability = builder_module._source_supportability(
+        result=result,
+        alternative_set=alternative_set,
+    )
+
+    assert supportability == {
+        "run_status": result.status,
+        "input_mode": "stateful",
+        "source_system": "lotus-core",
+        "source_supportability_state": "DEGRADED",
+        "alternative_set_status": str(alternative_set.status),
+    }
+
+
+def test_source_supportability_preserves_nulls_without_run_or_alternative_set() -> None:
+    assert builder_module._source_supportability(result=None, alternative_set=None) == {
+        "run_status": None,
+        "input_mode": None,
+        "source_system": None,
+        "source_supportability_state": None,
+        "alternative_set_status": None,
+    }
+
+
 def test_turnover_and_cost_section_payload_degrades_without_selected_metrics() -> None:
     state, summary, facts, metrics, reason_codes = (
         builder_module._turnover_and_cost_section_payload(

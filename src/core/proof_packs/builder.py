@@ -2127,14 +2127,31 @@ def _source_supportability(
     alternative_set: ConstructionAlternativeSet | None,
 ) -> dict[str, Any]:
     return {
-        "run_status": result.status if result is not None else None,
-        "input_mode": result.lineage.input_mode if result is not None else None,
-        "source_system": result.lineage.source_system if result is not None else None,
-        "source_supportability_state": (
-            result.lineage.source_supportability_state if result is not None else None
-        ),
-        "alternative_set_status": str(alternative_set.status) if alternative_set else None,
+        **_run_source_supportability(result),
+        "alternative_set_status": _alternative_set_status(alternative_set),
     }
+
+
+def _run_source_supportability(result: RebalanceResult | None) -> dict[str, Any]:
+    if result is None:
+        return {
+            "run_status": None,
+            "input_mode": None,
+            "source_system": None,
+            "source_supportability_state": None,
+        }
+    return {
+        "run_status": result.status,
+        "input_mode": result.lineage.input_mode,
+        "source_system": result.lineage.source_system,
+        "source_supportability_state": result.lineage.source_supportability_state,
+    }
+
+
+def _alternative_set_status(alternative_set: ConstructionAlternativeSet | None) -> str | None:
+    if alternative_set is None:
+        return None
+    return str(alternative_set.status)
 
 
 def _resolve_portfolio_id(

@@ -26356,3 +26356,44 @@ and improves internal transaction-cost source posture maintainability only.
   no operator-facing contract change.
 - Guidance decision: no skill, context, or playbook update required; existing backend governance
   and OpenAPI helper tests cover this repeatable pattern.
+
+## BACKEND-REVIEW-20260619-1029: Proof-pack source supportability helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: pre-trade proof-pack source supportability diagnostics, run-lineage
+  projection, and construction alternative-set posture evidence.
+- Finding: `_source_supportability` encoded missing-run defaults, run-lineage projection, source
+  supportability state, and construction alternative-set status in one B-grade helper. That made
+  proof-pack section diagnostics harder to audit as direct-run and selected-alternative proof-pack
+  paths continue to evolve.
+- Action: extracted explicit run-source supportability and alternative-set status helpers while
+  preserving the emitted `source_supportability` mapping. Added focused tests proving stateful
+  run-lineage diagnostics, degraded source supportability, alternative-set status projection, and
+  null payload preservation when neither source is present.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused proof-pack builder suite reported 111 passed. OpenAPI
+  quality, API vocabulary, and no-alias gates passed, and the FastAPI/router leakage scan returned
+  no findings. Radon reports `_source_supportability` reduced from B(6) to A(1), with extracted
+  helpers at A(2). The refreshed complexity report is sourced from `9d9aa248+worktree`, and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves proof-pack source-supportability maintainability and focused
+  diagnostic coverage only. It does not change proof-pack API contracts, source-lineage semantics,
+  construction status semantics, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and codebase review ledger instructions cover this repeatable hotspot-refactor pattern.
