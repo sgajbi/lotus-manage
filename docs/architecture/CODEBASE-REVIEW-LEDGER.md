@@ -28354,3 +28354,57 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1639: DPM source context core-product model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_core_products.py`, focused DPM source-context, mandate,
+  core-sourcing, PM-book, monitoring, and wave portfolio-universe tests, generated quality reports,
+  and this ledger.
+- Bank-buyable control area: core-owned portfolio-governance and source-discovery product
+  contracts for model targets, discretionary mandate binding, benchmark assignment, PM-book
+  membership, CIO model-change affected cohorts, and DPM portfolio-universe candidates.
+- Finding: `src/core/dpm_source_context.py` still embedded the remaining large core source-product
+  model family after prior source-context extractions. These contracts are cohesive Core product
+  DTOs and are independently consumed across mandate health, core sourcing, monitoring, PM-quality,
+  and wave discovery, so keeping them inline obscured the aggregate's remaining responsibility as
+  execution-context assembly and transformation helpers.
+- Action: moved the core product Pydantic models into
+  `src/core/dpm_source_context_core_products.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing imports, Pydantic validation, and OpenAPI schema
+  behavior remain stable. Removed the stale `datetime` import from the aggregate after extraction.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\mandates\test_mandate_pm_book.py tests\unit\dpm\mandates\test_mandate_optional_sources.py tests\unit\dpm\waves\test_wave_core_portfolio_universe_resolution_service.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\mandates\test_mandate_pm_book.py tests\unit\dpm\mandates\test_mandate_optional_sources.py tests\unit\dpm\waves\test_wave_core_portfolio_universe_resolution_service.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\api\test_mandates_api.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 172 passed.
+  `dpm_source_context.py` raw size moved from 1065 LOC to 624 LOC and improved to A
+  maintainability, the extracted `dpm_source_context_core_products.py` is 466 LOC with A
+  maintainability, the architecture gate passed, and the duplicate implementation gate remains at
+  0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused source-product
+  behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` is now a smaller source-context assembly and
+  transformation module at 624 LOC with A maintainability. Future slices should target remaining
+  transformation helpers only if they create a clear assembly, mapping, or testability boundary;
+  otherwise the next measured hotspots are `src/infrastructure/core_sourcing/client.py` and
+  `src/core/mandates.py`.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
