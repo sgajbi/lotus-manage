@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T06:26:01+00:00`
+- Generated at: `2026-06-19T06:30:48+00:00`
 
-- Report source snapshot: `0eaa785e+worktree`
+- Report source snapshot: `9c618b9e+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
-| 2 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
-| 3 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
-| 4 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
-| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
-| 6 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
-| 7 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
-| 8 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
-| 9 | build_pm_operating_quality_score_run | src/core/pm_quality/scoring.py | 5 | 72 |
-| 10 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
+| 1 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 2 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
+| 3 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
+| 4 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
+| 5 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
+| 6 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
+| 7 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
+| 8 | build_pm_operating_quality_score_run | src/core/pm_quality/scoring.py | 5 | 72 |
+| 9 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
+| 10 | _mandate_context_section_payload | src/core/proof_packs/builder.py | 5 | 67 |
 
 ### Most Complex Current Test Functions
 

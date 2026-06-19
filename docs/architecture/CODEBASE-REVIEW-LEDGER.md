@@ -26526,3 +26526,43 @@ and improves internal transaction-cost source posture maintainability only.
   hardening with unchanged public request contracts.
 - Guidance decision: no skill, context, or playbook update required; the helper extraction and
   focused request-model tests are sufficient durable guidance for this recurring validation pattern.
+
+## BACKEND-REVIEW-20260619-1033: Rebalance data-quality blocking policy
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/test_engine_simulation_shared.py`, and `quality/`.
+- Bank-buyable control area: rebalance execution data-quality gating, deterministic missing-data
+  blocking policy, and direct unit-level guardrails for shelf, price, and FX blocker behavior.
+- Finding: `check_blocking_dq` encoded shelf, missing-price, and missing-FX blocking decisions as
+  repeated inline conditionals. That left a B-grade hotspot in the execution path and made the
+  policy harder to audit as future data-quality buckets are added.
+- Action: extracted an explicit `_DataQualityBlockingRule` policy table plus small bucket/rule
+  helpers, then rewired `check_blocking_dq` through that reusable policy. Added focused tests
+  covering unconditional shelf blocking, option-gated price and FX blocking, and ignored empty or
+  non-blocking buckets.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\rebalance\execution.py tests\unit\dpm\engine\test_engine_simulation_shared.py`,
+  `python -m ruff check src\core\rebalance\execution.py tests\unit\dpm\engine\test_engine_simulation_shared.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance\execution.py`,
+  `python -m pytest tests\unit\dpm\engine\test_engine_simulation_shared.py -q`,
+  `python -m radon cc src\core\rebalance\execution.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused engine shared suite reported 15
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `check_blocking_dq` reduced from B(6) to A(2),
+  with the extracted rule helper at A(3). The refreshed complexity report is sourced from
+  `9c618b9e+worktree`, and the current top-ten source hotspot list no longer includes
+  `check_blocking_dq`.
+- Residual risk: this slice improves rebalance data-quality blocker maintainability and direct
+  policy coverage only. It does not change missing-data semantics, rebalance API contracts,
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance execution policy
+  hardening with unchanged operator-facing behavior.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and review-ledger guidance already cover policy-table extraction and focused unit
+  characterization.
