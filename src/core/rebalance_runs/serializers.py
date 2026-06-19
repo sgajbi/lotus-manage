@@ -9,6 +9,8 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryItem,
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyHistoryResponse,
+    DpmRunIdempotencyLookupResponse,
+    DpmRunIdempotencyRecord,
     DpmRunListItemResponse,
     DpmRunListResponse,
     DpmRunLookupResponse,
@@ -154,4 +156,15 @@ def to_idempotency_history_response(
             )
             for item in ordered_history
         ],
+    )
+
+
+def to_idempotency_lookup_response(
+    record: DpmRunIdempotencyRecord,
+) -> DpmRunIdempotencyLookupResponse:
+    return DpmRunIdempotencyLookupResponse(
+        idempotency_key=record.idempotency_key,
+        request_hash=record.request_hash,
+        rebalance_run_id=record.rebalance_run_id,
+        created_at=record.created_at.isoformat(),
     )

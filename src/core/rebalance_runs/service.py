@@ -45,6 +45,7 @@ from src.core.rebalance_runs.serializers import (
     to_async_accepted,
     to_async_status,
     to_idempotency_history_response,
+    to_idempotency_lookup_response,
     to_lineage_response,
     to_lookup_response,
     to_run_list_response,
@@ -244,12 +245,7 @@ class DpmRunSupportService:
         record = self._repository.get_idempotency_mapping(idempotency_key=idempotency_key)
         if record is None:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
-        return DpmRunIdempotencyLookupResponse(
-            idempotency_key=record.idempotency_key,
-            request_hash=record.request_hash,
-            rebalance_run_id=record.rebalance_run_id,
-            created_at=record.created_at.isoformat(),
-        )
+        return to_idempotency_lookup_response(record)
 
     def get_idempotency_history(self, *, idempotency_key: str) -> DpmRunIdempotencyHistoryResponse:
         self._cleanup_expired_supportability()

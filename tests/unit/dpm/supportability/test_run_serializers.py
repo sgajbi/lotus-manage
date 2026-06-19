@@ -1,7 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
-from src.core.rebalance_runs.models import DpmRunRecord
+from src.core.rebalance_runs.models import (
+    DpmRunIdempotencyHistoryRecord,
+    DpmRunIdempotencyRecord,
+    DpmRunRecord,
+)
 from src.core.rebalance_runs.serializers import (
+    to_idempotency_history_response,
+    to_idempotency_lookup_response,
     to_run_list_item_response,
     to_run_list_response,
 )
@@ -68,3 +74,52 @@ def test_run_list_response_preserves_order_and_cursor():
     assert response.items[0].idempotency_key == "idem_run_serializer_1"
     assert response.items[1].idempotency_key is None
     assert response.next_cursor == "rr_run_serializer_2"
+
+
+def test_idempotency_lookup_response_preserves_mapping_identity():
+    record = DpmRunIdempotencyRecord(
+        idempotency_key="idem_serializer_lookup",
+        request_hash="sha256:serializer-lookup",
+        rebalance_run_id="rr_serializer_lookup",
+        created_at=datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc),
+    )
+
+    response = to_idempotency_lookup_response(record)
+
+    assert response.idempotency_key == "idem_serializer_lookup"
+    assert response.request_hash == "sha256:serializer-lookup"
+    assert response.rebalance_run_id == "rr_serializer_lookup"
+    assert response.created_at == "2026-02-20T12:00:00+00:00"
+
+
+def test_idempotency_history_response_orders_events_by_source_record_identity():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    later = DpmRunIdempotencyHistoryRecord(
+        idempotency_key="idem_serializer_history",
+        rebalance_run_id="rr_serializer_history_2",
+        correlation_id="corr_serializer_history_2",
+        request_hash="sha256:serializer-history-2",
+        created_at=now + timedelta(seconds=1),
+    )
+    earlier = DpmRunIdempotencyHistoryRecord(
+        idempotency_key="idem_serializer_history",
+        rebalance_run_id="rr_serializer_history_1",
+        correlation_id="corr_serializer_history_1",
+        request_hash="sha256:serializer-history-1",
+        created_at=now,
+    )
+
+    response = to_idempotency_history_response(
+        idempotency_key="idem_serializer_history",
+        history=[later, earlier],
+    )
+
+    assert response.idempotency_key == "idem_serializer_history"
+    assert [event.rebalance_run_id for event in response.history] == [
+        "rr_serializer_history_1",
+        "rr_serializer_history_2",
+    ]
+    assert [event.correlation_id for event in response.history] == [
+        "corr_serializer_history_1",
+        "corr_serializer_history_2",
+    ]
