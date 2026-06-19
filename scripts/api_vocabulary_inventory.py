@@ -13,6 +13,12 @@ PROJECT_ROOT_STR = str(PROJECT_ROOT)
 if PROJECT_ROOT_STR not in sys.path:
     sys.path.insert(0, PROJECT_ROOT_STR)
 
+from scripts.ci_warning_filters import (  # noqa: E402
+    suppress_external_starlette_testclient_httpx_warning,
+)
+
+suppress_external_starlette_testclient_httpx_warning()
+
 from src.app.main import app  # noqa: E402
 
 ALLOWED_METHODS = {"get", "post", "put", "patch", "delete"}
@@ -54,7 +60,7 @@ def _semantic_id(name: str) -> str:
 
 def _schema_type(schema: dict[str, Any]) -> str:
     if "$ref" in schema:
-        return schema["$ref"].rsplit("/", 1)[-1]
+        return str(schema["$ref"]).rsplit("/", 1)[-1]
     return str(schema.get("type", "object"))
 
 
@@ -62,7 +68,13 @@ def _resolve_schema(schema: dict[str, Any], components: dict[str, Any]) -> dict[
     ref = schema.get("$ref")
     if not isinstance(ref, str):
         return schema
-    return components.get("schemas", {}).get(ref.rsplit("/", 1)[-1], {})
+    schemas = components.get("schemas", {})
+    if not isinstance(schemas, dict):
+        return {}
+    resolved = schemas.get(ref.rsplit("/", 1)[-1], {})
+    if not isinstance(resolved, dict):
+        return {}
+    return resolved
 
 
 def _schema_variants(schema: dict[str, Any], components: dict[str, Any]) -> list[dict[str, Any]]:
@@ -124,9 +136,9 @@ def _extract_fields(
 ) -> list[dict[str, Any]]:
     variants = _schema_variants(schema, components)
     if variants:
-        fields: list[dict[str, Any]] = []
+        variant_fields: list[dict[str, Any]] = []
         for variant in variants:
-            fields.extend(
+            variant_fields.extend(
                 _extract_fields(
                     variant,
                     components=components,
@@ -134,7 +146,7 @@ def _extract_fields(
                     location=location,
                 )
             )
-        return fields
+        return variant_fields
 
     resolved = _resolve_schema(schema, components)
     properties = resolved.get("properties", {})

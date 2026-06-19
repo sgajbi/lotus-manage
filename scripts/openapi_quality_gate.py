@@ -10,6 +10,12 @@ PROJECT_ROOT_STR = str(PROJECT_ROOT)
 if PROJECT_ROOT_STR not in sys.path:
     sys.path.insert(0, PROJECT_ROOT_STR)
 
+from scripts.ci_warning_filters import (  # noqa: E402
+    suppress_external_starlette_testclient_httpx_warning,
+)
+
+suppress_external_starlette_testclient_httpx_warning()
+
 from src.app.main import app  # noqa: E402
 
 ALLOWED_METHODS = {"get", "post", "put", "patch", "delete"}
