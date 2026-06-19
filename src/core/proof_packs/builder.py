@@ -12,11 +12,9 @@ from src.core.construction.models import (
     ConstructionAlternativeSet,
 )
 from src.core.proof_packs import alternative_sections as _alternative_sections
+from src.core.proof_packs import decision_artifacts as _decision_artifacts
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
-    DpmProofPackDecisionSummary,
-    DpmProofPackDecisionTimeline,
-    DpmProofPackDecisionTimelineEvent,
     DpmProofPackEvidenceRef,
     DpmProofPackSection,
     DpmProofPackSourceRef,
@@ -145,6 +143,22 @@ _turnover_payload_with_transaction_cost_context = (
 _turnover_payload_without_transaction_cost_context = (
     _alternative_sections.turnover_payload_without_transaction_cost_context
 )
+_alternative_set_generated_timeline_event = (
+    _decision_artifacts.alternative_set_generated_timeline_event
+)
+_approval_state = _decision_artifacts.approval_state
+_decision_summary = _decision_artifacts.decision_summary
+_decision_timeline = _decision_artifacts.decision_timeline
+_decision_timeline_event_sort_key = _decision_artifacts.decision_timeline_event_sort_key
+_expected_benefit = _decision_artifacts.expected_benefit
+_main_tradeoffs = _decision_artifacts.main_tradeoffs
+_proof_pack_generated_timeline_event = _decision_artifacts.proof_pack_generated_timeline_event
+_recommended_action = _decision_artifacts.recommended_action
+_run_created_timeline_event = _decision_artifacts.run_created_timeline_event
+_selected_alternative_timeline_event = _decision_artifacts.selected_alternative_timeline_event
+_selected_alternative_type = _decision_artifacts.selected_alternative_type
+_source_decision_timeline_events = _decision_artifacts.source_decision_timeline_events
+_workflow_decision_timeline_events = _decision_artifacts.workflow_decision_timeline_events
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -1150,226 +1164,6 @@ def _run_present_section_payload(
     if governance_payload is not None:
         return governance_payload
     raise AssertionError(f"Unhandled proof-pack section type: {section_type}")
-
-
-def _decision_summary(
-    *,
-    source_type: ProofPackSourceType,
-    result: RebalanceResult | None,
-    selected_alternative: ConstructionAlternative | None,
-    reason: str | None,
-    supportability: DpmProofPackSupportability,
-) -> DpmProofPackDecisionSummary:
-    return DpmProofPackDecisionSummary(
-        decision_type="PRE_TRADE_REBALANCE",
-        recommended_action=_recommended_action(supportability=supportability),
-        selected_alternative_type=_selected_alternative_type(
-            selected_alternative=selected_alternative
-        ),
-        business_rationale=reason or "No actor rationale supplied.",
-        expected_benefit=_expected_benefit(selected_alternative=selected_alternative),
-        main_tradeoffs=_main_tradeoffs(selected_alternative=selected_alternative),
-        top_risks=supportability.reason_codes[:5],
-        approval_state=_approval_state(result=result),
-        operations_state=supportability.status,
-    )
-
-
-def _recommended_action(*, supportability: DpmProofPackSupportability) -> str:
-    if supportability.status == "READY":
-        return "APPROVE_REBALANCE"
-    return "REVIEW_REBALANCE"
-
-
-def _selected_alternative_type(
-    *, selected_alternative: ConstructionAlternative | None
-) -> str | None:
-    if selected_alternative is None:
-        return None
-    return str(selected_alternative.method)
-
-
-def _expected_benefit(*, selected_alternative: ConstructionAlternative | None) -> str:
-    if selected_alternative is None:
-        return "Direct source run proof pack."
-    return selected_alternative.summary
-
-
-def _approval_state(*, result: RebalanceResult | None) -> str:
-    if result is None:
-        return "BLOCKED"
-    return result.status
-
-
-def _main_tradeoffs(*, selected_alternative: ConstructionAlternative | None) -> list[str]:
-    if selected_alternative is None:
-        return ["No construction alternative comparison was selected."]
-    metrics = selected_alternative.comparison_metrics
-    return [
-        f"turnover_weight={metrics.turnover_weight}",
-        f"drift_reduction={metrics.drift_reduction}",
-        f"trade_count={metrics.trade_count}",
-    ]
-
-
-def _decision_timeline(
-    *,
-    proof_pack_id: str,
-    generated_at: str,
-    source_type: ProofPackSourceType,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-    selection: ConstructionAlternativeSelection | None,
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-    created_by: str,
-) -> DpmProofPackDecisionTimeline:
-    events = _source_decision_timeline_events(
-        run=run,
-        alternative_set=alternative_set,
-        selected_alternative=selected_alternative,
-        selection=selection,
-        generated_at=generated_at,
-        created_by=created_by,
-    )
-    events.extend(_workflow_decision_timeline_events(workflow_decisions))
-    events.append(
-        _proof_pack_generated_timeline_event(
-            proof_pack_id=proof_pack_id,
-            generated_at=generated_at,
-            source_type=source_type,
-            created_by=created_by,
-        )
-    )
-    return DpmProofPackDecisionTimeline(
-        events=sorted(events, key=_decision_timeline_event_sort_key)
-    )
-
-
-def _source_decision_timeline_events(
-    *,
-    run: DpmRunRecord | None,
-    alternative_set: ConstructionAlternativeSet | None,
-    selected_alternative: ConstructionAlternative | None,
-    selection: ConstructionAlternativeSelection | None,
-    generated_at: str,
-    created_by: str,
-) -> list[DpmProofPackDecisionTimelineEvent]:
-    events: list[DpmProofPackDecisionTimelineEvent] = []
-    if run is not None:
-        events.append(_run_created_timeline_event(run))
-    if alternative_set is not None:
-        events.append(_alternative_set_generated_timeline_event(alternative_set))
-    if selected_alternative is not None:
-        events.append(
-            _selected_alternative_timeline_event(
-                selected_alternative=selected_alternative,
-                selection=selection,
-                generated_at=generated_at,
-                created_by=created_by,
-            )
-        )
-    return events
-
-
-def _run_created_timeline_event(
-    run: DpmRunRecord,
-) -> DpmProofPackDecisionTimelineEvent:
-    return DpmProofPackDecisionTimelineEvent(
-        event_id=f"{run.rebalance_run_id}:run_created",
-        event_type="REBALANCE_RUN_CREATED",
-        event_time=run.created_at.isoformat(),
-        actor="lotus-manage",
-        source_system="lotus-manage",
-        status=str(run.result_json.get("status", "UNKNOWN")),
-        reason_codes=[],
-    )
-
-
-def _alternative_set_generated_timeline_event(
-    alternative_set: ConstructionAlternativeSet,
-) -> DpmProofPackDecisionTimelineEvent:
-    return DpmProofPackDecisionTimelineEvent(
-        event_id=f"{alternative_set.alternative_set_id}:generated",
-        event_type="ALTERNATIVE_SET_GENERATED",
-        event_time=alternative_set.generated_at.isoformat(),
-        actor="lotus-manage",
-        source_system="lotus-manage",
-        status=str(alternative_set.status),
-        reason_codes=[],
-    )
-
-
-def _selected_alternative_timeline_event(
-    *,
-    selected_alternative: ConstructionAlternative,
-    selection: ConstructionAlternativeSelection | None,
-    generated_at: str,
-    created_by: str,
-) -> DpmProofPackDecisionTimelineEvent:
-    return DpmProofPackDecisionTimelineEvent(
-        event_id=f"{selected_alternative.alternative_id}:selected",
-        event_type="SELECTED_ALTERNATIVE",
-        event_time=selection.selected_at.isoformat() if selection else generated_at,
-        actor=selection.actor_id if selection else created_by,
-        source_system="lotus-manage",
-        status=str(selected_alternative.method_status),
-        reason_codes=[selection.reason_code] if selection else [],
-    )
-
-
-def _workflow_decision_timeline_events(
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> list[DpmProofPackDecisionTimelineEvent]:
-    return [
-        DpmProofPackDecisionTimelineEvent(
-            event_id=f"{decision.decision_id}:workflow_decision",
-            event_type="WORKFLOW_DECISION",
-            event_time=decision.decided_at.isoformat(),
-            actor=decision.actor_id,
-            source_system="lotus-manage",
-            status=str(decision.action),
-            reason_codes=[decision.reason_code],
-        )
-        for decision in workflow_decisions
-    ]
-
-
-def _proof_pack_generated_timeline_event(
-    *,
-    proof_pack_id: str,
-    generated_at: str,
-    source_type: ProofPackSourceType,
-    created_by: str,
-) -> DpmProofPackDecisionTimelineEvent:
-    return DpmProofPackDecisionTimelineEvent(
-        event_id=f"{proof_pack_id}:generated",
-        event_type="PROOF_PACK_GENERATED",
-        event_time=generated_at,
-        actor=created_by,
-        source_system="lotus-manage",
-        status=source_type,
-        reason_codes=[],
-    )
-
-
-_DECISION_TIMELINE_EVENT_RANK = {
-    "REBALANCE_RUN_CREATED": 0,
-    "ALTERNATIVE_SET_GENERATED": 1,
-    "SELECTED_ALTERNATIVE": 2,
-    "WORKFLOW_DECISION": 3,
-    "PROOF_PACK_GENERATED": 4,
-}
-
-
-def _decision_timeline_event_sort_key(
-    event: DpmProofPackDecisionTimelineEvent,
-) -> tuple[str, int, str]:
-    return (
-        event.event_time,
-        _DECISION_TIMELINE_EVENT_RANK.get(event.event_type, 99),
-        event.event_id,
-    )
 
 
 def _supportability(sections: list[DpmProofPackSection]) -> DpmProofPackSupportability:

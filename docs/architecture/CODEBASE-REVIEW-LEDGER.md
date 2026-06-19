@@ -27760,3 +27760,50 @@ and improves internal transaction-cost source posture maintainability only.
   codebase-review, and CI-enforcement guidance already cover shared deterministic helper
   extraction and measured hotspot burn-down; no platform skill-source change or bootstrap sync is
   needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1241: Proof-pack decision-artifact module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/decision_artifacts.py`,
+  focused proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack decision summary determinism, decision timeline auditability,
+  workflow-decision evidence ordering, and behavior-preserving source-file hotspot burn-down.
+- Finding: after selected-alternative extraction, `src/core/proof_packs/builder.py` still carried
+  decision summary assembly, recommended action derivation, selected alternative tradeoff
+  projection, source/workflow/generated timeline events, and timeline sort ranking inline with
+  broad proof-pack orchestration. This decision-presentation logic is cohesive, already covered by
+  focused proof-pack tests, and can be isolated without changing public proof-pack contracts.
+- Action: moved decision summary and decision timeline construction into
+  `src/core/proof_packs/decision_artifacts.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved direct-run fallback rationale, selected alternative
+  type projection, expected benefit text, main tradeoff formatting, approval state fallback,
+  workflow-decision event projection, selected alternative fallback actor behavior, generated event
+  status, and deterministic timeline ordering. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,514 LOC to 1,308 LOC, the extracted
+  `decision_artifacts.py` is 234 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, but major
+  proof-pack evidence families and decision artifacts are now isolated. Future slices should focus
+  on remaining run-state/run-policy/supportability orchestration only when cohesive tests and gate
+  evidence keep the change low-risk.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving module extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
