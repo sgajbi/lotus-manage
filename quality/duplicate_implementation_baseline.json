@@ -5,14 +5,5 @@
     "scripts"
   ],
   "min_lines": 8,
-  "accepted_duplicate_groups": [
-    {
-      "fingerprint": "847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c",
-      "occurrence_identities": [
-        "scripts/generate_rfc0041_wave_evidence.py:_request",
-        "scripts/generate_rfc0042_outcome_evidence.py:_request"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    }
-  ]
+  "accepted_duplicate_groups": []
 }

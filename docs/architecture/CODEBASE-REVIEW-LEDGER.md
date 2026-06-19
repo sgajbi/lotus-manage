@@ -27536,3 +27536,45 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and duplicate-gate guidance cover this behavior-preserving persistence-helper
   consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1106: RFC evidence request duplicate zero-baseline
+
+- Date: 2026-06-19
+- Scope: `scripts/generate_rfc0041_wave_evidence.py`,
+  `scripts/generate_rfc0042_outcome_evidence.py`, `scripts/rfc_evidence_http.py`, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: deterministic CI enforcement, agent-facing duplicate implementation
+  guardrails, and reusable RFC evidence script HTTP validation.
+- Finding: after production-code duplicate burn-down, the duplicate implementation gate retained
+  one accepted exact duplicate group in RFC evidence scripts. The repeated `_request` helpers had
+  identical expected-status assertion behavior and kept the duplicate gate in allowlisted-baseline
+  mode even though the behavior was straightforward to centralize.
+- Action: extracted the expected-status HTTP request helper into `scripts/rfc_evidence_http.py`
+  with explicit `failure_type` injection so each evidence script keeps its existing
+  `EvidenceError` failure semantics. Bound the shared helper directly in the RFC-0041 and
+  RFC-0042 evidence generators, regenerated the duplicate implementation baseline and inventory,
+  and reduced accepted exact duplicate groups from 1 to 0.
+- Status: hardened.
+- Evidence:
+  `python scripts\generate_rfc0041_wave_evidence.py --help`,
+  `python scripts\generate_rfc0042_outcome_evidence.py --help`,
+  `python -m ruff check scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python -m ruff format scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python -m ruff format --check scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. The duplicate implementation gate
+  now reports 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: none for exact non-trivial function-body duplicate implementation findings in
+  the current gate scope (`src`, `scripts`) at the configured 8-line threshold. Broader noisy
+  maintainability metrics remain report-only until baselines, false positives, lane placement, and
+  exception policy are settled.
+- Wiki decision: no wiki source change required; this is internal CI-enforcement evidence and
+  script maintainability work, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing
+  `lotus-ci-enforcement-governance` skill already directs promotion only for measured,
+  deterministic, low-noise gates and does not need local hand-editing or bootstrap sync for this
+  repository-local zero-baseline burn-down.
