@@ -28202,3 +28202,54 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
   pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
   slice.
+
+## BACKEND-REVIEW-20260619-1547: Core sourcing snapshot mapping extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/snapshot_mapping.py`, focused core-sourcing client tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` portfolio snapshot transformation, cash-row
+  aggregation, market-value currency preservation, required FX-pair derivation, and
+  behavior-preserving resolver-client hotspot burn-down.
+- Finding: `src/infrastructure/core_sourcing/client.py` was the largest production source file at
+  1898 LOC and combined HTTP resolver orchestration with deterministic Core snapshot row mapping,
+  cash aggregation, portfolio snapshot construction, and currency-pair helper logic. The snapshot
+  mapping block was cohesive infrastructure transformation behavior and already had focused unit
+  coverage, so it did not need to remain in the resolver client module.
+- Action: moved Core snapshot mapping, row normalization, cash aggregation, portfolio snapshot
+  construction, and required currency-pair helpers into
+  `src/infrastructure/core_sourcing/snapshot_mapping.py`; kept module-backed compatibility aliases
+  in `src/infrastructure/core_sourcing/client.py` for existing focused private-helper tests and
+  internal call sites. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1898 LOC to 1724 LOC, the extracted `snapshot_mapping.py` is
+  192 LOC with A maintainability, the architecture gate passed, and the duplicate implementation
+  gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused transformation
+  tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large HTTP resolver with
+  many source-product route methods and try-resolve helpers. Future slices should target cohesive
+  route families or source-product request mechanics only when behavior is characterized and
+  compatibility aliases can be phased deliberately.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.

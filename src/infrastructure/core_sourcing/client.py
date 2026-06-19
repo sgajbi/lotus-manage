@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import Decimal
-from typing import Any, Literal, Mapping, Optional, cast
+from typing import Any, Literal, Optional, cast
 
 import httpx
 
@@ -39,7 +38,8 @@ from src.core.dpm_source_context import (
     build_portfolio_snapshot_with_core_tax_lots,
     build_shelf_entries_from_core_eligibility,
 )
-from src.core.models import CashBalance, Money, PortfolioSnapshot, Position
+from src.core.models import PortfolioSnapshot
+from src.infrastructure.core_sourcing import snapshot_mapping as _snapshot_mapping
 
 
 class DpmCoreResolverError(RuntimeError):
@@ -53,6 +53,19 @@ class DpmCoreResolverUnavailableError(DpmCoreResolverError):
 LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
 _SourceProductMethod = Literal["get", "post"]
 _TRANSIENT_SOURCE_STATUS_CODES = frozenset({502, 503, 504})
+
+_cash_balance_currencies = _snapshot_mapping.cash_balance_currencies
+_core_snapshot_base_currency = _snapshot_mapping.core_snapshot_base_currency
+_core_snapshot_row_currency = _snapshot_mapping.core_snapshot_row_currency
+_held_instrument_ids = _snapshot_mapping.held_instrument_ids
+_map_core_snapshot_row = _snapshot_mapping.map_core_snapshot_row
+_portfolio_positions_and_cash_from_core_rows = (
+    _snapshot_mapping.portfolio_positions_and_cash_from_core_rows
+)
+_portfolio_snapshot_from_core_snapshot = _snapshot_mapping.portfolio_snapshot_from_core_snapshot
+_position_market_value_currencies = _snapshot_mapping.position_market_value_currencies
+_required_currency_pairs = _snapshot_mapping.required_currency_pairs
+_required_non_base_currencies = _snapshot_mapping.required_non_base_currencies
 
 
 def _source_product_headers(correlation_id: Optional[str]) -> dict[str, str]:
@@ -150,13 +163,6 @@ def _source_product_payload_with_retries(
         )
         return _source_product_response_payload(response, incomplete_code=incomplete_code)
     raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
-
-
-@dataclass(frozen=True)
-class _CoreSnapshotMappedRow:
-    position: Position | None = None
-    cash_currency: str | None = None
-    cash_amount: Decimal | None = None
 
 
 @dataclass(frozen=True)
@@ -1647,68 +1653,6 @@ class DpmCoreResolverClient:
             return None
 
 
-def _core_snapshot_base_currency(payload: Mapping[str, Any]) -> str:
-    valuation_context = payload.get("valuation_context") or {}
-    return str(
-        valuation_context.get("portfolio_currency")
-        or valuation_context.get("reporting_currency")
-        or "USD"
-    )
-
-
-def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
-    return str(row.get("security_id") or row.get("instrument_id") or "").strip()
-
-
-def _core_snapshot_row_quantity(row: Mapping[str, Any]) -> Decimal:
-    return Decimal(str(row.get("quantity") or "0"))
-
-
-def _core_snapshot_row_currency(row: Mapping[str, Any], *, base_currency: str) -> str:
-    return str(row.get("currency") or base_currency).upper()
-
-
-def _core_snapshot_row_market_value(row: Mapping[str, Any]) -> Decimal | None:
-    market_value = row.get("market_value_local")
-    if market_value is None:
-        return None
-    return Decimal(str(market_value))
-
-
-def _core_snapshot_row_is_cash(instrument_id: str) -> bool:
-    return instrument_id.startswith("CASH_")
-
-
-def _cash_core_snapshot_row(
-    *,
-    currency: str,
-    quantity: Decimal,
-) -> _CoreSnapshotMappedRow:
-    return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
-
-
-def _position_core_snapshot_row(
-    *,
-    instrument_id: str,
-    quantity: Decimal,
-    currency: str,
-    market_value: Decimal | None,
-) -> _CoreSnapshotMappedRow:
-    return _CoreSnapshotMappedRow(
-        position=Position(
-            instrument_id=instrument_id,
-            quantity=quantity,
-            market_value=(
-                Money(amount=market_value, currency=currency) if market_value is not None else None
-            ),
-        )
-    )
-
-
-def _held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
-    return [position.instrument_id for position in portfolio_snapshot.positions]
-
-
 def _requested_execution_instrument_ids(
     *,
     portfolio_snapshot: PortfolioSnapshot,
@@ -1778,121 +1722,3 @@ def _ready_execution_context_supportability() -> DpmCoreSupportability:
         missing_source_families=[],
         degraded_source_families=[],
     )
-
-
-def _map_core_snapshot_row(
-    row: Mapping[str, Any],
-    *,
-    base_currency: str,
-) -> _CoreSnapshotMappedRow | None:
-    instrument_id = _core_snapshot_row_instrument_id(row)
-    if not instrument_id:
-        return None
-
-    quantity = _core_snapshot_row_quantity(row)
-    currency = _core_snapshot_row_currency(row, base_currency=base_currency)
-    if _core_snapshot_row_is_cash(instrument_id):
-        return _cash_core_snapshot_row(currency=currency, quantity=quantity)
-
-    return _position_core_snapshot_row(
-        instrument_id=instrument_id,
-        quantity=quantity,
-        currency=currency,
-        market_value=_core_snapshot_row_market_value(row),
-    )
-
-
-def _merge_core_snapshot_mapped_row(
-    *,
-    positions: list[Position],
-    cash_by_currency: dict[str, Decimal],
-    mapped_row: _CoreSnapshotMappedRow,
-) -> None:
-    if mapped_row.position is not None:
-        positions.append(mapped_row.position)
-        return
-    if mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
-        cash_by_currency[mapped_row.cash_currency] = (
-            cash_by_currency.get(mapped_row.cash_currency, Decimal("0")) + mapped_row.cash_amount
-        )
-
-
-def _portfolio_positions_and_cash_from_core_rows(
-    rows: list[Mapping[str, Any]],
-    *,
-    base_currency: str,
-) -> tuple[list[Position], dict[str, Decimal]]:
-    positions: list[Position] = []
-    cash_by_currency: dict[str, Decimal] = {}
-    for row in rows:
-        mapped_row = _map_core_snapshot_row(row, base_currency=base_currency)
-        if mapped_row is None:
-            continue
-        _merge_core_snapshot_mapped_row(
-            positions=positions,
-            cash_by_currency=cash_by_currency,
-            mapped_row=mapped_row,
-        )
-
-    return positions, cash_by_currency
-
-
-def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:
-    sections = payload.get("sections") or {}
-    rows = sections.get("positions_baseline") or []
-    base_currency = _core_snapshot_base_currency(payload)
-    positions, cash_by_currency = _portfolio_positions_and_cash_from_core_rows(
-        rows,
-        base_currency=base_currency,
-    )
-
-    return PortfolioSnapshot(
-        snapshot_id=payload.get("snapshot_id")
-        or f"PortfolioStateSnapshot:{payload.get('portfolio_id')}:{payload.get('as_of_date')}",
-        portfolio_id=str(payload["portfolio_id"]),
-        base_currency=base_currency,
-        positions=positions,
-        cash_balances=[
-            CashBalance(currency=currency, amount=amount)
-            for currency, amount in sorted(cash_by_currency.items())
-        ],
-    )
-
-
-def _required_currency_pairs(
-    *,
-    portfolio_snapshot: PortfolioSnapshot,
-    base_currency: str,
-) -> list[tuple[str, str]]:
-    base = base_currency.upper()
-    return sorted(
-        (currency, base)
-        for currency in _required_non_base_currencies(
-            portfolio_snapshot=portfolio_snapshot,
-            base_currency=base,
-        )
-    )
-
-
-def _position_market_value_currencies(
-    positions: list[Position],
-) -> set[str]:
-    return {
-        position.market_value.currency.upper()
-        for position in positions
-        if position.market_value is not None
-    }
-
-
-def _cash_balance_currencies(cash_balances: list[CashBalance]) -> set[str]:
-    return {cash.currency.upper() for cash in cash_balances}
-
-
-def _required_non_base_currencies(
-    *,
-    portfolio_snapshot: PortfolioSnapshot,
-    base_currency: str,
-) -> set[str]:
-    currencies = _position_market_value_currencies(portfolio_snapshot.positions)
-    currencies.update(_cash_balance_currencies(portfolio_snapshot.cash_balances))
-    return {currency for currency in currencies if currency != base_currency}
