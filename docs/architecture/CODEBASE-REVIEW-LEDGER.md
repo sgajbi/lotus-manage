@@ -24915,3 +24915,41 @@ and improves internal transaction-cost source posture maintainability only.
   FastAPI/Starlette/httpx stack exposes a warning-free supported path.
 - Wiki decision: no wiki source change required; this is repository-local CI warning hygiene with
   no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-990: Proof-pack source analytics builder consolidation
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/source_analytics.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`, and `quality/`.
+- Bank-buyable control area: architecture, source-lineage supportability, testing, and CI
+  measurement.
+- Finding: proof-pack source analytics builders repeated the same validate, canonical-hash,
+  source-ref, degraded-reason, and analytics-envelope assembly across risk, performance,
+  client-restriction, and sustainability-preference contexts. That duplicated source-lineage
+  policy made future changes more error-prone and left the profile builders as B-grade radon
+  hotspots.
+- Action: extracted typed authority-context and profile-context builder helpers, kept family-owned
+  facts and metrics explicit, and added direct invalid-context tests so malformed source-owned
+  contexts continue to be skipped safely.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m ruff check src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m ruff format --check src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\source_analytics.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`, service leakage scan, `git diff --check`,
+  `python -m radon cc src\core\proof_packs\source_analytics.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused proof-pack suites reported 116
+  passed. Radon reports `_risk_source_analytics` and `_performance_source_analytics` reduced from
+  A(4) to A(2), while `_client_restriction_source_analytics` and
+  `_sustainability_preference_source_analytics` reduced from B(6) to A(2). Refreshed quality
+  reports are sourced from `73eb4860+worktree`, keep service boundary findings, router
+  infrastructure imports, and OpenAPI missing markers at 0, and record 2,652 test functions.
+- Residual risk: this slice improves proof-pack source analytics maintainability only. It does
+  not change source-owned risk, performance, restriction, or sustainability methodology; proof-pack
+  API contracts; downstream Gateway/Workbench behavior; runtime observability; security posture; or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-lineage
+  maintainability hardening with no operator-facing contract change.

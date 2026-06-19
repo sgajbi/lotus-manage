@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, TypeVar
 
 from pydantic import ValidationError
 
@@ -81,6 +81,12 @@ class ProofPackSourceAnalytics:
 
 
 _SourceAnalyticsBuilder = Callable[[dict[str, Any]], ProofPackSourceAnalytics | None]
+_AuthorityContext = AuthoritativeRiskContext | AuthoritativePerformanceContext
+_AuthorityContextT = TypeVar("_AuthorityContextT", bound=_AuthorityContext)
+_ProfileContext = (
+    AuthoritativeClientRestrictionContext | AuthoritativeSustainabilityPreferenceContext
+)
+_ProfileContextT = TypeVar("_ProfileContextT", bound=_ProfileContext)
 
 
 def source_analytics_for_alternative(
@@ -114,29 +120,15 @@ def _risk_source_analytics(source_context: dict[str, Any]) -> ProofPackSourceAna
         context = AuthoritativeRiskContext.model_validate(source_context)
     except ValidationError:
         return None
-    payload = context.model_dump(mode="json", exclude_none=True)
-    content_hash = hash_canonical_payload(payload)
-    return ProofPackSourceAnalytics(
+    return _authority_context_source_analytics(
+        context=context,
         family="risk",
-        state=_section_state(context.supportability_status),
         summary="Risk impact is attached from source-owned risk authority context.",
-        facts=_risk_source_facts(context),
-        metrics=_risk_source_metrics(context),
-        reason_codes=_authority_reason_codes(
-            context=context,
-            degraded_reason="DPM_RISK_AUTHORITY_CONTEXT_DEGRADED",
-        ),
-        source_ref=_authority_source_ref(
-            family="risk",
-            source_system=context.source_system,
-            source_type=context.source_product_name or "RiskMetricsReport",
-            source_id=context.source_id,
-            supportability_status=context.supportability_status,
-            content_hash=context.content_hash,
-            fallback_hash=content_hash,
-        ),
+        facts_builder=_risk_source_facts,
+        metrics_builder=_risk_source_metrics,
+        degraded_reason="DPM_RISK_AUTHORITY_CONTEXT_DEGRADED",
+        fallback_source_type="RiskMetricsReport",
         source_hash_key="risk_context",
-        content_hash=context.content_hash or content_hash,
     )
 
 
@@ -147,35 +139,58 @@ def _performance_source_analytics(
         context = AuthoritativePerformanceContext.model_validate(source_context)
     except ValidationError:
         return None
+    return _authority_context_source_analytics(
+        context=context,
+        family="performance",
+        summary="Performance context is attached from source-owned performance authority context.",
+        facts_builder=_performance_source_facts,
+        metrics_builder=_performance_source_metrics,
+        degraded_reason="DPM_PERFORMANCE_CONTEXT_DEGRADED",
+        fallback_source_type="PerformanceBenchmarkContext",
+        source_hash_key="performance_context",
+    )
+
+
+def _authority_context_source_analytics(
+    *,
+    context: _AuthorityContextT,
+    family: ProofPackAnalyticsFamily,
+    summary: str,
+    facts_builder: Callable[[_AuthorityContextT], dict[str, Any]],
+    metrics_builder: Callable[[_AuthorityContextT], dict[str, Any]],
+    degraded_reason: str,
+    fallback_source_type: str,
+    source_hash_key: str,
+) -> ProofPackSourceAnalytics:
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
     return ProofPackSourceAnalytics(
-        family="performance",
+        family=family,
         state=_section_state(context.supportability_status),
-        summary="Performance context is attached from source-owned performance authority context.",
-        facts=_performance_source_facts(context),
-        metrics=_performance_source_metrics(context),
+        summary=summary,
+        facts=facts_builder(context),
+        metrics=metrics_builder(context),
         reason_codes=_authority_reason_codes(
             context=context,
-            degraded_reason="DPM_PERFORMANCE_CONTEXT_DEGRADED",
+            degraded_reason=degraded_reason,
         ),
         source_ref=_authority_source_ref(
-            family="performance",
+            family=family,
             source_system=context.source_system,
-            source_type=context.source_product_name or "PerformanceBenchmarkContext",
+            source_type=context.source_product_name or fallback_source_type,
             source_id=context.source_id,
             supportability_status=context.supportability_status,
             content_hash=context.content_hash,
             fallback_hash=content_hash,
         ),
-        source_hash_key="performance_context",
+        source_hash_key=source_hash_key,
         content_hash=context.content_hash or content_hash,
     )
 
 
 def _authority_reason_codes(
     *,
-    context: AuthoritativeRiskContext | AuthoritativePerformanceContext,
+    context: _AuthorityContext,
     degraded_reason: str,
 ) -> list[str]:
     reason_codes = list(context.reason_codes)
@@ -330,43 +345,14 @@ def _client_restriction_source_analytics(
         context = AuthoritativeClientRestrictionContext.model_validate(source_context)
     except ValidationError:
         return None
-    payload = context.model_dump(mode="json", exclude_none=True)
-    content_hash = hash_canonical_payload(payload)
-    source_ref = _source_ref(
+    return _profile_context_source_analytics(
+        context=context,
         family="client_restriction",
-        source_system=context.source_system,
-        source_type=context.source_product_name,
-        source_id=context.source_id or content_hash,
-        supportability_state=str(context.supportability_status),
-        content_hash=context.content_hash or content_hash,
-    )
-    return ProofPackSourceAnalytics(
-        family="client_restriction",
-        state=_section_state(context.supportability_status),
         summary="Client restriction evidence is attached from source-owned ClientRestrictionProfile:v1.",
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name,
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "portfolio_id": context.portfolio_id,
-            "client_id": context.client_id,
-            "mandate_id": context.mandate_id,
-            "as_of_date": context.as_of_date.isoformat(),
-            "missing_data_families": context.missing_data_families,
-            "restrictions": [
-                restriction.model_dump(mode="json") for restriction in context.restrictions[:20]
-            ],
-        },
+        facts_builder=_client_restriction_source_facts,
         metrics={"restriction_count": context.restriction_count},
-        reason_codes=_degraded_context_reason_codes(
-            supportability_status=context.supportability_status,
-            reason_codes=context.reason_codes,
-            degraded_reason="DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED",
-        ),
-        source_ref=source_ref,
+        degraded_reason="DPM_CLIENT_RESTRICTION_CONTEXT_DEGRADED",
         source_hash_key="client_restriction_context",
-        content_hash=context.content_hash or content_hash,
     )
 
 
@@ -377,10 +363,34 @@ def _sustainability_preference_source_analytics(
         context = AuthoritativeSustainabilityPreferenceContext.model_validate(source_context)
     except ValidationError:
         return None
+    return _profile_context_source_analytics(
+        context=context,
+        family="sustainability_preference",
+        summary=(
+            "Sustainability preference evidence is attached from source-owned "
+            "SustainabilityPreferenceProfile:v1."
+        ),
+        facts_builder=_sustainability_preference_source_facts,
+        metrics={"preference_count": context.preference_count},
+        degraded_reason="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED",
+        source_hash_key="sustainability_preference_context",
+    )
+
+
+def _profile_context_source_analytics(
+    *,
+    context: _ProfileContextT,
+    family: ProofPackAnalyticsFamily,
+    summary: str,
+    facts_builder: Callable[[_ProfileContextT], dict[str, Any]],
+    metrics: dict[str, Any],
+    degraded_reason: str,
+    source_hash_key: str,
+) -> ProofPackSourceAnalytics:
     payload = context.model_dump(mode="json", exclude_none=True)
     content_hash = hash_canonical_payload(payload)
     source_ref = _source_ref(
-        family="sustainability_preference",
+        family=family,
         source_system=context.source_system,
         source_type=context.source_product_name,
         source_id=context.source_id or content_hash,
@@ -388,36 +398,56 @@ def _sustainability_preference_source_analytics(
         content_hash=context.content_hash or content_hash,
     )
     return ProofPackSourceAnalytics(
-        family="sustainability_preference",
+        family=family,
         state=_section_state(context.supportability_status),
-        summary=(
-            "Sustainability preference evidence is attached from source-owned "
-            "SustainabilityPreferenceProfile:v1."
-        ),
-        facts={
-            "source_system": context.source_system,
-            "source_product_name": context.source_product_name,
-            "source_product_version": context.source_product_version,
-            "source_id": context.source_id,
-            "portfolio_id": context.portfolio_id,
-            "client_id": context.client_id,
-            "mandate_id": context.mandate_id,
-            "as_of_date": context.as_of_date.isoformat(),
-            "missing_data_families": context.missing_data_families,
-            "preferences": [
-                preference.model_dump(mode="json") for preference in context.preferences[:20]
-            ],
-        },
-        metrics={"preference_count": context.preference_count},
+        summary=summary,
+        facts=facts_builder(context),
+        metrics=metrics,
         reason_codes=_degraded_context_reason_codes(
             supportability_status=context.supportability_status,
             reason_codes=context.reason_codes,
-            degraded_reason="DPM_SUSTAINABILITY_PREFERENCE_CONTEXT_DEGRADED",
+            degraded_reason=degraded_reason,
         ),
         source_ref=source_ref,
-        source_hash_key="sustainability_preference_context",
+        source_hash_key=source_hash_key,
         content_hash=context.content_hash or content_hash,
     )
+
+
+def _client_restriction_source_facts(
+    context: AuthoritativeClientRestrictionContext,
+) -> dict[str, Any]:
+    return {
+        **_profile_source_facts(context),
+        "restrictions": [
+            restriction.model_dump(mode="json") for restriction in context.restrictions[:20]
+        ],
+    }
+
+
+def _sustainability_preference_source_facts(
+    context: AuthoritativeSustainabilityPreferenceContext,
+) -> dict[str, Any]:
+    return {
+        **_profile_source_facts(context),
+        "preferences": [
+            preference.model_dump(mode="json") for preference in context.preferences[:20]
+        ],
+    }
+
+
+def _profile_source_facts(context: _ProfileContext) -> dict[str, Any]:
+    return {
+        "source_system": context.source_system,
+        "source_product_name": context.source_product_name,
+        "source_product_version": context.source_product_version,
+        "source_id": context.source_id,
+        "portfolio_id": context.portfolio_id,
+        "client_id": context.client_id,
+        "mandate_id": context.mandate_id,
+        "as_of_date": context.as_of_date.isoformat(),
+        "missing_data_families": context.missing_data_families,
+    }
 
 
 def _regime_stress_source_analytics(
