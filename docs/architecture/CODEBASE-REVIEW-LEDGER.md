@@ -25817,3 +25817,40 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal construction supportability
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1015: Mandate diff field traversal helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, and `quality/`.
+- Bank-buyable control area: mandate-version diff auditability, deterministic changed-field
+  traversal, and testing.
+- Finding: `iter_changed_fields` combined ignored-field handling, deterministic candidate-key
+  ordering, dotted field-path construction, nested dictionary recursion, and value comparison in
+  one B-grade helper. That made mandate diff traversal harder to audit as more mandate fields are
+  added.
+- Action: extracted candidate-key selection, field-path construction, and nested-value detection
+  helpers while preserving the existing `source_lineage` ignore rule, recursive traversal, and
+  deterministic output order; added direct tests for ignored fields, sorted keys, nested paths, and
+  nested-dict detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\mandate_diff.py tests\unit\dpm\mandates\test_mandate_diff.py`,
+  `python -m ruff check src\api\services\mandate_diff.py tests\unit\dpm\mandates\test_mandate_diff.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\mandate_diff.py`,
+  `python -m pytest tests\unit\dpm\mandates\test_mandate_diff.py -q`,
+  `python -m radon cc src\api\services\mandate_diff.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate diff suite reported 13
+  passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `iter_changed_fields` reduced from B(6) to A(4), with
+  extracted traversal helpers at A(1) to A(2). The refreshed complexity report is sourced from
+  `1cf1b378+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves mandate diff traversal maintainability only. It does not
+  change mandate version selection, materiality classification, HTTP error mapping, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate diff auditability
+  hardening with no operator-facing contract change.
