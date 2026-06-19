@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from src.api.dependencies import get_mandate_repository
@@ -11,6 +13,8 @@ from src.api.routers.monitoring_models import DpmMonitoringRunOnceRequest
 from src.api.routers.monitoring_run_once_routes import (
     _pm_book_source_filters,
     _portfolio_types_from_request,
+    _validate_pm_book_membership_ready,
+    _validated_pm_book_selector,
 )
 from src.core.mandates import (
     DpmMandateConstraintSet,
@@ -227,6 +231,35 @@ def test_monitoring_run_once_helpers_normalize_pm_book_selector_and_source_filte
         "source_snapshot_id": "pm-book-snapshot-20260503",
         "source_content_hash": "sha256:pm-book-membership",
     }
+    assert _validated_pm_book_selector(request) == ["DISCRETIONARY", "ADVISORY"]
+    _validate_pm_book_membership_ready(membership)
+
+
+def test_monitoring_run_once_helpers_reject_incomplete_pm_book_selector_and_membership() -> None:
+    missing_selector = DpmMonitoringRunOnceRequest(
+        mandate_ids=[],
+        as_of_date=date(2026, 5, 3),
+    )
+    missing_portfolio_types = DpmMonitoringRunOnceRequest(
+        mandate_ids=[],
+        as_of_date=date(2026, 5, 3),
+        portfolio_manager_id="PM_SG_DPM_001",
+        portfolio_types=[" "],
+    )
+    incomplete_membership = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
+        _pm_book_membership_payload(supportability_state="INCOMPLETE")
+    )
+
+    with pytest.raises(HTTPException) as missing_selector_exc:
+        _validated_pm_book_selector(missing_selector)
+    with pytest.raises(HTTPException) as missing_type_exc:
+        _validated_pm_book_selector(missing_portfolio_types)
+    with pytest.raises(HTTPException) as incomplete_membership_exc:
+        _validate_pm_book_membership_ready(incomplete_membership)
+
+    assert missing_selector_exc.value.status_code == 422
+    assert missing_type_exc.value.status_code == 422
+    assert incomplete_membership_exc.value.status_code == 424
 
 
 def test_monitoring_run_once_requires_explicit_or_pm_book_selector() -> None:

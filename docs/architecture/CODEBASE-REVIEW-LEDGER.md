@@ -25302,3 +25302,41 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal service-layer diagnostics
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1001: Monitoring PM-book selector helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/routers/monitoring_run_once_routes.py`,
+  `tests/unit/dpm/api/test_monitoring_api.py`, and `quality/`.
+- Bank-buyable control area: API boundary validation, source-owned PM-book cohort resolution, and
+  testing.
+- Finding: `_mandate_ids_from_pm_book_selector` combined selector validation, portfolio-type
+  normalization, core membership resolution, membership readiness checks, empty-membership
+  handling, mandate-id mapping, and source filter projection in one B-grade router helper. That
+  made monitoring PM-book selector failure behavior harder to audit.
+- Action: extracted PM-book selector validation, membership readiness validation, and
+  mandate-id mapping with HTTP exception preservation; added direct helper tests for normalized
+  selector success, missing selector rejection, missing portfolio-type rejection, and incomplete
+  membership rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\routers\monitoring_run_once_routes.py tests\unit\dpm\api\test_monitoring_api.py`,
+  `python -m ruff check src\api\routers\monitoring_run_once_routes.py tests\unit\dpm\api\test_monitoring_api.py`,
+  `python -m mypy --config-file mypy.ini src\api\routers\monitoring_run_once_routes.py`,
+  `python -m pytest tests\unit\dpm\api\test_monitoring_api.py -q`,
+  `python -m radon cc src\api\routers\monitoring_run_once_routes.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused monitoring
+  API suite reported 12 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_mandate_ids_from_pm_book_selector` reduced from B(6) to A(1), with extracted selector helpers
+  at A(2) to A(3). The refreshed complexity report is sourced from `1dc6d7ef+worktree` and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves monitoring PM-book selector maintainability only. It does not
+  change PM-book membership source contracts, mandate repository semantics, monitoring run
+  execution, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal API-boundary maintainability
+  hardening with no operator-facing contract change.
