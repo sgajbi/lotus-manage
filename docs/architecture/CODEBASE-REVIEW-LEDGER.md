@@ -27578,3 +27578,41 @@ and improves internal transaction-cost source posture maintainability only.
   `lotus-ci-enforcement-governance` skill already directs promotion only for measured,
   deterministic, low-noise gates and does not need local hand-editing or bootstrap sync for this
   repository-local zero-baseline burn-down.
+
+## BACKEND-REVIEW-20260619-1121: Proof-pack mandate-context module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/mandate_context.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack domain modularity, mandate evidence supportability, and
+  behavior-preserving source-file hotspot burn-down.
+- Finding: `src/core/proof_packs/builder.py` remains one of the largest production files and
+  carried mandate-context section construction inline with the broad proof-pack orchestration
+  surface. The function was behaviorally cohesive and already characterized by proof-pack builder
+  tests, making it a good safe extraction target without changing public proof-pack behavior.
+- Action: moved mandate-context section payload construction and mandate-health state mapping into
+  `src/core/proof_packs/mandate_context.py`, kept a builder-local import alias for existing call
+  sites and tests, and preserved mandate identity, missing twin, missing health, health score,
+  source-readiness, top-reason, and field-gap reason-code behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`.
+  Focused proof-pack builder tests reported 111 passed. `builder.py` raw size moved from 2,232 LOC
+  to 2,156 LOC, and the extracted `mandate_context.py` is 91 LOC with A maintainability.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot and should be
+  reduced through additional cohesive section-module extractions rather than broad rewrites.
+- Wiki decision: no wiki source change required; this is internal domain modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving module extraction pattern.

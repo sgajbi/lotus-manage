@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T08:26:28+00:00`
+- Generated at: `2026-06-19T08:32:32+00:00`
 
-- Report source snapshot: `01c3882e+worktree`
+- Report source snapshot: `10980a7e+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -40,7 +40,7 @@
 | 6 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
 | 7 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
 | 8 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
-| 9 | _mandate_context_section_payload | src/core/proof_packs/builder.py | 5 | 67 |
+| 9 | mandate_context_section_payload | src/core/proof_packs/mandate_context.py | 5 | 67 |
 | 10 | launch_bulk_review_campaign_definition_response | src/api/routers/wave_campaign_launch_http.py | 5 | 66 |
 
 ### Most Complex Current Test Functions
