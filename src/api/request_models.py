@@ -14,6 +14,8 @@ from src.core.models import (
     SimulationScenario,
 )
 
+InputMode = Literal["stateless", "stateful"]
+
 REBALANCE_REQUEST_EXAMPLE: JsonDict = {
     "portfolio_snapshot": {
         "portfolio_id": "pf_1",
@@ -82,7 +84,7 @@ class RebalanceExecutionRequestEnvelope(BaseModel):
         }
     }
 
-    input_mode: Literal["stateless", "stateful"] = Field(
+    input_mode: InputMode = Field(
         default="stateless",
         description=(
             "Execution input mode. Use `stateless` for complete inline bundles and `stateful` "
@@ -105,10 +107,11 @@ class RebalanceExecutionRequestEnvelope(BaseModel):
 
     @model_validator(mode="after")
     def validate_mode_payload(self) -> "RebalanceExecutionRequestEnvelope":
-        if self.input_mode == "stateless" and self.stateless_input is None:
-            raise ValueError("DPM_STATELESS_INPUT_REQUIRED")
-        if self.input_mode == "stateful" and self.stateful_input is None:
-            raise ValueError("DPM_STATEFUL_INPUT_REQUIRED")
+        _require_input_mode_payload(
+            input_mode=self.input_mode,
+            stateless_input=self.stateless_input,
+            stateful_input=self.stateful_input,
+        )
         return self
 
 
@@ -122,7 +125,7 @@ class BatchExecutionRequestEnvelope(BaseModel):
         }
     }
 
-    input_mode: Literal["stateless", "stateful"] = Field(
+    input_mode: InputMode = Field(
         default="stateless",
         description=(
             "Execution input mode. Use `stateless` for complete inline scenario bundles and "
@@ -145,11 +148,39 @@ class BatchExecutionRequestEnvelope(BaseModel):
 
     @model_validator(mode="after")
     def validate_mode_payload(self) -> "BatchExecutionRequestEnvelope":
-        if self.input_mode == "stateless" and self.stateless_input is None:
-            raise ValueError("DPM_STATELESS_INPUT_REQUIRED")
-        if self.input_mode == "stateful":
-            if self.stateful_input is None:
-                raise ValueError("DPM_STATEFUL_INPUT_REQUIRED")
-            if not self.scenarios:
-                raise ValueError("DPM_STATEFUL_SCENARIOS_REQUIRED")
+        _require_input_mode_payload(
+            input_mode=self.input_mode,
+            stateless_input=self.stateless_input,
+            stateful_input=self.stateful_input,
+        )
+        _require_stateful_scenarios(input_mode=self.input_mode, scenarios=self.scenarios)
         return self
+
+
+def _require_input_mode_payload(
+    *,
+    input_mode: InputMode,
+    stateless_input: object | None,
+    stateful_input: object | None,
+) -> None:
+    if _requires_stateless_payload(input_mode=input_mode, stateless_input=stateless_input):
+        raise ValueError("DPM_STATELESS_INPUT_REQUIRED")
+    if _requires_stateful_payload(input_mode=input_mode, stateful_input=stateful_input):
+        raise ValueError("DPM_STATEFUL_INPUT_REQUIRED")
+
+
+def _requires_stateless_payload(*, input_mode: InputMode, stateless_input: object | None) -> bool:
+    return input_mode == "stateless" and stateless_input is None
+
+
+def _requires_stateful_payload(*, input_mode: InputMode, stateful_input: object | None) -> bool:
+    return input_mode == "stateful" and stateful_input is None
+
+
+def _require_stateful_scenarios(
+    *,
+    input_mode: InputMode,
+    scenarios: dict[str, SimulationScenario],
+) -> None:
+    if input_mode == "stateful" and not scenarios:
+        raise ValueError("DPM_STATEFUL_SCENARIOS_REQUIRED")

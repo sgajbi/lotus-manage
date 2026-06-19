@@ -26484,3 +26484,45 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill, context, or playbook update required; the recurring pattern is
   already covered by backend governance and review-ledger guidance, and the shared helper plus tests
   are sufficient durable implementation guidance for future handoff modules.
+
+## BACKEND-REVIEW-20260619-1032: Request input-mode validation helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/request_models.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and `quality/`.
+- Bank-buyable control area: API request-envelope validation, stateless/stateful execution-mode
+  guardrails, and deterministic client error codes for missing execution payloads.
+- Finding: `BatchExecutionRequestEnvelope.validate_mode_payload` embedded stateless payload,
+  stateful payload, and stateful scenario validation in one B-grade Pydantic validator, while
+  `RebalanceExecutionRequestEnvelope` carried a smaller copy of the same input-mode policy. That
+  made API request contract guardrails harder to audit as stateful execution support expands.
+- Action: introduced a shared `InputMode` alias plus `_require_input_mode_payload`,
+  `_requires_stateless_payload`, `_requires_stateful_payload`, and `_require_stateful_scenarios`
+  helpers. Rewired both envelope validators through the shared helpers while preserving existing
+  error codes. Added focused tests covering valid stateless rebalance, valid stateless batch, valid
+  stateful batch with scenarios, and each helper error path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\request_models.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff check src\api\request_models.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src\api\request_models.py`,
+  `python -m pytest tests\unit\api\test_runtime_request_model_and_service_edges.py -q`,
+  `python -m radon cc src\api\request_models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused runtime request model and service-edge suite reported 48
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports both envelope `validate_mode_payload` methods at
+  A(1), with shared payload/scenario helpers at A(2) to A(3). The refreshed complexity report is
+  sourced from `0eaa785e+worktree`, and the current top-ten source hotspot list no longer includes
+  `validate_mode_payload`.
+- Residual risk: this slice improves request-envelope validation maintainability and direct
+  validation coverage only. It does not change API schemas, request error codes, stateful sourcing
+  feature gates, execution behavior, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal API request-model validation
+  hardening with unchanged public request contracts.
+- Guidance decision: no skill, context, or playbook update required; the helper extraction and
+  focused request-model tests are sufficient durable guidance for this recurring validation pattern.

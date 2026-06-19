@@ -25,6 +25,7 @@ import src.api.services.rebalance_simulation_service as service
 import src.api.services.rebalance_stateful_source_context as stateful_source_context
 import src.api.services.rebalance_sync_execution as sync_execution
 import src.api.services.rebalance_supportability_write as supportability_write
+import src.api.request_models as request_models
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
 import src.api.main as api_main
@@ -68,6 +69,54 @@ def test_request_envelopes_require_matching_stateful_payloads() -> None:
 
     with pytest.raises(ValidationError, match="DPM_STATEFUL_SCENARIOS_REQUIRED"):
         BatchExecutionRequestEnvelope(input_mode="stateful", stateful_input=_stateful_input())
+
+
+def test_request_envelopes_accept_valid_stateless_and_stateful_payloads() -> None:
+    rebalance_request = RebalanceRequest.model_validate(valid_api_payload())
+    batch_request = BatchRebalanceRequest.model_validate(
+        {
+            **valid_api_payload(),
+            "scenarios": {"baseline": {"options": {}}},
+        }
+    )
+
+    rebalance_envelope = RebalanceExecutionRequestEnvelope(
+        input_mode="stateless",
+        stateless_input=rebalance_request,
+    )
+    batch_envelope = BatchExecutionRequestEnvelope(
+        input_mode="stateless",
+        stateless_input=batch_request,
+    )
+    stateful_batch_envelope = BatchExecutionRequestEnvelope(
+        input_mode="stateful",
+        stateful_input=_stateful_input(),
+        scenarios={"baseline": {"options": {}}},
+    )
+
+    assert rebalance_envelope.stateless_input is rebalance_request
+    assert batch_envelope.stateless_input is batch_request
+    assert stateful_batch_envelope.stateful_input == _stateful_input()
+    assert set(stateful_batch_envelope.scenarios) == {"baseline"}
+
+
+def test_input_mode_payload_helpers_preserve_error_codes() -> None:
+    with pytest.raises(ValueError, match="DPM_STATELESS_INPUT_REQUIRED"):
+        request_models._require_input_mode_payload(
+            input_mode="stateless",
+            stateless_input=None,
+            stateful_input=None,
+        )
+
+    with pytest.raises(ValueError, match="DPM_STATEFUL_INPUT_REQUIRED"):
+        request_models._require_input_mode_payload(
+            input_mode="stateful",
+            stateless_input=None,
+            stateful_input=None,
+        )
+
+    with pytest.raises(ValueError, match="DPM_STATEFUL_SCENARIOS_REQUIRED"):
+        request_models._require_stateful_scenarios(input_mode="stateful", scenarios={})
 
 
 def test_runtime_utils_feature_and_backend_guards(monkeypatch) -> None:
