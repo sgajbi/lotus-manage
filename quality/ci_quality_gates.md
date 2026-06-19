@@ -33,7 +33,7 @@ The following commands are active repository gates:
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
     action references, unexpected workflow permissions, missing blocking quality-report checks, and
     PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
-    guidance decisions, and blocking workflow coverage-gate drift)
+    guidance decisions, coverage evidence, and blocking workflow coverage-gate drift)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
   - `make coverage-gate` (`python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)`;

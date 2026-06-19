@@ -26828,3 +26828,39 @@ and improves internal transaction-cost source posture maintainability only.
   repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. The shared coverage script, Make target, workflow
   policy gate, and tests are the durable future-agent guardrail for this recurring CI pattern.
+
+## BACKEND-REVIEW-20260619-1039: Coverage evidence required in PR contract
+
+- Date: 2026-06-19
+- Scope: `.github/pull_request_template.md`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `scripts/engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: agent-default validation evidence, coverage-gate adoption, and
+  prevention of PR evidence drift after adding shared local/GitHub coverage enforcement.
+- Finding: `make coverage-gate` was added as the shared coverage enforcement command, but the
+  agent-facing PR template did not require explicit coverage-gate evidence. That left a gap between
+  the new repo-native command and the evidence future agents are prompted to collect.
+- Action: added `make coverage-gate` to the PR template validation evidence section, added the same
+  required token to `scripts/workflow_policy_gate.py`, and extended the PR-template policy tests so
+  template drift fails if coverage evidence is removed. Updated the scorecard wording and CI-gate
+  documentation, then regenerated the quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 23
+  passed. Workflow policy, quality-report freshness, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice requires agents to record coverage-gate evidence. It does not verify
+  that the PR body is filled truthfully after PR creation, add diff coverage, or inspect GitHub
+  branch-protection settings.
+- Wiki decision: no wiki source change required; this is internal PR evidence governance and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The current `lotus-ci-enforcement-governance`
+  guidance already covers promoting agent-facing evidence when new repo-native gates are added.

@@ -194,6 +194,10 @@ def test_pr_template_policy_gate_rejects_missing_required_evidence(tmp_path: Pat
         "'`make ci-local`'"
     ) in violations
     assert (
+        f"{template.as_posix()}: PR template must include coverage_gate evidence token "
+        "'`make coverage-gate`'"
+    ) in violations
+    assert (
         f"{template.as_posix()}: PR template must include stranded_truth_fetch evidence token "
         "'`git fetch origin --prune`'"
     ) in violations

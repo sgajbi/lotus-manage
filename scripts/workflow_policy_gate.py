@@ -34,6 +34,7 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
     "local_parity": "`make ci-local`",
     "workflow_policy": "`make workflow-policy-gate`",
     "quality_report": "`make quality-report-gate`",
+    "coverage_gate": "`make coverage-gate`",
     "openapi": "`make openapi-gate`",
     "api_vocabulary": "`make api-vocabulary-gate`",
     "no_alias": "`make no-alias-gate`",
