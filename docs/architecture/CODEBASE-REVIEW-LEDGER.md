@@ -28461,3 +28461,63 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1709: Core sourcing source-product transport extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/source_product_transport.py`, focused core-sourcing client
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: deterministic Core source-product HTTP transport, transient retry
+  handling, correlation header propagation, safe unavailable/incomplete error mapping, and
+  source-payload shape validation for stateful DPM source hydration.
+- Quality intake: `src/infrastructure/core_sourcing/client.py` is the existing infrastructure owner
+  for Core source-product access; `lotus-core` remains source-data authority and Manage preserves
+  Core source payload semantics without becoming source owner. The closest meaningful tests are
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`; repo-native validation
+  uses focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is shrinking the already-measured
+  `core_sourcing/client.py` hotspot while preserving deterministic gate posture.
+- Finding: after resolver config extraction, `src/infrastructure/core_sourcing/client.py` still
+  embedded low-level source-product transport helpers for correlation headers, GET/POST selector
+  transport, transient retry boundaries, status-to-error mapping, and JSON object validation. These
+  mechanics are cohesive infrastructure concerns, behavior-covered by focused tests, and separate
+  from the client's higher-level source-product orchestration and DPM context assembly.
+- Action: moved source-product transport mechanics into
+  `src/infrastructure/core_sourcing/source_product_transport.py`; kept private compatibility
+  aliases from `src/infrastructure/core_sourcing/client.py` for existing tests/imports while making
+  the transport helper module the implementation owner. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1456 LOC with B maintainability 14.27 to 1366 LOC with B
+  maintainability 18.20, and the extracted `source_product_transport.py` is 109 LOC with A
+  maintainability 48.35. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused transport behavior, and quality-report
+  freshness. File size and maintainability remain measured/report-backed trend signals rather than
+  newly promoted blockers because they are not standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large Core source
+  orchestration module at 1366 LOC. Future slices should target cohesive source-product hydration
+  families or payload mapping only where focused tests can preserve unavailable signaling,
+  correlation propagation, retry semantics, and source-context payload behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.

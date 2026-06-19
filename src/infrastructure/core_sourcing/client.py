@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from typing import Any, Literal, Optional, cast
+from typing import Any, Optional
 
 import httpx
 
@@ -46,11 +46,14 @@ from src.infrastructure.core_sourcing.resolver_config import (
     LEGACY_DPM_EXECUTION_CONTEXT_PATH as LEGACY_DPM_EXECUTION_CONTEXT_PATH,
     DpmCoreResolverConfig as DpmCoreResolverConfig,
 )
+from src.infrastructure.core_sourcing import source_product_transport as _source_product_transport
+from src.infrastructure.core_sourcing.source_product_transport import (
+    SourceProductMethod as _SourceProductMethod,
+    source_product_headers as _source_product_headers,
+    source_product_payload_with_retries as _source_product_payload_with_retries,
+)
 from src.infrastructure.core_sourcing import snapshot_mapping as _snapshot_mapping
 
-
-_SourceProductMethod = Literal["get", "post"]
-_TRANSIENT_SOURCE_STATUS_CODES = frozenset({502, 503, 504})
 
 _cash_balance_currencies = _snapshot_mapping.cash_balance_currencies
 _core_snapshot_base_currency = _snapshot_mapping.core_snapshot_base_currency
@@ -64,103 +67,10 @@ _portfolio_snapshot_from_core_snapshot = _snapshot_mapping.portfolio_snapshot_fr
 _position_market_value_currencies = _snapshot_mapping.position_market_value_currencies
 _required_currency_pairs = _snapshot_mapping.required_currency_pairs
 _required_non_base_currencies = _snapshot_mapping.required_non_base_currencies
-
-
-def _source_product_headers(correlation_id: Optional[str]) -> dict[str, str]:
-    return {"X-Correlation-Id": correlation_id} if correlation_id else {}
-
-
-def _source_product_response_payload(
-    response: httpx.Response,
-    *,
-    incomplete_code: str,
-) -> dict[str, Any]:
-    response_payload = response.json()
-    if not isinstance(response_payload, dict):
-        raise DpmCoreResolverError(incomplete_code)
-    return response_payload
-
-
-def _raise_for_source_product_status(
-    response: httpx.Response,
-    *,
-    unavailable_code: str,
-    incomplete_code: str,
-) -> None:
-    if response.status_code >= 500:
-        raise DpmCoreResolverUnavailableError(unavailable_code)
-    if response.status_code >= 400:
-        raise DpmCoreResolverError(incomplete_code)
-
-
-def _source_product_request(
-    client: Any,
-    *,
-    method: _SourceProductMethod,
-    url: str,
-    selector: dict[str, Any],
-    headers: dict[str, str],
-) -> httpx.Response:
-    if method == "post":
-        return cast(httpx.Response, client.post(url, json=selector, headers=headers))
-    return cast(httpx.Response, client.get(url, params=selector, headers=headers))
-
-
-def _final_source_product_attempt(*, attempt_index: int, attempts: int) -> bool:
-    return attempt_index + 1 >= attempts
-
-
-def _should_retry_transient_source_status(
-    response: httpx.Response,
-    *,
-    attempt_index: int,
-    attempts: int,
-) -> bool:
-    return (
-        response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
-        and not _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts)
-    )
-
-
-def _source_product_payload_with_retries(
-    client: Any,
-    *,
-    attempts: int,
-    method: _SourceProductMethod,
-    url: str,
-    selector: dict[str, Any],
-    headers: dict[str, str],
-    unavailable_code: str,
-    incomplete_code: str,
-) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            response = _source_product_request(
-                client,
-                method=method,
-                url=url,
-                selector=selector,
-                headers=headers,
-            )
-        except (httpx.TimeoutException, httpx.TransportError) as exc:
-            last_error = exc
-            if _final_source_product_attempt(attempt_index=attempt, attempts=attempts):
-                raise DpmCoreResolverUnavailableError(unavailable_code) from exc
-            continue
-        if _should_retry_transient_source_status(
-            response,
-            attempt_index=attempt,
-            attempts=attempts,
-        ):
-            continue
-        _raise_for_source_product_status(
-            response,
-            unavailable_code=unavailable_code,
-            incomplete_code=incomplete_code,
-        )
-        return _source_product_response_payload(response, incomplete_code=incomplete_code)
-    raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+_final_source_product_attempt = _source_product_transport.final_source_product_attempt
+_should_retry_transient_source_status = (
+    _source_product_transport.should_retry_transient_source_status
+)
 
 
 class DpmCoreResolverClient:
