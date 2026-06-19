@@ -24891,3 +24891,26 @@ and improves internal transaction-cost source posture maintainability only.
   readiness or convert broader report-only baselines into hard release thresholds.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-989: Starlette TestClient warning hygiene
+
+- Date: 2026-06-19
+- Scope: `pyproject.toml`, `scripts/__init__.py`, `scripts/ci_warning_filters.py`,
+  `scripts/openapi_quality_gate.py`, `scripts/api_vocabulary_inventory.py`,
+  `tests/unit/test_ci_warning_filters.py`, and this ledger.
+- Bank-buyable control area: CI warning hygiene and operational signal quality.
+- Finding: PR #559 removed the warning from pytest paths that reported through
+  `fastapi.testclient`, but Main Releasability still surfaced the same external
+  Starlette/httpx TestClient deprecation through app-importing CI scripts.
+- Action: added a narrow CI warning helper for the exact external Starlette TestClient/httpx
+  message, reused it before app imports in OpenAPI and vocabulary gate scripts, and broadened the
+  pytest filter to the same exact message/category without suppressing unrelated deprecations.
+- Status: hardened.
+- Evidence: focused warning-filter tests verify the known warning is suppressed and unrelated
+  deprecation warnings remain visible.
+- Residual risk: this suppresses a known third-party compatibility warning while keeping project
+  warnings visible. It does not address action-internal GitHub/Node deprecation warnings emitted by
+  upstream actions, and it does not replace the eventual dependency-level remediation when the
+  FastAPI/Starlette/httpx stack exposes a warning-free supported path.
+- Wiki decision: no wiki source change required; this is repository-local CI warning hygiene with
+  no operator-facing contract change.

@@ -59,7 +59,7 @@ markers = [
   "e2e: end-to-end tests",
 ]
 filterwarnings = [
-  "ignore:Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead\\.:starlette.testclient.StarletteDeprecationWarning:fastapi\\.testclient",
+  "ignore:Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead\\.:DeprecationWarning",
 ]
 
 [tool.bandit]
