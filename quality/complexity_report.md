@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T06:14:57+00:00`
+- Generated at: `2026-06-19T06:18:08+00:00`
 
-- Report source snapshot: `9d9aa248+worktree`
+- Report source snapshot: `40b02568+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
-| 2 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
-| 3 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
-| 4 | supportability_severity | src/api/services/wave_supportability_diagnostics.py | 6 | 10 |
-| 5 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
-| 6 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
-| 7 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
-| 8 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
-| 9 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
-| 10 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
+| 1 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
+| 2 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
+| 3 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
+| 4 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
+| 5 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 6 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
+| 7 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
+| 8 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
+| 9 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
+| 10 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
 
 ### Most Complex Current Test Functions
 

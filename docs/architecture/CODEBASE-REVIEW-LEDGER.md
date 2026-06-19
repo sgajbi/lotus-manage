@@ -26397,3 +26397,44 @@ and improves internal transaction-cost source posture maintainability only.
   no operator-facing contract change.
 - Guidance decision: no skill, context, or playbook update required; existing backend governance
   and codebase review ledger instructions cover this repeatable hotspot-refactor pattern.
+
+## BACKEND-REVIEW-20260619-1030: Wave supportability diagnostic policy tables
+
+- Date: 2026-06-19
+- Scope: `src/api/services/wave_supportability_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and `quality/`.
+- Bank-buyable control area: wave operator diagnostics, supportability severity classification,
+  and source-owner routing for remediation.
+- Finding: `supportability_severity` and `supportability_source_owner` each embedded wave-item
+  state policy in branching. That kept both helpers at B-grade complexity and made diagnostic
+  severity/source-owner mapping harder to review as wave states and proof-pack postures evolve.
+- Action: extracted explicit supportability severity and source-owner state sets plus a small
+  proof-pack degraded predicate and default source-owner helper. Added table-driven tests covering
+  critical, warning, info, completed/no-issue states, proof-pack degraded warning behavior,
+  source-owner routing, and explicit source-owner override preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m ruff check src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\wave_supportability_diagnostics.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_supportability_diagnostics.py -q`,
+  `python -m radon cc src\api\services\wave_supportability_diagnostics.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused wave supportability diagnostics suite reported 7 passed.
+  OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `supportability_severity` reduced from B(6) to A(4) and
+  `supportability_source_owner` reduced from B(6) to A(3), with the default owner helper at A(4).
+  The refreshed complexity report is sourced from `40b02568+worktree`, and the current top-ten
+  source hotspot list no longer includes either targeted helper.
+- Residual risk: this slice improves wave supportability diagnostic maintainability and direct
+  policy-table coverage only. It does not change the supportability payload contract, wave state
+  semantics, remediation route behavior, Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal diagnostics implementation
+  hardening with no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and review-ledger guidance covered the hotspot/policy-table refactor pattern cleanly.

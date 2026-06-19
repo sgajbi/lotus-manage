@@ -3,6 +3,8 @@ from src.api.services.wave_supportability_diagnostics import (
     _supportability_reason_codes,
     operator_actions,
     supportability_issue,
+    supportability_severity,
+    supportability_source_owner,
 )
 from src.core.waves import DpmRebalanceWaveItem
 
@@ -67,6 +69,54 @@ def test_supportability_issue_preserves_explicit_owner_and_action() -> None:
         "reason_codes": ["RISK_INPUT_STALE"],
         "remediation_route": "REFRESH_RISK_INPUTS",
     }
+
+
+def test_supportability_severity_maps_wave_item_states() -> None:
+    expectations = {
+        "SOURCE_BLOCKED": "CRITICAL",
+        "SIMULATION_BLOCKED": "CRITICAL",
+        "SOURCE_DEGRADED": "WARNING",
+        "REVIEW_REQUIRED": "WARNING",
+        "SELECTED": "WARNING",
+        "CANDIDATE": "INFO",
+        "SOURCE_READY": "INFO",
+        "SIMULATED": None,
+    }
+
+    for state, expected in expectations.items():
+        assert supportability_severity(_item(state=state)) == expected
+
+
+def test_supportability_severity_warns_only_on_degraded_proof_pack_ready_item() -> None:
+    assert (
+        supportability_severity(
+            _item(state="PROOF_PACK_READY", diagnostics={"proof_pack_state": "DEGRADED"})
+        )
+        == "WARNING"
+    )
+    assert supportability_severity(_item(state="PROOF_PACK_READY")) is None
+
+
+def test_supportability_source_owner_maps_wave_item_states_and_explicit_owner() -> None:
+    expectations = {
+        "SOURCE_BLOCKED": "lotus-manage",
+        "SOURCE_DEGRADED": "lotus-manage",
+        "REVIEW_REQUIRED": "lotus-manage",
+        "SIMULATION_BLOCKED": "lotus-manage-construction",
+        "SELECTED": "lotus-manage-proof-pack",
+        "PROOF_PACK_READY": "lotus-manage-proof-pack",
+        "CANDIDATE": "lotus-manage",
+    }
+
+    for state, expected in expectations.items():
+        assert supportability_source_owner(_item(state=state)) == expected
+
+    assert (
+        supportability_source_owner(
+            _item(state="SIMULATION_BLOCKED", diagnostics={"source_owner": "lotus-risk"})
+        )
+        == "lotus-risk"
+    )
 
 
 def test_operator_actions_preserve_ready_and_sorted_remediation_routes() -> None:
