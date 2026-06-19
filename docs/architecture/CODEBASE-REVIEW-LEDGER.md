@@ -28394,6 +28394,73 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2243: Rebalance supportability summary projection extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/supportability_summary.py`,
+  `tests/unit/dpm/supportability/test_supportability_summary_projection.py`, focused
+  supportability/API tests, generated quality reports, and this ledger.
+- Bank-buyable control area: operator-facing DPM action-register supportability summary,
+  freshness bucket classification, bounded ready/empty/stale/degraded posture, workflow aggregate
+  counts, lineage counts, metrics label values, and API-facing supportability diagnostics.
+- Quality intake: `DpmRunSupportService` owns cleanup and repository access for supportability
+  summary reads, while `DpmSupportabilitySummaryData` from the repository is the source of truth.
+  The path is API-facing and operator-facing through `/api/v1/rebalance/supportability/summary`
+  and corresponding Prometheus labels. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_supportability_summary_projection.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is removing the remaining C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving supportability summary counts,
+  timestamps, freshness buckets, state/reason mapping, metrics values, and API guard behavior.
+- Finding: `src/core/rebalance_runs/service.py` still owned pure supportability response assembly
+  and freshness-state policy after prior serialization extractions. That policy is deterministic
+  over repository summary data plus current time and belongs in a separately tested projection
+  helper, not the orchestration service.
+- Action: added `src/core/rebalance_runs/supportability_summary.py` for summary response
+  projection, action-register supportability resolution, and freshness-bucket classification.
+  `DpmRunSupportService.get_supportability_summary` now retains cleanup and repository access, then
+  delegates pure projection with an explicit `now` timestamp. Added focused projection tests for
+  ready, empty, stale, degraded, timestamp/count projection, and naive timestamp handling. No API
+  contract, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_supportability_summary_projection.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py tests\unit\dpm\supportability\test_supportability_summary_projection.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py tests\unit\dpm\supportability\test_supportability_summary_projection.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused supportability/API tests
+  reported 168 passed. `src/core/rebalance_runs/service.py` moved from 898 LOC with C
+  maintainability 8.97 to 815 LOC with B maintainability 13.04, removing it from the C-grade
+  hotspot list. The extracted `src/core/rebalance_runs/supportability_summary.py` is 112 LOC with
+  A maintainability 46.20. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, supportability summary behavior, API behavior,
+  and quality-report freshness. This slice used maintainability index and file size as measured
+  improvement evidence, not as new blockers, consistent with CI-enforcement governance.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` is now B-grade but still owns run
+  persistence orchestration, workflow persistence, artifact resolution, cleanup, and support-bundle
+  orchestration. Future slices should move to the remaining measured C-grade hotspots or target
+  artifact resolution only if focused tests can preserve persisted/derived artifact behavior.
+- Wiki decision: no wiki source change required; this is internal supportability projection
+  modularity and quality evidence, not new operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
 ## BACKEND-REVIEW-20260619-2229: Rebalance run workflow projection helper extraction
 
 - Date: 2026-06-19

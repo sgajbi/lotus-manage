@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T14:37:50+00:00`
+- Generated at: `2026-06-19T14:43:01+00:00`
 
-- Report source snapshot: `2328c101+worktree`
+- Report source snapshot: `2e4d4cb0+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
-| 2 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
-| 3 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
-| 4 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
-| 5 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
-| 6 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
-| 7 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
-| 8 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
-| 9 | mandate_context_section_payload | src/core/proof_packs/mandate_context.py | 5 | 67 |
-| 10 | launch_bulk_review_campaign_definition_response | src/api/routers/wave_campaign_launch_http.py | 5 | 66 |
+| 1 | resolve_freshness_bucket | src/core/rebalance_runs/supportability_summary.py | 6 | 27 |
+| 2 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 3 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
+| 4 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
+| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
+| 6 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
+| 7 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
+| 8 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
+| 9 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
+| 10 | mandate_context_section_payload | src/core/proof_packs/mandate_context.py | 5 | 67 |
 
 ### Most Complex Current Test Functions
 
