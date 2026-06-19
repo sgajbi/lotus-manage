@@ -24953,3 +24953,36 @@ and improves internal transaction-cost source posture maintainability only.
   global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack source-lineage
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-991: Target cash-buffer scaling helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, and `quality/`.
+- Bank-buyable control area: architecture, portfolio target-generation maintainability, and
+  testing.
+- Finding: `_apply_min_cash_buffer` recomputed target-weight posture locally and combined
+  locked-weight accounting, allowed tradeable-weight calculation, tradeable-target scaling, and
+  status selection in one B-grade function. That made the cash-buffer rule harder to review even
+  though the module already had a named `_TargetWeightPosture` model.
+- Action: reused `_target_weight_posture`, extracted `_cash_buffer_tradeable_weight_limit`, and
+  extracted `_scale_tradeable_targets_for_cash_buffer`; added direct tests for locked-weight
+  cash-buffer capacity, scaling behavior, and no-op behavior when the tradeable weights are within
+  limit.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\rebalance\targets.py tests\unit\dpm\engine\coverage\test_engine_target_generation.py`,
+  `python -m ruff check src\core\rebalance\targets.py tests\unit\dpm\engine\coverage\test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance\targets.py`,
+  `python -m pytest tests\unit\dpm\engine\coverage\test_engine_target_generation.py -q`,
+  `python -m radon cc src\core\rebalance\targets.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused target-generation suite reported 27
+  passed. Radon reports `_apply_min_cash_buffer` reduced from B(10) to A(3), with
+  `_cash_buffer_tradeable_weight_limit` at A(1). The refreshed complexity report is sourced from
+  `f1f97304+worktree` and the current top-ten source hotspot list no longer includes
+  `_apply_min_cash_buffer`.
+- Residual risk: this slice improves target-generation maintainability only. It does not change
+  cash-buffer methodology, rebalance output contracts, execution routing, policy-pack behavior,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance target-generation
+  maintainability hardening with no operator-facing contract change.
