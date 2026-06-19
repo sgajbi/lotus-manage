@@ -67,8 +67,11 @@ from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionCo
 from src.infrastructure.waves.campaign_definitions import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
     PostgresDpmBulkReviewCampaignDefinitionRepository,
+    _definition_matches_filters,
+    _definition_sort_key,
     _import_psycopg,
     _load_campaign_definition_payload,
+    _paged_definitions,
     _payload,
 )
 import src.infrastructure.waves.campaign_definitions as campaign_definition_infra
@@ -366,6 +369,38 @@ def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> Non
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT",
     ):
         repository.save_definition(definition=_definition(display_name="Changed name"))
+
+
+def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> None:
+    older = _definition(campaign_id="campaign-alpha").model_copy(
+        update={"as_of_date": "2026-05-09"}
+    )
+    newer = _definition(campaign_id="campaign-zulu").model_copy(update={"as_of_date": "2026-05-11"})
+    retired = _definition(campaign_id="campaign-retired").model_copy(
+        update={"status": "RETIRED", "as_of_date": "2026-05-12"}
+    )
+
+    assert _definition_matches_filters(
+        newer,
+        campaign_id="campaign-zulu",
+        status="ACTIVE",
+        as_of_date="2026-05-11",
+    )
+    assert not _definition_matches_filters(
+        retired,
+        campaign_id=None,
+        status="ACTIVE",
+        as_of_date=None,
+    )
+    assert _definition_sort_key(newer) > _definition_sort_key(older)
+    assert _paged_definitions(
+        definitions=[older, newer, retired],
+        campaign_id=None,
+        status="ACTIVE",
+        as_of_date=None,
+        limit=1,
+        offset=0,
+    ) == [newer]
 
 
 def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> None:

@@ -25194,3 +25194,39 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal infrastructure adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-998: Campaign definition in-memory list helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability, deterministic ordering, and
+  testing.
+- Finding: `InMemoryDpmBulkReviewCampaignDefinitionRepository.list_definitions` combined optional
+  campaign id, status, and as-of-date filtering with descending definition ordering, pagination,
+  and defensive copying in one B-grade repository method. That made in-memory repository behavior
+  harder to compare against the PostgreSQL query shape.
+- Action: extracted reusable definition filter, sort-key, optional text predicate, and paging
+  helpers; kept defensive copying at the repository boundary; and added direct tests proving
+  filter matching, status exclusion, descending sort key behavior, and active-definition paging.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m ruff check src\infrastructure\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\campaign_definitions.py`,
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m radon cc src\infrastructure\waves\campaign_definitions.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused campaign
+  definition repository suite reported 55 passed. OpenAPI quality and API vocabulary gates passed,
+  and the FastAPI/router leakage scan returned no findings. Radon reports the in-memory
+  `list_definitions` method reduced from B(8) to A(1), with extracted helpers at A(1) to A(3).
+  The refreshed complexity report is sourced from `25ef66fd+worktree` and the current top-ten
+  source hotspot list no longer includes `list_definitions`.
+- Residual risk: this slice improves in-memory campaign definition query maintainability only. It
+  does not change PostgreSQL SQL rendering, campaign lifecycle semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.

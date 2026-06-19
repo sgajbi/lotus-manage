@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from copy import deepcopy
 from contextlib import closing
 from threading import Lock
@@ -64,22 +65,16 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
         with self._lock:
-            definitions = [
-                definition
-                for definition in self._definitions.values()
-                if (campaign_id is None or definition.campaign_id == campaign_id)
-                and (status is None or definition.status == status)
-                and (as_of_date is None or definition.as_of_date == as_of_date)
-            ]
-            definitions.sort(
-                key=lambda definition: (
-                    definition.as_of_date,
-                    definition.campaign_id,
-                    definition.campaign_version,
-                ),
-                reverse=True,
+            return deepcopy(
+                _paged_definitions(
+                    definitions=self._definitions.values(),
+                    campaign_id=campaign_id,
+                    status=status,
+                    as_of_date=as_of_date,
+                    limit=limit,
+                    offset=offset,
+                )
             )
-            return deepcopy(definitions[offset : offset + limit])
 
     def retire_definition(
         self,
@@ -213,6 +208,53 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
                 )
             self._definitions[key] = deepcopy(definition)
             return deepcopy(definition)
+
+
+def _paged_definitions(
+    *,
+    definitions: Iterable[DpmBulkReviewCampaignDefinition],
+    campaign_id: str | None,
+    status: str | None,
+    as_of_date: str | None,
+    limit: int,
+    offset: int,
+) -> list[DpmBulkReviewCampaignDefinition]:
+    filtered = [
+        definition
+        for definition in definitions
+        if _definition_matches_filters(
+            definition,
+            campaign_id=campaign_id,
+            status=status,
+            as_of_date=as_of_date,
+        )
+    ]
+    filtered.sort(key=_definition_sort_key, reverse=True)
+    return filtered[offset : offset + limit]
+
+
+def _definition_matches_filters(
+    definition: DpmBulkReviewCampaignDefinition,
+    *,
+    campaign_id: str | None,
+    status: str | None,
+    as_of_date: str | None,
+) -> bool:
+    return (
+        _optional_text_filter_matches(definition.campaign_id, campaign_id)
+        and _optional_text_filter_matches(definition.status, status)
+        and _optional_text_filter_matches(definition.as_of_date, as_of_date)
+    )
+
+
+def _optional_text_filter_matches(value: str, expected: str | None) -> bool:
+    return expected is None or value == expected
+
+
+def _definition_sort_key(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> tuple[str, str, str]:
+    return (definition.as_of_date, definition.campaign_id, definition.campaign_version)
 
 
 class PostgresDpmBulkReviewCampaignDefinitionRepository:
