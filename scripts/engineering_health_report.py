@@ -610,7 +610,7 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         [
             "Workflow policy",
             "Active gate",
-            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, and removal of blocking quality-report checks.",
+            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, removal of blocking quality-report checks, and PR evidence drift.",
         ],
         [
             "Local CI parity",

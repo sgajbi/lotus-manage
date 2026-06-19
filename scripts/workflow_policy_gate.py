@@ -6,6 +6,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_DIR = REPO_ROOT / ".github" / "workflows"
+PR_TEMPLATE_PATH = REPO_ROOT / ".github" / "pull_request_template.md"
 BLOCKING_WORKFLOW_NAMES = {
     "feature-lane.yml",
     "pr-merge-gate.yml",
@@ -21,6 +22,26 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
 FULL_SHA_PATTERN = re.compile(r"^[0-9a-fA-F]{40}$")
+PR_TEMPLATE_REQUIRED_TOKENS = {
+    "summary": "## Summary",
+    "risk": "## Risk / Rollback",
+    "local_static": "`make check`",
+    "local_pr": "`make ci`",
+    "local_parity": "`make ci-local`",
+    "workflow_policy": "`make workflow-policy-gate`",
+    "quality_report": "`make quality-report-gate`",
+    "openapi": "`make openapi-gate`",
+    "api_vocabulary": "`make api-vocabulary-gate`",
+    "no_alias": "`make no-alias-gate`",
+    "security": "`make security-audit`",
+    "feature_lane": "Remote Feature Lane",
+    "pr_merge_gate": "Pull Request Merge Gate",
+    "main_releasability": "Main Releasability",
+    "stranded_truth_fetch": "`git fetch origin --prune`",
+    "stranded_truth_branches": "`git branch -r --no-merged origin/main`",
+    "wiki_decision": "Wiki decision",
+    "guidance_decision": "Guidance decision",
+}
 
 
 def _workflow_files(workflow_dir: Path = WORKFLOW_DIR) -> list[Path]:
@@ -97,12 +118,27 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
     return []
 
 
+def pr_template_policy_violations(template_path: Path = PR_TEMPLATE_PATH) -> list[str]:
+    if not template_path.exists():
+        return [f"{template_path.as_posix()}: PR template is missing"]
+    text = template_path.read_text(encoding="utf-8")
+    violations = []
+    for requirement, token in PR_TEMPLATE_REQUIRED_TOKENS.items():
+        if token not in text:
+            violations.append(
+                f"{template_path.as_posix()}: PR template must include {requirement} evidence "
+                f"token {token!r}"
+            )
+    return violations
+
+
 def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
     violations: list[str] = []
     for workflow_path in _workflow_files(workflow_dir):
         violations.extend(permission_violations(workflow_path))
         violations.extend(action_reference_violations(workflow_path))
         violations.extend(quality_report_gate_violations(workflow_path))
+    violations.extend(pr_template_policy_violations())
     return violations
 
 

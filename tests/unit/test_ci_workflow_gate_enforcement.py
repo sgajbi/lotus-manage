@@ -6,6 +6,7 @@ from scripts.workflow_policy_gate import (
     action_reference_violations,
     evaluate_workflow_policy,
     permission_violations,
+    pr_template_policy_violations,
     quality_report_gate_violations,
 )
 
@@ -121,6 +122,41 @@ def test_quality_baseline_uses_node24_setup_node_action() -> None:
 
 def test_workflow_policy_gate_passes_current_repository_workflows() -> None:
     assert evaluate_workflow_policy() == []
+
+
+def test_pr_template_policy_gate_passes_current_template() -> None:
+    assert pr_template_policy_violations() == []
+
+
+def test_pr_template_policy_gate_rejects_missing_required_evidence(tmp_path: Path) -> None:
+    template = tmp_path / "pull_request_template.md"
+    template.write_text(
+        "\n".join(
+            [
+                "## Summary",
+                "-",
+                "## Validation Evidence",
+                "- [ ] `make check`",
+                "- [ ] `make ci`",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = pr_template_policy_violations(template)
+
+    assert (
+        f"{template.as_posix()}: PR template must include local_parity evidence token "
+        "'`make ci-local`'"
+    ) in violations
+    assert (
+        f"{template.as_posix()}: PR template must include stranded_truth_fetch evidence token "
+        "'`git fetch origin --prune`'"
+    ) in violations
+    assert (
+        f"{template.as_posix()}: PR template must include guidance_decision evidence token "
+        "'Guidance decision'"
+    ) in violations
 
 
 def test_workflow_policy_gate_rejects_unpinned_action_refs(tmp_path: Path) -> None:

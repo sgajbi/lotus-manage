@@ -31,7 +31,9 @@ The following commands are active repository gates:
   - `make dependency-hygiene-gate` (`python -m deptry src tests`)
   - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
-    action references, unexpected workflow permissions, and missing blocking quality-report checks)
+    action references, unexpected workflow permissions, missing blocking quality-report checks, and
+    PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
+    and guidance decisions)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
 
@@ -97,6 +99,6 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 ## Enforcement Posture
 
 - Phase 1: measure and baseline
-- Phase 2: enforce non-regressing deltas for active gates, block workflow policy drift, and block
-  stale quality reports
+- Phase 2: enforce non-regressing deltas for active gates, block workflow and PR-evidence policy
+  drift, and block stale quality reports
 - Phase 3: introduce hard thresholds and enterprise-readiness gates only after baseline review

@@ -26721,3 +26721,54 @@ and improves internal transaction-cost source posture maintainability only.
   documentation, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. The shared Make target plus unit test are the
   durable future-agent guardrail for local CI parity.
+
+## BACKEND-REVIEW-20260619-1037: PR evidence contract enforcement
+
+- Date: 2026-06-19
+- Scope: `.github/pull_request_template.md`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `scripts/engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: agent-default PR evidence quality, CI governance drift prevention,
+  truthful local/remote gate reporting, and durable proof expectations for future refactor slices.
+- Finding: the repository now has a strong local/static CI gate pack, workflow policy gate, and
+  checked-in quality-report freshness gate, but the PR template still asked agents for only a small
+  legacy validation subset. A future agent could submit a PR without recording local PR parity,
+  workflow policy, quality-report freshness, OpenAPI/vocabulary/no-alias, security, stranded-truth,
+  wiki, or guidance evidence, and CI would not fail on that weakened human/agent evidence contract.
+- Action: extended `scripts/workflow_policy_gate.py` to validate the PR template for required
+  evidence tokens covering summary, risk/rollback, `make check`, `make ci`, `make ci-local`,
+  workflow policy, quality-report freshness, OpenAPI, API vocabulary, no-alias, security, Remote
+  Feature Lane, Pull Request Merge Gate, Main Releasability, stranded-truth reconciliation, wiki
+  decision, and guidance decision. Updated the PR template to require those evidence fields and
+  added focused tests proving both the current template and a deliberately weakened template are
+  enforced. Updated the generated scorecard wording and CI-gate documentation to reflect that
+  workflow policy now also blocks PR evidence drift.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 20
+  passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces the repo-local PR template contract. It does not prove that
+  every future PR body has been filled truthfully, inspect live GitHub branch-protection settings,
+  require full-SHA pinning for external actions, or add a semantic diff-quality/changed-code
+  coverage gate.
+- Wiki decision: no wiki source change required; this changes internal CI/PR evidence governance
+  and repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required in this slice. The executable workflow policy gate
+  and PR template are the durable future-agent guidance; a broader Lotus-wide skill/context update
+  remains a possible platform-level follow-up if the same PR-evidence drift pattern is found across
+  other repositories.
