@@ -27361,3 +27361,46 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and duplicate-gate guidance cover this behavior-preserving helper
   consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1051: Postgres connection exception duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/common/postgres_errors.py`, `src/api/routers/runtime_utils.py`,
+  `src/api/services/rebalance_policy_pack_repository.py`,
+  `src/api/services/rebalance_run_support_repository.py`, focused runtime/repository tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: production Postgres initialization failure handling, service/router
+  boundary maintainability, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical Postgres connection exception type
+  construction in router runtime utilities, policy-pack repository factory, and run-support
+  repository factory. The behavior was correct but duplicated a production failure-boundary rule
+  that must remain consistent across runtime guards and repository initialization paths.
+- Action: introduced a shared `src.core.common.postgres_errors.postgres_connection_exception_types`
+  helper that owns built-in connection failure classes plus optional psycopg error class discovery.
+  Kept the existing router/service wrapper functions and exports intact for compatibility, with
+  wrappers delegating to the common helper. Added a direct core-level test for missing-psycopg
+  fallback and built-in exception coverage. Regenerated the duplicate implementation baseline and
+  inventory, reducing accepted exact duplicate groups from 7 to 6 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_postgres_errors.py tests\unit\api\test_runtime_request_model_and_service_edges.py tests\unit\dpm\api\test_dpm_policy_pack_admin_api.py tests\unit\dpm\api\test_dpm_runs_config.py tests\unit\dpm\api\test_rebalance_policy_pack_repository.py tests\unit\dpm\api\test_rebalance_run_support_repository.py -q`,
+  `python -m ruff format src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m ruff check src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m ruff format --check src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m mypy --config-file mypy.ini src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused runtime/repository suites reported 69 passed. The duplicate
+  implementation gate now reports 6 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in rebalance-run create/update persistence,
+  campaign definition event recording, workflow correlation routes, and RFC evidence script
+  request helpers. Those remain visible in `quality/duplicate_code_inventory.md`.
+- Wiki decision: no wiki source change required; this is internal production failure-boundary
+  maintainability and quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving common-helper
+  consolidation pattern.

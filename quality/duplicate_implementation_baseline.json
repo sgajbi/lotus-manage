@@ -7,15 +7,6 @@
   "min_lines": 8,
   "accepted_duplicate_groups": [
     {
-      "fingerprint": "317ca65810972045193f59d164afab794958f3bcb2d4e3dc50f5142cca03d15f",
-      "occurrence_identities": [
-        "src/api/routers/runtime_utils.py:postgres_connection_exception_types",
-        "src/api/services/rebalance_policy_pack_repository.py:postgres_connection_exception_types",
-        "src/api/services/rebalance_run_support_repository.py:postgres_connection_exception_types"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
       "fingerprint": "3bcc7cf6f60fca55c4be481bcafefe56cb4e893206e780f08778de34a32808da",
       "occurrence_identities": [
         "src/infrastructure/waves/campaign_definitions.py:record_definition_approval_decision",
