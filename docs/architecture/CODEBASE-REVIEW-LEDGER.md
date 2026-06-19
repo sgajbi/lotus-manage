@@ -24781,3 +24781,59 @@ and improves internal transaction-cost source posture maintainability only.
   certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-985: Projected cash FX intent resolution helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/execution.py` and
+  `tests/unit/dpm/engine/coverage/test_engine_intent_simulation.py`.
+- Bank-buyable control area: architecture, rebalance execution maintainability, and testing.
+- Finding: `_append_projected_cash_fx_intents` combined projected-cash iteration, FX resolution,
+  missing-FX diagnostics, blocking behavior, intent appending, and funding-currency dependency map
+  updates in one loop. That made cash-funding and sweep behavior harder to inspect even though
+  each resolution step is deterministic.
+- Action: extracted `_apply_projected_cash_fx_resolution`,
+  `_record_projected_cash_fx_missing_pair`, and `_append_projected_cash_fx_intent` so missing-FX
+  diagnostics, blocking decisions, and intent/dependency-map updates are named separately; added
+  direct helper tests for funding-intent append behavior and nonblocking missing-FX diagnostics
+  while preserving the existing aggregate append behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\rebalance\execution.py tests\unit\dpm\engine\coverage\test_engine_intent_simulation.py`,
+  `python -m ruff check src\core\rebalance\execution.py tests\unit\dpm\engine\coverage\test_engine_intent_simulation.py`,
+  `python -m ruff format --check src\core\rebalance\execution.py tests\unit\dpm\engine\coverage\test_engine_intent_simulation.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance\execution.py`,
+  `python -m pytest tests\unit\dpm\engine\coverage\test_engine_intent_simulation.py`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  service leakage scan, `git diff --check`, and
+  `python -m radon cc src\core\rebalance\execution.py -s`; the focused engine intent simulation
+  suite reported 25 passed, and radon reports `_append_projected_cash_fx_intents` reduced from
+  B(6) to A(3) with `_apply_projected_cash_fx_resolution` at A(2).
+- Residual risk: this slice improves internal rebalance execution maintainability only. It does
+  not change FX methodology, order dependency semantics, API contracts, gateway behavior,
+  Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance execution
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-986: Projected cash FX reports refreshed
+
+- Date: 2026-06-19
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after the projected cash FX helper extraction, the checked-in quality reports needed to
+  reflect the updated branch head, test-function count, and current source hotspot list.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts\engineering_health_report.py`; the refreshed reports are sourced from
+  `9302f776`, record 821 Python files, 2647 test functions, keep service boundary findings and
+  router infrastructure imports at 0, keep OpenAPI missing markers at 0, and the current top-ten
+  source hotspot list no longer includes `_append_projected_cash_fx_intents`.
+- Residual risk: this slice updates report truth only. It does not promote report-only complexity
+  baselines into stricter thresholds, remediate the remaining async payload, target-cash,
+  workflow-decision query, risk-authority client, outcome core-source, proof-pack governance,
+  advise-authority client, campaign-definition repository, or construction-readiness hotspots, or
+  certify global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.

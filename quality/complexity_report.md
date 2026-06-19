@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-17T07:36:52+00:00`
+- Generated at: `2026-06-19T02:55:08+00:00`
 
-- Report source snapshot: `696d2f7b+worktree`
+- Report source snapshot: `9302f776`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _append_projected_cash_fx_intents | src/core/rebalance/execution.py | 6 | 30 |
-| 2 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
-| 3 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
-| 4 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 5 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
-| 6 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
-| 7 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
-| 8 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
-| 9 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
-| 10 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
+| 1 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
+| 2 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
+| 3 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
+| 4 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
+| 5 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
+| 6 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
+| 7 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
+| 8 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
+| 9 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
+| 10 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
 
 ### Most Complex Current Test Functions
 
