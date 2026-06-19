@@ -616,10 +616,40 @@ def _validate_empty_search_item_latest_event_metadata(
     latest_event_time: str | None,
     latest_event_type: PortfolioMemoryEventType | None,
 ) -> None:
+    _validate_empty_search_item_supportability_state(supportability_state)
+    _validate_empty_search_item_aggregate_metadata(
+        event_type_counts=event_type_counts,
+        source_systems=source_systems,
+        reason_codes=reason_codes,
+    )
+    _validate_empty_search_item_latest_event_presence(
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    )
+
+
+def _validate_empty_search_item_supportability_state(
+    supportability_state: PortfolioMemorySupportabilityState,
+) -> None:
     if supportability_state != "EMPTY":
         raise ValueError("empty search items must use EMPTY supportability_state.")
+
+
+def _validate_empty_search_item_aggregate_metadata(
+    *,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+) -> None:
     if event_type_counts or source_systems or reason_codes:
         raise ValueError("empty search items must not carry aggregate event metadata.")
+
+
+def _validate_empty_search_item_latest_event_presence(
+    *,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> None:
     if _latest_event_metadata_is_present(
         latest_event_time=latest_event_time,
         latest_event_type=latest_event_type,

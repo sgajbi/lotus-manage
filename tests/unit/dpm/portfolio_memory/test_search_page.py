@@ -454,6 +454,19 @@ def test_validate_search_item_latest_event_helper_rejects_empty_item_with_latest
         )
 
 
+def test_validate_search_item_latest_event_helper_rejects_empty_item_with_non_empty_state() -> None:
+    with pytest.raises(ValueError, match="empty search items must use EMPTY supportability_state"):
+        _validate_search_item_latest_event_metadata(
+            event_count=0,
+            supportability_state="READY",
+            event_type_counts={},
+            source_systems=[],
+            reason_codes=[],
+            latest_event_time=None,
+            latest_event_type=None,
+        )
+
+
 def test_latest_event_metadata_presence_helpers_track_partial_and_complete_metadata() -> None:
     assert not _latest_event_metadata_is_present(
         latest_event_time=None,
@@ -473,13 +486,25 @@ def test_latest_event_metadata_presence_helpers_track_partial_and_complete_metad
     )
 
 
-def test_empty_search_item_latest_event_helper_rejects_aggregate_metadata() -> None:
+@pytest.mark.parametrize(
+    ("event_type_counts", "source_systems", "reason_codes"),
+    [
+        ({"WAVE_HANDOFF_READY": 1}, [], []),
+        ({}, ["lotus-manage"], []),
+        ({}, [], ["READY_FOR_OPERATIONS_REVIEW"]),
+    ],
+)
+def test_empty_search_item_latest_event_helper_rejects_aggregate_metadata(
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+) -> None:
     with pytest.raises(ValueError, match="aggregate event metadata"):
         _validate_empty_search_item_latest_event_metadata(
             supportability_state="EMPTY",
-            event_type_counts={"WAVE_HANDOFF_READY": 1},
-            source_systems=[],
-            reason_codes=[],
+            event_type_counts=event_type_counts,
+            source_systems=source_systems,
+            reason_codes=reason_codes,
             latest_event_time=None,
             latest_event_type=None,
         )

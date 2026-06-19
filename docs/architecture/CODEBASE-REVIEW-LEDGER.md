@@ -26086,3 +26086,42 @@ and improves internal transaction-cost source posture maintainability only.
   readiness.
 - Wiki decision: no wiki source change required; this is internal repository adapter hardening with
   no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1022: Portfolio-memory empty search metadata helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory search-row supportability, source-backed aggregate
+  metadata boundaries, and deterministic empty-result semantics.
+- Finding: `_validate_empty_search_item_latest_event_metadata` combined empty-row supportability
+  policy, aggregate metadata rejection, and latest-event metadata rejection in one B-grade helper.
+  That made empty portfolio-memory search-row invariants harder to audit as source-system,
+  source-type, supportability, and matching-event filters expanded.
+- Action: extracted supportability-state, aggregate-metadata, and latest-event-presence validators
+  while preserving the existing validation messages and behavior. Strengthened focused tests so
+  empty rows reject non-`EMPTY` supportability and each aggregate metadata family:
+  `event_type_counts`, `source_systems`, and `reason_codes`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_search_page.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory search-page
+  suite reported 37 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_empty_search_item_latest_event_metadata` reduced from B(6) to A(1), with extracted
+  validators at A(2) to A(4). The refreshed complexity report is sourced from
+  `142ebda4+worktree`, the current top-ten source hotspot list no longer includes the targeted
+  helper, and the highest current source-function complexity is 6.
+- Residual risk: this slice improves portfolio-memory search-row validation maintainability and
+  direct invariant coverage only. It does not change portfolio-memory composition, API contracts,
+  persistence, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal domain-model validation
+  hardening with no operator-facing contract change.
