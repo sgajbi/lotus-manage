@@ -25449,3 +25449,39 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal target-generation
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1005: Operation filter query predicate helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/operation_query.py`,
+  `tests/unit/dpm/supportability/test_operation_query.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability, deterministic SQL predicate
+  ordering, and testing.
+- Finding: `build_operation_filter_query` combined optional datetime and text predicate selection,
+  datetime ISO conversion, SQL `WHERE` rendering, and ordered argument collection in one B-grade
+  repository helper. That made operation filter query-shape drift harder to test directly.
+- Action: extracted typed operation predicates, optional datetime/text predicate helpers, and a
+  deterministic `WHERE` renderer while preserving the existing predicate order and placeholder
+  semantics; added direct tests for datetime conversion, predicate ordering, `WHERE` assembly, and
+  empty-filter rendering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\rebalance_runs\operation_query.py tests\unit\dpm\supportability\test_operation_query.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\operation_query.py tests\unit\dpm\supportability\test_operation_query.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\operation_query.py`,
+  `python -m pytest tests\unit\dpm\supportability\test_operation_query.py -q`,
+  `python -m radon cc src\infrastructure\rebalance_runs\operation_query.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused operation
+  query suite reported 5 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `build_operation_filter_query`
+  reduced from B(6) to A(2), with extracted predicate helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `2a65d171+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves operation filter query maintainability only. It does not
+  change operation persistence, pagination cursor behavior, SQL placeholder conventions, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.

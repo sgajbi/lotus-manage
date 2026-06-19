@@ -14,6 +14,12 @@ class OperationFilterQuery:
     args: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class _OperationPredicate:
+    clause: str
+    value: str
+
+
 def build_operation_filter_query(
     *,
     placeholder: str,
@@ -23,20 +29,66 @@ def build_operation_filter_query(
     status: Optional[str],
     correlation_id: Optional[str],
 ) -> OperationFilterQuery:
-    where_clauses: list[str] = []
-    args: list[str] = []
-    for clause, value in [
-        (f"created_at >= {placeholder}", created_from.isoformat() if created_from else None),
-        (f"created_at <= {placeholder}", created_to.isoformat() if created_to else None),
-        (f"operation_type = {placeholder}", operation_type),
-        (f"status = {placeholder}", status),
-        (f"correlation_id = {placeholder}", correlation_id),
-    ]:
-        if value is not None:
-            where_clauses.append(clause)
-            args.append(value)
-    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
-    return OperationFilterQuery(where_sql=where_sql, args=tuple(args))
+    predicates = _operation_filter_predicates(
+        placeholder=placeholder,
+        created_from=created_from,
+        created_to=created_to,
+        operation_type=operation_type,
+        status=status,
+        correlation_id=correlation_id,
+    )
+    return OperationFilterQuery(
+        where_sql=_operation_where_sql(predicates),
+        args=tuple(predicate.value for predicate in predicates),
+    )
+
+
+def _operation_filter_predicates(
+    *,
+    placeholder: str,
+    created_from: Optional[datetime],
+    created_to: Optional[datetime],
+    operation_type: Optional[str],
+    status: Optional[str],
+    correlation_id: Optional[str],
+) -> list[_OperationPredicate]:
+    return [
+        predicate
+        for predicate in [
+            _optional_datetime_predicate(
+                f"created_at >= {placeholder}",
+                created_from,
+            ),
+            _optional_datetime_predicate(
+                f"created_at <= {placeholder}",
+                created_to,
+            ),
+            _optional_text_predicate(f"operation_type = {placeholder}", operation_type),
+            _optional_text_predicate(f"status = {placeholder}", status),
+            _optional_text_predicate(f"correlation_id = {placeholder}", correlation_id),
+        ]
+        if predicate is not None
+    ]
+
+
+def _optional_datetime_predicate(
+    clause: str, value: Optional[datetime]
+) -> _OperationPredicate | None:
+    if value is None:
+        return None
+    return _OperationPredicate(clause=clause, value=value.isoformat())
+
+
+def _optional_text_predicate(clause: str, value: Optional[str]) -> _OperationPredicate | None:
+    if value is None:
+        return None
+    return _OperationPredicate(clause=clause, value=value)
+
+
+def _operation_where_sql(predicates: list[_OperationPredicate]) -> str:
+    if not predicates:
+        return ""
+    return f"WHERE {' AND '.join(predicate.clause for predicate in predicates)}"
 
 
 def operation_page(
