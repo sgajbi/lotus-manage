@@ -24903,8 +24903,9 @@ and improves internal transaction-cost source posture maintainability only.
   `fastapi.testclient`, but Main Releasability still surfaced the same external
   Starlette/httpx TestClient deprecation through app-importing CI scripts.
 - Action: added a narrow CI warning helper for the exact external Starlette TestClient/httpx
-  message, reused it before app imports in OpenAPI and vocabulary gate scripts, and broadened the
-  pytest filter to the same exact message/category without suppressing unrelated deprecations.
+  message and `starlette.exceptions.StarletteDeprecationWarning` category, reused it before app
+  imports in OpenAPI and vocabulary gate scripts, and broadened the pytest filter to the same exact
+  message/category without suppressing unrelated deprecations.
 - Status: hardened.
 - Evidence: focused warning-filter tests verify the known warning is suppressed and unrelated
   deprecation warnings remain visible.

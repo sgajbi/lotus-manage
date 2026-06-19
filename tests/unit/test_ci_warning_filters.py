@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import warnings
 
+from starlette.exceptions import StarletteDeprecationWarning
+
 from scripts.ci_warning_filters import suppress_external_starlette_testclient_httpx_warning
 
 
@@ -12,7 +14,7 @@ def test_suppresses_known_starlette_testclient_httpx_warning() -> None:
 
         warnings.warn(
             "Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.",
-            DeprecationWarning,
+            StarletteDeprecationWarning,
             stacklevel=1,
         )
 
