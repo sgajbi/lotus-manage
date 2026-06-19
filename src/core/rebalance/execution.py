@@ -394,25 +394,77 @@ def _append_projected_cash_fx_intents(
 ) -> tuple[bool, dict[str, str]]:
     fx_intent_id_by_currency: dict[str, str] = {}
     for ccy, bal in projected_cash.items():
-        resolution = _projected_cash_fx_resolution(
+        blocked = _apply_projected_cash_fx_resolution(
             currency=ccy,
             balance=bal,
             base_currency=portfolio.base_currency,
             market_data=market_data,
             intent_id=f"oi_fx_{len(intents) + 1}",
             options=options,
+            intents=intents,
+            diagnostics=diagnostics,
+            fx_intent_id_by_currency=fx_intent_id_by_currency,
         )
-        if resolution.missing_fx_pair is not None:
-            diagnostics.data_quality.setdefault("fx_missing", []).append(resolution.missing_fx_pair)
-        if resolution.blocked:
+        if blocked:
             return True, fx_intent_id_by_currency
-        if resolution.intent is None:
-            continue
-        intents.append(resolution.intent)
-        if resolution.funding_currency is not None:
-            fx_intent_id_by_currency[resolution.funding_currency] = resolution.intent.intent_id
 
     return False, fx_intent_id_by_currency
+
+
+def _apply_projected_cash_fx_resolution(
+    *,
+    currency: str,
+    balance: Decimal,
+    base_currency: str,
+    market_data: MarketDataSnapshot,
+    intent_id: str,
+    options: EngineOptions,
+    intents: list[OrderIntent],
+    diagnostics: DiagnosticsData,
+    fx_intent_id_by_currency: dict[str, str],
+) -> bool:
+    resolution = _projected_cash_fx_resolution(
+        currency=currency,
+        balance=balance,
+        base_currency=base_currency,
+        market_data=market_data,
+        intent_id=intent_id,
+        options=options,
+    )
+    _record_projected_cash_fx_missing_pair(
+        diagnostics=diagnostics,
+        missing_fx_pair=resolution.missing_fx_pair,
+    )
+    if resolution.blocked:
+        return True
+    _append_projected_cash_fx_intent(
+        resolution=resolution,
+        intents=intents,
+        fx_intent_id_by_currency=fx_intent_id_by_currency,
+    )
+    return False
+
+
+def _record_projected_cash_fx_missing_pair(
+    *,
+    diagnostics: DiagnosticsData,
+    missing_fx_pair: str | None,
+) -> None:
+    if missing_fx_pair is not None:
+        diagnostics.data_quality.setdefault("fx_missing", []).append(missing_fx_pair)
+
+
+def _append_projected_cash_fx_intent(
+    *,
+    resolution: _ProjectedCashFxResolution,
+    intents: list[OrderIntent],
+    fx_intent_id_by_currency: dict[str, str],
+) -> None:
+    if resolution.intent is None:
+        return
+    intents.append(resolution.intent)
+    if resolution.funding_currency is not None:
+        fx_intent_id_by_currency[resolution.funding_currency] = resolution.intent.intent_id
 
 
 def _projected_cash_fx_resolution(

@@ -3,6 +3,7 @@ from decimal import Decimal
 from src.core.rebalance.execution import (
     _after_simulation_options,
     _apply_execution_intents,
+    _apply_projected_cash_fx_resolution,
     _append_projected_cash_fx_intents,
     _blocked_simulation_result_from_rules,
     _fx_intent_for_projected_cash_balance,
@@ -232,6 +233,50 @@ class TestIntentDependenciesAndSimulation:
         assert blocked is True
         assert fx_map == {}
         assert intents == []
+        assert diagnostics.data_quality == {"fx_missing": ["EUR/USD"]}
+
+    def test_apply_projected_cash_fx_resolution_appends_funding_intent(self):
+        diagnostics = empty_diagnostics()
+        intents = []
+        fx_map = {}
+
+        blocked = _apply_projected_cash_fx_resolution(
+            currency="EUR",
+            balance=Decimal("-100"),
+            base_currency="USD",
+            market_data=market_data_snapshot(fx_rates=[fx("EUR/USD", "1.2")]),
+            intent_id="oi_fx_7",
+            options=EngineOptions(fx_buffer_pct=Decimal("0.05")),
+            intents=intents,
+            diagnostics=diagnostics,
+            fx_intent_id_by_currency=fx_map,
+        )
+
+        assert blocked is False
+        assert [intent.intent_id for intent in intents] == ["oi_fx_7"]
+        assert fx_map == {"EUR": "oi_fx_7"}
+        assert diagnostics.data_quality == {}
+
+    def test_apply_projected_cash_fx_resolution_records_nonblocking_missing_fx(self):
+        diagnostics = empty_diagnostics()
+        intents = []
+        fx_map = {}
+
+        blocked = _apply_projected_cash_fx_resolution(
+            currency="EUR",
+            balance=Decimal("-100"),
+            base_currency="USD",
+            market_data=market_data_snapshot(),
+            intent_id="oi_fx_missing",
+            options=EngineOptions(block_on_missing_fx=False),
+            intents=intents,
+            diagnostics=diagnostics,
+            fx_intent_id_by_currency=fx_map,
+        )
+
+        assert blocked is False
+        assert intents == []
+        assert fx_map == {}
         assert diagnostics.data_quality == {"fx_missing": ["EUR/USD"]}
 
     def test_projected_cash_fx_resolution_maps_missing_fx_and_funding_intent(self):
