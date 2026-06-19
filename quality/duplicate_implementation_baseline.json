@@ -16,14 +16,6 @@
       "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
     },
     {
-      "fingerprint": "32cba6c2f7cace3a0498797762fed88ee0f97d1e34b9533204cd7ae766fcca78",
-      "occurrence_identities": [
-        "src/core/portfolio_memory/models.py:_portfolio_memory_supportability_state",
-        "src/core/portfolio_memory/supportability.py:portfolio_memory_state"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
       "fingerprint": "3bcc7cf6f60fca55c4be481bcafefe56cb4e893206e780f08778de34a32808da",
       "occurrence_identities": [
         "src/infrastructure/waves/campaign_definitions.py:record_definition_approval_decision",
@@ -55,14 +47,6 @@
       "occurrence_identities": [
         "scripts/generate_rfc0041_wave_evidence.py:_request",
         "scripts/generate_rfc0042_outcome_evidence.py:_request"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
-      "fingerprint": "955f5589fc5bc3cf7cf06477bce4261c3e2ca57ec2b9fb1661e4fae54b0d7904",
-      "occurrence_identities": [
-        "src/core/portfolio_memory/models.py:_event_source_systems",
-        "src/core/portfolio_memory/search_filters.py:event_source_systems"
       ],
       "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
     },

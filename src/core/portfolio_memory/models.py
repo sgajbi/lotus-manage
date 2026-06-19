@@ -1,8 +1,13 @@
 """Domain models for source-backed portfolio memory."""
 
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, cast
 
 from pydantic import BaseModel, Field, model_validator
+
+from src.core.portfolio_memory.event_projection import (
+    event_source_systems,
+    portfolio_memory_supportability_state,
+)
 
 PortfolioMemoryEventType = Literal[
     "PROOF_PACK_CREATED",
@@ -1210,7 +1215,7 @@ def _portfolio_memory_event_type_counts(
 
 def _portfolio_memory_source_systems(events: list[DpmPortfolioMemoryEvent]) -> list[str]:
     return sorted(
-        {source_system for event in events for source_system in _event_source_systems(event)}
+        {source_system for event in events for source_system in event_source_systems(event)}
     )
 
 
@@ -1264,25 +1269,7 @@ def _validate_non_negative_counts(*, label: str, counts: dict[str, int]) -> None
         )
 
 
-def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_system
-        for source_system in [
-            event.source_system,
-            *(ref.source_system for ref in event.source_refs),
-            *(ref.source_system for ref in event.artifact_refs),
-        ]
-        if source_system
-    }
-
-
 def _portfolio_memory_supportability_state(
     events: list[DpmPortfolioMemoryEvent],
 ) -> PortfolioMemorySupportabilityState:
-    if not events:
-        return "EMPTY"
-    states = {event.supportability_state for event in events}
-    for state in ("BLOCKED", "DEGRADED", "PENDING_REVIEW"):
-        if state in states:
-            return state
-    return "READY"
+    return cast(PortfolioMemorySupportabilityState, portfolio_memory_supportability_state(events))

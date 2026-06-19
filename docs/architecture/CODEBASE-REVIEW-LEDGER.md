@@ -27269,3 +27269,48 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no platform-owned skill or deployed local skill update required. The existing
   `lotus-ci-enforcement-governance` skill already covered this pattern; repo-local engineering
   context was updated as source truth, and no local `AGENTS.md` or `.codex` skill was hand-edited.
+
+## BACKEND-REVIEW-20260619-1049: Portfolio-memory projection duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/event_projection.py`,
+  `src/core/portfolio_memory/models.py`, `src/core/portfolio_memory/search_filters.py`,
+  `src/core/portfolio_memory/supportability.py`, focused portfolio-memory tests, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: portfolio-memory source-lineage projection maintainability,
+  supportability-state consistency, and duplicate implementation regression prevention.
+- Finding: the exact duplicate implementation gate exposed two portfolio-memory accepted duplicate
+  groups: source-system extraction was implemented separately in `models.py` and
+  `search_filters.py`, and portfolio-memory supportability precedence was implemented separately
+  in `models.py` and `supportability.py`. The behavior was correct but had drift risk because
+  aggregate validation, search facets, and supportability mapping depended on the same rule.
+- Action: introduced a shared pure `event_projection` helper for event source-system/source-type
+  projection and fail-closed portfolio-memory supportability precedence. Updated model aggregate
+  validation, search filters, and supportability mapping to reuse the shared helper while
+  preserving existing public helper names. Added direct shared-helper tests for source facets and
+  supportability precedence. Regenerated the duplicate implementation baseline and inventory,
+  reducing accepted exact duplicate groups from 10 to 8 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_event_projection.py tests\unit\dpm\portfolio_memory\test_search_filters.py tests\unit\dpm\portfolio_memory\test_governance_supportability.py tests\unit\dpm\api\test_portfolio_memory_api.py -q`,
+  `python -m ruff format src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m ruff check src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m ruff format --check src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused portfolio-memory suites
+  reported 36 passed. The duplicate implementation gate now reports 8 accepted exact duplicate
+  groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: broader accepted duplicate groups remain in rebalance-run persistence, campaign
+  definition event recording, PM-quality source-ref projection, runtime Postgres exception
+  helpers, workflow correlation routes, and RFC evidence scripts. They are now visible in the
+  duplicate inventory and should be burned down through targeted behavior-preserving slices.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing duplicate gate
+  and codebase-review ledger pattern now give future agents a deterministic signal and durable
+  follow-up inventory.

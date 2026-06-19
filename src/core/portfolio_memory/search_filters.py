@@ -6,6 +6,10 @@ from src.core.portfolio_memory.models import (
     DpmPortfolioMemoryEvent,
     PortfolioMemorySupportabilityState,
 )
+from src.core.portfolio_memory.event_projection import (
+    event_source_systems as projected_event_source_systems,
+    event_source_types as projected_event_source_types,
+)
 
 
 def normalize_portfolio_memory_search_filter(value: str | None) -> str | None:
@@ -59,27 +63,11 @@ def _event_source_type_matches(*, event: DpmPortfolioMemoryEvent, source_type: s
 
 
 def event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_system
-        for source_system in [
-            event.source_system,
-            *(ref.source_system for ref in event.source_refs),
-            *(ref.source_system for ref in event.artifact_refs),
-        ]
-        if source_system
-    }
+    return projected_event_source_systems(event)
 
 
 def event_source_types(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_type
-        for source_type in [
-            event.source_type,
-            *(ref.source_type for ref in event.source_refs),
-            *(ref.source_type for ref in event.artifact_refs),
-        ]
-        if source_type
-    }
+    return projected_event_source_types(event)
 
 
 def count_values(values: Iterable[str]) -> dict[str, int]:
