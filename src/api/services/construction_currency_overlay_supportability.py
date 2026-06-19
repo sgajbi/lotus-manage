@@ -31,20 +31,39 @@ def currency_overlay_status(
     request: RebalanceRequest,
     context: AuthoritativeCurrencyOverlayContext | None,
 ) -> ConstructionMethodStatus:
-    if missing_currency_overlay_pairs(request=request):
+    if _currency_overlay_missing_required_fx(request=request):
         return ConstructionMethodStatus.BLOCKED
     if context is None:
         return ConstructionMethodStatus.DEGRADED
     if context.supportability_status != ConstructionMethodStatus.READY:
         return context.supportability_status
     instrument_currencies = non_base_market_price_currencies(request=request)
-    if instrument_currencies - set(context.eligible_currencies):
+    if _currency_overlay_has_unsupported_currency(
+        instrument_currencies=instrument_currencies,
+        eligible_currencies=context.eligible_currencies,
+    ):
         return ConstructionMethodStatus.PENDING_REVIEW
-    return (
-        ConstructionMethodStatus.READY
-        if instrument_currencies
-        else ConstructionMethodStatus.DEGRADED
-    )
+    return _currency_overlay_active_currency_status(instrument_currencies)
+
+
+def _currency_overlay_missing_required_fx(*, request: RebalanceRequest) -> bool:
+    return bool(missing_currency_overlay_pairs(request=request))
+
+
+def _currency_overlay_has_unsupported_currency(
+    *,
+    instrument_currencies: set[str],
+    eligible_currencies: list[str],
+) -> bool:
+    return bool(instrument_currencies - set(eligible_currencies))
+
+
+def _currency_overlay_active_currency_status(
+    instrument_currencies: set[str],
+) -> ConstructionMethodStatus:
+    if instrument_currencies:
+        return ConstructionMethodStatus.READY
+    return ConstructionMethodStatus.DEGRADED
 
 
 def missing_currency_overlay_pairs(*, request: RebalanceRequest) -> list[str]:

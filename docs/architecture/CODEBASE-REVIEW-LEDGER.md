@@ -25781,3 +25781,39 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal API governance helper
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1014: Currency overlay status decision helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`, and `quality/`.
+- Bank-buyable control area: construction currency overlay supportability, missing-FX
+  fail-closed behavior, unsupported-currency review routing, and testing.
+- Finding: `currency_overlay_status` combined missing required FX-pair blocking, absent source
+  context degradation, source-context supportability propagation, unsupported currency review, and
+  active-currency readiness fallback in one B-grade service helper. That made the order of
+  currency overlay supportability decisions harder to audit.
+- Action: extracted missing-required-FX, unsupported-currency, and active-currency status helpers
+  while preserving existing supportability ordering and statuses; added direct tests for each
+  decision edge.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_currency_overlay_supportability.py tests\unit\dpm\construction\test_currency_overlay_supportability.py`,
+  `python -m ruff check src\api\services\construction_currency_overlay_supportability.py tests\unit\dpm\construction\test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_currency_overlay_supportability.py`,
+  `python -m pytest tests\unit\dpm\construction\test_currency_overlay_supportability.py -q`,
+  `python -m radon cc src\api\services\construction_currency_overlay_supportability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused currency overlay supportability
+  suite reported 6 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `currency_overlay_status`
+  reduced from B(6) to A(5), with extracted decision helpers at A(1) to A(2). The refreshed
+  complexity report is sourced from `8bea3d52+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves currency overlay status maintainability only. It does not
+  change FX-pair derivation, source-owned Treasury context mapping, hedge methodology, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  maintainability hardening with no operator-facing contract change.
