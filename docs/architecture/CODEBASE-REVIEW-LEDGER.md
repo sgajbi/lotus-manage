@@ -28254,6 +28254,72 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2314: Mandate health scoring helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `src/core/mandate_health_scoring.py`, focused mandate
+  health/API/supportability/wave source-readiness tests, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: discretionary mandate health score calculation, dimension state
+  projection, recommended-action mapping, source analytics posture preservation, and monitoring
+  exception source evidence used by API-facing mandate health workflows.
+- Quality intake: `src/core/mandates.py` is the existing Manage-owned domain facade for mandate
+  digital-twin compilation, health-input construction, health scoring, and monitoring exception
+  projection. Core source products remain canonical for mandate binding, model targets, optional
+  client/source products, and market-data supportability. This slice is internal core/domain logic
+  used by API-facing mandate health routes, wave source-readiness flows, and mandate repository
+  supportability; it must preserve the public `src.core.mandates.calculate_mandate_health` import
+  surface and domain outputs. The closest meaningful tests are
+  `tests/unit/dpm/core/test_mandate_health.py`, `tests/unit/dpm/api/test_mandates_api.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`, and
+  `tests/unit/dpm/waves/test_source_readiness.py`. Repo-native validation uses focused pytest,
+  ruff, source mypy, architecture, duplicate-implementation, complexity, and generated-report
+  freshness checks. The measured quality signal is moving the C-grade `src/core/mandates.py`
+  hotspot out of C maintainability while preserving mandate health behavior.
+- Finding: `src/core/mandates.py` mixed Core source-product assembly with deterministic health
+  dimension scoring, source analytics posture, weighted-score calculation, top-reason ordering, and
+  recommended-action mapping. The scoring block is cohesive and covered through public behavior
+  tests, while digital-twin/source-input assembly remains a separate responsibility.
+- Action: moved mandate health scoring implementation into `src/core/mandate_health_scoring.py`
+  and re-exported `calculate_mandate_health` from `src/core/mandates.py` to preserve existing
+  callers. No API contract, repository contract, source-product truth, CI gate behavior, or runtime
+  behavior was intentionally changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_mandates_api.py tests\unit\dpm\supportability\test_dpm_mandate_repository.py tests\unit\dpm\waves\test_source_readiness.py`,
+  `python -m ruff check src\core\mandates.py src\core\mandate_health_scoring.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff format --check src\core\mandates.py src\core\mandate_health_scoring.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py src\core\mandate_health_scoring.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\mandates.py src\core\mandate_health_scoring.py`,
+  `python -m radon mi src\core\mandates.py src\core\mandate_health_scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused mandate/API/supportability
+  tests reported 90 passed. `src/core/mandates.py` moved from 1058 LOC with C maintainability 7.97
+  to 595 LOC with A maintainability 26.30, and the extracted
+  `src/core/mandate_health_scoring.py` is 484 LOC with A maintainability 22.42. The architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  with no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already block architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regressions, static/type regressions, and stale quality reports.
+  Maintainability index and file size remain measured, report-backed planning signals rather than
+  blocking gates because they are not sufficiently low-noise standalone enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining C-grade source hotspots are `src/core/outcomes/risk_sources.py` and
+  `src/core/pm_quality/scoring.py`. Future slices should target cohesive, directly tested behavior
+  families in those files and avoid promoting MI or file-size gates until baseline,
+  false-positive posture, lane placement, and exception policy are settled.
+- Wiki decision: no wiki source change required; this is internal mandate-health modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement governance already cover this measured extraction and no new repeatable
+  platform guidance emerged, so no platform skill-source change or bootstrap sync is needed for
+  this repository-local slice.
+
 ## BACKEND-REVIEW-20260619-2303: OpenAPI semantic inference helper extraction
 
 - Date: 2026-06-19
