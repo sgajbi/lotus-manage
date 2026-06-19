@@ -1131,16 +1131,51 @@ def _validate_portfolio_memory_event_aggregates(
     supportability_state: PortfolioMemorySupportabilityState,
     events: list[DpmPortfolioMemoryEvent],
 ) -> None:
-    if event_count != len(events):
-        raise ValueError("event_count must equal the number of events.")
-    if event_type_counts != _counts(event.event_type for event in events):
-        raise ValueError("event_type_counts must match the returned events.")
-    if source_systems != _portfolio_memory_source_systems(events):
-        raise ValueError("source_systems must match the returned events.")
-    if reason_codes != _portfolio_memory_reason_codes(events):
-        raise ValueError("reason_codes must match the returned events.")
-    if supportability_state != _portfolio_memory_supportability_state(events):
-        raise ValueError("supportability_state must match the returned events.")
+    _validate_portfolio_memory_aggregate_match(
+        actual=event_count,
+        expected=_portfolio_memory_event_count(events),
+        message="event_count must equal the number of events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=event_type_counts,
+        expected=_portfolio_memory_event_type_counts(events),
+        message="event_type_counts must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=source_systems,
+        expected=_portfolio_memory_source_systems(events),
+        message="source_systems must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=reason_codes,
+        expected=_portfolio_memory_reason_codes(events),
+        message="reason_codes must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=supportability_state,
+        expected=_portfolio_memory_supportability_state(events),
+        message="supportability_state must match the returned events.",
+    )
+
+
+def _validate_portfolio_memory_aggregate_match(
+    *,
+    actual: object,
+    expected: object,
+    message: str,
+) -> None:
+    if actual != expected:
+        raise ValueError(message)
+
+
+def _portfolio_memory_event_count(events: list[DpmPortfolioMemoryEvent]) -> int:
+    return len(events)
+
+
+def _portfolio_memory_event_type_counts(
+    events: list[DpmPortfolioMemoryEvent],
+) -> dict[str, int]:
+    return _counts(event.event_type for event in events)
 
 
 def _portfolio_memory_source_systems(events: list[DpmPortfolioMemoryEvent]) -> list[str]:

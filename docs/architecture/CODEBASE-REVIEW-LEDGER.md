@@ -25927,3 +25927,43 @@ and improves internal transaction-cost source posture maintainability only.
   posture, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal risk attribution adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1018: Portfolio-memory event aggregate helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_models.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory aggregate metadata integrity, source lineage
+  auditability, and fail-closed validation.
+- Finding: `_validate_portfolio_memory_event_aggregates` recomputed event count, event-type
+  counts, source-system summary, reason-code summary, and aggregate supportability state inline in
+  one B-grade validator. That made portfolio-memory summary integrity harder to audit and left
+  only the event-count mismatch path directly pinned by focused tests.
+- Action: extracted reusable aggregate mismatch validation plus named aggregate expectation
+  helpers for event count and event-type counts, preserved existing error messages and fail-closed
+  behavior, and added direct mismatch tests for event-type counts, source systems, reason codes,
+  and supportability state.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_models.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_models.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_models.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory model suite
+  reported 9 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_portfolio_memory_event_aggregates` reduced from B(7) to A(1), with extracted
+  aggregate helpers at A(1) to A(2). The refreshed complexity report is sourced from
+  `c710b88b+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves portfolio-memory aggregate validation maintainability and
+  direct model test coverage only. It does not change portfolio-memory API shape, search-page
+  metadata validation, persistence behavior, source-product contracts, downstream
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal portfolio-memory model
+  validation hardening with no operator-facing contract change.
