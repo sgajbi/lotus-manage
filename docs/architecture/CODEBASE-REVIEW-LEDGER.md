@@ -28254,6 +28254,79 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2321: Risk historical-attribution source adapter extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `src/core/outcomes/risk_source_attribution.py`,
+  `src/core/outcomes/risk_source_common.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: RFC-0042 source-owned risk realized evidence, including lotus-risk
+  historical attribution source fingerprint, supportability posture, quality flags, period-error
+  fail-closed behavior, selected set/contributor values, and reason-code evidence used by
+  outcome-review flows.
+- Quality intake: `src/core/outcomes/risk_sources.py` is the existing internal adapter facade for
+  lotus-risk source-owned evidence. The canonical source of business truth is the upstream
+  lotus-risk response payload: `metadata.request_fingerprint`, supportability state/reason,
+  source-emitted values, period errors, quality flags, source hashes, and as-of/observed dates.
+  Manage owns bounded `DpmRealizedSourceSnapshot` composition only and does not recalculate risk,
+  drawdown, concentration, rolling risk, or attribution methodology. The closest meaningful tests
+  are `tests/unit/core/test_risk_realized_outcome_sources.py`, including adapter behavior and
+  historical-attribution edge helpers. Repo-native validation uses focused pytest, ruff, source
+  mypy, architecture, duplicate-implementation, complexity, and generated-report freshness checks.
+  The measured quality signal is removing the C-grade `risk_sources.py` hotspot while preserving
+  public adapter imports and fail-closed source-owner behavior.
+- Finding: `risk_sources.py` mixed five adapter families plus shared parsing/posture primitives.
+  Historical attribution was a cohesive extraction seam because it owns a distinct lotus-risk
+  source type, source-id shape, set/contributor value selection, quality-flag posture, period-error
+  blocking, and reason-code vocabulary. Shared primitive readers and supportability posture logic
+  were also duplicated as file-local responsibility inside the facade.
+- Action: moved historical attribution adapter and helpers into
+  `src/core/outcomes/risk_source_attribution.py`; moved shared risk-source error, supportability
+  posture, primitive readers, decimal parsing, and primary reason helpers into
+  `src/core/outcomes/risk_source_common.py`; kept `risk_sources.py` as the stable public facade for
+  existing imports through explicit exports. Updated helper tests to import from the new owner
+  modules. No API contract, source payload semantics, reason-code behavior, or CI gate behavior was
+  changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py`,
+  `python -m radon mi src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py -s`,
+  `python -m radon cc src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py -s -n C`,
+  `python scripts\engineering_health_report.py`, and
+  `python scripts\engineering_health_report.py --check`. Focused risk-source tests reported 61
+  passed. `src/core/outcomes/risk_sources.py` moved from 1168 LOC with C maintainability 7.39 to
+  742 LOC with A maintainability 20.11. The extracted
+  `src/core/outcomes/risk_source_attribution.py` is 394 LOC with A maintainability 34.01, and
+  `src/core/outcomes/risk_source_common.py` is 87 LOC with A maintainability 45.22. The touched
+  modules have no C-or-worse source functions.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  C-or-worse source function complexity, static/type checks, focused risk-source behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than blockers because threshold policy, false positives, and exception
+  handling are not settled as deterministic low-noise enforcement.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/pm_quality/scoring.py` remains the next C-grade source hotspot after
+  this slice. It should be handled separately with a quality intake around PM operating quality
+  source truth, closest score-run/fairness/summary tests, and a measured behavior-preserving
+  extraction seam.
+- Wiki decision: no wiki source change required; this is internal source-adapter modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement and
+  backend delivery guidance already directed the correct no-new-gate decision and measured
+  extraction workflow; no platform skill-source change or bootstrap sync is needed for this
+  repository-local slice.
+
 ## BACKEND-REVIEW-20260619-2314: Mandate health scoring helper extraction
 
 - Date: 2026-06-19
