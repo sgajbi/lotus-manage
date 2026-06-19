@@ -23,6 +23,8 @@ The following commands are active repository gates:
   - `make typecheck-tests-critical`
   - `python scripts/openapi_quality_gate.py`
   - `python scripts/api_vocabulary_inventory.py --validate-only`
+  - `python scripts/service_boundary_gate.py`
+  - `python scripts/router_infrastructure_gate.py`
   - `make mesh-contract-validate`
   - `make architecture-gate` (`python -m importlinter.cli import-linter lint --config .importlinter`)
   - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
@@ -47,6 +49,7 @@ The following commands are active repository gates:
 - Workflow file: `.github/workflows/feature-lane.yml`
 - Required lanes:
   - `ruff` + `mypy` + `no-alias` + `openapi` + `api-vocabulary` + `security-audit`
+  - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
   - unit tests
 
@@ -55,6 +58,7 @@ The following commands are active repository gates:
 - Workflow file: `.github/workflows/pr-merge-gate.yml`
 - Required lanes:
   - same static/type/openapi/vocabulary/security gates as Feature Lane
+  - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
   - migration smoke
   - matrix unit/integration/e2e tests with coverage upload
@@ -71,6 +75,7 @@ The following commands are active repository gates:
 The `quality-baseline.yml` workflow runs additional quality snapshots in report-only mode:
 
 - `ruff`, `mypy`, `coverage`
+- `service-boundary-gate` + `router-infrastructure-gate`
 - `importlinter`
 - `radon` + `xenon` complexity
 - `vulture` dead-code scan

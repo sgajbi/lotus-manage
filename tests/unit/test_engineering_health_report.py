@@ -131,6 +131,10 @@ def test_baseline_report_declares_report_only_quality_coverage() -> None:
     assert "| Python files | 3 |" in report
     assert "| Router infrastructure imports | 1 |" in report
     assert (
+        "| Router infrastructure imports | `scripts/router_infrastructure_gate.py` plus this report | 2 - active/new-regression |"
+        in report
+    )
+    assert (
         "| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |" in report
     )
     assert "does not enforce thresholds by itself" in report
@@ -143,6 +147,10 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
     assert "- Report source snapshot: `abc1234`" in scorecard
     assert "| OpenAPI governance | Active gate | `scripts/openapi_quality_gate.py`. |" in scorecard
     assert "| Service boundary | Active gate | `scripts/service_boundary_gate.py`. |" in scorecard
+    assert (
+        "| Router infrastructure imports | Active gate | `scripts/router_infrastructure_gate.py`. |"
+        in scorecard
+    )
     assert "| Dependency architecture | Active gate |" in scorecard
     assert "| Dead code | Active gate |" in scorecard
     assert "| Complexity | Report-only baseline |" in scorecard

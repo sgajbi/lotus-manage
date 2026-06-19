@@ -53,6 +53,8 @@ jobs:
         run: make api-vocabulary-gate
       - name: Service Boundary Gate
         run: make service-boundary-gate
+      - name: Router Infrastructure Gate
+        run: make router-infrastructure-gate
       - name: Architecture Gate
         run: make architecture-gate
       - name: Complexity Gate
