@@ -28394,6 +28394,76 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2254: In-memory rebalance repository helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py`,
+  `src/infrastructure/rebalance_runs/in_memory_helpers.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`, focused repository and
+  supportability tests, generated quality reports, and this ledger.
+- Bank-buyable control area: DPM run repository fallback behavior for local/dev/test execution,
+  run and async-operation filtering, cursor pagination, workflow decision filtering, lineage edge
+  deduplication, supportability summary aggregation, retention purge cleanup, and repository
+  contract parity with SQLite/Postgres backends.
+- Quality intake: `InMemoryDpmRunRepository` owns lock-protected in-memory repository state and
+  contract orchestration for `DpmRunRepository`. The source of truth is the repository's in-memory
+  dictionaries under the repository lock; the path is internal infrastructure but feeds API-facing
+  and operator-facing rebalance supportability routes in local and test runtime. The closest
+  meaningful tests are `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is removing
+  `src/infrastructure/rebalance_runs/in_memory.py` from the C-grade maintainability hotspot list
+  while preserving filtering, cursoring, supportability summary counts, workflow decision ordering,
+  lineage dedupe, and retention purge behavior.
+- Finding: `src/infrastructure/rebalance_runs/in_memory.py` combined repository state/locking with
+  pure filtering, cursoring, summary aggregation, and purge helper policy. The helper policy is
+  deterministic over repository snapshots and was already tested as helper behavior, so keeping it
+  inside the repository module inflated the repository hotspot without improving ownership clarity.
+- Action: added `src/infrastructure/rebalance_runs/in_memory_helpers.py` for run/operation list
+  helpers, workflow decision filters, supportability summary aggregation, lineage edge identity
+  counting, and expired-run purge helpers. `InMemoryDpmRunRepository` now retains lock ownership,
+  state mutation, defensive copying, and repository contract orchestration while delegating pure
+  helper policy. Updated helper tests to import the helper owner directly. No repository contract,
+  API contract, storage semantics, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_in_memory_summary_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_in_memory_summary_helpers.py`,
+  `python -m ruff format --check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_in_memory_summary_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py`,
+  `python -m radon mi src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused repository/supportability tests
+  reported 108 passed. `src/infrastructure/rebalance_runs/in_memory.py` moved from 672 LOC with C
+  maintainability 8.02 to 291 LOC with A maintainability 26.90. The extracted
+  `src/infrastructure/rebalance_runs/in_memory_helpers.py` is 408 LOC with A maintainability
+  22.46. The architecture gate passed, and the duplicate implementation gate remains at 0 accepted
+  exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse cyclomatic complexity, static/type checks, repository contract behavior, and
+  quality-report freshness. This slice used maintainability index and file size as measured
+  improvement evidence, not as new blockers, consistent with CI-enforcement governance.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/api/openapi_enrichment.py`, `src/core/mandates.py`,
+  `src/core/outcomes/risk_sources.py`, and `src/core/pm_quality/scoring.py` remain C-grade
+  maintainability hotspots. Future slices should target one of those only with behavior-focused
+  tests and source-owner boundary preservation.
+- Wiki decision: no wiki source change required; this is internal repository modularity and
+  quality evidence, not new operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured helper-extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
 ## BACKEND-REVIEW-20260619-2243: Rebalance supportability summary projection extraction
 
 - Date: 2026-06-19
