@@ -25052,3 +25052,36 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal infrastructure adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-994: Workflow decision query predicate helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/workflow_decision_query.py`,
+  `tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability and testing.
+- Finding: `build_workflow_decision_filter_query` assembled optional equality predicates,
+  optional datetime predicates, SQL `WHERE` rendering, and argument ordering in one B-grade helper
+  used by both PostgreSQL and SQLite repositories. `workflow_decision_page` also embedded cursor
+  lookup inside pagination logic. That made query-shape drift harder to catch directly.
+- Action: extracted typed workflow-decision predicates, optional equality/date predicate helpers,
+  deterministic `WHERE` rendering, and cursor-index lookup; added direct tests for SQL fragment
+  shape, argument conversion, empty predicate behavior, `WHERE` assembly, and cursor lookup while
+  preserving the existing repository contract test for full query output and pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\rebalance_runs\workflow_decision_query.py tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\workflow_decision_query.py tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\workflow_decision_query.py`,
+  `python -m pytest tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py -q`,
+  `python -m radon cc src\infrastructure\rebalance_runs\workflow_decision_query.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused workflow decision query suite
+  reported 4 passed. Radon reports `build_workflow_decision_filter_query` reduced from B(6) to
+  A(2), and `workflow_decision_page` reduced from B(6) to A(4). The refreshed complexity report is
+  sourced from `dc77279c+worktree` and the current top-ten source hotspot list no longer includes
+  `build_workflow_decision_filter_query`.
+- Residual risk: this slice improves repository query helper maintainability only. It does not
+  change workflow-decision persistence semantics, cursor contract, SQL placeholder conventions,
+  Postgres/SQLite adapter routing, API contracts, downstream behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.

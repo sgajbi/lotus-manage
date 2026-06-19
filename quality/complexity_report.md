@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:11:41+00:00`
+- Generated at: `2026-06-19T04:14:21+00:00`
 
-- Report source snapshot: `71359f46`
+- Report source snapshot: `dc77279c+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 2 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
-| 3 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
-| 4 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
-| 5 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
-| 6 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
-| 7 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
-| 8 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
-| 9 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
-| 10 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
+| 1 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
+| 2 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
+| 3 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
+| 4 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
+| 5 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
+| 6 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
+| 7 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
+| 8 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
+| 9 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
+| 10 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
 
 ### Most Complex Current Test Functions
 
