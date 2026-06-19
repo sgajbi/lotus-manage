@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:04:07+00:00`
+- Generated at: `2026-06-19T04:07:03+00:00`
 
-- Report source snapshot: `f1f97304+worktree`
+- Report source snapshot: `eaaaf219+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
-| 2 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 3 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
-| 4 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
-| 5 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
-| 6 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
-| 7 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
-| 8 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
-| 9 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
-| 10 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
+| 1 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
+| 2 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
+| 3 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
+| 4 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
+| 5 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
+| 6 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
+| 7 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
+| 8 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
+| 9 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
+| 10 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
 
 ### Most Complex Current Test Functions
 

@@ -24986,3 +24986,36 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal rebalance target-generation
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-992: Async execution payload parser hardening
+
+- Date: 2026-06-19
+- Scope: `src/api/services/rebalance_async_operation_payload.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and `quality/`.
+- Bank-buyable control area: architecture, async operation resilience, and testing.
+- Finding: `resolve_analyze_async_execution_payload` combined current-versus-legacy envelope
+  detection, policy-context extraction, source-context validation, and batch request validation in
+  one source hotspot. It also assumed current-shape `policy_context` was a mapping, so malformed
+  metadata could escape as an attribute error instead of being safely ignored as absent optional
+  policy metadata.
+- Action: extracted current/legacy payload-part parsing, bounded non-mapping policy metadata with
+  a local mapping helper, isolated source-context validation, and added a regression test proving
+  malformed policy metadata preserves request validation while leaving optional policy fields
+  unset.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\rebalance_async_operation_payload.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff check src\api\services\rebalance_async_operation_payload.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\rebalance_async_operation_payload.py`,
+  `python -m pytest tests\unit\api\test_runtime_request_model_and_service_edges.py -q`,
+  `python -m radon cc src\api\services\rebalance_async_operation_payload.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused runtime request/service edge suite
+  reported 46 passed. Radon reports `resolve_analyze_async_execution_payload` reduced from B(6) to
+  A(1), with extracted parser helpers at A(1) to A(3). The refreshed complexity report is sourced
+  from `eaaaf219+worktree` and the current top-ten source hotspot list no longer includes
+  `resolve_analyze_async_execution_payload`.
+- Residual risk: this slice hardens async payload parsing only. It does not change async execution
+  scheduling, persistence, idempotency, policy-pack selection semantics for valid payloads, API
+  contracts, downstream runtime behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal async execution parser hardening
+  with no operator-facing contract change.

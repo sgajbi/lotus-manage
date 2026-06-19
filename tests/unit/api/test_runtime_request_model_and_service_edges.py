@@ -623,6 +623,26 @@ def test_rebalance_async_operation_payload_supports_current_and_legacy_shapes() 
     assert current.tenant_id == "tenant-sg"
 
 
+def test_rebalance_async_operation_payload_ignores_malformed_policy_context() -> None:
+    batch_payload = valid_api_payload()
+    batch_payload.pop("options")
+    batch_payload["scenarios"] = {"baseline": {"options": {}}}
+
+    current = async_payload.resolve_analyze_async_execution_payload(
+        {
+            "batch_request": batch_payload,
+            "policy_context": "not-a-policy-context",
+            "source_context": None,
+        }
+    )
+
+    assert set(current.request.scenarios) == {"baseline"}
+    assert current.source_context is None
+    assert current.request_policy_pack_id is None
+    assert current.tenant_default_policy_pack_id is None
+    assert current.tenant_id is None
+
+
 def test_rebalance_async_submission_payload_preserves_policy_context() -> None:
     batch_payload = valid_api_payload()
     batch_payload.pop("options")
