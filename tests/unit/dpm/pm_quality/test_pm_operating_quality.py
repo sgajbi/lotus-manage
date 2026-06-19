@@ -23,6 +23,7 @@ from src.core.pm_quality import (
     build_pm_quality_summary_invocation,
 )
 from src.core.pm_quality import scoring
+from src.core.pm_quality import fairness_analysis
 from src.core.pm_quality import summary_history
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
@@ -1293,7 +1294,7 @@ def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
     )
 
     with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED"):
-        scoring._validate_fairness_analysis_inputs(
+        fairness_analysis._validate_fairness_analysis_inputs(
             segments=[segment],
             minimum_segment_score_run_count=1,
             maximum_average_score_spread=Decimal("10"),
@@ -1301,7 +1302,7 @@ def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
     with pytest.raises(
         DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID"
     ):
-        scoring._validate_fairness_analysis_inputs(
+        fairness_analysis._validate_fairness_analysis_inputs(
             segments=[segment, segment],
             minimum_segment_score_run_count=0,
             maximum_average_score_spread=Decimal("10"),
@@ -1309,7 +1310,7 @@ def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
 
 
 def test_fairness_analysis_posture_helper_classifies_blocked_pending_and_ready() -> None:
-    blocked = scoring._fairness_analysis_posture(
+    blocked = fairness_analysis._fairness_analysis_posture(
         segment_results=[
             _fairness_segment_result(
                 segment_id="blocked",
@@ -1326,7 +1327,7 @@ def test_fairness_analysis_posture_helper_classifies_blocked_pending_and_ready()
         ],
         maximum_average_score_spread=Decimal("10"),
     )
-    pending = scoring._fairness_analysis_posture(
+    pending = fairness_analysis._fairness_analysis_posture(
         segment_results=[
             _fairness_segment_result(
                 segment_id="a",
@@ -1343,7 +1344,7 @@ def test_fairness_analysis_posture_helper_classifies_blocked_pending_and_ready()
         ],
         maximum_average_score_spread=Decimal("10"),
     )
-    ready = scoring._fairness_analysis_posture(
+    ready = fairness_analysis._fairness_analysis_posture(
         segment_results=[
             _fairness_segment_result(
                 segment_id="a",
@@ -1473,26 +1474,26 @@ def test_pm_quality_score_run_scope_mismatch_helpers_classify_fairness_inputs() 
     date_mismatch = _ready_score_run(as_of_date="2026-05-11")
     blocked = _ready_score_run(state="BLOCKED")
 
-    assert not scoring._score_run_policy_mismatched(
+    assert not fairness_analysis._score_run_policy_mismatched(
         score_run=ready,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
     )
-    assert scoring._score_run_policy_mismatched(
+    assert fairness_analysis._score_run_policy_mismatched(
         score_run=policy_mismatch,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
     )
-    assert scoring._score_run_as_of_date_mismatched(
+    assert fairness_analysis._score_run_as_of_date_mismatched(
         score_run=date_mismatch,
         as_of_date="2026-05-12",
     )
-    assert scoring._score_run_not_scorable(blocked)
-    assert not scoring._score_run_not_scorable(ready)
+    assert fairness_analysis._score_run_not_scorable(blocked)
+    assert not fairness_analysis._score_run_not_scorable(ready)
 
 
 def test_pm_quality_score_run_scope_mismatch_reasons_deduplicate_failures() -> None:
-    reasons = scoring._score_run_scope_mismatch_reasons(
+    reasons = fairness_analysis._score_run_scope_mismatch_reasons(
         score_runs=[
             _ready_score_run(policy_id="pmq_other"),
             _ready_score_run(as_of_date="2026-05-11"),

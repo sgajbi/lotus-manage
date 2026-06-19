@@ -42,12 +42,14 @@ from src.core.pm_quality.repository import (
     DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
-from src.core.pm_quality.scoring import (
+from src.core.pm_quality.fairness_analysis import (
     DpmPmQualityFairnessSegmentInput,
-    DpmPmQualityValidationError,
     build_pm_operating_quality_fairness_analysis,
+)
+from src.core.pm_quality.scoring import (
     build_pm_operating_quality_score_run,
 )
+from src.core.pm_quality.scoring_common import DpmPmQualityValidationError
 from src.core.pm_quality.summary_history import build_pm_quality_summary_invocation
 
 __all__ = [

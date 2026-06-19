@@ -28254,6 +28254,82 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2330: PM-quality fairness-analysis extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, `src/core/pm_quality/fairness_analysis.py`,
+  `src/core/pm_quality/scoring_common.py`, `src/core/pm_quality/__init__.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`, focused PM-quality API/service tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC42-WTBD-008 PM operating-quality score-run and fairness-analysis
+  evidence, including policy identity, governed as-of date, source-segment fairness posture,
+  score-run eligibility, source refs, deterministic content hashes, and review/escalation
+  behavior consumed by PM-quality APIs.
+- Quality intake: `src/core/pm_quality/scoring.py` was the existing pure PM operating-quality
+  scoring engine. Manage is the source of truth for PM-quality score runs and fairness-analysis
+  records; upstream or peer facts remain represented as bounded evidence/source refs rather than
+  recalculated source-owner truth. The closest meaningful tests are
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py` plus
+  `tests/unit/api/test_pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_review_action_builder.py`, and
+  `tests/unit/api/test_pm_operating_quality_api.py`. Repo-native validation uses focused pytest,
+  ruff, source mypy, architecture, duplicate-implementation, complexity, and generated-report
+  freshness checks. The measured quality signal is removing the last C-grade source module while
+  preserving public package imports and PM-quality fairness behavior.
+- Finding: `scoring.py` mixed score-run construction, fairness-analysis construction, shared hash
+  and source-ref helpers, and validation error ownership. Fairness analysis has a distinct product
+  boundary: source-defined segments, persisted score-run eligibility, policy/as-of matching,
+  segment-level blocking, comparable-average spread posture, deterministic fairness-analysis
+  identity, and source-ref aggregation. Those concerns can be owned independently without changing
+  API-service orchestration or score-run construction.
+- Action: moved fairness-analysis public builder, segment input, segment evaluation, score-run
+  eligibility predicates, fairness posture, source-ref aggregation, and fairness hash/id helpers
+  into `src/core/pm_quality/fairness_analysis.py`; moved shared validation error, content hashing,
+  optional model/decimal serialization, mean, and source-ref de-duplication into
+  `src/core/pm_quality/scoring_common.py`; kept package exports and scoring facade imports stable.
+  Updated fairness helper tests to import private fairness helpers from the new owner module. No
+  API contract, repository contract, PM-quality scoring behavior, fairness-analysis behavior,
+  deterministic identity behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m pytest tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_review_action_builder.py tests\unit\api\test_pm_operating_quality_api.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m ruff format --check src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py`,
+  `python -m radon mi src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py -s`,
+  `python -m radon cc src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py -s -n C`,
+  `python scripts\engineering_health_report.py`, and
+  `python scripts\engineering_health_report.py --check`. Focused PM-quality domain tests reported
+  37 passed, and PM-quality API/service tests reported 56 passed.
+  `src/core/pm_quality/scoring.py` moved from 1265 LOC with C maintainability 2.92 to 817 LOC with
+  B maintainability 13.36. The extracted `src/core/pm_quality/fairness_analysis.py` is 447 LOC
+  with A maintainability 30.08, and `src/core/pm_quality/scoring_common.py` is 42 LOC with A
+  maintainability 56.32. `make complexity-gate` now reports no C-grade source modules in the Radon
+  maintainability output.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  C-or-worse source function complexity, static/type checks, focused PM-quality behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than blockers because threshold policy, false positives, and exception
+  handling are not settled as deterministic low-noise enforcement.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/pm_quality/scoring.py` is now B-rated but still a large score-run
+  construction module at 817 LOC. Future slices should target one cohesive score-run family at a
+  time, likely lookback-window validation, outcome-review signal extraction, or governance evidence
+  construction, while preserving deterministic content hashes and PM-quality API behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement and
+  backend delivery guidance already directed the correct measured extraction and no-new-gate
+  decision; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
 ## BACKEND-REVIEW-20260619-2321: Risk historical-attribution source adapter extraction
 
 - Date: 2026-06-19
