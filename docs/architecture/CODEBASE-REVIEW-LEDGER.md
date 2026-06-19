@@ -25892,3 +25892,38 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal mandate optional-source
   readiness hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1017: Historical attribution set selection helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: risk attribution source evidence selection, source-owned result
+  matching, and testing.
+- Finding: `_historical_attribution_set` combined malformed attribution-set fallback, candidate
+  mapping coercion, attribution type matching, metric matching, and grouping-dimension matching in
+  one B-grade helper. That made source-owned historical attribution selection harder to audit.
+- Action: extracted attribution-set candidate extraction and exact match helpers while preserving
+  malformed-input fallback and selected set semantics; added direct tests for valid list
+  extraction, malformed candidate fallback, exact matches, mismatches, and selected result return.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk realized outcome source
+  suite reported 56 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `_historical_attribution_set`
+  reduced from B(6) to A(4), with extracted selection helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `2f8b8e10+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves historical attribution set selection maintainability only. It
+  does not change risk attribution value extraction, source-id construction, supportability
+  posture, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal risk attribution adapter
+  maintainability hardening with no operator-facing contract change.

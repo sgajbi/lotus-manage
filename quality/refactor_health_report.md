@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-19T05:28:27+00:00`
+- Generated at: `2026-06-19T05:31:27+00:00`
 
 - Baseline ref: `origin/main`
 
-- Report source snapshot: `f6fff140+worktree`
+- Report source snapshot: `2f8b8e10+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -13,7 +13,7 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 826 | 826 | +0 |
-| Total Python LOC | 179538 | 181264 | +1726 |
+| Total Python LOC | 179538 | 181319 | +1781 |
 | Test functions | 2651 | 2683 | +32 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
@@ -90,8 +90,8 @@
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
 | 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
-| 9 | test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_context | tests/unit/dpm/construction/test_enrichment.py | 235 |
-| 10 | test_dpm_supportability_and_async_schemas_have_descriptions_and_examples | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 234 |
+| 9 | test_rolling_and_historical_attribution_helper_edges_are_explicit | tests/unit/core/test_risk_realized_outcome_sources.py | 236 |
+| 10 | test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_context | tests/unit/dpm/construction/test_enrichment.py | 235 |
 
 ## Most Complex Functions
 

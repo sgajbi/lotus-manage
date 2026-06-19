@@ -24,6 +24,8 @@ from src.core.outcomes.risk_sources import (
     _historical_attribution_contributor,
     _historical_attribution_reason_codes,
     _historical_attribution_set,
+    _historical_attribution_set_matches,
+    _historical_attribution_sets,
     _historical_attribution_fail_closed_posture,
     _historical_attribution_period_blocked,
     _historical_attribution_quality_posture,
@@ -1574,6 +1576,39 @@ def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
             grouping_dimension="SECTOR",
         )
         == {}
+    )
+    attribution_sets = [
+        {
+            "attribution_type": "ACTIVE_RISK",
+            "metric": "TRACKING_ERROR",
+            "grouping_dimension": "SECTOR",
+            "total_value": "0.15",
+        }
+    ]
+    assert _historical_attribution_sets({"attribution_sets": attribution_sets}) == (
+        attribution_sets
+    )
+    assert _historical_attribution_sets({"attribution_sets": {}}) == []
+    assert _historical_attribution_set_matches(
+        attribution_set=attribution_sets[0],
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+    )
+    assert not _historical_attribution_set_matches(
+        attribution_set=attribution_sets[0],
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="ISSUER",
+    )
+    assert (
+        _historical_attribution_set(
+            period_result={"attribution_sets": attribution_sets},
+            attribution_type="ACTIVE_RISK",
+            metric="TRACKING_ERROR",
+            grouping_dimension="SECTOR",
+        )
+        == attribution_sets[0]
     )
     assert (
         _historical_attribution_contributor(attribution_set={}, contributor_group_key="TECH") == {}

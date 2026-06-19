@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:28:27+00:00`
+- Generated at: `2026-06-19T05:31:27+00:00`
 
-- Report source snapshot: `f6fff140+worktree`
+- Report source snapshot: `2f8b8e10+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
-| 2 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
-| 3 | _proof_pack_id | src/core/proof_packs/builder.py | 6 | 19 |
-| 4 | bulk_review_campaign_definition_hash | src/core/waves/campaign_definitions.py | 6 | 19 |
-| 5 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
-| 6 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
-| 7 | _performance_source_posture | src/core/outcomes/performance_sources.py | 6 | 17 |
-| 8 | _risk_source_posture | src/core/outcomes/risk_sources.py | 6 | 17 |
-| 9 | save_wave | src/infrastructure/waves/in_memory.py | 6 | 17 |
-| 10 | format | src/api/observability.py | 6 | 15 |
+| 1 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
+| 2 | _proof_pack_id | src/core/proof_packs/builder.py | 6 | 19 |
+| 3 | bulk_review_campaign_definition_hash | src/core/waves/campaign_definitions.py | 6 | 19 |
+| 4 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
+| 5 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
+| 6 | _performance_source_posture | src/core/outcomes/performance_sources.py | 6 | 17 |
+| 7 | _risk_source_posture | src/core/outcomes/risk_sources.py | 6 | 17 |
+| 8 | save_wave | src/infrastructure/waves/in_memory.py | 6 | 17 |
+| 9 | format | src/api/observability.py | 6 | 15 |
+| 10 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
 
 ### Most Complex Current Test Functions
 

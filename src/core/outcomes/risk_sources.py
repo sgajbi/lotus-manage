@@ -866,18 +866,38 @@ def _historical_attribution_set(
     metric: str,
     grouping_dimension: str,
 ) -> dict[str, Any]:
-    attribution_sets = period_result.get("attribution_sets")
-    if not isinstance(attribution_sets, list):
+    attribution_sets = _historical_attribution_sets(period_result)
+    if not attribution_sets:
         return {}
     for attribution_set in attribution_sets:
         set_mapping = _read_mapping(attribution_set)
-        if (
-            _read_text(set_mapping.get("attribution_type")) == attribution_type
-            and _read_text(set_mapping.get("metric")) == metric
-            and _read_text(set_mapping.get("grouping_dimension")) == grouping_dimension
+        if _historical_attribution_set_matches(
+            attribution_set=set_mapping,
+            attribution_type=attribution_type,
+            metric=metric,
+            grouping_dimension=grouping_dimension,
         ):
             return set_mapping
     return {}
+
+
+def _historical_attribution_sets(period_result: dict[str, Any]) -> list[Any]:
+    attribution_sets = period_result.get("attribution_sets")
+    return attribution_sets if isinstance(attribution_sets, list) else []
+
+
+def _historical_attribution_set_matches(
+    *,
+    attribution_set: dict[str, Any],
+    attribution_type: str,
+    metric: str,
+    grouping_dimension: str,
+) -> bool:
+    return (
+        _read_text(attribution_set.get("attribution_type")) == attribution_type
+        and _read_text(attribution_set.get("metric")) == metric
+        and _read_text(attribution_set.get("grouping_dimension")) == grouping_dimension
+    )
 
 
 def _historical_attribution_value(
