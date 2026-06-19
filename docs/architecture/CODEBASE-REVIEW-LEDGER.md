@@ -28047,3 +28047,54 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
   pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
   slice.
+
+## BACKEND-REVIEW-20260619-1446: Proof-pack payload routing extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/payload_routing.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack section payload routing, pre-run versus run-present
+  dispatch, source-analytics payload dispatch, adapter placeholder dispatch, governance payload
+  dispatch, and behavior-preserving orchestration hotspot burn-down.
+- Finding: after section assembly extraction, `src/core/proof_packs/builder.py` still owned the
+  cohesive payload dispatcher graph for pre-run sections, run-bound sections, source-context
+  sections, and governance fallthrough inline with proof-pack orchestration. The dispatcher surface
+  was already directly characterized by focused tests and is reusable proof-pack section routing
+  behavior rather than proof-pack assembly orchestration.
+- Action: moved payload routing configuration and dispatcher functions into
+  `src/core/proof_packs/payload_routing.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved decision-summary, mandate-context, source-readiness,
+  selected-alternative, source-analytics, adapter, run-state, run-policy, turnover/cost,
+  diagnostics, source-context, governance, missing-run, and unhandled-section behavior. Regenerated
+  quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `python -m radon mi src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 821 LOC to 531 LOC, the extracted
+  `payload_routing.py` is 333 LOC with A maintainability and max cyclomatic complexity A (5), the
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now a much smaller orchestration module. The
+  remaining proof-pack improvement path should shift from LOC reduction toward reducing
+  compatibility-alias clutter, improving direct tests on extracted modules, and applying the same
+  pattern to other current measured hotspots.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
