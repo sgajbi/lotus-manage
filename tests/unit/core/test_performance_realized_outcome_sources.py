@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 
 from src.core.outcomes import performance_sources as perf_sources
@@ -704,6 +706,32 @@ def test_degraded_contribution_preserves_source_owner_supportability() -> None:
         "PERFORMANCE_SUPPORTABILITY_STALE",
         "PERFORMANCE_REASON_STALE_SOURCE_OBSERVATIONS",
     ]
+
+
+@pytest.mark.parametrize(
+    ("supportability_state", "value", "expected_posture"),
+    [
+        ("unsupported", None, ("NOT_SUPPORTED", "NOT_SUPPORTED")),
+        ("error", None, ("BLOCKED", "MISSING")),
+        ("empty", None, ("BLOCKED", "MISSING")),
+        ("stale", Decimal("0.03"), ("DEGRADED", "STALE")),
+        ("degraded", Decimal("0.03"), ("DEGRADED", "PARTIAL")),
+        ("degraded", None, ("DEGRADED", "UNAVAILABLE")),
+        ("ready", Decimal("0.03"), ("READY", "COMPLETE")),
+    ],
+)
+def test_performance_source_posture_preserves_source_owner_failure_semantics(
+    supportability_state: str,
+    value: Decimal | None,
+    expected_posture: tuple[str, str],
+) -> None:
+    assert (
+        perf_sources._performance_source_posture(
+            supportability_state=supportability_state,
+            value=value,
+        )
+        == expected_posture
+    )
 
 
 def test_error_contribution_blocks_ready_claim() -> None:

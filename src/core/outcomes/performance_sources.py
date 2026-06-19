@@ -656,15 +656,33 @@ def _performance_source_posture(
     Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
     Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
 ]:
-    if supportability_state == "unsupported":
+    if _performance_source_is_not_supported(supportability_state):
         return "NOT_SUPPORTED", "NOT_SUPPORTED"
-    if supportability_state in {"error", "empty"}:
+    if _performance_source_is_blocked(supportability_state):
         return "BLOCKED", "MISSING"
-    if supportability_state == "stale":
+    if _performance_source_is_stale(supportability_state):
         return "DEGRADED", "STALE"
     if supportability_state != "ready":
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+        return "DEGRADED", _degraded_performance_source_quality(value)
     return "READY", "COMPLETE"
+
+
+def _performance_source_is_not_supported(supportability_state: str) -> bool:
+    return supportability_state == "unsupported"
+
+
+def _performance_source_is_blocked(supportability_state: str) -> bool:
+    return supportability_state in {"error", "empty"}
+
+
+def _performance_source_is_stale(supportability_state: str) -> bool:
+    return supportability_state == "stale"
+
+
+def _degraded_performance_source_quality(
+    value: Decimal | None,
+) -> Literal["PARTIAL", "UNAVAILABLE"]:
+    return "PARTIAL" if value is not None else "UNAVAILABLE"
 
 
 def _performance_primary_reason(source_state: str) -> str:

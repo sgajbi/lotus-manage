@@ -26125,3 +26125,42 @@ and improves internal transaction-cost source posture maintainability only.
   persistence, Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal domain-model validation
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1023: Performance source posture helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/performance_sources.py`,
+  `tests/unit/core/test_performance_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: RFC-0042 outcome-review performance source authority, degraded
+  supportability semantics, and no-local-performance-methodology boundaries.
+- Finding: `_performance_source_posture` encoded unsupported, blocked, stale, degraded, and ready
+  posture mapping in one B-grade helper. The existing adapter tests covered representative source
+  responses, but did not directly pin the complete source-owner posture table used by both
+  contribution and attribution realized-source adapters.
+- Action: extracted explicit source-state predicates and degraded-quality mapping while preserving
+  source-state and quality outputs. Added a direct posture table test covering unsupported,
+  blocked (`error` and `empty`), stale, degraded with source value, degraded without source value,
+  and ready source states.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\performance_sources.py tests\unit\core\test_performance_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\performance_sources.py tests\unit\core\test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\performance_sources.py`,
+  `python -m pytest tests\unit\core\test_performance_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\performance_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused performance source suite reported
+  36 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_performance_source_posture` reduced from
+  B(6) to A(5), with extracted predicate and quality helpers at A(1) to A(2). The refreshed
+  complexity report is sourced from `0a060ba4+worktree`, and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves performance source-posture maintainability and direct
+  source-owner posture coverage only. It does not change performance adapter semantics, outcome
+  review APIs, source-product contracts, risk-source posture behavior, Gateway/Workbench behavior,
+  or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
+  operator-facing contract change.
