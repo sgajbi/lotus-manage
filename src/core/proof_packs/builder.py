@@ -2,9 +2,7 @@
 
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from typing import Any
 
-from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.construction.models import (
     AuthoritativeRegimeStressContext,
     ConstructionAlternative,
@@ -16,10 +14,8 @@ from src.core.proof_packs import decision_artifacts as _decision_artifacts
 from src.core.proof_packs import identity as _identity
 from src.core.proof_packs.models import (
     DpmPreTradeProofPack,
-    DpmProofPackEvidenceRef,
     DpmProofPackSection,
     DpmProofPackSourceRef,
-    ProofPackSectionState,
     ProofPackSectionType,
     ProofPackSourceType,
 )
@@ -28,6 +24,7 @@ from src.core.proof_packs.mandate_context import (
 )
 from src.core.proof_packs import governance_sections as _governance_sections
 from src.core.proof_packs import run_sections as _run_sections
+from src.core.proof_packs import section_assembly as _section_assembly
 from src.core.proof_packs import section_payloads as _section_payloads
 from src.core.proof_packs import supportability as _supportability_module
 from src.core.proof_packs import source_identity as _source_identity
@@ -42,48 +39,17 @@ from src.core.models import RebalanceResult
 
 PROOF_PACK_VERSION = "1.0"
 
-_SECTION_TITLES: dict[ProofPackSectionType, str] = {
-    "decision_summary": "Decision Summary",
-    "mandate_context": "Mandate Context",
-    "source_readiness": "Source Readiness",
-    "before_state": "Before State",
-    "target_state": "Target State",
-    "selected_alternative": "Selected Alternative",
-    "trade_intents": "Trade Intents",
-    "after_state": "After State",
-    "drift_impact": "Drift Impact",
-    "risk_impact": "Risk Impact",
-    "performance_context": "Performance Context",
-    "tax_impact": "Tax Impact",
-    "turnover_and_cost": "Turnover and Cost",
-    "liquidity_and_cash": "Liquidity and Cash",
-    "fx_funding_plan": "FX Funding Plan",
-    "currency_overlay_evidence": "Currency Overlay Evidence",
-    "scenario_and_regime_evidence": "Scenario and Regime Evidence",
-    "eligibility_and_restrictions": "Eligibility and Restrictions",
-    "sustainability_controls": "Sustainability Controls",
-    "rule_results": "Rule Results",
-    "approval_requirements": "Approval Requirements",
-    "operations_handoff": "Operations Handoff",
-    "decision_timeline": "Decision Timeline",
-    "lineage": "Lineage",
-    "supportability": "Supportability",
-    "reporting_refs": "Reporting References",
-    "ai_refs": "AI Evidence References",
-}
-
-
 proof_pack_id_for_rebalance_run = _identity.proof_pack_id_for_rebalance_run
 proof_pack_id_for_selected_alternative = _identity.proof_pack_id_for_selected_alternative
 
 
-_SECTION_ORDER: list[ProofPackSectionType] = list(_SECTION_TITLES)
+_SECTION_ORDER = _section_assembly.SECTION_ORDER
 
 
 ProofPackSourceValidationError = _identity.ProofPackSourceValidationError
 
 
-_SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
+_SectionPayload = _section_assembly.SectionPayload
 
 _PreRunSourceAnalyticsConfig = tuple[ProofPackAnalyticsFamily, str, str]
 
@@ -437,7 +403,7 @@ def _build_proof_pack(
         created_by=created_by,
         correlation_id=context.correlation_id,
     )
-    return _finalize_proof_pack_content_hash(pack)
+    return _section_assembly.finalize_proof_pack_content_hash(pack)
 
 
 def _proof_pack_build_context(
@@ -537,12 +503,6 @@ def _proof_pack_sections(
     ]
 
 
-def _finalize_proof_pack_content_hash(pack: DpmPreTradeProofPack) -> DpmPreTradeProofPack:
-    payload = pack.model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
-    return DpmPreTradeProofPack.model_validate(payload)
-
-
 def _build_section(
     *,
     section_type: ProofPackSectionType,
@@ -564,53 +524,34 @@ def _build_section(
     created_by: str,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> DpmProofPackSection:
-    state, summary, facts, metrics, reason_codes = _section_payload(
+    return _section_assembly.build_section(
         section_type=section_type,
-        result=result,
-        run=run,
+        generated_at=generated_at,
+        payload=_section_payload(
+            section_type=section_type,
+            result=result,
+            run=run,
+            run_artifact_hash=run_artifact_hash,
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            selection=selection,
+            reason=reason,
+            mandate_id=mandate_id,
+            mandate_twin=mandate_twin,
+            mandate_health=mandate_health,
+            mandate_evidence_gap_codes=mandate_evidence_gap_codes,
+            created_by=created_by,
+            source_ref_count=source_ref_count,
+            source_analytics=source_analytics,
+            workflow_decisions=workflow_decisions,
+        ),
+        run_id=run.rebalance_run_id if run is not None else None,
         run_artifact_hash=run_artifact_hash,
-        alternative_set=alternative_set,
-        selected_alternative=selected_alternative,
-        selection=selection,
-        reason=reason,
-        mandate_id=mandate_id,
-        mandate_twin=mandate_twin,
-        mandate_health=mandate_health,
-        mandate_evidence_gap_codes=mandate_evidence_gap_codes,
-        created_by=created_by,
-        source_ref_count=source_ref_count,
-        source_analytics=source_analytics,
-        workflow_decisions=workflow_decisions,
-    )
-    evidence_refs = []
-    if run is not None and run_artifact_hash is not None:
-        evidence_refs.append(
-            DpmProofPackEvidenceRef(
-                ref_type="DPM_RUN_ARTIFACT",
-                ref_id=run.rebalance_run_id,
-                source_system="lotus-manage",
-                content_hash=run_artifact_hash,
-            )
-        )
-    payload = DpmProofPackSection(
-        section_id=f"{section_type}",
-        section_type=section_type,
-        state=state,
-        title=_SECTION_TITLES[section_type],
-        summary=summary,
-        facts=facts,
-        metrics=metrics,
-        reason_codes=reason_codes,
-        evidence_refs=evidence_refs,
         source_refs=source_refs,
         source_supportability=_source_supportability(
             result=result, alternative_set=alternative_set
         ),
-        generated_at=generated_at,
-        content_hash="",
-    ).model_dump(mode="json")
-    payload["content_hash"] = hash_canonical_payload(strip_keys(payload, exclude={"content_hash"}))
-    return DpmProofPackSection.model_validate(payload)
+    )
 
 
 def _pre_run_source_analytics_payload(
@@ -807,7 +748,7 @@ def _section_payload(
     source_ref_count: int,
     source_analytics: dict[str, ProofPackSourceAnalytics],
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]:
+) -> _SectionPayload:
     pre_run_payload = _pre_run_section_payload(
         section_type=section_type,
         result=result,

@@ -27998,3 +27998,52 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
   pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
   slice.
+
+## BACKEND-REVIEW-20260619-1427: Proof-pack section assembly extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/section_assembly.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: immutable proof-pack section construction, section ordering and
+  business titles, run-artifact evidence references, canonical section hashing, canonical
+  proof-pack hashing, and behavior-preserving source-file hotspot burn-down.
+- Finding: after supportability aggregation extraction, `src/core/proof_packs/builder.py` still
+  owned reusable immutable assembly mechanics inline with orchestration and payload dispatch:
+  section title/order governance, evidence-ref projection for run artifacts, and canonical content
+  hash finalization for sections and the proof pack. These mechanics are reusable proof-pack
+  assembly behavior and do not need to remain in the orchestration module.
+- Action: moved section title/order constants, section evidence-ref construction, canonical section
+  hashing, and proof-pack content-hash finalization into
+  `src/core/proof_packs/section_assembly.py`; kept builder-local compatibility aliases for the
+  existing private test surface and preserved section IDs, titles, evidence refs, source refs,
+  source supportability projection, section hash calculation, and final proof-pack content hash.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 880 LOC to 821 LOC, the extracted
+  `section_assembly.py` is 105 LOC with A maintainability and max cyclomatic complexity A (3), the
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` still owns orchestration, source-context
+  dispatch, and run-present/pre-run payload routing. Further extraction should target cohesive
+  payload routing only if it improves testability and does not obscure proof-pack flow.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
