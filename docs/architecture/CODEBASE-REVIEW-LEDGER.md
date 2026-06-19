@@ -26907,3 +26907,47 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. Existing backend delivery, codebase-review, and
   enterprise refactoring guidance cover this small behavior-preserving decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1041: PM-quality portfolio-memory collection decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/pm_quality_collection.py`, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: portfolio-memory source collection maintainability, PM-quality
+  evidence lineage, bounded repository scanning, and behavior-preserving source decomposition.
+- Finding: `pm_quality_memory_events` mixed PM-book scoped score-run selection, score-run event
+  projection, optional review-action scanning, optional summary-invocation scanning, and downstream
+  event assembly in one function. Radon reported the function as C(11), and the optimization that
+  skips downstream scans when no score runs are portfolio-scoped was embedded in the same block.
+- Action: extracted typed helpers for portfolio-scoped score-run indexing, score-run event
+  projection, matching score-run review actions, review-action event projection, matching
+  score-run summary invocations, and summary-invocation event projection. Preserved the public
+  collection function, event ordering, one score-run scan behavior, and skip-downstream-scan behavior
+  when no score runs match the requested portfolio.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_pm_quality_collection.py tests\unit\dpm\portfolio_memory\test_pm_quality_projection.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m ruff format src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m ruff check src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m radon cc src\core\portfolio_memory\pm_quality_collection.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality collection/projection suites reported 8 passed.
+  Radon improved `pm_quality_memory_events` from C(11) to A(2), with extracted helpers no higher
+  than A(3). Quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one portfolio-memory source collection hotspot only. Remaining
+  source hotspots include campaign approval inbox page construction, mandate health scoring, PM
+  quality scoring, and several B-level source helper functions.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The user’s CI-gate routing instruction was noted;
+  this was source-code refactoring, not CI-gate promotion.
