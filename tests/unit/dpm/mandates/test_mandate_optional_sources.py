@@ -5,6 +5,9 @@ from typing import Any
 from src.api.services import mandate_optional_sources
 from src.api.services.mandate_optional_sources import (
     DpmMandateOptionalSources,
+    _optional_source_data_quality_ready,
+    _optional_source_is_ready,
+    _optional_source_supportability_ready,
     ready_benchmark_assignment_source,
     ready_optional_source,
     resolve_mandate_optional_sources,
@@ -161,6 +164,30 @@ def test_ready_optional_source_rejects_degraded_supportability() -> None:
 
     assert ready_source is None
     assert unavailable_family == "SUSTAINABILITY_PREFERENCE_PROFILE"
+
+
+def test_optional_source_readiness_helpers_preserve_supportability_and_quality_rules() -> None:
+    ready = _OptionalSource(
+        supportability=_Supportability(state="READY"),
+        data_quality_status="accepted",
+    )
+    degraded = _OptionalSource(
+        supportability=_Supportability(state="DEGRADED"),
+        data_quality_status="COMPLETE",
+    )
+    stale = _OptionalSource(
+        supportability=_Supportability(state="READY"),
+        data_quality_status="STALE",
+    )
+
+    assert _optional_source_supportability_ready(ready)
+    assert not _optional_source_supportability_ready(degraded)
+    assert _optional_source_data_quality_ready(ready)
+    assert _optional_source_data_quality_ready(_OptionalSource(data_quality_status=None))
+    assert not _optional_source_data_quality_ready(stale)
+    assert _optional_source_is_ready(ready)
+    assert not _optional_source_is_ready(degraded)
+    assert not _optional_source_is_ready(stale)
 
 
 def test_ready_optional_source_rejects_unaccepted_data_quality_status() -> None:

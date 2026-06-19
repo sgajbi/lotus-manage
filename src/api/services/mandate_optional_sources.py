@@ -65,17 +65,27 @@ def ready_optional_source(
 ) -> tuple[Any | None, str | None]:
     if source is None:
         return None, unavailable_family
-    supportability = getattr(source, "supportability", None)
-    if supportability is not None and getattr(supportability, "state", None) != "READY":
-        return None, family_name
-    data_quality_status = getattr(source, "data_quality_status", None)
-    if data_quality_status is not None and str(data_quality_status).upper() not in {
-        "READY",
-        "COMPLETE",
-        "ACCEPTED",
-    }:
+    if not _optional_source_is_ready(source):
         return None, family_name
     return source, unavailable_family
+
+
+def _optional_source_is_ready(source: Any) -> bool:
+    return _optional_source_supportability_ready(source) and _optional_source_data_quality_ready(
+        source
+    )
+
+
+def _optional_source_supportability_ready(source: Any) -> bool:
+    supportability = getattr(source, "supportability", None)
+    return supportability is None or getattr(supportability, "state", None) == "READY"
+
+
+def _optional_source_data_quality_ready(source: Any) -> bool:
+    data_quality_status = getattr(source, "data_quality_status", None)
+    if data_quality_status is None:
+        return True
+    return str(data_quality_status).upper() in {"READY", "COMPLETE", "ACCEPTED"}
 
 
 def _resolve_optional_source_family(

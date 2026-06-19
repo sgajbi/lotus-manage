@@ -25854,3 +25854,41 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal mandate diff auditability
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1016: Mandate optional-source readiness helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/mandate_optional_sources.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, and `quality/`.
+- Bank-buyable control area: mandate optional source readiness, fail-closed source-family
+  handling, and testing.
+- Finding: `ready_optional_source` combined absent-source handling, source supportability checks,
+  accepted data-quality status checks, and unavailable-family propagation in one B-grade helper.
+  That made optional source readiness behavior harder to audit as source-owned mandate refresh
+  inputs expand.
+- Action: extracted combined readiness, supportability readiness, and data-quality readiness
+  helpers while preserving accepted statuses (`READY`, `COMPLETE`, `ACCEPTED`) and missing-source
+  unavailable-family behavior; added direct tests for ready, degraded, stale, accepted lowercase,
+  and absent-quality cases.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\mandate_optional_sources.py tests\unit\dpm\mandates\test_mandate_optional_sources.py`,
+  `python -m ruff check src\api\services\mandate_optional_sources.py tests\unit\dpm\mandates\test_mandate_optional_sources.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\mandate_optional_sources.py`,
+  `python -m pytest tests\unit\dpm\mandates\test_mandate_optional_sources.py -q`,
+  `python -m radon cc src\api\services\mandate_optional_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate optional-source suite
+  reported 12 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `ready_optional_source` reduced from B(6) to
+  A(3), with extracted readiness helpers at A(2). The refreshed complexity report is sourced from
+  `f6fff140+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves optional source readiness maintainability only. It does not
+  change Core resolver contracts, benchmark assignment readiness, source-family request specs,
+  mandate refresh behavior, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate optional-source
+  readiness hardening with no operator-facing contract change.
