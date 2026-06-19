@@ -26864,3 +26864,46 @@ and improves internal transaction-cost source posture maintainability only.
   repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. The current `lotus-ci-enforcement-governance`
   guidance already covers promoting agent-facing evidence when new repo-native gates are added.
+
+## BACKEND-REVIEW-20260619-1040: Outcome external execution boundary decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/execution_boundary.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: source-code maintainability, outcome-review supportability evidence,
+  external execution/OMS boundary readability, and low-risk domain refactoring.
+- Finding: `build_outcome_external_execution_boundary` combined execution-dimension lookup,
+  realized execution-value lookup, reason-code aggregation, source-product detection, and payload
+  assembly in one function. Radon reported the function as C(13), making a sensitive fail-closed
+  external execution boundary harder for future agents to inspect safely.
+- Action: extracted typed pure helpers for execution-quality result lookup, realized
+  execution-quality value lookup, external execution reason-code aggregation, source-product
+  presence detection, and source-ref collection. Kept the public function and payload contract
+  unchanged, including content-hash generation and `DpmOutcomeExternalExecutionBoundaryEvidence`
+  validation.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_outcome_handoffs.py tests\unit\api\test_outcome_reviews_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\execution_boundary.py`,
+  `python -m ruff format src\core\outcomes\execution_boundary.py`,
+  `python -m ruff check src\core\outcomes\execution_boundary.py`,
+  `python -m radon cc src\core\outcomes\execution_boundary.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused outcome handoff/API suites reported 11 passed. The Radon result
+  improved `build_outcome_external_execution_boundary` from C(13) to A(3); the largest extracted
+  helper is `_external_execution_reason_codes` at A(5). Quality-report freshness, OpenAPI quality,
+  API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one source hotspot only. It does not address remaining Radon
+  B/C source hotspots such as PM-quality memory collection, campaign approval inbox construction,
+  or mandate health scoring.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. Existing backend delivery, codebase-review, and
+  enterprise refactoring guidance cover this small behavior-preserving decomposition pattern.

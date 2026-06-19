@@ -9,8 +9,11 @@ from src.core.common.boundary_promotion import (
 from src.core.common.canonical import hash_canonical_payload
 from src.core.outcomes.models import (
     DpmOutcomeClientCommunicationBoundaryEvidence,
+    DpmOutcomeDimensionResult,
     DpmOutcomeExternalExecutionBoundaryEvidence,
+    DpmOutcomeMetricValue,
     DpmPostTradeOutcomeReview,
+    DpmOutcomeSourceRef,
 )
 
 
@@ -19,35 +22,11 @@ def build_outcome_external_execution_boundary(
 ) -> DpmOutcomeExternalExecutionBoundaryEvidence:
     """Build fail-closed external execution evidence from persisted review truth."""
 
-    execution_quality = next(
-        (result for result in review.dimension_results if result.dimension == "EXECUTION_QUALITY"),
-        None,
-    )
-    realized_execution_value = review.realized_snapshot.realized_values.get("EXECUTION_QUALITY")
-    reason_codes = sorted(
-        {
-            reason
-            for result in review.dimension_results
-            for reason in [
-                result.reason_code,
-                *result.supportability.reason_codes,
-                *(ref.source_type for ref in result.source_refs),
-            ]
-        }
-        | set(review.supportability.reason_codes)
-        | (
-            set(realized_execution_value.supportability.reason_codes)
-            if realized_execution_value is not None
-            else set()
-        )
-    )
-    source_product_present = any(
-        ref.source_type == "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT"
-        for ref in [
-            *review.source_lineage,
-            *(ref for result in review.dimension_results for ref in result.source_refs),
-            *(realized_execution_value.source_refs if realized_execution_value is not None else []),
-        ]
+    execution_quality = _execution_quality_result(review)
+    realized_execution_value = _realized_execution_quality_value(review)
+    reason_codes = _external_execution_reason_codes(review, realized_execution_value)
+    source_product_present = _external_execution_source_product_present(
+        review, realized_execution_value
     )
     payload = {
         "boundary_id": "DPM_OUTCOME_EXTERNAL_EXECUTION_BOUNDARY",
@@ -76,6 +55,67 @@ def build_outcome_external_execution_boundary(
     }
     payload["content_hash"] = hash_canonical_payload(payload)
     return DpmOutcomeExternalExecutionBoundaryEvidence.model_validate(payload)
+
+
+def _execution_quality_result(
+    review: DpmPostTradeOutcomeReview,
+) -> DpmOutcomeDimensionResult | None:
+    return next(
+        (result for result in review.dimension_results if result.dimension == "EXECUTION_QUALITY"),
+        None,
+    )
+
+
+def _realized_execution_quality_value(
+    review: DpmPostTradeOutcomeReview,
+) -> DpmOutcomeMetricValue | None:
+    return review.realized_snapshot.realized_values.get("EXECUTION_QUALITY")
+
+
+def _external_execution_reason_codes(
+    review: DpmPostTradeOutcomeReview,
+    realized_execution_value: DpmOutcomeMetricValue | None,
+) -> list[str]:
+    result_reason_codes = {
+        reason
+        for result in review.dimension_results
+        for reason in [
+            result.reason_code,
+            *result.supportability.reason_codes,
+            *(ref.source_type for ref in result.source_refs),
+        ]
+    }
+    realized_reason_codes = (
+        set(realized_execution_value.supportability.reason_codes)
+        if realized_execution_value is not None
+        else set()
+    )
+    return sorted(
+        result_reason_codes | set(review.supportability.reason_codes) | realized_reason_codes
+    )
+
+
+def _external_execution_source_product_present(
+    review: DpmPostTradeOutcomeReview,
+    realized_execution_value: DpmOutcomeMetricValue | None,
+) -> bool:
+    return any(
+        ref.source_type == "EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT"
+        for ref in _external_execution_source_refs(review, realized_execution_value)
+    )
+
+
+def _external_execution_source_refs(
+    review: DpmPostTradeOutcomeReview,
+    realized_execution_value: DpmOutcomeMetricValue | None,
+) -> list[DpmOutcomeSourceRef]:
+    source_refs = [
+        *review.source_lineage,
+        *(ref for result in review.dimension_results for ref in result.source_refs),
+    ]
+    if realized_execution_value is not None:
+        source_refs.extend(realized_execution_value.source_refs)
+    return source_refs
 
 
 def build_outcome_client_communication_boundary(
