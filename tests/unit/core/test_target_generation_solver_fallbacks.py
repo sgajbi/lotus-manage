@@ -5,6 +5,7 @@ import pytest
 
 from src.core.models import DiagnosticsData, EngineOptions, ModelPortfolio, ModelTarget, ShelfEntry
 from src.core.target_generation import (
+    _available_solver_attempts,
     _installed_solver_names,
     _load_solver_modules,
     _record_solver_failure,
@@ -185,6 +186,13 @@ def test_solver_availability_helper_treats_empty_installed_set_as_try_all() -> N
     assert _solver_is_available(solver_name="OSQP", installed=set())
     assert _solver_is_available(solver_name="SCS", installed={"SCS"})
     assert _solver_is_available(solver_name="OSQP", installed={"SCS"}) is False
+
+
+def test_available_solver_attempts_filter_installed_solver_profiles() -> None:
+    attempts = _available_solver_attempts(cp=_CpFallbackStub, installed={"SCS"})
+
+    assert [solver_name for solver_name, _kwargs_attempts in attempts] == ["SCS"]
+    assert len(attempts[0][1]) == 4
 
 
 def test_solve_attempt_status_handles_success_and_compatibility_failures() -> None:

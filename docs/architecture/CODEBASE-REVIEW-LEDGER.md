@@ -25413,3 +25413,39 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack lineage
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1004: Solver fallback attempt helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`, and `quality/`.
+- Bank-buyable control area: solver fallback determinism, target-generation maintainability, and
+  testing.
+- Finding: `_solve_with_fallbacks` combined installed-solver filtering, ordered solver profile
+  iteration, compatibility failure handling, latest-status propagation, and optimal-status return
+  handling in one B-grade solver orchestration helper. That made solver fallback behavior harder
+  to audit.
+- Action: introduced a typed solver attempt result, extracted available-solver filtering and
+  per-solver profile solving helpers, and added direct tests proving installed-solver filtering
+  preserves only source-supported solver profiles.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\target_generation.py tests\unit\core\test_target_generation_solver_fallbacks.py`,
+  `python -m ruff check src\core\target_generation.py tests\unit\core\test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src\core\target_generation.py`,
+  `python -m pytest tests\unit\core\test_target_generation_solver_fallbacks.py -q`,
+  `python -m radon cc src\core\target_generation.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused target
+  generation solver fallback suite reported 17 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_solve_with_fallbacks` reduced from B(6) to A(3), with extracted fallback helpers at A(3) to
+  A(4). The refreshed complexity report is sourced from `f8a50dbd+worktree` and the current
+  top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves solver fallback maintainability only. It does not change
+  optimization constraints, solver profile order, target weight methodology, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal target-generation
+  maintainability hardening with no operator-facing contract change.
