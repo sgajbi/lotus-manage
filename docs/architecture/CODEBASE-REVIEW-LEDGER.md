@@ -28098,3 +28098,55 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
   pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
   slice.
+
+## BACKEND-REVIEW-20260619-1512: DPM source context financial-planning model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_financial_planning.py`, focused DPM source-context/core-sourcing/
+  construction-liquidity tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` financial-planning source-product contracts,
+  cashflow projection evidence, client income-needs evidence, liquidity reserve evidence, planned
+  withdrawal evidence, and behavior-preserving source-context hotspot burn-down.
+- Finding: `src/core/dpm_source_context.py` remained the largest source module at 1929 LOC and mixed
+  reusable financial-planning Pydantic contracts with broader DPM source-context, tax, market-data,
+  external treasury, source-readiness, and execution-context models. The financial-planning source
+  product group had a cohesive responsibility and no dependency on the broader source-context
+  module, making it a low-risk extraction candidate.
+- Action: moved the `PortfolioCashflowProjection:v1`, `ClientIncomeNeedsSchedule:v1`,
+  `LiquidityReserveRequirement:v1`, and `PlannedWithdrawalSchedule:v1` model group into
+  `src/core/dpm_source_context_financial_planning.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing caller imports and OpenAPI/Pydantic behavior remain
+  stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_liquidity_source_context.py tests\unit\dpm\construction\test_source_identity.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 94 passed.
+  `dpm_source_context.py` raw size moved from 1929 LOC to 1781 LOC, the extracted
+  `dpm_source_context_financial_planning.py` is 166 LOC with A maintainability, the architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. The existing measured,
+  deterministic repo-native gates already cover this change class: architecture-boundary drift,
+  duplicate implementation hotspots, complexity non-regression, static/type checks, focused
+  contract behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` remains a large model aggregation module. Next
+  source-context slices should target similarly cohesive contract families, especially tax/
+  market-data coverage or external treasury/OMS groups, and keep import compatibility stable until
+  downstream modules migrate deliberately.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement
+  governance already states the correct measured, deterministic gate-promotion policy, so no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
