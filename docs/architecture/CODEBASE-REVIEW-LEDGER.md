@@ -25556,3 +25556,40 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack lineage
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1008: Proof-pack repository list query helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/proof_packs/in_memory.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_repository.py`, and `quality/`.
+- Bank-buyable control area: proof-pack repository query-shape maintainability, deterministic
+  listing semantics, and testing.
+- Finding: `InMemoryDpmProofPackRepository.list_proof_packs` combined optional portfolio,
+  mandate, and status filters with descending created-at ordering, pagination, locking, and
+  defensive copying in one B-grade repository method. That made proof-pack listing behavior harder
+  to test independently from repository storage mechanics.
+- Action: extracted typed list filters, filter predicate, optional-match, sort-key, and paging
+  helpers while preserving the existing lock boundary and deepcopy return behavior; added direct
+  tests for optional filter matching, portfolio/mandate filtering, descending ordering, and offset
+  pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\proof_packs\in_memory.py tests\unit\dpm\proof_packs\test_proof_pack_repository.py`,
+  `python -m ruff check src\infrastructure\proof_packs\in_memory.py tests\unit\dpm\proof_packs\test_proof_pack_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\proof_packs\in_memory.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_repository.py -q`,
+  `python -m radon cc src\infrastructure\proof_packs\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack repository suite
+  reported 10 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports
+  `InMemoryDpmProofPackRepository.list_proof_packs` reduced from B(8) to A(1), with extracted list
+  helpers at A(1) to A(3). The refreshed complexity report is sourced from `67b6b078+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted method.
+- Residual risk: this slice improves in-memory proof-pack list query maintainability only. It does
+  not change Postgres proof-pack query behavior, persistence schemas, idempotency semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.

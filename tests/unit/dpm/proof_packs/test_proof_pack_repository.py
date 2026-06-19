@@ -11,8 +11,13 @@ from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.models import DpmRunRecord
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.proof_packs.in_memory import (
+    _ProofPackListFilters,
     _ensure_proof_pack_content_is_immutable,
     _idempotency_binding,
+    _list_proof_packs,
+    _optional_match,
+    _proof_pack_matches_filters,
+    _proof_pack_sort_key,
     _retention_metadata,
 )
 from tests.shared.factories import (
@@ -204,6 +209,57 @@ def test_retention_metadata_helper_preserves_policy_and_optional_expiry() -> Non
     assert expiring.retention_expires_at == RETENTION_EXPIRES_AT.isoformat()
     assert non_expiring.retention_policy == "DPM_PRE_TRADE_PROOF_PACK_7Y"
     assert non_expiring.retention_expires_at is None
+
+
+def test_proof_pack_list_helpers_filter_sort_and_page_results() -> None:
+    first = _proof_pack().model_copy(
+        update={
+            "proof_pack_id": "dpp_repo_001",
+            "portfolio_id": "pf_repo_1",
+            "mandate_id": "mandate_repo_1",
+            "created_at": CREATED_AT,
+        }
+    )
+    second = first.model_copy(
+        update={
+            "proof_pack_id": "dpp_repo_002",
+            "portfolio_id": "pf_repo_1",
+            "mandate_id": "mandate_repo_1",
+            "created_at": CREATED_AT + timedelta(days=1),
+        }
+    )
+    other_portfolio = first.model_copy(
+        update={
+            "proof_pack_id": "dpp_repo_003",
+            "portfolio_id": "pf_repo_other",
+            "created_at": CREATED_AT + timedelta(days=2),
+        }
+    )
+
+    filters = _ProofPackListFilters(
+        portfolio_id="pf_repo_1",
+        mandate_id="mandate_repo_1",
+        status=None,
+    )
+
+    assert _optional_match(None, first.portfolio_id)
+    assert _optional_match("pf_repo_1", first.portfolio_id)
+    assert not _optional_match("pf_repo_other", first.portfolio_id)
+    assert _proof_pack_matches_filters(proof_pack=first, filters=filters)
+    assert not _proof_pack_matches_filters(proof_pack=other_portfolio, filters=filters)
+    assert _proof_pack_sort_key(second) > _proof_pack_sort_key(first)
+    assert _list_proof_packs(
+        proof_packs=[first, second, other_portfolio],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [second]
+    assert _list_proof_packs(
+        proof_packs=[first, second, other_portfolio],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [first]
 
 
 def test_in_memory_repository_appends_refs_without_mutating_body() -> None:

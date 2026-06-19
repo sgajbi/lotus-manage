@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
 
@@ -15,6 +16,13 @@ from src.core.proof_packs.repository import (
 )
 
 RETENTION_POLICY_PRE_TRADE_PROOF_PACK = "DPM_PRE_TRADE_PROOF_PACK_7Y"
+
+
+@dataclass(frozen=True)
+class _ProofPackListFilters:
+    portfolio_id: str | None
+    mandate_id: str | None
+    status: str | None
 
 
 def _ensure_proof_pack_content_is_immutable(
@@ -115,18 +123,17 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
         offset: int = 0,
     ) -> list[DpmPreTradeProofPack]:
         with self._lock:
-            proof_packs = [
-                proof_pack
-                for proof_pack in self._proof_packs.values()
-                if (portfolio_id is None or proof_pack.portfolio_id == portfolio_id)
-                and (mandate_id is None or proof_pack.mandate_id == mandate_id)
-                and (status is None or proof_pack.status == status)
-            ]
-            proof_packs.sort(
-                key=lambda proof_pack: (proof_pack.created_at, proof_pack.proof_pack_id),
-                reverse=True,
+            page = _list_proof_packs(
+                proof_packs=list(self._proof_packs.values()),
+                filters=_ProofPackListFilters(
+                    portfolio_id=portfolio_id,
+                    mandate_id=mandate_id,
+                    status=status,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(proof_packs[offset : offset + limit])
+            return deepcopy(page)
 
     def get_retention_metadata(
         self,
@@ -148,3 +155,39 @@ class InMemoryDpmProofPackRepository(DpmProofPackRepository):
     def list_refs(self, *, proof_pack_id: str) -> list[DpmProofPackStoredRef]:
         with self._lock:
             return deepcopy(self._refs.get(proof_pack_id, []))
+
+
+def _list_proof_packs(
+    *,
+    proof_packs: list[DpmPreTradeProofPack],
+    filters: _ProofPackListFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPreTradeProofPack]:
+    matched = [
+        proof_pack
+        for proof_pack in proof_packs
+        if _proof_pack_matches_filters(proof_pack=proof_pack, filters=filters)
+    ]
+    matched.sort(key=_proof_pack_sort_key, reverse=True)
+    return matched[offset : offset + limit]
+
+
+def _proof_pack_matches_filters(
+    *,
+    proof_pack: DpmPreTradeProofPack,
+    filters: _ProofPackListFilters,
+) -> bool:
+    return (
+        _optional_match(filters.portfolio_id, proof_pack.portfolio_id)
+        and _optional_match(filters.mandate_id, proof_pack.mandate_id)
+        and _optional_match(filters.status, proof_pack.status)
+    )
+
+
+def _optional_match(expected: str | None, actual: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _proof_pack_sort_key(proof_pack: DpmPreTradeProofPack) -> tuple[datetime, str]:
+    return proof_pack.created_at, proof_pack.proof_pack_id

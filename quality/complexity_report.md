@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:01:33+00:00`
+- Generated at: `2026-06-19T05:05:21+00:00`
 
-- Report source snapshot: `0be18091+worktree`
+- Report source snapshot: `67b6b078+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -33,15 +33,15 @@
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
 | 1 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
-| 2 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
-| 3 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
-| 4 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
-| 5 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
-| 6 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
-| 7 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
-| 8 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
-| 9 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
-| 10 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
+| 2 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
+| 3 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
+| 4 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
+| 5 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
+| 6 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
+| 7 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
+| 8 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
+| 9 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
+| 10 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
 
 ### Most Complex Current Test Functions
 
