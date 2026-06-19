@@ -28253,7 +28253,6 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
-
 ## BACKEND-REVIEW-20260619-1604: DPM source context external treasury model extraction
 
 - Date: 2026-06-19
@@ -28646,6 +28645,75 @@ and improves internal transaction-cost source posture maintainability only.
   time only where focused tests can preserve source-readiness, source-owned risk/performance
   context preservation, and monitoring exception behavior.
 - Wiki decision: no wiki source change required; this is internal domain-module modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2216: Rebalance run support-bundle helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/support_bundle.py`, focused rebalance run supportability/API/workflow
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: rebalance run support bundles, run lineage sorting/filtering/paging,
+  idempotency-history projection, workflow-history projection, async-operation supportability
+  projection, and operator support evidence assembly.
+- Quality intake: `src/core/rebalance_runs/service.py` is the existing Manage-owned rebalance run
+  support service for run persistence orchestration, async-operation status, idempotency lookup,
+  lineage lookup, workflow support, artifact retrieval, and supportability summaries. Manage remains
+  source of truth for rebalance run lifecycle and supportability evidence; upstream source facts and
+  execution payloads remain explicit request/Core-sourced inputs outside this slice. The closest
+  meaningful tests are `tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `tests/unit/dpm/supportability/test_dpm_idempotency_history_service.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/rebalance_runs/service.py` hotspot while preserving run support-bundle,
+  lineage, idempotency, artifact, and workflow behavior.
+- Finding: `src/core/rebalance_runs/service.py` mixed orchestration methods with pure
+  support-bundle and lineage projection helpers. The helpers sort/filter/page lineage edges and
+  assemble support-bundle subresponses independently of repository mutation, making them a cohesive
+  extraction seam with existing focused behavior coverage.
+- Action: moved pure support-bundle and lineage helper logic into
+  `src/core/rebalance_runs/support_bundle.py`; kept private compatibility aliases in
+  `src/core/rebalance_runs/service.py` for existing tests and internal callers. No API contract,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_lineage_service.py tests\unit\dpm\supportability\test_dpm_idempotency_history_service.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py tests\unit\dpm\supportability\test_dpm_lineage_service.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused supportability/API/workflow
+  tests reported 163 passed. `src/core/rebalance_runs/service.py` moved from 1040 LOC with C
+  maintainability 2.71 to 945 LOC with C maintainability 7.06, and the extracted
+  `src/core/rebalance_runs/support_bundle.py` is 154 LOC with A maintainability 44.46. Source
+  mypy passed for the touched modules; including the existing untyped lineage test file surfaced
+  unrelated pre-existing test/factory typing gaps, so the typed proof for this slice is scoped to
+  changed source files.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused support-bundle behavior, API/workflow
+  behavior, and quality-report freshness. Maintainability index and file size remain
+  measured/report-backed planning signals rather than new blockers because they are not standalone
+  low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 945 LOC because
+  it still owns run persistence orchestration, async operation lifecycle, workflow decisions,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should target
+  one cohesive behavior family at a time, likely async-operation lifecycle or workflow decision
+  orchestration, only where focused tests can preserve conflict handling, idempotency lookup,
+  lineage, and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal support-service modularity and
   quality evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
