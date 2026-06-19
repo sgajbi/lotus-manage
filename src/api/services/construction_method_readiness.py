@@ -225,25 +225,42 @@ def currency_overlay_reason_codes(
     result: RebalanceResult,
     authority_context: ConstructionAuthorityContext,
 ) -> list[str]:
-    reason_codes: list[str] = []
-    missing_pairs = missing_currency_overlay_pairs(request=request)
     overlay_status = currency_overlay_status(
         request=request,
         context=authority_context.currency_overlay_context,
     )
+    return [
+        _currency_overlay_fx_source_reason_code(
+            request=request,
+            result=result,
+            overlay_status=overlay_status,
+        ),
+        *_currency_overlay_context_reason_codes(authority_context),
+    ]
+
+
+def _currency_overlay_fx_source_reason_code(
+    *,
+    request: RebalanceRequest,
+    result: RebalanceResult,
+    overlay_status: ConstructionMethodStatus,
+) -> str:
+    missing_pairs = missing_currency_overlay_pairs(request=request)
     if result.diagnostics.missing_fx_pairs or missing_pairs:
-        reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_MISSING")
-    elif overlay_status == ConstructionMethodStatus.BLOCKED:
-        reason_codes.append("CURRENCY_OVERLAY_CONTEXT_BLOCKED")
-    elif overlay_status == ConstructionMethodStatus.DEGRADED:
-        reason_codes.append("CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE")
-    else:
-        reason_codes.append("CURRENCY_OVERLAY_FX_SOURCE_READY")
+        return "CURRENCY_OVERLAY_FX_SOURCE_MISSING"
+    if overlay_status == ConstructionMethodStatus.BLOCKED:
+        return "CURRENCY_OVERLAY_CONTEXT_BLOCKED"
+    if overlay_status == ConstructionMethodStatus.DEGRADED:
+        return "CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE"
+    return "CURRENCY_OVERLAY_FX_SOURCE_READY"
+
+
+def _currency_overlay_context_reason_codes(
+    authority_context: ConstructionAuthorityContext,
+) -> list[str]:
     if authority_context.currency_overlay_context is None:
-        reason_codes.append("CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING")
-    else:
-        reason_codes.extend(authority_context.currency_overlay_context.reason_codes)
-    return reason_codes
+        return ["CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING"]
+    return list(authority_context.currency_overlay_context.reason_codes)
 
 
 _METHOD_STATUS_BUILDERS: dict[ConstructionMethod, _MethodStatusBuilder] = {

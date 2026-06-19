@@ -25230,3 +25230,39 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal repository query-shape
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-999: Currency overlay reason-code helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`, and `quality/`.
+- Bank-buyable control area: service-layer source readiness semantics, fail-closed currency
+  overlay posture, and testing.
+- Finding: `currency_overlay_reason_codes` combined FX-source missing-pair precedence,
+  overlay-status reason selection, missing policy-context fallback, and source-owned policy reason
+  propagation in one B-grade API service helper. That made currency-overlay supportability
+  posture harder to audit at the service boundary.
+- Action: extracted FX-source reason selection and currency-overlay context reason propagation
+  helpers, kept the public helper as orchestration, and added direct tests for missing FX pair
+  precedence plus source policy reason-code preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_method_readiness.py tests\unit\dpm\construction\test_method_readiness.py`,
+  `python -m ruff check src\api\services\construction_method_readiness.py tests\unit\dpm\construction\test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_method_readiness.py`,
+  `python -m pytest tests\unit\dpm\construction\test_method_readiness.py -q`,
+  `python -m radon cc src\api\services\construction_method_readiness.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused method
+  readiness suite reported 7 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `currency_overlay_reason_codes`
+  reduced from B(6) to A(1), with extracted helpers at A(2) to A(5). The refreshed complexity
+  report is sourced from `d4c8d0e7+worktree` and the current top-ten source hotspot list no longer
+  includes the targeted helper.
+- Residual risk: this slice improves currency-overlay reason-code maintainability only. It does
+  not change currency-overlay readiness policy, FX-pair detection, external treasury ingestion,
+  API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal service-layer maintainability
+  hardening with no operator-facing contract change.

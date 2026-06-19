@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:30:43+00:00`
+- Generated at: `2026-06-19T04:34:39+00:00`
 
-- Report source snapshot: `25ef66fd+worktree`
+- Report source snapshot: `d4c8d0e7+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
-| 2 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
-| 3 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
-| 4 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
-| 5 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
-| 6 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
-| 7 | build_operation_filter_query | src/infrastructure/rebalance_runs/operation_query.py | 6 | 23 |
-| 8 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
-| 9 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
-| 10 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
+| 1 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
+| 2 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
+| 3 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
+| 4 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
+| 5 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
+| 6 | build_operation_filter_query | src/infrastructure/rebalance_runs/operation_query.py | 6 | 23 |
+| 7 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
+| 8 | _source_hashes | src/core/proof_packs/builder.py | 6 | 22 |
+| 9 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
+| 10 | list_proof_packs | src/infrastructure/proof_packs/in_memory.py | 6 | 22 |
 
 ### Most Complex Current Test Functions
 
