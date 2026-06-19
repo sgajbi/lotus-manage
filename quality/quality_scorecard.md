@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-19T06:30:48+00:00`
+- Generated at: `2026-06-19T06:41:51+00:00`
 
-- Report source snapshot: `9c618b9e+worktree`
+- Report source snapshot: `a1603e8e+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -17,6 +17,7 @@
 | Router infrastructure imports | Active gate | `scripts/router_infrastructure_gate.py`. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 0. |
 | Complexity | Report-only baseline | `quality/complexity_report.md`; add thresholds after baseline review. |
+| Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance. |
 | Dead code | Active gate | `make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output. |
 | Dependency architecture | Active gate | `make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry. |
 | Security depth | Partially active | `make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`. |

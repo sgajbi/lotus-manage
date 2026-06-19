@@ -26566,3 +26566,53 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill, context, or playbook update required; existing backend governance
   and review-ledger guidance already cover policy-table extraction and focused unit
   characterization.
+
+## BACKEND-REVIEW-20260619-1034: Quality report freshness CI enforcement
+
+- Date: 2026-06-19
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  `Makefile`, `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: CI enforcement, quality evidence integrity, scorecard freshness, and
+  future-regression prevention for the enterprise backend refactor program.
+- Finding: the repository generated and committed quality reports after refactoring slices, but
+  neither local gates nor blocking GitHub lanes proved that those checked-in scorecards were
+  current. This allowed future code changes to pass CI while leaving stale quality evidence behind,
+  weakening before/after PR proof and making degradation harder to catch.
+- Action: added `python scripts/engineering_health_report.py --check` and `make
+  quality-report-gate`. The check builds reports in memory, ignores only volatile report
+  provenance lines (`Generated at` and `Report source snapshot`), and fails on changed measured
+  content, missing artifacts, scorecard drift, boundary-count drift, complexity drift, or OpenAPI
+  posture drift. Wired the gate into `make check`, `make ci`, Remote Feature Lane, PR Merge Gate,
+  and Main Releasability. Added unit tests for provenance normalization and stale/missing artifact
+  detection, updated the CI gate documentation, and regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python scripts\engineering_health_report.py --check` initially failed with stale
+  `quality/refactor_health_report.md`, `quality/baseline_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`, proving the detector catches
+  stale artifacts; after regeneration it passed with "Quality reports are current." Also ran
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m pytest tests\unit\test_engineering_health_report.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/feature-lane.yml','.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml']]; print('Parsed workflow YAML files')"`,
+  and `git diff --check`. The focused engineering health report suite reported 10 passed. OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, workflow YAML parse,
+  and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces freshness of tracked quality reports and scorecards. It does
+  not yet add diff-coverage enforcement, actionlint execution in the local gate, branch-protection
+  introspection, or stricter numeric thresholds for report-only quality dimensions.
+- Wiki decision: no wiki source change required; this changes CI enforcement and repo-local
+  quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. Existing backend delivery, PR pre-merge, and
+  review-ledger guidance covered this pattern; the new executable gate is the durable guidance for
+  future agents.

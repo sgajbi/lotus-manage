@@ -153,6 +153,7 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
     )
     assert "| Dependency architecture | Active gate |" in scorecard
     assert "| Dead code | Active gate |" in scorecard
+    assert "| Quality report freshness | Active gate |" in scorecard
     assert "| Complexity | Report-only baseline |" in scorecard
     assert (
         "| 4 - enterprise-readiness gates | Block release on full readiness posture." in scorecard
@@ -205,6 +206,80 @@ def test_quality_rule_documents_state_report_only_architecture_and_api_rules() -
     assert "Current Gate Phase" in architecture_rules
     assert "Every endpoint should have a summary" in api_rules
     assert "OpenAPI and API vocabulary checks are active repo-native gates" in api_rules
+
+
+def test_report_check_normalizes_volatile_provenance() -> None:
+    current = "\n".join(
+        [
+            "# Report",
+            "- Generated at: `2026-06-19T00:00:00+00:00`",
+            "- Report source snapshot: `abc1234`",
+        ]
+    )
+    regenerated = "\n".join(
+        [
+            "# Report",
+            "- Generated at: `2026-06-19T01:00:00+00:00`",
+            "- Report source snapshot: `abc1234`",
+        ]
+    )
+    changed_snapshot = "\n".join(
+        [
+            "# Report",
+            "- Generated at: `2026-06-19T01:00:00+00:00`",
+            "- Report source snapshot: `def5678`",
+        ]
+    )
+
+    assert ehr._normalize_report_for_check(current) == ehr._normalize_report_for_check(regenerated)
+    assert ehr._normalize_report_for_check(current) == ehr._normalize_report_for_check(
+        changed_snapshot
+    )
+    assert ehr._normalize_report_for_check(current) != ehr._normalize_report_for_check(
+        changed_snapshot + "\n| Metric | Changed |\n"
+    )
+
+
+def test_stale_report_paths_detects_missing_or_changed_quality_artifacts(
+    tmp_path, monkeypatch
+) -> None:
+    current_report = tmp_path / "current.md"
+    stale_report = tmp_path / "stale.md"
+    missing_report = tmp_path / "missing.md"
+    current_report.write_text(
+        "# Current\n- Generated at: `old`\n- Report source snapshot: `abc1234`\n",
+        encoding="utf-8",
+    )
+    stale_report.write_text(
+        "# Stale\n- Generated at: `old`\n- Report source snapshot: `old1234`\n| Metric | Old |\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        ehr,
+        "REPORT_OUTPUT_BUILDERS",
+        (
+            (
+                current_report,
+                lambda _context: (
+                    "# Current\n- Generated at: `new`\n- Report source snapshot: `abc1234`\n"
+                ),
+            ),
+            (
+                stale_report,
+                lambda _context: (
+                    "# Stale\n- Generated at: `new`\n- Report source snapshot: `abc1234`\n| Metric | New |\n"
+                ),
+            ),
+            (
+                missing_report,
+                lambda _context: (
+                    "# Missing\n- Generated at: `new`\n- Report source snapshot: `abc1234`\n"
+                ),
+            ),
+        ),
+    )
+
+    assert ehr.stale_report_paths(_context()) == [stale_report, missing_report]
 
 
 def test_service_boundary_findings_include_transport_framework_imports() -> None:

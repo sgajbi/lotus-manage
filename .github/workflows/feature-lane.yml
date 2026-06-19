@@ -63,6 +63,8 @@ jobs:
         run: make dependency-hygiene-gate
       - name: Dead Code Gate
         run: make dead-code-gate
+      - name: Quality Report Freshness Gate
+        run: make quality-report-gate
       - name: Security Audit
         run: make security-audit
 
