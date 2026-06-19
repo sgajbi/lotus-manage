@@ -28583,3 +28583,70 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2210: Mandate model vocabulary extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `src/core/mandate_models.py`,
+  `tests/unit/dpm/core/test_mandate_health.py`, focused DPM mandate API/repository tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC-0038 mandate-health vocabulary, mandate digital-twin DTOs,
+  monitoring DTOs, command-center response DTOs, source-readiness projection, and source-owned
+  risk/performance context preservation.
+- Quality intake: `src/core/mandates.py` was the existing Manage-owned RFC-0038 mandate-health
+  domain module, combining stable DTO/vocabulary definitions with source-lineage assembly,
+  digital-twin construction, health scoring, and monitoring exception generation. Manage remains
+  source of truth for mandate-health representation and monitoring posture, while `lotus-core`,
+  `lotus-risk`, and `lotus-performance` remain authoritative for upstream source facts and
+  source-owned analytics contexts. The closest meaningful tests are
+  `tests/unit/dpm/core/test_mandate_health.py`, monitoring API tests, command-center tests,
+  mandate repository tests, and OpenAPI/supportability contract tests. Repo-native validation uses
+  focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/mandates.py` hotspot while preserving public import compatibility and behavior.
+- Finding: `src/core/mandates.py` carried more than 500 lines of stable enums, weights,
+  dataclass/type aliases, and Pydantic DTOs before the actual mandate source-lineage and scoring
+  logic. This made the module harder for agents to reason about and kept unrelated model
+  vocabulary coupled to scoring/orchestration edits.
+- Action: moved stable mandate-health vocabulary and DTO definitions into
+  `src/core/mandate_models.py`; kept explicit public compatibility re-exports from
+  `src/core/mandates.py`, including the previously available private helper/type aliases used by
+  local tests and internal callers. Tightened one test fixture annotation so the touched focused
+  mypy slice remains deterministic.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\mandates\test_mandate_command_center.py tests\unit\dpm\supportability\test_dpm_mandate_repository.py -q`,
+  `python -m pytest tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\mandates.py src\core\mandate_models.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff format --check src\core\mandates.py src\core\mandate_models.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py src\core\mandate_models.py src\core\mandate_repository.py src\api\services\mandate_command_center.py tests\unit\dpm\core\test_mandate_health.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\mandates.py src\core\mandate_models.py`,
+  `python -m radon mi src\core\mandates.py src\core\mandate_models.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 90 passed,
+  and API/OpenAPI-focused tests reported 36 passed. `src/core/mandates.py` moved from 1565 LOC
+  with C maintainability 0.00 to 1058 LOC with C maintainability 7.97, and the extracted
+  `src/core/mandate_models.py` is 588 LOC with A maintainability 20.59. The architecture gate
+  passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups and
+  no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused model/scoring behavior, API/OpenAPI
+  supportability contracts, and quality-report freshness. Maintainability index and file size
+  remain measured/report-backed planning signals rather than new blockers because they are not
+  standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/mandates.py` remains a C-grade module at 1058 LOC because it still owns
+  source-lineage assembly, digital-twin construction, health input construction, scoring, and
+  monitoring exception generation. Future slices should target one cohesive behavior family at a
+  time only where focused tests can preserve source-readiness, source-owned risk/performance
+  context preservation, and monitoring exception behavior.
+- Wiki decision: no wiki source change required; this is internal domain-module modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.

@@ -955,7 +955,7 @@ def test_inactive_sustainability_preferences_do_not_create_review_posture() -> N
 def test_sustainability_review_required_for_active_source_controls(
     preference_updates: dict[str, object],
 ) -> None:
-    base_preference = {
+    base_preference: dict[str, object] = {
         "preference_framework": "BANK_SUSTAINABILITY",
         "preference_code": "SOURCE_CONTROL",
         "preference_status": "ACTIVE",
