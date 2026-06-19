@@ -28302,3 +28302,55 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1621: DPM source context execution-control model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_execution_controls.py`, focused DPM construction/core-sourcing
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: source-owned execution controls and evidence contracts for instrument
+  eligibility, observed transaction-cost curves, client restrictions, and sustainability
+  preferences consumed by stateful DPM construction and execution supportability.
+- Finding: `src/core/dpm_source_context.py` still embedded the execution-control source-product
+  model family after prior financial-planning, market-data, and external-treasury extractions. The
+  family is cohesive, source-product oriented, and behavior-covered by core-sourcing and
+  construction supportability tests, so keeping it in the aggregate continued unnecessary module
+  growth.
+- Action: moved instrument eligibility, transaction-cost curve, client restriction, and
+  sustainability preference Pydantic models into
+  `src/core/dpm_source_context_execution_controls.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing imports, Pydantic validation, and OpenAPI schema
+  behavior remain stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_client_profile_source_context.py tests\unit\dpm\construction\test_client_restriction_supportability.py tests\unit\dpm\construction\test_enrichment.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_client_profile_source_context.py tests\unit\dpm\construction\test_client_restriction_supportability.py tests\unit\dpm\construction\test_enrichment.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 87 passed.
+  `dpm_source_context.py` raw size moved from 1329 LOC to 1065 LOC, the extracted
+  `dpm_source_context_execution_controls.py` is 285 LOC with A maintainability, the architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused source-product
+  behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` remains a source-context aggregate at 1065 LOC.
+  Future slices should target the remaining cohesive core source-product model families or
+  transformation helpers only when compatibility imports remain stable and tests characterize the
+  moved behavior.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
