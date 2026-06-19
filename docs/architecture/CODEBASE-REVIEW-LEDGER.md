@@ -29494,3 +29494,71 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and CI-enforcement guidance already require measured, deterministic, behavior-preserving slices;
   no platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2222: Rebalance intent tax-budget policy extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/intents.py`, `src/core/rebalance/tax_budget.py`, focused DPM engine
+  safety/tax-awareness tests, generated quality reports, and this ledger.
+- Bank-buyable control area: discretionary mandate rebalance intent generation, available-holding
+  sell safety, HIFO tax-lot selection, realized-gain budget limiting, tax-impact projection, and
+  diagnostic warning/event evidence.
+- Quality intake: `src/core/rebalance/intents.py` is the existing Manage-owned domain intent
+  generator for DPM rebalance simulations. The source of business truth is the caller-supplied
+  portfolio, market data, model targets, shelf, and `EngineOptions`; Manage derives trade intent
+  proposals and bounded diagnostics from those inputs without calling external services in this
+  path. The code path is internal domain logic consumed by API/service execution, not a router,
+  repository, OpenAPI, or direct runtime contract surface. Closest meaningful tests are
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `tests/unit/dpm/engine/test_engine_tax_awareness.py`, and
+  `tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`. Repo-native
+  validation uses focused pytest, ruff, source mypy, architecture, duplicate-implementation,
+  complexity, and generated-report freshness checks. The measured quality signal is moving the
+  B-rated, 716 LOC intent module to A-rated maintainability while preserving generated intent
+  quantity, notional, constraints, tax-impact, warning, and diagnostic-event behavior.
+- Finding: `intents.py` mixed target-to-intent orchestration with a coherent tax-budget policy
+  family: HIFO lot ordering, lot-cost FX conversion, sell-quantity clamping, tax-budget allowance,
+  realized-gain/loss accumulation, tax-impact construction, and tax-limit diagnostics. The
+  tax-budget policy is directly covered by unit and engine-level tests and can be owned separately
+  from the target intent loop.
+- Action: moved tax-budget accumulator/value objects, HIFO lot ordering, sell-quantity safety
+  limits, tax-budget allowance/lot scan logic, tax-impact projection, and tax-limit diagnostics to
+  `src/core/rebalance/tax_budget.py`. Kept `src/core/rebalance/intents.py` as the compatibility
+  facade for existing private helper imports while it now owns target-delta, market-context,
+  dust-suppression, security-intent construction, and the target iteration loop. No API contract,
+  OpenAPI, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\engine\test_engine_safety_rules.py tests\unit\dpm\engine\test_engine_tax_awareness.py tests\unit\dpm\engine\coverage\test_engine_tax_and_settlement_branches.py`,
+  `python -m ruff check src\core\rebalance\intents.py src\core\rebalance\tax_budget.py tests\unit\dpm\engine\test_engine_safety_rules.py`,
+  `python -m ruff format --check src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `python -m mypy src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `python -m radon mi src\core\rebalance\intents.py src\core\rebalance\tax_budget.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused safety/tax engine tests reported
+  55 passed. `src/core/rebalance/intents.py` moved from 716 LOC with B maintainability 16.52 to
+  405 LOC with A maintainability 31.41 after the compatibility `__all__` declaration; the extracted
+  `src/core/rebalance/tax_budget.py` is 373 LOC with A maintainability 28.04. The duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regression, static/type checks, focused tax-budget behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining B-rated source hotspots include `src/core/portfolio_memory/models.py`,
+  `src/core/pm_quality/scoring.py`, `src/core/pm_quality/models.py`,
+  `src/core/construction/models.py`, `src/core/rebalance_runs/service.py`,
+  `src/core/waves/campaign_assignment_tasks.py`, and `src/infrastructure/pm_quality/postgres.py`.
+  Future slices should keep targeting cohesive behavior families with direct tests before model or
+  persistence file-size splits.
+- Wiki decision: no wiki source change required; this is internal domain modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement guidance already cover this measured extraction pattern; no platform
+  skill-source change or bootstrap sync is needed for this repository-local slice.
