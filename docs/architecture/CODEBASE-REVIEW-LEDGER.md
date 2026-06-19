@@ -27314,3 +27314,50 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. The existing duplicate gate
   and codebase-review ledger pattern now give future agents a deterministic signal and durable
   follow-up inventory.
+
+## BACKEND-REVIEW-20260619-1050: PM-quality book-scope member-ref duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/book_scope_refs.py`,
+  `src/api/routers/pm_operating_quality_book_scope_builder.py`,
+  `src/api/services/pm_operating_quality_service.py`, focused PM-quality book-scope tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality source-lineage consistency, API/service
+  boundary maintainability, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical PM-book member source-ref
+  projection in the PM-quality router book-scope builder and PM-quality service. The duplicated
+  helper was behaviorally correct but sat on source-lineage evidence that feeds score-run evidence,
+  source refs, and downstream portfolio-memory projection. Future changes could drift member cap,
+  source id fallback, source type, or source-version semantics between route preview and service
+  command paths.
+- Action: introduced the shared `pm_book_member_source_refs` helper under `src/core/pm_quality/`
+  and updated the existing router/service private wrappers to delegate to it, preserving caller
+  compatibility and leaving the intentionally different source-id fallback conventions unchanged.
+  Added a direct core-level test for 100-member capping, `source_record_id` fallback, portfolio-id
+  fallback, source system/type, and as-of-date source version. Regenerated the duplicate
+  implementation baseline and inventory, reducing accepted exact duplicate groups from 8 to 7
+  with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_book_scope_refs.py tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_api.py -q`,
+  `python -m ruff format src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m ruff check src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m ruff format --check src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused PM-quality book-scope domain/API suites reported 52 passed. The
+  duplicate implementation gate now reports 7 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: broader accepted duplicate groups remain in rebalance-run persistence, campaign
+  definition event recording, runtime Postgres exception helpers, workflow correlation routes, and
+  RFC evidence scripts. The intentionally different PM-book source-id fallback strings remain
+  unchanged and should only be unified through an explicit API/service behavior decision.
+- Wiki decision: no wiki source change required; this is internal source-lineage maintainability
+  and quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving helper
+  consolidation pattern.

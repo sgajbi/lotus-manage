@@ -22,6 +22,7 @@ from src.core.pm_quality import (
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityEvidenceItem,
 )
+from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
 from src.api.services.core_resolver_service import (
     CoreResolverError,
     CoreResolverUnavailableError,
@@ -118,15 +119,7 @@ def _pm_book_scope_source_ref(
 def _pm_book_member_source_refs(
     membership: DpmCorePortfolioManagerBookMembershipResponse,
 ) -> list[DpmOutcomeSourceRef]:
-    return [
-        DpmOutcomeSourceRef(
-            source_system="lotus-core",
-            source_type="PORTFOLIO_MANAGER_BOOK_MEMBER",
-            source_id=member.source_record_id or member.portfolio_id,
-            source_version=membership.as_of_date.isoformat(),
-        )
-        for member in membership.members[:100]
-    ]
+    return pm_book_member_source_refs(membership)
 
 
 def _pm_book_scope_evidence_from_membership(

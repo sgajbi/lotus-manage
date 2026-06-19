@@ -35,14 +35,6 @@
       "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
     },
     {
-      "fingerprint": "7d6fe32652673c07585310d95a88ecbcc35c2a3131810826bc2cad7402bddd44",
-      "occurrence_identities": [
-        "src/api/routers/pm_operating_quality_book_scope_builder.py:_pm_book_member_source_refs",
-        "src/api/services/pm_operating_quality_service.py:_pm_book_member_source_refs"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
       "fingerprint": "847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c",
       "occurrence_identities": [
         "scripts/generate_rfc0041_wave_evidence.py:_request",
