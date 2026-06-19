@@ -1,8 +1,7 @@
 """Pure RFC-0040 proof-pack builders."""
 
-from dataclasses import dataclass
 from datetime import datetime, timezone
-from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, cast
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
@@ -30,6 +29,7 @@ from src.core.proof_packs.models import (
 from src.core.proof_packs.mandate_context import (
     mandate_context_section_payload as _mandate_context_section_payload,
 )
+from src.core.proof_packs import governance_sections as _governance_sections
 from src.core.proof_packs import source_identity as _source_identity
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
@@ -38,7 +38,7 @@ from src.core.proof_packs.source_analytics import (
 from src.core.mandates import DpmMandateDigitalTwin, DpmMandateHealthSnapshot
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
 from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
-from src.core.models import ExcludedInstrument, GateDecision, RebalanceResult, RuleResult
+from src.core.models import ExcludedInstrument, RebalanceResult, RuleResult
 
 PROOF_PACK_VERSION = "1.0"
 
@@ -93,17 +93,30 @@ class ProofPackSourceValidationError(ValueError):
 _SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
 
 _PreRunSourceAnalyticsConfig = tuple[ProofPackAnalyticsFamily, str, str]
-_GovernanceSectionPayloadBuilder = Callable[["_GovernanceSectionPayloadInput"], _SectionPayload]
 
 _ProofPackSourceContext = _source_identity.ProofPackSourceContext
 _SourceHashCandidate = _source_identity.SourceHashCandidate
+_approval_gate_fact = _governance_sections.approval_gate_fact
+_approval_reason_codes = _governance_sections.approval_reason_codes
+_approval_requirements_section_payload = _governance_sections.approval_requirements_section_payload
+_approval_section_state = _governance_sections.approval_section_state
+_approval_workflow_decision_facts = _governance_sections.approval_workflow_decision_facts
+_decision_timeline_section_payload = _governance_sections.decision_timeline_section_payload
+_gate_blocks_approval = _governance_sections.gate_blocks_approval
+_gate_requires_approval_review = _governance_sections.gate_requires_approval_review
+_lineage_section_payload = _governance_sections.lineage_section_payload
 _optional_source_hash = _source_identity.optional_source_hash
+_operations_handoff_section_payload = _governance_sections.operations_handoff_section_payload
 _present_source_refs = _source_identity.present_source_refs
+_proof_pack_governance_section_payload = _governance_sections.proof_pack_governance_section_payload
 _proof_pack_source_context = _source_identity.proof_pack_source_context
+_run_blocks_approval = _governance_sections.run_blocks_approval
+_run_requires_approval_review = _governance_sections.run_requires_approval_review
 _source_analytics = _source_identity.source_analytics_for_proof_pack
 _source_hash_candidates = _source_identity.source_hash_candidates
 _source_hashes = _source_identity.source_hashes_for_proof_pack
 _source_refs = _source_identity.source_refs_for_proof_pack
+_supportability_section_payload = _governance_sections.supportability_section_payload
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -147,15 +160,6 @@ class _ProofPackBuildContext:
     proof_pack_id: str
     portfolio_id: str
     correlation_id: str
-
-
-@dataclass(frozen=True)
-class _GovernanceSectionPayloadInput:
-    result: RebalanceResult
-    run: DpmRunRecord | None
-    selection: ConstructionAlternativeSelection | None
-    source_ref_count: int
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord]
 
 
 def build_proof_pack_from_run(
@@ -803,192 +807,6 @@ def _rule_results_metrics(failed_rules: list[RuleResult]) -> dict[str, int]:
 
 def _rule_results_reason_codes(failed_rules: list[RuleResult]) -> list[str]:
     return [rule.reason_code for rule in failed_rules]
-
-
-def _proof_pack_governance_section_payload(
-    *,
-    section_type: ProofPackSectionType,
-    result: RebalanceResult,
-    run: DpmRunRecord | None,
-    selection: ConstructionAlternativeSelection | None,
-    source_ref_count: int,
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
-    builder = _governance_section_payload_builder(section_type)
-    if builder is None:
-        return None
-    return builder(
-        _GovernanceSectionPayloadInput(
-            result=result,
-            run=run,
-            selection=selection,
-            source_ref_count=source_ref_count,
-            workflow_decisions=workflow_decisions,
-        )
-    )
-
-
-def _governance_section_payload_builder(
-    section_type: ProofPackSectionType,
-) -> _GovernanceSectionPayloadBuilder | None:
-    return _GOVERNANCE_SECTION_PAYLOAD_BUILDERS.get(section_type)
-
-
-def _approval_requirements_governance_payload(
-    context: _GovernanceSectionPayloadInput,
-) -> _SectionPayload:
-    return _approval_requirements_section_payload(
-        result=context.result,
-        workflow_decisions=context.workflow_decisions,
-    )
-
-
-def _operations_handoff_governance_payload(
-    context: _GovernanceSectionPayloadInput,
-) -> _SectionPayload:
-    return _operations_handoff_section_payload(result=context.result)
-
-
-def _decision_timeline_governance_payload(
-    context: _GovernanceSectionPayloadInput,
-) -> _SectionPayload:
-    return _decision_timeline_section_payload(run=context.run, selection=context.selection)
-
-
-def _lineage_governance_payload(context: _GovernanceSectionPayloadInput) -> _SectionPayload:
-    return _lineage_section_payload(
-        result=context.result,
-        run=context.run,
-        source_ref_count=context.source_ref_count,
-    )
-
-
-def _supportability_governance_payload(
-    context: _GovernanceSectionPayloadInput,
-) -> _SectionPayload:
-    return _supportability_section_payload()
-
-
-_GOVERNANCE_SECTION_PAYLOAD_BUILDERS: dict[
-    ProofPackSectionType,
-    _GovernanceSectionPayloadBuilder,
-] = {
-    "approval_requirements": _approval_requirements_governance_payload,
-    "operations_handoff": _operations_handoff_governance_payload,
-    "decision_timeline": _decision_timeline_governance_payload,
-    "lineage": _lineage_governance_payload,
-    "supportability": _supportability_governance_payload,
-}
-
-
-def _operations_handoff_section_payload(*, result: RebalanceResult) -> _SectionPayload:
-    return (
-        "READY" if result.status == "READY" else "PENDING_REVIEW",
-        "Operations handoff reflects current pre-trade readiness.",
-        {"run_status": result.status},
-        {},
-        [] if result.status == "READY" else ["DPM_OPERATIONS_REVIEW_REQUIRED"],
-    )
-
-
-def _decision_timeline_section_payload(
-    *,
-    run: DpmRunRecord | None,
-    selection: ConstructionAlternativeSelection | None,
-) -> _SectionPayload:
-    return (
-        "READY",
-        "Timeline generated from source run, selection, and proof-pack generation events.",
-        {
-            "run_created_at": run.created_at.isoformat() if run else None,
-            "selection_id": selection.selection_id if selection else None,
-        },
-        {},
-        [],
-    )
-
-
-def _lineage_section_payload(
-    *,
-    result: RebalanceResult,
-    run: DpmRunRecord | None,
-    source_ref_count: int,
-) -> _SectionPayload:
-    return (
-        "READY" if run is not None else "BLOCKED",
-        "Lineage identifiers captured from source run and source artifacts.",
-        result.lineage.model_dump(mode="json") if result else {},
-        {"source_ref_count": source_ref_count},
-        [] if run is not None else ["DPM_LINEAGE_RUN_MISSING"],
-    )
-
-
-def _supportability_section_payload() -> _SectionPayload:
-    return ("READY", "Supportability summary is generated for every proof pack.", {}, {}, [])
-
-
-def _approval_requirements_section_payload(
-    *,
-    result: RebalanceResult,
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> _SectionPayload:
-    gate = result.gate_decision
-    workflow_facts = _approval_workflow_decision_facts(workflow_decisions)
-    return (
-        _approval_section_state(result=result, gate=gate),
-        "Approval posture captured from run status and gate decision.",
-        {
-            "gate_decision": _approval_gate_fact(gate),
-            "workflow_decisions": workflow_facts,
-        },
-        {"workflow_decision_count": len(workflow_facts)},
-        _approval_reason_codes(gate),
-    )
-
-
-def _approval_workflow_decision_facts(
-    workflow_decisions: list[DpmRunWorkflowDecisionRecord],
-) -> list[dict[str, Any]]:
-    return [
-        decision.model_dump(mode="json")
-        for decision in sorted(workflow_decisions, key=lambda item: item.decided_at)
-    ]
-
-
-def _approval_section_state(
-    *, result: RebalanceResult, gate: GateDecision | None
-) -> ProofPackSectionState:
-    if _run_blocks_approval(result) or _gate_blocks_approval(gate):
-        return "BLOCKED"
-    if _run_requires_approval_review(result) or _gate_requires_approval_review(gate):
-        return "PENDING_REVIEW"
-    return "READY"
-
-
-def _run_blocks_approval(result: RebalanceResult) -> bool:
-    return result.status == "BLOCKED"
-
-
-def _gate_blocks_approval(gate: GateDecision | None) -> bool:
-    return gate is not None and gate.gate == "BLOCKED"
-
-
-def _run_requires_approval_review(result: RebalanceResult) -> bool:
-    return result.status == "PENDING_REVIEW"
-
-
-def _gate_requires_approval_review(gate: GateDecision | None) -> bool:
-    return gate is not None and gate.gate.endswith("REQUIRED")
-
-
-def _approval_gate_fact(gate: GateDecision | None) -> dict[str, Any] | None:
-    return gate.model_dump(mode="json") if gate is not None else None
-
-
-def _approval_reason_codes(gate: GateDecision | None) -> list[str]:
-    if gate is None:
-        return []
-    return [reason.reason_code for reason in gate.reasons]
 
 
 def _selected_alternative_section_payload(

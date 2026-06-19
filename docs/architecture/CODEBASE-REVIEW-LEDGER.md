@@ -27660,3 +27660,50 @@ and improves internal transaction-cost source posture maintainability only.
   evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and CI-enforcement guidance cover this behavior-preserving extraction pattern.
+
+## BACKEND-REVIEW-20260619-1157: Proof-pack governance-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/governance_sections.py`,
+  focused proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack governance evidence, approval posture determinism,
+  operations handoff readiness, lineage supportability, and behavior-preserving source-file hotspot
+  burn-down.
+- Finding: after source-identity extraction, `src/core/proof_packs/builder.py` still carried the
+  governance section dispatch table, approval requirement state logic, workflow-decision ordering,
+  operations handoff, decision timeline, lineage, and supportability payload builders inline with
+  broad proof-pack orchestration. This kept governance evidence assembly coupled to the remaining
+  hotspot even though the behavior was cohesive and already covered by focused tests.
+- Action: moved governance section dispatch and payload construction into
+  `src/core/proof_packs/governance_sections.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved approval blocking precedence, gate review handling,
+  workflow decision ordering, lineage missing-run blocking, source-ref metrics, operations handoff
+  review reason codes, and supportability placeholder behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,885 LOC to 1,703 LOC, the extracted
+  `governance_sections.py` is 209 LOC with A maintainability, the architecture gate passed, and
+  the duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, though mandate
+  context, source identity, and governance section responsibilities are now isolated. Future safe
+  slices should continue with cohesive proof-pack section families and deterministic gate evidence.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing
+  `lotus-ci-enforcement-governance` guidance already covers measured, deterministic, low-noise
+  enforcement and does not require platform skill-source changes or bootstrap sync for this
+  repository-local refactor slice.
