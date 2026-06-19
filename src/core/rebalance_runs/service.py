@@ -3,10 +3,16 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
+from src.core.rebalance_runs.async_operations import (
+    build_analyze_operation,
+    complete_operation_failure_record,
+    complete_operation_success_record,
+    mark_operation_running_record,
+    to_async_operation_list_response,
+)
 from src.core.rebalance_runs.models import (
     DpmActionRegisterSupportability,
     DpmAsyncAcceptedResponse,
-    DpmAsyncOperationListItemResponse,
     DpmAsyncOperationListResponse,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
@@ -284,17 +290,11 @@ class DpmRunSupportService:
         )
         if existing_operation is not None:
             raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
-        operation = DpmAsyncOperationRecord(
+        operation = build_analyze_operation(
             operation_id=f"dop_{uuid.uuid4().hex[:12]}",
-            operation_type="ANALYZE_SCENARIOS",
-            status="PENDING",
             correlation_id=resolved_correlation_id,
-            created_at=now,
-            started_at=None,
-            finished_at=None,
-            result_json=None,
-            error_json=None,
             request_json=request_json,
+            created_at=now,
         )
         try:
             self._repository.create_operation(operation)
@@ -330,30 +330,8 @@ class DpmRunSupportService:
             limit=limit,
             cursor=cursor,
         )
-        return DpmAsyncOperationListResponse(
-            items=[
-                DpmAsyncOperationListItemResponse(
-                    operation_id=operation.operation_id,
-                    operation_type=operation.operation_type,
-                    status=operation.status,
-                    correlation_id=operation.correlation_id,
-                    is_executable=(
-                        operation.status == "PENDING" and operation.request_json is not None
-                    ),
-                    created_at=operation.created_at.isoformat(),
-                    started_at=(
-                        operation.started_at.isoformat()
-                        if operation.started_at is not None
-                        else None
-                    ),
-                    finished_at=(
-                        operation.finished_at.isoformat()
-                        if operation.finished_at is not None
-                        else None
-                    ),
-                )
-                for operation in operations
-            ],
+        return to_async_operation_list_response(
+            operations=operations,
             next_cursor=next_cursor,
         )
 
@@ -556,8 +534,7 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "RUNNING"
-        operation.started_at = _utc_now()
+        mark_operation_running_record(operation, started_at=_utc_now())
         self._repository.update_operation(operation)
 
     def complete_operation_success(self, *, operation_id: str, result_json: dict[str, Any]) -> None:
@@ -565,10 +542,11 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "SUCCEEDED"
-        operation.result_json = result_json
-        operation.error_json = None
-        operation.finished_at = _utc_now()
+        complete_operation_success_record(
+            operation,
+            result_json=result_json,
+            finished_at=_utc_now(),
+        )
         self._repository.update_operation(operation)
 
     def complete_operation_failure(self, *, operation_id: str, code: str, message: str) -> None:
@@ -576,10 +554,12 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "FAILED"
-        operation.result_json = None
-        operation.error_json = {"code": code, "message": message}
-        operation.finished_at = _utc_now()
+        complete_operation_failure_record(
+            operation,
+            code=code,
+            message=message,
+            finished_at=_utc_now(),
+        )
         self._repository.update_operation(operation)
 
     def get_async_operation(self, *, operation_id: str) -> DpmAsyncOperationStatusResponse:
@@ -607,8 +587,7 @@ class DpmRunSupportService:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
         if operation.status != "PENDING" or operation.request_json is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_EXECUTABLE")
-        operation.status = "RUNNING"
-        operation.started_at = _utc_now()
+        mark_operation_running_record(operation, started_at=_utc_now())
         self._repository.update_operation(operation)
         return operation.request_json, operation.correlation_id
 

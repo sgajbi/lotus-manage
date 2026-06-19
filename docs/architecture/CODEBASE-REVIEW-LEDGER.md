@@ -28718,3 +28718,70 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2220: Rebalance run async-operation helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/async_operations.py`, focused async operation/supportability/API tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: DPM async operation submission records, status-list projection,
+  running/succeeded/failed lifecycle mutation, executable-status posture, and async operation
+  evidence used by operator-facing supportability routes.
+- Quality intake: `src/core/rebalance_runs/service.py` is the existing Manage-owned support
+  service for run lifecycle and async-operation supportability. Manage remains source of truth for
+  async operation status, conflict, execution-preparation, and terminal evidence; source facts and
+  rebalance execution payload semantics remain outside this slice. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is further reducing the C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving async operation conflict, status,
+  execution-prep, terminal result/error, and supportability behavior.
+- Finding: after extracting support-bundle helpers, `src/core/rebalance_runs/service.py` still
+  embedded pure async operation record construction, list response projection, executable-state
+  calculation, and running/succeeded/failed record mutation. These concerns are deterministic and
+  cohesive, while repository cleanup, lookup, conflict handling, and exception mapping belong in
+  the service orchestration layer.
+- Action: moved pure async operation construction, projection, and record mutation helpers into
+  `src/core/rebalance_runs/async_operations.py`; kept repository access, conflict checks, cleanup,
+  lineage recording, and exception mapping in `DpmRunSupportService`. No API contract,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py src\core\rebalance_runs\support_bundle.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused async/supportability/API
+  tests reported 165 passed. `src/core/rebalance_runs/service.py` moved from 945 LOC with C
+  maintainability 7.06 to 924 LOC with C maintainability 8.13, and the extracted
+  `src/core/rebalance_runs/async_operations.py` is 108 LOC with A maintainability 55.99. The
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused async-operation behavior, API/workflow
+  behavior, and quality-report freshness. Maintainability index and file size remain
+  measured/report-backed planning signals rather than new blockers because they are not standalone
+  low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 924 LOC because
+  it still owns run persistence orchestration, idempotency lookup, workflow decisions, artifact
+  resolution, cleanup, and supportability summary assembly. Future slices should target one
+  cohesive behavior family at a time, likely workflow decision orchestration or run lookup/list
+  projection, only where focused tests can preserve conflict handling, idempotency lookup, lineage,
+  and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal async-operation modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
