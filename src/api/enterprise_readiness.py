@@ -134,18 +134,55 @@ def authorize_write_request(
         return True, None
 
     normalized = _normalized_headers(headers)
-    missing = _missing_required_headers(normalized)
-    if missing:
-        return False, f"missing_headers:{','.join(missing)}"
-
-    if not _has_service_identity(normalized):
-        return False, "missing_service_identity"
-
-    required_capability = _required_capability(method, path)
-    if required_capability and required_capability not in _provided_capabilities(normalized):
-        return False, f"missing_capability:{required_capability}"
-
+    failure_reason = _write_authorization_failure_reason(
+        method=method,
+        path=path,
+        headers=normalized,
+    )
+    if failure_reason is not None:
+        return False, failure_reason
     return True, None
+
+
+def _write_authorization_failure_reason(
+    *,
+    method: str,
+    path: str,
+    headers: dict[str, str],
+) -> str | None:
+    for reason in (
+        _missing_required_headers_reason(headers),
+        _missing_service_identity_reason(headers),
+        _missing_capability_reason(method=method, path=path, headers=headers),
+    ):
+        if reason is not None:
+            return reason
+    return None
+
+
+def _missing_required_headers_reason(headers: dict[str, str]) -> str | None:
+    missing = _missing_required_headers(headers)
+    if missing:
+        return f"missing_headers:{','.join(missing)}"
+    return None
+
+
+def _missing_service_identity_reason(headers: dict[str, str]) -> str | None:
+    if not _has_service_identity(headers):
+        return "missing_service_identity"
+    return None
+
+
+def _missing_capability_reason(
+    *,
+    method: str,
+    path: str,
+    headers: dict[str, str],
+) -> str | None:
+    required_capability = _required_capability(method, path)
+    if required_capability and required_capability not in _provided_capabilities(headers):
+        return f"missing_capability:{required_capability}"
+    return None
 
 
 def _write_authorization_required(method: str) -> bool:

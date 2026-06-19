@@ -8,12 +8,16 @@ from src.api.enterprise_readiness import (
     _authz_key_material_issue,
     _authorization_denied_response,
     _has_service_identity,
+    _missing_capability_reason,
     _request_content_length,
     _missing_required_headers,
+    _missing_required_headers_reason,
+    _missing_service_identity_reason,
     _normalized_headers,
     _policy_version_issue,
     _provided_capabilities,
     _secret_rotation_issue,
+    _write_authorization_failure_reason,
     _write_payload_too_large,
     _write_authorization_required,
     authorize_write_request,
@@ -136,6 +140,72 @@ def test_write_authorization_policy_helpers_detect_missing_service_identity() ->
     assert _missing_required_headers(headers) == []
     assert not _has_service_identity(headers)
     assert _provided_capabilities(headers) == set()
+
+
+def test_write_authorization_failure_reason_helpers_preserve_denial_order(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("ENTERPRISE_CAPABILITY_RULES_JSON", '{"POST /write": "write"}')
+    missing_headers = _normalized_headers({})
+    missing_identity = _normalized_headers(
+        {
+            "X-Actor-Id": "actor",
+            "X-Tenant-Id": "tenant",
+            "X-Role": "operator",
+            "X-Correlation-Id": "corr",
+        }
+    )
+    missing_capability = _normalized_headers(
+        {
+            "X-Actor-Id": "actor",
+            "X-Tenant-Id": "tenant",
+            "X-Role": "operator",
+            "X-Correlation-Id": "corr",
+            "Authorization": "Bearer service-token",
+            "X-Capabilities": "read",
+        }
+    )
+    allowed = {**missing_capability, "x-capabilities": "read,write"}
+
+    assert _missing_required_headers_reason(missing_headers).startswith("missing_headers:")
+    assert _missing_service_identity_reason(missing_identity) == "missing_service_identity"
+    assert (
+        _missing_capability_reason(
+            method="POST",
+            path="/write",
+            headers=missing_capability,
+        )
+        == "missing_capability:write"
+    )
+    assert _write_authorization_failure_reason(
+        method="POST",
+        path="/write",
+        headers=missing_headers,
+    ).startswith("missing_headers:")
+    assert (
+        _write_authorization_failure_reason(
+            method="POST",
+            path="/write",
+            headers=missing_identity,
+        )
+        == "missing_service_identity"
+    )
+    assert (
+        _write_authorization_failure_reason(
+            method="POST",
+            path="/write",
+            headers=missing_capability,
+        )
+        == "missing_capability:write"
+    )
+    assert (
+        _write_authorization_failure_reason(
+            method="POST",
+            path="/write",
+            headers=allowed,
+        )
+        is None
+    )
 
 
 def test_enterprise_runtime_enforcement_reports_missing_identity(monkeypatch) -> None:

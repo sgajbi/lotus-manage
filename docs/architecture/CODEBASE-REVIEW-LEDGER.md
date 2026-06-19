@@ -25707,3 +25707,42 @@ and improves internal transaction-cost source posture maintainability only.
   downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal pagination invariant
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1012: Enterprise write-authorization failure helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`, and `quality/`.
+- Bank-buyable control area: enterprise write authorization boundary, fail-closed denial order,
+  and testing.
+- Finding: `authorize_write_request` combined enforcement gating, header normalization, missing
+  required-header denial, service-identity denial, capability lookup, and missing-capability
+  denial in one B-grade authorization helper. That made fail-closed denial order harder to audit
+  at an enterprise security boundary.
+- Action: extracted a write-authorization failure dispatcher plus missing-header,
+  missing-service-identity, and missing-capability reason helpers while preserving the existing
+  denial order and reason strings; added direct tests proving missing headers are evaluated before
+  service identity, service identity before capabilities, and allowed requests return no failure
+  reason.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py`,
+  `python -m ruff check src\api\enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py`,
+  `python -m mypy --config-file mypy.ini src\api\enterprise_readiness.py`,
+  `python -m pytest tests\unit\api\test_enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py -q`,
+  `python -m radon cc src\api\enterprise_readiness.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused enterprise readiness suites
+  reported 20 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `authorize_write_request` reduced from B(6) to
+  A(3), with extracted failure-reason helpers at A(2) to A(3). The refreshed complexity report is
+  sourced from `badde630+worktree` and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves write-authorization maintainability only. It does not change
+  authentication trust material, runtime policy configuration, cryptographic verification,
+  middleware response shape, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal enterprise-readiness
+  authorization boundary maintainability hardening with no operator-facing contract change.
