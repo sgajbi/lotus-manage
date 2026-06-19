@@ -1086,14 +1086,11 @@ def _risk_source_posture(
     Literal["READY", "DEGRADED", "BLOCKED", "NOT_SUPPORTED"],
     Literal["COMPLETE", "STALE", "UNAVAILABLE", "PARTIAL", "MISSING", "NOT_SUPPORTED"],
 ]:
-    if supportability_state == "unsupported":
-        return "NOT_SUPPORTED", "NOT_SUPPORTED"
-    if supportability_state == "permission_blocked":
-        return "BLOCKED", "MISSING"
-    if supportability_state == "stale":
-        return "DEGRADED", "STALE"
+    supportability_posture = _supportability_source_posture(supportability_state)
+    if supportability_posture is not None:
+        return supportability_posture
     if supportability_state != "ready":
-        return "DEGRADED", "PARTIAL" if value is not None else "UNAVAILABLE"
+        return "DEGRADED", _quality_for_degraded_value(value)
     return "READY", "COMPLETE"
 
 

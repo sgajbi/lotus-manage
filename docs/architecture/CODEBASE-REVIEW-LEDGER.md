@@ -26164,3 +26164,40 @@ and improves internal transaction-cost source posture maintainability only.
   or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1024: Risk source posture helper reuse
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: RFC-0042 outcome-review risk source authority, permission-blocked and
+  degraded supportability semantics, and no-local-risk-methodology boundaries.
+- Finding: `_risk_source_posture` repeated supportability and degraded-quality mapping that already
+  existed in `_supportability_source_posture` and `_quality_for_degraded_value`. This kept the
+  generic risk metrics posture path as a B-grade hotspot and created avoidable drift risk against
+  drawdown, rolling, concentration, and historical attribution posture helpers.
+- Action: routed generic risk source posture through the existing local supportability and
+  degraded-quality helpers while preserving all source-state and quality outputs. Broadened the
+  focused posture test into a table covering unsupported, permission-blocked, stale, degraded with
+  source value, degraded without source value, and ready source states.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk source suite reported 61
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_risk_source_posture` reduced from B(6) to
+  A(3). The refreshed complexity report is sourced from `9fc0378e+worktree`, and the current
+  top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves generic risk-source posture maintainability and direct
+  source-owner posture coverage only. It does not change risk adapter semantics, outcome-review
+  APIs, source-product contracts, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
+  operator-facing contract change.

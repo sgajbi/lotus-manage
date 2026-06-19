@@ -1414,18 +1414,28 @@ def test_historical_attribution_contributor_measure_requires_group_key() -> None
         )
 
 
-def test_risk_source_posture_helpers_preserve_authority_failure_semantics() -> None:
-    assert _risk_source_posture(supportability_state="unsupported", value=None) == (
-        "NOT_SUPPORTED",
-        "NOT_SUPPORTED",
-    )
-    assert _risk_source_posture(supportability_state="permission_blocked", value=None) == (
-        "BLOCKED",
-        "MISSING",
-    )
-    assert _risk_source_posture(supportability_state="stale", value=Decimal("1")) == (
-        "DEGRADED",
-        "STALE",
+@pytest.mark.parametrize(
+    ("supportability_state", "value", "expected_posture"),
+    [
+        ("unsupported", None, ("NOT_SUPPORTED", "NOT_SUPPORTED")),
+        ("permission_blocked", None, ("BLOCKED", "MISSING")),
+        ("stale", Decimal("1"), ("DEGRADED", "STALE")),
+        ("degraded", Decimal("1"), ("DEGRADED", "PARTIAL")),
+        ("degraded", None, ("DEGRADED", "UNAVAILABLE")),
+        ("ready", Decimal("1"), ("READY", "COMPLETE")),
+    ],
+)
+def test_risk_source_posture_helpers_preserve_authority_failure_semantics(
+    supportability_state: str,
+    value: Decimal | None,
+    expected_posture: tuple[str, str],
+) -> None:
+    assert (
+        _risk_source_posture(
+            supportability_state=supportability_state,
+            value=value,
+        )
+        == expected_posture
     )
     assert _primary_reason("NOT_SUPPORTED") == "RISK_SOURCE_NOT_SUPPORTED"
     assert _primary_reason("BLOCKED") == "RISK_SOURCE_BLOCKED"
