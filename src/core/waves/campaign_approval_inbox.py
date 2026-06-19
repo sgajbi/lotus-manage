@@ -185,7 +185,33 @@ def build_bulk_review_campaign_approval_inbox_page(
     limit: int,
     offset: int,
 ) -> DpmBulkReviewCampaignApprovalInboxPage:
-    items = [
+    items = _filter_approval_inbox_items(
+        items=_build_approval_inbox_items(
+            definitions=definitions,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+        ),
+        include_closed=include_closed,
+        inbox_status=inbox_status,
+    )
+    payload = _approval_inbox_page_payload(
+        items=items,
+        limit=limit,
+        offset=offset,
+    )
+    payload["content_hash"] = _hash_payload(payload)
+    return DpmBulkReviewCampaignApprovalInboxPage.model_validate(payload)
+
+
+def _build_approval_inbox_items(
+    *,
+    definitions: list[DpmBulkReviewCampaignDefinition],
+    requested_as_of_date: str | None,
+    actor_id: str | None,
+    active_on: date | None,
+) -> list[DpmBulkReviewCampaignApprovalInboxItem]:
+    return [
         build_bulk_review_campaign_approval_inbox_item(
             definition=definition,
             requested_as_of_date=requested_as_of_date or definition.as_of_date,
@@ -194,27 +220,61 @@ def build_bulk_review_campaign_approval_inbox_page(
         )
         for definition in definitions
     ]
-    if not include_closed:
-        items = [item for item in items if item.inbox_status != "CLOSED"]
-    if inbox_status is not None:
-        items = [item for item in items if item.inbox_status == inbox_status]
 
+
+def _filter_approval_inbox_items(
+    *,
+    items: list[DpmBulkReviewCampaignApprovalInboxItem],
+    include_closed: bool,
+    inbox_status: CampaignApprovalInboxStatus | None,
+) -> list[DpmBulkReviewCampaignApprovalInboxItem]:
+    return [
+        item
+        for item in items
+        if _approval_inbox_item_matches_filters(
+            item=item,
+            include_closed=include_closed,
+            inbox_status=inbox_status,
+        )
+    ]
+
+
+def _approval_inbox_item_matches_filters(
+    *,
+    item: DpmBulkReviewCampaignApprovalInboxItem,
+    include_closed: bool,
+    inbox_status: CampaignApprovalInboxStatus | None,
+) -> bool:
+    if not include_closed and item.inbox_status == "CLOSED":
+        return False
+    return inbox_status is None or item.inbox_status == inbox_status
+
+
+def _approval_inbox_status_counts(
+    items: list[DpmBulkReviewCampaignApprovalInboxItem],
+) -> dict[str, int]:
     status_counts: dict[str, int] = {}
     for item in items:
         status_counts[item.inbox_status] = status_counts.get(item.inbox_status, 0) + 1
+    return status_counts
 
-    payload: dict[str, object] = {
+
+def _approval_inbox_page_payload(
+    *,
+    items: list[DpmBulkReviewCampaignApprovalInboxItem],
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
+    return {
         "product_name": "BulkReviewCampaignApprovalInbox",
         "product_version": "v1",
         "items": [item.model_dump(mode="json") for item in items],
         "limit": limit,
         "offset": offset,
         "count": len(items),
-        "status_counts": status_counts,
+        "status_counts": _approval_inbox_status_counts(items),
         "content_hash": "",
     }
-    payload["content_hash"] = _hash_payload(payload)
-    return DpmBulkReviewCampaignApprovalInboxPage.model_validate(payload)
 
 
 def _classify_approval_inbox_posture(

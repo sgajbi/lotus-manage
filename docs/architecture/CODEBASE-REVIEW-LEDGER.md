@@ -26951,3 +26951,46 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill update required. The user’s CI-gate routing instruction was noted;
   this was source-code refactoring, not CI-gate promotion.
+
+## BACKEND-REVIEW-20260619-1042: Campaign approval inbox page decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_approval_inbox.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: approval-governance read-model maintainability, bounded campaign
+  review routing, and behavior-preserving source decomposition.
+- Finding: `build_bulk_review_campaign_approval_inbox_page` combined row construction,
+  closed/status filtering, status counting, payload assembly, content hashing, and model
+  validation in one read-model boundary. Radon reported the function as C(11), making a governed
+  approval attention surface harder for future agents to review safely.
+- Action: extracted typed pure helpers for approval-inbox item construction, filter matching,
+  filtered page item projection, returned-page status counting, and page payload assembly. Preserved
+  the public page function, filter semantics, status-count semantics, content-hash generation, and
+  `DpmBulkReviewCampaignApprovalInboxPage` validation contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_discovery.py tests\unit\dpm\api\test_waves_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_approval_inbox.py`,
+  `python -m ruff format src\core\waves\campaign_approval_inbox.py`,
+  `python -m ruff check src\core\waves\campaign_approval_inbox.py`,
+  `python -m radon cc src\core\waves\campaign_approval_inbox.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused campaign wave/API suites reported 240 passed. Radon improved
+  `build_bulk_review_campaign_approval_inbox_page` from C(11) to A(1), with all helpers in
+  `campaign_approval_inbox.py` reporting A-level complexity. Quality-report freshness, OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks
+  passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one campaign approval read-model hotspot only. Remaining
+  source hotspots include mandate health scoring, PM quality scoring, and several B-level source
+  helper functions.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context update required. The CI-enforcement guidance was
+  loaded for this turn; no CI gates were changed in this source refactoring slice.
