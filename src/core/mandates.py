@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_va
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreClientRestrictionEntry,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreLiquidityReserveRequirementResponse,
     DpmCoreMandateBindingResponse,
@@ -972,7 +973,31 @@ def build_health_input_from_core_sources(
 
 
 def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthSnapshot:
-    dimension_scores = [
+    dimension_scores = _mandate_health_dimension_scores(input_)
+    health_state = _mandate_health_state(dimension_scores)
+    top_reasons = _top_mandate_health_reasons(dimension_scores)
+    recommended_action = _overall_recommended_action(health_state, top_reasons)
+    return DpmMandateHealthSnapshot(
+        health_snapshot_id=_mandate_health_snapshot_id(input_),
+        mandate_id=input_.twin.mandate_id,
+        portfolio_id=input_.twin.portfolio_id,
+        as_of_date=input_.twin.as_of_date,
+        calculated_at=datetime.now(timezone.utc),
+        health_score=_weighted_mandate_health_score(dimension_scores),
+        health_state=health_state,
+        dimension_scores=dimension_scores,
+        top_reasons=top_reasons,
+        recommended_action=recommended_action,
+        source_readiness_state=input_.source_readiness_state,
+        evidence_refs=_mandate_health_evidence_refs(input_),
+        source_analytics_posture=_source_analytics_posture(input_),
+    )
+
+
+def _mandate_health_dimension_scores(
+    input_: DpmMandateHealthInput,
+) -> list[DpmMandateDimensionScore]:
+    return [
         _score_source_readiness(input_),
         _score_allocation_drift(input_),
         _score_risk_drift(input_),
@@ -984,42 +1009,46 @@ def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthS
         _score_review_cadence(input_),
         _score_model_freshness(input_),
     ]
+
+
+def _weighted_mandate_health_score(
+    dimension_scores: list[DpmMandateDimensionScore],
+) -> int:
     weighted = sum(
         Decimal(score.score) * Decimal(score.weight) for score in dimension_scores
     ) / Decimal("100")
-    hard_block = any(score.state == MandateHealthState.BLOCKED for score in dimension_scores)
-    pending = any(score.state == MandateHealthState.PENDING_REVIEW for score in dimension_scores)
-    health_state = (
-        MandateHealthState.BLOCKED
-        if hard_block
-        else MandateHealthState.PENDING_REVIEW
-        if pending
-        else MandateHealthState.READY
-    )
+    return int(weighted.quantize(Decimal("1"), ROUND_HALF_UP))
+
+
+def _mandate_health_state(
+    dimension_scores: list[DpmMandateDimensionScore],
+) -> MandateHealthState:
+    if any(score.state == MandateHealthState.BLOCKED for score in dimension_scores):
+        return MandateHealthState.BLOCKED
+    if any(score.state == MandateHealthState.PENDING_REVIEW for score in dimension_scores):
+        return MandateHealthState.PENDING_REVIEW
+    return MandateHealthState.READY
+
+
+def _top_mandate_health_reasons(
+    dimension_scores: list[DpmMandateDimensionScore],
+) -> list[DpmMandateHealthReason]:
     reasons = [_reason_from_score(score) for score in dimension_scores if score.score < 100]
     reasons.sort(key=lambda reason: _severity_rank(reason.severity), reverse=True)
-    recommended_action = _overall_recommended_action(health_state, reasons)
-    return DpmMandateHealthSnapshot(
-        health_snapshot_id=(
-            f"mh_{input_.twin.as_of_date.strftime('%Y%m%d')}_{input_.twin.portfolio_id.lower()}"
-        ),
-        mandate_id=input_.twin.mandate_id,
-        portfolio_id=input_.twin.portfolio_id,
-        as_of_date=input_.twin.as_of_date,
-        calculated_at=datetime.now(timezone.utc),
-        health_score=int(weighted.quantize(Decimal("1"), ROUND_HALF_UP)),
-        health_state=health_state,
-        dimension_scores=dimension_scores,
-        top_reasons=reasons[:5],
-        recommended_action=recommended_action,
-        source_readiness_state=input_.source_readiness_state,
-        evidence_refs=[
-            lineage.source_record_id
-            for lineage in input_.twin.source_lineage
-            if lineage.source_record_id
-        ],
-        source_analytics_posture=_source_analytics_posture(input_),
-    )
+    return reasons[:5]
+
+
+def _mandate_health_snapshot_id(input_: DpmMandateHealthInput) -> str:
+    as_of = input_.twin.as_of_date.strftime("%Y%m%d")
+    return f"mh_{as_of}_{input_.twin.portfolio_id.lower()}"
+
+
+def _mandate_health_evidence_refs(input_: DpmMandateHealthInput) -> list[str]:
+    return [
+        lineage.source_record_id
+        for lineage in input_.twin.source_lineage
+        if lineage.source_record_id
+    ]
 
 
 def _source_analytics_posture(
@@ -1122,18 +1151,34 @@ def _restricted_model_targets(
 ) -> list[str]:
     if client_restriction_profile is None:
         return []
-    restricted_instruments = {
+    restricted_instruments = _restricted_buy_instrument_ids(client_restriction_profile)
+    active_targets = _active_model_target_instrument_ids(model_targets)
+    return sorted(active_targets.intersection(restricted_instruments))
+
+
+def _restricted_buy_instrument_ids(
+    client_restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> set[str]:
+    return {
         instrument_id
         for restriction in client_restriction_profile.restrictions
-        if restriction.restriction_status.upper() == "ACTIVE" and restriction.applies_to_buy
+        if _active_buy_restriction_applies(restriction)
         for instrument_id in restriction.instrument_ids
     }
-    return sorted(
+
+
+def _active_buy_restriction_applies(restriction: DpmCoreClientRestrictionEntry) -> bool:
+    return restriction.restriction_status.upper() == "ACTIVE" and restriction.applies_to_buy
+
+
+def _active_model_target_instrument_ids(
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+) -> set[str]:
+    return {
         target.instrument_id
         for target in model_targets.targets
         if target.target_status.lower() == "active"
-        and target.instrument_id in restricted_instruments
-    )
+    }
 
 
 def _requires_sustainability_review(

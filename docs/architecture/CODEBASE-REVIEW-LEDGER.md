@@ -27034,3 +27034,47 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. The existing
   `lotus-ci-enforcement-governance` standard already covers this distinction, and no local
   `.codex/skills` files were edited.
+
+## BACKEND-REVIEW-20260619-1044: Mandate health snapshot assembly decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: discretionary mandate health scoring maintainability, source-backed
+  restriction posture, and domain-critical behavior-preserving decomposition.
+- Finding: `calculate_mandate_health` combined dimension scoring, weighted score calculation,
+  health-state precedence, reason derivation/sorting, snapshot identity, evidence refs, and final
+  snapshot assembly in one function. Radon reported it as B(10). The same file also had
+  `_restricted_model_targets` at B(9), mixing source-backed client restriction filtering and model
+  target matching in one helper.
+- Action: extracted typed helpers for mandate-health dimension scoring, weighted score rounding,
+  health-state precedence, top-reason derivation, snapshot identity, evidence refs, active buy
+  restriction instrument ids, active model target instrument ids, and restricted target matching.
+  Preserved score formulas, state precedence, reason ordering, evidence refs, source analytics
+  posture, and source-backed restriction semantics.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\mandates\test_mandate_health_result.py tests\unit\dpm\mandates\test_mandate_health_persistence.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py`,
+  `python -m ruff format src\core\mandates.py`,
+  `python -m ruff check src\core\mandates.py`,
+  `python -m radon cc src\core\mandates.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused mandate health suites reported 51 passed. Radon improved
+  `calculate_mandate_health` from B(10) to A(1) and `_restricted_model_targets` from B(9) to A(2);
+  `src/core/mandates.py` now has no B-level functions. Quality-report freshness, OpenAPI quality,
+  API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice decomposes the mandate-health source module only. It does not change
+  mandate scoring methodology, add new upstream source products, or address remaining B-level
+  functions in unrelated modules.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving domain decomposition pattern.
