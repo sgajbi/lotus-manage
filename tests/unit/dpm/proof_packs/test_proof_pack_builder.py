@@ -43,7 +43,7 @@ from src.core.proof_packs import (
     build_proof_pack_from_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
-from src.core.proof_packs.models import DpmProofPackSourceRef
+from src.core.proof_packs.models import DpmProofPackSourceRef, DpmProofPackSupportability
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     ProofPackSourceAnalytics,
@@ -343,6 +343,35 @@ def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> No
     }
     assert metrics == {}
     assert reason_codes == ["DPM_PROOF_PACK_REASON_MISSING"]
+
+
+def test_decision_summary_defaults_direct_source_run_posture() -> None:
+    supportability = DpmProofPackSupportability(
+        status="DEGRADED",
+        section_state_counts={"DEGRADED": 1},
+        ready_section_count=0,
+        degraded_section_count=1,
+        blocked_section_count=0,
+        pending_review_section_count=0,
+        reason_codes=["DPM_PROOF_PACK_REASON_MISSING"],
+        section_hashes={},
+    )
+
+    summary = builder_module._decision_summary(
+        source_type="REBALANCE_RUN",
+        result=None,
+        selected_alternative=None,
+        reason=None,
+        supportability=supportability,
+    )
+
+    assert summary.recommended_action == "REVIEW_REBALANCE"
+    assert summary.selected_alternative_type is None
+    assert summary.business_rationale == "No actor rationale supplied."
+    assert summary.expected_benefit == "Direct source run proof pack."
+    assert summary.main_tradeoffs == ["No construction alternative comparison was selected."]
+    assert summary.approval_state == "BLOCKED"
+    assert summary.operations_state == "DEGRADED"
 
 
 def test_pre_run_section_payload_ignores_run_required_sections() -> None:
@@ -891,6 +920,21 @@ def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
     assert facts["source_system"] == result.lineage.source_system
     assert metrics == {"source_ref_count": 7}
     assert reason_codes == []
+
+
+def test_proof_pack_governance_section_payload_ignores_non_governance_section() -> None:
+    result = _ready_rebalance_result()
+
+    payload = builder_module._proof_pack_governance_section_payload(
+        section_type="selected_alternative",
+        result=result,
+        run=_run_record(result=result),
+        selection=None,
+        source_ref_count=3,
+        workflow_decisions=[],
+    )
+
+    assert payload is None
 
 
 def test_operations_handoff_section_payload_marks_non_ready_for_review() -> None:

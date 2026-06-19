@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T04:19:24+00:00`
+- Generated at: `2026-06-19T04:24:50+00:00`
 
-- Report source snapshot: `437de734`
+- Report source snapshot: `093af1af+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
-| 2 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
-| 3 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
-| 4 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
-| 5 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
-| 6 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
-| 7 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
-| 8 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
-| 9 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
-| 10 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
+| 1 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
+| 2 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
+| 3 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
+| 4 | supportability_issue | src/api/services/wave_supportability_diagnostics.py | 6 | 24 |
+| 5 | _mandate_ids_from_pm_book_selector | src/api/routers/monitoring_run_once_routes.py | 6 | 23 |
+| 6 | _core_metadata | src/core/outcomes/core_sources.py | 6 | 23 |
+| 7 | _source_refs | src/core/proof_packs/builder.py | 6 | 23 |
+| 8 | _solve_with_fallbacks | src/core/target_generation.py | 6 | 23 |
+| 9 | build_operation_filter_query | src/infrastructure/rebalance_runs/operation_query.py | 6 | 23 |
+| 10 | _historical_attribution_source_posture | src/core/outcomes/risk_sources.py | 6 | 22 |
 
 ### Most Complex Current Test Functions
 

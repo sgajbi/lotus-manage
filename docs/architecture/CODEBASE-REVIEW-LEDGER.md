@@ -25118,3 +25118,42 @@ and improves internal transaction-cost source posture maintainability only.
   valid payloads, API contracts, downstream behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-evidence adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-996: Proof-pack governance dispatch helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack evidence assembly, governance section routing, and
+  testing.
+- Finding: `_proof_pack_governance_section_payload` embedded governance section dispatch in a
+  branch chain, and `_decision_summary` mixed recommended-action selection, direct-source fallback
+  fields, selected-alternative projection, and approval-state fallback in one B-grade builder.
+  That made proof-pack governance payload routing and default decision posture harder to audit.
+- Action: introduced a typed governance section payload context with explicit handler mapping,
+  extracted decision-summary field helpers, and added direct tests for non-governance dispatch
+  passthrough plus direct-source decision-summary fallback posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused proof-pack builder suite reported
+  106 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `_proof_pack_governance_section_payload` reduced from B(6)
+  to A(2), and `_decision_summary` reduced from B(6) to A(2). The refreshed complexity report is
+  sourced from `093af1af+worktree` and the current top-ten source hotspot list no longer includes
+  either targeted helper.
+- Residual risk: this slice improves proof-pack governance routing and decision-summary
+  maintainability only. It does not change proof-pack section contracts, source hash semantics,
+  run persistence, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability hardening with no operator-facing contract change.

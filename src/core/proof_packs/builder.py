@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from collections.abc import Callable
 from typing import Any, cast
 
 from src.core.common.canonical import hash_canonical_payload, strip_keys
@@ -90,6 +91,7 @@ class ProofPackSourceValidationError(ValueError):
 _SectionPayload = tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]]
 
 _PreRunSourceAnalyticsConfig = tuple[ProofPackAnalyticsFamily, str, str]
+_GovernanceSectionPayloadBuilder = Callable[["_GovernanceSectionPayloadInput"], _SectionPayload]
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -140,6 +142,15 @@ class _ProofPackSourceContext:
     source_hashes: dict[str, str]
     source_analytics: dict[str, ProofPackSourceAnalytics]
     source_refs: list[DpmProofPackSourceRef]
+
+
+@dataclass(frozen=True)
+class _GovernanceSectionPayloadInput:
+    result: RebalanceResult
+    run: DpmRunRecord | None
+    selection: ConstructionAlternativeSelection | None
+    source_ref_count: int
+    workflow_decisions: list[DpmRunWorkflowDecisionRecord]
 
 
 def build_proof_pack_from_run(
@@ -836,24 +847,71 @@ def _proof_pack_governance_section_payload(
     source_ref_count: int,
     workflow_decisions: list[DpmRunWorkflowDecisionRecord],
 ) -> tuple[ProofPackSectionState, str, dict[str, Any], dict[str, Any], list[str]] | None:
-    if section_type == "approval_requirements":
-        return _approval_requirements_section_payload(
-            result=result,
-            workflow_decisions=workflow_decisions,
-        )
-    if section_type == "operations_handoff":
-        return _operations_handoff_section_payload(result=result)
-    if section_type == "decision_timeline":
-        return _decision_timeline_section_payload(run=run, selection=selection)
-    if section_type == "lineage":
-        return _lineage_section_payload(
+    builder = _governance_section_payload_builder(section_type)
+    if builder is None:
+        return None
+    return builder(
+        _GovernanceSectionPayloadInput(
             result=result,
             run=run,
+            selection=selection,
             source_ref_count=source_ref_count,
+            workflow_decisions=workflow_decisions,
         )
-    if section_type == "supportability":
-        return _supportability_section_payload()
-    return None
+    )
+
+
+def _governance_section_payload_builder(
+    section_type: ProofPackSectionType,
+) -> _GovernanceSectionPayloadBuilder | None:
+    return _GOVERNANCE_SECTION_PAYLOAD_BUILDERS.get(section_type)
+
+
+def _approval_requirements_governance_payload(
+    context: _GovernanceSectionPayloadInput,
+) -> _SectionPayload:
+    return _approval_requirements_section_payload(
+        result=context.result,
+        workflow_decisions=context.workflow_decisions,
+    )
+
+
+def _operations_handoff_governance_payload(
+    context: _GovernanceSectionPayloadInput,
+) -> _SectionPayload:
+    return _operations_handoff_section_payload(result=context.result)
+
+
+def _decision_timeline_governance_payload(
+    context: _GovernanceSectionPayloadInput,
+) -> _SectionPayload:
+    return _decision_timeline_section_payload(run=context.run, selection=context.selection)
+
+
+def _lineage_governance_payload(context: _GovernanceSectionPayloadInput) -> _SectionPayload:
+    return _lineage_section_payload(
+        result=context.result,
+        run=context.run,
+        source_ref_count=context.source_ref_count,
+    )
+
+
+def _supportability_governance_payload(
+    context: _GovernanceSectionPayloadInput,
+) -> _SectionPayload:
+    return _supportability_section_payload()
+
+
+_GOVERNANCE_SECTION_PAYLOAD_BUILDERS: dict[
+    ProofPackSectionType,
+    _GovernanceSectionPayloadBuilder,
+] = {
+    "approval_requirements": _approval_requirements_governance_payload,
+    "operations_handoff": _operations_handoff_governance_payload,
+    "decision_timeline": _decision_timeline_governance_payload,
+    "lineage": _lineage_governance_payload,
+    "supportability": _supportability_governance_payload,
+}
 
 
 def _operations_handoff_section_payload(*, result: RebalanceResult) -> _SectionPayload:
@@ -1566,23 +1624,43 @@ def _decision_summary(
 ) -> DpmProofPackDecisionSummary:
     return DpmProofPackDecisionSummary(
         decision_type="PRE_TRADE_REBALANCE",
-        recommended_action="REVIEW_REBALANCE"
-        if supportability.status != "READY"
-        else "APPROVE_REBALANCE",
-        selected_alternative_type=(
-            str(selected_alternative.method) if selected_alternative is not None else None
+        recommended_action=_recommended_action(supportability=supportability),
+        selected_alternative_type=_selected_alternative_type(
+            selected_alternative=selected_alternative
         ),
         business_rationale=reason or "No actor rationale supplied.",
-        expected_benefit=(
-            selected_alternative.summary
-            if selected_alternative is not None
-            else "Direct source run proof pack."
-        ),
+        expected_benefit=_expected_benefit(selected_alternative=selected_alternative),
         main_tradeoffs=_main_tradeoffs(selected_alternative=selected_alternative),
         top_risks=supportability.reason_codes[:5],
-        approval_state=result.status if result is not None else "BLOCKED",
+        approval_state=_approval_state(result=result),
         operations_state=supportability.status,
     )
+
+
+def _recommended_action(*, supportability: DpmProofPackSupportability) -> str:
+    if supportability.status == "READY":
+        return "APPROVE_REBALANCE"
+    return "REVIEW_REBALANCE"
+
+
+def _selected_alternative_type(
+    *, selected_alternative: ConstructionAlternative | None
+) -> str | None:
+    if selected_alternative is None:
+        return None
+    return str(selected_alternative.method)
+
+
+def _expected_benefit(*, selected_alternative: ConstructionAlternative | None) -> str:
+    if selected_alternative is None:
+        return "Direct source run proof pack."
+    return selected_alternative.summary
+
+
+def _approval_state(*, result: RebalanceResult | None) -> str:
+    if result is None:
+        return "BLOCKED"
+    return result.status
 
 
 def _main_tradeoffs(*, selected_alternative: ConstructionAlternative | None) -> list[str]:
