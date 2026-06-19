@@ -26201,3 +26201,41 @@ and improves internal transaction-cost source posture maintainability only.
   APIs, source-product contracts, Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1025: In-memory wave save helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/in_memory.py`,
+  `tests/unit/dpm/waves/test_wave_domain.py`, and `quality/`.
+- Bank-buyable control area: rebalance wave write-path idempotency, duplicate identity protection,
+  and defensive-copy persistence for local/runtime repository parity.
+- Finding: `InMemoryDpmWaveRepository.save_wave` combined idempotency conflict detection,
+  duplicate wave-id detection, idempotency marker writes, and wave storage in one B-grade adapter
+  method. The behavior was covered through repository tests, but the write-path policy steps were
+  harder to audit and easier to drift from the PostgreSQL helper shape.
+- Action: extracted idempotency conflict validation, duplicate wave-id validation, idempotency
+  marker indexing, and deep-copy storage helpers while preserving repository behavior and error
+  codes. Added a focused helper test covering no-key noop behavior, replay-compatible idempotency,
+  idempotency conflict, duplicate wave-id conflict, and defensive copy-on-store behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m ruff check src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\in_memory.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_domain.py -q`,
+  `python -m radon cc src\infrastructure\waves\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused wave domain suite reported 23
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `InMemoryDpmWaveRepository.save_wave` reduced
+  from B(6) to A(1), with extracted write helpers at A(1) to A(4). The refreshed complexity report
+  is sourced from `734d7331+worktree`, and the current top-ten source hotspot list no longer
+  includes the targeted method.
+- Residual risk: this slice improves in-memory wave write-path maintainability and focused helper
+  coverage only. It does not change PostgreSQL wave persistence, API contracts, downstream
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository adapter hardening with
+  no operator-facing contract change.

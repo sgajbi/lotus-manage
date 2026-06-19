@@ -27,15 +27,20 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
         request_hash: str | None,
     ) -> None:
         with self._lock:
-            if idempotency_key is not None:
-                existing = self._idempotency_index.get(idempotency_key)
-                if existing is not None and existing != (wave.wave_id, request_hash):
-                    raise DpmWaveIdempotencyConflictError("DPM_WAVE_IDEMPOTENCY_CONFLICT")
-            if wave.wave_id in self._waves:
-                raise DpmWaveAlreadyExistsError("DPM_WAVE_ALREADY_EXISTS")
-            if idempotency_key is not None:
-                self._idempotency_index[idempotency_key] = (wave.wave_id, request_hash)
-            self._waves[wave.wave_id] = deepcopy(wave)
+            _raise_if_idempotency_conflict(
+                idempotency_index=self._idempotency_index,
+                idempotency_key=idempotency_key,
+                wave_id=wave.wave_id,
+                request_hash=request_hash,
+            )
+            _raise_if_wave_exists(waves=self._waves, wave_id=wave.wave_id)
+            _index_idempotency_key(
+                idempotency_index=self._idempotency_index,
+                idempotency_key=idempotency_key,
+                wave_id=wave.wave_id,
+                request_hash=request_hash,
+            )
+            _store_wave(waves=self._waves, wave=wave)
 
     def get_wave(self, *, wave_id: str) -> DpmRebalanceWave | None:
         with self._lock:
@@ -75,6 +80,48 @@ class InMemoryDpmWaveRepository(DpmWaveRepository):
             if current is None or current.version != expected_version:
                 raise DpmWaveVersionConflictError("DPM_WAVE_VERSION_CONFLICT")
             self._waves[wave.wave_id] = deepcopy(wave)
+
+
+def _raise_if_idempotency_conflict(
+    *,
+    idempotency_index: dict[str, tuple[str, str | None]],
+    idempotency_key: str | None,
+    wave_id: str,
+    request_hash: str | None,
+) -> None:
+    if idempotency_key is None:
+        return
+    existing = idempotency_index.get(idempotency_key)
+    if existing is not None and existing != (wave_id, request_hash):
+        raise DpmWaveIdempotencyConflictError("DPM_WAVE_IDEMPOTENCY_CONFLICT")
+
+
+def _raise_if_wave_exists(
+    *,
+    waves: dict[str, DpmRebalanceWave],
+    wave_id: str,
+) -> None:
+    if wave_id in waves:
+        raise DpmWaveAlreadyExistsError("DPM_WAVE_ALREADY_EXISTS")
+
+
+def _index_idempotency_key(
+    *,
+    idempotency_index: dict[str, tuple[str, str | None]],
+    idempotency_key: str | None,
+    wave_id: str,
+    request_hash: str | None,
+) -> None:
+    if idempotency_key is not None:
+        idempotency_index[idempotency_key] = (wave_id, request_hash)
+
+
+def _store_wave(
+    *,
+    waves: dict[str, DpmRebalanceWave],
+    wave: DpmRebalanceWave,
+) -> None:
+    waves[wave.wave_id] = deepcopy(wave)
 
 
 def _filtered_waves(

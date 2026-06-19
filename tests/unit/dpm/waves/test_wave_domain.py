@@ -19,6 +19,7 @@ from src.core.waves import (
     validate_wave_transition,
 )
 from src.infrastructure.waves import InMemoryDpmWaveRepository
+from src.infrastructure.waves import in_memory as in_memory_module
 from src.infrastructure.waves.postgres import PostgresDpmWaveRepository
 
 
@@ -178,6 +179,48 @@ def test_in_memory_wave_repository_replays_idempotent_wave() -> None:
     replay = repository.get_wave_by_idempotency(idempotency_key="idem-1")
 
     assert replay == wave
+
+
+def test_in_memory_wave_write_helpers_preserve_idempotency_and_copy_contract() -> None:
+    wave = _wave()
+    idempotency_index: dict[str, tuple[str, str | None]] = {}
+    waves: dict[str, DpmRebalanceWave] = {}
+
+    in_memory_module._raise_if_idempotency_conflict(  # noqa: SLF001
+        idempotency_index=idempotency_index,
+        idempotency_key=None,
+        wave_id=wave.wave_id,
+        request_hash=None,
+    )
+    in_memory_module._index_idempotency_key(  # noqa: SLF001
+        idempotency_index=idempotency_index,
+        idempotency_key="idem-1",
+        wave_id=wave.wave_id,
+        request_hash="hash-1",
+    )
+    in_memory_module._raise_if_idempotency_conflict(  # noqa: SLF001
+        idempotency_index=idempotency_index,
+        idempotency_key="idem-1",
+        wave_id=wave.wave_id,
+        request_hash="hash-1",
+    )
+
+    with pytest.raises(DpmWaveIdempotencyConflictError):
+        in_memory_module._raise_if_idempotency_conflict(  # noqa: SLF001
+            idempotency_index=idempotency_index,
+            idempotency_key="idem-1",
+            wave_id="dwv_conflict",
+            request_hash="hash-2",
+        )
+
+    in_memory_module._raise_if_wave_exists(waves=waves, wave_id=wave.wave_id)  # noqa: SLF001
+    in_memory_module._store_wave(waves=waves, wave=wave)  # noqa: SLF001
+    wave.items[0].state = "SOURCE_BLOCKED"
+
+    assert idempotency_index["idem-1"] == (wave.wave_id, "hash-1")
+    assert waves[wave.wave_id].items[0].state == "CANDIDATE"
+    with pytest.raises(DpmWaveAlreadyExistsError):
+        in_memory_module._raise_if_wave_exists(waves=waves, wave_id=wave.wave_id)  # noqa: SLF001
 
 
 def test_in_memory_wave_repository_lists_filtered_sorted_defensive_pages() -> None:

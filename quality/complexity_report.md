@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:56:37+00:00`
+- Generated at: `2026-06-19T05:59:31+00:00`
 
-- Report source snapshot: `9fc0378e+worktree`
+- Report source snapshot: `734d7331+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | save_wave | src/infrastructure/waves/in_memory.py | 6 | 17 |
-| 2 | format | src/api/observability.py | 6 | 15 |
-| 3 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
-| 4 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
-| 5 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
-| 6 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
-| 7 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
-| 8 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
-| 9 | supportability_severity | src/api/services/wave_supportability_diagnostics.py | 6 | 10 |
-| 10 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
+| 1 | format | src/api/observability.py | 6 | 15 |
+| 2 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
+| 3 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
+| 4 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
+| 5 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
+| 6 | _find_forbidden_field_names | src/core/outcomes/handoffs.py | 6 | 11 |
+| 7 | _find_forbidden_field_names | src/core/proof_packs/handoffs.py | 6 | 11 |
+| 8 | supportability_severity | src/api/services/wave_supportability_diagnostics.py | 6 | 10 |
+| 9 | validate_mode_payload | src/api/request_models.py | 6 | 9 |
+| 10 | check_blocking_dq | src/core/rebalance/execution.py | 6 | 8 |
 
 ### Most Complex Current Test Functions
 
