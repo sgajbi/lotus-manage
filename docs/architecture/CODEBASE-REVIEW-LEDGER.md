@@ -26239,3 +26239,40 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal repository adapter hardening with
   no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1026: JSON access formatter payload helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/observability.py`,
+  `tests/unit/dpm/api/test_observability_api.py`, and `quality/`.
+- Bank-buyable control area: structured JSON request logging, correlation/request/trace context,
+  and sensitive-field redaction for production support.
+- Finding: `JsonFormatter.format` built the full access-log payload, merged optional extra fields,
+  applied sensitive-field redaction, and pruned missing context in one B-grade method. That made
+  request-log payload behavior harder to audit as observability fields and safe extra labels grow.
+- Action: extracted JSON log payload assembly, base context payload construction, and `None` value
+  pruning helpers while preserving the emitted JSON shape. Strengthened focused tests so formatter
+  output proves sensitive extra fields are redacted, safe extra fields survive, correlation/request/
+  trace context is emitted when set, and missing context fields are omitted.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\observability.py tests\unit\dpm\api\test_observability_api.py`,
+  `python -m ruff check src\api\observability.py tests\unit\dpm\api\test_observability_api.py`,
+  `python -m mypy --config-file mypy.ini src\api\observability.py`,
+  `python -m pytest tests\unit\dpm\api\test_observability_api.py -q`,
+  `python -m radon cc src\api\observability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused observability API suite reported
+  16 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `JsonFormatter.format` reduced from B(8) to
+  A(1), with `JsonFormatter` class complexity reduced from B(9) to A(2). The refreshed complexity
+  report is sourced from `2c33dd24+worktree`, and the current top-ten source hotspot list no
+  longer includes the targeted formatter.
+- Residual risk: this slice improves structured log formatter maintainability and focused
+  redaction/context coverage only. It does not change middleware routing, metrics labels, OpenAPI
+  contracts, downstream behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal observability implementation
+  hardening with no operator-facing contract change.

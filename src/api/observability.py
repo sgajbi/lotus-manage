@@ -239,20 +239,33 @@ def _safe_log_extra_fields(extra_fields: dict[str, Any]) -> dict[str, Any]:
 
 class JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
-        payload = {
-            "timestamp": datetime.now(UTC).isoformat(),
-            "level": record.levelname,
-            "service": os.getenv("SERVICE_NAME", "lotus-manage"),
-            "environment": os.getenv("ENVIRONMENT", "local"),
-            "logger": record.name,
-            "message": record.getMessage(),
-            "correlation_id": correlation_id_var.get() or None,
-            "request_id": request_id_var.get() or None,
-            "trace_id": trace_id_var.get() or None,
-        }
-        if hasattr(record, "extra_fields") and isinstance(record.extra_fields, dict):
-            payload.update(_safe_log_extra_fields(record.extra_fields))
-        return json.dumps({k: v for k, v in payload.items() if v is not None})
+        return json.dumps(_json_log_payload(record))
+
+
+def _json_log_payload(record: logging.LogRecord) -> dict[str, Any]:
+    payload = _base_json_log_payload(record)
+    extra_fields = getattr(record, "extra_fields", None)
+    if isinstance(extra_fields, dict):
+        payload.update(_safe_log_extra_fields(extra_fields))
+    return _without_none_values(payload)
+
+
+def _base_json_log_payload(record: logging.LogRecord) -> dict[str, Any]:
+    return {
+        "timestamp": datetime.now(UTC).isoformat(),
+        "level": record.levelname,
+        "service": os.getenv("SERVICE_NAME", "lotus-manage"),
+        "environment": os.getenv("ENVIRONMENT", "local"),
+        "logger": record.name,
+        "message": record.getMessage(),
+        "correlation_id": correlation_id_var.get() or None,
+        "request_id": request_id_var.get() or None,
+        "trace_id": trace_id_var.get() or None,
+    }
+
+
+def _without_none_values(payload: dict[str, Any]) -> dict[str, Any]:
+    return {key: value for key, value in payload.items() if value is not None}
 
 
 def setup_observability(app: FastAPI) -> None:
