@@ -27121,3 +27121,47 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance cover this behavior-preserving read-model decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1046: PM-quality score-run evaluation decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality scoring maintainability, supervisory-control
+  evidence explainability, and behavior-preserving scoring decomposition.
+- Finding: `build_pm_operating_quality_score_run` mixed policy validation, scope defaulting,
+  disabled-run handling, governance evidence construction, signal collection, lookback validation,
+  indicator scoring, blocked-run evaluation, weighted-score calculation, state derivation, reason
+  aggregation, and immutable score-run assembly. Radon reported it as B(9). The same module also
+  kept weighted-score and state-override primitives at B-level complexity.
+- Action: introduced a typed internal `_ScoreRunEvaluation` value and extracted score-run
+  evaluation, blocked-indicator detection, blocked reason-code aggregation, scorable indicator
+  filtering, total-weight calculation, weighted-score calculation, rounded-score calculation, and
+  indicator-state checks. Preserved disabled-run behavior, blocked-run precedence, weighted score
+  rounding, policy threshold behavior, reason-code output, content hashing, and score-run contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py tests\unit\api\test_pm_operating_quality_service.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py`,
+  `python -m ruff format src\core\pm_quality\scoring.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py`,
+  `python -m radon cc src\core\pm_quality\scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality domain/API service suites reported 51 passed. Radon
+  improved `build_pm_operating_quality_score_run` from B(9) to A(5), `_weighted_score` from B(7)
+  to A(2), and `_score_state` from B(7) to A(5). Quality-report freshness, OpenAPI quality, API
+  vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces central PM-quality score-run assembly and scoring primitives
+  only. Remaining B-level PM-quality hotspots include fairness-analysis posture, fairness-segment
+  result construction, lookback validation, and score-run source-ref collection.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving scoring decomposition pattern.

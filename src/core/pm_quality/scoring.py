@@ -89,6 +89,13 @@ class _ActorEntitlementEvaluation:
     reason_codes: list[str]
 
 
+@dataclass(frozen=True)
+class _ScoreRunEvaluation:
+    state: PmQualityState
+    score: Decimal | None
+    reason_codes: list[str]
+
+
 _PM_QUALITY_STATE_RANK: dict[str, int] = {
     "BLOCKED": 6,
     "BREACHED": 5,
@@ -153,30 +160,20 @@ def build_pm_operating_quality_score_run(
     ]
     _validate_lookback_window(policy=policy, signals=signals)
     results = [_indicator_result(weight, signals) for weight in policy.weights]
-    if any(result.state == "BLOCKED" for result in results):
-        score = None
-        state: PmQualityState = "BLOCKED"
-        reason_codes = sorted(
-            {reason for result in results for reason in result.reason_codes}
-            | {"PM_QUALITY_REQUIRED_EVIDENCE_MISSING"}
-        )
-    else:
-        score = _weighted_score(results)
-        state = _score_state(score=score, policy=policy, results=results)
-        reason_codes = _score_reason_codes(state=state, results=results)
+    evaluation = _score_run_evaluation(policy=policy, results=results)
 
     return _score_run(
         pm_id=pm_id,
         book_id=book_id,
         as_of_date=as_of_date,
         policy=policy,
-        state=state,
-        score=score,
+        state=evaluation.state,
+        score=evaluation.score,
         indicator_results=results,
         book_scope_evidence=book_scope_evidence,
         scope_evidence=scope_evidence,
         governance_evidence=governance_evidence,
-        reason_codes=reason_codes,
+        reason_codes=evaluation.reason_codes,
         generated_at=generated_at,
         generated_by=generated_by,
         correlation_id=correlation_id,
@@ -646,12 +643,74 @@ def _indicator_source_refs(
 
 
 def _weighted_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
-    scorable = [result for result in results if result.score is not None]
-    total_weight = sum((result.weight for result in scorable), Decimal("0"))
+    scorable = _scorable_indicator_results(results)
+    total_weight = _indicator_total_weight(scorable)
     if total_weight <= 0:
         raise DpmPmQualityValidationError("PM_QUALITY_NO_SCORABLE_INDICATORS")
-    weighted = sum((result.score or Decimal("0")) * result.weight for result in scorable)
-    return (weighted / total_weight).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return _rounded_weighted_indicator_score(
+        weighted_score=_weighted_indicator_score(scorable),
+        total_weight=total_weight,
+    )
+
+
+def _scorable_indicator_results(
+    results: list[DpmPmQualityIndicatorResult],
+) -> list[DpmPmQualityIndicatorResult]:
+    return [result for result in results if result.score is not None]
+
+
+def _indicator_total_weight(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
+    return sum((result.weight for result in results), Decimal("0"))
+
+
+def _weighted_indicator_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
+    return sum(
+        ((result.score or Decimal("0")) * result.weight for result in results),
+        Decimal("0"),
+    )
+
+
+def _rounded_weighted_indicator_score(
+    *,
+    weighted_score: Decimal,
+    total_weight: Decimal,
+) -> Decimal:
+    return (weighted_score / total_weight).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _score_run_evaluation(
+    *,
+    policy: DpmPmOperatingQualityPolicy,
+    results: list[DpmPmQualityIndicatorResult],
+) -> _ScoreRunEvaluation:
+    if _score_run_has_blocked_indicator(results):
+        return _ScoreRunEvaluation(
+            state="BLOCKED",
+            score=None,
+            reason_codes=_blocked_score_run_reason_codes(results),
+        )
+    score = _weighted_score(results)
+    state = _score_state(score=score, policy=policy, results=results)
+    return _ScoreRunEvaluation(
+        state=state,
+        score=score,
+        reason_codes=_score_reason_codes(state=state, results=results),
+    )
+
+
+def _score_run_has_blocked_indicator(
+    results: list[DpmPmQualityIndicatorResult],
+) -> bool:
+    return any(result.state == "BLOCKED" for result in results)
+
+
+def _blocked_score_run_reason_codes(
+    results: list[DpmPmQualityIndicatorResult],
+) -> list[str]:
+    return sorted(
+        {reason for result in results for reason in result.reason_codes}
+        | {"PM_QUALITY_REQUIRED_EVIDENCE_MISSING"}
+    )
 
 
 def _score_state(
@@ -660,15 +719,23 @@ def _score_state(
     policy: DpmPmOperatingQualityPolicy,
     results: list[DpmPmQualityIndicatorResult],
 ) -> PmQualityState:
-    if any(result.state == "BREACHED" for result in results):
+    if _has_indicator_state(results=results, state="BREACHED"):
         return "BREACHED"
-    if any(result.state == "DEGRADED" for result in results):
+    if _has_indicator_state(results=results, state="DEGRADED"):
         return "DEGRADED"
     if score >= policy.ready_threshold:
         return "READY"
     if score >= policy.watch_threshold:
         return "PENDING_REVIEW"
     return "BREACHED"
+
+
+def _has_indicator_state(
+    *,
+    results: list[DpmPmQualityIndicatorResult],
+    state: PmQualityState,
+) -> bool:
+    return any(result.state == state for result in results)
 
 
 def _score_reason_codes(
