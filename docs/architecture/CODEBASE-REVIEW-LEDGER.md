@@ -28521,3 +28521,65 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1723: Core sourcing execution-context assembly extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/execution_context_assembly.py`, focused core-sourcing client
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful DPM execution-context assembly, requested instrument
+  derivation, currency-pair exposure derivation, source lineage identity, policy-pack override
+  behavior, and ready supportability posture for Core-backed source hydration.
+- Quality intake: `src/infrastructure/core_sourcing/client.py` remains the infrastructure owner for
+  Core source resolution; the pure assembly helpers are internal infrastructure orchestration, not
+  API-facing behavior. `lotus-core` remains source-data authority, and Manage only assembles
+  source-owned evidence into the DPM execution context. The closest meaningful tests are
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`; repo-native validation
+  uses focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is moving `core_sourcing/client.py`
+  from a B-grade hotspot to A maintainability while preserving deterministic gate posture.
+- Finding: after extracting resolver config and source-product transport, `client.py` still carried
+  pure execution-context assembly helpers for requested instrument ids, currency exposure inputs,
+  policy override projection, source lineage identity, and ready supportability. These helpers are
+  cohesive, deterministic, and independently tested, while keeping them inline inflated the source
+  adapter beyond source-product orchestration.
+- Action: moved execution-context assembly helpers into
+  `src/infrastructure/core_sourcing/execution_context_assembly.py`; kept private compatibility
+  aliases from `src/infrastructure/core_sourcing/client.py` for existing tests/imports while making
+  the new module the implementation owner. Removed stale client imports and regenerated quality
+  reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1366 LOC with B maintainability 18.20 to 1305 LOC with A
+  maintainability 19.67, and the extracted `execution_context_assembly.py` is 82 LOC with A
+  maintainability 61.92. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused assembly behavior, and quality-report
+  freshness. File size and maintainability remain measured/report-backed trend signals rather than
+  newly promoted blockers because they are not standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large Core source
+  orchestration module at 1305 LOC. Future slices should target cohesive source-product resolver
+  families only where focused tests can preserve unavailable signaling, payload semantics,
+  correlation propagation, and source-context behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
