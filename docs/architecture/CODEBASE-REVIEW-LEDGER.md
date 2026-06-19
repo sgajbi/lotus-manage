@@ -25746,3 +25746,38 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal enterprise-readiness
   authorization boundary maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1013: OpenAPI schema type example helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, and `quality/`.
+- Bank-buyable control area: OpenAPI example generation, API governance maintainability, and
+  testing.
+- Finding: `_schema_type_example` combined array item examples, object examples, boolean,
+  integer, and numeric examples in one B-grade dispatch helper. That made schema type example
+  behavior harder to extend safely while preserving current OpenAPI enrichment semantics.
+- Action: extracted schema type dispatch, array type example, and scalar type example helpers
+  while preserving existing generated examples; added direct tests for array, scalar, and
+  unsupported string dispatch behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff check src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py`,
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py -q`,
+  `python -m radon cc src\api\openapi_enrichment.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused OpenAPI enrichment helper suite
+  reported 37 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_schema_type_example` reduced from B(6) to
+  A(1), with extracted schema type helpers at A(1) to A(5). The refreshed complexity report is
+  sourced from `1738714f+worktree` and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves OpenAPI example-generation maintainability only. It does not
+  change OpenAPI route coverage, operation metadata policy, schema semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal API governance helper
+  maintainability hardening with no operator-facing contract change.

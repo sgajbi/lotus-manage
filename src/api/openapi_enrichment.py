@@ -152,18 +152,45 @@ def _schema_type_example(
     prop_schema: dict[str, Any],
 ) -> tuple[bool, Any]:
     schema_type = prop_schema.get("type")
+    example = _schema_type_example_value(
+        schema_type=schema_type,
+        prop_name=prop_name,
+        key=key,
+        prop_schema=prop_schema,
+    )
+    return (example is not None, example)
+
+
+def _schema_type_example_value(
+    *,
+    schema_type: Any,
+    prop_name: str,
+    key: str,
+    prop_schema: dict[str, Any],
+) -> Any | None:
     if schema_type == "array":
-        item_schema = prop_schema.get("items", {})
-        return True, [_infer_example(f"{prop_name}_item", item_schema)]
+        return _array_type_example(prop_name=prop_name, prop_schema=prop_schema)
+    scalar_example = _scalar_type_example(schema_type=schema_type, key=key)
+    if scalar_example is not None:
+        return scalar_example
+    return None
+
+
+def _array_type_example(*, prop_name: str, prop_schema: dict[str, Any]) -> list[Any]:
+    item_schema = prop_schema.get("items", {})
+    return [_infer_example(f"{prop_name}_item", item_schema)]
+
+
+def _scalar_type_example(*, schema_type: Any, key: str) -> Any | None:
     if schema_type == "object":
-        return True, {"sample_key": "sample_value"}
+        return {"sample_key": "sample_value"}
     if schema_type == "boolean":
-        return True, True
+        return True
     if schema_type == "integer":
-        return True, 10
+        return 10
     if schema_type == "number":
-        return True, _number_example_for_key(key)
-    return False, None
+        return _number_example_for_key(key)
+    return None
 
 
 def _schema_format_example(prop_schema: dict[str, Any]) -> tuple[bool, Any]:

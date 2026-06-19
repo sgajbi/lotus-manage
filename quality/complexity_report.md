@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:16:50+00:00`
+- Generated at: `2026-06-19T05:19:47+00:00`
 
-- Report source snapshot: `badde630+worktree`
+- Report source snapshot: `1738714f+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
-| 2 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
-| 3 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
-| 4 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
-| 5 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
-| 6 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
-| 7 | _proof_pack_id | src/core/proof_packs/builder.py | 6 | 19 |
-| 8 | bulk_review_campaign_definition_hash | src/core/waves/campaign_definitions.py | 6 | 19 |
-| 9 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
-| 10 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
+| 1 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
+| 2 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
+| 3 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
+| 4 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
+| 5 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
+| 6 | _proof_pack_id | src/core/proof_packs/builder.py | 6 | 19 |
+| 7 | bulk_review_campaign_definition_hash | src/core/waves/campaign_definitions.py | 6 | 19 |
+| 8 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
+| 9 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
+| 10 | _performance_source_posture | src/core/outcomes/performance_sources.py | 6 | 17 |
 
 ### Most Complex Current Test Functions
 

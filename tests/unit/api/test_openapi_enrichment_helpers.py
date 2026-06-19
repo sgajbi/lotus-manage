@@ -1,4 +1,5 @@
 from src.api.openapi_enrichment import (
+    _array_type_example,
     _array_example_from_schema,
     _composite_example_from_schema,
     _collection_example_from_schema,
@@ -37,6 +38,8 @@ from src.api.openapi_enrichment import (
     _schema_non_metrics_http_operations,
     _schema_path_methods,
     _schema_type_example,
+    _schema_type_example_value,
+    _scalar_type_example,
     _SEMANTIC_DESCRIPTION_RULES,
     _SEMANTIC_STRING_EXAMPLE_RULES,
     _semantic_description_for_context,
@@ -185,6 +188,35 @@ def test_openapi_enrichment_infer_example_helpers_separate_schema_concerns() -> 
         "2026-03-02T10:30:00Z",
     )
     assert _schema_format_example({"format": "uuid"}) == (False, None)
+
+
+def test_openapi_enrichment_schema_type_helpers_dispatch_type_examples() -> None:
+    assert _array_type_example(
+        prop_name="allocations",
+        prop_schema={"items": {"type": "integer"}},
+    ) == [10]
+    assert _scalar_type_example(schema_type="object", key="metadata") == {
+        "sample_key": "sample_value"
+    }
+    assert _scalar_type_example(schema_type="boolean", key="is_ready") is True
+    assert _scalar_type_example(schema_type="integer", key="count") == 10
+    assert _scalar_type_example(schema_type="number", key="target_weight") == 0.125
+    assert _scalar_type_example(schema_type="string", key="display_name") is None
+    assert _schema_type_example_value(
+        schema_type="array",
+        prop_name="allocations",
+        key="allocations",
+        prop_schema={"items": {"type": "integer"}},
+    ) == [10]
+    assert (
+        _schema_type_example_value(
+            schema_type="string",
+            prop_name="displayName",
+            key="display_name",
+            prop_schema={"type": "string"},
+        )
+        is None
+    )
 
 
 def test_openapi_enrichment_prefers_declared_schema_examples() -> None:
