@@ -24837,3 +24837,57 @@ and improves internal transaction-cost source posture maintainability only.
   certify global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is repository-local quality evidence with no
   operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-987: Router infrastructure boundary CI enforcement
+
+- Date: 2026-06-19
+- Scope: `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `.github/workflows/quality-baseline.yml`,
+  `Makefile`, `pyproject.toml`, `scripts/router_infrastructure_gate.py`,
+  `scripts/engineering_health_report.py`, `tests/unit/test_router_infrastructure_gate.py`,
+  `tests/unit/test_engineering_health_report.py`, and `quality/ci_quality_gates.md`.
+- Bank-buyable control area: CI enforcement, architecture boundary governance, and warning hygiene.
+- Finding: the quality reports had repeatedly measured router infrastructure imports at zero, but
+  that remediated boundary was still report-only truth. CI also emitted a known third-party
+  Starlette TestClient deprecation warning from `fastapi.testclient`, creating warning noise even
+  though the current application code does not own the deprecated call path.
+- Action: added `scripts/router_infrastructure_gate.py` with direct tests, wired
+  `make router-infrastructure-gate` into `make check`, `make ci`, `make ci-local`, Feature Lane,
+  PR Merge Gate, Main Releasability, and the Quality Baseline artifact capture; updated the
+  scorecard generator and CI-quality documentation to mark router infrastructure imports as an
+  active gate; added a narrow pytest warning filter for the external
+  `fastapi.testclient`/Starlette deprecation.
+- Status: hardened.
+- Evidence:
+  `python scripts\router_infrastructure_gate.py`,
+  `python -m pytest tests\unit\test_router_infrastructure_gate.py tests\unit\test_engineering_health_report.py tests\unit\dpm\engine\coverage\test_engine_intent_simulation.py`,
+  `python -m ruff format scripts\router_infrastructure_gate.py tests\unit\test_router_infrastructure_gate.py tests\unit\test_engineering_health_report.py scripts\engineering_health_report.py`, and
+  `python -m ruff check scripts\router_infrastructure_gate.py tests\unit\test_router_infrastructure_gate.py tests\unit\test_engineering_health_report.py scripts\engineering_health_report.py`;
+  the focused suite reported 35 passed and the router infrastructure gate passed against the
+  current router tree.
+- Residual risk: this slice promotes one already-remediated architecture boundary to blocking CI.
+  It does not promote report-only complexity thresholds, OpenAPI marker debt, documentation score,
+  observability runtime scoring, or third-party GitHub action/node deprecation warnings into hard
+  enterprise gates.
+- Wiki decision: no wiki source change required; this is repository-local CI enforcement and
+  quality-evidence guidance with no operator-facing runtime contract change.
+
+## BACKEND-REVIEW-20260619-988: Router infrastructure gate reports refreshed
+
+- Date: 2026-06-19
+- Scope: `quality/baseline_report.md`, `quality/refactor_health_report.md`,
+  `quality/quality_scorecard.md`, `quality/complexity_report.md`, and this ledger.
+- Bank-buyable control area: CI measurement and operational evidence.
+- Finding: after adding router infrastructure boundary enforcement, checked-in quality reports
+  needed to reflect the new active gate posture, updated source snapshot, and current zero router
+  infrastructure imports.
+- Action: regenerated the repository quality reports with `scripts/engineering_health_report.py`.
+- Status: refreshed.
+- Evidence: `python scripts\engineering_health_report.py`; the refreshed reports are sourced from
+  `84343223+worktree`, record 823 Python files, 2649 test functions, keep service boundary
+  findings and router infrastructure imports at 0, keep OpenAPI missing markers at 0, and list
+  `scripts/router_infrastructure_gate.py` as the active router infrastructure gate.
+- Residual risk: this slice updates report truth only. It does not certify global bank-buyable
+  readiness or convert broader report-only baselines into hard release thresholds.
+- Wiki decision: no wiki source change required; this is repository-local quality evidence with no
+  operator-facing contract change.
