@@ -26046,3 +26046,43 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal campaign-definition hashing
   hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1021: In-memory wave listing helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/in_memory.py`,
+  `tests/unit/dpm/waves/test_wave_domain.py`, and `quality/`.
+- Bank-buyable control area: rebalance wave repository read behavior, deterministic listing,
+  pagination, and defensive-copy isolation.
+- Finding: `InMemoryDpmWaveRepository.list_waves` combined lock-protected retrieval, state,
+  trigger-type, and as-of-date predicates, descending sort policy, pagination, and defensive copy
+  behavior in one B-grade adapter method. Existing tests covered defensive single-record reads and
+  PostgreSQL list filters but did not directly pin in-memory list filtering, ordering, pagination,
+  and copy isolation together.
+- Action: extracted in-memory list filtering, predicate, sort-key, paging, and copy helpers while
+  preserving repository protocol behavior; split the combined predicate into state, trigger, and
+  as-of-date match helpers. Added a focused repository test proving filtered descending pages and
+  defensive copy isolation for listed waves.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m ruff check src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\in_memory.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_domain.py -q`,
+  `python -m radon cc src\infrastructure\waves\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused wave domain suite reported 22
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `InMemoryDpmWaveRepository.list_waves` reduced
+  from B(8) to A(1), with extracted list helpers at A(1) to A(3). The refreshed complexity report
+  is sourced from `d9a0534d+worktree` and the current top-ten source hotspot list no longer
+  includes the targeted method.
+- Residual risk: this slice improves in-memory wave listing maintainability and direct repository
+  test coverage only. It does not change PostgreSQL listing behavior, wave write/idempotency
+  behavior, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal repository adapter hardening with
+  no operator-facing contract change.
