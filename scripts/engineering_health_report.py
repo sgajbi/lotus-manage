@@ -608,6 +608,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "`make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance.",
         ],
         [
+            "Workflow policy",
+            "Active gate",
+            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, and removal of blocking quality-report checks.",
+        ],
+        [
             "Dead code",
             "Active gate",
             "`make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output.",

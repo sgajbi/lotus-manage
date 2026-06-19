@@ -30,6 +30,8 @@ The following commands are active repository gates:
   - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
   - `make dependency-hygiene-gate` (`python -m deptry src tests`)
   - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
+  - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
+    action references, unexpected workflow permissions, and missing blocking quality-report checks)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
   - `python -m pytest tests/unit`
@@ -65,6 +67,7 @@ The following commands are active repository gates:
   - migration smoke
   - matrix unit/integration/e2e tests with coverage upload
   - combined coverage floor (`99`)
+  - workflow policy integrity
   - checked-in quality report freshness
   - Docker build validation
 
@@ -90,5 +93,6 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 ## Enforcement Posture
 
 - Phase 1: measure and baseline
-- Phase 2: enforce non-regressing deltas for active gates and block stale quality reports
+- Phase 2: enforce non-regressing deltas for active gates, block workflow policy drift, and block
+  stale quality reports
 - Phase 3: introduce hard thresholds and enterprise-readiness gates only after baseline review

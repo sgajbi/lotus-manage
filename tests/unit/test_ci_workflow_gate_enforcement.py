@@ -2,6 +2,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts.workflow_policy_gate import (
+    action_reference_violations,
+    evaluate_workflow_policy,
+    permission_violations,
+    quality_report_gate_violations,
+)
+
 
 ENFORCED_WORKFLOWS = [
     Path(".github/workflows/feature-lane.yml"),
@@ -60,3 +67,77 @@ def test_quality_baseline_uses_node24_setup_node_action() -> None:
     assert 'node-version: "24"' in workflow_text
     assert "actions/setup-node@v4" not in workflow_text
     assert 'node-version: "20"' not in workflow_text
+
+
+def test_workflow_policy_gate_passes_current_repository_workflows() -> None:
+    assert evaluate_workflow_policy() == []
+
+
+def test_workflow_policy_gate_rejects_unpinned_action_refs(tmp_path: Path) -> None:
+    workflow = tmp_path / "feature-lane.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  lint:",
+                "    steps:",
+                "      - uses: actions/checkout@main",
+                "      - uses: actions/setup-python@v6",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert action_reference_violations(workflow) == [
+        f"{workflow.as_posix()}: action reference must use a version tag or full SHA: "
+        "actions/checkout@main"
+    ]
+
+
+def test_workflow_policy_gate_rejects_permission_creep(tmp_path: Path) -> None:
+    workflow = tmp_path / "feature-lane.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: write",
+                "  actions: write",
+                "jobs:",
+                "  lint:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert permission_violations(workflow) == [
+        f"{workflow.as_posix()}: permissions must be {{'contents': 'read'}}, "
+        "found {'contents': 'write', 'actions': 'write'}"
+    ]
+
+
+def test_workflow_policy_gate_requires_blocking_quality_report_gate(tmp_path: Path) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  lint:",
+                "    steps:",
+                "      - name: Quality Report Freshness Gate",
+                "        continue-on-error: true",
+                "        run: make quality-report-gate",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert quality_report_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: quality report freshness gate must be blocking, "
+        "not continue-on-error"
+    ]

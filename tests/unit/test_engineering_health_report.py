@@ -154,6 +154,7 @@ def test_quality_scorecard_separates_active_gates_from_planned_gates() -> None:
     assert "| Dependency architecture | Active gate |" in scorecard
     assert "| Dead code | Active gate |" in scorecard
     assert "| Quality report freshness | Active gate |" in scorecard
+    assert "| Workflow policy | Active gate |" in scorecard
     assert "| Complexity | Report-only baseline |" in scorecard
     assert (
         "| 4 - enterprise-readiness gates | Block release on full readiness posture." in scorecard

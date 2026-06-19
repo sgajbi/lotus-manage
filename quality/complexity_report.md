@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T06:41:51+00:00`
+- Generated at: `2026-06-19T06:48:10+00:00`
 
-- Report source snapshot: `a1603e8e+worktree`
+- Report source snapshot: `dcbb4ac0+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 

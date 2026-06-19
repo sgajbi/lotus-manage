@@ -26616,3 +26616,56 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill update required. Existing backend delivery, PR pre-merge, and
   review-ledger guidance covered this pattern; the new executable gate is the durable guidance for
   future agents.
+
+## BACKEND-REVIEW-20260619-1035: Workflow policy CI enforcement
+
+- Date: 2026-06-19
+- Scope: `scripts/workflow_policy_gate.py`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `Makefile`, `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `scripts/engineering_health_report.py`,
+  `tests/unit/test_engineering_health_report.py`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: GitHub Actions supply-chain posture, workflow permission minimization,
+  CI drift prevention, and durable enforcement of the quality-report freshness gate in blocking
+  lanes.
+- Finding: workflow linting existed in GitHub through `reviewdog/action-actionlint`, but the
+  repository did not have a repo-native gate that could fail locally or in the blocking lane when a
+  future workflow introduced an unpinned action reference, expanded default workflow permissions, or
+  removed/softened the quality-report freshness gate. That left CI governance dependent on review
+  discipline rather than an executable policy.
+- Action: added `scripts/workflow_policy_gate.py` and `make workflow-policy-gate`. The gate
+  enforces expected top-level permissions for all repository workflows, allows the auto-merge
+  workflow's explicit `contents: write` and `pull-requests: write` scope only in
+  `pr-auto-merge.yml`, requires external `uses:` references to use a `vN`/semver tag or full SHA,
+  and requires Feature Lane, PR Merge Gate, and Main Releasability to run `make
+  quality-report-gate` as a blocking step. Wired the gate into `make check`, `make ci`, Remote
+  Feature Lane, PR Merge Gate, and Main Releasability. Added focused tests for current workflow
+  compliance, unpinned refs, permission creep, and non-blocking quality-report gate drift. Updated
+  the quality scorecard and CI gate documentation, then regenerated reports.
+- Status: hardened.
+- Evidence:
+  `python scripts\workflow_policy_gate.py`,
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/feature-lane.yml','.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml','.github/workflows/quality-baseline.yml','.github/workflows/pr-auto-merge.yml']]; print('Parsed workflow YAML files')"`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 17
+  passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, workflow YAML parse, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces repository-local workflow policy. It does not query GitHub
+  branch-protection settings, require full-SHA pinning for every external action, or replace the
+  GitHub-hosted actionlint check with a local binary.
+- Wiki decision: no wiki source change required; this is internal CI policy enforcement and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The executable workflow policy gate is the durable
+  future-agent guardrail for this recurring CI-governance pattern.
