@@ -41,6 +41,8 @@ from src.core.proof_packs import (
     ProofPackSourceValidationError,
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
+    proof_pack_id_for_rebalance_run,
+    proof_pack_id_for_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
 from src.core.proof_packs.models import DpmProofPackSourceRef, DpmProofPackSupportability
@@ -2096,6 +2098,22 @@ def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
     assert first.supportability.section_hashes == second.supportability.section_hashes
 
 
+def test_rebalance_run_proof_pack_id_uses_stable_run_identity() -> None:
+    run = _run_record()
+
+    pack = build_proof_pack_from_run(
+        run=run,
+        created_by="pm_001",
+        reason="Rebalance back to model after drift review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    assert pack.proof_pack_id == proof_pack_id_for_rebalance_run(
+        rebalance_run_id=run.rebalance_run_id
+    )
+
+
 def test_selected_alternative_proof_pack_captures_method_trace_and_selection_event() -> None:
     result = _ready_rebalance_result()
     alternative = build_rebalance_result_alternative(result=result)
@@ -2129,6 +2147,10 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
 
     selected = _section(pack, "selected_alternative")
     assert pack.source_type == "SELECTED_ALTERNATIVE"
+    assert pack.proof_pack_id == proof_pack_id_for_selected_alternative(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=alternative.alternative_id,
+    )
     assert pack.alternative_set_id == "cas_proof_pack_1"
     assert pack.selected_alternative_id == alternative.alternative_id
     assert pack.correlation_id == "corr-selection-proof-pack"

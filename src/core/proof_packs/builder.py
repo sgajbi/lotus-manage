@@ -2168,15 +2168,48 @@ def _proof_pack_id(
     alternative_set: ConstructionAlternativeSet | None,
     selected_alternative: ConstructionAlternative | None,
 ) -> str:
-    if source_type == "REBALANCE_RUN" and run is not None:
-        return proof_pack_id_for_rebalance_run(rebalance_run_id=run.rebalance_run_id)
-    if (
-        source_type == "SELECTED_ALTERNATIVE"
-        and alternative_set is not None
-        and selected_alternative is not None
-    ):
-        return proof_pack_id_for_selected_alternative(
-            alternative_set_id=alternative_set.alternative_set_id,
-            selected_alternative_id=selected_alternative.alternative_id,
-        )
+    proof_pack_id = _candidate_proof_pack_id(
+        source_type=source_type,
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=selected_alternative,
+    )
+    if proof_pack_id is not None:
+        return proof_pack_id
     raise ProofPackSourceValidationError("DPM_PROOF_PACK_SOURCE_MISSING")
+
+
+def _candidate_proof_pack_id(
+    *,
+    source_type: ProofPackSourceType,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+) -> str | None:
+    if source_type == "REBALANCE_RUN":
+        return _run_source_proof_pack_id(run)
+    if source_type == "SELECTED_ALTERNATIVE":
+        return _selected_alternative_source_proof_pack_id(
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+        )
+    return None
+
+
+def _run_source_proof_pack_id(run: DpmRunRecord | None) -> str | None:
+    if run is None:
+        return None
+    return proof_pack_id_for_rebalance_run(rebalance_run_id=run.rebalance_run_id)
+
+
+def _selected_alternative_source_proof_pack_id(
+    *,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+) -> str | None:
+    if alternative_set is None or selected_alternative is None:
+        return None
+    return proof_pack_id_for_selected_alternative(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=selected_alternative.alternative_id,
+    )

@@ -25967,3 +25967,42 @@ and improves internal transaction-cost source posture maintainability only.
   Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal portfolio-memory model
   validation hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1019: Proof-pack source ID resolution helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: immutable proof-pack identity, deterministic replay, and source
+  artifact auditability.
+- Finding: `_proof_pack_id` selected run-backed and selected-alternative-backed proof-pack
+  identifiers inline and raised the source-missing error from the same branch-heavy helper. That
+  kept deterministic proof-pack identity behavior correct but made source-specific ID resolution
+  harder to audit as proof-pack source families expand.
+- Action: extracted a candidate ID resolver and source-specific run and selected-alternative ID
+  helpers while preserving the public ID formatting helpers and the existing
+  `DPM_PROOF_PACK_SOURCE_MISSING` fail-closed behavior. Added public builder-level assertions that
+  generated run and selected-alternative proof packs use the stable ID helpers.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack builder suite reported
+  109 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_proof_pack_id` reduced from B(6) to A(2), with
+  extracted source ID helpers at A(2) to A(3). The refreshed complexity report is sourced from
+  `c7307eb7+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves proof-pack ID resolution maintainability and direct identity
+  test coverage only. It does not change proof-pack ID formats, repository persistence semantics,
+  proof-pack API contracts, source artifact hashes, downstream Gateway/Workbench behavior, or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder hardening
+  with no operator-facing contract change.
