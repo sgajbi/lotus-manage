@@ -25593,3 +25593,43 @@ and improves internal transaction-cost source posture maintainability only.
   contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal repository query-shape
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1009: PM-quality policy list query helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/pm_quality/in_memory.py`,
+  `tests/unit/dpm/pm_quality/test_pm_quality_repository.py`, and `quality/`.
+- Bank-buyable control area: PM operating quality policy repository query-shape maintainability,
+  deterministic listing semantics, and testing.
+- Finding: `InMemoryDpmPmQualityPolicyRepository.list_policies` combined optional policy-id,
+  enabled, and as-of-date filters with descending policy ordering, pagination, locking, and
+  defensive copying in one B-grade repository method. That made policy listing behavior less
+  consistent with the helper-based score-run, fairness-analysis, review-action, and summary
+  invocation list implementations in the same module.
+- Action: added typed policy filters plus policy predicate, boolean optional-match, sort, and
+  paging helpers while preserving the existing lock boundary and deepcopy return behavior; added
+  direct tests for enabled filtering, omitted-filter behavior, descending policy ordering, and
+  offset pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\pm_quality\in_memory.py tests\unit\dpm\pm_quality\test_pm_quality_repository.py`,
+  `python -m ruff check src\infrastructure\pm_quality\in_memory.py tests\unit\dpm\pm_quality\test_pm_quality_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\pm_quality\in_memory.py`,
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_quality_repository.py -q`,
+  `python -m radon cc src\infrastructure\pm_quality\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused PM-quality repository suite
+  reported 30 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports
+  `InMemoryDpmPmQualityPolicyRepository.list_policies` reduced from B(8) to A(1), with extracted
+  policy list helpers at A(1) to A(3). The refreshed complexity report is sourced from
+  `9a8e552b+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  method.
+- Residual risk: this slice improves in-memory PM-quality policy list query maintainability only.
+  It does not change Postgres PM-quality query behavior, policy immutability semantics,
+  governance approval rules, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.

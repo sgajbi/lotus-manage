@@ -33,17 +33,22 @@ from src.infrastructure.pm_quality import (
 )
 from src.infrastructure.pm_quality.in_memory import (
     _FairnessAnalysisFilters,
+    _PolicyFilters,
     _ReviewActionFilters,
     _ScoreRunFilters,
     _SummaryInvocationFilters,
     _fairness_analysis_matches_filters,
     _list_fairness_analyses,
+    _list_policies,
     _list_review_actions,
     _list_score_runs,
     _list_summary_invocations,
+    _optional_bool_matches,
+    _policy_matches_filters,
     _review_action_matches_filters,
     _score_run_matches_filters,
     _sort_fairness_analyses,
+    _sort_policies,
     _sort_review_actions,
     _sort_score_runs,
     _sort_summary_invocations,
@@ -572,6 +577,37 @@ def test_in_memory_pm_quality_repository_lists_policy_versions() -> None:
     assert repository.list_policies(enabled=False) == [disabled]
     assert repository.list_policies(as_of_date="missing") == []
     assert repository.list_policies(limit=1, offset=1) == [disabled]
+
+
+def test_pm_quality_policy_list_helpers_filter_sort_and_page_results() -> None:
+    enabled = _policy(policy_id="pmq_enabled", enabled=True)
+    newer_enabled = enabled.model_copy(
+        update={
+            "policy_id": "pmq_enabled_newer",
+            "as_of_date": "2026-05-13",
+        }
+    )
+    disabled = _policy(policy_id="pmq_disabled", enabled=False)
+    filters = _PolicyFilters(policy_id=None, enabled=True, as_of_date=None)
+
+    assert _optional_bool_matches(enabled.enabled, True)
+    assert _optional_bool_matches(disabled.enabled, None)
+    assert not _optional_bool_matches(disabled.enabled, True)
+    assert _policy_matches_filters(enabled, filters)
+    assert not _policy_matches_filters(disabled, filters)
+    assert _sort_policies([enabled, newer_enabled]) == [newer_enabled, enabled]
+    assert _list_policies(
+        policies=[enabled, newer_enabled, disabled],
+        filters=filters,
+        limit=1,
+        offset=0,
+    ) == [newer_enabled]
+    assert _list_policies(
+        policies=[enabled, newer_enabled, disabled],
+        filters=filters,
+        limit=1,
+        offset=1,
+    ) == [enabled]
 
 
 def test_postgres_pm_quality_policy_repository_round_trips_policy_versions(

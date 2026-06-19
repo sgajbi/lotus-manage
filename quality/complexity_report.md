@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:05:21+00:00`
+- Generated at: `2026-06-19T05:08:07+00:00`
 
-- Report source snapshot: `67b6b078+worktree`
+- Report source snapshot: `9a8e552b+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | list_policies | src/infrastructure/pm_quality/in_memory.py | 6 | 22 |
-| 2 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
-| 3 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
-| 4 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
-| 5 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
-| 6 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
-| 7 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
-| 8 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
-| 9 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
-| 10 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
+| 1 | sustainability_preference_reason_codes | src/api/services/construction_sustainability_supportability.py | 6 | 20 |
+| 2 | _validate_search_page_next_offset | src/core/portfolio_memory/models.py | 6 | 20 |
+| 3 | authorize_write_request | src/api/enterprise_readiness.py | 6 | 19 |
+| 4 | _schema_type_example | src/api/openapi_enrichment.py | 6 | 19 |
+| 5 | currency_overlay_status | src/api/services/construction_currency_overlay_supportability.py | 6 | 19 |
+| 6 | iter_changed_fields | src/api/services/mandate_diff.py | 6 | 19 |
+| 7 | ready_optional_source | src/api/services/mandate_optional_sources.py | 6 | 19 |
+| 8 | _historical_attribution_set | src/core/outcomes/risk_sources.py | 6 | 19 |
+| 9 | _validate_portfolio_memory_event_aggregates | src/core/portfolio_memory/models.py | 6 | 19 |
+| 10 | _proof_pack_id | src/core/proof_packs/builder.py | 6 | 19 |
 
 ### Most Complex Current Test Functions
 
