@@ -1,11 +1,8 @@
 from src.api.openapi_enrichment import (
-    _array_type_example,
     _array_example_from_schema,
     _composite_example_from_schema,
     _collection_example_from_schema,
-    _description_context,
     _documentable_property_schema,
-    _enum_example,
     _example_from_schema,
     _ensure_metrics_path_examples,
     _ensure_operation_default_docs,
@@ -15,13 +12,10 @@ from src.api.openapi_enrichment import (
     _ensure_request_body_example,
     _ensure_response_body_example,
     _ensure_property_documentation,
-    _infer_description,
-    _infer_example,
     _is_error_status_code,
     _is_http_operation_method,
     _model_documentable_properties,
     _model_property_schemas,
-    _number_example_for_key,
     _operation_has_error_response,
     _operation_tag_for_path,
     _object_example_from_schema,
@@ -33,54 +27,62 @@ from src.api.openapi_enrichment import (
     _schema_component_schemas,
     _schema_declared_example,
     _schema_documentable_properties,
-    _schema_format_example,
     _schema_http_operations,
     _schema_non_metrics_http_operations,
     _schema_path_methods,
-    _schema_type_example,
-    _schema_type_example_value,
-    _scalar_type_example,
+    enrich_openapi_schema,
+)
+from src.api.openapi_semantics import (
     _SEMANTIC_DESCRIPTION_RULES,
     _SEMANTIC_STRING_EXAMPLE_RULES,
+    _array_type_example,
+    _description_context,
+    _enum_example,
+    _number_example_for_key,
+    _scalar_type_example,
+    _schema_format_example,
+    _schema_type_example,
+    _schema_type_example_value,
     _semantic_description_for_context,
     _semantic_identifier_example,
     _semantic_string_example_for_key,
     _semantic_string_rule_example,
-    enrich_openapi_schema,
+    infer_openapi_description,
+    infer_openapi_example,
 )
 
 
 def test_openapi_enrichment_infers_domain_examples_and_descriptions() -> None:
-    assert _infer_example("portfolioId", {"type": "string"}) == "DEMO_DPM_EUR_001"
-    assert _infer_example("targetWeight", {"type": "number"}) == 0.125
-    assert _infer_example("lastPrice", {"type": "number"}) == 1.2345
-    assert _infer_example("quantity", {"type": "number"}) == 100.0
-    assert _infer_example("asOfDate", {"type": "string", "format": "date"}) == "2026-03-02"
-    assert _infer_example("runAt", {"type": "string", "format": "date-time"}).endswith("Z")
-    assert _infer_example("workflowStatus", {"type": "string"}) == "READY"
-    assert _infer_example("customEnum", {"enum": ["A", "B"]}) == "A"
-    assert _infer_example("attributes", {"type": "object"}) == {"sample_key": "sample_value"}
-    assert _infer_example("otherNumber", {"type": "number"}) == 10.5
-    assert _infer_example("currencyCode", {"type": "string"}) == "USD"
-    assert _infer_example("runTime", {"type": "string"}) == "2026-03-02T10:30:00Z"
-    assert _infer_example("customId", {"type": "string"}) == "CUSTOM_001"
-    assert _infer_example("unknown", {}) == "unknown_example"
-    assert _infer_description("RunModel", "runAt", {"format": "date-time"}) == (
+    assert infer_openapi_example("portfolioId", {"type": "string"}) == "DEMO_DPM_EUR_001"
+    assert infer_openapi_example("targetWeight", {"type": "number"}) == 0.125
+    assert infer_openapi_example("lastPrice", {"type": "number"}) == 1.2345
+    assert infer_openapi_example("quantity", {"type": "number"}) == 100.0
+    assert infer_openapi_example("asOfDate", {"type": "string", "format": "date"}) == "2026-03-02"
+    assert infer_openapi_example("runAt", {"type": "string", "format": "date-time"}).endswith("Z")
+    assert infer_openapi_example("workflowStatus", {"type": "string"}) == "READY"
+    assert infer_openapi_example("customEnum", {"enum": ["A", "B"]}) == "A"
+    assert infer_openapi_example("attributes", {"type": "object"}) == {"sample_key": "sample_value"}
+    assert infer_openapi_example("otherNumber", {"type": "number"}) == 10.5
+    assert infer_openapi_example("currencyCode", {"type": "string"}) == "USD"
+    assert infer_openapi_example("runTime", {"type": "string"}) == "2026-03-02T10:30:00Z"
+    assert infer_openapi_example("customId", {"type": "string"}) == "CUSTOM_001"
+    assert infer_openapi_example("unknown", {}) == "unknown_example"
+    assert infer_openapi_description("RunModel", "runAt", {"format": "date-time"}) == (
         "Timestamp for run at."
     )
-    assert _infer_description("RunModel", "marketValue", {"type": "number"}) == (
+    assert infer_openapi_description("RunModel", "marketValue", {"type": "number"}) == (
         "Monetary value for market value."
     )
-    assert _infer_description("RunModel", "asOfDate", {"format": "date"}) == (
+    assert infer_openapi_description("RunModel", "asOfDate", {"format": "date"}) == (
         "Business date for as of date."
     )
-    assert _infer_description("RunModel", "baseCurrency", {"type": "string"}) == (
+    assert infer_openapi_description("RunModel", "baseCurrency", {"type": "string"}) == (
         "ISO currency code for base currency."
     )
-    assert _infer_description("RunModel", "quantity", {"type": "number"}) == (
+    assert infer_openapi_description("RunModel", "quantity", {"type": "number"}) == (
         "Quantity value for quantity."
     )
-    assert _infer_description("RunModel", "marketPrice", {"type": "number"}) == (
+    assert infer_openapi_description("RunModel", "marketPrice", {"type": "number"}) == (
         "Rate/price value for market price."
     )
 

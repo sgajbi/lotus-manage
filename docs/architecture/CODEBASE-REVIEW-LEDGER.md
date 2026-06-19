@@ -28254,6 +28254,78 @@ and improves internal transaction-cost source posture maintainability only.
   CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
   platform skill-source change or bootstrap sync is needed for this repository-local slice.
 
+## BACKEND-REVIEW-20260619-2303: OpenAPI semantic inference helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`, `src/api/openapi_semantics.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, focused OpenAPI quality and contract tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: generated OpenAPI field descriptions, schema examples, request and
+  response examples, error examples, metrics media-type documentation, API vocabulary drift
+  prevention, and future-agent API-governance guardrails.
+- Quality intake: `src.api.openapi_enrichment.enrich_openapi_schema` is the existing schema
+  post-processing owner installed by `src.api.main`; the file mixed semantic field inference,
+  schema example traversal, and operation/response documentation. The canonical source of truth is
+  generated FastAPI OpenAPI plus Pydantic component schemas. This code path is API-governance and
+  developer/operator-facing contract truth, not runtime business calculation logic. The closest
+  meaningful tests are `tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `tests/unit/test_openapi_quality_gate.py`, and
+  `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`. Repo-native validation
+  uses focused pytest, ruff, source mypy, OpenAPI gate, API vocabulary gate, architecture,
+  duplicate-implementation, complexity, and generated-report freshness checks. The measured quality
+  signal is moving the C-grade OpenAPI enrichment hotspot out of C maintainability while preserving
+  generated schema documentation and example behavior.
+- Finding: `src/api/openapi_enrichment.py` owned too many API-governance concerns in one module.
+  The semantic description/example inference rules were deterministic, cohesive, and directly
+  test-covered, while schema traversal, `$ref`/composite example resolution, operation defaults,
+  error response content, and `/metrics` media-type enrichment remain separate mutation concerns.
+- Action: extracted semantic field description/example inference into
+  `src/api/openapi_semantics.py` with explicit `infer_openapi_description` and
+  `infer_openapi_example` entry points. `src/api/openapi_enrichment.py` now delegates field
+  fallback metadata to that owner and keeps schema traversal/enrichment behavior. Tests now import
+  semantic-rule helpers from the semantic owner and continue to exercise enrichment traversal from
+  the enrichment owner. No public API contract, OpenAPI output policy, CI gate behavior, or runtime
+  behavior was intentionally changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py tests\unit\test_openapi_quality_gate.py tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py`,
+  `python -m ruff check src\api\openapi_enrichment.py src\api\openapi_semantics.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src\api\openapi_enrichment.py src\api\openapi_semantics.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py src\api\openapi_semantics.py`,
+  `make openapi-gate`,
+  `make api-vocabulary-gate`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\api\openapi_enrichment.py src\api\openapi_semantics.py`,
+  `python -m radon mi src\api\openapi_enrichment.py src\api\openapi_semantics.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused OpenAPI tests reported 53
+  passed. `src/api/openapi_enrichment.py` moved from 817 LOC with C maintainability 4.55 to 580
+  LOC with B maintainability 15.64, and the extracted `src/api/openapi_semantics.py` is 246 LOC
+  with A maintainability 28.93. The OpenAPI quality gate passed, API vocabulary validation reported
+  no drift, and duplicate implementation remained at 0 accepted exact duplicate groups with no new
+  groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already block OpenAPI completeness drift, API vocabulary drift,
+  architecture-boundary drift, duplicate implementation hotspots, source C-or-worse complexity
+  regressions, and stale quality reports. Maintainability index and file size remain measured,
+  report-backed planning signals rather than blocking gates because they are not sufficiently
+  low-noise standalone enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining C-grade source hotspots are `src/core/mandates.py`,
+  `src/core/outcomes/risk_sources.py`, and `src/core/pm_quality/scoring.py`. Future slices should
+  target cohesive, directly tested behavior families in those files and avoid promoting MI or
+  file-size gates until baseline, false-positive posture, lane placement, and exception policy are
+  settled.
+- Wiki decision: no wiki source change required; this is internal API-governance modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement governance already cover this measured extraction and no new repeatable
+  platform guidance emerged, so no platform skill-source change or bootstrap sync is needed for
+  this repository-local slice.
+
 ## BACKEND-REVIEW-20260619-2234: Rebalance run list serialization extraction
 
 - Date: 2026-06-19
