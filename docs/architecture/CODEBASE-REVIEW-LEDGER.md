@@ -26994,3 +26994,43 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context update required. The CI-enforcement guidance was
   loaded for this turn; no CI gates were changed in this source refactoring slice.
+
+## BACKEND-REVIEW-20260619-1043: Complexity gate reporting alignment
+
+- Date: 2026-06-19
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: CI evidence truthfulness, agent-default quality guidance, and
+  low-noise gate governance.
+- Finding: the repo already had a deterministic active `make complexity-gate` in local static
+  gates and GitHub lanes, with `python -m radon cc src -s -n C` blocking source functions at Radon
+  C-or-worse. The generated scorecard and complexity report still described complexity as fully
+  report-only, creating misleading guidance for future agents and weakening PR evidence quality.
+- Action: updated generated report wording to distinguish the active source C-or-worse Radon CC
+  gate from broader source/test complexity rankings and Radon MI output, which remain report-only
+  until baselines, false positives, lane placement, and exception policy are clear. Added unit
+  assertions so the generated baseline, scorecard, and complexity report cannot silently regress to
+  misleading gate posture language.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `make complexity-gate`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused engineering-health and CI-workflow suites reported 23 passed.
+  Radon CC source C-or-worse enforcement and workflow policy passed.
+- Stranded truth: `git fetch origin --prune` had already succeeded in this work batch and
+  `git branch -r --no-merged origin/main` returned no unmerged remote branches to classify for the
+  docs/quality/CI-governance slice.
+- Residual risk: this slice corrects evidence posture for an already-active gate. It does not add
+  a new changed-code complexity gate, fail on Radon MI C results, or enforce test complexity
+  thresholds because those would require clearer baselines and exception policy.
+- Wiki decision: no wiki source change required; this is repo-local CI evidence and generated
+  scorecard truth, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing
+  `lotus-ci-enforcement-governance` standard already covers this distinction, and no local
+  `.codex/skills` files were edited.

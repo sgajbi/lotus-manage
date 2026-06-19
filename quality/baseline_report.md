@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-19T07:21:40+00:00`
+- Generated at: `2026-06-19T07:24:14+00:00`
 
-- Report source snapshot: `1f512528+worktree`
+- Report source snapshot: `e7580505+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -11,7 +11,7 @@
 | Metric | Value |
 | --- | --- |
 | Python files | 830 |
-| Total Python LOC | 183085 |
+| Total Python LOC | 183091 |
 | Test functions | 2725 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
@@ -36,7 +36,7 @@
 | OpenAPI completeness | `scripts/openapi_quality_gate.py` plus this report | 2 - active/new-regression |
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | `scripts/router_infrastructure_gate.py` plus this report | 2 - active/new-regression |
-| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |
+| Complexity/maintainability | `quality/complexity_report.md` | 2 - active source C gate; broader metrics baseline |
 | Dead code | `make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml` | 2 - active/new-regression |
 | Dependency hygiene | `make dependency-hygiene-gate`, `pip check`, and `make security-audit` | 2 - active/new-regression |
 | Security | `bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |

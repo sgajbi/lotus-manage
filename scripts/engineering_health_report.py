@@ -547,7 +547,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 [
                     "Complexity/maintainability",
                     "`quality/complexity_report.md`",
-                    "1 - baseline",
+                    "2 - active source C gate; broader metrics baseline",
                 ],
                 [
                     "Dead code",
@@ -599,8 +599,8 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Complexity",
-            "Report-only baseline",
-            "`quality/complexity_report.md`; add thresholds after baseline review.",
+            "Active source C gate",
+            "`make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only.",
         ],
         [
             "Quality report freshness",
@@ -696,7 +696,8 @@ def build_complexity_report(context: HealthReportContext) -> str:
         "# lotus-manage Complexity Report",
         f"- Generated at: `{context.generated_at}`",
         f"- Report source snapshot: `{context.current_ref}`",
-        "- Mode: report-only maintainability baseline using dependency-free AST branch counting.",
+        "- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free "
+        "AST branch metrics remain report-only.",
         "## Summary",
         _table(
             ["Metric", context.base_ref, "current branch", "Delta"],
@@ -731,8 +732,10 @@ def build_complexity_report(context: HealthReportContext) -> str:
             current.most_complex_test_functions,
         ),
         "## Gate Posture",
-        "- This report is phase 1/report-only. It intentionally does not fail builds until the "
-        "baseline is reviewed and thresholds are agreed.",
+        "- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` "
+        "(`python -m radon cc src -s -n C`).",
+        "- Broader source/test complexity rankings in this report remain report-only until "
+        "baselines, false positives, lane placement, and exception policy are clear.",
     ]
     return "\n\n".join(sections) + "\n"
 

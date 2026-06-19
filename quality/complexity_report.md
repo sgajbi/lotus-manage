@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T07:21:40+00:00`
+- Generated at: `2026-06-19T07:24:14+00:00`
 
-- Report source snapshot: `1f512528+worktree`
+- Report source snapshot: `e7580505+worktree`
 
-- Mode: report-only maintainability baseline using dependency-free AST branch counting.
+- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
 ## Summary
 
@@ -60,4 +60,6 @@
 
 ## Gate Posture
 
-- This report is phase 1/report-only. It intentionally does not fail builds until the baseline is reviewed and thresholds are agreed.
+- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` (`python -m radon cc src -s -n C`).
+
+- Broader source/test complexity rankings in this report remain report-only until baselines, false positives, lane placement, and exception policy are clear.
