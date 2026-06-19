@@ -1,8 +1,8 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T05:40:05+00:00`
+- Generated at: `2026-06-19T05:43:11+00:00`
 
-- Report source snapshot: `c7307eb7+worktree`
+- Report source snapshot: `329fb99a+worktree`
 
 - Mode: report-only maintainability baseline using dependency-free AST branch counting.
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | bulk_review_campaign_definition_hash | src/core/waves/campaign_definitions.py | 6 | 19 |
-| 2 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
-| 3 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
-| 4 | _performance_source_posture | src/core/outcomes/performance_sources.py | 6 | 17 |
-| 5 | _risk_source_posture | src/core/outcomes/risk_sources.py | 6 | 17 |
-| 6 | save_wave | src/infrastructure/waves/in_memory.py | 6 | 17 |
-| 7 | format | src/api/observability.py | 6 | 15 |
-| 8 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
-| 9 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
-| 10 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
+| 1 | list_waves | src/infrastructure/waves/in_memory.py | 6 | 19 |
+| 2 | _validate_empty_search_item_latest_event_metadata | src/core/portfolio_memory/models.py | 6 | 18 |
+| 3 | _performance_source_posture | src/core/outcomes/performance_sources.py | 6 | 17 |
+| 4 | _risk_source_posture | src/core/outcomes/risk_sources.py | 6 | 17 |
+| 5 | save_wave | src/infrastructure/waves/in_memory.py | 6 | 17 |
+| 6 | format | src/api/observability.py | 6 | 15 |
+| 7 | _requires_sustainability_review | src/core/mandates.py | 6 | 15 |
+| 8 | _composite_example_from_schema | src/api/openapi_enrichment.py | 6 | 14 |
+| 9 | _source_supportability | src/core/proof_packs/builder.py | 6 | 14 |
+| 10 | supportability_source_owner | src/api/services/wave_supportability_diagnostics.py | 6 | 11 |
 
 ### Most Complex Current Test Functions
 

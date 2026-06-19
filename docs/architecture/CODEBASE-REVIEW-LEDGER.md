@@ -26006,3 +26006,43 @@ and improves internal transaction-cost source posture maintainability only.
   global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal proof-pack builder hardening
   with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1020: Campaign-definition hash normalization helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, and `quality/`.
+- Bank-buyable control area: bulk-review campaign definition immutability, replay-safe content
+  hashes, and legacy payload compatibility.
+- Finding: `bulk_review_campaign_definition_hash` mixed canonical payload creation, generated
+  timestamp normalization, content-hash inclusion policy, empty evidence-ledger normalization, JSON
+  canonicalization, and SHA-256 hashing in one B-grade helper. That made immutable campaign
+  definition hashing harder to audit as approval, assignment, task, and maker-checker evidence
+  ledgers expanded.
+- Action: extracted hash payload creation, transient hash-field normalization, and empty evidence
+  collection pruning helpers while preserving the public hash format and existing mismatch
+  behavior. Added direct tests proving generated `created_at` values do not affect the content
+  hash and legacy payloads missing any empty evidence collection continue to hash identically.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m ruff check src\core\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_definitions.py`,
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m radon cc src\core\waves\campaign_definitions.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused campaign-definition repository
+  suite reported 60 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `bulk_review_campaign_definition_hash` reduced from B(6) to A(1), with extracted normalization
+  helpers at A(1) to A(3). The refreshed complexity report is sourced from `329fb99a+worktree` and
+  the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves campaign-definition content-hash maintainability and direct
+  compatibility coverage only. It does not change hash semantics, campaign lifecycle behavior,
+  repository persistence, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal campaign-definition hashing
+  hardening with no operator-facing contract change.

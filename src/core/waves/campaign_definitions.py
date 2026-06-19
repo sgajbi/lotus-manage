@@ -621,17 +621,41 @@ def bulk_review_campaign_definition_hash(
     *,
     include_hash: bool = False,
 ) -> str:
+    payload = _campaign_definition_hash_payload(definition, include_hash=include_hash)
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _campaign_definition_hash_payload(
+    definition: DpmBulkReviewCampaignDefinition,
+    *,
+    include_hash: bool,
+) -> dict[str, object]:
     payload = definition.model_dump(mode="json")
+    _normalize_campaign_definition_hash_fields(payload, include_hash=include_hash)
+    _drop_empty_campaign_definition_evidence_collections(payload)
+    return payload
+
+
+def _normalize_campaign_definition_hash_fields(
+    payload: dict[str, object],
+    *,
+    include_hash: bool,
+) -> None:
     if not include_hash:
         payload["content_hash"] = ""
     payload["created_at"] = ""
-    if not payload.get("approval_decisions"):
-        payload.pop("approval_decisions", None)
-    if not payload.get("assignment_actions"):
-        payload.pop("assignment_actions", None)
-    if not payload.get("assignment_tasks"):
-        payload.pop("assignment_tasks", None)
-    if not payload.get("maker_checker_controls"):
-        payload.pop("maker_checker_controls", None)
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _drop_empty_campaign_definition_evidence_collections(payload: dict[str, object]) -> None:
+    for field_name in _OPTIONAL_CAMPAIGN_DEFINITION_EVIDENCE_COLLECTIONS:
+        if not payload.get(field_name):
+            payload.pop(field_name, None)
+
+
+_OPTIONAL_CAMPAIGN_DEFINITION_EVIDENCE_COLLECTIONS = (
+    "approval_decisions",
+    "assignment_actions",
+    "assignment_tasks",
+    "maker_checker_controls",
+)

@@ -225,6 +225,37 @@ def test_campaign_definition_hash_preserves_pre_approval_decision_payloads() -> 
     assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
 
 
+def test_campaign_definition_hash_ignores_generated_creation_timestamp() -> None:
+    definition = _definition()
+    later_definition = definition.model_copy(
+        update={"created_at": datetime(2026, 5, 11, 9, 30, tzinfo=timezone.utc)}
+    )
+
+    assert bulk_review_campaign_definition_hash(later_definition) == definition.content_hash
+
+
+@pytest.mark.parametrize(
+    "collection_field",
+    [
+        "approval_decisions",
+        "assignment_actions",
+        "assignment_tasks",
+        "maker_checker_controls",
+    ],
+)
+def test_campaign_definition_hash_preserves_legacy_empty_evidence_collections(
+    collection_field: str,
+) -> None:
+    definition = _definition()
+    persisted_payload = definition.model_dump(mode="json")
+    persisted_payload.pop(collection_field, None)
+
+    reloaded = DpmBulkReviewCampaignDefinition.model_validate(persisted_payload)
+
+    assert getattr(reloaded, collection_field) == []
+    assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
+
+
 def test_campaign_definition_retired_and_superseded_validation_edges() -> None:
     definition = _definition()
     retired_base = {
