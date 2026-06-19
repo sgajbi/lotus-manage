@@ -173,7 +173,33 @@ def build_bulk_review_campaign_operating_queue_page(
     limit: int,
     offset: int,
 ) -> DpmBulkReviewCampaignOperatingQueuePage:
-    items = [
+    items = _filter_operating_queue_items(
+        items=_build_operating_queue_items(
+            definitions=definitions,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=active_on,
+        ),
+        active_on=active_on,
+        include_expired=include_expired,
+    )
+    payload = _operating_queue_page_payload(
+        items=items,
+        limit=limit,
+        offset=offset,
+    )
+    payload["content_hash"] = _hash_payload(payload)
+    return DpmBulkReviewCampaignOperatingQueuePage.model_validate(payload)
+
+
+def _build_operating_queue_items(
+    *,
+    definitions: list[DpmBulkReviewCampaignDefinition],
+    requested_as_of_date: str | None,
+    actor_id: str | None,
+    active_on: date | None,
+) -> list[DpmBulkReviewCampaignOperatingQueueItem]:
+    return [
         build_bulk_review_campaign_operating_queue_item(
             definition=definition,
             requested_as_of_date=requested_as_of_date or definition.as_of_date,
@@ -182,24 +208,59 @@ def build_bulk_review_campaign_operating_queue_page(
         )
         for definition in definitions
     ]
-    if active_on is not None and not include_expired:
-        items = [item for item in items if item.discovery.expiry_state != "EXPIRED"]
+
+
+def _filter_operating_queue_items(
+    *,
+    items: list[DpmBulkReviewCampaignOperatingQueueItem],
+    active_on: date | None,
+    include_expired: bool,
+) -> list[DpmBulkReviewCampaignOperatingQueueItem]:
+    return [
+        item
+        for item in items
+        if _operating_queue_item_matches_filters(
+            item=item,
+            active_on=active_on,
+            include_expired=include_expired,
+        )
+    ]
+
+
+def _operating_queue_item_matches_filters(
+    *,
+    item: DpmBulkReviewCampaignOperatingQueueItem,
+    active_on: date | None,
+    include_expired: bool,
+) -> bool:
+    return active_on is None or include_expired or item.discovery.expiry_state != "EXPIRED"
+
+
+def _operating_queue_status_counts(
+    items: list[DpmBulkReviewCampaignOperatingQueueItem],
+) -> dict[str, int]:
     status_counts: dict[str, int] = {}
     for item in items:
         status_counts[item.queue_status] = status_counts.get(item.queue_status, 0) + 1
+    return status_counts
 
-    payload: dict[str, object] = {
+
+def _operating_queue_page_payload(
+    *,
+    items: list[DpmBulkReviewCampaignOperatingQueueItem],
+    limit: int,
+    offset: int,
+) -> dict[str, object]:
+    return {
         "product_name": "BulkReviewCampaignOperatingQueue",
         "product_version": "v1",
         "items": [item.model_dump(mode="json") for item in items],
         "limit": limit,
         "offset": offset,
         "count": len(items),
-        "status_counts": status_counts,
+        "status_counts": _operating_queue_status_counts(items),
         "content_hash": "",
     }
-    payload["content_hash"] = _hash_payload(payload)
-    return DpmBulkReviewCampaignOperatingQueuePage.model_validate(payload)
 
 
 def _classify_queue_posture(

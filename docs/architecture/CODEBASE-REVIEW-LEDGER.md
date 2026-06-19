@@ -27078,3 +27078,46 @@ and improves internal transaction-cost source posture maintainability only.
   quality-report evidence, not operator-facing runtime or wiki truth.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and codebase-review guidance cover this behavior-preserving domain decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1045: Campaign operating queue page decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_operating_queue.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: campaign operating read-model maintainability, bounded launch
+  readiness routing, and behavior-preserving source decomposition.
+- Finding: `build_bulk_review_campaign_operating_queue_page` combined row construction,
+  active/expired filtering, returned-page status counting, payload assembly, content hashing, and
+  model validation in one read-model boundary. Radon reported the function as B(9), leaving another
+  campaign workflow page harder for future agents to audit safely.
+- Action: extracted typed pure helpers for operating-queue item construction, filter matching,
+  filtered item projection, returned-page status counting, and page payload assembly. Preserved the
+  public page function, expired-row filter semantics, status-count semantics, content-hash
+  generation, and `DpmBulkReviewCampaignOperatingQueuePage` validation contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_discovery.py tests\unit\dpm\api\test_waves_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_operating_queue.py`,
+  `python -m ruff format src\core\waves\campaign_operating_queue.py`,
+  `python -m ruff check src\core\waves\campaign_operating_queue.py`,
+  `python -m radon cc src\core\waves\campaign_operating_queue.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused campaign wave/API suites reported 240 passed. Radon improved
+  `build_bulk_review_campaign_operating_queue_page` from B(9) to A(1), with all helpers in
+  `campaign_operating_queue.py` reporting A-level complexity. Quality-report freshness, OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks
+  passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one campaign operating read-model hotspot only. Remaining
+  B-level source hotspots include PM-quality scoring, campaign discovery/readiness helpers,
+  portfolio-memory projections, and infrastructure pagination/query helpers.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving read-model decomposition pattern.
