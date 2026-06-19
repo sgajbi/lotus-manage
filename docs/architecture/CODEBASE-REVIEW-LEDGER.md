@@ -25633,3 +25633,41 @@ and improves internal transaction-cost source posture maintainability only.
   bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal repository query-shape
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1010: Sustainability preference reason-code helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_sustainability_supportability.py`,
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`, and `quality/`.
+- Bank-buyable control area: construction sustainability supportability evidence,
+  deterministic reason-code assembly, and testing.
+- Finding: `sustainability_preference_reason_codes` combined source profile availability,
+  supportability status, missing data families, allocation review breaches, classification review
+  evidence, and applied-profile success reasons in one B-grade service helper. That made
+  sustainability supportability evidence harder to audit and called classification-review
+  evaluation twice.
+- Action: extracted reason-code family helpers for supportability, missing data, allocation
+  review, classification review, and applied-profile success while preserving the existing
+  sorted/deduplicated output; added direct tests for each reason-code family.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_sustainability_supportability.py tests\unit\dpm\construction\test_sustainability_supportability.py`,
+  `python -m ruff check src\api\services\construction_sustainability_supportability.py tests\unit\dpm\construction\test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_sustainability_supportability.py`,
+  `python -m pytest tests\unit\dpm\construction\test_sustainability_supportability.py -q`,
+  `python -m radon cc src\api\services\construction_sustainability_supportability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused sustainability supportability
+  suite reported 10 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `sustainability_preference_reason_codes` reduced from B(8) to A(2), with extracted reason-code
+  helpers at A(2) to A(3). The refreshed complexity report is sourced from `5fc62610+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves sustainability preference reason-code maintainability only.
+  It does not change sustainability preference methodology, allocation breach thresholds,
+  classification evidence policy, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal supportability evidence
+  maintainability hardening with no operator-facing contract change.

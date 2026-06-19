@@ -31,19 +31,62 @@ def sustainability_preference_reason_codes(
 ) -> list[str]:
     if context is None:
         return ["SUSTAINABILITY_PREFERENCE_PROFILE_UNAVAILABLE"]
-    reason_codes = list(context.reason_codes)
-    if context.supportability_status != ConstructionMethodStatus.READY:
-        reason_codes.append(f"SUSTAINABILITY_PREFERENCE_PROFILE_{context.supportability_status}")
-    reason_codes.extend(f"MISSING_{family.upper()}" for family in context.missing_data_families)
     breaches = sustainability_allocation_breaches(result=result, context=context)
-    reason_codes.extend(
-        f"SUSTAINABILITY_ALLOCATION_REVIEW_{preference.preference_code}" for preference in breaches
-    )
-    if sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED")
-    if not breaches and not sustainability_classification_review_required(context=context):
-        reason_codes.append("SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED")
+    classification_review_required = sustainability_classification_review_required(context=context)
+    reason_codes = [
+        *context.reason_codes,
+        *_sustainability_supportability_reason_codes(context.supportability_status),
+        *_missing_sustainability_family_reason_codes(context.missing_data_families),
+        *_sustainability_allocation_review_reason_codes(breaches),
+        *_sustainability_classification_reason_codes(classification_review_required),
+        *_sustainability_applied_reason_codes(
+            breaches=breaches,
+            classification_review_required=classification_review_required,
+        ),
+    ]
     return sorted(set(reason_codes))
+
+
+def _sustainability_supportability_reason_codes(
+    status: ConstructionMethodStatus,
+) -> list[str]:
+    if status == ConstructionMethodStatus.READY:
+        return []
+    return [f"SUSTAINABILITY_PREFERENCE_PROFILE_{status}"]
+
+
+def _missing_sustainability_family_reason_codes(
+    missing_data_families: list[str],
+) -> list[str]:
+    return [f"MISSING_{family.upper()}" for family in missing_data_families]
+
+
+def _sustainability_allocation_review_reason_codes(
+    breaches: list[AuthoritativeSustainabilityPreference],
+) -> list[str]:
+    return [
+        f"SUSTAINABILITY_ALLOCATION_REVIEW_{preference.preference_code}" for preference in breaches
+    ]
+
+
+def _sustainability_classification_reason_codes(
+    classification_review_required: bool,
+) -> list[str]:
+    return (
+        ["SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED"]
+        if classification_review_required
+        else []
+    )
+
+
+def _sustainability_applied_reason_codes(
+    *,
+    breaches: list[AuthoritativeSustainabilityPreference],
+    classification_review_required: bool,
+) -> list[str]:
+    if breaches or classification_review_required:
+        return []
+    return ["SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED"]
 
 
 def sustainability_allocation_breaches(
