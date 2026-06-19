@@ -1965,6 +1965,42 @@ def test_proof_pack_source_context_merges_analytics_hashes_and_refs() -> None:
     )
 
 
+def test_source_hash_helpers_preserve_present_artifact_order() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_hashes",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+
+    candidates = builder_module._source_hash_candidates(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=None,
+        mandate_twin=None,
+        mandate_health=None,
+    )
+    source_hashes = builder_module._source_hashes(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=None,
+        mandate_twin=None,
+        mandate_health=None,
+    )
+
+    assert [candidate.key for candidate in candidates] == [
+        "rebalance_run",
+        "alternative_set",
+    ]
+    assert list(source_hashes) == ["rebalance_run", "alternative_set"]
+    assert source_hashes["rebalance_run"].startswith("sha256:")
+    assert source_hashes["alternative_set"].startswith("sha256:")
+    assert builder_module._optional_source_hash("mandate_twin", None) is None
+
+
 def test_run_artifact_hash_and_result_helpers_hydrate_run_evidence() -> None:
     result = _ready_rebalance_result()
     run = _run_record(result=result)

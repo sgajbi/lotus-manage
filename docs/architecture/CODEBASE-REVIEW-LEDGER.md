@@ -25521,3 +25521,38 @@ and improves internal transaction-cost source posture maintainability only.
   API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
 - Wiki decision: no wiki source change required; this is internal risk source adapter
   maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1007: Proof-pack source hash candidates
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack lineage integrity, canonical source hashing, and testing.
+- Finding: `_source_hashes` repeated optional canonical hashing for rebalance runs, construction
+  alternative sets, selected alternatives, mandate twins, and mandate health snapshots in one
+  B-grade helper. That made proof-pack lineage hashing harder to extend safely and harder to test
+  at the optional-source boundary.
+- Action: introduced a typed source-hash candidate, extracted candidate collection and optional
+  source hashing helpers, and preserved existing source hash keys and ordering; added direct tests
+  proving present artifact order, omitted optional sources, and canonical hash shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack builder suite
+  reported 108 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_source_hashes` reduced from B(6) to A(2),
+  with extracted source-hash helpers at A(2) to A(3). The refreshed complexity report is sourced
+  from `0be18091+worktree` and the current top-ten source hotspot list no longer includes the
+  targeted helper.
+- Residual risk: this slice improves proof-pack source hash maintainability only. It does not
+  change canonical hash algorithms, proof-pack section payloads, source-ref semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack lineage
+  maintainability hardening with no operator-facing contract change.

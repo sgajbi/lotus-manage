@@ -145,6 +145,12 @@ class _ProofPackSourceContext:
 
 
 @dataclass(frozen=True)
+class _SourceHashCandidate:
+    key: str
+    content_hash: str
+
+
+@dataclass(frozen=True)
 class _GovernanceSectionPayloadInput:
     result: RebalanceResult
     run: DpmRunRecord | None
@@ -1884,20 +1890,46 @@ def _source_hashes(
     mandate_twin: DpmMandateDigitalTwin | None,
     mandate_health: DpmMandateHealthSnapshot | None,
 ) -> dict[str, str]:
-    hashes: dict[str, str] = {}
-    if run is not None:
-        hashes["rebalance_run"] = hash_canonical_payload(run.model_dump(mode="json"))
-    if alternative_set is not None:
-        hashes["alternative_set"] = hash_canonical_payload(alternative_set.model_dump(mode="json"))
-    if selected_alternative is not None:
-        hashes["selected_alternative"] = hash_canonical_payload(
-            selected_alternative.model_dump(mode="json")
+    return {
+        candidate.key: candidate.content_hash
+        for candidate in _source_hash_candidates(
+            run=run,
+            alternative_set=alternative_set,
+            selected_alternative=selected_alternative,
+            mandate_twin=mandate_twin,
+            mandate_health=mandate_health,
         )
-    if mandate_twin is not None:
-        hashes["mandate_twin"] = hash_canonical_payload(mandate_twin.model_dump(mode="json"))
-    if mandate_health is not None:
-        hashes["mandate_health"] = hash_canonical_payload(mandate_health.model_dump(mode="json"))
-    return hashes
+    }
+
+
+def _source_hash_candidates(
+    *,
+    run: DpmRunRecord | None,
+    alternative_set: ConstructionAlternativeSet | None,
+    selected_alternative: ConstructionAlternative | None,
+    mandate_twin: DpmMandateDigitalTwin | None,
+    mandate_health: DpmMandateHealthSnapshot | None,
+) -> list[_SourceHashCandidate]:
+    return [
+        candidate
+        for candidate in [
+            _optional_source_hash("rebalance_run", run),
+            _optional_source_hash("alternative_set", alternative_set),
+            _optional_source_hash("selected_alternative", selected_alternative),
+            _optional_source_hash("mandate_twin", mandate_twin),
+            _optional_source_hash("mandate_health", mandate_health),
+        ]
+        if candidate is not None
+    ]
+
+
+def _optional_source_hash(key: str, source: Any | None) -> _SourceHashCandidate | None:
+    if source is None:
+        return None
+    return _SourceHashCandidate(
+        key=key,
+        content_hash=hash_canonical_payload(source.model_dump(mode="json")),
+    )
 
 
 def _source_analytics(
