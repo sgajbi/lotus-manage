@@ -27446,3 +27446,46 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery,
   codebase-review, and duplicate-gate guidance cover this behavior-preserving repository-helper
   consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1053: Workflow correlation route duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/api/routers/rebalance_runs_workflow_read_http.py`,
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, workflow API/OpenAPI tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: workflow supportability API maintainability, OpenAPI contract
+  preservation, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical route bodies for
+  `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}` and
+  `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`. Both endpoints enforce
+  support/workflow enablement, reject query parameters, and resolve append-only workflow history by
+  correlation id. The public paths are intentionally distinct, but the HTTP read behavior should
+  not drift.
+- Action: added a shared workflow-history-by-correlation HTTP read helper in
+  `rebalance_runs_workflow_read_http.py` and delegated the decisions-by-correlation alias through
+  it while preserving the decorated route, response model, path, summary, description, responses,
+  and service call semantics. Regenerated the duplicate implementation baseline and inventory,
+  reducing accepted exact duplicate groups from 4 to 3 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\api\test_api_rebalance.py tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py -q`,
+  `python -m ruff format src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m ruff check src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m ruff format --check src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m mypy --config-file mypy.ini src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused workflow API/OpenAPI suites reported 117 passed. The duplicate
+  implementation gate now reports 3 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in campaign definition event recording and RFC
+  evidence script request helpers. Campaign definition event recording is the remaining large
+  production-code duplicate hotspot and needs a dedicated persistence-focused slice.
+- Wiki decision: no wiki source change required; this is internal route maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving route-helper
+  consolidation pattern.

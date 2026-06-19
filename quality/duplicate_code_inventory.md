@@ -21,15 +21,6 @@
 
 ### Group 2
 
-- Fingerprint: `676e5772d69cbaf2dc95a2b328572fe21700d12b87acdd5f16e6ab84dbb5e22b`
-
-| File | Function | Line | Lines |
-| --- | --- | --- | --- |
-| `src/api/routers/rebalance_runs_workflow_decision_routes.py` | `get_dpm_workflow_decisions_by_correlation` | 150 | 17 |
-| `src/api/routers/rebalance_runs_workflow_history_routes.py` | `get_dpm_run_workflow_history_by_correlation` | 66 | 17 |
-
-### Group 3
-
 - Fingerprint: `847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c`
 
 | File | Function | Line | Lines |
@@ -37,7 +28,7 @@
 | `scripts/generate_rfc0041_wave_evidence.py` | `_request` | 46 | 16 |
 | `scripts/generate_rfc0042_outcome_evidence.py` | `_request` | 46 | 16 |
 
-### Group 4
+### Group 3
 
 - Fingerprint: `de1163a135da66d809e4c3d60216165ef9c6080e3e6873225f1705165c9cd8d0`
 

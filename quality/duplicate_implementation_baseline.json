@@ -18,14 +18,6 @@
       "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
     },
     {
-      "fingerprint": "676e5772d69cbaf2dc95a2b328572fe21700d12b87acdd5f16e6ab84dbb5e22b",
-      "occurrence_identities": [
-        "src/api/routers/rebalance_runs_workflow_decision_routes.py:get_dpm_workflow_decisions_by_correlation",
-        "src/api/routers/rebalance_runs_workflow_history_routes.py:get_dpm_run_workflow_history_by_correlation"
-      ],
-      "reason": "Current exact duplicate implementation baseline; future work must remove or consolidate this group before changing the baseline."
-    },
-    {
       "fingerprint": "847ede373a8c35ca9ffc13af638fafc6d1c8133fa7656e09e7f086ef3cd36b2c",
       "occurrence_identities": [
         "scripts/generate_rfc0041_wave_evidence.py:_request",

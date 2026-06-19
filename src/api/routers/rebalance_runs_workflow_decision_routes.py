@@ -4,7 +4,7 @@ from fastapi import Path, Query, Request, status
 
 from src.api.routers import rebalance_runs as shared
 from src.api.routers.rebalance_runs_workflow_read_http import (
-    read_workflow_with_http_mapping,
+    read_workflow_history_by_correlation_route,
 )
 from src.core.rebalance_runs import (
     DpmRunSupportService,
@@ -158,9 +158,13 @@ def get_dpm_workflow_decisions_by_correlation(
     ],
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmRunWorkflowHistoryResponse:
-    shared._assert_support_apis_enabled()
-    shared._assert_workflow_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=set())
-    return read_workflow_with_http_mapping(
-        lambda: service.get_workflow_history_by_correlation(correlation_id=correlation_id)
+    return read_workflow_history_by_correlation_route(
+        request=request,
+        correlation_id=correlation_id,
+        service=service,
+        assert_support_apis_enabled=shared._assert_support_apis_enabled,
+        assert_workflow_enabled=shared._assert_workflow_enabled,
+        reject_unexpected_query_params=lambda route_request: shared._reject_unexpected_query_params(
+            route_request, allowed_params=set()
+        ),
     )
