@@ -19,11 +19,9 @@ from src.core.proof_packs.models import (
     DpmProofPackEvidenceRef,
     DpmProofPackSection,
     DpmProofPackSourceRef,
-    DpmProofPackSupportability,
     ProofPackSectionState,
     ProofPackSectionType,
     ProofPackSourceType,
-    ProofPackStatus,
 )
 from src.core.proof_packs.mandate_context import (
     mandate_context_section_payload as _mandate_context_section_payload,
@@ -31,6 +29,7 @@ from src.core.proof_packs.mandate_context import (
 from src.core.proof_packs import governance_sections as _governance_sections
 from src.core.proof_packs import run_sections as _run_sections
 from src.core.proof_packs import section_payloads as _section_payloads
+from src.core.proof_packs import supportability as _supportability_module
 from src.core.proof_packs import source_identity as _source_identity
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
@@ -184,9 +183,11 @@ _selected_alternative_source_proof_pack_id = _identity.selected_alternative_sour
 _selection_correlation_id = _identity.selection_correlation_id
 _source_supportability = _identity.source_supportability
 _adapter_section_payload = _section_payloads.adapter_section_payload
+_aggregate_status = _supportability_module.aggregate_status
 _decision_summary_section_payload = _section_payloads.decision_summary_section_payload
 _source_analytics_section_payload = _section_payloads.source_analytics_section_payload
 _source_readiness_section_payload = _section_payloads.source_readiness_section_payload
+_supportability = _supportability_module.supportability
 
 _PRE_RUN_SOURCE_ANALYTICS_SECTIONS: dict[ProofPackSectionType, _PreRunSourceAnalyticsConfig] = {
     "risk_impact": (
@@ -877,34 +878,3 @@ def _run_present_section_payload(
     if governance_payload is not None:
         return governance_payload
     raise AssertionError(f"Unhandled proof-pack section type: {section_type}")
-
-
-def _supportability(sections: list[DpmProofPackSection]) -> DpmProofPackSupportability:
-    counts: dict[str, int] = {}
-    reason_codes: list[str] = []
-    section_hashes: dict[str, str] = {}
-    for section in sections:
-        counts[section.state] = counts.get(section.state, 0) + 1
-        reason_codes.extend(section.reason_codes)
-        section_hashes[section.section_id] = section.content_hash
-    status = _aggregate_status(counts)
-    return DpmProofPackSupportability(
-        status=status,
-        section_state_counts=counts,
-        ready_section_count=counts.get("READY", 0),
-        degraded_section_count=counts.get("DEGRADED", 0),
-        blocked_section_count=counts.get("BLOCKED", 0),
-        pending_review_section_count=counts.get("PENDING_REVIEW", 0),
-        reason_codes=sorted(set(reason_codes)),
-        section_hashes=section_hashes,
-    )
-
-
-def _aggregate_status(counts: dict[str, int]) -> ProofPackStatus:
-    if counts.get("BLOCKED", 0) > 0:
-        return "BLOCKED"
-    if counts.get("PENDING_REVIEW", 0) > 0:
-        return "PENDING_REVIEW"
-    if counts.get("DEGRADED", 0) > 0:
-        return "DEGRADED"
-    return "READY"
