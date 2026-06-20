@@ -104,7 +104,7 @@ jobs:
           set -o pipefail
           {
             bandit -q -r src -c pyproject.toml
-            pip-audit -r pyproject.toml
+            python -m pip_audit .
             make security-audit
           } 2>&1 | tee output/quality-baseline/security.txt
 

@@ -566,7 +566,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 ],
                 [
                     "Security",
-                    "`bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit`",
+                    "`bandit` + project-scoped `pip-audit` via `quality-baseline.yml` and `make security-audit`",
                     "2 - active/new-regression",
                 ],
                 ["Documentation gaps", "current docs tests plus planned docs scorecard", "planned"],
@@ -644,8 +644,10 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Security depth",
-            "Partially active",
-            "`make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`.",
+            "Active project dependency gate",
+            "`make security-audit` runs high-severity Bandit over `src` plus project-scoped "
+            "`python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family "
+            "as report-only evidence.",
         ],
         [
             "Documentation coverage",

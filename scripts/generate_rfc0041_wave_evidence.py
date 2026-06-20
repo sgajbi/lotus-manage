@@ -9,7 +9,10 @@ from typing import Any, cast
 
 import httpx
 
-from rfc_evidence_http import request_expected_status
+try:
+    from scripts.rfc_evidence_http import request_expected_status
+except ModuleNotFoundError:  # pragma: no cover - direct script execution path
+    from rfc_evidence_http import request_expected_status
 
 
 ROOT = Path(__file__).resolve().parents[1]

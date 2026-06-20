@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-19T15:47:46+00:00`
+- Generated at: `2026-06-20T00:36:09+00:00`
 
-- Report source snapshot: `13b8e0a6+worktree`
+- Report source snapshot: `92b0f6f9`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -11,8 +11,8 @@
 | Metric | Value |
 | --- | --- |
 | Python files | 878 |
-| Total Python LOC | 185317 |
-| Test functions | 2742 |
+| Total Python LOC | 185342 |
+| Test functions | 2744 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 
@@ -40,7 +40,7 @@
 | Duplicate implementation hotspots | `quality/duplicate_code_inventory.md` and `make duplicate-implementation-gate` | 2 - active exact-duplicate non-regression gate |
 | Dead code | `make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml` | 2 - active/new-regression |
 | Dependency hygiene | `make dependency-hygiene-gate`, `pip check`, and `make security-audit` | 2 - active/new-regression |
-| Security | `bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
+| Security | `bandit` + project-scoped `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
 | Documentation gaps | current docs tests plus planned docs scorecard | planned |
 | Observability gaps | `scripts/validate_observability_contracts.py`; richer runtime gap report planned | 2 - active/new-regression |
 

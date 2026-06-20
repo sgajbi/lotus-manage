@@ -166,7 +166,7 @@ security-audit:
 	# PYSEC-2022-42969 / py<1.11.1 has a CVSS 8.2 vulnerability in py package APIs.
 	# py is pulled transitively by test dependencies and currently has no direct fix path.
 	python -m bandit -q -r src -c pyproject.toml --severity-level high
-	python -m pip_audit --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969
+	python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969
 
 docker-build:
 	docker build -t lotus-manage:ci .

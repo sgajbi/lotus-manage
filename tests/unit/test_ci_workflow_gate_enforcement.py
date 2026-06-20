@@ -42,6 +42,7 @@ STATIC_QUALITY_GATE_TARGETS = {
     "mesh-contract-validate",
     "architecture-gate",
     "complexity-gate",
+    "duplicate-implementation-gate",
     "dependency-hygiene-gate",
     "dead-code-gate",
     "workflow-policy-gate",
@@ -117,6 +118,15 @@ def test_local_ci_targets_reuse_static_quality_gate_pack() -> None:
     assert "security-audit" in _make_target_prerequisites(makefile_text, "ci")
 
 
+def test_security_audit_is_project_scoped_and_blocking() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+    recipe = _make_target_recipe(makefile_text, "security-audit")
+
+    assert "python -m bandit -q -r src -c pyproject.toml --severity-level high" in recipe
+    assert "python -m pip_audit ." in recipe
+    assert "python -m pip_audit --ignore-vuln" not in recipe
+
+
 def test_local_ci_uses_shared_coverage_gate_script() -> None:
     makefile_text = Path("Makefile").read_text(encoding="utf-8")
 
@@ -162,6 +172,13 @@ def test_quality_baseline_uses_node24_setup_node_action() -> None:
     assert 'node-version: "24"' in workflow_text
     assert "actions/setup-node@v4" not in workflow_text
     assert 'node-version: "20"' not in workflow_text
+
+
+def test_quality_baseline_uses_project_scoped_security_audit() -> None:
+    workflow_text = Path(".github/workflows/quality-baseline.yml").read_text(encoding="utf-8")
+
+    assert "python -m pip_audit ." in workflow_text
+    assert "pip-audit -r pyproject.toml" not in workflow_text
 
 
 def test_workflow_policy_gate_passes_current_repository_workflows() -> None:

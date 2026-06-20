@@ -29562,3 +29562,57 @@ and improves internal transaction-cost source posture maintainability only.
 - Guidance decision: no skill or agent-context source update required. Existing backend delivery
   and CI-enforcement guidance already cover this measured extraction pattern; no platform
   skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260620-0826: Project-scoped security audit enforcement
+
+- Date: 2026-06-20
+- Scope: `Makefile`, `.github/workflows/quality-baseline.yml`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, RFC evidence script imports, generated
+  quality reports, and this ledger.
+- Bank-buyable control area: deterministic dependency vulnerability scanning, CI gate signal
+  quality, and future-agent guardrails for security enforcement.
+- Quality intake: the existing owner pattern is repo-native Make targets consumed by GitHub
+  Actions lanes. The source of truth is `pyproject.toml` plus `make security-audit`; the report-only
+  baseline workflow should reuse the same scanner family without inventing a separate dependency
+  audit contract. Closest meaningful tests are `tests/unit/test_ci_workflow_gate_enforcement.py`.
+  Repo-native validation uses focused workflow-policy tests, `make security-audit`, and generated
+  report freshness. The measurable quality signal is removing environment-wide Python
+  site-package noise from the blocking scanner while preserving a hard vulnerability gate over the
+  `lotus-manage` project dependency graph.
+- Finding: `make security-audit` ran `python -m pip_audit` without a project path, so local
+  validation audited unrelated packages installed in the shared developer interpreter. In this
+  environment that produced vulnerabilities from Poetry, unrelated PDF tooling, and other Lotus
+  services rather than from `lotus-manage`. The report-only baseline also used
+  `pip-audit -r pyproject.toml`, which is not a valid requirements-file invocation. The subsequent
+  `make check` run also exposed a unit-test collection blocker in RFC evidence scripts: direct
+  script-local `rfc_evidence_http` imports failed when the scripts were imported as
+  `scripts.generate_*` modules.
+- Action: changed `make security-audit` to run high-severity Bandit over `src` and
+  project-scoped `python -m pip_audit .` with the existing documented ignore exceptions. Updated
+  `quality-baseline.yml` to use the same project-aware audit mode. Added tests that require the
+  blocking Make target and report-only workflow to stay project-scoped. Updated RFC evidence
+  scripts to prefer package imports with a direct-execution fallback, preserving CLI behavior while
+  restoring module importability, and refreshed generated quality scorecard/baseline wording.
+- Status: hardened.
+- Evidence:
+  `python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969`
+  returned `No known vulnerabilities found`;
+  `make security-audit` passed;
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py` reported 15 passed;
+  `python -m pytest tests\unit\test_rfc0041_evidence_script.py` reported 3 passed; and
+  `python scripts\engineering_health_report.py` refreshed the checked-in quality reports.
+- CI-enforcement decision: promoted only a measured, deterministic, low-noise security signal into
+  the existing blocking gate. This does not weaken security scanning; it changes the audit scope
+  from the mutable developer machine to the repository dependency graph that CI installs and future
+  agents can reason about.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify before this CI-workflow slice.
+- Residual risk: there is still no lockfile or hash-pinned dependency audit. A future slice can add
+  lockfile-backed auditing once the repository has a governed dependency-lock strategy; until then,
+  project-scoped resolution is the deterministic low-noise gate available in this repo.
+- Wiki decision: no wiki source change required; this is developer/CI enforcement behavior already
+  documented in repo-local quality artifacts, not operator-facing runtime truth.
+- Guidance decision: no platform skill or agent-context source update required. Existing
+  `lotus-ci-enforcement-governance` guidance already directs agents to promote deterministic,
+  measured, low-noise gates; this slice applies that guidance locally and does not change the
+  platform operating contract.

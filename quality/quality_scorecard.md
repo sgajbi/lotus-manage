@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-19T15:47:46+00:00`
+- Generated at: `2026-06-20T00:36:09+00:00`
 
-- Report source snapshot: `13b8e0a6+worktree`
+- Report source snapshot: `92b0f6f9`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -24,7 +24,7 @@
 | Coverage gate parity | Active gate | `scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate. |
 | Dead code | Active gate | `make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output. |
 | Dependency architecture | Active gate | `make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry. |
-| Security depth | Partially active | `make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`. |
+| Security depth | Active project dependency gate | `make security-audit` runs high-severity Bandit over `src` plus project-scoped `python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family as report-only evidence. |
 | Documentation coverage | Partially active | Docs current-state tests exist; add docs-gap scoring later. |
 | Observability | Partially active | Observability contract validator exists; add runtime posture scoring later. |
 

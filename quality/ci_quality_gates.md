@@ -50,7 +50,7 @@ The following commands are active repository gates:
   - everything in `make static-quality-gates`
   - `make migration-smoke`
   - full suite with coverage gate (`test-all`, coverage fail-under 99%)
-  - `make security-audit`
+  - `make security-audit` (`bandit` over `src` plus project-scoped `python -m pip_audit .`)
 
 - `make ci-local`
   - everything in `make static-quality-gates`
@@ -100,7 +100,7 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 - `radon` + `xenon` complexity
 - `vulture` dead-code scan
 - `deptry`
-- `bandit` + `pip-audit`
+- `bandit` + project-scoped `pip-audit`
 - `interrogate`
 - `spectral` via `.spectral.yaml`
 
