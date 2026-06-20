@@ -82,6 +82,7 @@ def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
     validation_wiki_text = Path("wiki/Validation-and-CI.md").read_text(encoding="utf-8")
 
     assert "live-api-validate-core:" in makefile_text
+    assert "demo-certify:" in makefile_text
     assert "--core-base-url $${LOTUS_CORE_CONTROL_BASE_URL:-http://core-control.dev.lotus}" in (
         makefile_text
     )
@@ -91,10 +92,13 @@ def test_manage_core_live_validation_has_repo_native_command_and_docs() -> None:
     assert (
         "--expect-stateful-core-sourcing $${LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING:-available}"
     ) in makefile_text
+    assert "LOTUS_MANAGE_DEMO_CERT_OUTPUT" in makefile_text
     assert "`make live-api-validate-core`" in readme_text
+    assert "`make demo-certify`" in readme_text
     assert "RFC-087 certified source-data" in readme_text
     assert "products and canonical data is seeded" in readme_text
     assert "non-source-ready local runtime" in readme_text
     assert "make live-api-validate-core" in validation_wiki_text
+    assert "make demo-certify" in validation_wiki_text
     assert "RFC-087 certified composed DPM source-data products" in validation_wiki_text
     assert "canonical source-ready stack defaults" in validation_wiki_text

@@ -25,6 +25,9 @@
   The canonical source-ready stack defaults to
   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available`; set it to `disabled` only for a
   deliberately non-source-ready local runtime.
+- `make demo-certify`
+  app-level demo certification against the canonical live stack. The default evidence path is
+  `output/live-api/demo-certification/summary.json`.
 
 ## Live API evidence
 
@@ -67,6 +70,27 @@ Canonical core/manage proof mode must configure both `DPM_CORE_BASE_URL` and
 `DPM_CORE_QUERY_BASE_URL` for `lotus-manage`. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to
 400 days so the observed-cost proof covers low-turnover private-banking portfolios without making
 predictive execution-cost or market-impact claims.
+
+For app-level demo certification, run:
+
+```bash
+make demo-certify
+```
+
+The command uses the same live API validator with canonical defaults for
+`PB_SG_GLOBAL_BAL_001` as of `2026-04-10`, writes machine-readable evidence, and exits non-zero if
+capability truth, stateful source-backed construction, expected construction figures,
+supportability persistence, metrics, or retired-route behavior are weak or failing.
+
+CI posture:
+
+1. the `Demo Certification` GitHub workflow is manual and uploads the evidence artifact for
+   caller-supplied reachable canonical URLs,
+2. `Quality Baseline` runs deterministic command-contract tests report-only so future agents see
+   drift without making environment-dependent live stack proof a noisy blocker,
+3. live demo certification should become blocking only after the canonical stack is available in
+   the intended CI lane and repeated runs prove baseline stability, false-positive posture, and
+   exception handling.
 
 ## Documentation contract proof
 

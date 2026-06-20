@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-20T00:45:09+00:00`
+- Generated at: `2026-06-20T01:18:12+00:00`
 
-- Report source snapshot: `ae2ddfbb+worktree`
+- Report source snapshot: `2643af7b+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -11,8 +11,8 @@
 | Metric | Value |
 | --- | --- |
 | Python files | 878 |
-| Total Python LOC | 185387 |
-| Test functions | 2745 |
+| Total Python LOC | 185475 |
+| Test functions | 2748 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 
@@ -43,6 +43,7 @@
 | Security | `bandit` + project-scoped `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
 | Documentation gaps | current docs tests plus planned docs scorecard | planned |
 | Observability gaps | `scripts/validate_observability_contracts.py`; richer runtime gap report planned | 2 - active/new-regression |
+| Demo certification | `make demo-certify` plus manual live workflow; command-contract tests in Quality Baseline | 1 - manual/report-only live evidence |
 
 ## Notes
 

@@ -304,6 +304,24 @@ def test_live_api_validation_probes_expected_contracts(monkeypatch) -> None:
     }
 
 
+def test_live_api_summary_can_include_demo_certification_metadata() -> None:
+    summary = summarize(
+        [],
+        metadata={
+            "certification": "lotus-manage-live-api-demo-certification",
+            "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+            "as_of": "2026-04-10",
+        },
+    )
+
+    assert summary["failed"] == 0
+    assert summary["metadata"] == {
+        "certification": "lotus-manage-live-api-demo-certification",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of": "2026-04-10",
+    }
+
+
 def test_live_api_validation_probes_stateful_source_backed_construction(monkeypatch) -> None:
     monkeypatch.setattr(
         "scripts.validate_live_api._load_demo_payload",

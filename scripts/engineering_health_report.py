@@ -575,6 +575,11 @@ def build_baseline_report(context: HealthReportContext) -> str:
                     "`scripts/validate_observability_contracts.py`; richer runtime gap report planned",
                     "2 - active/new-regression",
                 ],
+                [
+                    "Demo certification",
+                    "`make demo-certify` plus manual live workflow; command-contract tests in Quality Baseline",
+                    "1 - manual/report-only live evidence",
+                ],
             ],
         ),
         "## Notes",
@@ -658,6 +663,13 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "Observability",
             "Partially active",
             "Observability contract validator exists; add runtime posture scoring later.",
+        ],
+        [
+            "Demo certification",
+            "Manual/report-only live evidence",
+            "`make demo-certify` certifies canonical live API demo proof and writes JSON evidence; "
+            "`demo-certification.yml` is manual, while `quality-baseline.yml` keeps deterministic "
+            "command-contract tests report-only until CI has a stable canonical stack lane.",
         ],
     ]
     sections = [

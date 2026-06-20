@@ -1,0 +1,67 @@
+name: Demo Certification
+
+on:
+  workflow_dispatch:
+    inputs:
+      lotus_manage_base_url:
+        description: "Reachable lotus-manage base URL for live demo certification."
+        required: true
+      lotus_core_control_base_url:
+        description: "Reachable lotus-core control base URL."
+        required: true
+      lotus_core_query_base_url:
+        description: "Reachable lotus-core query base URL."
+        required: true
+      portfolio_id:
+        description: "Canonical portfolio id for demo certification."
+        required: true
+        default: "PB_SG_GLOBAL_BAL_001"
+      as_of:
+        description: "Canonical as-of date for demo certification."
+        required: true
+        default: "2026-04-10"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONUNBUFFERED: "1"
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  live-api-demo-certification:
+    name: Demo Certification / Live API Evidence
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install
+        run: make install-ci
+
+      - name: Run Demo Certification
+        env:
+          LOTUS_MANAGE_BASE_URL: ${{ inputs.lotus_manage_base_url }}
+          LOTUS_CORE_CONTROL_BASE_URL: ${{ inputs.lotus_core_control_base_url }}
+          LOTUS_CORE_QUERY_BASE_URL: ${{ inputs.lotus_core_query_base_url }}
+          LOTUS_MANAGE_CANONICAL_PORTFOLIO_ID: ${{ inputs.portfolio_id }}
+          LOTUS_MANAGE_CANONICAL_AS_OF: ${{ inputs.as_of }}
+          LOTUS_MANAGE_DEMO_CERT_OUTPUT: output/live-api/demo-certification/summary.json
+        run: make demo-certify
+
+      - name: Upload Demo Certification Evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-certification-evidence
+          path: output/live-api/demo-certification/
+          if-no-files-found: warn
