@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from src.core.common.ai_guardrails import forbidden_field_names, sanitize_for_ai
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.outcomes.execution_boundary import (
@@ -27,21 +28,6 @@ from src.core.outcomes.models import (
 HANDOFF_CONTRACT_VERSION = "1.0"
 OUTCOME_REPORT_INPUT_REF_TYPE = "DPM_OUTCOME_REPORT_INPUT"
 OUTCOME_AI_EVIDENCE_REF_TYPE = "DPM_OUTCOME_AI_EVIDENCE_INPUT"
-AI_FORBIDDEN_FIELD_NAMES = frozenset(
-    {
-        "account_number",
-        "client_name",
-        "client_id",
-        "email",
-        "phone",
-        "raw_payload",
-        "raw_request",
-        "raw_response",
-        "secret",
-        "ssn",
-        "token",
-    }
-)
 
 
 class DpmOutcomeReportDimension(BaseModel):
@@ -270,7 +256,7 @@ def build_ai_evidence_input(
 
 
 def assert_no_ai_forbidden_fields(payload: Any) -> None:
-    found = sorted(_find_forbidden_field_names(payload))
+    found = sorted(forbidden_field_names(payload))
     if found:
         raise ValueError(f"DPM_OUTCOME_AI_FORBIDDEN_FIELDS:{','.join(found)}")
 
@@ -302,30 +288,7 @@ def _ai_dimension(result: dict[str, Any]) -> DpmOutcomeAiDimensionEvidence:
 
 
 def _sanitize_for_ai(value: Any, removed: set[str]) -> Any:
-    if isinstance(value, dict):
-        sanitized: dict[str, Any] = {}
-        for key, item in value.items():
-            if key.lower() in AI_FORBIDDEN_FIELD_NAMES:
-                removed.add(key.lower())
-                continue
-            sanitized[key] = _sanitize_for_ai(item, removed)
-        return sanitized
-    if isinstance(value, list):
-        return [_sanitize_for_ai(item, removed) for item in value]
-    return value
-
-
-def _find_forbidden_field_names(value: Any) -> set[str]:
-    found: set[str] = set()
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if key.lower() in AI_FORBIDDEN_FIELD_NAMES:
-                found.add(key.lower())
-            found.update(_find_forbidden_field_names(item))
-    elif isinstance(value, list):
-        for item in value:
-            found.update(_find_forbidden_field_names(item))
-    return found
+    return sanitize_for_ai(value=value, removed=removed)
 
 
 def _dedupe_source_refs(review: DpmPostTradeOutcomeReview) -> list[DpmOutcomeSourceRef]:

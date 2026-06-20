@@ -10,6 +10,7 @@ from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityUnavailableError,
 )
 from src.infrastructure.advise_authority.client import (
+    _cohort_optional_text,
     _dict_list_section,
     _supportability_reason_codes,
     _tactical_affected_portfolio_from_payload,
@@ -389,6 +390,8 @@ def test_tactical_house_view_response_parser_helpers_project_source_backed_portf
 
 def test_tactical_house_view_response_parser_helpers_validate_lists_and_defaults() -> None:
     assert _dict_list_section({"items": [{"ok": True}]}, "items") == [{"ok": True}]
+    assert _cohort_optional_text({"value": "custom"}, key="value", default="fallback") == "custom"
+    assert _cohort_optional_text({"value": None}, key="value", default="fallback") == "fallback"
     assert _supportability_reason_codes({}) == [
         "TACTICAL_HOUSE_VIEW_SUPPORTABILITY_REASON_CODES_MISSING"
     ]

@@ -31,6 +31,11 @@ class SolverProblemSpec(NamedTuple):
     weights: Any
 
 
+class SolverAttemptResult(NamedTuple):
+    solved: bool
+    latest_status: str | None
+
+
 def _build_solver_attempts(cp: Any) -> tuple[tuple[Any, tuple[dict[str, Any], ...]], ...]:
     """
     Ordered solver attempts with bounded runtime and compatibility fallbacks.
@@ -64,25 +69,52 @@ def _solve_with_fallbacks(prob: Any, cp: Any) -> tuple[bool, str | None]:
     latest_status: str | None = None
     installed = _installed_solver_names(cp)
 
-    for solver_name, kwargs_attempts in _build_solver_attempts(cp):
-        if not _solver_is_available(solver_name=solver_name, installed=installed):
-            continue
-
-        for solve_kwargs in kwargs_attempts:
-            attempt_status = _solve_attempt_status(
-                prob=prob,
-                cp=cp,
-                solver_name=solver_name,
-                solve_kwargs=solve_kwargs,
-            )
-            if attempt_status is None:
-                continue
-
-            latest_status = attempt_status
-            if _solver_status_is_optimal(latest_status):
-                return True, latest_status
+    for solver_name, kwargs_attempts in _available_solver_attempts(cp=cp, installed=installed):
+        result = _solve_solver_attempts(
+            prob=prob,
+            cp=cp,
+            solver_name=solver_name,
+            kwargs_attempts=kwargs_attempts,
+            latest_status=latest_status,
+        )
+        latest_status = result.latest_status
+        if result.solved:
+            return True, latest_status
 
     return False, latest_status
+
+
+def _available_solver_attempts(
+    *, cp: Any, installed: set[str]
+) -> tuple[tuple[Any, tuple[dict[str, Any], ...]], ...]:
+    return tuple(
+        (solver_name, kwargs_attempts)
+        for solver_name, kwargs_attempts in _build_solver_attempts(cp)
+        if _solver_is_available(solver_name=solver_name, installed=installed)
+    )
+
+
+def _solve_solver_attempts(
+    *,
+    prob: Any,
+    cp: Any,
+    solver_name: Any,
+    kwargs_attempts: tuple[dict[str, Any], ...],
+    latest_status: str | None,
+) -> SolverAttemptResult:
+    for solve_kwargs in kwargs_attempts:
+        attempt_status = _solve_attempt_status(
+            prob=prob,
+            cp=cp,
+            solver_name=solver_name,
+            solve_kwargs=solve_kwargs,
+        )
+        if attempt_status is None:
+            continue
+        latest_status = attempt_status
+        if _solver_status_is_optimal(latest_status):
+            return SolverAttemptResult(True, latest_status)
+    return SolverAttemptResult(False, latest_status)
 
 
 def _installed_solver_names(cp: Any) -> set[str]:

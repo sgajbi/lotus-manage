@@ -7,12 +7,15 @@ from src.core.common.target_redistribution import redistribute_sell_only_excess
 from src.core.rebalance.targets import (
     _apply_min_cash_buffer,
     _apply_single_position_max_weight,
+    _cash_buffer_tradeable_weight_limit,
     _cap_single_position_targets,
     _cap_tradeable_targets_to_available_weight,
     _constraint_key_parts,
     _group_constraint_members,
     _redistribute_group_constraint_excess,
     _redistribute_single_position_excess,
+    _scale_tradeable_targets_for_cash_buffer,
+    _target_weight_posture,
 )
 from src.core.rebalance.engine import _apply_group_constraints, _generate_targets, run_simulation
 from src.core.models import DiagnosticsData, EngineOptions, GroupConstraint, ShelfEntry
@@ -278,6 +281,61 @@ class TestTargetGeneration:
             "BUY_A": Decimal("0.43750"),
             "BUY_B": Decimal("0.26250"),
             "LOCKED": Decimal("0.10"),
+        }
+
+    def test_cash_buffer_tradeable_weight_limit_respects_locked_weight(self):
+        posture = _target_weight_posture(
+            eligible_targets={
+                "BUY_A": Decimal("0.50"),
+                "BUY_B": Decimal("0.30"),
+                "LOCKED": Decimal("0.15"),
+            },
+            buy_set={"BUY_A", "BUY_B"},
+        )
+
+        assert _cash_buffer_tradeable_weight_limit(
+            posture=posture,
+            min_cash_buffer_pct=Decimal("0.20"),
+        ) == Decimal("0.65")
+
+    def test_cash_buffer_scaling_helper_preserves_locked_targets(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.50"),
+            "BUY_B": Decimal("0.30"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+        scaled = _scale_tradeable_targets_for_cash_buffer(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A", "BUY_B"},
+            tradeable_weight=Decimal("0.80"),
+            allowed_tradeable_weight=Decimal("0.70"),
+        )
+
+        assert scaled is True
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.43750"),
+            "BUY_B": Decimal("0.26250"),
+            "LOCKED": Decimal("0.10"),
+        }
+
+    def test_cash_buffer_scaling_helper_skips_when_within_limit(self):
+        eligible_targets = {
+            "BUY_A": Decimal("0.40"),
+            "LOCKED": Decimal("0.20"),
+        }
+
+        scaled = _scale_tradeable_targets_for_cash_buffer(
+            eligible_targets=eligible_targets,
+            buy_set={"BUY_A"},
+            tradeable_weight=Decimal("0.40"),
+            allowed_tradeable_weight=Decimal("0.70"),
+        )
+
+        assert scaled is False
+        assert eligible_targets == {
+            "BUY_A": Decimal("0.40"),
+            "LOCKED": Decimal("0.20"),
         }
 
     def test_target_locked_over_100(self, base_inputs):

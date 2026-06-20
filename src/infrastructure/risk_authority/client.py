@@ -283,25 +283,37 @@ def _risk_context_from_concentration_response(body: dict[str, Any]) -> Authorita
     breaches = _concentration_breach_count(breach_inputs)
     return AuthoritativeRiskContext(
         supportability_status=_risk_status_from_supportability(sections.supportability_state),
-        source_system=str(body.get("source_service") or "lotus-risk"),
+        source_system=_concentration_source_system(body),
         source_product_name="ConcentrationAnalysis",
-        source_product_version=str(sections.metadata.get("methodology_version") or "v1"),
-        source_id=sections.request_fingerprint or None,
-        content_hash=sections.request_fingerprint or None,
+        source_product_version=_concentration_source_product_version(sections.metadata),
+        source_id=_optional_text(sections.request_fingerprint),
+        content_hash=_optional_text(sections.request_fingerprint),
         concentration_breaches=breaches,
-        concentration_hhi_delta=Decimal(str(sections.risk_proxy.get("hhi_delta", "0"))),
+        concentration_hhi_delta=_concentration_hhi_delta(sections.risk_proxy),
         top_position_weight_proposed=breach_inputs.top_position_weight_proposed,
-        issuer_coverage_status=(
-            str(sections.issuer_coverage_status)
-            if sections.issuer_coverage_status is not None
-            else None
-        ),
+        issuer_coverage_status=_issuer_coverage_status_text(sections.issuer_coverage_status),
         reason_codes=_concentration_reason_codes(
             supportability_reason=sections.supportability_reason,
             issuer_coverage_status=sections.issuer_coverage_status,
             breaches=breaches,
         ),
     )
+
+
+def _concentration_source_system(body: dict[str, Any]) -> str:
+    return _optional_text(body.get("source_service")) or "lotus-risk"
+
+
+def _concentration_source_product_version(metadata: dict[str, Any]) -> str:
+    return _optional_text(metadata.get("methodology_version")) or "v1"
+
+
+def _concentration_hhi_delta(risk_proxy: dict[str, Any]) -> Decimal:
+    return Decimal(str(risk_proxy.get("hhi_delta", "0")))
+
+
+def _issuer_coverage_status_text(value: Any) -> str | None:
+    return _optional_text(value)
 
 
 def _concentration_response_sections(body: dict[str, Any]) -> _ConcentrationResponseSections:

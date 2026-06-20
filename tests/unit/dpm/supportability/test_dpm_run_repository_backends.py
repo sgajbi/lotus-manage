@@ -18,7 +18,7 @@ from src.infrastructure.rebalance_runs import (
     PostgresDpmRunRepository,
     SqliteDpmRunRepository,
 )
-from src.infrastructure.rebalance_runs.in_memory import (
+from src.infrastructure.rebalance_runs.in_memory_helpers import (
     _OperationListFilters,
     _RunListFilters,
     _expired_run_identities,

@@ -13,8 +13,11 @@ from src.core.portfolio_memory.models import (
     _expected_search_page_next_offset,
     _latest_event_metadata_is_complete,
     _latest_event_metadata_is_present,
+    _next_offset_advances,
+    _next_offset_matches_expected,
     _page_has_more,
     _search_page_source_system_counts,
+    _search_page_is_terminal,
     _validate_empty_search_item_latest_event_metadata,
     _validate_populated_search_item_latest_event_metadata,
     _validate_search_item_counts,
@@ -27,6 +30,7 @@ from src.core.portfolio_memory.models import (
     _validate_search_page_next_offset,
     _validate_search_page_pagination,
     _validate_search_page_returned_counts_covered,
+    _validate_terminal_search_page_next_offset,
 )
 from src.core.portfolio_memory.search_page import (
     PortfolioMemorySearchFilters,
@@ -308,6 +312,13 @@ def test_search_page_pagination_helpers_project_has_more_and_next_offset() -> No
     assert not _page_has_more(offset=3, returned_count=2, total_count=5)
     assert _expected_search_page_next_offset(offset=10, returned_count=25, has_more=True) == 35
     assert _expected_search_page_next_offset(offset=10, returned_count=25, has_more=False) is None
+    assert _search_page_is_terminal(False)
+    assert not _search_page_is_terminal(True)
+    assert _next_offset_matches_expected(next_offset=35, expected_next_offset=35)
+    assert not _next_offset_matches_expected(next_offset=None, expected_next_offset=35)
+    assert not _next_offset_matches_expected(next_offset=34, expected_next_offset=35)
+    assert _next_offset_advances(offset=10, next_offset=35)
+    assert not _next_offset_advances(offset=10, next_offset=10)
 
 
 def test_search_page_next_offset_helper_rejects_non_advancing_offset() -> None:
@@ -318,6 +329,12 @@ def test_search_page_next_offset_helper_rejects_non_advancing_offset() -> None:
             has_more=True,
             next_offset=2,
         )
+
+
+def test_terminal_search_page_next_offset_helper_requires_null_offset() -> None:
+    _validate_terminal_search_page_next_offset(None)
+    with pytest.raises(ValueError, match="next_offset must be null"):
+        _validate_terminal_search_page_next_offset(2)
 
 
 def test_validate_search_page_count_maps_rejects_negative_and_mismatched_totals() -> None:
@@ -437,6 +454,19 @@ def test_validate_search_item_latest_event_helper_rejects_empty_item_with_latest
         )
 
 
+def test_validate_search_item_latest_event_helper_rejects_empty_item_with_non_empty_state() -> None:
+    with pytest.raises(ValueError, match="empty search items must use EMPTY supportability_state"):
+        _validate_search_item_latest_event_metadata(
+            event_count=0,
+            supportability_state="READY",
+            event_type_counts={},
+            source_systems=[],
+            reason_codes=[],
+            latest_event_time=None,
+            latest_event_type=None,
+        )
+
+
 def test_latest_event_metadata_presence_helpers_track_partial_and_complete_metadata() -> None:
     assert not _latest_event_metadata_is_present(
         latest_event_time=None,
@@ -456,13 +486,25 @@ def test_latest_event_metadata_presence_helpers_track_partial_and_complete_metad
     )
 
 
-def test_empty_search_item_latest_event_helper_rejects_aggregate_metadata() -> None:
+@pytest.mark.parametrize(
+    ("event_type_counts", "source_systems", "reason_codes"),
+    [
+        ({"WAVE_HANDOFF_READY": 1}, [], []),
+        ({}, ["lotus-manage"], []),
+        ({}, [], ["READY_FOR_OPERATIONS_REVIEW"]),
+    ],
+)
+def test_empty_search_item_latest_event_helper_rejects_aggregate_metadata(
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+) -> None:
     with pytest.raises(ValueError, match="aggregate event metadata"):
         _validate_empty_search_item_latest_event_metadata(
             supportability_state="EMPTY",
-            event_type_counts={"WAVE_HANDOFF_READY": 1},
-            source_systems=[],
-            reason_codes=[],
+            event_type_counts=event_type_counts,
+            source_systems=source_systems,
+            reason_codes=reason_codes,
             latest_event_time=None,
             latest_event_type=None,
         )

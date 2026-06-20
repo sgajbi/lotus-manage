@@ -1,13 +1,22 @@
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
 
+from src.core.rebalance_runs.models import DpmRunRecord, DpmRunWorkflowDecisionRecord
 from src.core.rebalance.engine import run_simulation
 from src.core.rebalance_runs.service import (
     DpmRunNotFoundError,
     DpmRunSupportService,
     DpmWorkflowDisabledError,
     DpmWorkflowTransitionError,
+)
+from src.core.rebalance_runs.workflow_projection import (
+    build_workflow_action_response,
+    build_workflow_decision_record,
+    build_workflow_history_response,
+    build_workflow_response,
+    latest_workflow_decision,
 )
 from src.core.models import EngineOptions
 from src.infrastructure.rebalance_runs import InMemoryDpmRunRepository
@@ -43,6 +52,106 @@ def _build_service(*, workflow_enabled: bool, required_statuses: set[str] | None
         workflow_enabled=workflow_enabled,
         workflow_requires_review_for_statuses=required_statuses,
     )
+
+
+def _workflow_run(*, status: str = "PENDING_REVIEW") -> DpmRunRecord:
+    return DpmRunRecord(
+        rebalance_run_id="rr_projection_1",
+        correlation_id="corr_projection_1",
+        request_hash="sha256:req-projection-1",
+        idempotency_key="idem_projection_1",
+        portfolio_id="pf_projection_1",
+        created_at=datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc),
+        result_json={"status": status},
+    )
+
+
+def _workflow_decision(
+    *,
+    decision_id: str,
+    action: str,
+    decided_at: datetime,
+) -> DpmRunWorkflowDecisionRecord:
+    return DpmRunWorkflowDecisionRecord(
+        decision_id=decision_id,
+        run_id="rr_projection_1",
+        action=action,
+        reason_code="REVIEW_APPROVED",
+        comment=None,
+        actor_id="reviewer_1",
+        decided_at=decided_at,
+        correlation_id=f"corr_{decision_id}",
+    )
+
+
+def test_workflow_projection_helpers_preserve_ordering_and_latest_decision():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    earlier = _workflow_decision(
+        decision_id="dwd_earlier",
+        action="REQUEST_CHANGES",
+        decided_at=now,
+    )
+    later = _workflow_decision(
+        decision_id="dwd_later",
+        action="APPROVE",
+        decided_at=now + timedelta(minutes=5),
+    )
+
+    assert latest_workflow_decision([later, earlier]) == later
+    history = build_workflow_history_response(
+        rebalance_run_id="rr_projection_1",
+        decisions=[later, earlier],
+    )
+
+    assert [decision.decision_id for decision in history.decisions] == [
+        "dwd_earlier",
+        "dwd_later",
+    ]
+
+
+def test_workflow_projection_helpers_build_current_and_action_responses():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    run = _workflow_run(status="PENDING_REVIEW")
+
+    initial = build_workflow_response(
+        run=run,
+        latest_decision=None,
+        workflow_enabled=True,
+        requires_review_for_statuses={"PENDING_REVIEW"},
+    )
+    assert initial.workflow_status == "PENDING_REVIEW"
+    assert initial.requires_review is True
+    assert initial.latest_decision is None
+
+    not_required = build_workflow_response(
+        run=run,
+        latest_decision=None,
+        workflow_enabled=False,
+        requires_review_for_statuses={"PENDING_REVIEW"},
+    )
+    assert not_required.workflow_status == "NOT_REQUIRED"
+    assert not_required.requires_review is False
+
+    decision = build_workflow_decision_record(
+        rebalance_run_id=run.rebalance_run_id,
+        action="APPROVE",
+        reason_code="REVIEW_APPROVED",
+        comment=None,
+        actor_id="reviewer_2",
+        correlation_id="corr_projection_action",
+        decided_at=now,
+    )
+    action_response = build_workflow_action_response(
+        rebalance_run_id=run.rebalance_run_id,
+        run_status="PENDING_REVIEW",
+        workflow_status="APPROVED",
+        decision=decision,
+    )
+    assert action_response.workflow_status == "APPROVED"
+    assert action_response.requires_review is True
+    assert action_response.latest_decision is not None
+    assert action_response.latest_decision.action == "APPROVE"
+    assert action_response.latest_decision.correlation_id == "corr_projection_action"
 
 
 def test_workflow_disabled_returns_not_required_and_blocks_actions():

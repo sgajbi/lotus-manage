@@ -19,21 +19,10 @@ from src.core.outcomes.risk_sources import (
     _drawdown_measure_unavailable,
     _drawdown_source_posture,
     _ensure_ready_risk_metric_value,
-    _ensure_ready_historical_attribution_value,
     _ensure_ready_rolling_metric_value,
-    _historical_attribution_contributor,
-    _historical_attribution_reason_codes,
-    _historical_attribution_set,
-    _historical_attribution_source_id,
-    _historical_attribution_source_posture,
-    _historical_attribution_source_snapshot,
-    _historical_attribution_value,
     _metric_unit,
-    _primary_reason,
-    _quality_for_degraded_value,
     _relative_drawdown_value,
     _risk_metrics_source_snapshot,
-    _risk_source_posture,
     _rolling_context_unavailable,
     _rolling_context_reason,
     _rolling_metric_value,
@@ -41,6 +30,26 @@ from src.core.outcomes.risk_sources import (
     _rolling_source_id,
     _rolling_source_posture,
     _rolling_window_result,
+)
+from src.core.outcomes.risk_source_attribution import (
+    _ensure_ready_historical_attribution_value,
+    _historical_attribution_contributor,
+    _historical_attribution_fail_closed_posture,
+    _historical_attribution_period_blocked,
+    _historical_attribution_quality_posture,
+    _historical_attribution_reason_codes,
+    _historical_attribution_set,
+    _historical_attribution_set_matches,
+    _historical_attribution_sets,
+    _historical_attribution_source_id,
+    _historical_attribution_source_posture,
+    _historical_attribution_source_snapshot,
+    _historical_attribution_value,
+)
+from src.core.outcomes.risk_source_common import (
+    _primary_reason,
+    _quality_for_degraded_value,
+    _risk_source_posture,
     _supportability_source_posture,
     _decimal_value,
 )
@@ -1409,18 +1418,28 @@ def test_historical_attribution_contributor_measure_requires_group_key() -> None
         )
 
 
-def test_risk_source_posture_helpers_preserve_authority_failure_semantics() -> None:
-    assert _risk_source_posture(supportability_state="unsupported", value=None) == (
-        "NOT_SUPPORTED",
-        "NOT_SUPPORTED",
-    )
-    assert _risk_source_posture(supportability_state="permission_blocked", value=None) == (
-        "BLOCKED",
-        "MISSING",
-    )
-    assert _risk_source_posture(supportability_state="stale", value=Decimal("1")) == (
-        "DEGRADED",
-        "STALE",
+@pytest.mark.parametrize(
+    ("supportability_state", "value", "expected_posture"),
+    [
+        ("unsupported", None, ("NOT_SUPPORTED", "NOT_SUPPORTED")),
+        ("permission_blocked", None, ("BLOCKED", "MISSING")),
+        ("stale", Decimal("1"), ("DEGRADED", "STALE")),
+        ("degraded", Decimal("1"), ("DEGRADED", "PARTIAL")),
+        ("degraded", None, ("DEGRADED", "UNAVAILABLE")),
+        ("ready", Decimal("1"), ("READY", "COMPLETE")),
+    ],
+)
+def test_risk_source_posture_helpers_preserve_authority_failure_semantics(
+    supportability_state: str,
+    value: Decimal | None,
+    expected_posture: tuple[str, str],
+) -> None:
+    assert (
+        _risk_source_posture(
+            supportability_state=supportability_state,
+            value=value,
+        )
+        == expected_posture
     )
     assert _primary_reason("NOT_SUPPORTED") == "RISK_SOURCE_NOT_SUPPORTED"
     assert _primary_reason("BLOCKED") == "RISK_SOURCE_BLOCKED"
@@ -1571,6 +1590,39 @@ def test_rolling_and_historical_attribution_helper_edges_are_explicit() -> None:
             grouping_dimension="SECTOR",
         )
         == {}
+    )
+    attribution_sets = [
+        {
+            "attribution_type": "ACTIVE_RISK",
+            "metric": "TRACKING_ERROR",
+            "grouping_dimension": "SECTOR",
+            "total_value": "0.15",
+        }
+    ]
+    assert _historical_attribution_sets({"attribution_sets": attribution_sets}) == (
+        attribution_sets
+    )
+    assert _historical_attribution_sets({"attribution_sets": {}}) == []
+    assert _historical_attribution_set_matches(
+        attribution_set=attribution_sets[0],
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="SECTOR",
+    )
+    assert not _historical_attribution_set_matches(
+        attribution_set=attribution_sets[0],
+        attribution_type="ACTIVE_RISK",
+        metric="TRACKING_ERROR",
+        grouping_dimension="ISSUER",
+    )
+    assert (
+        _historical_attribution_set(
+            period_result={"attribution_sets": attribution_sets},
+            attribution_type="ACTIVE_RISK",
+            metric="TRACKING_ERROR",
+            grouping_dimension="SECTOR",
+        )
+        == attribution_sets[0]
     )
     assert (
         _historical_attribution_contributor(attribution_set={}, contributor_group_key="TECH") == {}
@@ -1737,3 +1789,23 @@ def test_historical_attribution_posture_and_decimal_errors_are_fail_closed() -> 
     ) == ("DEGRADED", "PARTIAL")
     with pytest.raises(RiskOutcomeSourceError, match="non-numeric risk metric value"):
         _decimal_value("not-a-number")
+
+
+def test_historical_attribution_posture_helpers_preserve_precedence() -> None:
+    assert _historical_attribution_fail_closed_posture("unsupported") == (
+        "NOT_SUPPORTED",
+        "NOT_SUPPORTED",
+    )
+    assert _historical_attribution_fail_closed_posture("stale") is None
+    assert _historical_attribution_period_blocked("period unavailable")
+    assert not _historical_attribution_period_blocked(None)
+    assert _historical_attribution_quality_posture(
+        supportability_state="stale",
+        value=Decimal("1"),
+        quality_flags=[],
+    ) == ("DEGRADED", "STALE")
+    assert _historical_attribution_quality_posture(
+        supportability_state="ready",
+        value=Decimal("1"),
+        quality_flags=["ESTIMATED"],
+    ) == ("DEGRADED", "PARTIAL")

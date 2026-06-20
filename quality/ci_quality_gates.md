@@ -14,7 +14,7 @@
 
 The following commands are active repository gates:
 
-- `make check`
+- `make static-quality-gates`
   - `python -m ruff check .`
   - `python -m ruff format --check .`
   - `python scripts/check_monetary_float_usage.py`
@@ -28,19 +28,34 @@ The following commands are active repository gates:
   - `make mesh-contract-validate`
   - `make architecture-gate` (`python -m importlinter.cli import-linter lint --config .importlinter`)
   - `make complexity-gate` (`python -m radon cc src -s -n C`, `python -m radon mi src -s`)
+  - `make duplicate-implementation-gate` (`python scripts/duplicate_implementation_gate.py`;
+    blocks newly introduced exact non-trivial first-party Python function-body duplicates against
+    `quality/duplicate_implementation_baseline.json`)
   - `make dependency-hygiene-gate` (`python -m deptry src tests`)
   - `make dead-code-gate` (`python -m vulture src tests --min-confidence 80`)
+  - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
+    action references, unexpected workflow permissions, missing blocking quality-report checks, and
+    PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
+    guidance decisions, coverage evidence, and blocking workflow coverage-gate drift)
+  - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
+    ignores volatile report provenance while enforcing measured report content)
+  - `make coverage-gate` (`python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)`;
+    combines unit/integration/e2e coverage artifacts and enforces the shared coverage floor)
+
+- `make check`
+  - everything in `make static-quality-gates`
   - `python -m pytest tests/unit`
 
 - `make ci`
-  - everything in `make check`
+  - everything in `make static-quality-gates`
   - `make migration-smoke`
   - full suite with coverage gate (`test-all`, coverage fail-under 99%)
-  - `make security-audit`
+  - `make security-audit` (`bandit` over `src` plus project-scoped `python -m pip_audit .`)
 
 - `make ci-local`
-  - repository lint/typecheck/build/runner sequence for unit/integration/e2e
-  - matrix-independent full-path smoke for local parity
+  - everything in `make static-quality-gates`
+  - `python -m pip check`
+  - matrix-style unit/integration/e2e coverage files and shared `make coverage-gate`
 
 ## GitHub CI Lanes
 
@@ -51,6 +66,7 @@ The following commands are active repository gates:
   - `ruff` + `mypy` + `no-alias` + `openapi` + `api-vocabulary` + `security-audit`
   - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
+  - `duplicate-implementation-gate` for exact duplicate implementation non-regression
   - unit tests
 
 ### PR Merge Gate
@@ -60,9 +76,13 @@ The following commands are active repository gates:
   - same static/type/openapi/vocabulary/security gates as Feature Lane
   - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
+  - `duplicate-implementation-gate` for exact duplicate implementation non-regression
   - migration smoke
   - matrix unit/integration/e2e tests with coverage upload
   - combined coverage floor (`99`)
+  - workflow policy integrity
+  - checked-in quality report freshness
+  - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
   - Docker build validation
 
 ### Main Releasability Gate
@@ -80,12 +100,13 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 - `radon` + `xenon` complexity
 - `vulture` dead-code scan
 - `deptry`
-- `bandit` + `pip-audit`
+- `bandit` + project-scoped `pip-audit`
 - `interrogate`
 - `spectral` via `.spectral.yaml`
 
 ## Enforcement Posture
 
 - Phase 1: measure and baseline
-- Phase 2: enforce non-regressing deltas for active gates
+- Phase 2: enforce non-regressing deltas for active gates, block workflow and PR-evidence policy
+  drift, and block stale quality reports
 - Phase 3: introduce hard thresholds and enterprise-readiness gates only after baseline review

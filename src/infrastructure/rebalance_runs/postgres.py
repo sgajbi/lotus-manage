@@ -299,16 +299,12 @@ class PostgresDpmRunRepository:
         ]
 
     def create_operation(self, operation: DpmAsyncOperationRecord) -> None:
-        try:
-            self._upsert_operation(operation)
-        except Exception as exc:
-            if _is_unique_violation(exc):
-                raise DpmRunRepositoryConflictError(
-                    "DPM_ASYNC_OPERATION_CORRELATION_CONFLICT"
-                ) from exc
-            raise
+        self._create_or_update_operation(operation)
 
     def update_operation(self, operation: DpmAsyncOperationRecord) -> None:
+        self._create_or_update_operation(operation)
+
+    def _create_or_update_operation(self, operation: DpmAsyncOperationRecord) -> None:
         try:
             self._upsert_operation(operation)
         except Exception as exc:

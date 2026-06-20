@@ -276,6 +276,9 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
 
 def test_json_formatter_redacts_sensitive_extra_fields():
     formatter = observability_module.JsonFormatter()
+    correlation_token = observability_module.correlation_id_var.set("corr-log-test")
+    request_token = observability_module.request_id_var.set("req-log-test")
+    trace_token = observability_module.trace_id_var.set("trace-log-test")
     record = logging.LogRecord(
         name="lotus-manage.test",
         level=logging.INFO,
@@ -291,13 +294,42 @@ def test_json_formatter_redacts_sensitive_extra_fields():
         "status_family": "2xx",
     }
 
-    payload = json.loads(formatter.format(record))
+    try:
+        payload = json.loads(formatter.format(record))
+    finally:
+        observability_module.trace_id_var.reset(trace_token)
+        observability_module.request_id_var.reset(request_token)
+        observability_module.correlation_id_var.reset(correlation_token)
 
     assert payload["portfolio_id"] == "[REDACTED]"
     assert payload["request_hash"] == "[REDACTED]"
     assert payload["status_family"] == "2xx"
+    assert payload["correlation_id"] == "corr-log-test"
+    assert payload["request_id"] == "req-log-test"
+    assert payload["trace_id"] == "trace-log-test"
     assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(payload)
     assert "sha256:secret-request" not in json.dumps(payload)
+
+
+def test_json_log_payload_omits_missing_context_and_preserves_safe_extra_fields():
+    record = logging.LogRecord(
+        name="lotus-manage.test",
+        level=logging.INFO,
+        pathname=__file__,
+        lineno=1,
+        msg="safe.event",
+        args=(),
+        exc_info=None,
+    )
+    record.extra_fields = {"endpoint": "/metrics", "status_family": "2xx"}
+
+    payload = observability_module._json_log_payload(record)
+
+    assert payload["endpoint"] == "/metrics"
+    assert payload["status_family"] == "2xx"
+    assert "correlation_id" not in payload
+    assert "request_id" not in payload
+    assert "trace_id" not in payload
 
 
 def test_http_access_log_uses_route_template_not_sensitive_path_values():

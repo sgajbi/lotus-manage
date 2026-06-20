@@ -469,26 +469,49 @@ def _apply_min_cash_buffer(
     if min_cash_buffer_pct <= Decimal("0.0"):
         return "READY"
 
-    tradeable_weight = sum(
-        weight for instrument_id, weight in eligible_targets.items() if instrument_id in buy_set
+    posture = _target_weight_posture(eligible_targets=eligible_targets, buy_set=buy_set)
+    allowed_tradeable_weight = _cash_buffer_tradeable_weight_limit(
+        posture=posture,
+        min_cash_buffer_pct=min_cash_buffer_pct,
     )
-    locked_weight = sum(
-        weight for instrument_id, weight in eligible_targets.items() if instrument_id not in buy_set
+    scaled = _scale_tradeable_targets_for_cash_buffer(
+        eligible_targets=eligible_targets,
+        buy_set=buy_set,
+        tradeable_weight=posture.tradeable_weight,
+        allowed_tradeable_weight=allowed_tradeable_weight,
     )
-    allowed_tradeable_weight = max(
-        Decimal("0.0"),
-        Decimal("1.0") - min_cash_buffer_pct - locked_weight,
-    )
-    if tradeable_weight <= allowed_tradeable_weight:
+    if not scaled:
         return "READY"
 
-    if tradeable_weight > Decimal("0.0"):
-        scale = allowed_tradeable_weight / tradeable_weight
-        for instrument_id in eligible_targets:
-            if instrument_id in buy_set:
-                eligible_targets[instrument_id] *= scale
-
     return "PENDING_REVIEW"
+
+
+def _cash_buffer_tradeable_weight_limit(
+    *,
+    posture: _TargetWeightPosture,
+    min_cash_buffer_pct: Decimal,
+) -> Decimal:
+    return max(
+        Decimal("0.0"),
+        posture.available_tradeable_weight - min_cash_buffer_pct,
+    )
+
+
+def _scale_tradeable_targets_for_cash_buffer(
+    *,
+    eligible_targets: dict[str, Decimal],
+    buy_set: set[str],
+    tradeable_weight: Decimal,
+    allowed_tradeable_weight: Decimal,
+) -> bool:
+    if tradeable_weight <= allowed_tradeable_weight or tradeable_weight <= Decimal("0.0"):
+        return False
+
+    scale = allowed_tradeable_weight / tradeable_weight
+    for instrument_id in eligible_targets:
+        if instrument_id in buy_set:
+            eligible_targets[instrument_id] *= scale
+    return True
 
 
 def _target_generation_status(

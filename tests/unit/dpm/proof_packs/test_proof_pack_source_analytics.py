@@ -127,3 +127,18 @@ def test_source_analytics_dispatch_registry_covers_supported_families() -> None:
 
 def test_source_analytics_for_context_skips_empty_context_without_dispatch() -> None:
     assert source_analytics_for_context(source_context={}, family="risk") is None
+
+
+@pytest.mark.parametrize(
+    "family",
+    ["risk", "performance", "client_restriction", "sustainability_preference"],
+)
+def test_source_analytics_for_context_skips_invalid_factored_contexts(
+    family: ProofPackAnalyticsFamily,
+) -> None:
+    analytics = source_analytics_for_context(
+        source_context={"supportability_status": "READY"},
+        family=family,
+    )
+
+    assert analytics is None

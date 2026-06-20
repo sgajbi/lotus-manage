@@ -6,8 +6,11 @@ from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.api.services.mandate_diff import (
     DpmMandateDiff,
     DpmMandateFieldChange,
+    _diff_candidate_keys,
+    _diff_field_path,
     _latest_mandate_diff_version_pair,
     _mandate_version_index,
+    _nested_diff_values,
     _requested_mandate_diff_version_pair,
     build_mandate_diff,
     build_mandate_diff_for_versions,
@@ -62,6 +65,34 @@ def test_iter_changed_fields_recurses_and_ignores_source_lineage() -> None:
         ("constraints.turnover_budget", "0.10", "0.15"),
         ("mandate_version", "2", "3"),
     ]
+
+
+def test_mandate_diff_field_helpers_preserve_sorted_ignored_and_nested_paths() -> None:
+    previous = {
+        "mandate_version": "2",
+        "constraints": {"turnover_budget": "0.10"},
+        "source_lineage": {"generated_at": "old"},
+    }
+    current = {
+        "display_name": "Global balanced mandate",
+        "mandate_version": "3",
+        "source_lineage": {"generated_at": "new"},
+    }
+
+    assert _diff_candidate_keys(previous=previous, current=current) == [
+        "constraints",
+        "display_name",
+        "mandate_version",
+    ]
+    assert _diff_field_path(prefix="", key="mandate_version") == "mandate_version"
+    assert _diff_field_path(prefix="constraints", key="turnover_budget") == (
+        "constraints.turnover_budget"
+    )
+    assert _nested_diff_values(
+        previous_value=previous["constraints"],
+        current_value={"turnover_budget": "0.15"},
+    )
+    assert not _nested_diff_values(previous_value=previous["constraints"], current_value=None)
 
 
 def test_diff_payloads_returns_sorted_materiality_changes() -> None:

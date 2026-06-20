@@ -1,8 +1,8 @@
 # lotus-manage Baseline Quality Report
 
-- Generated at: `2026-06-19T03:14:37+00:00`
+- Generated at: `2026-06-20T00:45:09+00:00`
 
-- Report source snapshot: `84343223+worktree`
+- Report source snapshot: `ae2ddfbb+worktree`
 
 - Mode: report-only baseline. This records current posture; it does not enforce thresholds by itself.
 
@@ -10,9 +10,9 @@
 
 | Metric | Value |
 | --- | --- |
-| Python files | 823 |
-| Total Python LOC | 179465 |
-| Test functions | 2649 |
+| Python files | 878 |
+| Total Python LOC | 185387 |
+| Test functions | 2745 |
 | Service boundary findings | 0 |
 | Router infrastructure imports | 0 |
 
@@ -36,10 +36,11 @@
 | OpenAPI completeness | `scripts/openapi_quality_gate.py` plus this report | 2 - active/new-regression |
 | Service boundary leakage | service leakage scan plus this report | 2 - active/new-regression |
 | Router infrastructure imports | `scripts/router_infrastructure_gate.py` plus this report | 2 - active/new-regression |
-| Complexity/maintainability | `quality/complexity_report.md` | 1 - baseline |
+| Complexity/maintainability | `quality/complexity_report.md` | 2 - active source C gate; broader metrics baseline |
+| Duplicate implementation hotspots | `quality/duplicate_code_inventory.md` and `make duplicate-implementation-gate` | 2 - active exact-duplicate non-regression gate |
 | Dead code | `make dead-code-gate` plus vulture baseline capture via `quality-baseline.yml` | 2 - active/new-regression |
 | Dependency hygiene | `make dependency-hygiene-gate`, `pip check`, and `make security-audit` | 2 - active/new-regression |
-| Security | `bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
+| Security | `bandit` + project-scoped `pip-audit` via `quality-baseline.yml` and `make security-audit` | 2 - active/new-regression |
 | Documentation gaps | current docs tests plus planned docs scorecard | planned |
 | Observability gaps | `scripts/validate_observability_contracts.py`; richer runtime gap report planned | 2 - active/new-regression |
 

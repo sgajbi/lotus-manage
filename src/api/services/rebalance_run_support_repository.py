@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import cast
 
-from src.core.common.capabilities import psycopg_error_type
+from src.core.common.postgres_errors import (
+    postgres_connection_exception_types as common_postgres_connection_exception_types,
+)
 from src.core.rebalance_runs.repository import DpmRunRepository
 from src.infrastructure.rebalance_runs import (
     PostgresDpmRunRepository,
@@ -21,17 +23,7 @@ def build_repository(dsn: str) -> DpmRunRepository:
 
 
 def postgres_connection_exception_types() -> tuple[type[BaseException], ...]:
-    types: list[type[BaseException]] = [
-        ConnectionError,
-        OSError,
-        TimeoutError,
-        TypeError,
-        ValueError,
-    ]
-    error_type = psycopg_error_type()
-    if error_type is not None:
-        types.append(error_type)
-    return tuple(types)
+    return common_postgres_connection_exception_types()
 
 
 __all__ = [

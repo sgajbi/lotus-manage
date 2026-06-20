@@ -24915,3 +24915,4713 @@ and improves internal transaction-cost source posture maintainability only.
   FastAPI/Starlette/httpx stack exposes a warning-free supported path.
 - Wiki decision: no wiki source change required; this is repository-local CI warning hygiene with
   no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-990: Proof-pack source analytics builder consolidation
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/source_analytics.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_source_analytics.py`, and `quality/`.
+- Bank-buyable control area: architecture, source-lineage supportability, testing, and CI
+  measurement.
+- Finding: proof-pack source analytics builders repeated the same validate, canonical-hash,
+  source-ref, degraded-reason, and analytics-envelope assembly across risk, performance,
+  client-restriction, and sustainability-preference contexts. That duplicated source-lineage
+  policy made future changes more error-prone and left the profile builders as B-grade radon
+  hotspots.
+- Action: extracted typed authority-context and profile-context builder helpers, kept family-owned
+  facts and metrics explicit, and added direct invalid-context tests so malformed source-owned
+  contexts continue to be skipped safely.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m ruff check src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m ruff format --check src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\source_analytics.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`, service leakage scan, `git diff --check`,
+  `python -m radon cc src\core\proof_packs\source_analytics.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused proof-pack suites reported 116
+  passed. Radon reports `_risk_source_analytics` and `_performance_source_analytics` reduced from
+  A(4) to A(2), while `_client_restriction_source_analytics` and
+  `_sustainability_preference_source_analytics` reduced from B(6) to A(2). Refreshed quality
+  reports are sourced from `73eb4860+worktree`, keep service boundary findings, router
+  infrastructure imports, and OpenAPI missing markers at 0, and record 2,652 test functions.
+- Residual risk: this slice improves proof-pack source analytics maintainability only. It does
+  not change source-owned risk, performance, restriction, or sustainability methodology; proof-pack
+  API contracts; downstream Gateway/Workbench behavior; runtime observability; security posture; or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack source-lineage
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-991: Target cash-buffer scaling helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/targets.py`,
+  `tests/unit/dpm/engine/coverage/test_engine_target_generation.py`, and `quality/`.
+- Bank-buyable control area: architecture, portfolio target-generation maintainability, and
+  testing.
+- Finding: `_apply_min_cash_buffer` recomputed target-weight posture locally and combined
+  locked-weight accounting, allowed tradeable-weight calculation, tradeable-target scaling, and
+  status selection in one B-grade function. That made the cash-buffer rule harder to review even
+  though the module already had a named `_TargetWeightPosture` model.
+- Action: reused `_target_weight_posture`, extracted `_cash_buffer_tradeable_weight_limit`, and
+  extracted `_scale_tradeable_targets_for_cash_buffer`; added direct tests for locked-weight
+  cash-buffer capacity, scaling behavior, and no-op behavior when the tradeable weights are within
+  limit.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\rebalance\targets.py tests\unit\dpm\engine\coverage\test_engine_target_generation.py`,
+  `python -m ruff check src\core\rebalance\targets.py tests\unit\dpm\engine\coverage\test_engine_target_generation.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance\targets.py`,
+  `python -m pytest tests\unit\dpm\engine\coverage\test_engine_target_generation.py -q`,
+  `python -m radon cc src\core\rebalance\targets.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused target-generation suite reported 27
+  passed. Radon reports `_apply_min_cash_buffer` reduced from B(10) to A(3), with
+  `_cash_buffer_tradeable_weight_limit` at A(1). The refreshed complexity report is sourced from
+  `f1f97304+worktree` and the current top-ten source hotspot list no longer includes
+  `_apply_min_cash_buffer`.
+- Residual risk: this slice improves target-generation maintainability only. It does not change
+  cash-buffer methodology, rebalance output contracts, execution routing, policy-pack behavior,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance target-generation
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-992: Async execution payload parser hardening
+
+- Date: 2026-06-19
+- Scope: `src/api/services/rebalance_async_operation_payload.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and `quality/`.
+- Bank-buyable control area: architecture, async operation resilience, and testing.
+- Finding: `resolve_analyze_async_execution_payload` combined current-versus-legacy envelope
+  detection, policy-context extraction, source-context validation, and batch request validation in
+  one source hotspot. It also assumed current-shape `policy_context` was a mapping, so malformed
+  metadata could escape as an attribute error instead of being safely ignored as absent optional
+  policy metadata.
+- Action: extracted current/legacy payload-part parsing, bounded non-mapping policy metadata with
+  a local mapping helper, isolated source-context validation, and added a regression test proving
+  malformed policy metadata preserves request validation while leaving optional policy fields
+  unset.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\rebalance_async_operation_payload.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff check src\api\services\rebalance_async_operation_payload.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\rebalance_async_operation_payload.py`,
+  `python -m pytest tests\unit\api\test_runtime_request_model_and_service_edges.py -q`,
+  `python -m radon cc src\api\services\rebalance_async_operation_payload.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused runtime request/service edge suite
+  reported 46 passed. Radon reports `resolve_analyze_async_execution_payload` reduced from B(6) to
+  A(1), with extracted parser helpers at A(1) to A(3). The refreshed complexity report is sourced
+  from `eaaaf219+worktree` and the current top-ten source hotspot list no longer includes
+  `resolve_analyze_async_execution_payload`.
+- Residual risk: this slice hardens async payload parsing only. It does not change async execution
+  scheduling, persistence, idempotency, policy-pack selection semantics for valid payloads, API
+  contracts, downstream runtime behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal async execution parser hardening
+  with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-993: Risk concentration source identity helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/risk_authority/client.py`,
+  `tests/unit/dpm/infrastructure/test_risk_authority_client.py`, and `quality/`.
+- Bank-buyable control area: architecture, source-authority boundary clarity, and testing.
+- Finding: `_risk_context_from_concentration_response` mixed lotus-risk source identity,
+  methodology-version fallback, request-fingerprint preservation, HHI-delta projection, issuer
+  coverage projection, breach counting, and reason-code assembly in one infrastructure adapter
+  hotspot. That made source-owned concentration evidence mapping harder to review.
+- Action: extracted concentration source-system, source-product-version, HHI-delta, and issuer
+  coverage mapping helpers, reused the existing optional-text normalizer for source identity, and
+  added direct tests for default/trimmed source identity, default/trimmed methodology version,
+  HHI-delta projection, and optional issuer coverage posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\risk_authority\client.py tests\unit\dpm\infrastructure\test_risk_authority_client.py`,
+  `python -m ruff check src\infrastructure\risk_authority\client.py tests\unit\dpm\infrastructure\test_risk_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\risk_authority\client.py`,
+  `python -m pytest tests\unit\dpm\infrastructure\test_risk_authority_client.py -q`,
+  `python -m radon cc src\infrastructure\risk_authority\client.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused risk-authority suite reported 35
+  passed. Radon reports `_risk_context_from_concentration_response` reduced from B(6) to A(1),
+  with the extracted source mapping helpers at A(1) to A(2). The refreshed complexity report is
+  sourced from `dbe60f67+worktree` and the current top-ten source hotspot list no longer includes
+  `_risk_context_from_concentration_response`.
+- Residual risk: this slice improves risk-authority concentration adapter maintainability only. It
+  does not change lotus-risk methodology, concentration thresholds, request routing, retry/timeout
+  behavior, source-owned response contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-994: Workflow decision query predicate helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/workflow_decision_query.py`,
+  `tests/unit/dpm/supportability/test_workflow_decision_query_helpers.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability and testing.
+- Finding: `build_workflow_decision_filter_query` assembled optional equality predicates,
+  optional datetime predicates, SQL `WHERE` rendering, and argument ordering in one B-grade helper
+  used by both PostgreSQL and SQLite repositories. `workflow_decision_page` also embedded cursor
+  lookup inside pagination logic. That made query-shape drift harder to catch directly.
+- Action: extracted typed workflow-decision predicates, optional equality/date predicate helpers,
+  deterministic `WHERE` rendering, and cursor-index lookup; added direct tests for SQL fragment
+  shape, argument conversion, empty predicate behavior, `WHERE` assembly, and cursor lookup while
+  preserving the existing repository contract test for full query output and pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\rebalance_runs\workflow_decision_query.py tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\workflow_decision_query.py tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\workflow_decision_query.py`,
+  `python -m pytest tests\unit\dpm\supportability\test_workflow_decision_query_helpers.py -q`,
+  `python -m radon cc src\infrastructure\rebalance_runs\workflow_decision_query.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused workflow decision query suite
+  reported 4 passed. Radon reports `build_workflow_decision_filter_query` reduced from B(6) to
+  A(2), and `workflow_decision_page` reduced from B(6) to A(4). The refreshed complexity report is
+  sourced from `dc77279c+worktree` and the current top-ten source hotspot list no longer includes
+  `build_workflow_decision_filter_query`.
+- Residual risk: this slice improves repository query helper maintainability only. It does not
+  change workflow-decision persistence semantics, cursor contract, SQL placeholder conventions,
+  Postgres/SQLite adapter routing, API contracts, downstream behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-995: Transaction money source fallback helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned outcome evidence mapping, currency handling, and
+  testing.
+- Finding: `_transaction_money_value` combined reporting-currency precedence, source-measure
+  validation, source-currency fallback, and reason-code suffix selection in one B-grade helper.
+  `_transaction_fx_pnl_value` carried a similar inline currency fallback path for base and local FX
+  P&L evidence. That made transaction-ledger source money mapping harder to review.
+- Action: extracted `_transaction_reporting_money` and `_transaction_source_currency`, reused the
+  currency fallback helper for transaction fee/tax and FX P&L paths, and added direct tests for
+  reporting-currency precedence plus first/fallback/default source-currency behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff format --check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\core_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\core_sources.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused core realized outcome source suite
+  reported 50 passed. Radon reports `_transaction_money_value` reduced from B(6) to A(3), and
+  `_transaction_fx_pnl_value` reduced from B(6) to A(3). The refreshed complexity report is
+  sourced from `62d78043+worktree` and the current top-ten source hotspot list no longer includes
+  `_transaction_money_value`.
+- Residual risk: this slice improves transaction-ledger money mapping maintainability only. It
+  does not change realized outcome methodology, source-ledger contracts, value precedence for
+  valid payloads, API contracts, downstream behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-evidence adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-996: Proof-pack governance dispatch helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack evidence assembly, governance section routing, and
+  testing.
+- Finding: `_proof_pack_governance_section_payload` embedded governance section dispatch in a
+  branch chain, and `_decision_summary` mixed recommended-action selection, direct-source fallback
+  fields, selected-alternative projection, and approval-state fallback in one B-grade builder.
+  That made proof-pack governance payload routing and default decision posture harder to audit.
+- Action: introduced a typed governance section payload context with explicit handler mapping,
+  extracted decision-summary field helpers, and added direct tests for non-governance dispatch
+  passthrough plus direct-source decision-summary fallback posture.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`, and
+  `python scripts\engineering_health_report.py`. The focused proof-pack builder suite reported
+  106 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `_proof_pack_governance_section_payload` reduced from B(6)
+  to A(2), and `_decision_summary` reduced from B(6) to A(2). The refreshed complexity report is
+  sourced from `093af1af+worktree` and the current top-ten source hotspot list no longer includes
+  either targeted helper.
+- Residual risk: this slice improves proof-pack governance routing and decision-summary
+  maintainability only. It does not change proof-pack section contracts, source hash semantics,
+  run persistence, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-997: Advise-authority tactical cohort parser helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/advise_authority/client.py`,
+  `tests/unit/dpm/infrastructure/test_advise_authority_client.py`, and `quality/`.
+- Bank-buyable control area: authority boundary parsing, source-owned advisory evidence mapping,
+  and testing.
+- Finding: `_tactical_house_view_cohort_from_response` combined fail-closed response validation,
+  affected-portfolio parsing, source-ref validation, source-product defaulting, supportability
+  reason-code fallback, and dataclass construction in one B-grade adapter helper. That made the
+  lotus-advise authority boundary harder to audit.
+- Action: separated response orchestration from cohort dataclass construction, extracted optional
+  source-product text defaulting, and added direct helper tests for custom and default optional
+  source text while preserving existing invalid-shape and transport-failure coverage.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\advise_authority\client.py tests\unit\dpm\infrastructure\test_advise_authority_client.py`,
+  `python -m ruff check src\infrastructure\advise_authority\client.py tests\unit\dpm\infrastructure\test_advise_authority_client.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\advise_authority\client.py`,
+  `python -m pytest tests\unit\dpm\infrastructure\test_advise_authority_client.py -q`,
+  `python -m radon cc src\infrastructure\advise_authority\client.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused
+  advise-authority client suite reported 17 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_tactical_house_view_cohort_from_response` reduced from B(6) to A(2), with extracted cohort
+  construction at A(4). The refreshed complexity report is sourced from `b30f31c6+worktree` and
+  the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves lotus-advise tactical cohort parser maintainability only. It
+  does not change authority request semantics, retry/timeout behavior, advisory methodology,
+  source-owned response contracts, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal infrastructure adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-998: Campaign definition in-memory list helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability, deterministic ordering, and
+  testing.
+- Finding: `InMemoryDpmBulkReviewCampaignDefinitionRepository.list_definitions` combined optional
+  campaign id, status, and as-of-date filtering with descending definition ordering, pagination,
+  and defensive copying in one B-grade repository method. That made in-memory repository behavior
+  harder to compare against the PostgreSQL query shape.
+- Action: extracted reusable definition filter, sort-key, optional text predicate, and paging
+  helpers; kept defensive copying at the repository boundary; and added direct tests proving
+  filter matching, status exclusion, descending sort key behavior, and active-definition paging.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m ruff check src\infrastructure\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\campaign_definitions.py`,
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m radon cc src\infrastructure\waves\campaign_definitions.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused campaign
+  definition repository suite reported 55 passed. OpenAPI quality and API vocabulary gates passed,
+  and the FastAPI/router leakage scan returned no findings. Radon reports the in-memory
+  `list_definitions` method reduced from B(8) to A(1), with extracted helpers at A(1) to A(3).
+  The refreshed complexity report is sourced from `25ef66fd+worktree` and the current top-ten
+  source hotspot list no longer includes `list_definitions`.
+- Residual risk: this slice improves in-memory campaign definition query maintainability only. It
+  does not change PostgreSQL SQL rendering, campaign lifecycle semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-999: Currency overlay reason-code helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_method_readiness.py`,
+  `tests/unit/dpm/construction/test_method_readiness.py`, and `quality/`.
+- Bank-buyable control area: service-layer source readiness semantics, fail-closed currency
+  overlay posture, and testing.
+- Finding: `currency_overlay_reason_codes` combined FX-source missing-pair precedence,
+  overlay-status reason selection, missing policy-context fallback, and source-owned policy reason
+  propagation in one B-grade API service helper. That made currency-overlay supportability
+  posture harder to audit at the service boundary.
+- Action: extracted FX-source reason selection and currency-overlay context reason propagation
+  helpers, kept the public helper as orchestration, and added direct tests for missing FX pair
+  precedence plus source policy reason-code preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_method_readiness.py tests\unit\dpm\construction\test_method_readiness.py`,
+  `python -m ruff check src\api\services\construction_method_readiness.py tests\unit\dpm\construction\test_method_readiness.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_method_readiness.py`,
+  `python -m pytest tests\unit\dpm\construction\test_method_readiness.py -q`,
+  `python -m radon cc src\api\services\construction_method_readiness.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused method
+  readiness suite reported 7 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `currency_overlay_reason_codes`
+  reduced from B(6) to A(1), with extracted helpers at A(2) to A(5). The refreshed complexity
+  report is sourced from `d4c8d0e7+worktree` and the current top-ten source hotspot list no longer
+  includes the targeted helper.
+- Residual risk: this slice improves currency-overlay reason-code maintainability only. It does
+  not change currency-overlay readiness policy, FX-pair detection, external treasury ingestion,
+  API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal service-layer maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1000: Wave supportability issue projection helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/wave_supportability_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and `quality/`.
+- Bank-buyable control area: wave supportability diagnostics, operator action evidence, and
+  testing.
+- Finding: `supportability_issue` combined completed-state suppression, degraded proof-pack
+  exception handling, severity lookup, fallback reason-code resolution, source-owner routing, and
+  remediation payload assembly in one B-grade API service helper. That made wave supportability
+  diagnostics harder to audit.
+- Action: extracted supportability issue emission gating, proof-pack state lookup, payload
+  assembly, and fallback reason-code resolution; added direct tests proving degraded proof-pack
+  issues are emitted and fallback reason codes/remediation are preserved.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m ruff check src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\wave_supportability_diagnostics.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_supportability_diagnostics.py -q`,
+  `python -m radon cc src\api\services\wave_supportability_diagnostics.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused wave
+  supportability diagnostics suite reported 4 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `supportability_issue` reduced from B(6) to A(3), with extracted helpers at A(1) to A(3). The
+  refreshed complexity report is sourced from `7b0b3047+worktree` and the current top-ten source
+  hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves supportability issue projection maintainability only. It does
+  not change wave state transitions, severity taxonomy, remediation taxonomy, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal service-layer diagnostics
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1001: Monitoring PM-book selector helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/routers/monitoring_run_once_routes.py`,
+  `tests/unit/dpm/api/test_monitoring_api.py`, and `quality/`.
+- Bank-buyable control area: API boundary validation, source-owned PM-book cohort resolution, and
+  testing.
+- Finding: `_mandate_ids_from_pm_book_selector` combined selector validation, portfolio-type
+  normalization, core membership resolution, membership readiness checks, empty-membership
+  handling, mandate-id mapping, and source filter projection in one B-grade router helper. That
+  made monitoring PM-book selector failure behavior harder to audit.
+- Action: extracted PM-book selector validation, membership readiness validation, and
+  mandate-id mapping with HTTP exception preservation; added direct helper tests for normalized
+  selector success, missing selector rejection, missing portfolio-type rejection, and incomplete
+  membership rejection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\routers\monitoring_run_once_routes.py tests\unit\dpm\api\test_monitoring_api.py`,
+  `python -m ruff check src\api\routers\monitoring_run_once_routes.py tests\unit\dpm\api\test_monitoring_api.py`,
+  `python -m mypy --config-file mypy.ini src\api\routers\monitoring_run_once_routes.py`,
+  `python -m pytest tests\unit\dpm\api\test_monitoring_api.py -q`,
+  `python -m radon cc src\api\routers\monitoring_run_once_routes.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused monitoring
+  API suite reported 12 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_mandate_ids_from_pm_book_selector` reduced from B(6) to A(1), with extracted selector helpers
+  at A(2) to A(3). The refreshed complexity report is sourced from `1dc6d7ef+worktree` and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves monitoring PM-book selector maintainability only. It does not
+  change PM-book membership source contracts, mandate repository semantics, monitoring run
+  execution, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal API-boundary maintainability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1002: Core source metadata projection helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `tests/unit/core/test_core_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned outcome evidence metadata, lineage fallback semantics,
+  and testing.
+- Finding: `_core_metadata` combined required source-product validation, as-of-date fallback,
+  observed-at fallback, data-quality defaulting, and content-hash fallback in one B-grade shared
+  lotus-core outcome adapter helper. That made source-evidence metadata semantics harder to audit
+  across cash, tax, cashflow, execution acknowledgement, and transaction adapters.
+- Action: extracted explicit helpers for core product name, product version, as-of date,
+  observed-at timestamp, data-quality status, and content hash; added direct tests for resolved
+  as-of-date fallback, generated-at fallback, `UNKNOWN` data-quality default, and snapshot-id hash
+  fallback.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\core_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\core_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused core
+  realized outcome source suite reported 51 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_core_metadata` reduced from B(6) to A(1), with extracted metadata helpers at A(1) to A(3).
+  The refreshed complexity report is sourced from `76b3d524+worktree` and the current top-ten
+  source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves lotus-core realized outcome metadata maintainability only. It
+  does not change source-product contracts, value extraction, source-id semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-evidence adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1003: Proof-pack optional source-ref helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack source lineage assembly, supportability evidence, and
+  testing.
+- Finding: `_source_refs` combined ordered optional source-ref collection for rebalance runs,
+  construction alternative sets, selected alternatives, mandate twins, and mandate health
+  snapshots in one B-grade helper. That made proof-pack lineage ordering and absent-source
+  handling harder to audit.
+- Action: extracted optional source-ref builders for each source domain plus a present-ref filter,
+  preserving the existing source-ref order and source hash semantics; added direct tests proving
+  absent optional sources are omitted and candidate filtering preserves present refs.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused proof-pack
+  builder suite reported 107 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `_source_refs` reduced from
+  B(6) to A(1), with extracted optional source-ref helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `4b8727a4+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves proof-pack source-ref collection maintainability only. It
+  does not change source-ref models, content-hash semantics, proof-pack section payloads, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack lineage
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1004: Solver fallback attempt helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/target_generation.py`,
+  `tests/unit/core/test_target_generation_solver_fallbacks.py`, and `quality/`.
+- Bank-buyable control area: solver fallback determinism, target-generation maintainability, and
+  testing.
+- Finding: `_solve_with_fallbacks` combined installed-solver filtering, ordered solver profile
+  iteration, compatibility failure handling, latest-status propagation, and optimal-status return
+  handling in one B-grade solver orchestration helper. That made solver fallback behavior harder
+  to audit.
+- Action: introduced a typed solver attempt result, extracted available-solver filtering and
+  per-solver profile solving helpers, and added direct tests proving installed-solver filtering
+  preserves only source-supported solver profiles.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\target_generation.py tests\unit\core\test_target_generation_solver_fallbacks.py`,
+  `python -m ruff check src\core\target_generation.py tests\unit\core\test_target_generation_solver_fallbacks.py`,
+  `python -m mypy --config-file mypy.ini src\core\target_generation.py`,
+  `python -m pytest tests\unit\core\test_target_generation_solver_fallbacks.py -q`,
+  `python -m radon cc src\core\target_generation.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused target
+  generation solver fallback suite reported 17 passed. OpenAPI quality and API vocabulary gates
+  passed, and the FastAPI/router leakage scan returned no findings. Radon reports
+  `_solve_with_fallbacks` reduced from B(6) to A(3), with extracted fallback helpers at A(3) to
+  A(4). The refreshed complexity report is sourced from `f8a50dbd+worktree` and the current
+  top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves solver fallback maintainability only. It does not change
+  optimization constraints, solver profile order, target weight methodology, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal target-generation
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1005: Operation filter query predicate helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/operation_query.py`,
+  `tests/unit/dpm/supportability/test_operation_query.py`, and `quality/`.
+- Bank-buyable control area: repository query-shape maintainability, deterministic SQL predicate
+  ordering, and testing.
+- Finding: `build_operation_filter_query` combined optional datetime and text predicate selection,
+  datetime ISO conversion, SQL `WHERE` rendering, and ordered argument collection in one B-grade
+  repository helper. That made operation filter query-shape drift harder to test directly.
+- Action: extracted typed operation predicates, optional datetime/text predicate helpers, and a
+  deterministic `WHERE` renderer while preserving the existing predicate order and placeholder
+  semantics; added direct tests for datetime conversion, predicate ordering, `WHERE` assembly, and
+  empty-filter rendering.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\rebalance_runs\operation_query.py tests\unit\dpm\supportability\test_operation_query.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\operation_query.py tests\unit\dpm\supportability\test_operation_query.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\operation_query.py`,
+  `python -m pytest tests\unit\dpm\supportability\test_operation_query.py -q`,
+  `python -m radon cc src\infrastructure\rebalance_runs\operation_query.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `git diff --check`, and `python scripts\engineering_health_report.py`. The focused operation
+  query suite reported 5 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `build_operation_filter_query`
+  reduced from B(6) to A(2), with extracted predicate helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `2a65d171+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves operation filter query maintainability only. It does not
+  change operation persistence, pagination cursor behavior, SQL placeholder conventions, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1006: Historical attribution posture helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: source-owned risk attribution evidence, fail-closed posture
+  precedence, and testing.
+- Finding: `_historical_attribution_source_posture` combined supportability fail-closed handling,
+  period-error precedence, stale/degraded quality handling, and quality-flag degradation in one
+  B-grade helper. That made a source-owned risk attribution adapter harder to audit because the
+  ordering of blocked, stale, degraded, and ready outcomes was implicit in one branch chain.
+- Action: extracted fail-closed supportability, period-blocked, and quality-posture helpers while
+  preserving the existing precedence; added direct tests proving unsupported and stale
+  supportability precedence, period-error blocking, and quality-flag degradation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk realized outcome source
+  suite reported 56 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_historical_attribution_source_posture` reduced from B(6) to A(3), with extracted precedence
+  helpers at A(1) to A(4). The refreshed complexity report is sourced from `5c39a6f2+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves historical attribution posture maintainability only. It does
+  not change attribution value extraction, source-id construction, risk attribution methodology,
+  API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal risk source adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1007: Proof-pack source hash candidates
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: proof-pack lineage integrity, canonical source hashing, and testing.
+- Finding: `_source_hashes` repeated optional canonical hashing for rebalance runs, construction
+  alternative sets, selected alternatives, mandate twins, and mandate health snapshots in one
+  B-grade helper. That made proof-pack lineage hashing harder to extend safely and harder to test
+  at the optional-source boundary.
+- Action: introduced a typed source-hash candidate, extracted candidate collection and optional
+  source hashing helpers, and preserved existing source hash keys and ordering; added direct tests
+  proving present artifact order, omitted optional sources, and canonical hash shape.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack builder suite
+  reported 108 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_source_hashes` reduced from B(6) to A(2),
+  with extracted source-hash helpers at A(2) to A(3). The refreshed complexity report is sourced
+  from `0be18091+worktree` and the current top-ten source hotspot list no longer includes the
+  targeted helper.
+- Residual risk: this slice improves proof-pack source hash maintainability only. It does not
+  change canonical hash algorithms, proof-pack section payloads, source-ref semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack lineage
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1008: Proof-pack repository list query helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/proof_packs/in_memory.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_repository.py`, and `quality/`.
+- Bank-buyable control area: proof-pack repository query-shape maintainability, deterministic
+  listing semantics, and testing.
+- Finding: `InMemoryDpmProofPackRepository.list_proof_packs` combined optional portfolio,
+  mandate, and status filters with descending created-at ordering, pagination, locking, and
+  defensive copying in one B-grade repository method. That made proof-pack listing behavior harder
+  to test independently from repository storage mechanics.
+- Action: extracted typed list filters, filter predicate, optional-match, sort-key, and paging
+  helpers while preserving the existing lock boundary and deepcopy return behavior; added direct
+  tests for optional filter matching, portfolio/mandate filtering, descending ordering, and offset
+  pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\proof_packs\in_memory.py tests\unit\dpm\proof_packs\test_proof_pack_repository.py`,
+  `python -m ruff check src\infrastructure\proof_packs\in_memory.py tests\unit\dpm\proof_packs\test_proof_pack_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\proof_packs\in_memory.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_repository.py -q`,
+  `python -m radon cc src\infrastructure\proof_packs\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack repository suite
+  reported 10 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports
+  `InMemoryDpmProofPackRepository.list_proof_packs` reduced from B(8) to A(1), with extracted list
+  helpers at A(1) to A(3). The refreshed complexity report is sourced from `67b6b078+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted method.
+- Residual risk: this slice improves in-memory proof-pack list query maintainability only. It does
+  not change Postgres proof-pack query behavior, persistence schemas, idempotency semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1009: PM-quality policy list query helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/pm_quality/in_memory.py`,
+  `tests/unit/dpm/pm_quality/test_pm_quality_repository.py`, and `quality/`.
+- Bank-buyable control area: PM operating quality policy repository query-shape maintainability,
+  deterministic listing semantics, and testing.
+- Finding: `InMemoryDpmPmQualityPolicyRepository.list_policies` combined optional policy-id,
+  enabled, and as-of-date filters with descending policy ordering, pagination, locking, and
+  defensive copying in one B-grade repository method. That made policy listing behavior less
+  consistent with the helper-based score-run, fairness-analysis, review-action, and summary
+  invocation list implementations in the same module.
+- Action: added typed policy filters plus policy predicate, boolean optional-match, sort, and
+  paging helpers while preserving the existing lock boundary and deepcopy return behavior; added
+  direct tests for enabled filtering, omitted-filter behavior, descending policy ordering, and
+  offset pagination.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\pm_quality\in_memory.py tests\unit\dpm\pm_quality\test_pm_quality_repository.py`,
+  `python -m ruff check src\infrastructure\pm_quality\in_memory.py tests\unit\dpm\pm_quality\test_pm_quality_repository.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\pm_quality\in_memory.py`,
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_quality_repository.py -q`,
+  `python -m radon cc src\infrastructure\pm_quality\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused PM-quality repository suite
+  reported 30 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports
+  `InMemoryDpmPmQualityPolicyRepository.list_policies` reduced from B(8) to A(1), with extracted
+  policy list helpers at A(1) to A(3). The refreshed complexity report is sourced from
+  `9a8e552b+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  method.
+- Residual risk: this slice improves in-memory PM-quality policy list query maintainability only.
+  It does not change Postgres PM-quality query behavior, policy immutability semantics,
+  governance approval rules, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository query-shape
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1010: Sustainability preference reason-code helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_sustainability_supportability.py`,
+  `tests/unit/dpm/construction/test_sustainability_supportability.py`, and `quality/`.
+- Bank-buyable control area: construction sustainability supportability evidence,
+  deterministic reason-code assembly, and testing.
+- Finding: `sustainability_preference_reason_codes` combined source profile availability,
+  supportability status, missing data families, allocation review breaches, classification review
+  evidence, and applied-profile success reasons in one B-grade service helper. That made
+  sustainability supportability evidence harder to audit and called classification-review
+  evaluation twice.
+- Action: extracted reason-code family helpers for supportability, missing data, allocation
+  review, classification review, and applied-profile success while preserving the existing
+  sorted/deduplicated output; added direct tests for each reason-code family.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_sustainability_supportability.py tests\unit\dpm\construction\test_sustainability_supportability.py`,
+  `python -m ruff check src\api\services\construction_sustainability_supportability.py tests\unit\dpm\construction\test_sustainability_supportability.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_sustainability_supportability.py`,
+  `python -m pytest tests\unit\dpm\construction\test_sustainability_supportability.py -q`,
+  `python -m radon cc src\api\services\construction_sustainability_supportability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused sustainability supportability
+  suite reported 10 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `sustainability_preference_reason_codes` reduced from B(8) to A(2), with extracted reason-code
+  helpers at A(2) to A(3). The refreshed complexity report is sourced from `5fc62610+worktree`
+  and the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves sustainability preference reason-code maintainability only.
+  It does not change sustainability preference methodology, allocation breach thresholds,
+  classification evidence policy, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal supportability evidence
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1011: Portfolio-memory search next-offset helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory search pagination correctness, cursor integrity,
+  and testing.
+- Finding: `_validate_search_page_next_offset` combined terminal-page null checks,
+  non-terminal expected-offset checks, and advancement checks in one B-grade validator. That made
+  pagination cursor invariants harder to review independently from the enclosing search-page
+  metadata validator.
+- Action: extracted terminal-page detection, terminal next-offset validation,
+  expected-next-offset matching, and next-offset advancement helpers while preserving existing
+  error messages and pagination behavior; added direct tests for each helper path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_search_page.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory search page
+  suite reported 34 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_search_page_next_offset` reduced from B(6) to A(5), with extracted pagination helpers
+  at A(1) to A(2). The refreshed complexity report is sourced from `34c8d949+worktree` and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves portfolio-memory search pagination maintainability only. It
+  does not change search ranking, candidate selection, count-map aggregation, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal pagination invariant
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1012: Enterprise write-authorization failure helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/enterprise_readiness.py`,
+  `tests/unit/api/test_enterprise_readiness_hardening.py`, and `quality/`.
+- Bank-buyable control area: enterprise write authorization boundary, fail-closed denial order,
+  and testing.
+- Finding: `authorize_write_request` combined enforcement gating, header normalization, missing
+  required-header denial, service-identity denial, capability lookup, and missing-capability
+  denial in one B-grade authorization helper. That made fail-closed denial order harder to audit
+  at an enterprise security boundary.
+- Action: extracted a write-authorization failure dispatcher plus missing-header,
+  missing-service-identity, and missing-capability reason helpers while preserving the existing
+  denial order and reason strings; added direct tests proving missing headers are evaluated before
+  service identity, service identity before capabilities, and allowed requests return no failure
+  reason.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py`,
+  `python -m ruff check src\api\enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py`,
+  `python -m mypy --config-file mypy.ini src\api\enterprise_readiness.py`,
+  `python -m pytest tests\unit\api\test_enterprise_readiness.py tests\unit\api\test_enterprise_readiness_hardening.py -q`,
+  `python -m radon cc src\api\enterprise_readiness.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused enterprise readiness suites
+  reported 20 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `authorize_write_request` reduced from B(6) to
+  A(3), with extracted failure-reason helpers at A(2) to A(3). The refreshed complexity report is
+  sourced from `badde630+worktree` and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves write-authorization maintainability only. It does not change
+  authentication trust material, runtime policy configuration, cryptographic verification,
+  middleware response shape, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal enterprise-readiness
+  authorization boundary maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1013: OpenAPI schema type example helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, and `quality/`.
+- Bank-buyable control area: OpenAPI example generation, API governance maintainability, and
+  testing.
+- Finding: `_schema_type_example` combined array item examples, object examples, boolean,
+  integer, and numeric examples in one B-grade dispatch helper. That made schema type example
+  behavior harder to extend safely while preserving current OpenAPI enrichment semantics.
+- Action: extracted schema type dispatch, array type example, and scalar type example helpers
+  while preserving existing generated examples; added direct tests for array, scalar, and
+  unsupported string dispatch behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff check src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py`,
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py -q`,
+  `python -m radon cc src\api\openapi_enrichment.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused OpenAPI enrichment helper suite
+  reported 37 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_schema_type_example` reduced from B(6) to
+  A(1), with extracted schema type helpers at A(1) to A(5). The refreshed complexity report is
+  sourced from `1738714f+worktree` and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves OpenAPI example-generation maintainability only. It does not
+  change OpenAPI route coverage, operation metadata policy, schema semantics, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal API governance helper
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1014: Currency overlay status decision helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/construction_currency_overlay_supportability.py`,
+  `tests/unit/dpm/construction/test_currency_overlay_supportability.py`, and `quality/`.
+- Bank-buyable control area: construction currency overlay supportability, missing-FX
+  fail-closed behavior, unsupported-currency review routing, and testing.
+- Finding: `currency_overlay_status` combined missing required FX-pair blocking, absent source
+  context degradation, source-context supportability propagation, unsupported currency review, and
+  active-currency readiness fallback in one B-grade service helper. That made the order of
+  currency overlay supportability decisions harder to audit.
+- Action: extracted missing-required-FX, unsupported-currency, and active-currency status helpers
+  while preserving existing supportability ordering and statuses; added direct tests for each
+  decision edge.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\construction_currency_overlay_supportability.py tests\unit\dpm\construction\test_currency_overlay_supportability.py`,
+  `python -m ruff check src\api\services\construction_currency_overlay_supportability.py tests\unit\dpm\construction\test_currency_overlay_supportability.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\construction_currency_overlay_supportability.py`,
+  `python -m pytest tests\unit\dpm\construction\test_currency_overlay_supportability.py -q`,
+  `python -m radon cc src\api\services\construction_currency_overlay_supportability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused currency overlay supportability
+  suite reported 6 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `currency_overlay_status`
+  reduced from B(6) to A(5), with extracted decision helpers at A(1) to A(2). The refreshed
+  complexity report is sourced from `8bea3d52+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves currency overlay status maintainability only. It does not
+  change FX-pair derivation, source-owned Treasury context mapping, hedge methodology, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal construction supportability
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1015: Mandate diff field traversal helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/mandate_diff.py`,
+  `tests/unit/dpm/mandates/test_mandate_diff.py`, and `quality/`.
+- Bank-buyable control area: mandate-version diff auditability, deterministic changed-field
+  traversal, and testing.
+- Finding: `iter_changed_fields` combined ignored-field handling, deterministic candidate-key
+  ordering, dotted field-path construction, nested dictionary recursion, and value comparison in
+  one B-grade helper. That made mandate diff traversal harder to audit as more mandate fields are
+  added.
+- Action: extracted candidate-key selection, field-path construction, and nested-value detection
+  helpers while preserving the existing `source_lineage` ignore rule, recursive traversal, and
+  deterministic output order; added direct tests for ignored fields, sorted keys, nested paths, and
+  nested-dict detection.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\mandate_diff.py tests\unit\dpm\mandates\test_mandate_diff.py`,
+  `python -m ruff check src\api\services\mandate_diff.py tests\unit\dpm\mandates\test_mandate_diff.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\mandate_diff.py`,
+  `python -m pytest tests\unit\dpm\mandates\test_mandate_diff.py -q`,
+  `python -m radon cc src\api\services\mandate_diff.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate diff suite reported 13
+  passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `iter_changed_fields` reduced from B(6) to A(4), with
+  extracted traversal helpers at A(1) to A(2). The refreshed complexity report is sourced from
+  `1cf1b378+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves mandate diff traversal maintainability only. It does not
+  change mandate version selection, materiality classification, HTTP error mapping, API contracts,
+  downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate diff auditability
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1016: Mandate optional-source readiness helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/services/mandate_optional_sources.py`,
+  `tests/unit/dpm/mandates/test_mandate_optional_sources.py`, and `quality/`.
+- Bank-buyable control area: mandate optional source readiness, fail-closed source-family
+  handling, and testing.
+- Finding: `ready_optional_source` combined absent-source handling, source supportability checks,
+  accepted data-quality status checks, and unavailable-family propagation in one B-grade helper.
+  That made optional source readiness behavior harder to audit as source-owned mandate refresh
+  inputs expand.
+- Action: extracted combined readiness, supportability readiness, and data-quality readiness
+  helpers while preserving accepted statuses (`READY`, `COMPLETE`, `ACCEPTED`) and missing-source
+  unavailable-family behavior; added direct tests for ready, degraded, stale, accepted lowercase,
+  and absent-quality cases.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\mandate_optional_sources.py tests\unit\dpm\mandates\test_mandate_optional_sources.py`,
+  `python -m ruff check src\api\services\mandate_optional_sources.py tests\unit\dpm\mandates\test_mandate_optional_sources.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\mandate_optional_sources.py`,
+  `python -m pytest tests\unit\dpm\mandates\test_mandate_optional_sources.py -q`,
+  `python -m radon cc src\api\services\mandate_optional_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate optional-source suite
+  reported 12 passed. OpenAPI quality and API vocabulary gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `ready_optional_source` reduced from B(6) to
+  A(3), with extracted readiness helpers at A(2). The refreshed complexity report is sourced from
+  `f6fff140+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves optional source readiness maintainability only. It does not
+  change Core resolver contracts, benchmark assignment readiness, source-family request specs,
+  mandate refresh behavior, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate optional-source
+  readiness hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1017: Historical attribution set selection helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: risk attribution source evidence selection, source-owned result
+  matching, and testing.
+- Finding: `_historical_attribution_set` combined malformed attribution-set fallback, candidate
+  mapping coercion, attribution type matching, metric matching, and grouping-dimension matching in
+  one B-grade helper. That made source-owned historical attribution selection harder to audit.
+- Action: extracted attribution-set candidate extraction and exact match helpers while preserving
+  malformed-input fallback and selected set semantics; added direct tests for valid list
+  extraction, malformed candidate fallback, exact matches, mismatches, and selected result return.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk realized outcome source
+  suite reported 56 passed. OpenAPI quality and API vocabulary gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports `_historical_attribution_set`
+  reduced from B(6) to A(4), with extracted selection helpers at A(2) to A(3). The refreshed
+  complexity report is sourced from `2f8b8e10+worktree` and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves historical attribution set selection maintainability only. It
+  does not change risk attribution value extraction, source-id construction, supportability
+  posture, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal risk attribution adapter
+  maintainability hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1018: Portfolio-memory event aggregate helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_models.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory aggregate metadata integrity, source lineage
+  auditability, and fail-closed validation.
+- Finding: `_validate_portfolio_memory_event_aggregates` recomputed event count, event-type
+  counts, source-system summary, reason-code summary, and aggregate supportability state inline in
+  one B-grade validator. That made portfolio-memory summary integrity harder to audit and left
+  only the event-count mismatch path directly pinned by focused tests.
+- Action: extracted reusable aggregate mismatch validation plus named aggregate expectation
+  helpers for event count and event-type counts, preserved existing error messages and fail-closed
+  behavior, and added direct mismatch tests for event-type counts, source systems, reason codes,
+  and supportability state.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_models.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_models.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_models.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory model suite
+  reported 9 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_portfolio_memory_event_aggregates` reduced from B(7) to A(1), with extracted
+  aggregate helpers at A(1) to A(2). The refreshed complexity report is sourced from
+  `c710b88b+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves portfolio-memory aggregate validation maintainability and
+  direct model test coverage only. It does not change portfolio-memory API shape, search-page
+  metadata validation, persistence behavior, source-product contracts, downstream
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal portfolio-memory model
+  validation hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1019: Proof-pack source ID resolution helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: immutable proof-pack identity, deterministic replay, and source
+  artifact auditability.
+- Finding: `_proof_pack_id` selected run-backed and selected-alternative-backed proof-pack
+  identifiers inline and raised the source-missing error from the same branch-heavy helper. That
+  kept deterministic proof-pack identity behavior correct but made source-specific ID resolution
+  harder to audit as proof-pack source families expand.
+- Action: extracted a candidate ID resolver and source-specific run and selected-alternative ID
+  helpers while preserving the public ID formatting helpers and the existing
+  `DPM_PROOF_PACK_SOURCE_MISSING` fail-closed behavior. Added public builder-level assertions that
+  generated run and selected-alternative proof packs use the stable ID helpers.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused proof-pack builder suite reported
+  109 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_proof_pack_id` reduced from B(6) to A(2), with
+  extracted source ID helpers at A(2) to A(3). The refreshed complexity report is sourced from
+  `c7307eb7+worktree` and the current top-ten source hotspot list no longer includes the targeted
+  helper.
+- Residual risk: this slice improves proof-pack ID resolution maintainability and direct identity
+  test coverage only. It does not change proof-pack ID formats, repository persistence semantics,
+  proof-pack API contracts, source artifact hashes, downstream Gateway/Workbench behavior, or
+  global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder hardening
+  with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1020: Campaign-definition hash normalization helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_definitions.py`,
+  `tests/unit/dpm/waves/test_campaign_definition_repository.py`, and `quality/`.
+- Bank-buyable control area: bulk-review campaign definition immutability, replay-safe content
+  hashes, and legacy payload compatibility.
+- Finding: `bulk_review_campaign_definition_hash` mixed canonical payload creation, generated
+  timestamp normalization, content-hash inclusion policy, empty evidence-ledger normalization, JSON
+  canonicalization, and SHA-256 hashing in one B-grade helper. That made immutable campaign
+  definition hashing harder to audit as approval, assignment, task, and maker-checker evidence
+  ledgers expanded.
+- Action: extracted hash payload creation, transient hash-field normalization, and empty evidence
+  collection pruning helpers while preserving the public hash format and existing mismatch
+  behavior. Added direct tests proving generated `created_at` values do not affect the content
+  hash and legacy payloads missing any empty evidence collection continue to hash identically.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m ruff check src\core\waves\campaign_definitions.py tests\unit\dpm\waves\test_campaign_definition_repository.py`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_definitions.py`,
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m radon cc src\core\waves\campaign_definitions.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused campaign-definition repository
+  suite reported 60 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `bulk_review_campaign_definition_hash` reduced from B(6) to A(1), with extracted normalization
+  helpers at A(1) to A(3). The refreshed complexity report is sourced from `329fb99a+worktree` and
+  the current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves campaign-definition content-hash maintainability and direct
+  compatibility coverage only. It does not change hash semantics, campaign lifecycle behavior,
+  repository persistence, API contracts, downstream Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal campaign-definition hashing
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1021: In-memory wave listing helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/in_memory.py`,
+  `tests/unit/dpm/waves/test_wave_domain.py`, and `quality/`.
+- Bank-buyable control area: rebalance wave repository read behavior, deterministic listing,
+  pagination, and defensive-copy isolation.
+- Finding: `InMemoryDpmWaveRepository.list_waves` combined lock-protected retrieval, state,
+  trigger-type, and as-of-date predicates, descending sort policy, pagination, and defensive copy
+  behavior in one B-grade adapter method. Existing tests covered defensive single-record reads and
+  PostgreSQL list filters but did not directly pin in-memory list filtering, ordering, pagination,
+  and copy isolation together.
+- Action: extracted in-memory list filtering, predicate, sort-key, paging, and copy helpers while
+  preserving repository protocol behavior; split the combined predicate into state, trigger, and
+  as-of-date match helpers. Added a focused repository test proving filtered descending pages and
+  defensive copy isolation for listed waves.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m ruff check src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\in_memory.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_domain.py -q`,
+  `python -m radon cc src\infrastructure\waves\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused wave domain suite reported 22
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `InMemoryDpmWaveRepository.list_waves` reduced
+  from B(8) to A(1), with extracted list helpers at A(1) to A(3). The refreshed complexity report
+  is sourced from `d9a0534d+worktree` and the current top-ten source hotspot list no longer
+  includes the targeted method.
+- Residual risk: this slice improves in-memory wave listing maintainability and direct repository
+  test coverage only. It does not change PostgreSQL listing behavior, wave write/idempotency
+  behavior, API contracts, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal repository adapter hardening with
+  no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1022: Portfolio-memory empty search metadata helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/models.py`,
+  `tests/unit/dpm/portfolio_memory/test_search_page.py`, and `quality/`.
+- Bank-buyable control area: portfolio-memory search-row supportability, source-backed aggregate
+  metadata boundaries, and deterministic empty-result semantics.
+- Finding: `_validate_empty_search_item_latest_event_metadata` combined empty-row supportability
+  policy, aggregate metadata rejection, and latest-event metadata rejection in one B-grade helper.
+  That made empty portfolio-memory search-row invariants harder to audit as source-system,
+  source-type, supportability, and matching-event filters expanded.
+- Action: extracted supportability-state, aggregate-metadata, and latest-event-presence validators
+  while preserving the existing validation messages and behavior. Strengthened focused tests so
+  empty rows reject non-`EMPTY` supportability and each aggregate metadata family:
+  `event_type_counts`, `source_systems`, and `reason_codes`.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m ruff check src\core\portfolio_memory\models.py tests\unit\dpm\portfolio_memory\test_search_page.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\models.py`,
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_search_page.py -q`,
+  `python -m radon cc src\core\portfolio_memory\models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused portfolio-memory search-page
+  suite reported 37 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports
+  `_validate_empty_search_item_latest_event_metadata` reduced from B(6) to A(1), with extracted
+  validators at A(2) to A(4). The refreshed complexity report is sourced from
+  `142ebda4+worktree`, the current top-ten source hotspot list no longer includes the targeted
+  helper, and the highest current source-function complexity is 6.
+- Residual risk: this slice improves portfolio-memory search-row validation maintainability and
+  direct invariant coverage only. It does not change portfolio-memory composition, API contracts,
+  persistence, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal domain-model validation
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1023: Performance source posture helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/performance_sources.py`,
+  `tests/unit/core/test_performance_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: RFC-0042 outcome-review performance source authority, degraded
+  supportability semantics, and no-local-performance-methodology boundaries.
+- Finding: `_performance_source_posture` encoded unsupported, blocked, stale, degraded, and ready
+  posture mapping in one B-grade helper. The existing adapter tests covered representative source
+  responses, but did not directly pin the complete source-owner posture table used by both
+  contribution and attribution realized-source adapters.
+- Action: extracted explicit source-state predicates and degraded-quality mapping while preserving
+  source-state and quality outputs. Added a direct posture table test covering unsupported,
+  blocked (`error` and `empty`), stale, degraded with source value, degraded without source value,
+  and ready source states.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\performance_sources.py tests\unit\core\test_performance_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\performance_sources.py tests\unit\core\test_performance_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\performance_sources.py`,
+  `python -m pytest tests\unit\core\test_performance_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\performance_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused performance source suite reported
+  36 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_performance_source_posture` reduced from
+  B(6) to A(5), with extracted predicate and quality helpers at A(1) to A(2). The refreshed
+  complexity report is sourced from `0a060ba4+worktree`, and the current top-ten source hotspot
+  list no longer includes the targeted helper.
+- Residual risk: this slice improves performance source-posture maintainability and direct
+  source-owner posture coverage only. It does not change performance adapter semantics, outcome
+  review APIs, source-product contracts, risk-source posture behavior, Gateway/Workbench behavior,
+  or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
+  operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1024: Risk source posture helper reuse
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, and `quality/`.
+- Bank-buyable control area: RFC-0042 outcome-review risk source authority, permission-blocked and
+  degraded supportability semantics, and no-local-risk-methodology boundaries.
+- Finding: `_risk_source_posture` repeated supportability and degraded-quality mapping that already
+  existed in `_supportability_source_posture` and `_quality_for_degraded_value`. This kept the
+  generic risk metrics posture path as a B-grade hotspot and created avoidable drift risk against
+  drawdown, rolling, concentration, and historical attribution posture helpers.
+- Action: routed generic risk source posture through the existing local supportability and
+  degraded-quality helpers while preserving all source-state and quality outputs. Broadened the
+  focused posture test into a table covering unsupported, permission-blocked, stale, degraded with
+  source value, degraded without source value, and ready source states.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py`,
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py -q`,
+  `python -m radon cc src\core\outcomes\risk_sources.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused risk source suite reported 61
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_risk_source_posture` reduced from B(6) to
+  A(3). The refreshed complexity report is sourced from `9fc0378e+worktree`, and the current
+  top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves generic risk-source posture maintainability and direct
+  source-owner posture coverage only. It does not change risk adapter semantics, outcome-review
+  APIs, source-product contracts, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal source-adapter hardening with no
+  operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1025: In-memory wave save helpers
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/in_memory.py`,
+  `tests/unit/dpm/waves/test_wave_domain.py`, and `quality/`.
+- Bank-buyable control area: rebalance wave write-path idempotency, duplicate identity protection,
+  and defensive-copy persistence for local/runtime repository parity.
+- Finding: `InMemoryDpmWaveRepository.save_wave` combined idempotency conflict detection,
+  duplicate wave-id detection, idempotency marker writes, and wave storage in one B-grade adapter
+  method. The behavior was covered through repository tests, but the write-path policy steps were
+  harder to audit and easier to drift from the PostgreSQL helper shape.
+- Action: extracted idempotency conflict validation, duplicate wave-id validation, idempotency
+  marker indexing, and deep-copy storage helpers while preserving repository behavior and error
+  codes. Added a focused helper test covering no-key noop behavior, replay-compatible idempotency,
+  idempotency conflict, duplicate wave-id conflict, and defensive copy-on-store behavior.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m ruff check src\infrastructure\waves\in_memory.py tests\unit\dpm\waves\test_wave_domain.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\in_memory.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_domain.py -q`,
+  `python -m radon cc src\infrastructure\waves\in_memory.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused wave domain suite reported 23
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `InMemoryDpmWaveRepository.save_wave` reduced
+  from B(6) to A(1), with extracted write helpers at A(1) to A(4). The refreshed complexity report
+  is sourced from `734d7331+worktree`, and the current top-ten source hotspot list no longer
+  includes the targeted method.
+- Residual risk: this slice improves in-memory wave write-path maintainability and focused helper
+  coverage only. It does not change PostgreSQL wave persistence, API contracts, downstream
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal repository adapter hardening with
+  no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1026: JSON access formatter payload helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/observability.py`,
+  `tests/unit/dpm/api/test_observability_api.py`, and `quality/`.
+- Bank-buyable control area: structured JSON request logging, correlation/request/trace context,
+  and sensitive-field redaction for production support.
+- Finding: `JsonFormatter.format` built the full access-log payload, merged optional extra fields,
+  applied sensitive-field redaction, and pruned missing context in one B-grade method. That made
+  request-log payload behavior harder to audit as observability fields and safe extra labels grow.
+- Action: extracted JSON log payload assembly, base context payload construction, and `None` value
+  pruning helpers while preserving the emitted JSON shape. Strengthened focused tests so formatter
+  output proves sensitive extra fields are redacted, safe extra fields survive, correlation/request/
+  trace context is emitted when set, and missing context fields are omitted.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\observability.py tests\unit\dpm\api\test_observability_api.py`,
+  `python -m ruff check src\api\observability.py tests\unit\dpm\api\test_observability_api.py`,
+  `python -m mypy --config-file mypy.ini src\api\observability.py`,
+  `python -m pytest tests\unit\dpm\api\test_observability_api.py -q`,
+  `python -m radon cc src\api\observability.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused observability API suite reported
+  16 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `JsonFormatter.format` reduced from B(8) to
+  A(1), with `JsonFormatter` class complexity reduced from B(9) to A(2). The refreshed complexity
+  report is sourced from `2c33dd24+worktree`, and the current top-ten source hotspot list no
+  longer includes the targeted formatter.
+- Residual risk: this slice improves structured log formatter maintainability and focused
+  redaction/context coverage only. It does not change middleware routing, metrics labels, OpenAPI
+  contracts, downstream behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal observability implementation
+  hardening with no operator-facing contract change.
+
+## BACKEND-REVIEW-20260619-1027: Mandate sustainability review predicates
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `tests/unit/dpm/core/test_mandate_health.py`, and `quality/`.
+- Bank-buyable control area: source-owned sustainability preference handling, mandate workflow
+  readiness, and no-local-ESG-approval boundaries.
+- Finding: `_requires_sustainability_review` combined missing-profile handling, active preference
+  detection, and four source-owned sustainability control families in one B-grade helper. Existing
+  end-to-end mandate health tests proved the review posture, but the exact source-control triggers
+  were not directly pinned.
+- Action: extracted active preference and review-control predicates using the concrete Core
+  `DpmCoreSustainabilityPreferenceEntry` source-product type while preserving review behavior.
+  Added focused tests proving active minimum-allocation, maximum-allocation, exclusion-code, and
+  positive-tilt controls require review, while missing profiles, inactive preferences, and
+  control-free active preferences do not.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\mandates.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff check src\core\mandates.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py`,
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py -q`,
+  `python -m radon cc src\core\mandates.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused mandate health suite reported 45
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `_requires_sustainability_review` reduced from
+  B(7) to A(3), with extracted predicates at A(1) to A(4). The refreshed complexity report is
+  sourced from `5ffabcff+worktree`, and the current top-ten source hotspot list no longer includes
+  the targeted helper.
+- Residual risk: this slice improves sustainability review maintainability and source-control test
+  coverage only. It does not change ESG methodology, mandate-health scoring semantics, API
+  contracts, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal mandate domain-rule hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; the existing backend delivery
+  governance and codebase review ledger instructions covered this pattern cleanly.
+
+## BACKEND-REVIEW-20260619-1028: OpenAPI composite example option helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, and `quality/`.
+- Bank-buyable control area: OpenAPI example generation, contract readability, and API governance
+  evidence for generated documentation.
+- Finding: `_composite_example_from_schema` combined composite-family lookup, option iteration,
+  null-schema filtering, and example generation in one B-grade helper. Existing tests covered a
+  `oneOf` nullable reference path, but did not pin composite-family precedence or all-null fallback
+  behavior.
+- Action: extracted composite option lookup and first non-null option selection helpers while
+  preserving emitted examples. Strengthened focused tests to cover `oneOf` null-skipping,
+  `anyOf` fallback after null-only `oneOf`, `allOf` precedence over `oneOf`, all-null composites,
+  and non-composite schemas.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff check src\api\openapi_enrichment.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py`,
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py -q`,
+  `python -m radon cc src\api\openapi_enrichment.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused OpenAPI enrichment helper suite
+  reported 37 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/
+  router leakage scan returned no findings. Radon reports `_composite_example_from_schema` reduced
+  from B(6) to A(2), with extracted option helpers at A(3) to A(4). The refreshed complexity
+  report is sourced from `faee5d20+worktree`, and the current top-ten source hotspot list no
+  longer includes the targeted helper.
+- Residual risk: this slice improves OpenAPI example-generation maintainability and focused helper
+  coverage only. It does not change API route behavior, schema ownership, OpenAPI governance
+  thresholds, downstream Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal OpenAPI enrichment hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and OpenAPI helper tests cover this repeatable pattern.
+
+## BACKEND-REVIEW-20260619-1029: Proof-pack source supportability helpers
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`,
+  `tests/unit/dpm/proof_packs/test_proof_pack_builder.py`, and `quality/`.
+- Bank-buyable control area: pre-trade proof-pack source supportability diagnostics, run-lineage
+  projection, and construction alternative-set posture evidence.
+- Finding: `_source_supportability` encoded missing-run defaults, run-lineage projection, source
+  supportability state, and construction alternative-set status in one B-grade helper. That made
+  proof-pack section diagnostics harder to audit as direct-run and selected-alternative proof-pack
+  paths continue to evolve.
+- Action: extracted explicit run-source supportability and alternative-set status helpers while
+  preserving the emitted `source_supportability` mapping. Added focused tests proving stateful
+  run-lineage diagnostics, degraded source supportability, alternative-set status projection, and
+  null payload preservation when neither source is present.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff check src\core\proof_packs\builder.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py`,
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m radon cc src\core\proof_packs\builder.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused proof-pack builder suite reported 111 passed. OpenAPI
+  quality, API vocabulary, and no-alias gates passed, and the FastAPI/router leakage scan returned
+  no findings. Radon reports `_source_supportability` reduced from B(6) to A(1), with extracted
+  helpers at A(2). The refreshed complexity report is sourced from `9d9aa248+worktree`, and the
+  current top-ten source hotspot list no longer includes the targeted helper.
+- Residual risk: this slice improves proof-pack source-supportability maintainability and focused
+  diagnostic coverage only. It does not change proof-pack API contracts, source-lineage semantics,
+  construction status semantics, downstream Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal proof-pack builder hardening with
+  no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and codebase review ledger instructions cover this repeatable hotspot-refactor pattern.
+
+## BACKEND-REVIEW-20260619-1030: Wave supportability diagnostic policy tables
+
+- Date: 2026-06-19
+- Scope: `src/api/services/wave_supportability_diagnostics.py`,
+  `tests/unit/dpm/waves/test_wave_supportability_diagnostics.py`, and `quality/`.
+- Bank-buyable control area: wave operator diagnostics, supportability severity classification,
+  and source-owner routing for remediation.
+- Finding: `supportability_severity` and `supportability_source_owner` each embedded wave-item
+  state policy in branching. That kept both helpers at B-grade complexity and made diagnostic
+  severity/source-owner mapping harder to review as wave states and proof-pack postures evolve.
+- Action: extracted explicit supportability severity and source-owner state sets plus a small
+  proof-pack degraded predicate and default source-owner helper. Added table-driven tests covering
+  critical, warning, info, completed/no-issue states, proof-pack degraded warning behavior,
+  source-owner routing, and explicit source-owner override preservation.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m ruff check src\api\services\wave_supportability_diagnostics.py tests\unit\dpm\waves\test_wave_supportability_diagnostics.py`,
+  `python -m mypy --config-file mypy.ini src\api\services\wave_supportability_diagnostics.py`,
+  `python -m pytest tests\unit\dpm\waves\test_wave_supportability_diagnostics.py -q`,
+  `python -m radon cc src\api\services\wave_supportability_diagnostics.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused wave supportability diagnostics suite reported 7 passed.
+  OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router leakage scan
+  returned no findings. Radon reports `supportability_severity` reduced from B(6) to A(4) and
+  `supportability_source_owner` reduced from B(6) to A(3), with the default owner helper at A(4).
+  The refreshed complexity report is sourced from `40b02568+worktree`, and the current top-ten
+  source hotspot list no longer includes either targeted helper.
+- Residual risk: this slice improves wave supportability diagnostic maintainability and direct
+  policy-table coverage only. It does not change the supportability payload contract, wave state
+  semantics, remediation route behavior, Gateway/Workbench behavior, or global bank-buyable
+  readiness.
+- Wiki decision: no wiki source change required; this is internal diagnostics implementation
+  hardening with no operator-facing contract change.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and review-ledger guidance covered the hotspot/policy-table refactor pattern cleanly.
+
+## BACKEND-REVIEW-20260619-1031: Shared AI handoff guardrails
+
+- Date: 2026-06-19
+- Scope: `src/core/common/ai_guardrails.py`, `src/core/outcomes/handoffs.py`,
+  `src/core/proof_packs/handoffs.py`, `tests/unit/core/test_ai_guardrails.py`, and `quality/`.
+- Bank-buyable control area: AI evidence handoff sensitive-field removal, report/AI payload
+  redaction consistency, and no-sensitive-data guardrails for proof-pack and outcome-review
+  downstream consumers.
+- Finding: proof-pack and outcome-review handoff modules duplicated the same forbidden AI field
+  vocabulary, sanitizer recursion, and forbidden-field scanner. The duplicated
+  `_find_forbidden_field_names` helpers were both B-grade hotspots, increasing the risk that future
+  sensitive-field hardening would be applied to one handoff path but not the other.
+- Action: extracted shared `sanitize_for_ai` and `forbidden_field_names` helpers plus the common
+  forbidden-field vocabulary into `src/core/common/ai_guardrails.py`. Rewired proof-pack and
+  outcome handoffs through the shared helper while preserving their existing public
+  `assert_no_ai_forbidden_fields` functions and domain-specific error codes. Added focused common
+  guardrail tests for nested dictionaries/lists, forbidden parent-field removal, allowed-value
+  preservation, and non-string key handling.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py`,
+  `python -m ruff check src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py`,
+  `python -m mypy --config-file mypy.ini src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py`,
+  `python -m pytest tests\unit\core\test_ai_guardrails.py tests\unit\core\test_outcome_handoffs.py tests\unit\dpm\proof_packs\test_proof_pack_handoffs.py -q`,
+  `python -m radon cc src\core\common\ai_guardrails.py src\core\outcomes\handoffs.py src\core\proof_packs\handoffs.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused AI guardrail, outcome handoff, and proof-pack handoff suites
+  reported 13 passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the
+  FastAPI/router leakage scan returned no findings. Radon reports shared guardrail helpers at A(2)
+  to A(4), and the local handoff `_sanitize_for_ai` wrappers at A(1). The refreshed complexity
+  report is sourced from `edc388bd+worktree`, and the current top-ten source hotspot list no longer
+  includes either duplicated `_find_forbidden_field_names` helper.
+- Residual risk: this slice improves AI handoff guardrail reuse and direct common-helper coverage
+  only. It does not change proof-pack or outcome handoff public contracts, forbidden action lists,
+  evidence hash exclusions, downstream report/AI behavior, Gateway/Workbench behavior, or global
+  bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal security/maintainability
+  hardening with unchanged operator-facing handoff contracts.
+- Guidance decision: no skill, context, or playbook update required; the recurring pattern is
+  already covered by backend governance and review-ledger guidance, and the shared helper plus tests
+  are sufficient durable implementation guidance for future handoff modules.
+
+## BACKEND-REVIEW-20260619-1032: Request input-mode validation helpers
+
+- Date: 2026-06-19
+- Scope: `src/api/request_models.py`,
+  `tests/unit/api/test_runtime_request_model_and_service_edges.py`, and `quality/`.
+- Bank-buyable control area: API request-envelope validation, stateless/stateful execution-mode
+  guardrails, and deterministic client error codes for missing execution payloads.
+- Finding: `BatchExecutionRequestEnvelope.validate_mode_payload` embedded stateless payload,
+  stateful payload, and stateful scenario validation in one B-grade Pydantic validator, while
+  `RebalanceExecutionRequestEnvelope` carried a smaller copy of the same input-mode policy. That
+  made API request contract guardrails harder to audit as stateful execution support expands.
+- Action: introduced a shared `InputMode` alias plus `_require_input_mode_payload`,
+  `_requires_stateless_payload`, `_requires_stateful_payload`, and `_require_stateful_scenarios`
+  helpers. Rewired both envelope validators through the shared helpers while preserving existing
+  error codes. Added focused tests covering valid stateless rebalance, valid stateless batch, valid
+  stateful batch with scenarios, and each helper error path.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\api\request_models.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m ruff check src\api\request_models.py tests\unit\api\test_runtime_request_model_and_service_edges.py`,
+  `python -m mypy --config-file mypy.ini src\api\request_models.py`,
+  `python -m pytest tests\unit\api\test_runtime_request_model_and_service_edges.py -q`,
+  `python -m radon cc src\api\request_models.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  `python scripts\engineering_health_report.py`,
+  and `git diff --check`. The focused runtime request model and service-edge suite reported 48
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports both envelope `validate_mode_payload` methods at
+  A(1), with shared payload/scenario helpers at A(2) to A(3). The refreshed complexity report is
+  sourced from `0eaa785e+worktree`, and the current top-ten source hotspot list no longer includes
+  `validate_mode_payload`.
+- Residual risk: this slice improves request-envelope validation maintainability and direct
+  validation coverage only. It does not change API schemas, request error codes, stateful sourcing
+  feature gates, execution behavior, Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal API request-model validation
+  hardening with unchanged public request contracts.
+- Guidance decision: no skill, context, or playbook update required; the helper extraction and
+  focused request-model tests are sufficient durable guidance for this recurring validation pattern.
+
+## BACKEND-REVIEW-20260619-1033: Rebalance data-quality blocking policy
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/execution.py`,
+  `tests/unit/dpm/engine/test_engine_simulation_shared.py`, and `quality/`.
+- Bank-buyable control area: rebalance execution data-quality gating, deterministic missing-data
+  blocking policy, and direct unit-level guardrails for shelf, price, and FX blocker behavior.
+- Finding: `check_blocking_dq` encoded shelf, missing-price, and missing-FX blocking decisions as
+  repeated inline conditionals. That left a B-grade hotspot in the execution path and made the
+  policy harder to audit as future data-quality buckets are added.
+- Action: extracted an explicit `_DataQualityBlockingRule` policy table plus small bucket/rule
+  helpers, then rewired `check_blocking_dq` through that reusable policy. Added focused tests
+  covering unconditional shelf blocking, option-gated price and FX blocking, and ignored empty or
+  non-blocking buckets.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format src\core\rebalance\execution.py tests\unit\dpm\engine\test_engine_simulation_shared.py`,
+  `python -m ruff check src\core\rebalance\execution.py tests\unit\dpm\engine\test_engine_simulation_shared.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance\execution.py`,
+  `python -m pytest tests\unit\dpm\engine\test_engine_simulation_shared.py -q`,
+  `python -m radon cc src\core\rebalance\execution.py -s`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `rg -n "from src\.api\.routers|import src\.api\.routers|HTTPException|status\.HTTP|from fastapi|import fastapi|from starlette|import starlette" src/api/services -g "*.py"`,
+  and `python scripts\engineering_health_report.py`. The focused engine shared suite reported 15
+  passed. OpenAPI quality, API vocabulary, and no-alias gates passed, and the FastAPI/router
+  leakage scan returned no findings. Radon reports `check_blocking_dq` reduced from B(6) to A(2),
+  with the extracted rule helper at A(3). The refreshed complexity report is sourced from
+  `9c618b9e+worktree`, and the current top-ten source hotspot list no longer includes
+  `check_blocking_dq`.
+- Residual risk: this slice improves rebalance data-quality blocker maintainability and direct
+  policy coverage only. It does not change missing-data semantics, rebalance API contracts,
+  Gateway/Workbench behavior, or global bank-buyable readiness.
+- Wiki decision: no wiki source change required; this is internal rebalance execution policy
+  hardening with unchanged operator-facing behavior.
+- Guidance decision: no skill, context, or playbook update required; existing backend governance
+  and review-ledger guidance already cover policy-table extraction and focused unit
+  characterization.
+
+## BACKEND-REVIEW-20260619-1034: Quality report freshness CI enforcement
+
+- Date: 2026-06-19
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  `Makefile`, `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: CI enforcement, quality evidence integrity, scorecard freshness, and
+  future-regression prevention for the enterprise backend refactor program.
+- Finding: the repository generated and committed quality reports after refactoring slices, but
+  neither local gates nor blocking GitHub lanes proved that those checked-in scorecards were
+  current. This allowed future code changes to pass CI while leaving stale quality evidence behind,
+  weakening before/after PR proof and making degradation harder to catch.
+- Action: added `python scripts/engineering_health_report.py --check` and `make
+  quality-report-gate`. The check builds reports in memory, ignores only volatile report
+  provenance lines (`Generated at` and `Report source snapshot`), and fails on changed measured
+  content, missing artifacts, scorecard drift, boundary-count drift, complexity drift, or OpenAPI
+  posture drift. Wired the gate into `make check`, `make ci`, Remote Feature Lane, PR Merge Gate,
+  and Main Releasability. Added unit tests for provenance normalization and stale/missing artifact
+  detection, updated the CI gate documentation, and regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python scripts\engineering_health_report.py --check` initially failed with stale
+  `quality/refactor_health_report.md`, `quality/baseline_report.md`,
+  `quality/quality_scorecard.md`, and `quality/complexity_report.md`, proving the detector catches
+  stale artifacts; after regeneration it passed with "Quality reports are current." Also ran
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m pytest tests\unit\test_engineering_health_report.py -q`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/feature-lane.yml','.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml']]; print('Parsed workflow YAML files')"`,
+  and `git diff --check`. The focused engineering health report suite reported 10 passed. OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, workflow YAML parse,
+  and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces freshness of tracked quality reports and scorecards. It does
+  not yet add diff-coverage enforcement, actionlint execution in the local gate, branch-protection
+  introspection, or stricter numeric thresholds for report-only quality dimensions.
+- Wiki decision: no wiki source change required; this changes CI enforcement and repo-local
+  quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. Existing backend delivery, PR pre-merge, and
+  review-ledger guidance covered this pattern; the new executable gate is the durable guidance for
+  future agents.
+
+## BACKEND-REVIEW-20260619-1035: Workflow policy CI enforcement
+
+- Date: 2026-06-19
+- Scope: `scripts/workflow_policy_gate.py`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `Makefile`, `.github/workflows/feature-lane.yml`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `scripts/engineering_health_report.py`,
+  `tests/unit/test_engineering_health_report.py`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: GitHub Actions supply-chain posture, workflow permission minimization,
+  CI drift prevention, and durable enforcement of the quality-report freshness gate in blocking
+  lanes.
+- Finding: workflow linting existed in GitHub through `reviewdog/action-actionlint`, but the
+  repository did not have a repo-native gate that could fail locally or in the blocking lane when a
+  future workflow introduced an unpinned action reference, expanded default workflow permissions, or
+  removed/softened the quality-report freshness gate. That left CI governance dependent on review
+  discipline rather than an executable policy.
+- Action: added `scripts/workflow_policy_gate.py` and `make workflow-policy-gate`. The gate
+  enforces expected top-level permissions for all repository workflows, allows the auto-merge
+  workflow's explicit `contents: write` and `pull-requests: write` scope only in
+  `pr-auto-merge.yml`, requires external `uses:` references to use a `vN`/semver tag or full SHA,
+  and requires Feature Lane, PR Merge Gate, and Main Releasability to run `make
+  quality-report-gate` as a blocking step. Wired the gate into `make check`, `make ci`, Remote
+  Feature Lane, PR Merge Gate, and Main Releasability. Added focused tests for current workflow
+  compliance, unpinned refs, permission creep, and non-blocking quality-report gate drift. Updated
+  the quality scorecard and CI gate documentation, then regenerated reports.
+- Status: hardened.
+- Evidence:
+  `python scripts\workflow_policy_gate.py`,
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/feature-lane.yml','.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml','.github/workflows/quality-baseline.yml','.github/workflows/pr-auto-merge.yml']]; print('Parsed workflow YAML files')"`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 17
+  passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, workflow YAML parse, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces repository-local workflow policy. It does not query GitHub
+  branch-protection settings, require full-SHA pinning for every external action, or replace the
+  GitHub-hosted actionlint check with a local binary.
+- Wiki decision: no wiki source change required; this is internal CI policy enforcement and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The executable workflow policy gate is the durable
+  future-agent guardrail for this recurring CI-governance pattern.
+
+## BACKEND-REVIEW-20260619-1036: Local CI static-gate parity
+
+- Date: 2026-06-19
+- Scope: `Makefile`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: local CI proof fidelity, PR Merge Gate parity, static quality
+  enforcement, and future-regression prevention for refactor slices before they reach GitHub.
+- Finding: `make check` included the remediated static quality gates, and PR Merge Gate enforced
+  critical test typecheck, architecture, complexity, dependency-hygiene, dead-code, workflow
+  policy, and quality-report freshness checks. `make ci` and `make ci-local`, however, did not
+  share one canonical static gate pack, so a future local PR-proof run could omit active static
+  gates that GitHub would later enforce.
+- Action: introduced `static-quality-gates` as the single Make target for lint, no-alias,
+  typecheck, critical-test typecheck, OpenAPI, API vocabulary, service-boundary,
+  router-infrastructure, mesh-contract, architecture, complexity, dependency-hygiene, dead-code,
+  workflow-policy, and quality-report freshness checks. Rewired `make check`, `make ci`, and
+  `make ci-local` to depend on that shared target, removed duplicated late `ci-local` gate calls,
+  and added a focused unit test that pins the shared static-gate dependency and the `ci` coverage
+  plus security-audit contract. Updated CI gate documentation and quality scorecard wording, then
+  regenerated reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\workflow_policy_gate.py`,
+  `make -n check`,
+  `make -n ci`,
+  `make -n ci-local`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 18
+  passed. The `make -n` evidence shows `check`, `ci`, and `ci-local` all execute the shared
+  static gate pack; `ci` still executes migration smoke, full coverage, and security audit; and
+  `ci-local` still executes matrix-style unit/integration/e2e coverage plus combined coverage.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice aligns local static-gate parity. It does not run the full heavyweight
+  `make ci` locally in this turn, add local actionlint binary execution, or inspect live GitHub
+  branch-protection settings.
+- Wiki decision: no wiki source change required; this is internal CI and repo-local quality-gate
+  documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The shared Make target plus unit test are the
+  durable future-agent guardrail for local CI parity.
+
+## BACKEND-REVIEW-20260619-1037: PR evidence contract enforcement
+
+- Date: 2026-06-19
+- Scope: `.github/pull_request_template.md`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `scripts/engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: agent-default PR evidence quality, CI governance drift prevention,
+  truthful local/remote gate reporting, and durable proof expectations for future refactor slices.
+- Finding: the repository now has a strong local/static CI gate pack, workflow policy gate, and
+  checked-in quality-report freshness gate, but the PR template still asked agents for only a small
+  legacy validation subset. A future agent could submit a PR without recording local PR parity,
+  workflow policy, quality-report freshness, OpenAPI/vocabulary/no-alias, security, stranded-truth,
+  wiki, or guidance evidence, and CI would not fail on that weakened human/agent evidence contract.
+- Action: extended `scripts/workflow_policy_gate.py` to validate the PR template for required
+  evidence tokens covering summary, risk/rollback, `make check`, `make ci`, `make ci-local`,
+  workflow policy, quality-report freshness, OpenAPI, API vocabulary, no-alias, security, Remote
+  Feature Lane, Pull Request Merge Gate, Main Releasability, stranded-truth reconciliation, wiki
+  decision, and guidance decision. Updated the PR template to require those evidence fields and
+  added focused tests proving both the current template and a deliberately weakened template are
+  enforced. Updated the generated scorecard wording and CI-gate documentation to reflect that
+  workflow policy now also blocks PR evidence drift.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 20
+  passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice enforces the repo-local PR template contract. It does not prove that
+  every future PR body has been filled truthfully, inspect live GitHub branch-protection settings,
+  require full-SHA pinning for external actions, or add a semantic diff-quality/changed-code
+  coverage gate.
+- Wiki decision: no wiki source change required; this changes internal CI/PR evidence governance
+  and repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required in this slice. The executable workflow policy gate
+  and PR template are the durable future-agent guidance; a broader Lotus-wide skill/context update
+  remains a possible platform-level follow-up if the same PR-evidence drift pattern is found across
+  other repositories.
+
+## BACKEND-REVIEW-20260619-1038: Shared coverage gate parity
+
+- Date: 2026-06-19
+- Scope: `scripts/coverage_gate.py`, `Makefile`, `.github/workflows/pr-merge-gate.yml`,
+  `.github/workflows/main-releasability.yml`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `tests/unit/test_coverage_gate.py`,
+  `scripts/engineering_health_report.py`, `quality/ci_quality_gates.md`, generated quality
+  reports, and this ledger.
+- Bank-buyable control area: coverage enforcement consistency, local/GitHub CI parity, agent
+  default command quality, and prevention of ad hoc CI implementation drift.
+- Finding: combined coverage enforcement was active, but the implementation was duplicated between
+  `make ci-local` and the GitHub PR/Main workflows. An existing `scripts/coverage_gate.py` was
+  hard-coded to root-level coverage files and a fixed 99 percent threshold, while workflows used
+  inline `python -m coverage combine` and `coverage report` commands. Future agents could update
+  one path without the others, weakening the confidence that local PR proof and GitHub proof enforce
+  the same coverage policy.
+- Action: upgraded `scripts/coverage_gate.py` into the shared coverage enforcement command with
+  configurable coverage directory, repeated coverage-file arguments, and `COVERAGE_FAIL_UNDER`
+  support. Added `make coverage-gate`, rewired `make ci-local` to call it after unit/integration/e2e
+  coverage data generation, and rewired PR Merge Gate and Main Releasability to call the same script
+  against downloaded `coverage-data` artifacts. Extended `workflow_policy_gate.py` so blocking
+  workflows fail policy validation if they bypass `scripts/coverage_gate.py` or reintroduce ad hoc
+  coverage combine/report commands. Added tests for Makefile parity, workflow parity, policy-gate
+  rejection of ad hoc coverage commands, and coverage-gate missing-artifact diagnostics. Updated the
+  quality scorecard and CI-gate documentation to make shared coverage parity visible.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\coverage_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_coverage_gate.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `make -n coverage-gate`,
+  `make -n ci-local`,
+  `python -c "from pathlib import Path; import yaml; [yaml.safe_load(Path(path).read_text(encoding='utf-8')) for path in ['.github/workflows/pr-merge-gate.yml','.github/workflows/main-releasability.yml']]; print('Parsed coverage workflows')"`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. The focused CI workflow, coverage-gate, and engineering-health suites
+  reported 25 passed. Workflow policy, quality-report freshness, OpenAPI quality, API vocabulary,
+  no-alias, service-boundary, router-infrastructure, workflow YAML parse, Makefile dry-run, and
+  whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice centralizes total coverage enforcement. It does not add changed-code
+  diff coverage, mutation testing, branch-protection introspection, or semantic test-quality
+  scoring for newly touched modules.
+- Wiki decision: no wiki source change required; this is internal CI command parity and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The shared coverage script, Make target, workflow
+  policy gate, and tests are the durable future-agent guardrail for this recurring CI pattern.
+
+## BACKEND-REVIEW-20260619-1039: Coverage evidence required in PR contract
+
+- Date: 2026-06-19
+- Scope: `.github/pull_request_template.md`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, `scripts/engineering_health_report.py`,
+  `quality/ci_quality_gates.md`, generated quality reports, and this ledger.
+- Bank-buyable control area: agent-default validation evidence, coverage-gate adoption, and
+  prevention of PR evidence drift after adding shared local/GitHub coverage enforcement.
+- Finding: `make coverage-gate` was added as the shared coverage enforcement command, but the
+  agent-facing PR template did not require explicit coverage-gate evidence. That left a gap between
+  the new repo-native command and the evidence future agents are prompted to collect.
+- Action: added `make coverage-gate` to the PR template validation evidence section, added the same
+  required token to `scripts/workflow_policy_gate.py`, and extended the PR-template policy tests so
+  template drift fails if coverage evidence is removed. Updated the scorecard wording and CI-gate
+  documentation, then regenerated the quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py tests\unit\test_engineering_health_report.py`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. The focused CI workflow and engineering-health suites reported 23
+  passed. Workflow policy, quality-report freshness, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: this slice requires agents to record coverage-gate evidence. It does not verify
+  that the PR body is filled truthfully after PR creation, add diff coverage, or inspect GitHub
+  branch-protection settings.
+- Wiki decision: no wiki source change required; this is internal PR evidence governance and
+  repo-local quality-gate documentation, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The current `lotus-ci-enforcement-governance`
+  guidance already covers promoting agent-facing evidence when new repo-native gates are added.
+
+## BACKEND-REVIEW-20260619-1040: Outcome external execution boundary decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/execution_boundary.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: source-code maintainability, outcome-review supportability evidence,
+  external execution/OMS boundary readability, and low-risk domain refactoring.
+- Finding: `build_outcome_external_execution_boundary` combined execution-dimension lookup,
+  realized execution-value lookup, reason-code aggregation, source-product detection, and payload
+  assembly in one function. Radon reported the function as C(13), making a sensitive fail-closed
+  external execution boundary harder for future agents to inspect safely.
+- Action: extracted typed pure helpers for execution-quality result lookup, realized
+  execution-quality value lookup, external execution reason-code aggregation, source-product
+  presence detection, and source-ref collection. Kept the public function and payload contract
+  unchanged, including content-hash generation and `DpmOutcomeExternalExecutionBoundaryEvidence`
+  validation.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_outcome_handoffs.py tests\unit\api\test_outcome_reviews_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\execution_boundary.py`,
+  `python -m ruff format src\core\outcomes\execution_boundary.py`,
+  `python -m ruff check src\core\outcomes\execution_boundary.py`,
+  `python -m radon cc src\core\outcomes\execution_boundary.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused outcome handoff/API suites reported 11 passed. The Radon result
+  improved `build_outcome_external_execution_boundary` from C(13) to A(3); the largest extracted
+  helper is `_external_execution_reason_codes` at A(5). Quality-report freshness, OpenAPI quality,
+  API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one source hotspot only. It does not address remaining Radon
+  B/C source hotspots such as PM-quality memory collection, campaign approval inbox construction,
+  or mandate health scoring.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. Existing backend delivery, codebase-review, and
+  enterprise refactoring guidance cover this small behavior-preserving decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1041: PM-quality portfolio-memory collection decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/pm_quality_collection.py`, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: portfolio-memory source collection maintainability, PM-quality
+  evidence lineage, bounded repository scanning, and behavior-preserving source decomposition.
+- Finding: `pm_quality_memory_events` mixed PM-book scoped score-run selection, score-run event
+  projection, optional review-action scanning, optional summary-invocation scanning, and downstream
+  event assembly in one function. Radon reported the function as C(11), and the optimization that
+  skips downstream scans when no score runs are portfolio-scoped was embedded in the same block.
+- Action: extracted typed helpers for portfolio-scoped score-run indexing, score-run event
+  projection, matching score-run review actions, review-action event projection, matching
+  score-run summary invocations, and summary-invocation event projection. Preserved the public
+  collection function, event ordering, one score-run scan behavior, and skip-downstream-scan behavior
+  when no score runs match the requested portfolio.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_pm_quality_collection.py tests\unit\dpm\portfolio_memory\test_pm_quality_projection.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m ruff format src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m ruff check src\core\portfolio_memory\pm_quality_collection.py`,
+  `python -m radon cc src\core\portfolio_memory\pm_quality_collection.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality collection/projection suites reported 8 passed.
+  Radon improved `pm_quality_memory_events` from C(11) to A(2), with extracted helpers no higher
+  than A(3). Quality-report freshness, OpenAPI quality, API vocabulary, no-alias,
+  service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one portfolio-memory source collection hotspot only. Remaining
+  source hotspots include campaign approval inbox page construction, mandate health scoring, PM
+  quality scoring, and several B-level source helper functions.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill update required. The user’s CI-gate routing instruction was noted;
+  this was source-code refactoring, not CI-gate promotion.
+
+## BACKEND-REVIEW-20260619-1042: Campaign approval inbox page decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_approval_inbox.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: approval-governance read-model maintainability, bounded campaign
+  review routing, and behavior-preserving source decomposition.
+- Finding: `build_bulk_review_campaign_approval_inbox_page` combined row construction,
+  closed/status filtering, status counting, payload assembly, content hashing, and model
+  validation in one read-model boundary. Radon reported the function as C(11), making a governed
+  approval attention surface harder for future agents to review safely.
+- Action: extracted typed pure helpers for approval-inbox item construction, filter matching,
+  filtered page item projection, returned-page status counting, and page payload assembly. Preserved
+  the public page function, filter semantics, status-count semantics, content-hash generation, and
+  `DpmBulkReviewCampaignApprovalInboxPage` validation contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_discovery.py tests\unit\dpm\api\test_waves_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_approval_inbox.py`,
+  `python -m ruff format src\core\waves\campaign_approval_inbox.py`,
+  `python -m ruff check src\core\waves\campaign_approval_inbox.py`,
+  `python -m radon cc src\core\waves\campaign_approval_inbox.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused campaign wave/API suites reported 240 passed. Radon improved
+  `build_bulk_review_campaign_approval_inbox_page` from C(11) to A(1), with all helpers in
+  `campaign_approval_inbox.py` reporting A-level complexity. Quality-report freshness, OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks
+  passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one campaign approval read-model hotspot only. Remaining
+  source hotspots include mandate health scoring, PM quality scoring, and several B-level source
+  helper functions.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context update required. The CI-enforcement guidance was
+  loaded for this turn; no CI gates were changed in this source refactoring slice.
+
+## BACKEND-REVIEW-20260619-1043: Complexity gate reporting alignment
+
+- Date: 2026-06-19
+- Scope: `scripts/engineering_health_report.py`, `tests/unit/test_engineering_health_report.py`,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: CI evidence truthfulness, agent-default quality guidance, and
+  low-noise gate governance.
+- Finding: the repo already had a deterministic active `make complexity-gate` in local static
+  gates and GitHub lanes, with `python -m radon cc src -s -n C` blocking source functions at Radon
+  C-or-worse. The generated scorecard and complexity report still described complexity as fully
+  report-only, creating misleading guidance for future agents and weakening PR evidence quality.
+- Action: updated generated report wording to distinguish the active source C-or-worse Radon CC
+  gate from broader source/test complexity rankings and Radon MI output, which remain report-only
+  until baselines, false positives, lane placement, and exception policy are clear. Added unit
+  assertions so the generated baseline, scorecard, and complexity report cannot silently regress to
+  misleading gate posture language.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\test_engineering_health_report.py tests\unit\test_ci_workflow_gate_enforcement.py -q`,
+  `python -m mypy --config-file mypy.ini scripts\engineering_health_report.py`,
+  `python -m ruff format scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `python -m ruff check scripts\engineering_health_report.py tests\unit\test_engineering_health_report.py`,
+  `make complexity-gate`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused engineering-health and CI-workflow suites reported 23 passed.
+  Radon CC source C-or-worse enforcement and workflow policy passed.
+- Stranded truth: `git fetch origin --prune` had already succeeded in this work batch and
+  `git branch -r --no-merged origin/main` returned no unmerged remote branches to classify for the
+  docs/quality/CI-governance slice.
+- Residual risk: this slice corrects evidence posture for an already-active gate. It does not add
+  a new changed-code complexity gate, fail on Radon MI C results, or enforce test complexity
+  thresholds because those would require clearer baselines and exception policy.
+- Wiki decision: no wiki source change required; this is repo-local CI evidence and generated
+  scorecard truth, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing
+  `lotus-ci-enforcement-governance` standard already covers this distinction, and no local
+  `.codex/skills` files were edited.
+
+## BACKEND-REVIEW-20260619-1044: Mandate health snapshot assembly decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: discretionary mandate health scoring maintainability, source-backed
+  restriction posture, and domain-critical behavior-preserving decomposition.
+- Finding: `calculate_mandate_health` combined dimension scoring, weighted score calculation,
+  health-state precedence, reason derivation/sorting, snapshot identity, evidence refs, and final
+  snapshot assembly in one function. Radon reported it as B(10). The same file also had
+  `_restricted_model_targets` at B(9), mixing source-backed client restriction filtering and model
+  target matching in one helper.
+- Action: extracted typed helpers for mandate-health dimension scoring, weighted score rounding,
+  health-state precedence, top-reason derivation, snapshot identity, evidence refs, active buy
+  restriction instrument ids, active model target instrument ids, and restricted target matching.
+  Preserved score formulas, state precedence, reason ordering, evidence refs, source analytics
+  posture, and source-backed restriction semantics.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\mandates\test_mandate_health_result.py tests\unit\dpm\mandates\test_mandate_health_persistence.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py`,
+  `python -m ruff format src\core\mandates.py`,
+  `python -m ruff check src\core\mandates.py`,
+  `python -m radon cc src\core\mandates.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused mandate health suites reported 51 passed. Radon improved
+  `calculate_mandate_health` from B(10) to A(1) and `_restricted_model_targets` from B(9) to A(2);
+  `src/core/mandates.py` now has no B-level functions. Quality-report freshness, OpenAPI quality,
+  API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice decomposes the mandate-health source module only. It does not change
+  mandate scoring methodology, add new upstream source products, or address remaining B-level
+  functions in unrelated modules.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving domain decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1045: Campaign operating queue page decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/waves/campaign_operating_queue.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: campaign operating read-model maintainability, bounded launch
+  readiness routing, and behavior-preserving source decomposition.
+- Finding: `build_bulk_review_campaign_operating_queue_page` combined row construction,
+  active/expired filtering, returned-page status counting, payload assembly, content hashing, and
+  model validation in one read-model boundary. Radon reported the function as B(9), leaving another
+  campaign workflow page harder for future agents to audit safely.
+- Action: extracted typed pure helpers for operating-queue item construction, filter matching,
+  filtered item projection, returned-page status counting, and page payload assembly. Preserved the
+  public page function, expired-row filter semantics, status-count semantics, content-hash
+  generation, and `DpmBulkReviewCampaignOperatingQueuePage` validation contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_discovery.py tests\unit\dpm\api\test_waves_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\waves\campaign_operating_queue.py`,
+  `python -m ruff format src\core\waves\campaign_operating_queue.py`,
+  `python -m ruff check src\core\waves\campaign_operating_queue.py`,
+  `python -m radon cc src\core\waves\campaign_operating_queue.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused campaign wave/API suites reported 240 passed. Radon improved
+  `build_bulk_review_campaign_operating_queue_page` from B(9) to A(1), with all helpers in
+  `campaign_operating_queue.py` reporting A-level complexity. Quality-report freshness, OpenAPI
+  quality, API vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks
+  passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces one campaign operating read-model hotspot only. Remaining
+  B-level source hotspots include PM-quality scoring, campaign discovery/readiness helpers,
+  portfolio-memory projections, and infrastructure pagination/query helpers.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving read-model decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1046: PM-quality score-run evaluation decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality scoring maintainability, supervisory-control
+  evidence explainability, and behavior-preserving scoring decomposition.
+- Finding: `build_pm_operating_quality_score_run` mixed policy validation, scope defaulting,
+  disabled-run handling, governance evidence construction, signal collection, lookback validation,
+  indicator scoring, blocked-run evaluation, weighted-score calculation, state derivation, reason
+  aggregation, and immutable score-run assembly. Radon reported it as B(9). The same module also
+  kept weighted-score and state-override primitives at B-level complexity.
+- Action: introduced a typed internal `_ScoreRunEvaluation` value and extracted score-run
+  evaluation, blocked-indicator detection, blocked reason-code aggregation, scorable indicator
+  filtering, total-weight calculation, weighted-score calculation, rounded-score calculation, and
+  indicator-state checks. Preserved disabled-run behavior, blocked-run precedence, weighted score
+  rounding, policy threshold behavior, reason-code output, content hashing, and score-run contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py tests\unit\api\test_pm_operating_quality_service.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py`,
+  `python -m ruff format src\core\pm_quality\scoring.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py`,
+  `python -m radon cc src\core\pm_quality\scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality domain/API service suites reported 51 passed. Radon
+  improved `build_pm_operating_quality_score_run` from B(9) to A(5), `_weighted_score` from B(7)
+  to A(2), and `_score_state` from B(7) to A(5). Quality-report freshness, OpenAPI quality, API
+  vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces central PM-quality score-run assembly and scoring primitives
+  only. Remaining B-level PM-quality hotspots include fairness-analysis posture, fairness-segment
+  result construction, lookback validation, and score-run source-ref collection.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving scoring decomposition pattern.
+
+## BACKEND-REVIEW-20260619-1047: PM-quality fairness analysis decomposition
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality fairness-analysis maintainability,
+  supervisory-control evidence explainability, and behavior-preserving fairness posture assembly.
+- Finding: the PM-quality fairness path still concentrated blocked-segment posture, comparable
+  segment checks, spread classification, score-run reference projection, segment scorable-score
+  evaluation, segment result assembly, fairness-analysis source-ref collection, hash payload
+  construction, and identifier generation in large helpers. Radon reported
+  `_fairness_analysis` as B(8), `_fairness_segment_result` as B(7), and
+  `_fairness_analysis_posture` as B(6).
+- Action: introduced a typed internal `_FairnessSegmentEvaluation` value and extracted blocked
+  segment selection, comparable-segment posture, spread posture, score-run refs, segment
+  evaluation, scorable score filtering, blocked/ready segment evaluation constructors,
+  fairness-analysis source-ref collection, fairness-analysis hash payload construction, optional
+  decimal serialization, and fairness-analysis id generation. Preserved fairness blocked
+  precedence, comparable-segment requirements, spread threshold semantics, reason-code output,
+  content hashing, and immutable fairness-analysis contract.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_api.py -q`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py`,
+  `python -m ruff format src\core\pm_quality\scoring.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py`,
+  `python -m radon cc src\core\pm_quality\scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python scripts\openapi_quality_gate.py`,
+  `python scripts\api_vocabulary_inventory.py --validate-only`,
+  `make no-alias-gate`,
+  `python scripts\service_boundary_gate.py`,
+  `python scripts\router_infrastructure_gate.py`,
+  and `git diff --check`. Focused PM-quality domain/API suites reported 88 passed. Radon improved
+  `_fairness_analysis` from B(8) to A(1), `_fairness_segment_result` from B(7) to A(1), and
+  `_fairness_analysis_posture` from B(6) to A(3). Quality-report freshness, OpenAPI quality, API
+  vocabulary, no-alias, service-boundary, router-infrastructure, and whitespace checks passed.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: this slice reduces PM-quality fairness-analysis assembly hotspots only. Remaining
+  B-level PM-quality hotspots include lookback-window validation and score-run source-ref
+  collection; broader unrelated source hotspots remain in API services, portfolio memory,
+  rebalance, proof-pack, and infrastructure modules.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-report evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving fairness-analysis decomposition
+  pattern.
+
+## BACKEND-REVIEW-20260619-1048: Exact duplicate implementation CI gate promotion
+
+- Date: 2026-06-19
+- Scope: `scripts/duplicate_implementation_gate.py`, `Makefile`, blocking GitHub workflows,
+  workflow policy, PR evidence template, quality reports, repository engineering context, and this
+  ledger.
+- Bank-buyable control area: CI-enforced maintainability, agent-driven implementation guardrails,
+  duplicate implementation drift prevention, and deterministic quality evidence.
+- Finding: duplicate implementation hotspots were a known refactor concern but had no repo-native
+  deterministic non-regression gate. Existing active gates covered architecture boundaries,
+  complexity, dead code, dependency hygiene, OpenAPI, vocabulary, no-alias, contract validation,
+  workflow policy, and security audit, but future agent work could still introduce exact cloned
+  first-party implementation bodies without a direct blocking signal.
+- Action: added an exact normalized Python function-body duplicate detector over `src/` and
+  `scripts/`, generated a current-state baseline with 10 accepted duplicate groups, and promoted a
+  non-regression gate through `make duplicate-implementation-gate`. Wired the gate into
+  `make static-quality-gates`, Remote Feature Lane, Pull Request Merge Gate, Main Releasability,
+  workflow-policy drift checks, PR validation evidence, CI quality documentation, and repository
+  engineering context. Kept broader/fuzzy similarity out of blocking CI because false positives,
+  thresholds, lane placement, and exception policy are not yet proven.
+- Status: hardened.
+- Evidence:
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `python -m pytest tests\unit\scripts\test_duplicate_implementation_gate.py -q`,
+  `python -m ruff format scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m ruff check scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m ruff format --check scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py tests\unit\scripts\test_duplicate_implementation_gate.py`,
+  `python -m mypy --config-file mypy.ini scripts\duplicate_implementation_gate.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `make duplicate-implementation-gate`,
+  `python scripts\workflow_policy_gate.py`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused gate tests reported 4 passed. The promoted gate reported
+  10 accepted exact duplicate groups and no new groups. Workflow policy, quality-report freshness,
+  changed-file lint/format/type checks, and whitespace checks passed.
+- Aggregate-gate note: `make static-quality-gates` was attempted and stopped at
+  `python -m ruff format --check .` because existing unrelated files
+  `src\core\rebalance\engine.py` and
+  `tests\unit\dpm\engine\test_engine_wrapper_helpers.py` would be reformatted. The changed files
+  in this slice pass focused format checks; unrelated source/test formatting was left untouched to
+  avoid cosmetic churn.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this CI/governance slice.
+- Residual risk: the gate blocks exact normalized non-trivial Python function-body clones only. It
+  intentionally does not block fuzzy similarity, small helper duplication, test fixture repetition,
+  generated-code similarity, or broader semantic duplication until those signals have stable
+  baselines and low-noise exception policy. Existing 10 accepted groups remain visible in
+  `quality/duplicate_code_inventory.md` and should be burned down through targeted refactors.
+- Wiki decision: no wiki source change required; this is internal CI enforcement and
+  developer/agent guardrail truth, reflected in repo-local quality docs and repository engineering
+  context rather than operator-facing wiki material.
+- Guidance decision: no platform-owned skill or deployed local skill update required. The existing
+  `lotus-ci-enforcement-governance` skill already covered this pattern; repo-local engineering
+  context was updated as source truth, and no local `AGENTS.md` or `.codex` skill was hand-edited.
+
+## BACKEND-REVIEW-20260619-1049: Portfolio-memory projection duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/portfolio_memory/event_projection.py`,
+  `src/core/portfolio_memory/models.py`, `src/core/portfolio_memory/search_filters.py`,
+  `src/core/portfolio_memory/supportability.py`, focused portfolio-memory tests, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: portfolio-memory source-lineage projection maintainability,
+  supportability-state consistency, and duplicate implementation regression prevention.
+- Finding: the exact duplicate implementation gate exposed two portfolio-memory accepted duplicate
+  groups: source-system extraction was implemented separately in `models.py` and
+  `search_filters.py`, and portfolio-memory supportability precedence was implemented separately
+  in `models.py` and `supportability.py`. The behavior was correct but had drift risk because
+  aggregate validation, search facets, and supportability mapping depended on the same rule.
+- Action: introduced a shared pure `event_projection` helper for event source-system/source-type
+  projection and fail-closed portfolio-memory supportability precedence. Updated model aggregate
+  validation, search filters, and supportability mapping to reuse the shared helper while
+  preserving existing public helper names. Added direct shared-helper tests for source facets and
+  supportability precedence. Regenerated the duplicate implementation baseline and inventory,
+  reducing accepted exact duplicate groups from 10 to 8 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\portfolio_memory\test_event_projection.py tests\unit\dpm\portfolio_memory\test_search_filters.py tests\unit\dpm\portfolio_memory\test_governance_supportability.py tests\unit\dpm\api\test_portfolio_memory_api.py -q`,
+  `python -m ruff format src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m ruff check src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m ruff format --check src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py tests\unit\dpm\portfolio_memory\test_event_projection.py`,
+  `python -m mypy --config-file mypy.ini src\core\portfolio_memory\event_projection.py src\core\portfolio_memory\models.py src\core\portfolio_memory\search_filters.py src\core\portfolio_memory\supportability.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused portfolio-memory suites
+  reported 36 passed. The duplicate implementation gate now reports 8 accepted exact duplicate
+  groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: broader accepted duplicate groups remain in rebalance-run persistence, campaign
+  definition event recording, PM-quality source-ref projection, runtime Postgres exception
+  helpers, workflow correlation routes, and RFC evidence scripts. They are now visible in the
+  duplicate inventory and should be burned down through targeted behavior-preserving slices.
+- Wiki decision: no wiki source change required; this is internal source maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing duplicate gate
+  and codebase-review ledger pattern now give future agents a deterministic signal and durable
+  follow-up inventory.
+
+## BACKEND-REVIEW-20260619-1050: PM-quality book-scope member-ref duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/book_scope_refs.py`,
+  `src/api/routers/pm_operating_quality_book_scope_builder.py`,
+  `src/api/services/pm_operating_quality_service.py`, focused PM-quality book-scope tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: PM operating quality source-lineage consistency, API/service
+  boundary maintainability, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical PM-book member source-ref
+  projection in the PM-quality router book-scope builder and PM-quality service. The duplicated
+  helper was behaviorally correct but sat on source-lineage evidence that feeds score-run evidence,
+  source refs, and downstream portfolio-memory projection. Future changes could drift member cap,
+  source id fallback, source type, or source-version semantics between route preview and service
+  command paths.
+- Action: introduced the shared `pm_book_member_source_refs` helper under `src/core/pm_quality/`
+  and updated the existing router/service private wrappers to delegate to it, preserving caller
+  compatibility and leaving the intentionally different source-id fallback conventions unchanged.
+  Added a direct core-level test for 100-member capping, `source_record_id` fallback, portfolio-id
+  fallback, source system/type, and as-of-date source version. Regenerated the duplicate
+  implementation baseline and inventory, reducing accepted exact duplicate groups from 8 to 7
+  with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_book_scope_refs.py tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_api.py -q`,
+  `python -m ruff format src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m ruff check src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m ruff format --check src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py tests\unit\dpm\pm_quality\test_book_scope_refs.py`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\book_scope_refs.py src\api\routers\pm_operating_quality_book_scope_builder.py src\api\services\pm_operating_quality_service.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused PM-quality book-scope domain/API suites reported 52 passed. The
+  duplicate implementation gate now reports 7 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: broader accepted duplicate groups remain in rebalance-run persistence, campaign
+  definition event recording, runtime Postgres exception helpers, workflow correlation routes, and
+  RFC evidence scripts. The intentionally different PM-book source-id fallback strings remain
+  unchanged and should only be unified through an explicit API/service behavior decision.
+- Wiki decision: no wiki source change required; this is internal source-lineage maintainability
+  and quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving helper
+  consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1051: Postgres connection exception duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/core/common/postgres_errors.py`, `src/api/routers/runtime_utils.py`,
+  `src/api/services/rebalance_policy_pack_repository.py`,
+  `src/api/services/rebalance_run_support_repository.py`, focused runtime/repository tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: production Postgres initialization failure handling, service/router
+  boundary maintainability, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical Postgres connection exception type
+  construction in router runtime utilities, policy-pack repository factory, and run-support
+  repository factory. The behavior was correct but duplicated a production failure-boundary rule
+  that must remain consistent across runtime guards and repository initialization paths.
+- Action: introduced a shared `src.core.common.postgres_errors.postgres_connection_exception_types`
+  helper that owns built-in connection failure classes plus optional psycopg error class discovery.
+  Kept the existing router/service wrapper functions and exports intact for compatibility, with
+  wrappers delegating to the common helper. Added a direct core-level test for missing-psycopg
+  fallback and built-in exception coverage. Regenerated the duplicate implementation baseline and
+  inventory, reducing accepted exact duplicate groups from 7 to 6 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_postgres_errors.py tests\unit\api\test_runtime_request_model_and_service_edges.py tests\unit\dpm\api\test_dpm_policy_pack_admin_api.py tests\unit\dpm\api\test_dpm_runs_config.py tests\unit\dpm\api\test_rebalance_policy_pack_repository.py tests\unit\dpm\api\test_rebalance_run_support_repository.py -q`,
+  `python -m ruff format src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m ruff check src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m ruff format --check src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py tests\unit\core\test_postgres_errors.py`,
+  `python -m mypy --config-file mypy.ini src\core\common\postgres_errors.py src\api\routers\runtime_utils.py src\api\services\rebalance_policy_pack_repository.py src\api\services\rebalance_run_support_repository.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused runtime/repository suites reported 69 passed. The duplicate
+  implementation gate now reports 6 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in rebalance-run create/update persistence,
+  campaign definition event recording, workflow correlation routes, and RFC evidence script
+  request helpers. Those remain visible in `quality/duplicate_code_inventory.md`.
+- Wiki decision: no wiki source change required; this is internal production failure-boundary
+  maintainability and quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving common-helper
+  consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1052: Rebalance-run operation persistence duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py`,
+  `src/infrastructure/rebalance_runs/postgres.py`, focused run-repository backend tests, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: async operation persistence correctness, repository conflict
+  semantics, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical `create_operation` and
+  `update_operation` bodies in both the in-memory and Postgres run repository backends. The
+  duplicated code preserved correct behavior, but it split operation correlation-conflict handling
+  and upsert semantics across separate create/update entry points in each backend.
+- Action: extracted backend-local shared helpers: `_save_operation` in the in-memory repository for
+  correlation conflict detection plus operation/correlation index persistence, and
+  `_create_or_update_operation` in the Postgres repository for conflict-wrapped upsert handling.
+  Kept the public `create_operation` and `update_operation` repository methods unchanged.
+  Regenerated the duplicate implementation baseline and inventory, reducing accepted exact
+  duplicate groups from 6 to 4 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_dpm_postgres_repository_scaffold.py -q`,
+  `python -m ruff format src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m ruff check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m ruff format --check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\postgres.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused run repository backend suites reported 59 passed. The duplicate
+  implementation gate now reports 4 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in campaign definition event recording, workflow
+  correlation routes, and RFC evidence script request helpers. The campaign definition groups are
+  now the largest duplicate hotspot and need a separate persistence-focused slice.
+- Wiki decision: no wiki source change required; this is internal repository maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving repository-helper
+  consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1053: Workflow correlation route duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/api/routers/rebalance_runs_workflow_read_http.py`,
+  `src/api/routers/rebalance_runs_workflow_decision_routes.py`, workflow API/OpenAPI tests,
+  duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: workflow supportability API maintainability, OpenAPI contract
+  preservation, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed identical route bodies for
+  `GET /rebalance/workflow/decisions/by-correlation/{correlation_id}` and
+  `GET /rebalance/runs/by-correlation/{correlation_id}/workflow/history`. Both endpoints enforce
+  support/workflow enablement, reject query parameters, and resolve append-only workflow history by
+  correlation id. The public paths are intentionally distinct, but the HTTP read behavior should
+  not drift.
+- Action: added a shared workflow-history-by-correlation HTTP read helper in
+  `rebalance_runs_workflow_read_http.py` and delegated the decisions-by-correlation alias through
+  it while preserving the decorated route, response model, path, summary, description, responses,
+  and service call semantics. Regenerated the duplicate implementation baseline and inventory,
+  reducing accepted exact duplicate groups from 4 to 3 with no new groups.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\api\test_api_rebalance.py tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py -q`,
+  `python -m ruff format src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m ruff check src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m ruff format --check src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python -m mypy --config-file mypy.ini src\api\routers\rebalance_runs_workflow_read_http.py src\api\routers\rebalance_runs_workflow_decision_routes.py src\api\routers\rebalance_runs_workflow_history_routes.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `git diff --check`. Focused workflow API/OpenAPI suites reported 117 passed. The duplicate
+  implementation gate now reports 3 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: accepted duplicate groups remain in campaign definition event recording and RFC
+  evidence script request helpers. Campaign definition event recording is the remaining large
+  production-code duplicate hotspot and needs a dedicated persistence-focused slice.
+- Wiki decision: no wiki source change required; this is internal route maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving route-helper
+  consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1054: Campaign definition active-update duplicate burn-down
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/waves/campaign_definitions.py`, focused campaign definition
+  repository tests, duplicate baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: bulk-review campaign definition persistence correctness,
+  lifecycle-conflict consistency, and duplicate implementation regression prevention.
+- Finding: the duplicate implementation gate exposed repeated active-definition update mechanics
+  across launch, approval-decision, assignment-action, assignment-task, and maker-checker-control
+  recording methods. The duplicate logic existed in both in-memory and Postgres campaign
+  definition repositories, including same-content idempotency, missing-definition handling,
+  active-status enforcement, content-hash/payload update, rowcount conflict mapping, and commit or
+  rollback behavior.
+- Action: extracted backend-local `_record_active_definition_update` helpers for the in-memory and
+  Postgres repositories, then delegated all five public record methods through the shared helper
+  in each backend. Preserved public repository method names, return behavior, idempotent
+  same-content behavior, lifecycle conflict codes, and Postgres transaction handling. Regenerated
+  the duplicate implementation baseline and inventory, reducing accepted exact duplicate groups
+  from 3 to 1 with no new groups; the only remaining accepted duplicate group is the RFC evidence
+  script request helper.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\waves\test_campaign_definition_repository.py -q`,
+  `python -m ruff check src\infrastructure\waves\campaign_definitions.py`,
+  `python -m ruff format --check src\infrastructure\waves\campaign_definitions.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\waves\campaign_definitions.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  `python -m radon cc src\infrastructure\waves\campaign_definitions.py -s`,
+  and `git diff --check`. Focused campaign definition repository suites reported 60 passed. The
+  duplicate implementation gate now reports 1 accepted exact duplicate group and no new groups.
+  Radon reports all five public active-definition record methods at A(1), with extracted helpers
+  at A-level complexity.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: the remaining accepted exact duplicate group is script-only:
+  `scripts/generate_rfc0041_wave_evidence.py:_request` and
+  `scripts/generate_rfc0042_outcome_evidence.py:_request`. Production-code exact duplicates from
+  the current gate baseline have been burned down.
+- Wiki decision: no wiki source change required; this is internal repository maintainability and
+  quality-evidence burn-down, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and duplicate-gate guidance cover this behavior-preserving persistence-helper
+  consolidation pattern.
+
+## BACKEND-REVIEW-20260619-1106: RFC evidence request duplicate zero-baseline
+
+- Date: 2026-06-19
+- Scope: `scripts/generate_rfc0041_wave_evidence.py`,
+  `scripts/generate_rfc0042_outcome_evidence.py`, `scripts/rfc_evidence_http.py`, duplicate
+  baseline artifacts, generated quality reports, and this ledger.
+- Bank-buyable control area: deterministic CI enforcement, agent-facing duplicate implementation
+  guardrails, and reusable RFC evidence script HTTP validation.
+- Finding: after production-code duplicate burn-down, the duplicate implementation gate retained
+  one accepted exact duplicate group in RFC evidence scripts. The repeated `_request` helpers had
+  identical expected-status assertion behavior and kept the duplicate gate in allowlisted-baseline
+  mode even though the behavior was straightforward to centralize.
+- Action: extracted the expected-status HTTP request helper into `scripts/rfc_evidence_http.py`
+  with explicit `failure_type` injection so each evidence script keeps its existing
+  `EvidenceError` failure semantics. Bound the shared helper directly in the RFC-0041 and
+  RFC-0042 evidence generators, regenerated the duplicate implementation baseline and inventory,
+  and reduced accepted exact duplicate groups from 1 to 0.
+- Status: hardened.
+- Evidence:
+  `python scripts\generate_rfc0041_wave_evidence.py --help`,
+  `python scripts\generate_rfc0042_outcome_evidence.py --help`,
+  `python -m ruff check scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python -m ruff format scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python -m ruff format --check scripts\rfc_evidence_http.py scripts\generate_rfc0041_wave_evidence.py scripts\generate_rfc0042_outcome_evidence.py`,
+  `python scripts\duplicate_implementation_gate.py --update-baseline`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. The duplicate implementation gate
+  now reports 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: none for exact non-trivial function-body duplicate implementation findings in
+  the current gate scope (`src`, `scripts`) at the configured 8-line threshold. Broader noisy
+  maintainability metrics remain report-only until baselines, false positives, lane placement, and
+  exception policy are settled.
+- Wiki decision: no wiki source change required; this is internal CI-enforcement evidence and
+  script maintainability work, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. The existing
+  `lotus-ci-enforcement-governance` skill already directs promotion only for measured,
+  deterministic, low-noise gates and does not need local hand-editing or bootstrap sync for this
+  repository-local zero-baseline burn-down.
+
+## BACKEND-REVIEW-20260619-1121: Proof-pack mandate-context module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/mandate_context.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack domain modularity, mandate evidence supportability, and
+  behavior-preserving source-file hotspot burn-down.
+- Finding: `src/core/proof_packs/builder.py` remains one of the largest production files and
+  carried mandate-context section construction inline with the broad proof-pack orchestration
+  surface. The function was behaviorally cohesive and already characterized by proof-pack builder
+  tests, making it a good safe extraction target without changing public proof-pack behavior.
+- Action: moved mandate-context section payload construction and mandate-health state mapping into
+  `src/core/proof_packs/mandate_context.py`, kept a builder-local import alias for existing call
+  sites and tests, and preserved mandate identity, missing twin, missing health, health score,
+  source-readiness, top-reason, and field-gap reason-code behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python scripts\engineering_health_report.py`,
+  `python scripts\engineering_health_report.py --check`,
+  and `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\mandate_context.py`.
+  Focused proof-pack builder tests reported 111 passed. `builder.py` raw size moved from 2,232 LOC
+  to 2,156 LOC, and the extracted `mandate_context.py` is 91 LOC with A maintainability.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot and should be
+  reduced through additional cohesive section-module extractions rather than broad rewrites.
+- Wiki decision: no wiki source change required; this is internal domain modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance cover this behavior-preserving module extraction pattern.
+
+## BACKEND-REVIEW-20260619-1135: Proof-pack source-identity module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/source_identity.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack source lineage integrity, source hash determinism,
+  source-owned analytics refs, and behavior-preserving source-file hotspot burn-down.
+- Finding: after the mandate-context extraction, `src/core/proof_packs/builder.py` still carried
+  source hash, source analytics, and source-ref assembly inline with proof-pack orchestration.
+  This cluster is cohesive source-identity behavior and already covered by focused tests for hash
+  ordering, omitted optional sources, source-ref supportability, direct regime-stress fallback, and
+  deterministic proof-pack hashing.
+- Action: moved proof-pack source context assembly, source hash candidates, source analytics
+  selection, source-ref construction, and optional source-ref filtering into
+  `src/core/proof_packs/source_identity.py`. Kept builder-local compatibility aliases for existing
+  private tests and call sites while preserving source hash ordering, source-owned analytics hash
+  injection, Manage artifact source types, mandate supportability states, and optional-source
+  omission behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\source_identity.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 2,156 LOC to 1,885 LOC, and the extracted
+  `source_identity.py` is 299 LOC with A maintainability. The duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, though the
+  source identity and mandate context responsibilities are now isolated. Future safe slices should
+  continue with cohesive section families rather than broad rewrites.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and CI-enforcement guidance cover this behavior-preserving extraction pattern.
+
+## BACKEND-REVIEW-20260619-1157: Proof-pack governance-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/governance_sections.py`,
+  focused proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack governance evidence, approval posture determinism,
+  operations handoff readiness, lineage supportability, and behavior-preserving source-file hotspot
+  burn-down.
+- Finding: after source-identity extraction, `src/core/proof_packs/builder.py` still carried the
+  governance section dispatch table, approval requirement state logic, workflow-decision ordering,
+  operations handoff, decision timeline, lineage, and supportability payload builders inline with
+  broad proof-pack orchestration. This kept governance evidence assembly coupled to the remaining
+  hotspot even though the behavior was cohesive and already covered by focused tests.
+- Action: moved governance section dispatch and payload construction into
+  `src/core/proof_packs/governance_sections.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved approval blocking precedence, gate review handling,
+  workflow decision ordering, lineage missing-run blocking, source-ref metrics, operations handoff
+  review reason codes, and supportability placeholder behavior. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\governance_sections.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,885 LOC to 1,703 LOC, the extracted
+  `governance_sections.py` is 209 LOC with A maintainability, the architecture gate passed, and
+  the duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, though mandate
+  context, source identity, and governance section responsibilities are now isolated. Future safe
+  slices should continue with cohesive proof-pack section families and deterministic gate evidence.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing
+  `lotus-ci-enforcement-governance` guidance already covers measured, deterministic, low-noise
+  enforcement and does not require platform skill-source changes or bootstrap sync for this
+  repository-local refactor slice.
+
+## BACKEND-REVIEW-20260619-1219: Proof-pack alternative-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/alternative_sections.py`,
+  `src/core/proof_packs/section_state.py`, `src/core/proof_packs/source_analytics.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: selected construction alternative evidence, transaction-cost source
+  context supportability, client-restriction eligibility posture, shared proof-pack section-state
+  ranking, and behavior-preserving source-file hotspot burn-down.
+- Finding: after governance extraction, `src/core/proof_packs/builder.py` still carried selected
+  alternative evidence projection, turnover/cost payload construction, and eligibility/restriction
+  posture logic inline with proof-pack orchestration. The same section-state severity ordering also
+  existed locally in `source_analytics.py`, leaving a small duplicated invariant that could drift
+  as additional source-owned analytics are added.
+- Action: moved selected-alternative, turnover/cost, and eligibility/restriction section builders
+  into `src/core/proof_packs/alternative_sections.py`; centralized proof-pack section severity
+  ranking in `src/core/proof_packs/section_state.py`; updated source analytics to use the shared
+  helper; and kept builder-local compatibility aliases for the existing private test surface.
+  Preserved selected method readiness, method trace facts, missing selected-alternative degradation,
+  transaction-cost authority reason-code behavior, merged source-owned cost metrics, universe
+  exclusion posture, client-restriction facts, and sorted reason-code outputs. Regenerated quality
+  reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\source_analytics.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\alternative_sections.py src\core\proof_packs\section_state.py src\core\proof_packs\source_analytics.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,703 LOC to 1,514 LOC, the extracted
+  `alternative_sections.py` is 222 LOC with A maintainability, `section_state.py` is 15 LOC with A
+  maintainability, the architecture gate passed, and the duplicate implementation gate remains at
+  0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, but selected
+  alternative, turnover/cost, eligibility/restrictions, governance, source identity, and mandate
+  context responsibilities are now isolated. Future slices should continue with remaining cohesive
+  proof-pack section families and avoid broad orchestration rewrites.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  codebase-review, and CI-enforcement guidance already cover shared deterministic helper
+  extraction and measured hotspot burn-down; no platform skill-source change or bootstrap sync is
+  needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1241: Proof-pack decision-artifact module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/decision_artifacts.py`,
+  focused proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack decision summary determinism, decision timeline auditability,
+  workflow-decision evidence ordering, and behavior-preserving source-file hotspot burn-down.
+- Finding: after selected-alternative extraction, `src/core/proof_packs/builder.py` still carried
+  decision summary assembly, recommended action derivation, selected alternative tradeoff
+  projection, source/workflow/generated timeline events, and timeline sort ranking inline with
+  broad proof-pack orchestration. This decision-presentation logic is cohesive, already covered by
+  focused proof-pack tests, and can be isolated without changing public proof-pack contracts.
+- Action: moved decision summary and decision timeline construction into
+  `src/core/proof_packs/decision_artifacts.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved direct-run fallback rationale, selected alternative
+  type projection, expected benefit text, main tradeoff formatting, approval state fallback,
+  workflow-decision event projection, selected alternative fallback actor behavior, generated event
+  status, and deterministic timeline ordering. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\decision_artifacts.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,514 LOC to 1,308 LOC, the extracted
+  `decision_artifacts.py` is 234 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains a large source hotspot, but major
+  proof-pack evidence families and decision artifacts are now isolated. Future slices should focus
+  on remaining run-state/run-policy/supportability orchestration only when cohesive tests and gate
+  evidence keep the change low-risk.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving module extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1304: Proof-pack run-section module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/run_sections.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: source run evidence, diagnostics posture, policy result evidence,
+  liquidity/cash supportability, FX funding supportability, and behavior-preserving source-file
+  hotspot burn-down.
+- Finding: after decision-artifact extraction, `src/core/proof_packs/builder.py` still carried
+  source run state, trade intent, after-state, liquidity/cash, FX funding, currency-overlay
+  fallback, drift impact, tax impact, and rule-result payload builders inline with orchestration.
+  These functions form a cohesive run-evidence section family and are directly characterized by
+  focused proof-pack builder tests.
+- Action: moved run-state, diagnostics, policy, and rule-result section payload builders into
+  `src/core/proof_packs/run_sections.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved missing trade-intent blocking, after-state blocked
+  reason codes, cash ladder breach handling, missing FX-pair handling, currency-overlay fallback,
+  direct-run drift fallback, missing tax-impact degradation, hard-rule blocking precedence, and
+  rule-result fail metrics. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\run_sections.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,308 LOC to 1,127 LOC, the extracted
+  `run_sections.py` is 206 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` remains above 1,000 LOC, but the major
+  evidence-section families are now isolated. Remaining safe slices should focus on orchestration
+  helpers, source readiness/supportability, or proof-pack identity only where cohesive tests and
+  deterministic gate evidence keep the blast radius controlled.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1326: Proof-pack identity module extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/identity.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack identity determinism, source metadata resolution,
+  correlation fallback ordering, source supportability projection, and behavior-preserving
+  source-file hotspot burn-down.
+- Finding: after run-section extraction, `src/core/proof_packs/builder.py` still carried proof-pack
+  ID construction, source validation errors, correlation-id fallback logic, portfolio/as-of
+  resolution, source supportability projection, and alternative-set source status mapping inline
+  with orchestration. These helpers form a cohesive identity/source-metadata boundary and are
+  covered by focused proof-pack tests for missing-source validation, stable run IDs, selected
+  alternative IDs, correlation fallback precedence, and source supportability null handling.
+- Action: moved proof-pack identity, correlation, source supportability, portfolio, and as-of
+  helpers into `src/core/proof_packs/identity.py`; kept public ID helpers exported from the builder
+  and preserved builder-local compatibility aliases for the existing private test surface. Preserved
+  `DPM_PROOF_PACK_SOURCE_MISSING` failures, selected correlation precedence, run correlation
+  fallback, generated correlation IDs, run-source proof-pack ID derivation, selected-alternative
+  proof-pack ID derivation, source supportability nulls, and alternative-set status projection.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\identity.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\identity.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\identity.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\identity.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 1,127 LOC to 990 LOC, the extracted
+  `identity.py` is 173 LOC with A maintainability, the architecture gate passed, and the duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now below 1,000 LOC and mostly retains
+  orchestration, source analytics dispatch, source readiness, section construction, and
+  supportability aggregation. Future slices should avoid hollow abstractions and only extract
+  remaining helpers where ownership is clear and focused tests characterize behavior.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1348: Proof-pack generic section-payload extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/section_payloads.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack source analytics payloads, source readiness posture,
+  adapter contract evidence, decision summary section evidence, and behavior-preserving source-file
+  hotspot burn-down.
+- Finding: after identity extraction, `src/core/proof_packs/builder.py` still carried generic
+  section payload helpers for source analytics families, adapter placeholder contracts, source
+  readiness, and decision summary section facts inline with orchestration. These helpers are
+  cohesive payload-formatting behavior, directly characterized by focused proof-pack tests, and do
+  not need to remain in the orchestration module.
+- Action: moved generic section payload helpers into `src/core/proof_packs/section_payloads.py`,
+  kept builder-local compatibility aliases for the existing private test surface, and preserved
+  missing source analytics degradation, optional reason-code sorting for scenario/regime evidence,
+  adapter contract facts, source-readiness degraded state mapping, missing source-run blocking, and
+  decision-summary actor/reason/selected-alternative facts. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\section_payloads.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 990 LOC to 910 LOC, the extracted
+  `section_payloads.py` is 98 LOC with A maintainability, the architecture gate passed, and the
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now primarily orchestration and proof-pack
+  assembly. Remaining extractions should be smaller and justified by clear ownership boundaries,
+  such as supportability aggregation or content hashing, rather than arbitrary LOC reduction.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and codebase-review guidance already cover this behavior-preserving extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1409: Proof-pack supportability aggregation extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/supportability.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack supportability aggregation, aggregate status precedence,
+  reason-code deduplication, section hash inventory, and behavior-preserving source-file hotspot
+  burn-down.
+- Finding: after generic section-payload extraction, `src/core/proof_packs/builder.py` still owned
+  supportability aggregation and aggregate status ordering inline with orchestration. This was
+  cohesive supportability summary behavior and already covered by full proof-pack builder tests plus
+  direct aggregate-status tests.
+- Action: moved supportability aggregation and aggregate status precedence into
+  `src/core/proof_packs/supportability.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved state count projection,
+  READY/DEGRADED/BLOCKED/PENDING_REVIEW counts, reason-code deduplication and sorting, section hash
+  mapping, and aggregate status precedence. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\supportability.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\supportability.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\supportability.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\supportability.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\supportability.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\supportability.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 910 LOC to 880 LOC, the extracted
+  `supportability.py` is 38 LOC with A maintainability and max cyclomatic complexity A (4), the
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now primarily orchestration and proof-pack
+  assembly. Remaining extractions should be justified by ownership boundaries and focused behavior
+  characterization, not LOC reduction alone.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-1427: Proof-pack section assembly extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/section_assembly.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: immutable proof-pack section construction, section ordering and
+  business titles, run-artifact evidence references, canonical section hashing, canonical
+  proof-pack hashing, and behavior-preserving source-file hotspot burn-down.
+- Finding: after supportability aggregation extraction, `src/core/proof_packs/builder.py` still
+  owned reusable immutable assembly mechanics inline with orchestration and payload dispatch:
+  section title/order governance, evidence-ref projection for run artifacts, and canonical content
+  hash finalization for sections and the proof pack. These mechanics are reusable proof-pack
+  assembly behavior and do not need to remain in the orchestration module.
+- Action: moved section title/order constants, section evidence-ref construction, canonical section
+  hashing, and proof-pack content-hash finalization into
+  `src/core/proof_packs/section_assembly.py`; kept builder-local compatibility aliases for the
+  existing private test surface and preserved section IDs, titles, evidence refs, source refs,
+  source supportability projection, section hash calculation, and final proof-pack content hash.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\section_assembly.py`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 880 LOC to 821 LOC, the extracted
+  `section_assembly.py` is 105 LOC with A maintainability and max cyclomatic complexity A (3), the
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` still owns orchestration, source-context
+  dispatch, and run-present/pre-run payload routing. Further extraction should target cohesive
+  payload routing only if it improves testability and does not obscure proof-pack flow.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-1446: Proof-pack payload routing extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/proof_packs/builder.py`, `src/core/proof_packs/payload_routing.py`, focused
+  proof-pack builder tests, generated quality reports, and this ledger.
+- Bank-buyable control area: proof-pack section payload routing, pre-run versus run-present
+  dispatch, source-analytics payload dispatch, adapter placeholder dispatch, governance payload
+  dispatch, and behavior-preserving orchestration hotspot burn-down.
+- Finding: after section assembly extraction, `src/core/proof_packs/builder.py` still owned the
+  cohesive payload dispatcher graph for pre-run sections, run-bound sections, source-context
+  sections, and governance fallthrough inline with proof-pack orchestration. The dispatcher surface
+  was already directly characterized by focused tests and is reusable proof-pack section routing
+  behavior rather than proof-pack assembly orchestration.
+- Action: moved payload routing configuration and dispatcher functions into
+  `src/core/proof_packs/payload_routing.py`, kept builder-local compatibility aliases for the
+  existing private test surface, and preserved decision-summary, mandate-context, source-readiness,
+  selected-alternative, source-analytics, adapter, run-state, run-policy, turnover/cost,
+  diagnostics, source-context, governance, missing-run, and unhandled-section behavior. Regenerated
+  quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\proof_packs\test_proof_pack_builder.py -q`,
+  `python -m ruff check src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m ruff format src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `python -m ruff format --check src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py tests\unit\dpm\proof_packs\test_proof_pack_builder.py`,
+  `python -m mypy --config-file mypy.ini src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `make architecture-gate`,
+  `make complexity-gate`,
+  `make duplicate-implementation-gate`,
+  `python -m radon cc src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py -s`,
+  `python -m radon raw src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py`,
+  `python -m radon mi src\core\proof_packs\builder.py src\core\proof_packs\payload_routing.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused proof-pack builder tests
+  reported 111 passed. `builder.py` raw size moved from 821 LOC to 531 LOC, the extracted
+  `payload_routing.py` is 333 LOC with A maintainability and max cyclomatic complexity A (5), the
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/proof_packs/builder.py` is now a much smaller orchestration module. The
+  remaining proof-pack improvement path should shift from LOC reduction toward reducing
+  compatibility-alias clutter, improving direct tests on extracted modules, and applying the same
+  pattern to other current measured hotspots.
+- Wiki decision: no wiki source change required; this is internal proof-pack modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-1512: DPM source context financial-planning model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_financial_planning.py`, focused DPM source-context/core-sourcing/
+  construction-liquidity tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` financial-planning source-product contracts,
+  cashflow projection evidence, client income-needs evidence, liquidity reserve evidence, planned
+  withdrawal evidence, and behavior-preserving source-context hotspot burn-down.
+- Finding: `src/core/dpm_source_context.py` remained the largest source module at 1929 LOC and mixed
+  reusable financial-planning Pydantic contracts with broader DPM source-context, tax, market-data,
+  external treasury, source-readiness, and execution-context models. The financial-planning source
+  product group had a cohesive responsibility and no dependency on the broader source-context
+  module, making it a low-risk extraction candidate.
+- Action: moved the `PortfolioCashflowProjection:v1`, `ClientIncomeNeedsSchedule:v1`,
+  `LiquidityReserveRequirement:v1`, and `PlannedWithdrawalSchedule:v1` model group into
+  `src/core/dpm_source_context_financial_planning.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing caller imports and OpenAPI/Pydantic behavior remain
+  stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_liquidity_source_context.py tests\unit\dpm\construction\test_source_identity.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_financial_planning.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 94 passed.
+  `dpm_source_context.py` raw size moved from 1929 LOC to 1781 LOC, the extracted
+  `dpm_source_context_financial_planning.py` is 166 LOC with A maintainability, the architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. The existing measured,
+  deterministic repo-native gates already cover this change class: architecture-boundary drift,
+  duplicate implementation hotspots, complexity non-regression, static/type checks, focused
+  contract behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` remains a large model aggregation module. Next
+  source-context slices should target similarly cohesive contract families, especially tax/
+  market-data coverage or external treasury/OMS groups, and keep import compatibility stable until
+  downstream modules migrate deliberately.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement
+  governance already states the correct measured, deterministic gate-promotion policy, so no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1531: DPM source context market-data model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`, `src/core/dpm_source_context_market_data.py`, focused
+  DPM source-context/core-sourcing/mandate tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` `PortfolioTaxLotWindow:v1` and
+  `MarketDataCoverageWindow:v1` source-product contracts, tax-lot evidence, market price/FX
+  coverage evidence, source-owned supportability, and behavior-preserving source-context hotspot
+  burn-down.
+- Finding: after financial-planning model extraction, `src/core/dpm_source_context.py` still mixed
+  source-product model families with transformation helpers. The tax-lot and market-data coverage
+  Pydantic model group was cohesive, source-owned, and independent of broader DPM context assembly,
+  making it a low-risk extraction candidate with direct behavior coverage in source-context,
+  core-sourcing, mandate-health, and mandate API tests.
+- Action: moved `PortfolioTaxLotWindow:v1` and `MarketDataCoverageWindow:v1` model classes into
+  `src/core/dpm_source_context_market_data.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing caller imports and Pydantic/OpenAPI behavior remain
+  stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_market_data.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 136 passed.
+  `dpm_source_context.py` raw size moved from 1781 LOC to 1628 LOC, the extracted
+  `dpm_source_context_market_data.py` is 168 LOC with A maintainability, the architecture gate
+  passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups and no
+  new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. The existing measured,
+  deterministic repo-native gates already cover this change class: architecture-boundary drift,
+  duplicate implementation hotspots, complexity non-regression, static/type checks, focused
+  contract behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` still aggregates several independent
+  source-product contract families plus transformation helpers. The next measured source-context
+  slice should target external treasury/OMS models or separate transformation helpers only if the
+  move keeps imports stable and improves responsibility boundaries.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this behavior-preserving extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-1547: Core sourcing snapshot mapping extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/snapshot_mapping.py`, focused core-sourcing client tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: stateful `lotus-core` portfolio snapshot transformation, cash-row
+  aggregation, market-value currency preservation, required FX-pair derivation, and
+  behavior-preserving resolver-client hotspot burn-down.
+- Finding: `src/infrastructure/core_sourcing/client.py` was the largest production source file at
+  1898 LOC and combined HTTP resolver orchestration with deterministic Core snapshot row mapping,
+  cash aggregation, portfolio snapshot construction, and currency-pair helper logic. The snapshot
+  mapping block was cohesive infrastructure transformation behavior and already had focused unit
+  coverage, so it did not need to remain in the resolver client module.
+- Action: moved Core snapshot mapping, row normalization, cash aggregation, portfolio snapshot
+  construction, and required currency-pair helpers into
+  `src/infrastructure/core_sourcing/snapshot_mapping.py`; kept module-backed compatibility aliases
+  in `src/infrastructure/core_sourcing/client.py` for existing focused private-helper tests and
+  internal call sites. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\snapshot_mapping.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1898 LOC to 1724 LOC, the extracted `snapshot_mapping.py` is
+  192 LOC with A maintainability, the architecture gate passed, and the duplicate implementation
+  gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused transformation
+  tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large HTTP resolver with
+  many source-product route methods and try-resolve helpers. Future slices should target cohesive
+  route families or source-product request mechanics only when behavior is characterized and
+  compatibility aliases can be phased deliberately.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2330: PM-quality fairness-analysis extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/pm_quality/scoring.py`, `src/core/pm_quality/fairness_analysis.py`,
+  `src/core/pm_quality/scoring_common.py`, `src/core/pm_quality/__init__.py`,
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py`, focused PM-quality API/service tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC42-WTBD-008 PM operating-quality score-run and fairness-analysis
+  evidence, including policy identity, governed as-of date, source-segment fairness posture,
+  score-run eligibility, source refs, deterministic content hashes, and review/escalation
+  behavior consumed by PM-quality APIs.
+- Quality intake: `src/core/pm_quality/scoring.py` was the existing pure PM operating-quality
+  scoring engine. Manage is the source of truth for PM-quality score runs and fairness-analysis
+  records; upstream or peer facts remain represented as bounded evidence/source refs rather than
+  recalculated source-owner truth. The closest meaningful tests are
+  `tests/unit/dpm/pm_quality/test_pm_operating_quality.py` plus
+  `tests/unit/api/test_pm_operating_quality_service.py`,
+  `tests/unit/api/test_pm_operating_quality_review_action_builder.py`, and
+  `tests/unit/api/test_pm_operating_quality_api.py`. Repo-native validation uses focused pytest,
+  ruff, source mypy, architecture, duplicate-implementation, complexity, and generated-report
+  freshness checks. The measured quality signal is removing the last C-grade source module while
+  preserving public package imports and PM-quality fairness behavior.
+- Finding: `scoring.py` mixed score-run construction, fairness-analysis construction, shared hash
+  and source-ref helpers, and validation error ownership. Fairness analysis has a distinct product
+  boundary: source-defined segments, persisted score-run eligibility, policy/as-of matching,
+  segment-level blocking, comparable-average spread posture, deterministic fairness-analysis
+  identity, and source-ref aggregation. Those concerns can be owned independently without changing
+  API-service orchestration or score-run construction.
+- Action: moved fairness-analysis public builder, segment input, segment evaluation, score-run
+  eligibility predicates, fairness posture, source-ref aggregation, and fairness hash/id helpers
+  into `src/core/pm_quality/fairness_analysis.py`; moved shared validation error, content hashing,
+  optional model/decimal serialization, mean, and source-ref de-duplication into
+  `src/core/pm_quality/scoring_common.py`; kept package exports and scoring facade imports stable.
+  Updated fairness helper tests to import private fairness helpers from the new owner module. No
+  API contract, repository contract, PM-quality scoring behavior, fairness-analysis behavior,
+  deterministic identity behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m pytest tests\unit\api\test_pm_operating_quality_service.py tests\unit\api\test_pm_operating_quality_review_action_builder.py tests\unit\api\test_pm_operating_quality_api.py`,
+  `python -m ruff check src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m ruff format --check src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py tests\unit\dpm\pm_quality\test_pm_operating_quality.py`,
+  `python -m mypy --config-file mypy.ini src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py src\core\pm_quality\__init__.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py`,
+  `python -m radon mi src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py -s`,
+  `python -m radon cc src\core\pm_quality\scoring.py src\core\pm_quality\fairness_analysis.py src\core\pm_quality\scoring_common.py -s -n C`,
+  `python scripts\engineering_health_report.py`, and
+  `python scripts\engineering_health_report.py --check`. Focused PM-quality domain tests reported
+  37 passed, and PM-quality API/service tests reported 56 passed.
+  `src/core/pm_quality/scoring.py` moved from 1265 LOC with C maintainability 2.92 to 817 LOC with
+  B maintainability 13.36. The extracted `src/core/pm_quality/fairness_analysis.py` is 447 LOC
+  with A maintainability 30.08, and `src/core/pm_quality/scoring_common.py` is 42 LOC with A
+  maintainability 56.32. `make complexity-gate` now reports no C-grade source modules in the Radon
+  maintainability output.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  C-or-worse source function complexity, static/type checks, focused PM-quality behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than blockers because threshold policy, false positives, and exception
+  handling are not settled as deterministic low-noise enforcement.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/pm_quality/scoring.py` is now B-rated but still a large score-run
+  construction module at 817 LOC. Future slices should target one cohesive score-run family at a
+  time, likely lookback-window validation, outcome-review signal extraction, or governance evidence
+  construction, while preserving deterministic content hashes and PM-quality API behavior.
+- Wiki decision: no wiki source change required; this is internal PM-quality modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement and
+  backend delivery guidance already directed the correct measured extraction and no-new-gate
+  decision; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-2321: Risk historical-attribution source adapter extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/risk_sources.py`,
+  `src/core/outcomes/risk_source_attribution.py`,
+  `src/core/outcomes/risk_source_common.py`,
+  `tests/unit/core/test_risk_realized_outcome_sources.py`, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: RFC-0042 source-owned risk realized evidence, including lotus-risk
+  historical attribution source fingerprint, supportability posture, quality flags, period-error
+  fail-closed behavior, selected set/contributor values, and reason-code evidence used by
+  outcome-review flows.
+- Quality intake: `src/core/outcomes/risk_sources.py` is the existing internal adapter facade for
+  lotus-risk source-owned evidence. The canonical source of business truth is the upstream
+  lotus-risk response payload: `metadata.request_fingerprint`, supportability state/reason,
+  source-emitted values, period errors, quality flags, source hashes, and as-of/observed dates.
+  Manage owns bounded `DpmRealizedSourceSnapshot` composition only and does not recalculate risk,
+  drawdown, concentration, rolling risk, or attribution methodology. The closest meaningful tests
+  are `tests/unit/core/test_risk_realized_outcome_sources.py`, including adapter behavior and
+  historical-attribution edge helpers. Repo-native validation uses focused pytest, ruff, source
+  mypy, architecture, duplicate-implementation, complexity, and generated-report freshness checks.
+  The measured quality signal is removing the C-grade `risk_sources.py` hotspot while preserving
+  public adapter imports and fail-closed source-owner behavior.
+- Finding: `risk_sources.py` mixed five adapter families plus shared parsing/posture primitives.
+  Historical attribution was a cohesive extraction seam because it owns a distinct lotus-risk
+  source type, source-id shape, set/contributor value selection, quality-flag posture, period-error
+  blocking, and reason-code vocabulary. Shared primitive readers and supportability posture logic
+  were also duplicated as file-local responsibility inside the facade.
+- Action: moved historical attribution adapter and helpers into
+  `src/core/outcomes/risk_source_attribution.py`; moved shared risk-source error, supportability
+  posture, primitive readers, decimal parsing, and primary reason helpers into
+  `src/core/outcomes/risk_source_common.py`; kept `risk_sources.py` as the stable public facade for
+  existing imports through explicit exports. Updated helper tests to import from the new owner
+  modules. No API contract, source payload semantics, reason-code behavior, or CI gate behavior was
+  changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff check src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m ruff format --check src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py tests\unit\core\test_risk_realized_outcome_sources.py`,
+  `python -m mypy --config-file mypy.ini src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_common.py src\core\outcomes\risk_source_attribution.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py`,
+  `python -m radon mi src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py -s`,
+  `python -m radon cc src\core\outcomes\risk_sources.py src\core\outcomes\risk_source_attribution.py src\core\outcomes\risk_source_common.py -s -n C`,
+  `python scripts\engineering_health_report.py`, and
+  `python scripts\engineering_health_report.py --check`. Focused risk-source tests reported 61
+  passed. `src/core/outcomes/risk_sources.py` moved from 1168 LOC with C maintainability 7.39 to
+  742 LOC with A maintainability 20.11. The extracted
+  `src/core/outcomes/risk_source_attribution.py` is 394 LOC with A maintainability 34.01, and
+  `src/core/outcomes/risk_source_common.py` is 87 LOC with A maintainability 45.22. The touched
+  modules have no C-or-worse source functions.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  C-or-worse source function complexity, static/type checks, focused risk-source behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than blockers because threshold policy, false positives, and exception
+  handling are not settled as deterministic low-noise enforcement.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/pm_quality/scoring.py` remains the next C-grade source hotspot after
+  this slice. It should be handled separately with a quality intake around PM operating quality
+  source truth, closest score-run/fairness/summary tests, and a measured behavior-preserving
+  extraction seam.
+- Wiki decision: no wiki source change required; this is internal source-adapter modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing CI-enforcement and
+  backend delivery guidance already directed the correct no-new-gate decision and measured
+  extraction workflow; no platform skill-source change or bootstrap sync is needed for this
+  repository-local slice.
+
+## BACKEND-REVIEW-20260619-2314: Mandate health scoring helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `src/core/mandate_health_scoring.py`, focused mandate
+  health/API/supportability/wave source-readiness tests, generated quality reports, and this
+  ledger.
+- Bank-buyable control area: discretionary mandate health score calculation, dimension state
+  projection, recommended-action mapping, source analytics posture preservation, and monitoring
+  exception source evidence used by API-facing mandate health workflows.
+- Quality intake: `src/core/mandates.py` is the existing Manage-owned domain facade for mandate
+  digital-twin compilation, health-input construction, health scoring, and monitoring exception
+  projection. Core source products remain canonical for mandate binding, model targets, optional
+  client/source products, and market-data supportability. This slice is internal core/domain logic
+  used by API-facing mandate health routes, wave source-readiness flows, and mandate repository
+  supportability; it must preserve the public `src.core.mandates.calculate_mandate_health` import
+  surface and domain outputs. The closest meaningful tests are
+  `tests/unit/dpm/core/test_mandate_health.py`, `tests/unit/dpm/api/test_mandates_api.py`,
+  `tests/unit/dpm/supportability/test_dpm_mandate_repository.py`, and
+  `tests/unit/dpm/waves/test_source_readiness.py`. Repo-native validation uses focused pytest,
+  ruff, source mypy, architecture, duplicate-implementation, complexity, and generated-report
+  freshness checks. The measured quality signal is moving the C-grade `src/core/mandates.py`
+  hotspot out of C maintainability while preserving mandate health behavior.
+- Finding: `src/core/mandates.py` mixed Core source-product assembly with deterministic health
+  dimension scoring, source analytics posture, weighted-score calculation, top-reason ordering, and
+  recommended-action mapping. The scoring block is cohesive and covered through public behavior
+  tests, while digital-twin/source-input assembly remains a separate responsibility.
+- Action: moved mandate health scoring implementation into `src/core/mandate_health_scoring.py`
+  and re-exported `calculate_mandate_health` from `src/core/mandates.py` to preserve existing
+  callers. No API contract, repository contract, source-product truth, CI gate behavior, or runtime
+  behavior was intentionally changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_mandates_api.py tests\unit\dpm\supportability\test_dpm_mandate_repository.py tests\unit\dpm\waves\test_source_readiness.py`,
+  `python -m ruff check src\core\mandates.py src\core\mandate_health_scoring.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff format --check src\core\mandates.py src\core\mandate_health_scoring.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py src\core\mandate_health_scoring.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\mandates.py src\core\mandate_health_scoring.py`,
+  `python -m radon mi src\core\mandates.py src\core\mandate_health_scoring.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused mandate/API/supportability
+  tests reported 90 passed. `src/core/mandates.py` moved from 1058 LOC with C maintainability 7.97
+  to 595 LOC with A maintainability 26.30, and the extracted
+  `src/core/mandate_health_scoring.py` is 484 LOC with A maintainability 22.42. The architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  with no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already block architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regressions, static/type regressions, and stale quality reports.
+  Maintainability index and file size remain measured, report-backed planning signals rather than
+  blocking gates because they are not sufficiently low-noise standalone enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining C-grade source hotspots are `src/core/outcomes/risk_sources.py` and
+  `src/core/pm_quality/scoring.py`. Future slices should target cohesive, directly tested behavior
+  families in those files and avoid promoting MI or file-size gates until baseline,
+  false-positive posture, lane placement, and exception policy are settled.
+- Wiki decision: no wiki source change required; this is internal mandate-health modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement governance already cover this measured extraction and no new repeatable
+  platform guidance emerged, so no platform skill-source change or bootstrap sync is needed for
+  this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2303: OpenAPI semantic inference helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/api/openapi_enrichment.py`, `src/api/openapi_semantics.py`,
+  `tests/unit/api/test_openapi_enrichment_helpers.py`, focused OpenAPI quality and contract tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: generated OpenAPI field descriptions, schema examples, request and
+  response examples, error examples, metrics media-type documentation, API vocabulary drift
+  prevention, and future-agent API-governance guardrails.
+- Quality intake: `src.api.openapi_enrichment.enrich_openapi_schema` is the existing schema
+  post-processing owner installed by `src.api.main`; the file mixed semantic field inference,
+  schema example traversal, and operation/response documentation. The canonical source of truth is
+  generated FastAPI OpenAPI plus Pydantic component schemas. This code path is API-governance and
+  developer/operator-facing contract truth, not runtime business calculation logic. The closest
+  meaningful tests are `tests/unit/api/test_openapi_enrichment_helpers.py`,
+  `tests/unit/test_openapi_quality_gate.py`, and
+  `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`. Repo-native validation
+  uses focused pytest, ruff, source mypy, OpenAPI gate, API vocabulary gate, architecture,
+  duplicate-implementation, complexity, and generated-report freshness checks. The measured quality
+  signal is moving the C-grade OpenAPI enrichment hotspot out of C maintainability while preserving
+  generated schema documentation and example behavior.
+- Finding: `src/api/openapi_enrichment.py` owned too many API-governance concerns in one module.
+  The semantic description/example inference rules were deterministic, cohesive, and directly
+  test-covered, while schema traversal, `$ref`/composite example resolution, operation defaults,
+  error response content, and `/metrics` media-type enrichment remain separate mutation concerns.
+- Action: extracted semantic field description/example inference into
+  `src/api/openapi_semantics.py` with explicit `infer_openapi_description` and
+  `infer_openapi_example` entry points. `src/api/openapi_enrichment.py` now delegates field
+  fallback metadata to that owner and keeps schema traversal/enrichment behavior. Tests now import
+  semantic-rule helpers from the semantic owner and continue to exercise enrichment traversal from
+  the enrichment owner. No public API contract, OpenAPI output policy, CI gate behavior, or runtime
+  behavior was intentionally changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\api\test_openapi_enrichment_helpers.py tests\unit\test_openapi_quality_gate.py tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py`,
+  `python -m ruff check src\api\openapi_enrichment.py src\api\openapi_semantics.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m ruff format --check src\api\openapi_enrichment.py src\api\openapi_semantics.py tests\unit\api\test_openapi_enrichment_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\api\openapi_enrichment.py src\api\openapi_semantics.py`,
+  `make openapi-gate`,
+  `make api-vocabulary-gate`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\api\openapi_enrichment.py src\api\openapi_semantics.py`,
+  `python -m radon mi src\api\openapi_enrichment.py src\api\openapi_semantics.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused OpenAPI tests reported 53
+  passed. `src/api/openapi_enrichment.py` moved from 817 LOC with C maintainability 4.55 to 580
+  LOC with B maintainability 15.64, and the extracted `src/api/openapi_semantics.py` is 246 LOC
+  with A maintainability 28.93. The OpenAPI quality gate passed, API vocabulary validation reported
+  no drift, and duplicate implementation remained at 0 accepted exact duplicate groups with no new
+  groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already block OpenAPI completeness drift, API vocabulary drift,
+  architecture-boundary drift, duplicate implementation hotspots, source C-or-worse complexity
+  regressions, and stale quality reports. Maintainability index and file size remain measured,
+  report-backed planning signals rather than blocking gates because they are not sufficiently
+  low-noise standalone enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining C-grade source hotspots are `src/core/mandates.py`,
+  `src/core/outcomes/risk_sources.py`, and `src/core/pm_quality/scoring.py`. Future slices should
+  target cohesive, directly tested behavior families in those files and avoid promoting MI or
+  file-size gates until baseline, false-positive posture, lane placement, and exception policy are
+  settled.
+- Wiki decision: no wiki source change required; this is internal API-governance modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement governance already cover this measured extraction and no new repeatable
+  platform guidance emerged, so no platform skill-source change or bootstrap sync is needed for
+  this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2234: Rebalance run list serialization extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`, `src/core/rebalance_runs/serializers.py`,
+  `tests/unit/dpm/supportability/test_run_serializers.py`, focused supportability/API tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: Manage-owned DPM run lookup/list supportability APIs, persisted run
+  record projection, run status exposure, idempotency-key posture, and cursor-backed run inventory
+  evidence used by operator-facing supportability routes.
+- Quality intake: `DpmRunSupportService` owns cleanup, repository filtering, not-found semantics,
+  and API-facing run inventory orchestration; `src/core/rebalance_runs/serializers.py` already
+  owns run lookup DTO projection. The source of truth remains persisted `DpmRunRecord` rows and
+  repository list cursors. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_run_serializers.py`,
+  `tests/unit/dpm/supportability/test_dpm_supportability_retention_service.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving run list filtering, paging,
+  retention cleanup, idempotency posture, and API response shape.
+- Finding: `src/core/rebalance_runs/service.py` still constructed run-list response DTOs inline,
+  despite `src/core/rebalance_runs/serializers.py` already owning lookup serialization for the same
+  record type. This mixed orchestration and projection, increasing service size without adding
+  domain authority.
+- Action: added `to_run_list_item_response` and `to_run_list_response` to
+  `src/core/rebalance_runs/serializers.py`; updated `DpmRunSupportService.list_runs` to delegate
+  pure DTO assembly while retaining cleanup, repository filter delegation, cursor handling, and
+  exception behavior. Added focused serializer tests for nullable idempotency keys, status
+  projection from persisted result JSON, ISO timestamp rendering, item ordering, and cursor
+  preservation. No API contract, repository contract, runtime behavior, or CI gate behavior was
+  changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_run_serializers.py tests\unit\dpm\supportability\test_dpm_supportability_retention_service.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused run-list/supportability/API
+  tests reported 162 passed. `src/core/rebalance_runs/service.py` moved from 916 LOC with C
+  maintainability 8.84 to 902 LOC with C maintainability 8.97, and
+  `src/core/rebalance_runs/serializers.py` remains A-grade at 157 LOC with maintainability 58.43.
+  The architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused run-list behavior, API behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals under the CI-enforcement governance standard.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 902 LOC because
+  it still owns run persistence orchestration, idempotency lookup/history, workflow persistence,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should target
+  one cohesive behavior family at a time, likely idempotency lookup/history projection or
+  supportability summary assembly, only where focused tests preserve not-found semantics, lineage,
+  and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal run-list serialization
+  modularity and quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2238: Rebalance idempotency lookup serialization extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`, `src/core/rebalance_runs/serializers.py`,
+  `tests/unit/dpm/supportability/test_run_serializers.py`, focused idempotency/supportability/API
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: Manage-owned idempotency lookup and append-only idempotency history
+  supportability APIs, replay evidence, not-found semantics, ISO timestamp projection, and
+  repository-backed idempotency posture used by operator-facing DPM run support routes.
+- Quality intake: `DpmRunSupportService` owns cleanup, repository lookup, and
+  `DPM_IDEMPOTENCY_KEY_NOT_FOUND` semantics; `src/core/rebalance_runs/serializers.py` already owns
+  run lookup/list and idempotency history DTO projection. The source of truth remains
+  `DpmRunIdempotencyRecord` plus append-only `DpmRunIdempotencyHistoryRecord` rows from the
+  repository. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_run_serializers.py`,
+  `tests/unit/dpm/supportability/test_dpm_idempotency_history_service.py`,
+  `tests/unit/dpm/supportability/test_dpm_supportability_retention_service.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving idempotency lookup/history
+  response shape, ordering, API guard behavior, and missing-key semantics.
+- Finding: `src/core/rebalance_runs/service.py` still constructed
+  `DpmRunIdempotencyLookupResponse` inline while `src/core/rebalance_runs/serializers.py` already
+  owned adjacent idempotency history serialization. This left a small but real projection concern
+  in the orchestration service.
+- Action: added `to_idempotency_lookup_response` to
+  `src/core/rebalance_runs/serializers.py`; updated `DpmRunSupportService.get_idempotency_lookup`
+  to delegate pure DTO assembly while retaining cleanup, repository lookup, and not-found
+  behavior. Added focused serializer tests for lookup identity/timestamp projection and
+  idempotency-history ordering. No API contract, repository contract, runtime behavior, or CI gate
+  behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_run_serializers.py tests\unit\dpm\supportability\test_dpm_idempotency_history_service.py tests\unit\dpm\supportability\test_dpm_supportability_retention_service.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py tests\unit\dpm\supportability\test_run_serializers.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\serializers.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused
+  idempotency/supportability/API tests reported 166 passed. `src/core/rebalance_runs/service.py`
+  moved from 902 LOC with C maintainability 8.97 to 898 LOC with C maintainability 8.97, and
+  `src/core/rebalance_runs/serializers.py` remains A-grade at 170 LOC with maintainability 57.61.
+  The architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused idempotency behavior, API behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals under the CI-enforcement governance standard.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 898 LOC because
+  it still owns run persistence orchestration, workflow persistence, artifact resolution, cleanup,
+  and supportability summary assembly. Future slices should target one cohesive behavior family at
+  a time, likely supportability summary assembly or artifact resolution, only where focused tests
+  preserve not-found semantics, lineage, retention, and API behavior.
+- Wiki decision: no wiki source change required; this is internal idempotency serialization
+  modularity and quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2254: In-memory rebalance repository helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/rebalance_runs/in_memory.py`,
+  `src/infrastructure/rebalance_runs/in_memory_helpers.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`, focused repository and
+  supportability tests, generated quality reports, and this ledger.
+- Bank-buyable control area: DPM run repository fallback behavior for local/dev/test execution,
+  run and async-operation filtering, cursor pagination, workflow decision filtering, lineage edge
+  deduplication, supportability summary aggregation, retention purge cleanup, and repository
+  contract parity with SQLite/Postgres backends.
+- Quality intake: `InMemoryDpmRunRepository` owns lock-protected in-memory repository state and
+  contract orchestration for `DpmRunRepository`. The source of truth is the repository's in-memory
+  dictionaries under the repository lock; the path is internal infrastructure but feeds API-facing
+  and operator-facing rebalance supportability routes in local and test runtime. The closest
+  meaningful tests are `tests/unit/dpm/supportability/test_dpm_run_repository_backends.py`,
+  `tests/unit/dpm/supportability/test_in_memory_summary_helpers.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is removing
+  `src/infrastructure/rebalance_runs/in_memory.py` from the C-grade maintainability hotspot list
+  while preserving filtering, cursoring, supportability summary counts, workflow decision ordering,
+  lineage dedupe, and retention purge behavior.
+- Finding: `src/infrastructure/rebalance_runs/in_memory.py` combined repository state/locking with
+  pure filtering, cursoring, summary aggregation, and purge helper policy. The helper policy is
+  deterministic over repository snapshots and was already tested as helper behavior, so keeping it
+  inside the repository module inflated the repository hotspot without improving ownership clarity.
+- Action: added `src/infrastructure/rebalance_runs/in_memory_helpers.py` for run/operation list
+  helpers, workflow decision filters, supportability summary aggregation, lineage edge identity
+  counting, and expired-run purge helpers. `InMemoryDpmRunRepository` now retains lock ownership,
+  state mutation, defensive copying, and repository contract orchestration while delegating pure
+  helper policy. Updated helper tests to import the helper owner directly. No repository contract,
+  API contract, storage semantics, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_in_memory_summary_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_in_memory_summary_helpers.py`,
+  `python -m ruff format --check src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py tests\unit\dpm\supportability\test_dpm_run_repository_backends.py tests\unit\dpm\supportability\test_in_memory_summary_helpers.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py`,
+  `python -m radon mi src\infrastructure\rebalance_runs\in_memory.py src\infrastructure\rebalance_runs\in_memory_helpers.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused repository/supportability tests
+  reported 108 passed. `src/infrastructure/rebalance_runs/in_memory.py` moved from 672 LOC with C
+  maintainability 8.02 to 291 LOC with A maintainability 26.90. The extracted
+  `src/infrastructure/rebalance_runs/in_memory_helpers.py` is 408 LOC with A maintainability
+  22.46. The architecture gate passed, and the duplicate implementation gate remains at 0 accepted
+  exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse cyclomatic complexity, static/type checks, repository contract behavior, and
+  quality-report freshness. This slice used maintainability index and file size as measured
+  improvement evidence, not as new blockers, consistent with CI-enforcement governance.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/api/openapi_enrichment.py`, `src/core/mandates.py`,
+  `src/core/outcomes/risk_sources.py`, and `src/core/pm_quality/scoring.py` remain C-grade
+  maintainability hotspots. Future slices should target one of those only with behavior-focused
+  tests and source-owner boundary preservation.
+- Wiki decision: no wiki source change required; this is internal repository modularity and
+  quality evidence, not new operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured helper-extraction
+  pattern; no platform skill-source change or bootstrap sync is needed for this repository-local
+  slice.
+
+## BACKEND-REVIEW-20260619-2243: Rebalance supportability summary projection extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/supportability_summary.py`,
+  `tests/unit/dpm/supportability/test_supportability_summary_projection.py`, focused
+  supportability/API tests, generated quality reports, and this ledger.
+- Bank-buyable control area: operator-facing DPM action-register supportability summary,
+  freshness bucket classification, bounded ready/empty/stale/degraded posture, workflow aggregate
+  counts, lineage counts, metrics label values, and API-facing supportability diagnostics.
+- Quality intake: `DpmRunSupportService` owns cleanup and repository access for supportability
+  summary reads, while `DpmSupportabilitySummaryData` from the repository is the source of truth.
+  The path is API-facing and operator-facing through `/api/v1/rebalance/supportability/summary`
+  and corresponding Prometheus labels. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_supportability_summary_projection.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is removing the remaining C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving supportability summary counts,
+  timestamps, freshness buckets, state/reason mapping, metrics values, and API guard behavior.
+- Finding: `src/core/rebalance_runs/service.py` still owned pure supportability response assembly
+  and freshness-state policy after prior serialization extractions. That policy is deterministic
+  over repository summary data plus current time and belongs in a separately tested projection
+  helper, not the orchestration service.
+- Action: added `src/core/rebalance_runs/supportability_summary.py` for summary response
+  projection, action-register supportability resolution, and freshness-bucket classification.
+  `DpmRunSupportService.get_supportability_summary` now retains cleanup and repository access, then
+  delegates pure projection with an explicit `now` timestamp. Added focused projection tests for
+  ready, empty, stale, degraded, timestamp/count projection, and naive timestamp handling. No API
+  contract, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_supportability_summary_projection.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py tests\unit\dpm\supportability\test_supportability_summary_projection.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py tests\unit\dpm\supportability\test_supportability_summary_projection.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\supportability_summary.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused supportability/API tests
+  reported 168 passed. `src/core/rebalance_runs/service.py` moved from 898 LOC with C
+  maintainability 8.97 to 815 LOC with B maintainability 13.04, removing it from the C-grade
+  hotspot list. The extracted `src/core/rebalance_runs/supportability_summary.py` is 112 LOC with
+  A maintainability 46.20. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, supportability summary behavior, API behavior,
+  and quality-report freshness. This slice used maintainability index and file size as measured
+  improvement evidence, not as new blockers, consistent with CI-enforcement governance.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` is now B-grade but still owns run
+  persistence orchestration, workflow persistence, artifact resolution, cleanup, and support-bundle
+  orchestration. Future slices should move to the remaining measured C-grade hotspots or target
+  artifact resolution only if focused tests can preserve persisted/derived artifact behavior.
+- Wiki decision: no wiki source change required; this is internal supportability projection
+  modularity and quality evidence, not new operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2229: Rebalance run workflow projection helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/workflow_projection.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_workflow_service.py`, focused supportability/API
+  workflow tests, generated quality reports, and this ledger.
+- Bank-buyable control area: Manage-owned rebalance workflow status projection, append-only review
+  decision evidence, decision-history ordering, reviewer action response shape, and workflow
+  supportability surfaced through API-facing DPM run routes.
+- Quality intake: `DpmRunSupportService` is the existing owner for rebalance run workflow reads and
+  reviewer actions. The source of truth remains the persisted Manage run record plus append-only
+  workflow decisions; the path is API-facing through the rebalance workflow routes and internal
+  support-bundle composition. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_dpm_run_workflow_service.py`,
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/rebalance_runs/service.py` hotspot while preserving workflow status,
+  transition validation, latest-decision selection, history ordering, and API response shape.
+- Finding: after async-operation extraction, `src/core/rebalance_runs/service.py` still embedded
+  pure workflow projection and decision-record construction alongside repository lookup,
+  feature-flag guards, transition validation, persistence, cleanup, and exception mapping. The
+  projection and record-construction logic is deterministic, cohesive, and separately testable
+  without broadening the service boundary.
+- Action: added `src/core/rebalance_runs/workflow_projection.py` for latest-decision selection,
+  decision-history response assembly, current workflow response projection, workflow decision
+  record construction, and action response assembly. `DpmRunSupportService` now delegates those
+  pure helpers while retaining cleanup, repository access, workflow-required checks, transition
+  validation, append-only persistence, and public API behavior. Added focused helper tests for
+  ordering, latest-decision selection, disabled/not-required projection, and action response shape.
+  No API contract, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_workflow_service.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py tests\unit\dpm\supportability\test_dpm_run_workflow_service.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py tests\unit\dpm\supportability\test_dpm_run_workflow_service.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py src\core\rebalance_runs\workflow.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\workflow_projection.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused workflow/supportability/API
+  tests reported 173 passed. `src/core/rebalance_runs/service.py` moved from 924 LOC with C
+  maintainability 8.13 to 916 LOC with C maintainability 8.84, and the extracted
+  `src/core/rebalance_runs/workflow_projection.py` is 105 LOC with A maintainability 61.90. The
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused workflow behavior, API contract behavior,
+  and quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals under the CI-enforcement governance standard.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 916 LOC because
+  it still owns run persistence orchestration, idempotency lookup, workflow persistence,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should keep
+  targeting one cohesive behavior family at a time, likely run lookup/list projection or
+  supportability summary assembly, only where focused tests preserve not-found semantics,
+  idempotency mapping, lineage, and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal workflow modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+## BACKEND-REVIEW-20260619-1604: DPM source context external treasury model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_external_treasury.py`, focused DPM construction/core-sourcing
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: external treasury and OMS source-product contracts for hedge
+  readiness, currency exposure, hedge policy, eligible hedge instruments, FX forward curves, and
+  order-execution acknowledgements with fail-closed supportability posture.
+- Finding: `src/core/dpm_source_context.py` still held the independent external treasury/OMS
+  source-product Pydantic family after earlier source-context extractions. The family is cohesive,
+  behavior-covered, and does not need to remain inside the broader DPM source-context aggregate.
+- Action: moved the external treasury/OMS supportability and response models into
+  `src/core/dpm_source_context_external_treasury.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing imports, Pydantic validation, and OpenAPI schema
+  behavior remain stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_enrichment.py tests\unit\dpm\construction\test_treasury_source_context.py tests\unit\dpm\construction\test_execution_source_context.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_external_treasury.py tests\unit\dpm\construction\source_product_context_fixtures.py tests\unit\dpm\construction\test_enrichment.py tests\unit\dpm\construction\test_treasury_source_context.py tests\unit\dpm\construction\test_execution_source_context.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_external_treasury.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_external_treasury.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_external_treasury.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_external_treasury.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 94 passed.
+  `dpm_source_context.py` raw size moved from 1628 LOC to 1329 LOC, the extracted
+  `dpm_source_context_external_treasury.py` is 321 LOC with A maintainability, the architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused source-product
+  behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` remains a large source-context aggregate at 1329
+  LOC. Future slices should continue extracting cohesive source-product families or transformation
+  helpers only when caller imports can remain stable and behavior coverage is already in place or
+  added in the same slice.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1621: DPM source context execution-control model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_execution_controls.py`, focused DPM construction/core-sourcing
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: source-owned execution controls and evidence contracts for instrument
+  eligibility, observed transaction-cost curves, client restrictions, and sustainability
+  preferences consumed by stateful DPM construction and execution supportability.
+- Finding: `src/core/dpm_source_context.py` still embedded the execution-control source-product
+  model family after prior financial-planning, market-data, and external-treasury extractions. The
+  family is cohesive, source-product oriented, and behavior-covered by core-sourcing and
+  construction supportability tests, so keeping it in the aggregate continued unnecessary module
+  growth.
+- Action: moved instrument eligibility, transaction-cost curve, client restriction, and
+  sustainability preference Pydantic models into
+  `src/core/dpm_source_context_execution_controls.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing imports, Pydantic validation, and OpenAPI schema
+  behavior remain stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_client_profile_source_context.py tests\unit\dpm\construction\test_client_restriction_supportability.py tests\unit\dpm\construction\test_enrichment.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\construction\test_client_profile_source_context.py tests\unit\dpm\construction\test_client_restriction_supportability.py tests\unit\dpm\construction\test_enrichment.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_execution_controls.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 87 passed.
+  `dpm_source_context.py` raw size moved from 1329 LOC to 1065 LOC, the extracted
+  `dpm_source_context_execution_controls.py` is 285 LOC with A maintainability, the architecture
+  gate passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups
+  and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused source-product
+  behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` remains a source-context aggregate at 1065 LOC.
+  Future slices should target the remaining cohesive core source-product model families or
+  transformation helpers only when compatibility imports remain stable and tests characterize the
+  moved behavior.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1639: DPM source context core-product model extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/dpm_source_context.py`,
+  `src/core/dpm_source_context_core_products.py`, focused DPM source-context, mandate,
+  core-sourcing, PM-book, monitoring, and wave portfolio-universe tests, generated quality reports,
+  and this ledger.
+- Bank-buyable control area: core-owned portfolio-governance and source-discovery product
+  contracts for model targets, discretionary mandate binding, benchmark assignment, PM-book
+  membership, CIO model-change affected cohorts, and DPM portfolio-universe candidates.
+- Finding: `src/core/dpm_source_context.py` still embedded the remaining large core source-product
+  model family after prior source-context extractions. These contracts are cohesive Core product
+  DTOs and are independently consumed across mandate health, core sourcing, monitoring, PM-quality,
+  and wave discovery, so keeping them inline obscured the aggregate's remaining responsibility as
+  execution-context assembly and transformation helpers.
+- Action: moved the core product Pydantic models into
+  `src/core/dpm_source_context_core_products.py`; kept explicit re-exports from
+  `src/core/dpm_source_context.py` so existing imports, Pydantic validation, and OpenAPI schema
+  behavior remain stable. Removed the stale `datetime` import from the aggregate after extraction.
+  Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\mandates\test_mandate_pm_book.py tests\unit\dpm\mandates\test_mandate_optional_sources.py tests\unit\dpm\waves\test_wave_core_portfolio_universe_resolution_service.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py tests\unit\dpm\core\test_dpm_source_context.py tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\mandates\test_mandate_pm_book.py tests\unit\dpm\mandates\test_mandate_optional_sources.py tests\unit\dpm\waves\test_wave_core_portfolio_universe_resolution_service.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\api\test_mandates_api.py`,
+  `python -m ruff format --check src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `python -m mypy --config-file mypy.ini src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py`,
+  `python -m radon mi src\core\dpm_source_context.py src\core\dpm_source_context_core_products.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 172 passed.
+  `dpm_source_context.py` raw size moved from 1065 LOC to 624 LOC and improved to A
+  maintainability, the extracted `dpm_source_context_core_products.py` is 466 LOC with A
+  maintainability, the architecture gate passed, and the duplicate implementation gate remains at
+  0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused source-product
+  behavior tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/dpm_source_context.py` is now a smaller source-context assembly and
+  transformation module at 624 LOC with A maintainability. Future slices should target remaining
+  transformation helpers only if they create a clear assembly, mapping, or testability boundary;
+  otherwise the next measured hotspots are `src/infrastructure/core_sourcing/client.py` and
+  `src/core/mandates.py`.
+- Wiki decision: no wiki source change required; this is internal source-context modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1658: Core sourcing resolver config extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/resolver_config.py`,
+  `src/infrastructure/core_sourcing/errors.py`, focused core-sourcing client tests, generated
+  quality reports, and this ledger.
+- Bank-buyable control area: deterministic Core resolver endpoint configuration, unavailable
+  source signaling, and HTTP source-orchestration boundaries for DPM portfolio context hydration.
+- Finding: `src/infrastructure/core_sourcing/client.py` still owned resolver exceptions, endpoint
+  path-template defaults, URL resolution, HTTP execution, payload parsing, retry handling, and
+  source-context assembly in one large infrastructure module. The resolver config and exception
+  family are cohesive, behavior-covered, and reusable across source-client construction, while
+  keeping them inline made the client harder to review for transport and orchestration changes.
+- Action: moved resolver exception types into `src/infrastructure/core_sourcing/errors.py` and
+  resolver path-template configuration into
+  `src/infrastructure/core_sourcing/resolver_config.py`; introduced a shared URL-resolution helper
+  to remove repeated base/path assembly while preserving the existing unavailable reason codes.
+  Kept compatibility re-exports from `src/infrastructure/core_sourcing/client.py` so existing
+  imports remain stable. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\resolver_config.py src\infrastructure\core_sourcing\errors.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1724 LOC with C maintainability to 1456 LOC with B
+  maintainability, the extracted `resolver_config.py` is 280 LOC with A maintainability, and
+  `errors.py` is 6 LOC with A maintainability. The architecture gate passed, and the duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover this change class: architecture-boundary drift, duplicate
+  implementation hotspots, complexity non-regression, static/type checks, focused resolver behavior
+  tests, and current quality-report freshness. No noisy metric was promoted.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large transport and
+  orchestration module at 1456 LOC. Future slices should target cohesive HTTP/payload parsing or
+  source-product hydration families only where focused tests can preserve upstream unavailable
+  signaling, retry behavior, and source-context payload semantics.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1709: Core sourcing source-product transport extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/source_product_transport.py`, focused core-sourcing client
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: deterministic Core source-product HTTP transport, transient retry
+  handling, correlation header propagation, safe unavailable/incomplete error mapping, and
+  source-payload shape validation for stateful DPM source hydration.
+- Quality intake: `src/infrastructure/core_sourcing/client.py` is the existing infrastructure owner
+  for Core source-product access; `lotus-core` remains source-data authority and Manage preserves
+  Core source payload semantics without becoming source owner. The closest meaningful tests are
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`; repo-native validation
+  uses focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is shrinking the already-measured
+  `core_sourcing/client.py` hotspot while preserving deterministic gate posture.
+- Finding: after resolver config extraction, `src/infrastructure/core_sourcing/client.py` still
+  embedded low-level source-product transport helpers for correlation headers, GET/POST selector
+  transport, transient retry boundaries, status-to-error mapping, and JSON object validation. These
+  mechanics are cohesive infrastructure concerns, behavior-covered by focused tests, and separate
+  from the client's higher-level source-product orchestration and DPM context assembly.
+- Action: moved source-product transport mechanics into
+  `src/infrastructure/core_sourcing/source_product_transport.py`; kept private compatibility
+  aliases from `src/infrastructure/core_sourcing/client.py` for existing tests/imports while making
+  the transport helper module the implementation owner. Regenerated quality reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\source_product_transport.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1456 LOC with B maintainability 14.27 to 1366 LOC with B
+  maintainability 18.20, and the extracted `source_product_transport.py` is 109 LOC with A
+  maintainability 48.35. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused transport behavior, and quality-report
+  freshness. File size and maintainability remain measured/report-backed trend signals rather than
+  newly promoted blockers because they are not standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large Core source
+  orchestration module at 1366 LOC. Future slices should target cohesive source-product hydration
+  families or payload mapping only where focused tests can preserve unavailable signaling,
+  correlation propagation, retry semantics, and source-context payload behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-1723: Core sourcing execution-context assembly extraction
+
+- Date: 2026-06-19
+- Scope: `src/infrastructure/core_sourcing/client.py`,
+  `src/infrastructure/core_sourcing/execution_context_assembly.py`, focused core-sourcing client
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: stateful DPM execution-context assembly, requested instrument
+  derivation, currency-pair exposure derivation, source lineage identity, policy-pack override
+  behavior, and ready supportability posture for Core-backed source hydration.
+- Quality intake: `src/infrastructure/core_sourcing/client.py` remains the infrastructure owner for
+  Core source resolution; the pure assembly helpers are internal infrastructure orchestration, not
+  API-facing behavior. `lotus-core` remains source-data authority, and Manage only assembles
+  source-owned evidence into the DPM execution context. The closest meaningful tests are
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client.py` and
+  `tests/unit/dpm/infrastructure/test_core_sourcing_client_hardening.py`; repo-native validation
+  uses focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is moving `core_sourcing/client.py`
+  from a B-grade hotspot to A maintainability while preserving deterministic gate posture.
+- Finding: after extracting resolver config and source-product transport, `client.py` still carried
+  pure execution-context assembly helpers for requested instrument ids, currency exposure inputs,
+  policy override projection, source lineage identity, and ready supportability. These helpers are
+  cohesive, deterministic, and independently tested, while keeping them inline inflated the source
+  adapter beyond source-product orchestration.
+- Action: moved execution-context assembly helpers into
+  `src/infrastructure/core_sourcing/execution_context_assembly.py`; kept private compatibility
+  aliases from `src/infrastructure/core_sourcing/client.py` for existing tests/imports while making
+  the new module the implementation owner. Removed stale client imports and regenerated quality
+  reports.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py -q`,
+  `python -m ruff check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py tests\unit\dpm\infrastructure\test_core_sourcing_client.py tests\unit\dpm\infrastructure\test_core_sourcing_client_hardening.py`,
+  `python -m ruff format --check src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `python -m mypy --config-file mypy.ini src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py`,
+  `python -m radon mi src\infrastructure\core_sourcing\client.py src\infrastructure\core_sourcing\execution_context_assembly.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 73 passed.
+  `client.py` raw size moved from 1366 LOC with B maintainability 18.20 to 1305 LOC with A
+  maintainability 19.67, and the extracted `execution_context_assembly.py` is 82 LOC with A
+  maintainability 61.92. The architecture gate passed, and the duplicate implementation gate
+  remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused assembly behavior, and quality-report
+  freshness. File size and maintainability remain measured/report-backed trend signals rather than
+  newly promoted blockers because they are not standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/infrastructure/core_sourcing/client.py` remains a large Core source
+  orchestration module at 1305 LOC. Future slices should target cohesive source-product resolver
+  families only where focused tests can preserve unavailable signaling, payload semantics,
+  correlation propagation, and source-context behavior.
+- Wiki decision: no wiki source change required; this is internal infrastructure modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2210: Mandate model vocabulary extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/mandates.py`, `src/core/mandate_models.py`,
+  `tests/unit/dpm/core/test_mandate_health.py`, focused DPM mandate API/repository tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC-0038 mandate-health vocabulary, mandate digital-twin DTOs,
+  monitoring DTOs, command-center response DTOs, source-readiness projection, and source-owned
+  risk/performance context preservation.
+- Quality intake: `src/core/mandates.py` was the existing Manage-owned RFC-0038 mandate-health
+  domain module, combining stable DTO/vocabulary definitions with source-lineage assembly,
+  digital-twin construction, health scoring, and monitoring exception generation. Manage remains
+  source of truth for mandate-health representation and monitoring posture, while `lotus-core`,
+  `lotus-risk`, and `lotus-performance` remain authoritative for upstream source facts and
+  source-owned analytics contexts. The closest meaningful tests are
+  `tests/unit/dpm/core/test_mandate_health.py`, monitoring API tests, command-center tests,
+  mandate repository tests, and OpenAPI/supportability contract tests. Repo-native validation uses
+  focused pytest, ruff, mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/mandates.py` hotspot while preserving public import compatibility and behavior.
+- Finding: `src/core/mandates.py` carried more than 500 lines of stable enums, weights,
+  dataclass/type aliases, and Pydantic DTOs before the actual mandate source-lineage and scoring
+  logic. This made the module harder for agents to reason about and kept unrelated model
+  vocabulary coupled to scoring/orchestration edits.
+- Action: moved stable mandate-health vocabulary and DTO definitions into
+  `src/core/mandate_models.py`; kept explicit public compatibility re-exports from
+  `src/core/mandates.py`, including the previously available private helper/type aliases used by
+  local tests and internal callers. Tightened one test fixture annotation so the touched focused
+  mypy slice remains deterministic.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\core\test_mandate_health.py tests\unit\dpm\api\test_monitoring_api.py tests\unit\dpm\mandates\test_mandate_command_center.py tests\unit\dpm\supportability\test_dpm_mandate_repository.py -q`,
+  `python -m pytest tests\unit\dpm\contracts\test_contract_openapi_supportability_docs.py tests\unit\dpm\api\test_mandates_api.py -q`,
+  `python -m ruff check src\core\mandates.py src\core\mandate_models.py tests\unit\dpm\core\test_mandate_health.py`,
+  `python -m ruff format --check src\core\mandates.py src\core\mandate_models.py`,
+  `python -m mypy --config-file mypy.ini src\core\mandates.py src\core\mandate_models.py src\core\mandate_repository.py src\api\services\mandate_command_center.py tests\unit\dpm\core\test_mandate_health.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\mandates.py src\core\mandate_models.py`,
+  `python -m radon mi src\core\mandates.py src\core\mandate_models.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused tests reported 90 passed,
+  and API/OpenAPI-focused tests reported 36 passed. `src/core/mandates.py` moved from 1565 LOC
+  with C maintainability 0.00 to 1058 LOC with C maintainability 7.97, and the extracted
+  `src/core/mandate_models.py` is 588 LOC with A maintainability 20.59. The architecture gate
+  passed, and the duplicate implementation gate remains at 0 accepted exact duplicate groups and
+  no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused model/scoring behavior, API/OpenAPI
+  supportability contracts, and quality-report freshness. Maintainability index and file size
+  remain measured/report-backed planning signals rather than new blockers because they are not
+  standalone low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/mandates.py` remains a C-grade module at 1058 LOC because it still owns
+  source-lineage assembly, digital-twin construction, health input construction, scoring, and
+  monitoring exception generation. Future slices should target one cohesive behavior family at a
+  time only where focused tests can preserve source-readiness, source-owned risk/performance
+  context preservation, and monitoring exception behavior.
+- Wiki decision: no wiki source change required; this is internal domain-module modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2216: Rebalance run support-bundle helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/support_bundle.py`, focused rebalance run supportability/API/workflow
+  tests, generated quality reports, and this ledger.
+- Bank-buyable control area: rebalance run support bundles, run lineage sorting/filtering/paging,
+  idempotency-history projection, workflow-history projection, async-operation supportability
+  projection, and operator support evidence assembly.
+- Quality intake: `src/core/rebalance_runs/service.py` is the existing Manage-owned rebalance run
+  support service for run persistence orchestration, async-operation status, idempotency lookup,
+  lineage lookup, workflow support, artifact retrieval, and supportability summaries. Manage remains
+  source of truth for rebalance run lifecycle and supportability evidence; upstream source facts and
+  execution payloads remain explicit request/Core-sourced inputs outside this slice. The closest
+  meaningful tests are `tests/unit/dpm/supportability/test_dpm_lineage_service.py`,
+  `tests/unit/dpm/supportability/test_dpm_idempotency_history_service.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is reducing the already-measured
+  C-grade `src/core/rebalance_runs/service.py` hotspot while preserving run support-bundle,
+  lineage, idempotency, artifact, and workflow behavior.
+- Finding: `src/core/rebalance_runs/service.py` mixed orchestration methods with pure
+  support-bundle and lineage projection helpers. The helpers sort/filter/page lineage edges and
+  assemble support-bundle subresponses independently of repository mutation, making them a cohesive
+  extraction seam with existing focused behavior coverage.
+- Action: moved pure support-bundle and lineage helper logic into
+  `src/core/rebalance_runs/support_bundle.py`; kept private compatibility aliases in
+  `src/core/rebalance_runs/service.py` for existing tests and internal callers. No API contract,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_lineage_service.py tests\unit\dpm\supportability\test_dpm_idempotency_history_service.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py tests\unit\dpm\supportability\test_dpm_lineage_service.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\support_bundle.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused supportability/API/workflow
+  tests reported 163 passed. `src/core/rebalance_runs/service.py` moved from 1040 LOC with C
+  maintainability 2.71 to 945 LOC with C maintainability 7.06, and the extracted
+  `src/core/rebalance_runs/support_bundle.py` is 154 LOC with A maintainability 44.46. Source
+  mypy passed for the touched modules; including the existing untyped lineage test file surfaced
+  unrelated pre-existing test/factory typing gaps, so the typed proof for this slice is scoped to
+  changed source files.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused support-bundle behavior, API/workflow
+  behavior, and quality-report freshness. Maintainability index and file size remain
+  measured/report-backed planning signals rather than new blockers because they are not standalone
+  low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 945 LOC because
+  it still owns run persistence orchestration, async operation lifecycle, workflow decisions,
+  artifact resolution, cleanup, and supportability summary assembly. Future slices should target
+  one cohesive behavior family at a time, likely async-operation lifecycle or workflow decision
+  orchestration, only where focused tests can preserve conflict handling, idempotency lookup,
+  lineage, and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal support-service modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2220: Rebalance run async-operation helper extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance_runs/async_operations.py`, focused async operation/supportability/API tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: DPM async operation submission records, status-list projection,
+  running/succeeded/failed lifecycle mutation, executable-status posture, and async operation
+  evidence used by operator-facing supportability routes.
+- Quality intake: `src/core/rebalance_runs/service.py` is the existing Manage-owned support
+  service for run lifecycle and async-operation supportability. Manage remains source of truth for
+  async operation status, conflict, execution-preparation, and terminal evidence; source facts and
+  rebalance execution payload semantics remain outside this slice. The closest meaningful tests are
+  `tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py`,
+  `tests/unit/dpm/api/test_api_rebalance.py`, and
+  `tests/integration/dpm/api/test_dpm_api_workflow_integration.py`. Repo-native validation uses
+  focused pytest, ruff, source mypy, architecture, duplicate-implementation, complexity, and
+  generated-report freshness checks. The measured quality signal is further reducing the C-grade
+  `src/core/rebalance_runs/service.py` hotspot while preserving async operation conflict, status,
+  execution-prep, terminal result/error, and supportability behavior.
+- Finding: after extracting support-bundle helpers, `src/core/rebalance_runs/service.py` still
+  embedded pure async operation record construction, list response projection, executable-state
+  calculation, and running/succeeded/failed record mutation. These concerns are deterministic and
+  cohesive, while repository cleanup, lookup, conflict handling, and exception mapping belong in
+  the service orchestration layer.
+- Action: moved pure async operation construction, projection, and record mutation helpers into
+  `src/core/rebalance_runs/async_operations.py`; kept repository access, conflict checks, cleanup,
+  lineage recording, and exception mapping in `DpmRunSupportService`. No API contract,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py tests\unit\dpm\api\test_api_rebalance.py tests\integration\dpm\api\test_dpm_api_workflow_integration.py -q`,
+  `python -m ruff check src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py tests\unit\dpm\supportability\test_dpm_run_support_service_coverage.py`,
+  `python -m ruff format --check src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py`,
+  `python -m mypy --config-file mypy.ini src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py src\core\rebalance_runs\support_bundle.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py`,
+  `python -m radon mi src\core\rebalance_runs\service.py src\core\rebalance_runs\async_operations.py -s`,
+  `python scripts\engineering_health_report.py`,
+  and `python scripts\engineering_health_report.py --check`. Focused async/supportability/API
+  tests reported 165 passed. `src/core/rebalance_runs/service.py` moved from 945 LOC with C
+  maintainability 7.06 to 924 LOC with C maintainability 8.13, and the extracted
+  `src/core/rebalance_runs/async_operations.py` is 108 LOC with A maintainability 55.99. The
+  architecture gate passed, and the duplicate implementation gate remains at 0 accepted exact
+  duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  complexity non-regression, static/type checks, focused async-operation behavior, API/workflow
+  behavior, and quality-report freshness. Maintainability index and file size remain
+  measured/report-backed planning signals rather than new blockers because they are not standalone
+  low-noise enforcement signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: `src/core/rebalance_runs/service.py` remains a C-grade module at 924 LOC because
+  it still owns run persistence orchestration, idempotency lookup, workflow decisions, artifact
+  resolution, cleanup, and supportability summary assembly. Future slices should target one
+  cohesive behavior family at a time, likely workflow decision orchestration or run lookup/list
+  projection, only where focused tests can preserve conflict handling, idempotency lookup, lineage,
+  and supportability behavior.
+- Wiki decision: no wiki source change required; this is internal async-operation modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery,
+  CI-enforcement, and codebase-review guidance already cover this measured extraction pattern; no
+  platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2221: Core outcome source adapter modularization
+
+- Date: 2026-06-19
+- Scope: `src/core/outcomes/core_sources.py`,
+  `src/core/outcomes/core_source_common.py`,
+  `src/core/outcomes/core_source_execution.py`, focused lotus-core realized outcome adapter tests,
+  generated quality reports, and this ledger.
+- Bank-buyable control area: RFC-0042 realized outcome evidence sourced from `lotus-core`
+  `HoldingsAsOf`, `TransactionLedgerWindow`, `PortfolioCashflowProjection`,
+  `PortfolioRealizedTaxSummary`, `PortfolioCashMovementSummary`, and
+  `ExternalOrderExecutionAcknowledgement` products.
+- Quality intake: `src/core/outcomes/core_sources.py` is the existing Manage-owned adapter facade
+  for source-owned lotus-core outcome evidence. `lotus-core` remains the business source of truth
+  for cash balances, transaction rows, cashflow projections, realized tax totals, cash movement
+  buckets, market/source metadata, and external execution acknowledgement posture; Manage only wraps
+  source-emitted evidence into bounded `DpmRealizedSourceSnapshot` values and fail-closed posture.
+  The code path is internal domain logic consumed by outcome-review assembly and tests, not a router
+  or direct API contract surface. The closest meaningful tests are
+  `tests/unit/core/test_core_realized_outcome_sources.py` and the documentation current-state guard
+  that records the realized-source slice. Repo-native validation uses focused pytest, ruff, source
+  mypy, architecture, duplicate-implementation, complexity, and generated-report freshness checks.
+  The measured quality signal is moving the B-rated, 927 LOC `core_sources.py` hotspot to A-rated
+  maintainability while preserving all public adapter imports, fail-closed source posture, source-id
+  construction, reason codes, value/unit selection, and helper compatibility.
+- Finding: `core_sources.py` mixed three responsibilities: common lotus-core response metadata and
+  parsing helpers, the external execution acknowledgement adapter, and cash/transaction/tax/cashflow
+  realized-source adapters. The common helpers and execution acknowledgement adapter are cohesive
+  extraction seams with direct behavior coverage and stable import callers.
+- Action: moved common source parsing, metadata, reason-code, identifier, quality-state, and decimal
+  parsing helpers into `src/core/outcomes/core_source_common.py`; moved the external execution
+  acknowledgement adapter and posture helpers into `src/core/outcomes/core_source_execution.py`;
+  kept `src/core/outcomes/core_sources.py` as the compatibility facade that re-exports existing
+  public adapters and private helper names used by current tests. No API contract, OpenAPI,
+  repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m pytest tests\unit\core\test_core_realized_outcome_sources.py tests\unit\test_documentation_current_state.py`,
+  `python -m ruff check src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py tests\unit\core\test_core_realized_outcome_sources.py`,
+  `python -m mypy src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py`,
+  `python -m radon mi src\core\outcomes\core_sources.py src\core\outcomes\core_source_common.py src\core\outcomes\core_source_execution.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused lotus-core outcome-source tests
+  reported 51 passed; the combined focused outcome-source plus documentation current-state run
+  reported 79 passed. `src/core/outcomes/core_sources.py` moved from 927 LOC with B
+  maintainability 13.69 to 718 LOC with A maintainability 23.93 after the compatibility `__all__`
+  declaration; `src/core/outcomes/core_source_common.py` is 148 LOC with A maintainability 37.13,
+  and `src/core/outcomes/core_source_execution.py` is 139 LOC with A maintainability 53.04. The
+  duplicate implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regression, static/type checks, focused source-adapter behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining B-rated source hotspots include `src/core/portfolio_memory/models.py`,
+  `src/core/pm_quality/scoring.py`, `src/core/pm_quality/models.py`,
+  `src/core/construction/models.py`, `src/core/rebalance_runs/service.py`,
+  `src/core/rebalance/intents.py`, `src/core/waves/campaign_assignment_tasks.py`, and
+  `src/infrastructure/pm_quality/postgres.py`. Future slices should continue to pick cohesive,
+  directly tested behavior families rather than splitting model files or persistence code on size
+  alone.
+- Wiki decision: no wiki source change required; this is internal outcome-source modularity and
+  quality evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement guidance already require measured, deterministic, behavior-preserving slices;
+  no platform skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260619-2222: Rebalance intent tax-budget policy extraction
+
+- Date: 2026-06-19
+- Scope: `src/core/rebalance/intents.py`, `src/core/rebalance/tax_budget.py`, focused DPM engine
+  safety/tax-awareness tests, generated quality reports, and this ledger.
+- Bank-buyable control area: discretionary mandate rebalance intent generation, available-holding
+  sell safety, HIFO tax-lot selection, realized-gain budget limiting, tax-impact projection, and
+  diagnostic warning/event evidence.
+- Quality intake: `src/core/rebalance/intents.py` is the existing Manage-owned domain intent
+  generator for DPM rebalance simulations. The source of business truth is the caller-supplied
+  portfolio, market data, model targets, shelf, and `EngineOptions`; Manage derives trade intent
+  proposals and bounded diagnostics from those inputs without calling external services in this
+  path. The code path is internal domain logic consumed by API/service execution, not a router,
+  repository, OpenAPI, or direct runtime contract surface. Closest meaningful tests are
+  `tests/unit/dpm/engine/test_engine_safety_rules.py`,
+  `tests/unit/dpm/engine/test_engine_tax_awareness.py`, and
+  `tests/unit/dpm/engine/coverage/test_engine_tax_and_settlement_branches.py`. Repo-native
+  validation uses focused pytest, ruff, source mypy, architecture, duplicate-implementation,
+  complexity, and generated-report freshness checks. The measured quality signal is moving the
+  B-rated, 716 LOC intent module to A-rated maintainability while preserving generated intent
+  quantity, notional, constraints, tax-impact, warning, and diagnostic-event behavior.
+- Finding: `intents.py` mixed target-to-intent orchestration with a coherent tax-budget policy
+  family: HIFO lot ordering, lot-cost FX conversion, sell-quantity clamping, tax-budget allowance,
+  realized-gain/loss accumulation, tax-impact construction, and tax-limit diagnostics. The
+  tax-budget policy is directly covered by unit and engine-level tests and can be owned separately
+  from the target intent loop.
+- Action: moved tax-budget accumulator/value objects, HIFO lot ordering, sell-quantity safety
+  limits, tax-budget allowance/lot scan logic, tax-impact projection, and tax-limit diagnostics to
+  `src/core/rebalance/tax_budget.py`. Kept `src/core/rebalance/intents.py` as the compatibility
+  facade for existing private helper imports while it now owns target-delta, market-context,
+  dust-suppression, security-intent construction, and the target iteration loop. No API contract,
+  OpenAPI, repository contract, runtime behavior, or CI gate behavior was changed.
+- Status: hardened.
+- Evidence:
+  `python -m pytest tests\unit\dpm\engine\test_engine_safety_rules.py tests\unit\dpm\engine\test_engine_tax_awareness.py tests\unit\dpm\engine\coverage\test_engine_tax_and_settlement_branches.py`,
+  `python -m ruff check src\core\rebalance\intents.py src\core\rebalance\tax_budget.py tests\unit\dpm\engine\test_engine_safety_rules.py`,
+  `python -m ruff format --check src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `python -m mypy src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `make architecture-gate`,
+  `make duplicate-implementation-gate`,
+  `make complexity-gate`,
+  `python -m radon raw src\core\rebalance\intents.py src\core\rebalance\tax_budget.py`,
+  `python -m radon mi src\core\rebalance\intents.py src\core\rebalance\tax_budget.py -s`,
+  and `python scripts\engineering_health_report.py`. Focused safety/tax engine tests reported
+  55 passed. `src/core/rebalance/intents.py` moved from 716 LOC with B maintainability 16.52 to
+  405 LOC with A maintainability 31.41 after the compatibility `__all__` declaration; the extracted
+  `src/core/rebalance/tax_budget.py` is 373 LOC with A maintainability 28.04. The duplicate
+  implementation gate remains at 0 accepted exact duplicate groups and no new groups.
+- CI-enforcement decision: no new blocking gate promoted in this slice. Existing deterministic
+  repo-native gates already cover architecture-boundary drift, duplicate implementation hotspots,
+  source C-or-worse complexity regression, static/type checks, focused tax-budget behavior, and
+  quality-report freshness. Maintainability index and file size remain measured/report-backed
+  planning signals rather than new blockers because they are not standalone low-noise enforcement
+  signals.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify for this docs/quality slice.
+- Residual risk: remaining B-rated source hotspots include `src/core/portfolio_memory/models.py`,
+  `src/core/pm_quality/scoring.py`, `src/core/pm_quality/models.py`,
+  `src/core/construction/models.py`, `src/core/rebalance_runs/service.py`,
+  `src/core/waves/campaign_assignment_tasks.py`, and `src/infrastructure/pm_quality/postgres.py`.
+  Future slices should keep targeting cohesive behavior families with direct tests before model or
+  persistence file-size splits.
+- Wiki decision: no wiki source change required; this is internal domain modularity and quality
+  evidence, not operator-facing runtime or wiki truth.
+- Guidance decision: no skill or agent-context source update required. Existing backend delivery
+  and CI-enforcement guidance already cover this measured extraction pattern; no platform
+  skill-source change or bootstrap sync is needed for this repository-local slice.
+
+## BACKEND-REVIEW-20260620-0826: Project-scoped security audit enforcement
+
+- Date: 2026-06-20
+- Scope: `Makefile`, `.github/workflows/quality-baseline.yml`,
+  `tests/unit/test_ci_workflow_gate_enforcement.py`, RFC evidence script imports, generated
+  quality reports, and this ledger.
+- Bank-buyable control area: deterministic dependency vulnerability scanning, CI gate signal
+  quality, and future-agent guardrails for security enforcement.
+- Quality intake: the existing owner pattern is repo-native Make targets consumed by GitHub
+  Actions lanes. The source of truth is `pyproject.toml` plus `make security-audit`; the report-only
+  baseline workflow should reuse the same scanner family without inventing a separate dependency
+  audit contract. Closest meaningful tests are `tests/unit/test_ci_workflow_gate_enforcement.py`.
+  Repo-native validation uses focused workflow-policy tests, `make security-audit`, and generated
+  report freshness. The measurable quality signal is removing environment-wide Python
+  site-package noise from the blocking scanner while preserving a hard vulnerability gate over the
+  `lotus-manage` project dependency graph.
+- Finding: `make security-audit` ran `python -m pip_audit` without a project path, so local
+  validation audited unrelated packages installed in the shared developer interpreter. In this
+  environment that produced vulnerabilities from Poetry, unrelated PDF tooling, and other Lotus
+  services rather than from `lotus-manage`. The report-only baseline also used
+  `pip-audit -r pyproject.toml`, which is not a valid requirements-file invocation. The subsequent
+  `make check` run also exposed a unit-test collection blocker in RFC evidence scripts: direct
+  script-local `rfc_evidence_http` imports failed when the scripts were imported as
+  `scripts.generate_*` modules. The first remote Feature Lane run for PR #561 exposed an
+  additional CI-only quality-report blocker: Actions checkout used the default shallow fetch, so
+  `origin/main` was unavailable when `python scripts/engineering_health_report.py --check`
+  attempted to build the comparative baseline.
+- Action: changed `make security-audit` to run high-severity Bandit over `src` and
+  project-scoped `python -m pip_audit .` with the existing documented ignore exceptions. Updated
+  `quality-baseline.yml` to use the same project-aware audit mode. Added tests that require the
+  blocking Make target and report-only workflow to stay project-scoped. Updated RFC evidence
+  scripts to prefer package imports with a direct-execution fallback, preserving CLI behavior while
+  restoring module importability. Updated Feature Lane, PR Merge Gate, and Main Releasability
+  lint/typecheck/security jobs to use `actions/checkout` with `fetch-depth: 0` where
+  `make quality-report-gate` runs, and extended `workflow_policy_gate.py` plus unit tests so future
+  workflow edits keep `origin/main` available for report-freshness checks. Refreshed generated
+  quality scorecard/baseline wording.
+- Status: hardened.
+- Evidence:
+  `python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969`
+  returned `No known vulnerabilities found`;
+  `make security-audit` passed;
+  `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py` reported 15 passed;
+  `python -m pytest tests\unit\test_rfc0041_evidence_script.py` reported 3 passed; and
+  `python scripts\engineering_health_report.py` refreshed the checked-in quality reports. After the
+  remote CI checkout fix, `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py`
+  reported 16 passed and `make workflow-policy-gate` passed locally.
+- CI-enforcement decision: promoted only a measured, deterministic, low-noise security signal into
+  the existing blocking gate. This does not weaken security scanning; it changes the audit scope
+  from the mutable developer machine to the repository dependency graph that CI installs and future
+  agents can reason about.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged
+  origin/main` returned no unmerged remote branches to classify before this CI-workflow slice.
+- Residual risk: there is still no lockfile or hash-pinned dependency audit. A future slice can add
+  lockfile-backed auditing once the repository has a governed dependency-lock strategy; until then,
+  project-scoped resolution is the deterministic low-noise gate available in this repo.
+- Wiki decision: no wiki source change required; this is developer/CI enforcement behavior already
+  documented in repo-local quality artifacts, not operator-facing runtime truth.
+- Guidance decision: no platform skill or agent-context source update required. Existing
+  `lotus-ci-enforcement-governance` guidance already directs agents to promote deterministic,
+  measured, low-noise gates; this slice applies that guidance locally and does not change the
+  platform operating contract.

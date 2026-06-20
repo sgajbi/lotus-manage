@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-19T03:14:37+00:00`
+- Generated at: `2026-06-20T00:45:09+00:00`
 
-- Report source snapshot: `84343223+worktree`
+- Report source snapshot: `ae2ddfbb+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -16,10 +16,15 @@
 | Service boundary | Active gate | `scripts/service_boundary_gate.py`. |
 | Router infrastructure imports | Active gate | `scripts/router_infrastructure_gate.py`. |
 | OpenAPI 4xx/5xx response markers | Baseline debt | Current missing markers: 0. |
-| Complexity | Report-only baseline | `quality/complexity_report.md`; add thresholds after baseline review. |
+| Complexity | Active source C gate | `make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only. |
+| Duplicate implementation hotspots | Active exact-duplicate non-regression gate | `make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups. |
+| Quality report freshness | Active gate | `make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance. |
+| Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, coverage-gate drift, and PR evidence drift. |
+| Local CI parity | Active gate | `make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates. |
+| Coverage gate parity | Active gate | `scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate. |
 | Dead code | Active gate | `make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output. |
 | Dependency architecture | Active gate | `make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry. |
-| Security depth | Partially active | `make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`. |
+| Security depth | Active project dependency gate | `make security-audit` runs high-severity Bandit over `src` plus project-scoped `python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family as report-only evidence. |
 | Documentation coverage | Partially active | Docs current-state tests exist; add docs-gap scoring later. |
 | Observability | Partially active | Observability contract validator exists; add runtime posture scoring later. |
 

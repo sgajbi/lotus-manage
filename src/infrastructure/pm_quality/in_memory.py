@@ -28,6 +28,13 @@ from src.core.pm_quality.repository import (
 
 
 @dataclass(frozen=True)
+class _PolicyFilters:
+    policy_id: str | None
+    enabled: bool | None
+    as_of_date: str | None
+
+
+@dataclass(frozen=True)
 class _ScoreRunFilters:
     pm_id: str | None
     book_id: str | None
@@ -95,18 +102,17 @@ class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
         offset: int = 0,
     ) -> list[DpmPmOperatingQualityPolicy]:
         with self._lock:
-            policies = [
-                policy
-                for policy in self._policies.values()
-                if (policy_id is None or policy.policy_id == policy_id)
-                and (enabled is None or policy.enabled == enabled)
-                and (as_of_date is None or policy.as_of_date == as_of_date)
-            ]
-            policies.sort(
-                key=lambda policy: (policy.as_of_date, policy.policy_id, policy.policy_version),
-                reverse=True,
+            page = _list_policies(
+                policies=list(self._policies.values()),
+                filters=_PolicyFilters(
+                    policy_id=policy_id,
+                    enabled=enabled,
+                    as_of_date=as_of_date,
+                ),
+                limit=limit,
+                offset=offset,
             )
-            return deepcopy(policies[offset : offset + limit])
+            return deepcopy(page)
 
 
 class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
@@ -305,6 +311,40 @@ class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocat
             return deepcopy(page)
 
 
+def _policy_matches_filters(
+    policy: DpmPmOperatingQualityPolicy,
+    filters: _PolicyFilters,
+) -> bool:
+    return all(
+        (
+            _optional_value_matches(policy.policy_id, filters.policy_id),
+            _optional_bool_matches(policy.enabled, filters.enabled),
+            _optional_value_matches(policy.as_of_date, filters.as_of_date),
+        )
+    )
+
+
+def _sort_policies(
+    policies: list[DpmPmOperatingQualityPolicy],
+) -> list[DpmPmOperatingQualityPolicy]:
+    return sorted(
+        policies,
+        key=lambda policy: (policy.as_of_date, policy.policy_id, policy.policy_version),
+        reverse=True,
+    )
+
+
+def _list_policies(
+    *,
+    policies: list[DpmPmOperatingQualityPolicy],
+    filters: _PolicyFilters,
+    limit: int,
+    offset: int,
+) -> list[DpmPmOperatingQualityPolicy]:
+    filtered = [policy for policy in policies if _policy_matches_filters(policy, filters)]
+    return _sort_policies(filtered)[offset : offset + limit]
+
+
 def _score_run_matches_filters(
     score_run: DpmPmOperatingQualityScoreRun,
     filters: _ScoreRunFilters,
@@ -432,6 +472,10 @@ def _summary_invocation_matches_filters(
 
 
 def _optional_value_matches(actual: str | None, expected: str | None) -> bool:
+    return expected is None or actual == expected
+
+
+def _optional_bool_matches(actual: bool, expected: bool | None) -> bool:
     return expected is None or actual == expected
 
 

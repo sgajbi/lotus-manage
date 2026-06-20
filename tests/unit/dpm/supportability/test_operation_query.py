@@ -4,6 +4,9 @@ from datetime import datetime, timedelta, timezone
 
 from src.core.rebalance_runs.models import DpmAsyncOperationRecord
 from src.infrastructure.rebalance_runs.operation_query import (
+    _operation_filter_predicates,
+    _operation_where_sql,
+    _optional_datetime_predicate,
     build_operation_filter_query,
     operation_page,
 )
@@ -65,6 +68,28 @@ def test_build_operation_filter_query_returns_empty_filter_without_constraints()
 
     assert query.where_sql == ""
     assert query.args == ()
+
+
+def test_operation_filter_predicate_helpers_convert_dates_and_render_where_sql() -> None:
+    created_from = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    predicate = _optional_datetime_predicate("created_at >= ?", created_from)
+    predicates = _operation_filter_predicates(
+        placeholder="?",
+        created_from=created_from,
+        created_to=None,
+        operation_type="ANALYZE_SCENARIOS",
+        status=None,
+        correlation_id=None,
+    )
+
+    assert predicate is not None
+    assert predicate.value == "2026-02-20T12:00:00+00:00"
+    assert [item.clause for item in predicates] == [
+        "created_at >= ?",
+        "operation_type = ?",
+    ]
+    assert _operation_where_sql(predicates) == "WHERE created_at >= ? AND operation_type = ?"
+    assert _operation_where_sql([]) == ""
 
 
 def test_operation_page_returns_next_cursor_for_truncated_results() -> None:

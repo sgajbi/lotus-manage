@@ -1,8 +1,34 @@
 """Source-owned lotus-core realized evidence adapters for RFC-0042."""
 
-from decimal import Decimal, InvalidOperation
-from typing import Any, Literal, TypedDict
+from decimal import Decimal
+from typing import Any, Literal
 
+from src.core.outcomes.core_source_common import (
+    CoreOutcomeSourceError,
+    _core_as_of_date,
+    _core_content_hash,
+    _core_data_quality_status,
+    _core_metadata,
+    _core_observed_at,
+    _decimal_value,
+    _prefixed_reason_codes,
+    _primary_reason,
+    _read_int,
+    _read_mapping,
+    _read_required_text,
+    _read_text,
+    _read_text_list,
+    _source_id,
+    _source_quality,
+    _source_state,
+)
+from src.core.outcomes.core_source_execution import (
+    _execution_acknowledgement_posture,
+    _execution_acknowledgement_reason_codes,
+    _execution_acknowledgement_source_id,
+    _execution_acknowledgement_state_quality,
+    realized_execution_acknowledgement_source_from_response,
+)
 from src.core.outcomes.models import OutcomeDimension
 from src.core.outcomes.models import DpmRealizedSourceSnapshot
 
@@ -24,28 +50,36 @@ RealizedTaxSummaryOutcomeMeasure = Literal[
     "reporting_currency_total_tax_amount",
 ]
 
-
-class CoreOutcomeSourceError(ValueError):
-    """Raised when a lotus-core response cannot produce bounded outcome evidence."""
-
-
-class _CoreSourceMetadata(TypedDict):
-    product_name: str
-    product_version: str
-    as_of_date: str
-    observed_at: str | None
-    data_quality_status: str
-    content_hash: str | None
-
-
-class _ExecutionAcknowledgementPosture(TypedDict):
-    acknowledgement_count: int
-    supportability_state: str
-    supportability_reason: str
-    execution_intent_id: str
-    order_reference_ids: list[str]
-    missing_data_families: list[str]
-    blocked_capabilities: list[str]
+__all__ = [
+    "CoreOutcomeSourceError",
+    "realized_cash_source_from_cash_balances_response",
+    "realized_transaction_source_from_transaction_ledger_response",
+    "realized_cashflow_projection_source_from_cashflow_projection_response",
+    "realized_tax_summary_source_from_realized_tax_summary_response",
+    "realized_cash_movement_source_from_cash_movement_summary_response",
+    "realized_execution_acknowledgement_source_from_response",
+    "unavailable_core_cash_source",
+    "unavailable_core_cashflow_projection_source",
+    "_cash_movement_bucket_matches",
+    "_cash_movement_buckets",
+    "_core_as_of_date",
+    "_core_content_hash",
+    "_core_data_quality_status",
+    "_core_metadata",
+    "_core_observed_at",
+    "_currency_total_matches",
+    "_currency_total_rows",
+    "_execution_acknowledgement_posture",
+    "_execution_acknowledgement_reason_codes",
+    "_execution_acknowledgement_source_id",
+    "_execution_acknowledgement_state_quality",
+    "_normalized_currency_filter",
+    "_raise_on_invalid_currency_total_selection",
+    "_transaction_cashflow_value",
+    "_transaction_fx_pnl_value",
+    "_transaction_reporting_money",
+    "_transaction_source_currency",
+]
 
 
 def realized_cash_source_from_cash_balances_response(
@@ -368,118 +402,6 @@ def realized_cash_movement_source_from_cash_movement_summary_response(
     )
 
 
-def realized_execution_acknowledgement_source_from_response(
-    response: dict[str, Any],
-) -> DpmRealizedSourceSnapshot:
-    """Adapt lotus-core OMS acknowledgement posture without claiming execution support."""
-
-    metadata = _core_metadata(response)
-    portfolio_id = _read_required_text(response.get("portfolio_id"), "portfolio_id")
-    posture = _execution_acknowledgement_posture(response, metadata=metadata)
-    source_state, quality = _execution_acknowledgement_state_quality(
-        posture["supportability_state"]
-    )
-    return DpmRealizedSourceSnapshot(
-        dimension="EXECUTION_QUALITY",
-        source_system="lotus-core",
-        source_type="EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT",
-        source_id=_execution_acknowledgement_source_id(
-            metadata=metadata,
-            portfolio_id=portfolio_id,
-            posture=posture,
-        ),
-        value=Decimal(posture["acknowledgement_count"]),
-        unit="acknowledgements",
-        source_state=source_state,
-        quality=quality,
-        observed_at=metadata["observed_at"],
-        as_of_date=metadata["as_of_date"],
-        content_hash=metadata["content_hash"],
-        reason_codes=_execution_acknowledgement_reason_codes(
-            metadata=metadata,
-            posture=posture,
-        ),
-    )
-
-
-def _execution_acknowledgement_posture(
-    response: dict[str, Any],
-    *,
-    metadata: _CoreSourceMetadata,
-) -> _ExecutionAcknowledgementPosture:
-    supportability = _read_mapping(response.get("supportability"))
-    return {
-        "acknowledgement_count": _read_int(
-            supportability.get("acknowledgement_count"),
-            "supportability.acknowledgement_count",
-        ),
-        "supportability_state": (
-            _read_text(supportability.get("state")) or metadata["data_quality_status"]
-        ).upper(),
-        "supportability_reason": (
-            _read_text(supportability.get("reason")) or "EXTERNAL_OMS_ACKNOWLEDGEMENT_UNAVAILABLE"
-        ),
-        "execution_intent_id": _read_text(response.get("execution_intent_id")) or "none",
-        "order_reference_ids": _read_text_list(response.get("order_reference_ids")),
-        "missing_data_families": _read_text_list(supportability.get("missing_data_families")),
-        "blocked_capabilities": _read_text_list(supportability.get("blocked_capabilities")),
-    }
-
-
-def _execution_acknowledgement_source_id(
-    *,
-    metadata: _CoreSourceMetadata,
-    portfolio_id: str,
-    posture: _ExecutionAcknowledgementPosture,
-) -> str:
-    order_basis = (
-        ",".join(posture["order_reference_ids"]) if posture["order_reference_ids"] else "none"
-    )
-    return _source_id(
-        product_name=metadata["product_name"],
-        product_version=metadata["product_version"],
-        portfolio_id=portfolio_id,
-        as_of_date=metadata["as_of_date"],
-        basis=(
-            "external_order_execution_acknowledgement:"
-            f"execution_intent={posture['execution_intent_id']}:orders={order_basis}"
-        ),
-        fingerprint=metadata["content_hash"],
-    )
-
-
-def _execution_acknowledgement_state_quality(
-    supportability_state: str,
-) -> tuple[Literal["BLOCKED", "DEGRADED"], Literal["MISSING", "UNAVAILABLE"]]:
-    if supportability_state == "UNAVAILABLE":
-        return "BLOCKED", "MISSING"
-    return "DEGRADED", "UNAVAILABLE"
-
-
-def _execution_acknowledgement_reason_codes(
-    *,
-    metadata: _CoreSourceMetadata,
-    posture: _ExecutionAcknowledgementPosture,
-) -> list[str]:
-    return [
-        "CORE_EXECUTION_ACKNOWLEDGEMENT_FAIL_CLOSED",
-        f"CORE_PRODUCT_{metadata['product_name'].upper()}",
-        f"CORE_PRODUCT_VERSION_{metadata['product_version'].upper()}",
-        f"EXECUTION_ACKNOWLEDGEMENT_SUPPORTABILITY_{posture['supportability_state']}",
-        posture["supportability_reason"],
-        f"EXECUTION_ACKNOWLEDGEMENT_COUNT_{posture['acknowledgement_count']}",
-        *_prefixed_reason_codes(
-            "EXECUTION_ACKNOWLEDGEMENT_MISSING_DATA",
-            posture["missing_data_families"],
-        ),
-        *_prefixed_reason_codes(
-            "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY",
-            posture["blocked_capabilities"],
-        ),
-        f"CORE_DATA_QUALITY_{metadata['data_quality_status'].upper()}",
-    ]
-
-
 def unavailable_core_cash_source(
     *,
     source_id: str,
@@ -691,23 +613,56 @@ def _transaction_money_value(
     source_currency_fields: tuple[str, str],
     reason: str,
 ) -> tuple[Decimal, str, str]:
-    reporting_value = transaction.get(reporting_field)
-    reporting_currency = _read_text(response.get("reporting_currency"))
-    if reporting_value is not None and reporting_currency is not None:
-        return _decimal_value(reporting_value), reporting_currency, f"{reason}_REPORTING"
+    reporting_money = _transaction_reporting_money(
+        response=response,
+        transaction=transaction,
+        reporting_field=reporting_field,
+        reason=reason,
+    )
+    if reporting_money is not None:
+        return reporting_money
 
     source_value = transaction.get(source_field)
     if source_value is None:
         raise CoreOutcomeSourceError(
             f"lotus-core transaction ledger response is missing {source_field}"
         )
-    first_currency_field, fallback_currency_field = source_currency_fields
     return (
         _decimal_value(source_value),
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=source_currency_fields,
+            fallback_currency="transaction_currency",
+        ),
+        f"{reason}_SOURCE",
+    )
+
+
+def _transaction_reporting_money(
+    *,
+    response: dict[str, Any],
+    transaction: dict[str, Any],
+    reporting_field: str,
+    reason: str,
+) -> tuple[Decimal, str, str] | None:
+    reporting_value = transaction.get(reporting_field)
+    reporting_currency = _read_text(response.get("reporting_currency"))
+    if reporting_value is None or reporting_currency is None:
+        return None
+    return _decimal_value(reporting_value), reporting_currency, f"{reason}_REPORTING"
+
+
+def _transaction_source_currency(
+    *,
+    transaction: dict[str, Any],
+    source_currency_fields: tuple[str, str],
+    fallback_currency: str,
+) -> str:
+    first_currency_field, fallback_currency_field = source_currency_fields
+    return (
         _read_text(transaction.get(first_currency_field))
         or _read_text(transaction.get(fallback_currency_field))
-        or "transaction_currency",
-        f"{reason}_SOURCE",
+        or fallback_currency
     )
 
 
@@ -716,16 +671,22 @@ def _transaction_fx_pnl_value(*, transaction: dict[str, Any]) -> tuple[Decimal, 
     if value is not None:
         return (
             _decimal_value(value),
-            _read_text(transaction.get("currency")) or "base_currency",
+            _transaction_source_currency(
+                transaction=transaction,
+                source_currency_fields=("currency", "currency"),
+                fallback_currency="base_currency",
+            ),
             "TRANSACTION_VALUE_REALIZED_FX_PNL_BASE",
         )
     local_value = transaction.get("realized_fx_pnl_local")
     if local_value is not None:
         return (
             _decimal_value(local_value),
-            _read_text(transaction.get("trade_currency"))
-            or _read_text(transaction.get("currency"))
-            or "local_currency",
+            _transaction_source_currency(
+                transaction=transaction,
+                source_currency_fields=("trade_currency", "currency"),
+                fallback_currency="local_currency",
+            ),
             "TRANSACTION_VALUE_REALIZED_FX_PNL_LOCAL",
         )
     raise CoreOutcomeSourceError(
@@ -755,115 +716,3 @@ def _transaction_dimension(measure: TransactionLedgerOutcomeMeasure) -> OutcomeD
         "cashflow_amount": "CASH_RESIDUAL",
     }
     return dimension_by_measure[measure]
-
-
-def _core_metadata(response: dict[str, Any]) -> _CoreSourceMetadata:
-    product_name = _read_required_text(response.get("product_name"), "product_name")
-    product_version = _read_required_text(response.get("product_version"), "product_version")
-    as_of_date = _read_required_text(
-        response.get("as_of_date") or response.get("resolved_as_of_date"),
-        "as_of_date",
-    )
-    generated_at = _read_text(response.get("generated_at"))
-    latest_evidence = _read_text(response.get("latest_evidence_timestamp"))
-    data_quality_status = (_read_text(response.get("data_quality_status")) or "UNKNOWN").upper()
-    content_hash = (
-        _read_text(response.get("source_batch_fingerprint"))
-        or _read_text(response.get("snapshot_id"))
-        or _read_text(response.get("correlation_id"))
-    )
-    return {
-        "product_name": product_name,
-        "product_version": product_version,
-        "as_of_date": as_of_date,
-        "observed_at": latest_evidence or generated_at,
-        "data_quality_status": data_quality_status,
-        "content_hash": content_hash,
-    }
-
-
-def _source_id(
-    *,
-    product_name: str,
-    product_version: str,
-    portfolio_id: str,
-    as_of_date: str,
-    basis: str,
-    fingerprint: str | None,
-) -> str:
-    suffix = fingerprint or "no-source-fingerprint"
-    return f"{product_name}:{product_version}:{portfolio_id}:{as_of_date}:{basis}:{suffix}"
-
-
-def _source_state(data_quality_status: str) -> Literal["READY", "DEGRADED"]:
-    if data_quality_status in {"COMPLETE", "READY", "OK"}:
-        return "READY"
-    if data_quality_status in {"UNAVAILABLE", "ERROR"}:
-        return "DEGRADED"
-    return "DEGRADED"
-
-
-def _source_quality(
-    data_quality_status: str,
-) -> Literal["COMPLETE", "STALE", "PARTIAL", "UNAVAILABLE"]:
-    if data_quality_status in {"COMPLETE", "READY", "OK"}:
-        return "COMPLETE"
-    if data_quality_status in {"STALE"}:
-        return "STALE"
-    if data_quality_status in {"PARTIAL", "INCOMPLETE"}:
-        return "PARTIAL"
-    return "UNAVAILABLE"
-
-
-def _primary_reason(data_quality_status: str) -> str:
-    if data_quality_status in {"COMPLETE", "READY", "OK"}:
-        return "CORE_SOURCE_READY"
-    return "CORE_SOURCE_DEGRADED"
-
-
-def _read_mapping(value: Any) -> dict[str, Any]:
-    return value if isinstance(value, dict) else {}
-
-
-def _read_text(value: Any) -> str | None:
-    return value.strip() if isinstance(value, str) and value.strip() else None
-
-
-def _read_required_text(value: Any, field_name: str) -> str:
-    text = _read_text(value)
-    if text is None:
-        raise CoreOutcomeSourceError(f"lotus-core cash response is missing {field_name}")
-    return text
-
-
-def _read_text_list(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    return [item.strip() for item in value if isinstance(item, str) and item.strip()]
-
-
-def _read_int(value: Any, field_name: str) -> int:
-    if isinstance(value, bool):
-        raise CoreOutcomeSourceError(f"lotus-core response contains non-integer {field_name}")
-    try:
-        parsed = int(str(value))
-    except (TypeError, ValueError) as exc:
-        raise CoreOutcomeSourceError(
-            f"lotus-core response contains non-integer {field_name}"
-        ) from exc
-    if parsed < 0:
-        raise CoreOutcomeSourceError(f"lotus-core response contains negative {field_name}")
-    return parsed
-
-
-def _prefixed_reason_codes(prefix: str, values: list[str]) -> list[str]:
-    return [f"{prefix}_{value.upper()}" for value in values]
-
-
-def _decimal_value(value: Any) -> Decimal:
-    try:
-        return Decimal(str(value))
-    except (InvalidOperation, TypeError) as exc:
-        raise CoreOutcomeSourceError(
-            "lotus-core cash response contains a non-numeric cash balance total"
-        ) from exc

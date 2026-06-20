@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import argparse
 import io
 import subprocess
 import sys
@@ -9,7 +10,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -83,6 +84,10 @@ class HealthReportContext:
     base: SnapshotMetrics
     current: SnapshotMetrics
     openapi: dict[str, int]
+
+
+ReportBuilder = Callable[[HealthReportContext], str]
+ReportOutput = tuple[Path, ReportBuilder]
 
 
 def _git(*args: str) -> str:
@@ -542,7 +547,12 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 [
                     "Complexity/maintainability",
                     "`quality/complexity_report.md`",
-                    "1 - baseline",
+                    "2 - active source C gate; broader metrics baseline",
+                ],
+                [
+                    "Duplicate implementation hotspots",
+                    "`quality/duplicate_code_inventory.md` and `make duplicate-implementation-gate`",
+                    "2 - active exact-duplicate non-regression gate",
                 ],
                 [
                     "Dead code",
@@ -556,7 +566,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
                 ],
                 [
                     "Security",
-                    "`bandit` + `pip-audit` via `quality-baseline.yml` and `make security-audit`",
+                    "`bandit` + project-scoped `pip-audit` via `quality-baseline.yml` and `make security-audit`",
                     "2 - active/new-regression",
                 ],
                 ["Documentation gaps", "current docs tests plus planned docs scorecard", "planned"],
@@ -594,8 +604,33 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Complexity",
-            "Report-only baseline",
-            "`quality/complexity_report.md`; add thresholds after baseline review.",
+            "Active source C gate",
+            "`make complexity-gate` blocks Radon C-or-worse source functions; `quality/complexity_report.md` keeps broader source/test metrics report-only.",
+        ],
+        [
+            "Duplicate implementation hotspots",
+            "Active exact-duplicate non-regression gate",
+            "`make duplicate-implementation-gate` blocks newly introduced exact non-trivial Python function-body duplicates; `quality/duplicate_implementation_baseline.json` governs current accepted groups.",
+        ],
+        [
+            "Quality report freshness",
+            "Active gate",
+            "`make quality-report-gate` blocks stale checked-in quality reports while ignoring volatile report provenance.",
+        ],
+        [
+            "Workflow policy",
+            "Active gate",
+            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, coverage-gate drift, and PR evidence drift.",
+        ],
+        [
+            "Local CI parity",
+            "Active gate",
+            "`make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates.",
+        ],
+        [
+            "Coverage gate parity",
+            "Active gate",
+            "`scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate.",
         ],
         [
             "Dead code",
@@ -609,8 +644,10 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         ],
         [
             "Security depth",
-            "Partially active",
-            "`make security-audit` is active; `bandit` and `pip-audit` are report-only in `quality-baseline.yml`.",
+            "Active project dependency gate",
+            "`make security-audit` runs high-severity Bandit over `src` plus project-scoped "
+            "`python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family "
+            "as report-only evidence.",
         ],
         [
             "Documentation coverage",
@@ -671,7 +708,8 @@ def build_complexity_report(context: HealthReportContext) -> str:
         "# lotus-manage Complexity Report",
         f"- Generated at: `{context.generated_at}`",
         f"- Report source snapshot: `{context.current_ref}`",
-        "- Mode: report-only maintainability baseline using dependency-free AST branch counting.",
+        "- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free "
+        "AST branch metrics remain report-only.",
         "## Summary",
         _table(
             ["Metric", context.base_ref, "current branch", "Delta"],
@@ -706,8 +744,10 @@ def build_complexity_report(context: HealthReportContext) -> str:
             current.most_complex_test_functions,
         ),
         "## Gate Posture",
-        "- This report is phase 1/report-only. It intentionally does not fail builds until the "
-        "baseline is reviewed and thresholds are agreed.",
+        "- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` "
+        "(`python -m radon cc src -s -n C`).",
+        "- Broader source/test complexity rankings in this report remain report-only until "
+        "baselines, false positives, lane placement, and exception policy are clear.",
     ]
     return "\n\n".join(sections) + "\n"
 
@@ -768,31 +808,75 @@ OpenAPI and API vocabulary checks are active repo-native gates. The broader rule
 """
 
 
+REPORT_OUTPUT_BUILDERS: tuple[ReportOutput, ...] = (
+    (DEFAULT_OUTPUT, build_refactor_report),
+    (DEFAULT_BASELINE_OUTPUT, build_baseline_report),
+    (DEFAULT_SCORECARD_OUTPUT, build_quality_scorecard),
+    (DEFAULT_COMPLEXITY_OUTPUT, build_complexity_report),
+    (DEFAULT_ARCHITECTURE_RULES_OUTPUT, lambda _context: build_architecture_rules()),
+    (DEFAULT_API_GOVERNANCE_RULES_OUTPUT, lambda _context: build_api_governance_rules()),
+)
+
+
+def build_report_outputs(context: HealthReportContext) -> dict[Path, str]:
+    return {path: builder(context) for path, builder in REPORT_OUTPUT_BUILDERS}
+
+
 def write_reports(context: HealthReportContext) -> None:
-    outputs = {
-        DEFAULT_OUTPUT: build_refactor_report(context),
-        DEFAULT_BASELINE_OUTPUT: build_baseline_report(context),
-        DEFAULT_SCORECARD_OUTPUT: build_quality_scorecard(context),
-        DEFAULT_COMPLEXITY_OUTPUT: build_complexity_report(context),
-        DEFAULT_ARCHITECTURE_RULES_OUTPUT: build_architecture_rules(),
-        DEFAULT_API_GOVERNANCE_RULES_OUTPUT: build_api_governance_rules(),
-    }
-    for path, content in outputs.items():
+    for path, content in build_report_outputs(context).items():
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
 
+def _normalize_report_for_check(content: str) -> str:
+    return "\n".join(
+        "- Volatile report provenance: `<ignored>`"
+        if line.startswith(("- Generated at: `", "- Report source snapshot: `"))
+        else line
+        for line in content.splitlines()
+    )
+
+
+def stale_report_paths(context: HealthReportContext) -> list[Path]:
+    stale_paths: list[Path] = []
+    for path, expected_content in build_report_outputs(context).items():
+        if not path.exists():
+            stale_paths.append(path)
+            continue
+        current_content = path.read_text(encoding="utf-8")
+        if _normalize_report_for_check(current_content) != _normalize_report_for_check(
+            expected_content
+        ):
+            stale_paths.append(path)
+    return stale_paths
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Generate or verify Lotus quality reports.")
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Fail when checked-in quality reports are stale, ignoring volatile report provenance.",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
+    args = _parse_args()
     context = _report_context()
+    if args.check:
+        stale_paths = stale_report_paths(context)
+        if stale_paths:
+            print("Quality reports are stale. Regenerate them with:")
+            print("  python scripts/engineering_health_report.py")
+            for path in stale_paths:
+                print(f"Stale: {path.relative_to(REPO_ROOT).as_posix()}")
+            raise SystemExit(1)
+        print("Quality reports are current.")
+        return
+
     write_reports(context)
-    for path in (
-        DEFAULT_OUTPUT,
-        DEFAULT_BASELINE_OUTPUT,
-        DEFAULT_SCORECARD_OUTPUT,
-        DEFAULT_COMPLEXITY_OUTPUT,
-        DEFAULT_ARCHITECTURE_RULES_OUTPUT,
-        DEFAULT_API_GOVERNANCE_RULES_OUTPUT,
-    ):
+    for path, _builder in REPORT_OUTPUT_BUILDERS:
         print(f"Wrote {path.relative_to(REPO_ROOT).as_posix()}")
 
 

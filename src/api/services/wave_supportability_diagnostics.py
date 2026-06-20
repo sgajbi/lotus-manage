@@ -7,36 +7,79 @@ def supportability_issue(
     item: DpmRebalanceWaveItem,
     item_index: int,
 ) -> dict[str, object] | None:
-    if item.state in {"APPROVED", "STAGED", "HANDOFF_READY", "PROOF_PACK_READY", "SIMULATED"}:
-        if (
-            item.state != "PROOF_PACK_READY"
-            or item.diagnostics.get("proof_pack_state") != "DEGRADED"
-        ):
-            return None
+    if not _should_emit_supportability_issue(item):
+        return None
     severity = supportability_severity(item)
     if severity is None:
         return None
-    reason_codes = item.reason_codes or [supportability_reason(item)]
+    return _supportability_issue_payload(
+        wave_id=wave_id,
+        item=item,
+        item_index=item_index,
+        severity=severity,
+    )
+
+
+def _should_emit_supportability_issue(item: DpmRebalanceWaveItem) -> bool:
+    if item.state not in _COMPLETED_WAVE_ITEM_STATES:
+        return True
+    return item.state == "PROOF_PACK_READY" and _proof_pack_state(item) == "DEGRADED"
+
+
+def _proof_pack_state(item: DpmRebalanceWaveItem) -> object:
+    return item.diagnostics.get("proof_pack_state")
+
+
+def _supportability_issue_payload(
+    *,
+    wave_id: str,
+    item: DpmRebalanceWaveItem,
+    item_index: int,
+    severity: str,
+) -> dict[str, object]:
     return {
         "support_ref": f"wave:{wave_id}:item:{item_index}",
         "item_state": item.state,
         "severity": severity,
         "source_owner": supportability_source_owner(item),
-        "reason_codes": reason_codes,
+        "reason_codes": _supportability_reason_codes(item),
         "remediation_route": supportability_remediation(item),
     }
 
 
+def _supportability_reason_codes(item: DpmRebalanceWaveItem) -> list[str]:
+    return item.reason_codes or [supportability_reason(item)]
+
+
+_COMPLETED_WAVE_ITEM_STATES = {
+    "APPROVED",
+    "STAGED",
+    "HANDOFF_READY",
+    "PROOF_PACK_READY",
+    "SIMULATED",
+}
+
+_CRITICAL_SUPPORTABILITY_STATES = {"SOURCE_BLOCKED", "SIMULATION_BLOCKED"}
+_WARNING_SUPPORTABILITY_STATES = {"SOURCE_DEGRADED", "REVIEW_REQUIRED", "SELECTED"}
+_INFO_SUPPORTABILITY_STATES = {"CANDIDATE", "SOURCE_READY"}
+_MANAGE_SOURCE_OWNER_STATES = {"SOURCE_BLOCKED", "SOURCE_DEGRADED", "REVIEW_REQUIRED"}
+_PROOF_PACK_SOURCE_OWNER_STATES = {"SELECTED", "PROOF_PACK_READY"}
+
+
 def supportability_severity(item: DpmRebalanceWaveItem) -> str | None:
-    if item.state in {"SOURCE_BLOCKED", "SIMULATION_BLOCKED"}:
+    if item.state in _CRITICAL_SUPPORTABILITY_STATES:
         return "CRITICAL"
-    if item.state in {"SOURCE_DEGRADED", "REVIEW_REQUIRED", "SELECTED"}:
+    if _has_warning_supportability(item):
         return "WARNING"
-    if item.state == "PROOF_PACK_READY" and item.diagnostics.get("proof_pack_state") == "DEGRADED":
-        return "WARNING"
-    if item.state in {"CANDIDATE", "SOURCE_READY"}:
+    if item.state in _INFO_SUPPORTABILITY_STATES:
         return "INFO"
     return None
+
+
+def _has_warning_supportability(item: DpmRebalanceWaveItem) -> bool:
+    return item.state in _WARNING_SUPPORTABILITY_STATES or (
+        item.state == "PROOF_PACK_READY" and _proof_pack_state(item) == "DEGRADED"
+    )
 
 
 def supportability_reason(item: DpmRebalanceWaveItem) -> str:
@@ -57,11 +100,15 @@ def supportability_source_owner(item: DpmRebalanceWaveItem) -> str:
     owner = item.diagnostics.get("source_owner")
     if isinstance(owner, str) and owner:
         return owner
-    if item.state in {"SOURCE_BLOCKED", "SOURCE_DEGRADED", "REVIEW_REQUIRED"}:
+    return _default_supportability_source_owner(item.state)
+
+
+def _default_supportability_source_owner(item_state: str) -> str:
+    if item_state in _MANAGE_SOURCE_OWNER_STATES:
         return "lotus-manage"
-    if item.state == "SIMULATION_BLOCKED":
+    if item_state == "SIMULATION_BLOCKED":
         return "lotus-manage-construction"
-    if item.state in {"SELECTED", "PROOF_PACK_READY"}:
+    if item_state in _PROOF_PACK_SOURCE_OWNER_STATES:
         return "lotus-manage-proof-pack"
     return "lotus-manage"
 

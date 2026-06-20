@@ -20,6 +20,7 @@ from src.core.models import (
     Position,
     SecurityTradeIntent,
 )
+from src.core.rebalance.execution import check_blocking_dq
 from src.core.valuation import build_simulated_state
 from tests.shared.factories import cash, market_data_snapshot, portfolio_snapshot
 from tests.unit.dpm.engine.coverage.helpers import empty_diagnostics
@@ -147,6 +148,35 @@ def test_derive_status_from_rules_matches_ready_outcome():
     rules = RuleEngine.evaluate(state, EngineOptions(), diagnostics)
 
     assert derive_status_from_rules(rules) == "READY"
+
+
+def test_check_blocking_dq_always_blocks_missing_shelf_entries() -> None:
+    assert check_blocking_dq({"shelf_missing": ["EQ_1"]}, EngineOptions()) is True
+
+
+def test_check_blocking_dq_respects_missing_price_option() -> None:
+    dq_log = {"price_missing": ["EQ_1"]}
+
+    assert check_blocking_dq(dq_log, EngineOptions(block_on_missing_prices=True)) is True
+    assert check_blocking_dq(dq_log, EngineOptions(block_on_missing_prices=False)) is False
+
+
+def test_check_blocking_dq_respects_missing_fx_option() -> None:
+    dq_log = {"fx_missing": ["EUR/USD"]}
+
+    assert check_blocking_dq(dq_log, EngineOptions(block_on_missing_fx=True)) is True
+    assert check_blocking_dq(dq_log, EngineOptions(block_on_missing_fx=False)) is False
+
+
+def test_check_blocking_dq_ignores_empty_and_non_blocking_buckets() -> None:
+    dq_log = {
+        "shelf_missing": [],
+        "price_missing": [],
+        "fx_missing": [],
+        "advisory_note_missing": ["NOTE_1"],
+    }
+
+    assert check_blocking_dq(dq_log, EngineOptions()) is False
 
 
 def test_build_reconciliation_returns_ok_for_expected_total():

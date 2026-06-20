@@ -1,7 +1,5 @@
-from dataclasses import dataclass
 from datetime import date, timedelta
-from decimal import Decimal
-from typing import Any, Literal, Mapping, Optional, cast
+from typing import Any, Optional
 
 import httpx
 
@@ -27,9 +25,6 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioUniverseCandidateResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
     DpmCorePortfolioTaxLotWindowResponse,
-    DpmCorePolicyContext,
-    DpmCoreSourceLineage,
-    DpmCoreSupportability,
     DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
     DpmStatefulInput,
@@ -39,390 +34,53 @@ from src.core.dpm_source_context import (
     build_portfolio_snapshot_with_core_tax_lots,
     build_shelf_entries_from_core_eligibility,
 )
-from src.core.models import CashBalance, Money, PortfolioSnapshot, Position
+from src.core.models import PortfolioSnapshot
+from src.infrastructure.core_sourcing.errors import (
+    DpmCoreResolverError as DpmCoreResolverError,
+    DpmCoreResolverUnavailableError as DpmCoreResolverUnavailableError,
+)
+from src.infrastructure.core_sourcing import (
+    execution_context_assembly as _execution_context_assembly,
+)
+from src.infrastructure.core_sourcing.resolver_config import (
+    LEGACY_DPM_EXECUTION_CONTEXT_PATH as LEGACY_DPM_EXECUTION_CONTEXT_PATH,
+    DpmCoreResolverConfig as DpmCoreResolverConfig,
+)
+from src.infrastructure.core_sourcing import source_product_transport as _source_product_transport
+from src.infrastructure.core_sourcing.source_product_transport import (
+    SourceProductMethod as _SourceProductMethod,
+    source_product_headers as _source_product_headers,
+    source_product_payload_with_retries as _source_product_payload_with_retries,
+)
+from src.infrastructure.core_sourcing import snapshot_mapping as _snapshot_mapping
 
 
-class DpmCoreResolverError(RuntimeError):
-    pass
-
-
-class DpmCoreResolverUnavailableError(DpmCoreResolverError):
-    pass
-
-
-LEGACY_DPM_EXECUTION_CONTEXT_PATH = "/integration/portfolios/{portfolio_id}/dpm-execution-context"
-_SourceProductMethod = Literal["get", "post"]
-_TRANSIENT_SOURCE_STATUS_CODES = frozenset({502, 503, 504})
-
-
-def _source_product_headers(correlation_id: Optional[str]) -> dict[str, str]:
-    return {"X-Correlation-Id": correlation_id} if correlation_id else {}
-
-
-def _source_product_response_payload(
-    response: httpx.Response,
-    *,
-    incomplete_code: str,
-) -> dict[str, Any]:
-    response_payload = response.json()
-    if not isinstance(response_payload, dict):
-        raise DpmCoreResolverError(incomplete_code)
-    return response_payload
-
-
-def _raise_for_source_product_status(
-    response: httpx.Response,
-    *,
-    unavailable_code: str,
-    incomplete_code: str,
-) -> None:
-    if response.status_code >= 500:
-        raise DpmCoreResolverUnavailableError(unavailable_code)
-    if response.status_code >= 400:
-        raise DpmCoreResolverError(incomplete_code)
-
-
-def _source_product_request(
-    client: Any,
-    *,
-    method: _SourceProductMethod,
-    url: str,
-    selector: dict[str, Any],
-    headers: dict[str, str],
-) -> httpx.Response:
-    if method == "post":
-        return cast(httpx.Response, client.post(url, json=selector, headers=headers))
-    return cast(httpx.Response, client.get(url, params=selector, headers=headers))
-
-
-def _final_source_product_attempt(*, attempt_index: int, attempts: int) -> bool:
-    return attempt_index + 1 >= attempts
-
-
-def _should_retry_transient_source_status(
-    response: httpx.Response,
-    *,
-    attempt_index: int,
-    attempts: int,
-) -> bool:
-    return (
-        response.status_code in _TRANSIENT_SOURCE_STATUS_CODES
-        and not _final_source_product_attempt(attempt_index=attempt_index, attempts=attempts)
-    )
-
-
-def _source_product_payload_with_retries(
-    client: Any,
-    *,
-    attempts: int,
-    method: _SourceProductMethod,
-    url: str,
-    selector: dict[str, Any],
-    headers: dict[str, str],
-    unavailable_code: str,
-    incomplete_code: str,
-) -> dict[str, Any]:
-    last_error: Exception | None = None
-    for attempt in range(attempts):
-        try:
-            response = _source_product_request(
-                client,
-                method=method,
-                url=url,
-                selector=selector,
-                headers=headers,
-            )
-        except (httpx.TimeoutException, httpx.TransportError) as exc:
-            last_error = exc
-            if _final_source_product_attempt(attempt_index=attempt, attempts=attempts):
-                raise DpmCoreResolverUnavailableError(unavailable_code) from exc
-            continue
-        if _should_retry_transient_source_status(
-            response,
-            attempt_index=attempt,
-            attempts=attempts,
-        ):
-            continue
-        _raise_for_source_product_status(
-            response,
-            unavailable_code=unavailable_code,
-            incomplete_code=incomplete_code,
-        )
-        return _source_product_response_payload(response, incomplete_code=incomplete_code)
-    raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
-
-
-@dataclass(frozen=True)
-class _CoreSnapshotMappedRow:
-    position: Position | None = None
-    cash_currency: str | None = None
-    cash_amount: Decimal | None = None
-
-
-@dataclass(frozen=True)
-class DpmCoreResolverConfig:
-    base_url: str
-    query_base_url: str | None = None
-    path_template: str = ""
-    model_portfolio_targets_path_template: str = (
-        "/integration/model-portfolios/{model_portfolio_id}/targets"
-    )
-    mandate_binding_path_template: str = "/integration/portfolios/{portfolio_id}/mandate-binding"
-    benchmark_assignment_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/benchmark-assignment"
-    )
-    portfolio_manager_book_memberships_path_template: str = (
-        "/integration/portfolio-manager-books/{portfolio_manager_id}/memberships"
-    )
-    cio_model_change_affected_cohort_path_template: str = (
-        "/integration/model-portfolios/{model_portfolio_id}/affected-mandates"
-    )
-    dpm_portfolio_universe_candidates_path_template: str = (
-        "/integration/dpm/portfolio-universe/candidates"
-    )
-    instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
-    portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
-    market_data_coverage_path_template: str = "/integration/market-data/coverage"
-    portfolio_snapshot_path_template: str = "/integration/portfolios/{portfolio_id}/core-snapshot"
-    transaction_cost_curve_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/transaction-cost-curve"
-    )
-    portfolio_cashflow_projection_path_template: str = (
-        "/portfolios/{portfolio_id}/cashflow-projection"
-    )
-    client_income_needs_schedule_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/client-income-needs-schedule"
-    )
-    liquidity_reserve_requirement_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/liquidity-reserve-requirement"
-    )
-    planned_withdrawal_schedule_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/planned-withdrawal-schedule"
-    )
-    external_hedge_execution_readiness_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/external-hedge-execution-readiness"
-    )
-    external_currency_exposure_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/external-currency-exposure"
-    )
-    external_hedge_policy_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/external-hedge-policy"
-    )
-    external_eligible_hedge_instruments_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/external-eligible-hedge-instruments"
-    )
-    external_fx_forward_curve_path_template: str = (
-        "/integration/market-data/external-fx-forward-curve"
-    )
-    external_order_execution_acknowledgement_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/external-order-execution-acknowledgement"
-    )
-    transaction_cost_lookback_days: int = 400
-    client_restriction_profile_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/client-restriction-profile"
-    )
-    sustainability_preference_profile_path_template: str = (
-        "/integration/portfolios/{portfolio_id}/sustainability-preference-profile"
-    )
-    timeout_seconds: float = 2.0
-    max_attempts: int = 2
-
-    def resolve_url(self, portfolio_id: str) -> str:
-        if not self.path_template.strip():
-            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
-        if self.path_template.strip() == LEGACY_DPM_EXECUTION_CONTEXT_PATH:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = self.path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_model_portfolio_targets_url(self, model_portfolio_id: str) -> str:
-        path_template = self.model_portfolio_targets_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_MODEL_TARGET_RESOLVER_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(model_portfolio_id=model_portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_mandate_binding_url(self, portfolio_id: str) -> str:
-        path_template = self.mandate_binding_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_MANDATE_BINDING_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_benchmark_assignment_url(self, portfolio_id: str) -> str:
-        path_template = self.benchmark_assignment_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_BENCHMARK_ASSIGNMENT_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_portfolio_manager_book_memberships_url(self, portfolio_manager_id: str) -> str:
-        path_template = self.portfolio_manager_book_memberships_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_manager_id=portfolio_manager_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_cio_model_change_affected_cohort_url(self, model_portfolio_id: str) -> str:
-        path_template = self.cio_model_change_affected_cohort_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_CIO_MODEL_CHANGE_COHORT_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(model_portfolio_id=model_portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_dpm_portfolio_universe_candidates_url(self) -> str:
-        path_template = self.dpm_portfolio_universe_candidates_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_PORTFOLIO_UNIVERSE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_instrument_eligibility_url(self) -> str:
-        path_template = self.instrument_eligibility_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_INSTRUMENT_ELIGIBILITY_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_portfolio_tax_lots_url(self, portfolio_id: str) -> str:
-        path_template = self.portfolio_tax_lots_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_PORTFOLIO_TAX_LOTS_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_market_data_coverage_url(self) -> str:
-        path_template = self.market_data_coverage_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_portfolio_snapshot_url(self, portfolio_id: str) -> str:
-        path_template = self.portfolio_snapshot_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_RESOLVER_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_transaction_cost_curve_url(self, portfolio_id: str) -> str:
-        path_template = self.transaction_cost_curve_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_TRANSACTION_COST_CURVE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_portfolio_cashflow_projection_url(self, portfolio_id: str) -> str:
-        path_template = self.portfolio_cashflow_projection_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_CASHFLOW_PROJECTION_UNAVAILABLE")
-        base = (self.query_base_url or self.base_url).rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_client_income_needs_schedule_url(self, portfolio_id: str) -> str:
-        path_template = self.client_income_needs_schedule_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_INCOME_NEEDS_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_liquidity_reserve_requirement_url(self, portfolio_id: str) -> str:
-        path_template = self.liquidity_reserve_requirement_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_LIQUIDITY_RESERVE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_planned_withdrawal_schedule_url(self, portfolio_id: str) -> str:
-        path_template = self.planned_withdrawal_schedule_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_PLANNED_WITHDRAWAL_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_hedge_execution_readiness_url(self, portfolio_id: str) -> str:
-        path_template = self.external_hedge_execution_readiness_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_HEDGE_READINESS_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_currency_exposure_url(self, portfolio_id: str) -> str:
-        path_template = self.external_currency_exposure_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_CURRENCY_EXPOSURE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_hedge_policy_url(self, portfolio_id: str) -> str:
-        path_template = self.external_hedge_policy_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_HEDGE_POLICY_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_eligible_hedge_instruments_url(self, portfolio_id: str) -> str:
-        path_template = self.external_eligible_hedge_instruments_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_EXTERNAL_ELIGIBLE_HEDGE_INSTRUMENTS_UNAVAILABLE"
-            )
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_fx_forward_curve_url(self) -> str:
-        path_template = self.external_fx_forward_curve_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_EXTERNAL_FX_FORWARD_CURVE_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_external_order_execution_acknowledgement_url(self, portfolio_id: str) -> str:
-        path_template = self.external_order_execution_acknowledgement_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError(
-                "DPM_CORE_EXTERNAL_ORDER_EXECUTION_ACKNOWLEDGEMENT_UNAVAILABLE"
-            )
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_client_restriction_profile_url(self, portfolio_id: str) -> str:
-        path_template = self.client_restriction_profile_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_CLIENT_RESTRICTIONS_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
-
-    def resolve_sustainability_preference_profile_url(self, portfolio_id: str) -> str:
-        path_template = self.sustainability_preference_profile_path_template.strip()
-        if not path_template:
-            raise DpmCoreResolverUnavailableError("DPM_CORE_SUSTAINABILITY_PREFERENCES_UNAVAILABLE")
-        base = self.base_url.rstrip("/")
-        path = path_template.format(portfolio_id=portfolio_id).lstrip("/")
-        return f"{base}/{path}"
+_cash_balance_currencies = _snapshot_mapping.cash_balance_currencies
+_core_snapshot_base_currency = _snapshot_mapping.core_snapshot_base_currency
+_core_snapshot_row_currency = _snapshot_mapping.core_snapshot_row_currency
+_held_instrument_ids = _snapshot_mapping.held_instrument_ids
+_map_core_snapshot_row = _snapshot_mapping.map_core_snapshot_row
+_portfolio_positions_and_cash_from_core_rows = (
+    _snapshot_mapping.portfolio_positions_and_cash_from_core_rows
+)
+_portfolio_snapshot_from_core_snapshot = _snapshot_mapping.portfolio_snapshot_from_core_snapshot
+_position_market_value_currencies = _snapshot_mapping.position_market_value_currencies
+_required_currency_pairs = _snapshot_mapping.required_currency_pairs
+_required_non_base_currencies = _snapshot_mapping.required_non_base_currencies
+_final_source_product_attempt = _source_product_transport.final_source_product_attempt
+_should_retry_transient_source_status = (
+    _source_product_transport.should_retry_transient_source_status
+)
+_requested_execution_instrument_ids = _execution_context_assembly.requested_execution_instrument_ids
+_execution_context_currency_pairs = _execution_context_assembly.execution_context_currency_pairs
+_execution_context_exposure_currencies = (
+    _execution_context_assembly.execution_context_exposure_currencies
+)
+_execution_context_policy = _execution_context_assembly.execution_context_policy
+_execution_context_lineage = _execution_context_assembly.execution_context_lineage
+_ready_execution_context_supportability = (
+    _execution_context_assembly.ready_execution_context_supportability
+)
 
 
 class DpmCoreResolverClient:
@@ -1645,254 +1303,3 @@ class DpmCoreResolverClient:
             )
         except DpmCoreResolverError:
             return None
-
-
-def _core_snapshot_base_currency(payload: Mapping[str, Any]) -> str:
-    valuation_context = payload.get("valuation_context") or {}
-    return str(
-        valuation_context.get("portfolio_currency")
-        or valuation_context.get("reporting_currency")
-        or "USD"
-    )
-
-
-def _core_snapshot_row_instrument_id(row: Mapping[str, Any]) -> str:
-    return str(row.get("security_id") or row.get("instrument_id") or "").strip()
-
-
-def _core_snapshot_row_quantity(row: Mapping[str, Any]) -> Decimal:
-    return Decimal(str(row.get("quantity") or "0"))
-
-
-def _core_snapshot_row_currency(row: Mapping[str, Any], *, base_currency: str) -> str:
-    return str(row.get("currency") or base_currency).upper()
-
-
-def _core_snapshot_row_market_value(row: Mapping[str, Any]) -> Decimal | None:
-    market_value = row.get("market_value_local")
-    if market_value is None:
-        return None
-    return Decimal(str(market_value))
-
-
-def _core_snapshot_row_is_cash(instrument_id: str) -> bool:
-    return instrument_id.startswith("CASH_")
-
-
-def _cash_core_snapshot_row(
-    *,
-    currency: str,
-    quantity: Decimal,
-) -> _CoreSnapshotMappedRow:
-    return _CoreSnapshotMappedRow(cash_currency=currency, cash_amount=quantity)
-
-
-def _position_core_snapshot_row(
-    *,
-    instrument_id: str,
-    quantity: Decimal,
-    currency: str,
-    market_value: Decimal | None,
-) -> _CoreSnapshotMappedRow:
-    return _CoreSnapshotMappedRow(
-        position=Position(
-            instrument_id=instrument_id,
-            quantity=quantity,
-            market_value=(
-                Money(amount=market_value, currency=currency) if market_value is not None else None
-            ),
-        )
-    )
-
-
-def _held_instrument_ids(portfolio_snapshot: PortfolioSnapshot) -> list[str]:
-    return [position.instrument_id for position in portfolio_snapshot.positions]
-
-
-def _requested_execution_instrument_ids(
-    *,
-    portfolio_snapshot: PortfolioSnapshot,
-    model_targets: DpmCoreModelPortfolioTargetResponse,
-) -> list[str]:
-    held_instrument_ids = _held_instrument_ids(portfolio_snapshot)
-    target_instrument_ids = [target.instrument_id for target in model_targets.targets]
-    return sorted(set(held_instrument_ids + target_instrument_ids))
-
-
-def _execution_context_currency_pairs(
-    portfolio_snapshot: PortfolioSnapshot,
-) -> list[tuple[str, str]]:
-    return _required_currency_pairs(
-        portfolio_snapshot=portfolio_snapshot,
-        base_currency=portfolio_snapshot.base_currency,
-    )
-
-
-def _execution_context_exposure_currencies(
-    currency_pairs: list[tuple[str, str]],
-) -> list[str]:
-    return sorted({source_currency for source_currency, _ in currency_pairs})
-
-
-def _execution_context_policy(
-    *,
-    stateful_input: DpmStatefulInput,
-    policy_context: DpmCorePolicyContext,
-) -> DpmCorePolicyContext:
-    return DpmCorePolicyContext(
-        recommended_policy_pack_id=(
-            stateful_input.policy_pack_id or policy_context.recommended_policy_pack_id
-        ),
-        tenant_id=policy_context.tenant_id,
-        booking_center_code=policy_context.booking_center_code,
-        mandate_id=policy_context.mandate_id,
-    )
-
-
-def _execution_context_lineage(
-    *,
-    stateful_input: DpmStatefulInput,
-    portfolio_snapshot: PortfolioSnapshot,
-    model_targets: DpmCoreModelPortfolioTargetResponse,
-    eligibility: DpmCoreInstrumentEligibilityBulkResponse,
-    mandate: DpmCoreMandateBindingResponse,
-) -> DpmCoreSourceLineage:
-    as_of_date = stateful_input.as_of.isoformat()
-    return DpmCoreSourceLineage(
-        portfolio_snapshot_id=portfolio_snapshot.snapshot_id
-        or f"core-snapshot:{stateful_input.portfolio_id}:{as_of_date}",
-        market_data_snapshot_id=f"market-data-coverage:{as_of_date}",
-        model_portfolio_id=model_targets.model_portfolio_id,
-        model_portfolio_version=model_targets.model_portfolio_version,
-        shelf_version=eligibility.lineage.get("contract_version"),
-        integration_policy_version=mandate.lineage.get("contract_version"),
-        source_lineage_bundle_id=f"rfc-087:{stateful_input.portfolio_id}:{as_of_date}",
-    )
-
-
-def _ready_execution_context_supportability() -> DpmCoreSupportability:
-    return DpmCoreSupportability(
-        state="READY",
-        reason="DPM_CORE_CONTEXT_READY",
-        freshness_bucket="current",
-        missing_source_families=[],
-        degraded_source_families=[],
-    )
-
-
-def _map_core_snapshot_row(
-    row: Mapping[str, Any],
-    *,
-    base_currency: str,
-) -> _CoreSnapshotMappedRow | None:
-    instrument_id = _core_snapshot_row_instrument_id(row)
-    if not instrument_id:
-        return None
-
-    quantity = _core_snapshot_row_quantity(row)
-    currency = _core_snapshot_row_currency(row, base_currency=base_currency)
-    if _core_snapshot_row_is_cash(instrument_id):
-        return _cash_core_snapshot_row(currency=currency, quantity=quantity)
-
-    return _position_core_snapshot_row(
-        instrument_id=instrument_id,
-        quantity=quantity,
-        currency=currency,
-        market_value=_core_snapshot_row_market_value(row),
-    )
-
-
-def _merge_core_snapshot_mapped_row(
-    *,
-    positions: list[Position],
-    cash_by_currency: dict[str, Decimal],
-    mapped_row: _CoreSnapshotMappedRow,
-) -> None:
-    if mapped_row.position is not None:
-        positions.append(mapped_row.position)
-        return
-    if mapped_row.cash_currency is not None and mapped_row.cash_amount is not None:
-        cash_by_currency[mapped_row.cash_currency] = (
-            cash_by_currency.get(mapped_row.cash_currency, Decimal("0")) + mapped_row.cash_amount
-        )
-
-
-def _portfolio_positions_and_cash_from_core_rows(
-    rows: list[Mapping[str, Any]],
-    *,
-    base_currency: str,
-) -> tuple[list[Position], dict[str, Decimal]]:
-    positions: list[Position] = []
-    cash_by_currency: dict[str, Decimal] = {}
-    for row in rows:
-        mapped_row = _map_core_snapshot_row(row, base_currency=base_currency)
-        if mapped_row is None:
-            continue
-        _merge_core_snapshot_mapped_row(
-            positions=positions,
-            cash_by_currency=cash_by_currency,
-            mapped_row=mapped_row,
-        )
-
-    return positions, cash_by_currency
-
-
-def _portfolio_snapshot_from_core_snapshot(payload: dict[str, Any]) -> PortfolioSnapshot:
-    sections = payload.get("sections") or {}
-    rows = sections.get("positions_baseline") or []
-    base_currency = _core_snapshot_base_currency(payload)
-    positions, cash_by_currency = _portfolio_positions_and_cash_from_core_rows(
-        rows,
-        base_currency=base_currency,
-    )
-
-    return PortfolioSnapshot(
-        snapshot_id=payload.get("snapshot_id")
-        or f"PortfolioStateSnapshot:{payload.get('portfolio_id')}:{payload.get('as_of_date')}",
-        portfolio_id=str(payload["portfolio_id"]),
-        base_currency=base_currency,
-        positions=positions,
-        cash_balances=[
-            CashBalance(currency=currency, amount=amount)
-            for currency, amount in sorted(cash_by_currency.items())
-        ],
-    )
-
-
-def _required_currency_pairs(
-    *,
-    portfolio_snapshot: PortfolioSnapshot,
-    base_currency: str,
-) -> list[tuple[str, str]]:
-    base = base_currency.upper()
-    return sorted(
-        (currency, base)
-        for currency in _required_non_base_currencies(
-            portfolio_snapshot=portfolio_snapshot,
-            base_currency=base,
-        )
-    )
-
-
-def _position_market_value_currencies(
-    positions: list[Position],
-) -> set[str]:
-    return {
-        position.market_value.currency.upper()
-        for position in positions
-        if position.market_value is not None
-    }
-
-
-def _cash_balance_currencies(cash_balances: list[CashBalance]) -> set[str]:
-    return {cash.currency.upper() for cash in cash_balances}
-
-
-def _required_non_base_currencies(
-    *,
-    portfolio_snapshot: PortfolioSnapshot,
-    base_currency: str,
-) -> set[str]:
-    currencies = _position_market_value_currencies(portfolio_snapshot.positions)
-    currencies.update(_cash_balance_currencies(portfolio_snapshot.cash_balances))
-    return {currency for currency in currencies if currency != base_currency}

@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Any, Literal, Mapping
+from typing import Any, Literal
 from uuid import uuid5, NAMESPACE_URL
 
 from src.core.outcomes import DpmOutcomeSourceRef, DpmPostTradeOutcomeReview
+from src.core.pm_quality.fairness_analysis import (
+    DpmPmQualityFairnessSegmentInput as DpmPmQualityFairnessSegmentInput,
+    build_pm_operating_quality_fairness_analysis as build_pm_operating_quality_fairness_analysis,
+)
 from src.core.pm_quality.models import (
     DpmPmOperatingQualityPolicy,
     DpmPmOperatingQualityScoreRun,
-    DpmPmQualityFairnessAnalysis,
-    DpmPmQualityFairnessSegmentResult,
     DpmPmQualityBookScopeEvidence,
     DpmPmQualityGovernanceEvidence,
     DpmPmQualityEvidenceItem,
@@ -27,10 +27,13 @@ from src.core.pm_quality.models import (
     PmQualityFairnessSegmentType,
     PmQualityState,
 )
-
-
-class DpmPmQualityValidationError(Exception):
-    """Raised when a PM quality score run cannot be evaluated safely."""
+from src.core.pm_quality.scoring_common import (
+    DpmPmQualityValidationError as DpmPmQualityValidationError,
+    _content_hash,
+    _dedupe_refs,
+    _mean,
+    _optional_model_dump,
+)
 
 
 @dataclass(frozen=True)
@@ -41,17 +44,6 @@ class _PmQualitySignal:
     reason_codes: list[str]
     source_refs: list[DpmOutcomeSourceRef]
     as_of_date: str | None = None
-
-
-@dataclass(frozen=True)
-class DpmPmQualityFairnessSegmentInput:
-    """Source-defined segment and its persisted score-run members."""
-
-    segment_id: str
-    segment_type: PmQualityFairnessSegmentType
-    display_name: str
-    score_runs: list[DpmPmOperatingQualityScoreRun]
-    source_refs: list[DpmOutcomeSourceRef]
 
 
 @dataclass(frozen=True)
@@ -71,13 +63,6 @@ class _LookbackScopeFields:
 
 
 @dataclass(frozen=True)
-class _FairnessPosture:
-    state: PmQualityState
-    observed_spread: Decimal | None
-    reason_codes: list[str]
-
-
-@dataclass(frozen=True)
 class _GovernanceExpiryEvaluation:
     expires_on: str | None
     reason_codes: list[str]
@@ -86,6 +71,13 @@ class _GovernanceExpiryEvaluation:
 @dataclass(frozen=True)
 class _ActorEntitlementEvaluation:
     state: Literal["AUTHORIZED", "NOT_SUPPLIED"]
+    reason_codes: list[str]
+
+
+@dataclass(frozen=True)
+class _ScoreRunEvaluation:
+    state: PmQualityState
+    score: Decimal | None
     reason_codes: list[str]
 
 
@@ -153,157 +145,23 @@ def build_pm_operating_quality_score_run(
     ]
     _validate_lookback_window(policy=policy, signals=signals)
     results = [_indicator_result(weight, signals) for weight in policy.weights]
-    if any(result.state == "BLOCKED" for result in results):
-        score = None
-        state: PmQualityState = "BLOCKED"
-        reason_codes = sorted(
-            {reason for result in results for reason in result.reason_codes}
-            | {"PM_QUALITY_REQUIRED_EVIDENCE_MISSING"}
-        )
-    else:
-        score = _weighted_score(results)
-        state = _score_state(score=score, policy=policy, results=results)
-        reason_codes = _score_reason_codes(state=state, results=results)
+    evaluation = _score_run_evaluation(policy=policy, results=results)
 
     return _score_run(
         pm_id=pm_id,
         book_id=book_id,
         as_of_date=as_of_date,
         policy=policy,
-        state=state,
-        score=score,
+        state=evaluation.state,
+        score=evaluation.score,
         indicator_results=results,
         book_scope_evidence=book_scope_evidence,
         scope_evidence=scope_evidence,
         governance_evidence=governance_evidence,
-        reason_codes=reason_codes,
+        reason_codes=evaluation.reason_codes,
         generated_at=generated_at,
         generated_by=generated_by,
         correlation_id=correlation_id,
-    )
-
-
-def build_pm_operating_quality_fairness_analysis(
-    *,
-    policy_id: str,
-    policy_version: str,
-    as_of_date: str,
-    segments: list[DpmPmQualityFairnessSegmentInput],
-    minimum_segment_score_run_count: int,
-    maximum_average_score_spread: Decimal,
-    generated_by: str,
-    correlation_id: str,
-) -> DpmPmQualityFairnessAnalysis:
-    """Build bounded cross-segment fairness posture from persisted PM-quality score runs."""
-
-    _validate_fairness_analysis_inputs(
-        segments=segments,
-        minimum_segment_score_run_count=minimum_segment_score_run_count,
-        maximum_average_score_spread=maximum_average_score_spread,
-    )
-    generated_at = datetime.now(timezone.utc)
-    segment_results = [
-        _fairness_segment_result(
-            policy_id=policy_id,
-            policy_version=policy_version,
-            as_of_date=as_of_date,
-            segment=segment,
-            minimum_segment_score_run_count=minimum_segment_score_run_count,
-        )
-        for segment in segments
-    ]
-    posture = _fairness_analysis_posture(
-        segment_results=segment_results,
-        maximum_average_score_spread=maximum_average_score_spread,
-    )
-
-    return _fairness_analysis(
-        policy_id=policy_id,
-        policy_version=policy_version,
-        as_of_date=as_of_date,
-        state=posture.state,
-        segment_results=segment_results,
-        minimum_segment_score_run_count=minimum_segment_score_run_count,
-        maximum_average_score_spread=maximum_average_score_spread,
-        observed_average_score_spread=posture.observed_spread,
-        reason_codes=posture.reason_codes,
-        generated_at=generated_at,
-        generated_by=generated_by,
-        correlation_id=correlation_id,
-    )
-
-
-def _validate_fairness_analysis_inputs(
-    *,
-    segments: list[DpmPmQualityFairnessSegmentInput],
-    minimum_segment_score_run_count: int,
-    maximum_average_score_spread: Decimal,
-) -> None:
-    if len(segments) < 2:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED")
-    if minimum_segment_score_run_count < 1:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID")
-    if maximum_average_score_spread < 0 or maximum_average_score_spread > 100:
-        raise DpmPmQualityValidationError("PM_QUALITY_FAIRNESS_SPREAD_THRESHOLD_INVALID")
-
-
-def _fairness_analysis_posture(
-    *,
-    segment_results: list[DpmPmQualityFairnessSegmentResult],
-    maximum_average_score_spread: Decimal,
-) -> _FairnessPosture:
-    blocked_results = [result for result in segment_results if result.state == "BLOCKED"]
-    if blocked_results:
-        return _blocked_fairness_posture(blocked_results)
-
-    ready_averages = _ready_segment_average_scores(segment_results)
-    if len(ready_averages) < 2:
-        return _FairnessPosture(
-            state="BLOCKED",
-            observed_spread=None,
-            reason_codes=["PM_QUALITY_FAIRNESS_COMPARABLE_SEGMENTS_REQUIRED"],
-        )
-
-    observed_spread = _observed_average_score_spread(ready_averages)
-    if observed_spread > maximum_average_score_spread:
-        return _FairnessPosture(
-            state="PENDING_REVIEW",
-            observed_spread=observed_spread,
-            reason_codes=["PM_QUALITY_FAIRNESS_SPREAD_REVIEW_REQUIRED"],
-        )
-    return _FairnessPosture(
-        state="READY",
-        observed_spread=observed_spread,
-        reason_codes=["PM_QUALITY_FAIRNESS_WITHIN_GOVERNED_SPREAD"],
-    )
-
-
-def _blocked_fairness_posture(
-    blocked_results: list[DpmPmQualityFairnessSegmentResult],
-) -> _FairnessPosture:
-    return _FairnessPosture(
-        state="BLOCKED",
-        observed_spread=None,
-        reason_codes=sorted(
-            {reason for result in blocked_results for reason in result.reason_codes}
-            | {"PM_QUALITY_FAIRNESS_SEGMENT_BLOCKED"}
-        ),
-    )
-
-
-def _ready_segment_average_scores(
-    segment_results: list[DpmPmQualityFairnessSegmentResult],
-) -> list[Decimal]:
-    return [
-        result.average_score
-        for result in segment_results
-        if result.state == "READY" and result.average_score is not None
-    ]
-
-
-def _observed_average_score_spread(ready_averages: list[Decimal]) -> Decimal:
-    return (max(ready_averages) - min(ready_averages)).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
     )
 
 
@@ -646,12 +504,74 @@ def _indicator_source_refs(
 
 
 def _weighted_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
-    scorable = [result for result in results if result.score is not None]
-    total_weight = sum((result.weight for result in scorable), Decimal("0"))
+    scorable = _scorable_indicator_results(results)
+    total_weight = _indicator_total_weight(scorable)
     if total_weight <= 0:
         raise DpmPmQualityValidationError("PM_QUALITY_NO_SCORABLE_INDICATORS")
-    weighted = sum((result.score or Decimal("0")) * result.weight for result in scorable)
-    return (weighted / total_weight).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+    return _rounded_weighted_indicator_score(
+        weighted_score=_weighted_indicator_score(scorable),
+        total_weight=total_weight,
+    )
+
+
+def _scorable_indicator_results(
+    results: list[DpmPmQualityIndicatorResult],
+) -> list[DpmPmQualityIndicatorResult]:
+    return [result for result in results if result.score is not None]
+
+
+def _indicator_total_weight(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
+    return sum((result.weight for result in results), Decimal("0"))
+
+
+def _weighted_indicator_score(results: list[DpmPmQualityIndicatorResult]) -> Decimal:
+    return sum(
+        ((result.score or Decimal("0")) * result.weight for result in results),
+        Decimal("0"),
+    )
+
+
+def _rounded_weighted_indicator_score(
+    *,
+    weighted_score: Decimal,
+    total_weight: Decimal,
+) -> Decimal:
+    return (weighted_score / total_weight).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _score_run_evaluation(
+    *,
+    policy: DpmPmOperatingQualityPolicy,
+    results: list[DpmPmQualityIndicatorResult],
+) -> _ScoreRunEvaluation:
+    if _score_run_has_blocked_indicator(results):
+        return _ScoreRunEvaluation(
+            state="BLOCKED",
+            score=None,
+            reason_codes=_blocked_score_run_reason_codes(results),
+        )
+    score = _weighted_score(results)
+    state = _score_state(score=score, policy=policy, results=results)
+    return _ScoreRunEvaluation(
+        state=state,
+        score=score,
+        reason_codes=_score_reason_codes(state=state, results=results),
+    )
+
+
+def _score_run_has_blocked_indicator(
+    results: list[DpmPmQualityIndicatorResult],
+) -> bool:
+    return any(result.state == "BLOCKED" for result in results)
+
+
+def _blocked_score_run_reason_codes(
+    results: list[DpmPmQualityIndicatorResult],
+) -> list[str]:
+    return sorted(
+        {reason for result in results for reason in result.reason_codes}
+        | {"PM_QUALITY_REQUIRED_EVIDENCE_MISSING"}
+    )
 
 
 def _score_state(
@@ -660,15 +580,23 @@ def _score_state(
     policy: DpmPmOperatingQualityPolicy,
     results: list[DpmPmQualityIndicatorResult],
 ) -> PmQualityState:
-    if any(result.state == "BREACHED" for result in results):
+    if _has_indicator_state(results=results, state="BREACHED"):
         return "BREACHED"
-    if any(result.state == "DEGRADED" for result in results):
+    if _has_indicator_state(results=results, state="DEGRADED"):
         return "DEGRADED"
     if score >= policy.ready_threshold:
         return "READY"
     if score >= policy.watch_threshold:
         return "PENDING_REVIEW"
     return "BREACHED"
+
+
+def _has_indicator_state(
+    *,
+    results: list[DpmPmQualityIndicatorResult],
+    state: PmQualityState,
+) -> bool:
+    return any(result.state == state for result in results)
 
 
 def _score_reason_codes(
@@ -689,123 +617,6 @@ def _score_reason_codes(
         if result.state != "READY":
             reasons.update(result.reason_codes)
     return sorted(reasons)
-
-
-def _fairness_segment_result(
-    *,
-    policy_id: str,
-    policy_version: str,
-    as_of_date: str,
-    segment: DpmPmQualityFairnessSegmentInput,
-    minimum_segment_score_run_count: int,
-) -> DpmPmQualityFairnessSegmentResult:
-    refs = [
-        DpmOutcomeSourceRef(
-            source_system="lotus-manage",
-            source_type="PmOperatingQualityScoreRun",
-            source_id=score_run.score_run_id,
-            source_version=score_run.product_version,
-            content_hash=score_run.content_hash,
-        )
-        for score_run in segment.score_runs
-    ]
-    mismatch_reasons = _score_run_scope_mismatch_reasons(
-        score_runs=segment.score_runs,
-        policy_id=policy_id,
-        policy_version=policy_version,
-        as_of_date=as_of_date,
-    )
-    scorable_scores = [
-        score_run.score
-        for score_run in segment.score_runs
-        if score_run.score is not None
-        and score_run.state in {"READY", "PENDING_REVIEW", "DEGRADED", "BREACHED"}
-    ]
-    if mismatch_reasons:
-        return DpmPmQualityFairnessSegmentResult(
-            segment_id=segment.segment_id,
-            segment_type=segment.segment_type,
-            display_name=segment.display_name,
-            state="BLOCKED",
-            score_run_count=len(segment.score_runs),
-            average_score=None,
-            minimum_score=None,
-            maximum_score=None,
-            reason_codes=mismatch_reasons,
-            score_run_refs=refs,
-            source_refs=segment.source_refs,
-        )
-    if len(scorable_scores) < minimum_segment_score_run_count:
-        return DpmPmQualityFairnessSegmentResult(
-            segment_id=segment.segment_id,
-            segment_type=segment.segment_type,
-            display_name=segment.display_name,
-            state="BLOCKED",
-            score_run_count=len(segment.score_runs),
-            average_score=None,
-            minimum_score=None,
-            maximum_score=None,
-            reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_MINIMUM_COUNT_NOT_MET"],
-            score_run_refs=refs,
-            source_refs=segment.source_refs,
-        )
-
-    return DpmPmQualityFairnessSegmentResult(
-        segment_id=segment.segment_id,
-        segment_type=segment.segment_type,
-        display_name=segment.display_name,
-        state="READY",
-        score_run_count=len(scorable_scores),
-        average_score=_mean(scorable_scores),
-        minimum_score=min(scorable_scores),
-        maximum_score=max(scorable_scores),
-        reason_codes=["PM_QUALITY_FAIRNESS_SEGMENT_EVALUATED"],
-        score_run_refs=refs,
-        source_refs=segment.source_refs,
-    )
-
-
-def _score_run_scope_mismatch_reasons(
-    *,
-    score_runs: list[DpmPmOperatingQualityScoreRun],
-    policy_id: str,
-    policy_version: str,
-    as_of_date: str,
-) -> list[str]:
-    reasons: set[str] = set()
-    for score_run in score_runs:
-        if _score_run_policy_mismatched(
-            score_run=score_run,
-            policy_id=policy_id,
-            policy_version=policy_version,
-        ):
-            reasons.add("PM_QUALITY_FAIRNESS_POLICY_MISMATCH")
-        if _score_run_as_of_date_mismatched(score_run=score_run, as_of_date=as_of_date):
-            reasons.add("PM_QUALITY_FAIRNESS_AS_OF_DATE_MISMATCH")
-        if _score_run_not_scorable(score_run):
-            reasons.add("PM_QUALITY_FAIRNESS_SCORE_RUN_NOT_SCORABLE")
-    return sorted(reasons)
-
-
-def _score_run_policy_mismatched(
-    *,
-    score_run: DpmPmOperatingQualityScoreRun,
-    policy_id: str,
-    policy_version: str,
-) -> bool:
-    return score_run.policy_id != policy_id or score_run.policy_version != policy_version
-
-
-def _score_run_as_of_date_mismatched(
-    *,
-    score_run: DpmPmOperatingQualityScoreRun,
-    as_of_date: str,
-) -> bool:
-    return score_run.as_of_date != as_of_date
-
-
-def _score_run_not_scorable(score_run: DpmPmOperatingQualityScoreRun) -> bool:
-    return score_run.state in {"DISABLED", "BLOCKED"} or score_run.score is None
 
 
 def _score_run(
@@ -917,65 +728,6 @@ def _score_run_hash_payload(
     }
 
 
-def _optional_model_dump(model: Any | None) -> dict[str, Any] | None:
-    return model.model_dump(mode="json") if model is not None else None
-
-
-def _fairness_analysis(
-    *,
-    policy_id: str,
-    policy_version: str,
-    as_of_date: str,
-    state: PmQualityState,
-    segment_results: list[DpmPmQualityFairnessSegmentResult],
-    minimum_segment_score_run_count: int,
-    maximum_average_score_spread: Decimal,
-    observed_average_score_spread: Decimal | None,
-    reason_codes: list[str],
-    generated_at: datetime,
-    generated_by: str,
-    correlation_id: str,
-) -> DpmPmQualityFairnessAnalysis:
-    source_refs = _dedupe_refs(
-        [ref for result in segment_results for ref in result.score_run_refs]
-        + [ref for result in segment_results for ref in result.source_refs]
-    )
-    hash_payload = {
-        "policy_id": policy_id,
-        "policy_version": policy_version,
-        "as_of_date": as_of_date,
-        "state": state,
-        "segment_results": [result.model_dump(mode="json") for result in segment_results],
-        "minimum_segment_score_run_count": minimum_segment_score_run_count,
-        "maximum_average_score_spread": str(maximum_average_score_spread),
-        "observed_average_score_spread": (
-            str(observed_average_score_spread)
-            if observed_average_score_spread is not None
-            else None
-        ),
-        "reason_codes": reason_codes,
-        "source_refs": [ref.model_dump(mode="json") for ref in source_refs],
-    }
-    content_hash = _content_hash(hash_payload)
-    return DpmPmQualityFairnessAnalysis(
-        fairness_analysis_id=f"pmq_fair_{uuid5(NAMESPACE_URL, content_hash).hex[:16]}",
-        policy_id=policy_id,
-        policy_version=policy_version,
-        as_of_date=as_of_date,
-        state=state,
-        segment_results=segment_results,
-        minimum_segment_score_run_count=minimum_segment_score_run_count,
-        maximum_average_score_spread=maximum_average_score_spread,
-        observed_average_score_spread=observed_average_score_spread,
-        reason_codes=reason_codes,
-        source_refs=source_refs,
-        content_hash=content_hash,
-        generated_at=generated_at,
-        generated_by=generated_by,
-        correlation_id=correlation_id,
-    )
-
-
 def _governance_evidence(
     *,
     policy: DpmPmOperatingQualityPolicy,
@@ -1063,23 +815,3 @@ def _state_score(state: str) -> Decimal:
 def _worst_state(states: list[str]) -> PmQualityState:
     worst = max(states, key=lambda state: _PM_QUALITY_STATE_RANK.get(state, 0))
     return _NORMALIZED_WORST_STATE.get(worst, "DEGRADED")
-
-
-def _mean(values: list[Decimal]) -> Decimal:
-    if not values:
-        return Decimal("0")
-    return (sum(values, Decimal("0")) / Decimal(len(values))).quantize(
-        Decimal("0.01"), rounding=ROUND_HALF_UP
-    )
-
-
-def _dedupe_refs(refs: list[DpmOutcomeSourceRef]) -> list[DpmOutcomeSourceRef]:
-    by_key: dict[tuple[str, str, str], DpmOutcomeSourceRef] = {}
-    for ref in refs:
-        by_key[(ref.source_system, ref.source_type, ref.source_id)] = ref
-    return [by_key[key] for key in sorted(by_key)]
-
-
-def _content_hash(payload: Mapping[str, Any]) -> str:
-    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-    return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()

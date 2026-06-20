@@ -1,10 +1,10 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-06-19T03:14:37+00:00`
+- Generated at: `2026-06-20T00:45:09+00:00`
 
 - Baseline ref: `origin/main`
 
-- Report source snapshot: `84343223+worktree`
+- Report source snapshot: `ae2ddfbb+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -12,9 +12,9 @@
 
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
-| Python files | 821 | 823 | +2 |
-| Total Python LOC | 179371 | 179465 | +94 |
-| Test functions | 2647 | 2649 | +2 |
+| Python files | 826 | 878 | +52 |
+| Total Python LOC | 179538 | 185387 | +5849 |
+| Test functions | 2651 | 2745 | +94 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -52,14 +52,14 @@
 | --- | --- | --- |
 | 1 | tests/unit/dpm/api/test_waves_api.py | 6408 |
 | 2 | tests/unit/dpm/api/test_api_rebalance.py | 3318 |
-| 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3126 |
+| 3 | tests/unit/dpm/proof_packs/test_proof_pack_builder.py | 3289 |
 | 4 | tests/unit/dpm/waves/test_campaign_discovery.py | 2960 |
 | 5 | tests/unit/test_documentation_current_state.py | 2721 |
 | 6 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2600 |
 | 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2531 |
-| 8 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2423 |
-| 9 | src/core/proof_packs/builder.py | 2011 |
-| 10 | src/core/dpm_source_context.py | 1929 |
+| 8 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 2489 |
+| 9 | tests/unit/core/test_risk_realized_outcome_sources.py | 1811 |
+| 10 | tests/unit/api/test_pm_operating_quality_api.py | 1745 |
 
 ## Largest Functions
 
@@ -90,8 +90,8 @@
 | 6 | _generate_wave_lifecycle | scripts/generate_rfc0041_wave_evidence.py | 350 |
 | 7 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 328 |
 | 8 | run_demo_pack | scripts/run_demo_pack_live.py | 302 |
-| 9 | test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_context | tests/unit/dpm/construction/test_enrichment.py | 235 |
-| 10 | test_dpm_supportability_and_async_schemas_have_descriptions_and_examples | tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py | 234 |
+| 9 | test_rolling_and_historical_attribution_helper_edges_are_explicit | tests/unit/core/test_risk_realized_outcome_sources.py | 236 |
+| 10 | test_source_context_lifts_external_hedge_readiness_as_fail_closed_currency_context | tests/unit/dpm/construction/test_enrichment.py | 235 |
 
 ## Most Complex Functions
 

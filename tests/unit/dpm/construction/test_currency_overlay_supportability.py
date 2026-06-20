@@ -2,6 +2,9 @@ from decimal import Decimal
 
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_currency_overlay_supportability import (
+    _currency_overlay_active_currency_status,
+    _currency_overlay_has_unsupported_currency,
+    _currency_overlay_missing_required_fx,
     available_fx_pairs,
     currency_overlay_status,
     derive_currency_overlay_context,
@@ -110,6 +113,24 @@ def test_currency_overlay_supportability_blocks_missing_required_fx_pair() -> No
         currency_overlay_status(request=request, context=context)
         == ConstructionMethodStatus.BLOCKED
     )
+
+
+def test_currency_overlay_status_helpers_project_decision_edges() -> None:
+    missing_fx_request = _currency_overlay_request(fx_pairs=[])
+    covered_fx_request = _currency_overlay_request(fx_pairs=["SGD/USD"])
+
+    assert _currency_overlay_missing_required_fx(request=missing_fx_request)
+    assert not _currency_overlay_missing_required_fx(request=covered_fx_request)
+    assert _currency_overlay_has_unsupported_currency(
+        instrument_currencies={"SGD", "EUR"},
+        eligible_currencies=["SGD"],
+    )
+    assert not _currency_overlay_has_unsupported_currency(
+        instrument_currencies={"SGD"},
+        eligible_currencies=["SGD", "EUR"],
+    )
+    assert _currency_overlay_active_currency_status({"SGD"}) == ConstructionMethodStatus.READY
+    assert _currency_overlay_active_currency_status(set()) == ConstructionMethodStatus.DEGRADED
 
 
 def test_currency_overlay_supportability_degrades_without_source_context() -> None:

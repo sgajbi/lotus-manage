@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from src.core.common.boundary_promotion import CLIENT_COMMUNICATION_PROMOTION_REQUIREMENTS
+from src.core.common.ai_guardrails import forbidden_field_names, sanitize_for_ai
 from src.core.common.canonical import hash_canonical_payload, strip_keys
 from src.core.portfolio_memory.handoffs import DpmPortfolioMemoryReportContext
 from src.core.proof_packs.markdown import render_proof_pack_markdown
@@ -22,21 +23,6 @@ from src.core.proof_packs.models import (
 HANDOFF_CONTRACT_VERSION = "1.0"
 REPORT_INPUT_REF_TYPE = "DPM_PROOF_PACK_REPORT_INPUT"
 AI_EVIDENCE_REF_TYPE = "DPM_PROOF_PACK_AI_EVIDENCE_INPUT"
-AI_FORBIDDEN_FIELD_NAMES = frozenset(
-    {
-        "account_number",
-        "client_name",
-        "client_id",
-        "email",
-        "phone",
-        "raw_payload",
-        "raw_request",
-        "raw_response",
-        "secret",
-        "ssn",
-        "token",
-    }
-)
 
 
 class DpmProofPackReportSection(BaseModel):
@@ -346,36 +332,13 @@ def _client_communication_boundary() -> DpmProofPackClientCommunicationBoundaryE
 
 
 def assert_no_ai_forbidden_fields(payload: Any) -> None:
-    found = sorted(_find_forbidden_field_names(payload))
+    found = sorted(forbidden_field_names(payload))
     if found:
         raise ValueError(f"DPM_PROOF_PACK_AI_FORBIDDEN_FIELDS:{','.join(found)}")
 
 
 def _sanitize_for_ai(value: Any, removed: set[str]) -> Any:
-    if isinstance(value, dict):
-        sanitized: dict[str, Any] = {}
-        for key, item in value.items():
-            if key.lower() in AI_FORBIDDEN_FIELD_NAMES:
-                removed.add(key.lower())
-                continue
-            sanitized[key] = _sanitize_for_ai(item, removed)
-        return sanitized
-    if isinstance(value, list):
-        return [_sanitize_for_ai(item, removed) for item in value]
-    return value
-
-
-def _find_forbidden_field_names(value: Any) -> set[str]:
-    found: set[str] = set()
-    if isinstance(value, dict):
-        for key, item in value.items():
-            if key.lower() in AI_FORBIDDEN_FIELD_NAMES:
-                found.add(key.lower())
-            found.update(_find_forbidden_field_names(item))
-    elif isinstance(value, list):
-        for item in value:
-            found.update(_find_forbidden_field_names(item))
-    return found
+    return sanitize_for_ai(value=value, removed=removed)
 
 
 def _dedupe_source_refs(proof_pack: DpmPreTradeProofPack) -> list[DpmProofPackSourceRef]:

@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-06-19T03:14:37+00:00`
+- Generated at: `2026-06-20T00:45:09+00:00`
 
-- Report source snapshot: `84343223+worktree`
+- Report source snapshot: `ae2ddfbb+worktree`
 
-- Mode: report-only maintainability baseline using dependency-free AST branch counting.
+- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
 ## Summary
 
@@ -32,16 +32,16 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | resolve_analyze_async_execution_payload | src/api/services/rebalance_async_operation_payload.py | 6 | 29 |
-| 2 | _apply_min_cash_buffer | src/core/rebalance/targets.py | 6 | 29 |
-| 3 | build_workflow_decision_filter_query | src/infrastructure/rebalance_runs/workflow_decision_query.py | 6 | 29 |
-| 4 | _risk_context_from_concentration_response | src/infrastructure/risk_authority/client.py | 6 | 29 |
-| 5 | _transaction_money_value | src/core/outcomes/core_sources.py | 6 | 27 |
-| 6 | _proof_pack_governance_section_payload | src/core/proof_packs/builder.py | 6 | 27 |
-| 7 | _decision_summary | src/core/proof_packs/builder.py | 6 | 27 |
-| 8 | _tactical_house_view_cohort_from_response | src/infrastructure/advise_authority/client.py | 6 | 26 |
-| 9 | list_definitions | src/infrastructure/waves/campaign_definitions.py | 6 | 26 |
-| 10 | currency_overlay_reason_codes | src/api/services/construction_method_readiness.py | 6 | 25 |
+| 1 | resolve_freshness_bucket | src/core/rebalance_runs/supportability_summary.py | 6 | 27 |
+| 2 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |
+| 3 | pm_quality_summary_invocation_event | src/core/portfolio_memory/pm_quality_projection.py | 5 | 100 |
+| 4 | resolve_bulk_review_campaign_portfolios | src/api/routers/wave_campaign_source_resolution.py | 5 | 83 |
+| 5 | generate_fx_and_simulate | src/core/rebalance/execution.py | 5 | 81 |
+| 6 | _source_lineage | src/core/outcomes/snapshots.py | 5 | 75 |
+| 7 | build_mandate_refresh_result_from_core | src/api/services/mandate_refresh.py | 5 | 74 |
+| 8 | collect_portfolio_memory_events | src/core/portfolio_memory/source_collection.py | 5 | 73 |
+| 9 | compile_mandate_digital_twin_from_core | src/core/mandates.py | 5 | 69 |
+| 10 | mandate_context_section_payload | src/core/proof_packs/mandate_context.py | 5 | 67 |
 
 ### Most Complex Current Test Functions
 
@@ -60,4 +60,6 @@
 
 ## Gate Posture
 
-- This report is phase 1/report-only. It intentionally does not fail builds until the baseline is reviewed and thresholds are agreed.
+- Source functions at Radon C-or-worse are actively blocked by `make complexity-gate` (`python -m radon cc src -s -n C`).
+
+- Broader source/test complexity rankings in this report remain report-only until baselines, false positives, lane placement, and exception policy are clear.

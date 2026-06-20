@@ -120,24 +120,46 @@ def _mandate_ids_from_pm_book_selector(
     request: DpmMonitoringRunOnceRequest,
     repository: DpmMandateRepository,
 ) -> tuple[list[str], dict[str, str]]:
+    portfolio_types = _validated_pm_book_selector(request)
+    membership = _resolve_pm_book_membership(request=request, portfolio_types=portfolio_types)
+    _validate_pm_book_membership_ready(membership)
+    mandate_ids = _mandate_ids_from_pm_book_membership(
+        repository=repository,
+        membership=membership,
+    )
+    return mandate_ids, _pm_book_source_filters(membership)
+
+
+def _validated_pm_book_selector(request: DpmMonitoringRunOnceRequest) -> list[str]:
     if not request.portfolio_manager_id:
         raise monitoring_selector_required_http_exception()
     portfolio_types = _portfolio_types_from_request(request)
     if not portfolio_types:
         raise monitoring_pm_book_portfolio_types_required_http_exception()
-    membership = _resolve_pm_book_membership(request=request, portfolio_types=portfolio_types)
+    return portfolio_types
+
+
+def _validate_pm_book_membership_ready(
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> None:
     if membership.supportability.state != "READY":
         raise monitoring_pm_book_membership_not_ready_http_exception(membership)
     if not membership.members:
         raise monitoring_pm_book_membership_empty_http_exception()
+
+
+def _mandate_ids_from_pm_book_membership(
+    *,
+    repository: DpmMandateRepository,
+    membership: DpmCorePortfolioManagerBookMembershipResponse,
+) -> list[str]:
     try:
-        mandate_ids = mandate_ids_from_pm_book_membership(
+        return mandate_ids_from_pm_book_membership(
             repository=repository,
             membership=membership,
         )
     except DpmMandateSourceIncompleteError as exc:
         raise monitoring_pm_book_mandate_snapshot_incomplete_http_exception(exc) from exc
-    return mandate_ids, _pm_book_source_filters(membership)
 
 
 def _monitoring_run_filters(

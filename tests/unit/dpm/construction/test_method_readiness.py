@@ -3,6 +3,8 @@ from decimal import Decimal
 from src.api.request_models import RebalanceRequest
 from src.api.services.construction_method_readiness import (
     _MethodReasonCodeContext,
+    _currency_overlay_context_reason_codes,
+    _currency_overlay_fx_source_reason_code,
     _reason_code_builder_for_method,
     _status_builder_for_method,
     currency_overlay_reason_codes,
@@ -11,6 +13,7 @@ from src.api.services.construction_method_readiness import (
     solver_reason_codes,
 )
 from src.core.construction.models import (
+    AuthoritativeCurrencyOverlayContext,
     ConstructionAuthorityContext,
     ConstructionEnrichmentSummary,
 )
@@ -110,6 +113,36 @@ def test_currency_overlay_reason_codes_preserve_missing_policy_context() -> None
     assert reason_codes == [
         "CURRENCY_OVERLAY_NO_NON_BASE_EXPOSURE",
         "CURRENCY_OVERLAY_POLICY_CONTEXT_MISSING",
+    ]
+
+
+def test_currency_overlay_fx_source_reason_code_prioritizes_missing_fx_pairs() -> None:
+    result = _trade_result().model_copy(deep=True)
+    result.diagnostics.missing_fx_pairs.append("USD/EUR")
+
+    reason_code = _currency_overlay_fx_source_reason_code(
+        request=_request(),
+        result=result,
+        overlay_status=ConstructionMethodStatus.READY,
+    )
+
+    assert reason_code == "CURRENCY_OVERLAY_FX_SOURCE_MISSING"
+
+
+def test_currency_overlay_context_reason_codes_preserve_source_reasons() -> None:
+    authority_context = ConstructionAuthorityContext(
+        currency_overlay_context=AuthoritativeCurrencyOverlayContext(
+            supportability_status=ConstructionMethodStatus.READY,
+            source_system="lotus-core",
+            policy_id="hedge-policy-sgd",
+            hedge_ratio_min=Decimal("0.10"),
+            hedge_ratio_max=Decimal("0.60"),
+            reason_codes=["CURRENCY_OVERLAY_POLICY_READY"],
+        )
+    )
+
+    assert _currency_overlay_context_reason_codes(authority_context) == [
+        "CURRENCY_OVERLAY_POLICY_READY"
     ]
 
 

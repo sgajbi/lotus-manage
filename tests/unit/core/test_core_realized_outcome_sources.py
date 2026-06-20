@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 
 from src.core.outcomes import (
     CoreOutcomeSourceError,
@@ -15,7 +16,11 @@ from src.core.outcomes import (
 from src.core.outcomes.core_sources import (
     _cash_movement_bucket_matches,
     _cash_movement_buckets,
+    _core_as_of_date,
+    _core_content_hash,
+    _core_data_quality_status,
     _core_metadata,
+    _core_observed_at,
     _currency_total_matches,
     _currency_total_rows,
     _execution_acknowledgement_posture,
@@ -26,6 +31,8 @@ from src.core.outcomes.core_sources import (
     _raise_on_invalid_currency_total_selection,
     _transaction_cashflow_value,
     _transaction_fx_pnl_value,
+    _transaction_reporting_money,
+    _transaction_source_currency,
 )
 from tests.unit.core.test_realized_outcome_sources import _window
 
@@ -792,6 +799,26 @@ def test_execution_acknowledgement_helpers_build_deterministic_identity_and_reas
     assert "EXECUTION_ACKNOWLEDGEMENT_BLOCKED_CAPABILITY_OMS_ACKNOWLEDGEMENT" in reason_codes
 
 
+def test_core_metadata_helpers_preserve_fallback_order() -> None:
+    response = _external_order_execution_acknowledgement_response()
+    response.pop("as_of_date")
+    response["resolved_as_of_date"] = "2026-05-07"
+    response["generated_at"] = "2026-05-07T08:00:00Z"
+    response.pop("latest_evidence_timestamp")
+    response.pop("data_quality_status")
+    response.pop("source_batch_fingerprint")
+    response["snapshot_id"] = "snapshot-fallback"
+
+    metadata = _core_metadata(response)
+
+    assert _core_as_of_date(response) == "2026-05-07"
+    assert _core_observed_at(response) == "2026-05-07T08:00:00Z"
+    assert _core_data_quality_status(response) == "UNKNOWN"
+    assert _core_content_hash(response) == "snapshot-fallback"
+    assert metadata["as_of_date"] == "2026-05-07"
+    assert metadata["content_hash"] == "snapshot-fallback"
+
+
 def test_execution_acknowledgement_helpers_default_empty_selector_identity() -> None:
     response = _external_order_execution_acknowledgement_response()
     response["execution_intent_id"] = ""
@@ -1063,6 +1090,55 @@ def test_transaction_value_helpers_select_fx_and_cashflow_source_values() -> Non
     assert str(cashflow_value) == str(cashflow_transaction["cashflow"]["amount"])
     assert cashflow_unit == "USD"
     assert cashflow_reason == "TRANSACTION_VALUE_CASHFLOW_AMOUNT"
+
+
+def test_transaction_money_helpers_preserve_reporting_precedence_and_currency_fallbacks() -> None:
+    response = {"reporting_currency": "SGD"}
+    transaction = {
+        "trade_fee_reporting_currency": "24.97",
+        "trade_fee": "18.50",
+        "trade_currency": "USD",
+        "currency": "EUR",
+    }
+
+    reporting_value = _transaction_reporting_money(
+        response=response,
+        transaction=transaction,
+        reporting_field="trade_fee_reporting_currency",
+        reason="TRANSACTION_VALUE_TRADE_FEE",
+    )
+
+    assert reporting_value == (
+        Decimal("24.97"),
+        "SGD",
+        "TRANSACTION_VALUE_TRADE_FEE_REPORTING",
+    )
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "USD"
+    )
+    transaction["trade_currency"] = None
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "EUR"
+    )
+    transaction["currency"] = None
+    assert (
+        _transaction_source_currency(
+            transaction=transaction,
+            source_currency_fields=("trade_currency", "currency"),
+            fallback_currency="transaction_currency",
+        )
+        == "transaction_currency"
+    )
 
 
 def test_transaction_adapter_treats_missing_transaction_list_as_source_gap() -> None:

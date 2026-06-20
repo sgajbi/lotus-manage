@@ -5,6 +5,9 @@ from src.core.pm_quality.models import (
     DpmPmQualityReviewAction,
     DpmPmQualitySummaryInvocation,
 )
+from typing import cast
+
+from src.core.portfolio_memory.event_projection import portfolio_memory_supportability_state
 from src.core.portfolio_memory.models import (
     DpmPortfolioMemoryEvent,
     PortfolioMemorySupportabilityState,
@@ -14,13 +17,7 @@ from src.core.portfolio_memory.models import (
 def portfolio_memory_state(
     events: list[DpmPortfolioMemoryEvent],
 ) -> PortfolioMemorySupportabilityState:
-    if not events:
-        return "EMPTY"
-    states = {event.supportability_state for event in events}
-    for state in ("BLOCKED", "DEGRADED", "PENDING_REVIEW"):
-        if state in states:
-            return state
-    return "READY"
+    return cast(PortfolioMemorySupportabilityState, portfolio_memory_supportability_state(events))
 
 
 def source_supportability_state(source_state: str | None) -> PortfolioMemorySupportabilityState:

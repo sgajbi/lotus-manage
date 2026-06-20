@@ -1,8 +1,13 @@
 """Domain models for source-backed portfolio memory."""
 
-from typing import Any, Iterable, Literal
+from typing import Any, Iterable, Literal, cast
 
 from pydantic import BaseModel, Field, model_validator
+
+from src.core.portfolio_memory.event_projection import (
+    event_source_systems,
+    portfolio_memory_supportability_state,
+)
 
 PortfolioMemoryEventType = Literal[
     "PROOF_PACK_CREATED",
@@ -616,10 +621,40 @@ def _validate_empty_search_item_latest_event_metadata(
     latest_event_time: str | None,
     latest_event_type: PortfolioMemoryEventType | None,
 ) -> None:
+    _validate_empty_search_item_supportability_state(supportability_state)
+    _validate_empty_search_item_aggregate_metadata(
+        event_type_counts=event_type_counts,
+        source_systems=source_systems,
+        reason_codes=reason_codes,
+    )
+    _validate_empty_search_item_latest_event_presence(
+        latest_event_time=latest_event_time,
+        latest_event_type=latest_event_type,
+    )
+
+
+def _validate_empty_search_item_supportability_state(
+    supportability_state: PortfolioMemorySupportabilityState,
+) -> None:
     if supportability_state != "EMPTY":
         raise ValueError("empty search items must use EMPTY supportability_state.")
+
+
+def _validate_empty_search_item_aggregate_metadata(
+    *,
+    event_type_counts: dict[str, int],
+    source_systems: list[str],
+    reason_codes: list[str],
+) -> None:
     if event_type_counts or source_systems or reason_codes:
         raise ValueError("empty search items must not carry aggregate event metadata.")
+
+
+def _validate_empty_search_item_latest_event_presence(
+    *,
+    latest_event_time: str | None,
+    latest_event_type: PortfolioMemoryEventType | None,
+) -> None:
     if _latest_event_metadata_is_present(
         latest_event_time=latest_event_time,
         latest_event_type=latest_event_type,
@@ -982,14 +1017,38 @@ def _validate_search_page_next_offset(
         returned_count=returned_count,
         has_more=has_more,
     )
-    if not has_more:
-        if next_offset is not None:
-            raise ValueError("next_offset must be null when has_more is false.")
+    if _search_page_is_terminal(has_more):
+        _validate_terminal_search_page_next_offset(next_offset)
         return
-    if next_offset is None or next_offset != expected_next_offset:
+    if not _next_offset_matches_expected(
+        next_offset=next_offset,
+        expected_next_offset=expected_next_offset,
+    ):
         raise ValueError("next_offset must equal offset plus returned_count.")
-    if next_offset <= offset:
+    assert next_offset is not None
+    if not _next_offset_advances(offset=offset, next_offset=next_offset):
         raise ValueError("next_offset must advance when has_more is true.")
+
+
+def _search_page_is_terminal(has_more: bool) -> bool:
+    return not has_more
+
+
+def _validate_terminal_search_page_next_offset(next_offset: int | None) -> None:
+    if next_offset is not None:
+        raise ValueError("next_offset must be null when has_more is false.")
+
+
+def _next_offset_matches_expected(
+    *,
+    next_offset: int | None,
+    expected_next_offset: int | None,
+) -> bool:
+    return next_offset is not None and next_offset == expected_next_offset
+
+
+def _next_offset_advances(*, offset: int, next_offset: int) -> bool:
+    return next_offset > offset
 
 
 def _validate_search_page_count_maps(
@@ -1107,21 +1166,56 @@ def _validate_portfolio_memory_event_aggregates(
     supportability_state: PortfolioMemorySupportabilityState,
     events: list[DpmPortfolioMemoryEvent],
 ) -> None:
-    if event_count != len(events):
-        raise ValueError("event_count must equal the number of events.")
-    if event_type_counts != _counts(event.event_type for event in events):
-        raise ValueError("event_type_counts must match the returned events.")
-    if source_systems != _portfolio_memory_source_systems(events):
-        raise ValueError("source_systems must match the returned events.")
-    if reason_codes != _portfolio_memory_reason_codes(events):
-        raise ValueError("reason_codes must match the returned events.")
-    if supportability_state != _portfolio_memory_supportability_state(events):
-        raise ValueError("supportability_state must match the returned events.")
+    _validate_portfolio_memory_aggregate_match(
+        actual=event_count,
+        expected=_portfolio_memory_event_count(events),
+        message="event_count must equal the number of events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=event_type_counts,
+        expected=_portfolio_memory_event_type_counts(events),
+        message="event_type_counts must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=source_systems,
+        expected=_portfolio_memory_source_systems(events),
+        message="source_systems must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=reason_codes,
+        expected=_portfolio_memory_reason_codes(events),
+        message="reason_codes must match the returned events.",
+    )
+    _validate_portfolio_memory_aggregate_match(
+        actual=supportability_state,
+        expected=_portfolio_memory_supportability_state(events),
+        message="supportability_state must match the returned events.",
+    )
+
+
+def _validate_portfolio_memory_aggregate_match(
+    *,
+    actual: object,
+    expected: object,
+    message: str,
+) -> None:
+    if actual != expected:
+        raise ValueError(message)
+
+
+def _portfolio_memory_event_count(events: list[DpmPortfolioMemoryEvent]) -> int:
+    return len(events)
+
+
+def _portfolio_memory_event_type_counts(
+    events: list[DpmPortfolioMemoryEvent],
+) -> dict[str, int]:
+    return _counts(event.event_type for event in events)
 
 
 def _portfolio_memory_source_systems(events: list[DpmPortfolioMemoryEvent]) -> list[str]:
     return sorted(
-        {source_system for event in events for source_system in _event_source_systems(event)}
+        {source_system for event in events for source_system in event_source_systems(event)}
     )
 
 
@@ -1175,25 +1269,7 @@ def _validate_non_negative_counts(*, label: str, counts: dict[str, int]) -> None
         )
 
 
-def _event_source_systems(event: DpmPortfolioMemoryEvent) -> set[str]:
-    return {
-        source_system
-        for source_system in [
-            event.source_system,
-            *(ref.source_system for ref in event.source_refs),
-            *(ref.source_system for ref in event.artifact_refs),
-        ]
-        if source_system
-    }
-
-
 def _portfolio_memory_supportability_state(
     events: list[DpmPortfolioMemoryEvent],
 ) -> PortfolioMemorySupportabilityState:
-    if not events:
-        return "EMPTY"
-    states = {event.supportability_state for event in events}
-    for state in ("BLOCKED", "DEGRADED", "PENDING_REVIEW"):
-        if state in states:
-            return state
-    return "READY"
+    return cast(PortfolioMemorySupportabilityState, portfolio_memory_supportability_state(events))

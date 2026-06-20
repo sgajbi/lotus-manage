@@ -42,6 +42,12 @@ _ExecutionSimulationResult: TypeAlias = tuple[
 
 
 @dataclass(frozen=True)
+class _DataQualityBlockingRule:
+    bucket: str
+    option_name: str | None = None
+
+
+@dataclass(frozen=True)
 class _SettlementLadderProjection:
     points: list[CashLadderPoint]
     breaches: list[CashLadderBreach]
@@ -54,6 +60,13 @@ class _ProjectedCashFxResolution:
     funding_currency: str | None = None
     missing_fx_pair: str | None = None
     blocked: bool = False
+
+
+_BLOCKING_DATA_QUALITY_RULES: tuple[_DataQualityBlockingRule, ...] = (
+    _DataQualityBlockingRule(bucket="shelf_missing"),
+    _DataQualityBlockingRule(bucket="price_missing", option_name="block_on_missing_prices"),
+    _DataQualityBlockingRule(bucket="fx_missing", option_name="block_on_missing_fx"),
+)
 
 
 def build_settlement_ladder(
@@ -707,11 +720,22 @@ def generate_fx_and_simulate(
     )
 
 
+def _data_quality_bucket_has_entries(dq_log: dict[str, list[str]], bucket: str) -> bool:
+    return bool(dq_log.get(bucket))
+
+
+def _data_quality_rule_blocks(
+    dq_log: dict[str, list[str]], options: EngineOptions, rule: _DataQualityBlockingRule
+) -> bool:
+    if not _data_quality_bucket_has_entries(dq_log=dq_log, bucket=rule.bucket):
+        return False
+    if rule.option_name is None:
+        return True
+    return bool(getattr(options, rule.option_name))
+
+
 def check_blocking_dq(dq_log: dict[str, list[str]], options: EngineOptions) -> bool:
-    if dq_log.get("shelf_missing"):
-        return True
-    if dq_log.get("price_missing") and options.block_on_missing_prices:
-        return True
-    if dq_log.get("fx_missing") and options.block_on_missing_fx:
-        return True
-    return False
+    return any(
+        _data_quality_rule_blocks(dq_log=dq_log, options=options, rule=rule)
+        for rule in _BLOCKING_DATA_QUALITY_RULES
+    )

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import date, datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
-from enum import Enum
-from typing import Literal, Optional, TypeAlias
-
-from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Optional
 
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientIncomeNeedsScheduleResponse,
+    DpmCoreClientRestrictionEntry,
     DpmCoreClientRestrictionProfileResponse,
     DpmCoreLiquidityReserveRequirementResponse,
     DpmCoreMandateBindingResponse,
@@ -18,581 +15,75 @@ from src.core.dpm_source_context import (
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePlannedWithdrawalScheduleResponse,
     DpmCorePortfolioCashflowProjectionResponse,
+    DpmCoreSustainabilityPreferenceEntry,
     DpmCoreSustainabilityPreferenceProfileResponse,
 )
-
-
-class MandateHealthState(str, Enum):
-    READY = "READY"
-    PENDING_REVIEW = "PENDING_REVIEW"
-    BLOCKED = "BLOCKED"
-
-
-class MandateHealthDimension(str, Enum):
-    SOURCE_READINESS = "SOURCE_READINESS"
-    ALLOCATION_DRIFT = "ALLOCATION_DRIFT"
-    RISK_DRIFT = "RISK_DRIFT"
-    CASH_LIQUIDITY = "CASH_LIQUIDITY"
-    TAX_TURNOVER = "TAX_TURNOVER"
-    ELIGIBILITY_RESTRICTIONS = "ELIGIBILITY_RESTRICTIONS"
-    PERFORMANCE_ATTENTION = "PERFORMANCE_ATTENTION"
-    WORKFLOW_READINESS = "WORKFLOW_READINESS"
-    REVIEW_CADENCE = "REVIEW_CADENCE"
-    MODEL_FRESHNESS = "MODEL_FRESHNESS"
-
-
-class MandateRecommendedAction(str, Enum):
-    NONE = "NONE"
-    SIMULATE_REBALANCE = "SIMULATE_REBALANCE"
-    REVIEW_MANDATE = "REVIEW_MANDATE"
-    FIX_SOURCE_DATA = "FIX_SOURCE_DATA"
-    REVIEW_RESTRICTION = "REVIEW_RESTRICTION"
-    REVIEW_WORKFLOW = "REVIEW_WORKFLOW"
-
-
-class MonitoringSeverity(str, Enum):
-    INFO = "INFO"
-    WARNING = "WARNING"
-    CRITICAL = "CRITICAL"
-
-
-DIMENSION_WEIGHTS: dict[MandateHealthDimension, int] = {
-    MandateHealthDimension.SOURCE_READINESS: 15,
-    MandateHealthDimension.ALLOCATION_DRIFT: 18,
-    MandateHealthDimension.RISK_DRIFT: 12,
-    MandateHealthDimension.CASH_LIQUIDITY: 10,
-    MandateHealthDimension.TAX_TURNOVER: 10,
-    MandateHealthDimension.ELIGIBILITY_RESTRICTIONS: 10,
-    MandateHealthDimension.PERFORMANCE_ATTENTION: 8,
-    MandateHealthDimension.WORKFLOW_READINESS: 7,
-    MandateHealthDimension.REVIEW_CADENCE: 5,
-    MandateHealthDimension.MODEL_FRESHNESS: 5,
-}
-
-_DigitalTwinLineageSourceProduct: TypeAlias = (
-    DpmCoreMandateBindingResponse
-    | DpmCoreModelPortfolioTargetResponse
-    | DpmCoreClientRestrictionProfileResponse
-    | DpmCoreSustainabilityPreferenceProfileResponse
-    | DpmCorePortfolioCashflowProjectionResponse
-    | DpmCoreClientIncomeNeedsScheduleResponse
-    | DpmCoreLiquidityReserveRequirementResponse
-    | DpmCorePlannedWithdrawalScheduleResponse
+from src.core.mandate_models import (
+    DIMENSION_WEIGHTS,
+    DigitalTwinLineageSourceProduct as _DigitalTwinLineageSourceProduct,
+    DpmCommandCenterAttentionBucket,
+    DpmCommandCenterRecommendedAction,
+    DpmCommandCenterSummary,
+    DpmCommandCenterSupportability,
+    DpmMandateConstraintSet,
+    DpmMandateDimensionScore,
+    DpmMandateDigitalTwin,
+    DpmMandateHealthInput,
+    DpmMandateHealthReason,
+    DpmMandateHealthSnapshot,
+    DpmMandateHealthSourceAnalyticsPosture,
+    DpmMandateHealthSourceProductRequirement,
+    DpmMandatePreferences,
+    DpmMandateReviewPolicy,
+    DpmMandateSourceHealthContext,
+    DpmMonitoringException,
+    DpmMonitoringRun,
+    DpmSourceProductLineage,
+    MandateHealthDimension,
+    MandateHealthState,
+    MandateRecommendedAction,
+    MandateSourceReadinessProjection as _MandateSourceReadinessProjection,
+    MonitoringSeverity,
+    SourceReadinessState as _SourceReadinessState,
+    bounded_ratio as _bounded_ratio,
+    default_source_analytics_posture as _default_source_analytics_posture,
 )
-_SourceReadinessState: TypeAlias = Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"]
+from src.core.mandate_health_scoring import calculate_mandate_health
 
-
-@dataclass(frozen=True)
-class _MandateSourceReadinessProjection:
-    state: _SourceReadinessState
-    missing_source_families: list[str]
-    degraded_source_families: list[str]
-    stale_source_families: list[str]
-
-
-def _bounded_ratio(value: Decimal, *, field_name: str) -> Decimal:
-    if value < Decimal("0") or value > Decimal("1"):
-        raise ValueError(f"{field_name} must be between 0 and 1 inclusive")
-    return value
-
-
-def _score_from_penalty(penalty: Decimal) -> int:
-    bounded_penalty = min(max(penalty, Decimal("0")), Decimal("100"))
-    return int((Decimal("100") - bounded_penalty).quantize(Decimal("1"), ROUND_HALF_UP))
-
-
-class DpmMandateConstraintSet(BaseModel):
-    cash_band_min_weight: Decimal = Field(default=Decimal("0"), ge=0, le=1)
-    cash_band_max_weight: Decimal = Field(default=Decimal("1"), ge=0, le=1)
-    single_position_max_weight: Optional[Decimal] = Field(default=None)
-    issuer_max_weight: Optional[Decimal] = Field(default=None)
-    sector_max_weight: Optional[Decimal] = Field(default=None)
-    region_max_weight: Optional[Decimal] = Field(default=None)
-    currency_max_weight: Optional[Decimal] = Field(default=None)
-    turnover_budget: Optional[Decimal] = Field(default=None)
-    tax_budget_base: Optional[Decimal] = Field(default=None)
-    max_tracking_error: Optional[Decimal] = Field(default=None)
-    max_active_share: Optional[Decimal] = Field(default=None)
-    minimum_trade_notional: Optional[Decimal] = Field(default=None, ge=0)
-    allowed_product_types: list[str] = Field(default_factory=list)
-    restricted_instruments: list[str] = Field(default_factory=list)
-    restricted_issuers: list[str] = Field(default_factory=list)
-    restricted_sectors: list[str] = Field(default_factory=list)
-    sustainability_exclusions: list[str] = Field(default_factory=list)
-
-    @field_validator(
-        "single_position_max_weight",
-        "issuer_max_weight",
-        "sector_max_weight",
-        "region_max_weight",
-        "currency_max_weight",
-        "turnover_budget",
-        "max_tracking_error",
-        "max_active_share",
-    )
-    @classmethod
-    def validate_optional_ratio(
-        cls,
-        value: Optional[Decimal],
-        info: ValidationInfo,
-    ) -> Optional[Decimal]:
-        if value is None:
-            return value
-        return _bounded_ratio(value, field_name=info.field_name or "ratio")
-
-    @model_validator(mode="after")
-    def validate_cash_band(self) -> "DpmMandateConstraintSet":
-        if self.cash_band_min_weight > self.cash_band_max_weight:
-            raise ValueError("cash_band_min_weight must not exceed cash_band_max_weight")
-        return self
-
-
-class DpmMandatePreferences(BaseModel):
-    sustainability_strategy: Optional[str] = Field(default=None)
-    income_priority: Optional[Literal["LOW", "MEDIUM", "HIGH"]] = Field(default=None)
-    bespoke_notes: list[str] = Field(default_factory=list)
-
-
-class DpmMandateReviewPolicy(BaseModel):
-    review_frequency: str = Field(default="QUARTERLY")
-    last_review_date: Optional[date] = Field(default=None)
-    next_review_due_date: Optional[date] = Field(default=None)
-
-
-class DpmSourceProductLineage(BaseModel):
-    product_name: str
-    product_version: str
-    source_system: str = Field(default="lotus-core")
-    source_record_id: Optional[str] = Field(default=None)
-    data_quality_status: Optional[str] = Field(default=None)
-    latest_evidence_timestamp: Optional[datetime] = Field(default=None)
-    lineage: dict[str, str] = Field(default_factory=dict)
-
-
-class DpmMandateDigitalTwin(BaseModel):
-    mandate_id: str
-    portfolio_id: str
-    mandate_version: str
-    as_of_date: date
-    source_system: str = Field(default="lotus-core")
-    base_currency: str
-    reference_currency: str
-    risk_profile: str
-    investment_objective: str
-    time_horizon: str
-    model_portfolio_id: str
-    model_portfolio_version: Optional[str] = Field(default=None)
-    benchmark_id: Optional[str] = Field(default=None)
-    constraints: DpmMandateConstraintSet
-    preferences: DpmMandatePreferences = Field(default_factory=DpmMandatePreferences)
-    review_policy: DpmMandateReviewPolicy
-    source_lineage: list[DpmSourceProductLineage] = Field(default_factory=list)
-    field_gap_codes: list[str] = Field(default_factory=list)
-
-
-class DpmMandateHealthReason(BaseModel):
-    dimension: MandateHealthDimension
-    reason_code: str
-    severity: MonitoringSeverity
-    message: str
-    recommended_action: MandateRecommendedAction
-
-
-class DpmMandateDimensionScore(BaseModel):
-    dimension: MandateHealthDimension
-    weight: int
-    score: int = Field(ge=0, le=100)
-    state: MandateHealthState
-    reason_code: str
-    measured_value: Optional[Decimal | str | int] = Field(default=None)
-    threshold_value: Optional[Decimal | str | int] = Field(default=None)
-    evidence_refs: list[str] = Field(default_factory=list)
-
-
-class DpmMandateSourceHealthContext(BaseModel):
-    source_system: Literal["lotus-risk", "lotus-performance"]
-    source_product_name: str
-    source_product_version: str = "v1"
-    health_state: Literal["ready", "attention", "unavailable"]
-    threshold_breached: Optional[bool] = None
-    request_fingerprint: str
-    source_metric: dict[str, object] = Field(default_factory=dict)
-    methodology_posture: dict[str, object] = Field(default_factory=dict)
-    benchmark_context: dict[str, object] = Field(default_factory=dict)
-    reason_codes: list[str] = Field(default_factory=list)
-
-    @model_validator(mode="after")
-    def _validate_source_product_identity(self) -> "DpmMandateSourceHealthContext":
-        expected_products = {
-            "lotus-risk": "MandateRiskHealthContext",
-            "lotus-performance": "MandatePerformanceHealthContext",
-        }
-        expected_product = expected_products[self.source_system]
-        if self.source_product_name != expected_product:
-            raise ValueError(f"{self.source_system} context must use {expected_product}")
-        if self.source_product_version != "v1":
-            raise ValueError("source_product_version must be v1")
-        if not self.request_fingerprint.startswith("sha256:"):
-            raise ValueError("request_fingerprint must be a sha256 fingerprint")
-        return self
-
-
-class DpmMandateHealthInput(BaseModel):
-    twin: DpmMandateDigitalTwin
-    current_weights: dict[str, Decimal] = Field(default_factory=dict)
-    target_weights: dict[str, Decimal] = Field(default_factory=dict)
-    cash_weight: Decimal = Field(default=Decimal("0"), ge=0)
-    source_readiness_state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = "READY"
-    missing_source_families: list[str] = Field(default_factory=list)
-    degraded_source_families: list[str] = Field(default_factory=list)
-    stale_source_families: list[str] = Field(default_factory=list)
-    restricted_held_instruments: list[str] = Field(default_factory=list)
-    restricted_target_instruments: list[str] = Field(default_factory=list)
-    sustainability_review_required: bool = False
-    projected_net_cashflow: Optional[Decimal] = Field(default=None)
-    projected_cashflow_currency: Optional[str] = Field(default=None)
-    tax_lot_missing_security_ids: list[str] = Field(default_factory=list)
-    turnover_budget_used: Optional[Decimal] = Field(default=None)
-    tax_budget_used_base: Optional[Decimal] = Field(default=None)
-    tracking_error: Optional[Decimal] = Field(default=None)
-    performance_under_review: bool = False
-    risk_health_context: Optional[DpmMandateSourceHealthContext] = Field(
-        default=None,
-        description=(
-            "Bounded source-owned lotus-risk MandateRiskHealthContext:v1 posture. Manage "
-            "preserves this context and may use its health_state/threshold posture without "
-            "recalculating risk methodology."
-        ),
-    )
-    performance_health_context: Optional[DpmMandateSourceHealthContext] = Field(
-        default=None,
-        description=(
-            "Bounded source-owned lotus-performance MandatePerformanceHealthContext:v1 posture. "
-            "Manage preserves this context and may use its health_state/threshold posture without "
-            "recalculating performance methodology."
-        ),
-    )
-    workflow_blocked: bool = False
-    approval_required: bool = False
-    model_effective_to: Optional[date] = Field(default=None)
-
-    @model_validator(mode="after")
-    def _validate_source_health_context_slots(self) -> "DpmMandateHealthInput":
-        if (
-            self.risk_health_context is not None
-            and self.risk_health_context.source_system != "lotus-risk"
-        ):
-            raise ValueError("risk_health_context must use lotus-risk MandateRiskHealthContext")
-        if (
-            self.performance_health_context is not None
-            and self.performance_health_context.source_system != "lotus-performance"
-        ):
-            raise ValueError(
-                "performance_health_context must use lotus-performance "
-                "MandatePerformanceHealthContext"
-            )
-        return self
-
-
-class DpmMandateHealthSourceProductRequirement(BaseModel):
-    source_system: str
-    source_product_name: str
-    source_product_version: str
-    required_for_ready: bool = False
-
-
-class DpmMandateHealthSourceAnalyticsPosture(BaseModel):
-    product_family: Literal["MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"] = (
-        "MANDATE_HEALTH_RISK_PERFORMANCE_CONTEXT"
-    )
-    risk_tracking_error_supplied: bool
-    performance_attention_signal_supplied: bool
-    risk_health_context_supplied: bool = False
-    performance_health_context_supplied: bool = False
-    risk_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
-    performance_context_preservation: Literal["SUPPORTED_WHEN_SUPPLIED"] = "SUPPORTED_WHEN_SUPPLIED"
-    source_context_preservation: Literal["SOURCE_PRODUCT_CONTEXT_PRESERVED_WHEN_SUPPLIED"] = (
-        "SOURCE_PRODUCT_CONTEXT_PRESERVED_WHEN_SUPPLIED"
-    )
-    required_source_products: list[DpmMandateHealthSourceProductRequirement]
-    source_context_refs: list[str] = Field(default_factory=list)
-    blocked_capabilities: list[str] = Field(
-        default_factory=lambda: [
-            "LOCAL_TRACKING_ERROR_CALCULATION",
-            "LOCAL_VOLATILITY_CALCULATION",
-            "LOCAL_DRAWDOWN_CALCULATION",
-            "LOCAL_PERFORMANCE_ATTRIBUTION_CALCULATION",
-            "LOCAL_BENCHMARK_RELATIVE_PERFORMANCE_CALCULATION",
-        ]
-    )
-    reason_codes: list[str] = Field(
-        default_factory=lambda: [
-            "MANDATE_HEALTH_SOURCE_ANALYTICS_PRESERVED_WHEN_SUPPLIED",
-            "RISK_PERFORMANCE_METHODOLOGY_REMAINS_SOURCE_OWNED",
-        ]
-    )
-
-
-def _default_source_analytics_posture() -> DpmMandateHealthSourceAnalyticsPosture:
-    return DpmMandateHealthSourceAnalyticsPosture(
-        risk_tracking_error_supplied=False,
-        performance_attention_signal_supplied=False,
-        required_source_products=[
-            DpmMandateHealthSourceProductRequirement(
-                source_system="lotus-risk",
-                source_product_name="MandateRiskHealthContext",
-                source_product_version="v1",
-                required_for_ready=False,
-            ),
-            DpmMandateHealthSourceProductRequirement(
-                source_system="lotus-performance",
-                source_product_name="MandatePerformanceHealthContext",
-                source_product_version="v1",
-                required_for_ready=False,
-            ),
-        ],
-    )
-
-
-class DpmMandateHealthSnapshot(BaseModel):
-    health_snapshot_id: str
-    mandate_id: str
-    portfolio_id: str
-    as_of_date: date
-    calculated_at: datetime
-    health_score: int = Field(ge=0, le=100)
-    health_state: MandateHealthState
-    dimension_scores: list[DpmMandateDimensionScore]
-    top_reasons: list[DpmMandateHealthReason]
-    recommended_action: MandateRecommendedAction
-    source_readiness_state: str
-    evidence_refs: list[str] = Field(default_factory=list)
-    source_analytics_posture: DpmMandateHealthSourceAnalyticsPosture = Field(
-        default_factory=_default_source_analytics_posture
-    )
-
-
-class DpmMonitoringException(BaseModel):
-    exception_id: str
-    monitoring_run_id: Optional[str] = Field(
-        default=None,
-        description="Monitoring run that generated the exception, when available.",
-        examples=["dmr_20260503_083000"],
-    )
-    mandate_id: str
-    portfolio_id: str
-    detected_at: datetime
-    as_of_date: date
-    dimension: MandateHealthDimension
-    severity: MonitoringSeverity
-    reason_code: str
-    state: Literal["ACTIVE", "RESOLVED"] = "ACTIVE"
-    recommended_action: MandateRecommendedAction
-    measured_value: Optional[Decimal | str | int] = None
-    threshold_value: Optional[Decimal | str | int] = None
-    source_lineage: list[DpmSourceProductLineage] = Field(default_factory=list)
-    resolved_at: Optional[datetime] = None
-    resolution_reason: Optional[str] = None
-
-
-class DpmMonitoringRun(BaseModel):
-    monitoring_run_id: str = Field(
-        description="Stable monitoring run identifier.",
-        examples=["dmr_20260503_083000"],
-    )
-    as_of_date: date = Field(
-        description="Business date used to evaluate mandate health.",
-        examples=["2026-05-03"],
-    )
-    requested_at: datetime = Field(
-        description="UTC timestamp when monitoring was requested.",
-        examples=["2026-05-03T08:30:00Z"],
-    )
-    completed_at: Optional[datetime] = Field(
-        default=None,
-        description="UTC timestamp when monitoring completed.",
-        examples=["2026-05-03T08:30:02Z"],
-    )
-    status: Literal["SUCCEEDED", "FAILED"] = Field(
-        description="Monitoring run terminal status.",
-        examples=["SUCCEEDED"],
-    )
-    mandate_ids: list[str] = Field(
-        default_factory=list,
-        description="Mandate ids included in the monitoring run.",
-        examples=[["MANDATE_PB_SG_GLOBAL_BAL_001"]],
-    )
-    filters: dict[str, str] = Field(
-        default_factory=dict,
-        description="Caller-supplied monitoring filters used for audit and replay.",
-        examples=[{"tenant_id": "default"}],
-    )
-    total_mandates: int = Field(
-        ge=0,
-        description="Number of mandates evaluated by this monitoring run.",
-        examples=[1],
-    )
-    health_distribution: dict[str, int] = Field(
-        default_factory=dict,
-        description="Count of evaluated mandates by health state.",
-        examples=[{"READY": 0, "PENDING_REVIEW": 1, "BLOCKED": 0}],
-    )
-    exception_count: int = Field(
-        ge=0,
-        description="Number of monitoring exceptions generated or refreshed.",
-        examples=[1],
-    )
-    source_readiness_summary: dict[str, int] = Field(
-        default_factory=dict,
-        description="Count of evaluated mandates by source-readiness state.",
-        examples=[{"READY": 1}],
-    )
-    failure_reason: Optional[str] = Field(
-        default=None,
-        description="Bounded failure reason when the monitoring run failed.",
-        examples=["MANDATE_NOT_FOUND"],
-    )
-
-
-class DpmCommandCenterAttentionBucket(BaseModel):
-    dimension: MandateHealthDimension = Field(
-        description="Mandate health dimension driving the attention bucket.",
-        examples=["SOURCE_READINESS"],
-    )
-    severity: MonitoringSeverity = Field(
-        description="Highest monitoring severity represented by this bucket.",
-        examples=["CRITICAL"],
-    )
-    recommended_action: MandateRecommendedAction = Field(
-        description="Primary action expected from PM, supervision, operations, or data ownership.",
-        examples=["FIX_SOURCE_DATA"],
-    )
-    exception_count: int = Field(
-        ge=0,
-        description="Number of active exceptions in this bucket.",
-        examples=[3],
-    )
-    top_reason_codes: list[str] = Field(
-        default_factory=list,
-        description="Most frequent bounded reason codes represented by this bucket.",
-        examples=[["SOURCE_READINESS_BLOCKED"]],
-    )
-
-
-class DpmCommandCenterRecommendedAction(BaseModel):
-    recommended_action: MandateRecommendedAction = Field(
-        description="Action recommended for the PM book.",
-        examples=["SIMULATE_REBALANCE"],
-    )
-    exception_count: int = Field(
-        ge=0,
-        description="Number of active exceptions supporting this recommended action.",
-        examples=[2],
-    )
-    highest_severity: MonitoringSeverity = Field(
-        description="Highest severity among exceptions supporting this action.",
-        examples=["WARNING"],
-    )
-
-
-class DpmCommandCenterSupportability(BaseModel):
-    state: Literal["READY", "PARTIAL", "EMPTY", "DEGRADED", "BLOCKED"] = Field(
-        description=(
-            "Bounded command-center supportability state derived from command-center "
-            "completeness and source-readiness evidence."
-        ),
-        examples=["READY"],
-    )
-    data_completeness_state: Literal["COMPLETE", "PARTIAL", "EMPTY"] = Field(
-        description="Whether command-center data is complete, partial, or empty for the query.",
-        examples=["PARTIAL"],
-    )
-    reason: str = Field(
-        description="Bounded reason explaining the supportability state.",
-        examples=["COMMAND_CENTER_READY"],
-    )
-    generated_at: datetime = Field(
-        description="UTC timestamp when the command-center response was generated.",
-        examples=["2026-05-03T08:30:00Z"],
-    )
-    source_run_id: Optional[str] = Field(
-        default=None,
-        description="Monitoring run id used as the primary source for book-level aggregation.",
-        examples=["dmr_20260503_083000"],
-    )
-    partial_readiness_reasons: list[str] = Field(
-        default_factory=list,
-        description="Explicit reasons explaining partial or empty command-center readiness.",
-        examples=[["PM_BOOK_DISCOVERY_NOT_YET_SOURCED"]],
-    )
-
-
-class DpmCommandCenterSummary(BaseModel):
-    tenant_id: Optional[str] = Field(
-        default=None,
-        description="Tenant filter used for the command-center summary.",
-        examples=["default"],
-    )
-    portfolio_manager_id: Optional[str] = Field(
-        default=None,
-        description="Portfolio-manager filter used for the command-center summary.",
-        examples=["PM_SG_DPM_001"],
-    )
-    book_id: Optional[str] = Field(
-        default=None,
-        description="PM book filter used for the command-center summary.",
-        examples=["BOOK_SG_BALANCED_DPM"],
-    )
-    as_of_date: Optional[date] = Field(
-        default=None,
-        description="Business date represented by the command-center summary.",
-        examples=["2026-05-03"],
-    )
-    selected_health_state: Optional[MandateHealthState] = Field(
-        default=None,
-        description="Optional health-state filter applied to the displayed distribution.",
-        examples=["PENDING_REVIEW"],
-    )
-    evaluated_mandates: int = Field(
-        ge=0,
-        description="Number of mandates represented by the selected monitoring run.",
-        examples=[42],
-    )
-    monitored_mandate_ids: list[str] = Field(
-        default_factory=list,
-        description="Mandate ids represented by the selected monitoring run.",
-        examples=[["MANDATE_PB_SG_GLOBAL_BAL_001"]],
-    )
-    health_distribution: dict[str, int] = Field(
-        default_factory=dict,
-        description="Mandate count by health state for the selected run.",
-        examples=[{"READY": 25, "PENDING_REVIEW": 14, "BLOCKED": 3}],
-    )
-    source_readiness_summary: dict[str, int] = Field(
-        default_factory=dict,
-        description="Mandate count by source-readiness state for the selected run.",
-        examples=[{"READY": 39, "PARTIAL": 3}],
-    )
-    active_exception_count: int = Field(
-        ge=0,
-        description="Number of active monitoring exceptions represented by the command center.",
-        examples=[5],
-    )
-    attention_buckets: list[DpmCommandCenterAttentionBucket] = Field(
-        default_factory=list,
-        description="Aggregated active exception buckets ordered by severity and exception count.",
-    )
-    recommended_actions: list[DpmCommandCenterRecommendedAction] = Field(
-        default_factory=list,
-        description="Aggregated action queue ordered by severity and exception count.",
-    )
-    latest_monitoring_run: Optional[DpmMonitoringRun] = Field(
-        default=None,
-        description="Latest monitoring run selected for this command-center summary.",
-    )
-    supportability: DpmCommandCenterSupportability = Field(
-        description="Supportability block explaining response completeness and evidence source.",
-    )
+__all__ = [
+    "DIMENSION_WEIGHTS",
+    "DpmCommandCenterAttentionBucket",
+    "DpmCommandCenterRecommendedAction",
+    "DpmCommandCenterSummary",
+    "DpmCommandCenterSupportability",
+    "DpmMandateConstraintSet",
+    "DpmMandateDimensionScore",
+    "DpmMandateDigitalTwin",
+    "DpmMandateHealthInput",
+    "DpmMandateHealthReason",
+    "DpmMandateHealthSnapshot",
+    "DpmMandateHealthSourceAnalyticsPosture",
+    "DpmMandateHealthSourceProductRequirement",
+    "DpmMandatePreferences",
+    "DpmMandateReviewPolicy",
+    "DpmMandateSourceHealthContext",
+    "DpmMonitoringException",
+    "DpmMonitoringRun",
+    "DpmSourceProductLineage",
+    "MandateHealthDimension",
+    "MandateHealthState",
+    "MandateRecommendedAction",
+    "MonitoringSeverity",
+    "_DigitalTwinLineageSourceProduct",
+    "_MandateSourceReadinessProjection",
+    "_SourceReadinessState",
+    "_bounded_ratio",
+    "_default_source_analytics_posture",
+    "build_health_input_from_core_sources",
+    "calculate_mandate_health",
+    "compile_mandate_digital_twin_from_core",
+    "monitoring_exceptions_from_health",
+]
 
 
 def _mandate_twin_field_gap_codes(
@@ -970,89 +461,6 @@ def build_health_input_from_core_sources(
     )
 
 
-def calculate_mandate_health(input_: DpmMandateHealthInput) -> DpmMandateHealthSnapshot:
-    dimension_scores = [
-        _score_source_readiness(input_),
-        _score_allocation_drift(input_),
-        _score_risk_drift(input_),
-        _score_cash_liquidity(input_),
-        _score_tax_turnover(input_),
-        _score_eligibility_restrictions(input_),
-        _score_performance_attention(input_),
-        _score_workflow_readiness(input_),
-        _score_review_cadence(input_),
-        _score_model_freshness(input_),
-    ]
-    weighted = sum(
-        Decimal(score.score) * Decimal(score.weight) for score in dimension_scores
-    ) / Decimal("100")
-    hard_block = any(score.state == MandateHealthState.BLOCKED for score in dimension_scores)
-    pending = any(score.state == MandateHealthState.PENDING_REVIEW for score in dimension_scores)
-    health_state = (
-        MandateHealthState.BLOCKED
-        if hard_block
-        else MandateHealthState.PENDING_REVIEW
-        if pending
-        else MandateHealthState.READY
-    )
-    reasons = [_reason_from_score(score) for score in dimension_scores if score.score < 100]
-    reasons.sort(key=lambda reason: _severity_rank(reason.severity), reverse=True)
-    recommended_action = _overall_recommended_action(health_state, reasons)
-    return DpmMandateHealthSnapshot(
-        health_snapshot_id=(
-            f"mh_{input_.twin.as_of_date.strftime('%Y%m%d')}_{input_.twin.portfolio_id.lower()}"
-        ),
-        mandate_id=input_.twin.mandate_id,
-        portfolio_id=input_.twin.portfolio_id,
-        as_of_date=input_.twin.as_of_date,
-        calculated_at=datetime.now(timezone.utc),
-        health_score=int(weighted.quantize(Decimal("1"), ROUND_HALF_UP)),
-        health_state=health_state,
-        dimension_scores=dimension_scores,
-        top_reasons=reasons[:5],
-        recommended_action=recommended_action,
-        source_readiness_state=input_.source_readiness_state,
-        evidence_refs=[
-            lineage.source_record_id
-            for lineage in input_.twin.source_lineage
-            if lineage.source_record_id
-        ],
-        source_analytics_posture=_source_analytics_posture(input_),
-    )
-
-
-def _source_analytics_posture(
-    input_: DpmMandateHealthInput,
-) -> DpmMandateHealthSourceAnalyticsPosture:
-    source_context_refs = []
-    reason_codes = list(_default_source_analytics_posture().reason_codes)
-    if input_.risk_health_context is not None:
-        source_context_refs.append(_source_health_context_ref(input_.risk_health_context))
-        reason_codes.append("MANDATE_RISK_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
-    if input_.performance_health_context is not None:
-        source_context_refs.append(_source_health_context_ref(input_.performance_health_context))
-        reason_codes.append("MANDATE_PERFORMANCE_HEALTH_CONTEXT_SOURCE_PRODUCT_PRESERVED")
-    return _default_source_analytics_posture().model_copy(
-        update={
-            "risk_tracking_error_supplied": input_.tracking_error is not None
-            or input_.risk_health_context is not None,
-            "performance_attention_signal_supplied": input_.performance_under_review
-            or input_.performance_health_context is not None,
-            "risk_health_context_supplied": input_.risk_health_context is not None,
-            "performance_health_context_supplied": input_.performance_health_context is not None,
-            "source_context_refs": source_context_refs,
-            "reason_codes": reason_codes,
-        }
-    )
-
-
-def _source_health_context_ref(context: DpmMandateSourceHealthContext) -> str:
-    return (
-        f"{context.source_system}:{context.source_product_name}:"
-        f"{context.source_product_version}:{context.request_fingerprint}"
-    )
-
-
 def monitoring_exceptions_from_health(
     snapshot: DpmMandateHealthSnapshot,
     *,
@@ -1121,18 +529,34 @@ def _restricted_model_targets(
 ) -> list[str]:
     if client_restriction_profile is None:
         return []
-    restricted_instruments = {
+    restricted_instruments = _restricted_buy_instrument_ids(client_restriction_profile)
+    active_targets = _active_model_target_instrument_ids(model_targets)
+    return sorted(active_targets.intersection(restricted_instruments))
+
+
+def _restricted_buy_instrument_ids(
+    client_restriction_profile: DpmCoreClientRestrictionProfileResponse,
+) -> set[str]:
+    return {
         instrument_id
         for restriction in client_restriction_profile.restrictions
-        if restriction.restriction_status.upper() == "ACTIVE" and restriction.applies_to_buy
+        if _active_buy_restriction_applies(restriction)
         for instrument_id in restriction.instrument_ids
     }
-    return sorted(
+
+
+def _active_buy_restriction_applies(restriction: DpmCoreClientRestrictionEntry) -> bool:
+    return restriction.restriction_status.upper() == "ACTIVE" and restriction.applies_to_buy
+
+
+def _active_model_target_instrument_ids(
+    model_targets: DpmCoreModelPortfolioTargetResponse,
+) -> set[str]:
+    return {
         target.instrument_id
         for target in model_targets.targets
         if target.target_status.lower() == "active"
-        and target.instrument_id in restricted_instruments
-    )
+    }
 
 
 def _requires_sustainability_review(
@@ -1141,360 +565,31 @@ def _requires_sustainability_review(
     if profile is None:
         return False
     return any(
-        preference.preference_status.upper() == "ACTIVE"
-        and (
-            preference.minimum_allocation is not None
-            or preference.maximum_allocation is not None
-            or bool(preference.exclusion_codes)
-            or bool(preference.positive_tilt_codes)
-        )
+        _active_sustainability_preference_requires_review(preference)
         for preference in profile.preferences
     )
 
 
-def _ready_score(dimension: MandateHealthDimension) -> DpmMandateDimensionScore:
-    return DpmMandateDimensionScore(
-        dimension=dimension,
-        weight=DIMENSION_WEIGHTS[dimension],
-        score=100,
-        state=MandateHealthState.READY,
-        reason_code=f"{dimension.value}_READY",
+def _active_sustainability_preference_requires_review(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return _sustainability_preference_is_active(
+        preference
+    ) and _sustainability_preference_has_review_controls(preference)
+
+
+def _sustainability_preference_is_active(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return preference.preference_status.upper() == "ACTIVE"
+
+
+def _sustainability_preference_has_review_controls(
+    preference: DpmCoreSustainabilityPreferenceEntry,
+) -> bool:
+    return (
+        preference.minimum_allocation is not None
+        or preference.maximum_allocation is not None
+        or bool(preference.exclusion_codes)
+        or bool(preference.positive_tilt_codes)
     )
-
-
-def _attention_score(
-    *,
-    dimension: MandateHealthDimension,
-    score: int,
-    state: MandateHealthState,
-    reason_code: str,
-    measured_value: Optional[Decimal | str | int] = None,
-    threshold_value: Optional[Decimal | str | int] = None,
-    evidence_refs: Optional[list[str]] = None,
-) -> DpmMandateDimensionScore:
-    return DpmMandateDimensionScore(
-        dimension=dimension,
-        weight=DIMENSION_WEIGHTS[dimension],
-        score=max(0, min(score, 100)),
-        state=state,
-        reason_code=reason_code,
-        measured_value=measured_value,
-        threshold_value=threshold_value,
-        evidence_refs=evidence_refs or [],
-    )
-
-
-def _score_source_readiness(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    if (
-        input_.source_readiness_state in {"INCOMPLETE", "UNAVAILABLE"}
-        or input_.missing_source_families
-    ):
-        return _attention_score(
-            dimension=MandateHealthDimension.SOURCE_READINESS,
-            score=0,
-            state=MandateHealthState.BLOCKED,
-            reason_code="DPM_SOURCE_INCOMPLETE",
-            measured_value=input_.source_readiness_state,
-            threshold_value="READY",
-        )
-    if input_.source_readiness_state == "DEGRADED" or input_.stale_source_families:
-        return _attention_score(
-            dimension=MandateHealthDimension.SOURCE_READINESS,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="DPM_SOURCE_STALE",
-            measured_value=input_.source_readiness_state,
-            threshold_value="READY",
-        )
-    return _ready_score(MandateHealthDimension.SOURCE_READINESS)
-
-
-def _score_allocation_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    if not input_.current_weights or not input_.target_weights:
-        return _attention_score(
-            dimension=MandateHealthDimension.ALLOCATION_DRIFT,
-            score=85,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="ALLOCATION_DRIFT_NOT_ASSESSED",
-        )
-    default_band = Decimal("0.025")
-    max_drift = max(
-        (
-            abs(input_.current_weights.get(instrument_id, Decimal("0")) - target_weight)
-            for instrument_id, target_weight in input_.target_weights.items()
-        ),
-        default=Decimal("0"),
-    )
-    if max_drift <= default_band:
-        return _ready_score(MandateHealthDimension.ALLOCATION_DRIFT)
-    score = _score_from_penalty((max_drift - default_band) * Decimal("1000"))
-    return _attention_score(
-        dimension=MandateHealthDimension.ALLOCATION_DRIFT,
-        score=score,
-        state=MandateHealthState.PENDING_REVIEW,
-        reason_code="ALLOCATION_DRIFT",
-        measured_value=max_drift,
-        threshold_value=default_band,
-    )
-
-
-def _score_risk_drift(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    source_score = _score_source_health_context(
-        context=input_.risk_health_context,
-        dimension=MandateHealthDimension.RISK_DRIFT,
-        attention_reason_code="SOURCE_RISK_HEALTH_ATTENTION",
-        unavailable_reason_code="SOURCE_RISK_HEALTH_UNAVAILABLE",
-    )
-    if source_score is not None:
-        return source_score
-    if input_.tracking_error is None or input_.twin.constraints.max_tracking_error is None:
-        return _ready_score(MandateHealthDimension.RISK_DRIFT)
-    if input_.tracking_error <= input_.twin.constraints.max_tracking_error:
-        return _ready_score(MandateHealthDimension.RISK_DRIFT)
-    return _attention_score(
-        dimension=MandateHealthDimension.RISK_DRIFT,
-        score=65,
-        state=MandateHealthState.PENDING_REVIEW,
-        reason_code="TRACKING_ERROR_ABOVE_LIMIT",
-        measured_value=input_.tracking_error,
-        threshold_value=input_.twin.constraints.max_tracking_error,
-    )
-
-
-def _score_cash_liquidity(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    constraints = input_.twin.constraints
-    if input_.cash_weight < constraints.cash_band_min_weight:
-        return _attention_score(
-            dimension=MandateHealthDimension.CASH_LIQUIDITY,
-            score=60,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="CASH_BELOW_BAND",
-            measured_value=input_.cash_weight,
-            threshold_value=constraints.cash_band_min_weight,
-        )
-    if input_.cash_weight > constraints.cash_band_max_weight:
-        return _attention_score(
-            dimension=MandateHealthDimension.CASH_LIQUIDITY,
-            score=75,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="CASH_ABOVE_BAND",
-            measured_value=input_.cash_weight,
-            threshold_value=constraints.cash_band_max_weight,
-        )
-    if input_.projected_net_cashflow is not None and input_.projected_net_cashflow < Decimal("0"):
-        return _attention_score(
-            dimension=MandateHealthDimension.CASH_LIQUIDITY,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="PROJECTED_CASHFLOW_PRESSURE",
-            measured_value=input_.projected_net_cashflow,
-            threshold_value=0,
-        )
-    return _ready_score(MandateHealthDimension.CASH_LIQUIDITY)
-
-
-def _score_tax_turnover(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    if input_.tax_lot_missing_security_ids:
-        return _attention_score(
-            dimension=MandateHealthDimension.TAX_TURNOVER,
-            score=40,
-            state=MandateHealthState.BLOCKED,
-            reason_code="TAX_LOTS_INCOMPLETE",
-            measured_value=len(input_.tax_lot_missing_security_ids),
-            threshold_value=0,
-        )
-    if (
-        input_.turnover_budget_used is not None
-        and input_.twin.constraints.turnover_budget is not None
-        and input_.turnover_budget_used >= input_.twin.constraints.turnover_budget * Decimal("0.8")
-    ):
-        return _attention_score(
-            dimension=MandateHealthDimension.TAX_TURNOVER,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="TURNOVER_BUDGET_NEAR_LIMIT",
-            measured_value=input_.turnover_budget_used,
-            threshold_value=input_.twin.constraints.turnover_budget,
-        )
-    return _ready_score(MandateHealthDimension.TAX_TURNOVER)
-
-
-def _score_eligibility_restrictions(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    restricted = set(input_.restricted_held_instruments)
-    restricted.update(input_.restricted_target_instruments)
-    restricted.update(
-        instrument_id
-        for instrument_id in input_.current_weights
-        if instrument_id in set(input_.twin.constraints.restricted_instruments)
-    )
-    if restricted:
-        return _attention_score(
-            dimension=MandateHealthDimension.ELIGIBILITY_RESTRICTIONS,
-            score=0,
-            state=MandateHealthState.BLOCKED,
-            reason_code="RESTRICTED_INSTRUMENT_HELD",
-            measured_value=len(restricted),
-            threshold_value=0,
-        )
-    return _ready_score(MandateHealthDimension.ELIGIBILITY_RESTRICTIONS)
-
-
-def _score_performance_attention(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    source_score = _score_source_health_context(
-        context=input_.performance_health_context,
-        dimension=MandateHealthDimension.PERFORMANCE_ATTENTION,
-        attention_reason_code="SOURCE_PERFORMANCE_HEALTH_ATTENTION",
-        unavailable_reason_code="SOURCE_PERFORMANCE_HEALTH_UNAVAILABLE",
-    )
-    if source_score is not None:
-        return source_score
-    if input_.performance_under_review:
-        return _attention_score(
-            dimension=MandateHealthDimension.PERFORMANCE_ATTENTION,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="PERFORMANCE_UNDER_REVIEW",
-        )
-    return _ready_score(MandateHealthDimension.PERFORMANCE_ATTENTION)
-
-
-def _score_source_health_context(
-    *,
-    context: Optional[DpmMandateSourceHealthContext],
-    dimension: MandateHealthDimension,
-    attention_reason_code: str,
-    unavailable_reason_code: str,
-) -> Optional[DpmMandateDimensionScore]:
-    if context is None:
-        return None
-    context_ref = _source_health_context_ref(context)
-    if context.health_state == "ready" and context.threshold_breached is not True:
-        return _ready_score(dimension)
-    if context.health_state == "unavailable":
-        return _attention_score(
-            dimension=dimension,
-            score=60,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code=unavailable_reason_code,
-            measured_value=f"{context.source_product_name}:unavailable",
-            threshold_value="ready",
-            evidence_refs=[context_ref],
-        )
-    return _attention_score(
-        dimension=dimension,
-        score=65,
-        state=MandateHealthState.PENDING_REVIEW,
-        reason_code=attention_reason_code,
-        measured_value=f"{context.source_product_name}:{context.health_state}",
-        threshold_value="ready",
-        evidence_refs=[context_ref],
-    )
-
-
-def _score_workflow_readiness(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    if input_.workflow_blocked:
-        return _attention_score(
-            dimension=MandateHealthDimension.WORKFLOW_READINESS,
-            score=0,
-            state=MandateHealthState.BLOCKED,
-            reason_code="REBALANCE_RUN_BLOCKED",
-        )
-    if input_.sustainability_review_required:
-        return _attention_score(
-            dimension=MandateHealthDimension.WORKFLOW_READINESS,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="SUSTAINABILITY_REVIEW_REQUIRED",
-        )
-    if input_.approval_required:
-        return _attention_score(
-            dimension=MandateHealthDimension.WORKFLOW_READINESS,
-            score=70,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="APPROVAL_REQUIRED",
-        )
-    return _ready_score(MandateHealthDimension.WORKFLOW_READINESS)
-
-
-def _score_review_cadence(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    due_date = input_.twin.review_policy.next_review_due_date
-    if due_date is not None and due_date < input_.twin.as_of_date:
-        days_overdue = (input_.twin.as_of_date - due_date).days
-        return _attention_score(
-            dimension=MandateHealthDimension.REVIEW_CADENCE,
-            score=65,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="MANDATE_REVIEW_OVERDUE",
-            measured_value=days_overdue,
-            threshold_value=0,
-        )
-    return _ready_score(MandateHealthDimension.REVIEW_CADENCE)
-
-
-def _score_model_freshness(input_: DpmMandateHealthInput) -> DpmMandateDimensionScore:
-    if input_.model_effective_to is not None and input_.model_effective_to < input_.twin.as_of_date:
-        return _attention_score(
-            dimension=MandateHealthDimension.MODEL_FRESHNESS,
-            score=55,
-            state=MandateHealthState.PENDING_REVIEW,
-            reason_code="MODEL_VERSION_STALE",
-            measured_value=input_.model_effective_to.isoformat(),
-            threshold_value=input_.twin.as_of_date.isoformat(),
-        )
-    return _ready_score(MandateHealthDimension.MODEL_FRESHNESS)
-
-
-def _reason_from_score(score: DpmMandateDimensionScore) -> DpmMandateHealthReason:
-    severity = (
-        MonitoringSeverity.CRITICAL
-        if score.state == MandateHealthState.BLOCKED
-        else MonitoringSeverity.WARNING
-    )
-    return DpmMandateHealthReason(
-        dimension=score.dimension,
-        reason_code=score.reason_code,
-        severity=severity,
-        message=f"{score.dimension.value} requires attention: {score.reason_code}",
-        recommended_action=_recommended_action_for_dimension(score.dimension, score.state),
-    )
-
-
-def _recommended_action_for_dimension(
-    dimension: MandateHealthDimension,
-    state: MandateHealthState,
-) -> MandateRecommendedAction:
-    if dimension == MandateHealthDimension.SOURCE_READINESS:
-        return MandateRecommendedAction.FIX_SOURCE_DATA
-    if dimension == MandateHealthDimension.ELIGIBILITY_RESTRICTIONS:
-        return MandateRecommendedAction.REVIEW_RESTRICTION
-    if dimension in {
-        MandateHealthDimension.WORKFLOW_READINESS,
-        MandateHealthDimension.REVIEW_CADENCE,
-    }:
-        return MandateRecommendedAction.REVIEW_WORKFLOW
-    if state == MandateHealthState.PENDING_REVIEW:
-        return MandateRecommendedAction.SIMULATE_REBALANCE
-    return MandateRecommendedAction.REVIEW_MANDATE
-
-
-def _overall_recommended_action(
-    health_state: MandateHealthState,
-    reasons: list[DpmMandateHealthReason],
-) -> MandateRecommendedAction:
-    if health_state == MandateHealthState.READY:
-        return MandateRecommendedAction.NONE
-    if reasons:
-        return reasons[0].recommended_action
-    return MandateRecommendedAction.REVIEW_MANDATE
-
-
-def _severity_rank(severity: MonitoringSeverity) -> int:
-    return {
-        MonitoringSeverity.INFO: 0,
-        MonitoringSeverity.WARNING: 1,
-        MonitoringSeverity.CRITICAL: 2,
-    }[severity]
-
-
-if sum(DIMENSION_WEIGHTS.values()) != 100:
-    raise RuntimeError("Mandate health dimension weights must total 100")

@@ -41,9 +41,11 @@ from src.core.proof_packs import (
     ProofPackSourceValidationError,
     build_proof_pack_from_run,
     build_proof_pack_from_selected_alternative,
+    proof_pack_id_for_rebalance_run,
+    proof_pack_id_for_selected_alternative,
 )
 from src.core.proof_packs import builder as builder_module
-from src.core.proof_packs.models import DpmProofPackSourceRef
+from src.core.proof_packs.models import DpmProofPackSourceRef, DpmProofPackSupportability
 from src.core.proof_packs.source_analytics import (
     ProofPackAnalyticsFamily,
     ProofPackSourceAnalytics,
@@ -343,6 +345,35 @@ def test_pre_run_section_payload_returns_decision_summary_missing_reason() -> No
     }
     assert metrics == {}
     assert reason_codes == ["DPM_PROOF_PACK_REASON_MISSING"]
+
+
+def test_decision_summary_defaults_direct_source_run_posture() -> None:
+    supportability = DpmProofPackSupportability(
+        status="DEGRADED",
+        section_state_counts={"DEGRADED": 1},
+        ready_section_count=0,
+        degraded_section_count=1,
+        blocked_section_count=0,
+        pending_review_section_count=0,
+        reason_codes=["DPM_PROOF_PACK_REASON_MISSING"],
+        section_hashes={},
+    )
+
+    summary = builder_module._decision_summary(
+        source_type="REBALANCE_RUN",
+        result=None,
+        selected_alternative=None,
+        reason=None,
+        supportability=supportability,
+    )
+
+    assert summary.recommended_action == "REVIEW_REBALANCE"
+    assert summary.selected_alternative_type is None
+    assert summary.business_rationale == "No actor rationale supplied."
+    assert summary.expected_benefit == "Direct source run proof pack."
+    assert summary.main_tradeoffs == ["No construction alternative comparison was selected."]
+    assert summary.approval_state == "BLOCKED"
+    assert summary.operations_state == "DEGRADED"
 
 
 def test_pre_run_section_payload_ignores_run_required_sections() -> None:
@@ -893,6 +924,21 @@ def test_proof_pack_governance_section_payload_tracks_lineage_refs() -> None:
     assert reason_codes == []
 
 
+def test_proof_pack_governance_section_payload_ignores_non_governance_section() -> None:
+    result = _ready_rebalance_result()
+
+    payload = builder_module._proof_pack_governance_section_payload(
+        section_type="selected_alternative",
+        result=result,
+        run=_run_record(result=result),
+        selection=None,
+        source_ref_count=3,
+        workflow_decisions=[],
+    )
+
+    assert payload is None
+
+
 def test_operations_handoff_section_payload_marks_non_ready_for_review() -> None:
     result = _ready_rebalance_result().model_copy(update={"status": "PENDING_REVIEW"})
 
@@ -1170,6 +1216,50 @@ def test_source_readiness_section_payload_degrades_on_lineage_state() -> None:
     }
     assert metrics == {}
     assert reason_codes == ["DPM_SOURCE_READINESS_DEGRADED"]
+
+
+def test_source_supportability_projects_run_lineage_and_alternative_status() -> None:
+    result = _ready_rebalance_result()
+    result = result.model_copy(
+        update={
+            "lineage": result.lineage.model_copy(
+                update={
+                    "input_mode": "stateful",
+                    "source_system": "lotus-core",
+                    "source_supportability_state": "DEGRADED",
+                }
+            )
+        }
+    )
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_supportability",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[build_rebalance_result_alternative(result=result)],
+    )
+
+    supportability = builder_module._source_supportability(
+        result=result,
+        alternative_set=alternative_set,
+    )
+
+    assert supportability == {
+        "run_status": result.status,
+        "input_mode": "stateful",
+        "source_system": "lotus-core",
+        "source_supportability_state": "DEGRADED",
+        "alternative_set_status": str(alternative_set.status),
+    }
+
+
+def test_source_supportability_preserves_nulls_without_run_or_alternative_set() -> None:
+    assert builder_module._source_supportability(result=None, alternative_set=None) == {
+        "run_status": None,
+        "input_mode": None,
+        "source_system": None,
+        "source_supportability_state": None,
+        "alternative_set_status": None,
+    }
 
 
 def test_turnover_and_cost_section_payload_degrades_without_selected_metrics() -> None:
@@ -1921,6 +2011,42 @@ def test_proof_pack_source_context_merges_analytics_hashes_and_refs() -> None:
     )
 
 
+def test_source_hash_helpers_preserve_present_artifact_order() -> None:
+    result = _ready_rebalance_result()
+    run = _run_record(result=result)
+    alternative = build_rebalance_result_alternative(result=result)
+    alternative_set = build_alternative_set(
+        alternative_set_id="cas_source_hashes",
+        portfolio_id="pf_proof_pack_1",
+        as_of="2026-05-03",
+        alternatives=[alternative],
+    )
+
+    candidates = builder_module._source_hash_candidates(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=None,
+        mandate_twin=None,
+        mandate_health=None,
+    )
+    source_hashes = builder_module._source_hashes(
+        run=run,
+        alternative_set=alternative_set,
+        selected_alternative=None,
+        mandate_twin=None,
+        mandate_health=None,
+    )
+
+    assert [candidate.key for candidate in candidates] == [
+        "rebalance_run",
+        "alternative_set",
+    ]
+    assert list(source_hashes) == ["rebalance_run", "alternative_set"]
+    assert source_hashes["rebalance_run"].startswith("sha256:")
+    assert source_hashes["alternative_set"].startswith("sha256:")
+    assert builder_module._optional_source_hash("mandate_twin", None) is None
+
+
 def test_run_artifact_hash_and_result_helpers_hydrate_run_evidence() -> None:
     result = _ready_rebalance_result()
     run = _run_record(result=result)
@@ -1980,6 +2106,23 @@ def test_source_refs_preserve_manage_artifact_and_mandate_supportability() -> No
     assert refs_by_type["DPM_MANDATE_HEALTH_SNAPSHOT"].content_hash == "sha256:health"
 
 
+def test_source_refs_omit_absent_optional_sources() -> None:
+    source_ref = _source_ref()
+
+    assert (
+        builder_module._source_refs(
+            run=None,
+            alternative_set=None,
+            selected_alternative=None,
+            source_hashes={},
+            mandate_twin=None,
+            mandate_health=None,
+        )
+        == []
+    )
+    assert builder_module._present_source_refs([None, source_ref, None]) == [source_ref]
+
+
 def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
     mandate_twin = _mandate_twin()
     kwargs = {
@@ -1997,6 +2140,22 @@ def test_proof_pack_hash_is_deterministic_for_equivalent_inputs() -> None:
 
     assert first.content_hash == second.content_hash
     assert first.supportability.section_hashes == second.supportability.section_hashes
+
+
+def test_rebalance_run_proof_pack_id_uses_stable_run_identity() -> None:
+    run = _run_record()
+
+    pack = build_proof_pack_from_run(
+        run=run,
+        created_by="pm_001",
+        reason="Rebalance back to model after drift review.",
+        created_at=CREATED_AT,
+        mandate_id="mandate_001",
+    )
+
+    assert pack.proof_pack_id == proof_pack_id_for_rebalance_run(
+        rebalance_run_id=run.rebalance_run_id
+    )
 
 
 def test_selected_alternative_proof_pack_captures_method_trace_and_selection_event() -> None:
@@ -2032,6 +2191,10 @@ def test_selected_alternative_proof_pack_captures_method_trace_and_selection_eve
 
     selected = _section(pack, "selected_alternative")
     assert pack.source_type == "SELECTED_ALTERNATIVE"
+    assert pack.proof_pack_id == proof_pack_id_for_selected_alternative(
+        alternative_set_id=alternative_set.alternative_set_id,
+        selected_alternative_id=alternative.alternative_id,
+    )
     assert pack.alternative_set_id == "cas_proof_pack_1"
     assert pack.selected_alternative_id == alternative.alternative_id
     assert pack.correlation_id == "corr-selection-proof-pack"

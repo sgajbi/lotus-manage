@@ -67,8 +67,11 @@ from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionCo
 from src.infrastructure.waves.campaign_definitions import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
     PostgresDpmBulkReviewCampaignDefinitionRepository,
+    _definition_matches_filters,
+    _definition_sort_key,
     _import_psycopg,
     _load_campaign_definition_payload,
+    _paged_definitions,
     _payload,
 )
 import src.infrastructure.waves.campaign_definitions as campaign_definition_infra
@@ -222,6 +225,37 @@ def test_campaign_definition_hash_preserves_pre_approval_decision_payloads() -> 
     assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
 
 
+def test_campaign_definition_hash_ignores_generated_creation_timestamp() -> None:
+    definition = _definition()
+    later_definition = definition.model_copy(
+        update={"created_at": datetime(2026, 5, 11, 9, 30, tzinfo=timezone.utc)}
+    )
+
+    assert bulk_review_campaign_definition_hash(later_definition) == definition.content_hash
+
+
+@pytest.mark.parametrize(
+    "collection_field",
+    [
+        "approval_decisions",
+        "assignment_actions",
+        "assignment_tasks",
+        "maker_checker_controls",
+    ],
+)
+def test_campaign_definition_hash_preserves_legacy_empty_evidence_collections(
+    collection_field: str,
+) -> None:
+    definition = _definition()
+    persisted_payload = definition.model_dump(mode="json")
+    persisted_payload.pop(collection_field, None)
+
+    reloaded = DpmBulkReviewCampaignDefinition.model_validate(persisted_payload)
+
+    assert getattr(reloaded, collection_field) == []
+    assert bulk_review_campaign_definition_hash(reloaded) == definition.content_hash
+
+
 def test_campaign_definition_retired_and_superseded_validation_edges() -> None:
     definition = _definition()
     retired_base = {
@@ -366,6 +400,38 @@ def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> Non
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT",
     ):
         repository.save_definition(definition=_definition(display_name="Changed name"))
+
+
+def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> None:
+    older = _definition(campaign_id="campaign-alpha").model_copy(
+        update={"as_of_date": "2026-05-09"}
+    )
+    newer = _definition(campaign_id="campaign-zulu").model_copy(update={"as_of_date": "2026-05-11"})
+    retired = _definition(campaign_id="campaign-retired").model_copy(
+        update={"status": "RETIRED", "as_of_date": "2026-05-12"}
+    )
+
+    assert _definition_matches_filters(
+        newer,
+        campaign_id="campaign-zulu",
+        status="ACTIVE",
+        as_of_date="2026-05-11",
+    )
+    assert not _definition_matches_filters(
+        retired,
+        campaign_id=None,
+        status="ACTIVE",
+        as_of_date=None,
+    )
+    assert _definition_sort_key(newer) > _definition_sort_key(older)
+    assert _paged_definitions(
+        definitions=[older, newer, retired],
+        campaign_id=None,
+        status="ACTIVE",
+        as_of_date=None,
+        limit=1,
+        offset=0,
+    ) == [newer]
 
 
 def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> None:

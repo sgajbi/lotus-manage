@@ -3,10 +3,16 @@ import hashlib
 import json
 import uuid
 from datetime import datetime, timezone
+from functools import partial
 from pathlib import Path
 from typing import Any, cast
 
 import httpx
+
+try:
+    from scripts.rfc_evidence_http import request_expected_status
+except ModuleNotFoundError:  # pragma: no cover - direct script execution path
+    from rfc_evidence_http import request_expected_status
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +21,9 @@ DEFAULT_OUTPUT_ROOT = ROOT / "output" / "rfc0041-wave-proof"
 
 class EvidenceError(RuntimeError):
     pass
+
+
+_request = partial(request_expected_status, failure_type=EvidenceError)
 
 
 def _stable_json(data: Any) -> str:
@@ -41,24 +50,6 @@ def _write_text(output_dir: Path, name: str, content: str) -> dict[str, str]:
 def _assert(condition: bool, message: str) -> None:
     if not condition:
         raise EvidenceError(message)
-
-
-def _request(
-    client: httpx.Client,
-    method: str,
-    path: str,
-    *,
-    expected_status: int,
-    json_body: dict[str, Any] | None = None,
-    headers: dict[str, str] | None = None,
-    params: dict[str, Any] | None = None,
-) -> httpx.Response:
-    response = client.request(method, path, json=json_body, headers=headers, params=params)
-    _assert(
-        response.status_code == expected_status,
-        f"{method} {path}: expected {expected_status}, got {response.status_code}: {response.text}",
-    )
-    return response
 
 
 def _json(response: httpx.Response) -> dict[str, Any]:

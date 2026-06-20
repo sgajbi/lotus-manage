@@ -3,8 +3,13 @@ from decimal import Decimal
 from src.api.services.construction_sustainability_supportability import (
     _maximum_allocation_breached,
     _minimum_allocation_breached,
+    _missing_sustainability_family_reason_codes,
     _preference_allocation_breached,
     _preference_allocation_weight,
+    _sustainability_allocation_review_reason_codes,
+    _sustainability_applied_reason_codes,
+    _sustainability_classification_reason_codes,
+    _sustainability_supportability_reason_codes,
     active_sustainability_preferences,
     allocation_weight_by_asset_class,
     sustainability_preference_reason_codes,
@@ -203,6 +208,46 @@ def test_sustainability_preference_allocation_breach_detects_minimum_and_maximum
     assert _preference_allocation_breached(
         preference=maximum,
         weight_by_asset_class={"equity": Decimal("0.60")},
+    )
+
+
+def test_sustainability_reason_code_helpers_project_review_families() -> None:
+    preference = AuthoritativeSustainabilityPreference(
+        preference_framework="BANK_SUSTAINABILITY",
+        preference_code="MAX_EQUITY",
+        preference_status="ACTIVE",
+        preference_source="CLIENT_PROFILE",
+        applies_to_asset_classes=["EQUITY"],
+        maximum_allocation=Decimal("0.50"),
+        effective_from="2026-01-01",
+        preference_version=1,
+    )
+
+    assert _sustainability_supportability_reason_codes(ConstructionMethodStatus.READY) == []
+    assert _sustainability_supportability_reason_codes(ConstructionMethodStatus.DEGRADED) == [
+        "SUSTAINABILITY_PREFERENCE_PROFILE_DEGRADED"
+    ]
+    assert _missing_sustainability_family_reason_codes(["classification", "scores"]) == [
+        "MISSING_CLASSIFICATION",
+        "MISSING_SCORES",
+    ]
+    assert _sustainability_allocation_review_reason_codes([preference]) == [
+        "SUSTAINABILITY_ALLOCATION_REVIEW_MAX_EQUITY"
+    ]
+    assert _sustainability_classification_reason_codes(True) == [
+        "SUSTAINABILITY_CLASSIFICATION_EVIDENCE_REQUIRED"
+    ]
+    assert _sustainability_classification_reason_codes(False) == []
+    assert _sustainability_applied_reason_codes(
+        breaches=[],
+        classification_review_required=False,
+    ) == ["SUSTAINABILITY_PREFERENCE_PROFILE_APPLIED"]
+    assert (
+        _sustainability_applied_reason_codes(
+            breaches=[preference],
+            classification_review_required=False,
+        )
+        == []
     )
 
 

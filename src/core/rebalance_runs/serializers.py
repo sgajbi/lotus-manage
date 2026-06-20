@@ -9,6 +9,10 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryItem,
     DpmRunIdempotencyHistoryRecord,
     DpmRunIdempotencyHistoryResponse,
+    DpmRunIdempotencyLookupResponse,
+    DpmRunIdempotencyRecord,
+    DpmRunListItemResponse,
+    DpmRunListResponse,
     DpmRunLookupResponse,
     DpmRunRecord,
     DpmRunWorkflowDecisionRecord,
@@ -26,6 +30,29 @@ def to_lookup_response(run: DpmRunRecord) -> DpmRunLookupResponse:
         portfolio_id=run.portfolio_id,
         created_at=run.created_at.isoformat(),
         result=RebalanceResult.model_validate(run.result_json),
+    )
+
+
+def to_run_list_item_response(run: DpmRunRecord) -> DpmRunListItemResponse:
+    return DpmRunListItemResponse(
+        rebalance_run_id=run.rebalance_run_id,
+        correlation_id=run.correlation_id,
+        request_hash=run.request_hash,
+        idempotency_key=run.idempotency_key,
+        portfolio_id=run.portfolio_id,
+        status=str(run.result_json.get("status", "")),
+        created_at=run.created_at.isoformat(),
+    )
+
+
+def to_run_list_response(
+    *,
+    runs: list[DpmRunRecord],
+    next_cursor: str | None,
+) -> DpmRunListResponse:
+    return DpmRunListResponse(
+        items=[to_run_list_item_response(run) for run in runs],
+        next_cursor=next_cursor,
     )
 
 
@@ -129,4 +156,15 @@ def to_idempotency_history_response(
             )
             for item in ordered_history
         ],
+    )
+
+
+def to_idempotency_lookup_response(
+    record: DpmRunIdempotencyRecord,
+) -> DpmRunIdempotencyLookupResponse:
+    return DpmRunIdempotencyLookupResponse(
+        idempotency_key=record.idempotency_key,
+        request_hash=record.request_hash,
+        rebalance_run_id=record.rebalance_run_id,
+        created_at=record.created_at.isoformat(),
     )

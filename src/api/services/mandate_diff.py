@@ -1,10 +1,12 @@
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 
 from pydantic import BaseModel, Field
 
 from src.api.services.mandate_errors import DpmMandateDiffUnavailableError
 from src.core.mandates import DpmMandateDigitalTwin
+
+_IGNORED_DIFF_FIELDS = frozenset({"source_lineage"})
 
 
 class DpmMandateFieldChange(BaseModel):
@@ -152,19 +154,35 @@ def iter_changed_fields(
     *,
     prefix: str = "",
 ) -> list[tuple[str, Any, Any]]:
-    ignored = {"source_lineage"}
     changes: list[tuple[str, Any, Any]] = []
-    keys = sorted((set(previous) | set(current)) - ignored)
-    for key in keys:
-        field_path = f"{prefix}.{key}" if prefix else key
+    for key in _diff_candidate_keys(previous=previous, current=current):
+        field_path = _diff_field_path(prefix=prefix, key=key)
         previous_value = previous.get(key)
         current_value = current.get(key)
-        if isinstance(previous_value, dict) and isinstance(current_value, dict):
-            changes.extend(iter_changed_fields(previous_value, current_value, prefix=field_path))
+        if _nested_diff_values(previous_value=previous_value, current_value=current_value):
+            changes.extend(
+                iter_changed_fields(
+                    cast(dict[str, Any], previous_value),
+                    cast(dict[str, Any], current_value),
+                    prefix=field_path,
+                )
+            )
             continue
         if previous_value != current_value:
             changes.append((field_path, previous_value, current_value))
     return changes
+
+
+def _diff_candidate_keys(*, previous: dict[str, Any], current: dict[str, Any]) -> list[str]:
+    return sorted((set(previous) | set(current)) - _IGNORED_DIFF_FIELDS)
+
+
+def _diff_field_path(*, prefix: str, key: str) -> str:
+    return f"{prefix}.{key}" if prefix else key
+
+
+def _nested_diff_values(*, previous_value: Any, current_value: Any) -> bool:
+    return isinstance(previous_value, dict) and isinstance(current_value, dict)
 
 
 def materiality_for_field(field_path: str) -> str:

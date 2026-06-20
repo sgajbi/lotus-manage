@@ -3,14 +3,18 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from src.core.rebalance_runs.artifact import build_dpm_run_artifact
+from src.core.rebalance_runs.async_operations import (
+    build_analyze_operation,
+    complete_operation_failure_record,
+    complete_operation_success_record,
+    mark_operation_running_record,
+    to_async_operation_list_response,
+)
 from src.core.rebalance_runs.models import (
-    DpmActionRegisterSupportability,
     DpmAsyncAcceptedResponse,
-    DpmAsyncOperationListItemResponse,
     DpmAsyncOperationListResponse,
     DpmAsyncOperationRecord,
     DpmAsyncOperationStatusResponse,
-    DpmFreshnessBucket,
     DpmLineageEdgeRecord,
     DpmLineageEdgeType,
     DpmLineageResponse,
@@ -19,7 +23,6 @@ from src.core.rebalance_runs.models import (
     DpmRunIdempotencyHistoryResponse,
     DpmRunIdempotencyLookupResponse,
     DpmRunIdempotencyRecord,
-    DpmRunListItemResponse,
     DpmRunListResponse,
     DpmRunLookupResponse,
     DpmRunRecord,
@@ -29,28 +32,59 @@ from src.core.rebalance_runs.models import (
     DpmRunWorkflowResponse,
     DpmSupportabilitySummaryData,
     DpmSupportabilitySummaryResponse,
-    DpmSupportabilityReason,
-    DpmSupportabilityState,
     DpmWorkflowActionType,
     DpmWorkflowDecisionListResponse,
     DpmWorkflowStatus,
 )
 from src.core.rebalance_runs.repository import DpmRunRepository, DpmRunRepositoryConflictError
 from src.core.rebalance_runs.serializers import (
-    lineage_cursor,
     to_async_accepted,
     to_async_status,
     to_idempotency_history_response,
+    to_idempotency_lookup_response,
     to_lineage_response,
     to_lookup_response,
+    to_run_list_response,
     to_workflow_decision_response,
 )
+from src.core.rebalance_runs.support_bundle import (
+    filter_lineage_edges as _filter_lineage_edges,
+    is_lineage_edge_in_window as _is_lineage_edge_in_window,
+    matches_lineage_edge_type as _matches_lineage_edge_type,
+    page_lineage_edges as _page_lineage_edges,
+    sort_lineage_edges as _sort_lineage_edges,
+    support_bundle_async_operation as _support_bundle_async_operation,
+    support_bundle_idempotency_history as _support_bundle_idempotency_history,
+    support_bundle_lineage as _support_bundle_lineage,
+    support_bundle_workflow_history as _support_bundle_workflow_history,
+)
+from src.core.rebalance_runs.supportability_summary import build_supportability_summary_response
 from src.core.rebalance_runs.workflow import (
     resolve_workflow_status,
     resolve_workflow_transition,
     workflow_required_for_run_status,
 )
+from src.core.rebalance_runs.workflow_projection import (
+    build_workflow_action_response,
+    build_workflow_decision_record,
+    build_workflow_history_response,
+    build_workflow_response,
+    latest_workflow_decision,
+)
 from src.core.models import RebalanceResult
+
+__all__ = [
+    "DpmAsyncOperationConflictError",
+    "DpmRunNotFoundError",
+    "DpmRunSupportService",
+    "DpmWorkflowDisabledError",
+    "DpmWorkflowTransitionError",
+    "_filter_lineage_edges",
+    "_is_lineage_edge_in_window",
+    "_matches_lineage_edge_type",
+    "_page_lineage_edges",
+    "_sort_lineage_edges",
+]
 
 
 class DpmRunNotFoundError(Exception):
@@ -201,33 +235,14 @@ class DpmRunSupportService:
             limit=limit,
             cursor=cursor,
         )
-        return DpmRunListResponse(
-            items=[
-                DpmRunListItemResponse(
-                    rebalance_run_id=row.rebalance_run_id,
-                    correlation_id=row.correlation_id,
-                    request_hash=row.request_hash,
-                    idempotency_key=row.idempotency_key,
-                    portfolio_id=row.portfolio_id,
-                    status=str(row.result_json.get("status", "")),
-                    created_at=row.created_at.isoformat(),
-                )
-                for row in rows
-            ],
-            next_cursor=next_cursor,
-        )
+        return to_run_list_response(runs=rows, next_cursor=next_cursor)
 
     def get_idempotency_lookup(self, *, idempotency_key: str) -> DpmRunIdempotencyLookupResponse:
         self._cleanup_expired_supportability()
         record = self._repository.get_idempotency_mapping(idempotency_key=idempotency_key)
         if record is None:
             raise DpmRunNotFoundError("DPM_IDEMPOTENCY_KEY_NOT_FOUND")
-        return DpmRunIdempotencyLookupResponse(
-            idempotency_key=record.idempotency_key,
-            request_hash=record.request_hash,
-            rebalance_run_id=record.rebalance_run_id,
-            created_at=record.created_at.isoformat(),
-        )
+        return to_idempotency_lookup_response(record)
 
     def get_idempotency_history(self, *, idempotency_key: str) -> DpmRunIdempotencyHistoryResponse:
         self._cleanup_expired_supportability()
@@ -261,17 +276,11 @@ class DpmRunSupportService:
         )
         if existing_operation is not None:
             raise DpmAsyncOperationConflictError("DPM_ASYNC_OPERATION_CORRELATION_CONFLICT")
-        operation = DpmAsyncOperationRecord(
+        operation = build_analyze_operation(
             operation_id=f"dop_{uuid.uuid4().hex[:12]}",
-            operation_type="ANALYZE_SCENARIOS",
-            status="PENDING",
             correlation_id=resolved_correlation_id,
-            created_at=now,
-            started_at=None,
-            finished_at=None,
-            result_json=None,
-            error_json=None,
             request_json=request_json,
+            created_at=now,
         )
         try:
             self._repository.create_operation(operation)
@@ -307,30 +316,8 @@ class DpmRunSupportService:
             limit=limit,
             cursor=cursor,
         )
-        return DpmAsyncOperationListResponse(
-            items=[
-                DpmAsyncOperationListItemResponse(
-                    operation_id=operation.operation_id,
-                    operation_type=operation.operation_type,
-                    status=operation.status,
-                    correlation_id=operation.correlation_id,
-                    is_executable=(
-                        operation.status == "PENDING" and operation.request_json is not None
-                    ),
-                    created_at=operation.created_at.isoformat(),
-                    started_at=(
-                        operation.started_at.isoformat()
-                        if operation.started_at is not None
-                        else None
-                    ),
-                    finished_at=(
-                        operation.finished_at.isoformat()
-                        if operation.finished_at is not None
-                        else None
-                    ),
-                )
-                for operation in operations
-            ],
+        return to_async_operation_list_response(
+            operations=operations,
             next_cursor=next_cursor,
         )
 
@@ -367,39 +354,11 @@ class DpmRunSupportService:
         self._cleanup_expired_operations()
         self._cleanup_expired_supportability()
         summary: DpmSupportabilitySummaryData = self._repository.get_supportability_summary()
-        supportability = _resolve_action_register_supportability(summary=summary)
-        return DpmSupportabilitySummaryResponse(
+        return build_supportability_summary_response(
+            summary=summary,
             store_backend=store_backend,
             retention_days=retention_days,
-            run_count=summary.run_count,
-            operation_count=summary.operation_count,
-            operation_status_counts=summary.operation_status_counts,
-            run_status_counts=summary.run_status_counts,
-            workflow_decision_count=summary.workflow_decision_count,
-            workflow_action_counts=summary.workflow_action_counts,
-            workflow_reason_code_counts=summary.workflow_reason_code_counts,
-            lineage_edge_count=summary.lineage_edge_count,
-            oldest_run_created_at=(
-                summary.oldest_run_created_at.isoformat()
-                if summary.oldest_run_created_at is not None
-                else None
-            ),
-            newest_run_created_at=(
-                summary.newest_run_created_at.isoformat()
-                if summary.newest_run_created_at is not None
-                else None
-            ),
-            oldest_operation_created_at=(
-                summary.oldest_operation_created_at.isoformat()
-                if summary.oldest_operation_created_at is not None
-                else None
-            ),
-            newest_operation_created_at=(
-                summary.newest_operation_created_at.isoformat()
-                if summary.newest_operation_created_at is not None
-                else None
-            ),
-            supportability=supportability,
+            now=_utc_now(),
         )
 
     def get_run_support_bundle(
@@ -533,8 +492,7 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "RUNNING"
-        operation.started_at = _utc_now()
+        mark_operation_running_record(operation, started_at=_utc_now())
         self._repository.update_operation(operation)
 
     def complete_operation_success(self, *, operation_id: str, result_json: dict[str, Any]) -> None:
@@ -542,10 +500,11 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "SUCCEEDED"
-        operation.result_json = result_json
-        operation.error_json = None
-        operation.finished_at = _utc_now()
+        complete_operation_success_record(
+            operation,
+            result_json=result_json,
+            finished_at=_utc_now(),
+        )
         self._repository.update_operation(operation)
 
     def complete_operation_failure(self, *, operation_id: str, code: str, message: str) -> None:
@@ -553,10 +512,12 @@ class DpmRunSupportService:
         operation = self._repository.get_operation(operation_id=operation_id)
         if operation is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
-        operation.status = "FAILED"
-        operation.result_json = None
-        operation.error_json = {"code": code, "message": message}
-        operation.finished_at = _utc_now()
+        complete_operation_failure_record(
+            operation,
+            code=code,
+            message=message,
+            finished_at=_utc_now(),
+        )
         self._repository.update_operation(operation)
 
     def get_async_operation(self, *, operation_id: str) -> DpmAsyncOperationStatusResponse:
@@ -584,8 +545,7 @@ class DpmRunSupportService:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_FOUND")
         if operation.status != "PENDING" or operation.request_json is None:
             raise DpmRunNotFoundError("DPM_ASYNC_OPERATION_NOT_EXECUTABLE")
-        operation.status = "RUNNING"
-        operation.started_at = _utc_now()
+        mark_operation_running_record(operation, started_at=_utc_now())
         self._repository.update_operation(operation)
         return operation.request_json, operation.correlation_id
 
@@ -603,10 +563,9 @@ class DpmRunSupportService:
         self._cleanup_expired_supportability()
         self._get_required_run(rebalance_run_id=rebalance_run_id)
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
-        decisions = sorted(decisions, key=lambda item: item.decided_at)
-        return DpmRunWorkflowHistoryResponse(
-            run_id=rebalance_run_id,
-            decisions=[to_workflow_decision_response(decision) for decision in decisions],
+        return build_workflow_history_response(
+            rebalance_run_id=rebalance_run_id,
+            decisions=decisions,
         )
 
     def get_workflow_history_by_correlation(
@@ -686,23 +645,21 @@ class DpmRunSupportService:
         if next_status is None:
             raise DpmWorkflowTransitionError("DPM_WORKFLOW_INVALID_TRANSITION")
 
-        decision = DpmRunWorkflowDecisionRecord(
-            decision_id=f"dwd_{uuid.uuid4().hex[:12]}",
-            run_id=rebalance_run_id,
+        decision = build_workflow_decision_record(
+            rebalance_run_id=rebalance_run_id,
             action=action,
             reason_code=reason_code,
             comment=comment,
             actor_id=actor_id,
-            decided_at=_utc_now(),
             correlation_id=correlation_id,
+            decided_at=_utc_now(),
         )
         self._repository.append_workflow_decision(decision)
-        return DpmRunWorkflowResponse(
-            run_id=rebalance_run_id,
+        return build_workflow_action_response(
+            rebalance_run_id=rebalance_run_id,
             run_status=run_status,
             workflow_status=next_status,
-            requires_review=True,
-            latest_decision=to_workflow_decision_response(decision),
+            decision=decision,
         )
 
     def apply_workflow_action_by_correlation(
@@ -797,31 +754,19 @@ class DpmRunSupportService:
         return mapping
 
     def _to_workflow_response(self, *, run: DpmRunRecord) -> DpmRunWorkflowResponse:
-        run_status = str(run.result_json.get("status", ""))
         latest_decision = self._latest_workflow_decision(rebalance_run_id=run.rebalance_run_id)
-        workflow_status = self._resolve_workflow_status(
-            run_status=run_status,
+        return build_workflow_response(
+            run=run,
             latest_decision=latest_decision,
-        )
-        return DpmRunWorkflowResponse(
-            run_id=run.rebalance_run_id,
-            run_status=run_status,
-            workflow_status=workflow_status,
-            requires_review=self._workflow_required_for_run_status(run_status=run_status),
-            latest_decision=(
-                to_workflow_decision_response(latest_decision)
-                if latest_decision is not None
-                else None
-            ),
+            workflow_enabled=self._workflow_enabled,
+            requires_review_for_statuses=self._workflow_requires_review_for_statuses,
         )
 
     def _latest_workflow_decision(
         self, *, rebalance_run_id: str
     ) -> Optional[DpmRunWorkflowDecisionRecord]:
         decisions = self._repository.list_workflow_decisions(rebalance_run_id=rebalance_run_id)
-        if not decisions:
-            return None
-        return max(decisions, key=lambda item: item.decided_at)
+        return latest_workflow_decision(decisions)
 
     def _workflow_required_for_run_status(self, *, run_status: str) -> bool:
         return workflow_required_for_run_status(
@@ -868,173 +813,3 @@ class DpmRunSupportService:
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def _support_bundle_async_operation(
-    *,
-    run: DpmRunRecord,
-    operation: Optional[DpmAsyncOperationRecord],
-) -> Optional[DpmAsyncOperationStatusResponse]:
-    if operation is None or operation.correlation_id != run.correlation_id:
-        return None
-    return to_async_status(operation)
-
-
-def _support_bundle_idempotency_history(
-    *,
-    run: DpmRunRecord,
-    history: Optional[list[DpmRunIdempotencyHistoryRecord]],
-) -> Optional[DpmRunIdempotencyHistoryResponse]:
-    if run.idempotency_key is None or history is None:
-        return None
-    return to_idempotency_history_response(
-        idempotency_key=run.idempotency_key,
-        history=history,
-    )
-
-
-def _support_bundle_workflow_history(
-    *,
-    rebalance_run_id: str,
-    decisions: list[DpmRunWorkflowDecisionRecord],
-) -> DpmRunWorkflowHistoryResponse:
-    return DpmRunWorkflowHistoryResponse(
-        run_id=rebalance_run_id,
-        decisions=[
-            to_workflow_decision_response(decision)
-            for decision in sorted(decisions, key=lambda item: item.decided_at)
-        ],
-    )
-
-
-def _support_bundle_lineage(
-    *,
-    rebalance_run_id: str,
-    edges: list[DpmLineageEdgeRecord],
-) -> DpmLineageResponse:
-    return to_lineage_response(
-        entity_id=rebalance_run_id,
-        edges=_sort_lineage_edges(edges),
-        next_cursor=None,
-    )
-
-
-def _sort_lineage_edges(edges: list[DpmLineageEdgeRecord]) -> list[DpmLineageEdgeRecord]:
-    return sorted(
-        edges,
-        key=lambda edge: (
-            edge.created_at,
-            edge.source_entity_id,
-            edge.edge_type,
-            edge.target_entity_id,
-        ),
-    )
-
-
-def _filter_lineage_edges(
-    *,
-    edges: list[DpmLineageEdgeRecord],
-    edge_type: Optional[str],
-    created_from: Optional[datetime],
-    created_to: Optional[datetime],
-) -> list[DpmLineageEdgeRecord]:
-    return [
-        edge
-        for edge in edges
-        if _matches_lineage_edge_type(edge=edge, edge_type=edge_type)
-        and _is_lineage_edge_in_window(
-            edge=edge,
-            created_from=created_from,
-            created_to=created_to,
-        )
-    ]
-
-
-def _matches_lineage_edge_type(
-    *,
-    edge: DpmLineageEdgeRecord,
-    edge_type: Optional[str],
-) -> bool:
-    return edge_type is None or edge.edge_type == edge_type
-
-
-def _is_lineage_edge_in_window(
-    *,
-    edge: DpmLineageEdgeRecord,
-    created_from: Optional[datetime],
-    created_to: Optional[datetime],
-) -> bool:
-    if created_from is not None and edge.created_at < created_from:
-        return False
-    if created_to is not None and edge.created_at > created_to:
-        return False
-    return True
-
-
-def _page_lineage_edges(
-    *,
-    edges: list[DpmLineageEdgeRecord],
-    cursor: Optional[str],
-    limit: int,
-) -> tuple[list[DpmLineageEdgeRecord], Optional[str]]:
-    if cursor is not None:
-        cursor_index = next(
-            (index for index, row in enumerate(edges) if lineage_cursor(row) == cursor),
-            None,
-        )
-        edges = [] if cursor_index is None else edges[cursor_index + 1 :]
-    page = edges[:limit]
-    next_cursor = lineage_cursor(page[-1]) if len(edges) > limit else None
-    return page, next_cursor
-
-
-def _resolve_action_register_supportability(
-    *,
-    summary: DpmSupportabilitySummaryData,
-) -> DpmActionRegisterSupportability:
-    freshness_bucket = _resolve_freshness_bucket(summary=summary)
-    has_records = summary.run_count > 0 or summary.operation_count > 0
-    state: DpmSupportabilityState
-    reason: DpmSupportabilityReason
-    if not has_records:
-        state = "empty"
-        reason = "supportability_summary_empty"
-    elif freshness_bucket == "stale":
-        state = "stale"
-        reason = "supportability_summary_stale"
-    elif summary.operation_status_counts.get("FAILED", 0) > 0:
-        state = "degraded"
-        reason = "supportability_summary_degraded"
-    else:
-        state = "ready"
-        reason = "supportability_summary_ready"
-    return DpmActionRegisterSupportability(
-        state=state,
-        reason=reason,
-        freshness_bucket=freshness_bucket,
-        run_count=summary.run_count,
-        operation_count=summary.operation_count,
-        workflow_decision_count=summary.workflow_decision_count,
-    )
-
-
-def _resolve_freshness_bucket(*, summary: DpmSupportabilitySummaryData) -> DpmFreshnessBucket:
-    candidates = [
-        value
-        for value in (
-            summary.newest_run_created_at,
-            summary.newest_operation_created_at,
-        )
-        if value is not None
-    ]
-    if not candidates:
-        return "unknown"
-    newest = max(candidates)
-    if newest.tzinfo is None:
-        newest = newest.replace(tzinfo=timezone.utc)
-    age_days = (_utc_now().date() - newest.astimezone(timezone.utc).date()).days
-    if age_days <= 0:
-        return "current"
-    if age_days <= 1:
-        return "same_day"
-    return "stale"
