@@ -22,6 +22,7 @@ ARTIFACT_WORKFLOWS = [
     Path(".github/workflows/pr-merge-gate.yml"),
     Path(".github/workflows/main-releasability.yml"),
     Path(".github/workflows/quality-baseline.yml"),
+    Path(".github/workflows/demo-certification.yml"),
 ]
 
 QUALITY_GATE_NAMES = [
@@ -179,6 +180,29 @@ def test_quality_baseline_uses_project_scoped_security_audit() -> None:
 
     assert "python -m pip_audit ." in workflow_text
     assert "pip-audit -r pyproject.toml" not in workflow_text
+
+
+def test_demo_certification_is_manual_and_evidence_backed() -> None:
+    workflow_text = Path(".github/workflows/demo-certification.yml").read_text(encoding="utf-8")
+
+    assert "workflow_dispatch:" in workflow_text
+    assert "schedule:" not in workflow_text
+    assert "pull_request:" not in workflow_text
+    assert "make demo-certify" in workflow_text
+    assert "LOTUS_MANAGE_DEMO_CERT_OUTPUT: output/live-api/demo-certification/summary.json" in (
+        workflow_text
+    )
+    assert "actions/upload-artifact@v7" in workflow_text
+
+
+def test_quality_baseline_keeps_demo_certification_contract_report_only() -> None:
+    workflow_text = Path(".github/workflows/quality-baseline.yml").read_text(encoding="utf-8")
+    block = _step_block(workflow_text, "Demo Certification Contract")
+
+    assert "continue-on-error: true" in block
+    assert "tests/unit/test_validate_live_api.py" in block
+    assert "tests/unit/test_run_demo_pack_live.py" in block
+    assert "make demo-certify" not in block
 
 
 def test_workflow_policy_gate_passes_current_repository_workflows() -> None:

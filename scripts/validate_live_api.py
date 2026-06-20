@@ -3,6 +3,7 @@ import json
 import sys
 import uuid
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Literal, cast
 
@@ -877,14 +878,21 @@ def run_live_api_validation(
     return results
 
 
-def summarize(results: list[ProbeResult]) -> dict[str, Any]:
+def summarize(
+    results: list[ProbeResult],
+    *,
+    metadata: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     failures = [asdict(result) for result in results if not result.ok]
-    return {
+    summary = {
         "total": len(results),
         "failed": len(failures),
         "failures": failures,
         "results": [asdict(result) for result in results],
     }
+    if metadata is not None:
+        summary["metadata"] = metadata
+    return summary
 
 
 def main() -> int:
@@ -949,7 +957,28 @@ def main() -> int:
         portfolio_id=args.portfolio_id,
         as_of=args.as_of,
     )
-    summary = summarize(results)
+    metadata = {
+        "certification": "lotus-manage-live-api-demo-certification",
+        "generated_at_utc": datetime.now(UTC).isoformat(),
+        "base_url": args.base_url,
+        "include_demo_pack": not args.skip_demo_pack,
+        "core_base_urls": args.core_base_url,
+        "expect_core_dpm_route": args.expect_core_dpm_route,
+        "expect_stateful_core_sourcing": args.expect_stateful_core_sourcing,
+        "portfolio_id": args.portfolio_id,
+        "as_of": args.as_of,
+        "evidence_basis": [
+            "health readiness",
+            "integration capability publication",
+            "OpenAPI certification contract",
+            "stateful core-sourcing lineage",
+            "construction calculation invariants",
+            "async idempotency/correlation guard",
+            "PostgreSQL supportability summary",
+            "bounded supportability metric exposure",
+        ],
+    }
+    summary = summarize(results, metadata=metadata)
     rendered = json.dumps(summary, indent=2, sort_keys=True)
     print(rendered)
     if args.json_output is not None:

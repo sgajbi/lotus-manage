@@ -125,6 +125,12 @@ jobs:
           PY
           spectral lint openapi.json --ruleset .spectral.yaml 2>&1 | tee output/quality-baseline/spectral.txt
 
+      - name: Demo Certification Contract
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python -m pytest tests/unit/test_validate_live_api.py tests/unit/test_run_demo_pack_live.py 2>&1 | tee output/quality-baseline/demo-certification-contract.txt
+
       - name: Upload Quality Baseline Logs
         if: always()
         uses: actions/upload-artifact@v7

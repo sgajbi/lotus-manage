@@ -21,6 +21,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "pr-merge-gate.yml": {"contents": "read"},
     "main-releasability.yml": {"contents": "read"},
     "quality-baseline.yml": {"contents": "read"},
+    "demo-certification.yml": {"contents": "read"},
     "pr-auto-merge.yml": {"contents": "write", "pull-requests": "write"},
 }
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)

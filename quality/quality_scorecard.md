@@ -1,8 +1,8 @@
 # lotus-manage Quality Scorecard
 
-- Generated at: `2026-06-20T00:45:09+00:00`
+- Generated at: `2026-06-20T01:18:12+00:00`
 
-- Report source snapshot: `ae2ddfbb+worktree`
+- Report source snapshot: `2643af7b+worktree`
 
 - Purpose: make enterprise-readiness progress measurable without pretending report-only baselines are mature enforcement gates.
 
@@ -27,6 +27,7 @@
 | Security depth | Active project dependency gate | `make security-audit` runs high-severity Bandit over `src` plus project-scoped `python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family as report-only evidence. |
 | Documentation coverage | Partially active | Docs current-state tests exist; add docs-gap scoring later. |
 | Observability | Partially active | Observability contract validator exists; add runtime posture scoring later. |
+| Demo certification | Manual/report-only live evidence | `make demo-certify` certifies canonical live API demo proof and writes JSON evidence; `demo-certification.yml` is manual, while `quality-baseline.yml` keeps deterministic command-contract tests report-only until CI has a stable canonical stack lane. |
 
 ## Progressive Gate Policy
 

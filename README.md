@@ -586,6 +586,11 @@ Repo-native gate mapping:
   because RFC-087 source products and stateful manage gates are active. Set
   `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=disabled` only when deliberately validating a
   non-source-ready local runtime.
+- `make demo-certify`
+  app-level demo certification against the canonical live stack. It writes machine-readable
+  evidence to `output/live-api/demo-certification/summary.json` by default and asserts capability
+  truth, stateful source-backed construction, supportability persistence, metrics, and retired
+  route absence for `PB_SG_GLOBAL_BAL_001` as of `2026-04-10`.
 - `make mesh-contract-validate`
   repo-native domain product, trust telemetry, and observability monitoring contract validation
   against Lotus platform governance
@@ -645,6 +650,10 @@ Operationally important truths:
    stateful source-backed construction over `TransactionCostCurve:v1`,
    `PortfolioCashflowProjection:v1`, `ClientRestrictionProfile:v1`, and
    `SustainabilityPreferenceProfile:v1`, not only stateful simulate lineage.
+   Demo certification uses the same proof family through `make demo-certify`; the GitHub
+   `Demo Certification` workflow is manual because normal hosted CI runners do not own the
+   canonical local stack, while Quality Baseline keeps the deterministic command-contract tests
+   visible as report-only evidence.
 5. `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS` defaults to 400 days so low-turnover private-banking
    portfolios can consume observed booked-fee evidence without treating it as predictive execution
    cost, venue, or market-impact methodology.

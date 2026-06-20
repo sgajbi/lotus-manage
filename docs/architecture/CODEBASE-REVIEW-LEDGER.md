@@ -29625,3 +29625,75 @@ and improves internal transaction-cost source posture maintainability only.
   `lotus-ci-enforcement-governance` guidance already directs agents to promote deterministic,
   measured, low-noise gates; this slice applies that guidance locally and does not change the
   platform operating contract.
+
+## BACKEND-REVIEW-20260620-0912: App-level demo certification pipeline posture
+
+- Date: 2026-06-20
+- Scope: `scripts/validate_live_api.py`, `Makefile`, `.github/workflows/demo-certification.yml`,
+  `.github/workflows/quality-baseline.yml`, `scripts/workflow_policy_gate.py`,
+  `tests/unit/test_validate_live_api.py`, `tests/unit/test_run_demo_pack_live.py`,
+  `tests/unit/test_local_docker_runtime_contract.py`, `tests/unit/test_ci_workflow_gate_enforcement.py`,
+  README, wiki validation guidance, repository engineering context, generated quality reports, and
+  this ledger.
+- Bank-buyable control area: repeatable app-level demo proof, canonical live API evidence,
+  capability-truth drift prevention, supportability/observability proof, and low-noise CI lane
+  placement for future agent work.
+- Quality intake: the existing owner pattern is FastAPI routers in `src/api/routers/*`,
+  orchestration in `src/api/services/*`, domain logic in `src/core/*`, persistence in
+  `src/infrastructure/*`, and integration capability truth at
+  `/api/v1/integration/capabilities`. Source truth is `REPOSITORY-ENGINEERING-CONTEXT.md`,
+  `wiki/Supported-Features.md`, `wiki/Validation-and-CI.md`, OpenAPI, domain/trust contracts, and
+  canonical front-office seed truth for `PB_SG_GLOBAL_BAL_001`. Closest meaningful tests are
+  `tests/unit/test_validate_live_api.py`, `tests/unit/test_run_demo_pack_live.py`,
+  `tests/e2e/demo/test_demo_scenarios.py`, `tests/integration/test_openapi_certification_matrix.py`,
+  and DPM supportability/API integration tests. Repo-native validation uses `make demo-certify`,
+  `make live-api-validate-core`, focused pytest, workflow-policy gate, and generated report
+  freshness. The measurable quality signal is machine-readable live certification evidence with
+  zero failed probes, preserved capability truth, expected construction figures, supportability
+  persistence, metrics exposure, and retired-route absence.
+- Finding: `lotus-manage` already had a strong live API validator, but no repo-native
+  demo-certification command with stable evidence defaults and no CI-visible posture that future
+  agents could discover. Making the live command PR-blocking would be noisy because normal hosted
+  runners do not own the canonical local stack.
+- Action: added `make demo-certify` as the repo-native app-level command using canonical manage/core
+  URLs, `PB_SG_GLOBAL_BAL_001`, and `2026-04-10` defaults. The validator now writes certification
+  metadata into the JSON summary. Added a manual GitHub `Demo Certification` workflow that runs the
+  same command against caller-supplied reachable canonical URLs and uploads evidence. Added a
+  report-only Quality Baseline step for deterministic command-contract tests and extended workflow
+  policy expectations so the new workflow keeps read-only permissions and pinned artifact actions.
+  Updated README, wiki validation guidance, repository context, and generated scorecard/baseline
+  truth.
+- Status: hardened.
+- Evidence:
+  `python -m ruff format --check scripts\validate_live_api.py tests\unit\test_validate_live_api.py tests\unit\test_local_docker_runtime_contract.py tests\unit\test_ci_workflow_gate_enforcement.py scripts\engineering_health_report.py`,
+  `python -m ruff check scripts\validate_live_api.py tests\unit\test_validate_live_api.py tests\unit\test_local_docker_runtime_contract.py tests\unit\test_ci_workflow_gate_enforcement.py scripts\workflow_policy_gate.py scripts\engineering_health_report.py`,
+  `python -m pytest tests\unit\test_validate_live_api.py tests\unit\test_run_demo_pack_live.py tests\unit\test_local_docker_runtime_contract.py tests\unit\test_ci_workflow_gate_enforcement.py`
+  reported 41 passed, `make workflow-policy-gate`, `python scripts\engineering_health_report.py --check`,
+  and `make demo-certify` passed. `make demo-certify` wrote
+  `output/live-api/demo-certification/summary.json` with 14 probes, 0 failures, canonical
+  `PB_SG_GLOBAL_BAL_001` metadata, READY stateful core-sourcing lineage, source-backed construction
+  over `TransactionCostCurve`, `PortfolioCashflowProjection`, `ClientRestrictionProfile`, and
+  `SustainabilityPreferenceProfile`, expected first-wave construction figures, PostgreSQL
+  supportability summary, bounded supportability metrics, and retired core DPM route absence on
+  both core-control and core-query. The governed canonical Workbench validation also passed for
+  `PB_SG_GLOBAL_BAL_001`, writing `live-validation-summary.json` and 29 `demo_ready` screenshots to
+  `C:\Users\Sandeep\projects\lotus-workbench\output\playwright\live-canonical\lotus-manage-main-20260620-090006`.
+  The aggregate `make check` gate then passed with 2,960 passed and 13 skipped unit tests after
+  completing the static, contract, architecture, duplicate, dependency, dead-code, workflow-policy,
+  quality-report, and unit-test phases.
+- CI-enforcement decision: no new live demo gate is promoted to blocking in this slice. The
+  deterministic contract coverage is report-only in Quality Baseline, and the live command is
+  manual with uploaded evidence until canonical stack availability, repeated-run stability,
+  false-positive posture, lane placement, and exception policy are proven.
+- Stranded truth: `git fetch origin --prune` succeeded and `git branch -r --no-merged origin/main`
+  returned no unmerged remote branches to classify before this CI/demo-certification slice.
+- Residual risk: the live demo command is environment-dependent and should remain manual/report-only
+  in CI until repeated canonical-stack runs prove low-noise stability in the intended lane.
+- Wiki decision: wiki source changed because validation/operator truth changed. Run wiki check-only
+  before merge and publish from `main` after merge. Pre-merge check-only currently reports expected
+  drift for `Validation-and-CI.md` because this branch intentionally updates repo-authored wiki
+  source ahead of publication.
+- Guidance decision: no platform skill or agent-context source update required. Existing
+  `lotus-demo-readiness-certification`, `lotus-ci-enforcement-governance`, and
+  `lotus-backend-delivery-governance` guidance already covers this manual/report-only promotion
+  posture; this slice applies the current guidance locally.

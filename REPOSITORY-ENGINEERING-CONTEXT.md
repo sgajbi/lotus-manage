@@ -950,7 +950,9 @@ Use these commands as the primary local contract:
    `make ci-local-docker`
 6. canonical host runtime
    `make run-canonical`
-7. domain-data-product contract validation
+7. app-level demo certification
+   `make demo-certify`
+8. domain-data-product contract validation
    `make domain-product-validate`
 
 ## Validation And CI Expectations
@@ -977,7 +979,10 @@ Important validation expectations:
 7. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
    `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
    debug paths.
-8. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
+8. app-level demo certification is repo-native through `make demo-certify`; it is exposed through a
+   manual GitHub workflow with uploaded evidence and report-only command-contract coverage until the
+   canonical live stack is proven stable inside CI.
+9. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
    closure, post-merge audit, and move-on to the next RFC. Run `git fetch origin --prune` and
    `git branch -r --no-merged origin/main`, inspect unmerged branches touching `docs/rfcs/`,
    `wiki/`, `README.md`, `REPOSITORY-ENGINEERING-CONTEXT.md`, `AGENTS.md`, contracts, standards,
