@@ -110,18 +110,36 @@ def quality_report_gate_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name not in BLOCKING_WORKFLOW_NAMES:
         return []
     text = workflow_path.read_text(encoding="utf-8")
+    violations: list[str] = []
     if "make quality-report-gate" not in text:
         return [f"{workflow_path.as_posix()}: blocking workflow must run make quality-report-gate"]
     start = text.index("make quality-report-gate")
+    checkout_start = text.rfind("uses: actions/checkout@", 0, start)
+    if checkout_start == -1:
+        violations.append(
+            f"{workflow_path.as_posix()}: quality report gate job must checkout repository first"
+        )
+    else:
+        checkout_block_end = text.find("\n      - ", checkout_start)
+        checkout_block = (
+            text[checkout_start:]
+            if checkout_block_end == -1
+            else text[checkout_start:checkout_block_end]
+        )
+        if "fetch-depth: 0" not in checkout_block:
+            violations.append(
+                f"{workflow_path.as_posix()}: quality report gate job must use "
+                "actions/checkout with fetch-depth: 0 so origin/main is available"
+            )
     step_start = text.rfind("\n      - name:", 0, start)
     step_end = text.find("\n      - name:", start)
     step_block = text[step_start:] if step_end == -1 else text[step_start:step_end]
     if "continue-on-error" in step_block:
-        return [
+        violations.append(
             f"{workflow_path.as_posix()}: quality report freshness gate must be blocking, "
             "not continue-on-error"
-        ]
-    return []
+        )
+    return violations
 
 
 def duplicate_implementation_gate_violations(workflow_path: Path) -> list[str]:

@@ -29586,13 +29586,20 @@ and improves internal transaction-cost source posture maintainability only.
   `pip-audit -r pyproject.toml`, which is not a valid requirements-file invocation. The subsequent
   `make check` run also exposed a unit-test collection blocker in RFC evidence scripts: direct
   script-local `rfc_evidence_http` imports failed when the scripts were imported as
-  `scripts.generate_*` modules.
+  `scripts.generate_*` modules. The first remote Feature Lane run for PR #561 exposed an
+  additional CI-only quality-report blocker: Actions checkout used the default shallow fetch, so
+  `origin/main` was unavailable when `python scripts/engineering_health_report.py --check`
+  attempted to build the comparative baseline.
 - Action: changed `make security-audit` to run high-severity Bandit over `src` and
   project-scoped `python -m pip_audit .` with the existing documented ignore exceptions. Updated
   `quality-baseline.yml` to use the same project-aware audit mode. Added tests that require the
   blocking Make target and report-only workflow to stay project-scoped. Updated RFC evidence
   scripts to prefer package imports with a direct-execution fallback, preserving CLI behavior while
-  restoring module importability, and refreshed generated quality scorecard/baseline wording.
+  restoring module importability. Updated Feature Lane, PR Merge Gate, and Main Releasability
+  lint/typecheck/security jobs to use `actions/checkout` with `fetch-depth: 0` where
+  `make quality-report-gate` runs, and extended `workflow_policy_gate.py` plus unit tests so future
+  workflow edits keep `origin/main` available for report-freshness checks. Refreshed generated
+  quality scorecard/baseline wording.
 - Status: hardened.
 - Evidence:
   `python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969`
@@ -29600,7 +29607,9 @@ and improves internal transaction-cost source posture maintainability only.
   `make security-audit` passed;
   `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py` reported 15 passed;
   `python -m pytest tests\unit\test_rfc0041_evidence_script.py` reported 3 passed; and
-  `python scripts\engineering_health_report.py` refreshed the checked-in quality reports.
+  `python scripts\engineering_health_report.py` refreshed the checked-in quality reports. After the
+  remote CI checkout fix, `python -m pytest tests\unit\test_ci_workflow_gate_enforcement.py`
+  reported 16 passed and `make workflow-policy-gate` passed locally.
 - CI-enforcement decision: promoted only a measured, deterministic, low-noise security signal into
   the existing blocking gate. This does not weaken security scanning; it changes the audit scope
   from the mutable developer machine to the repository dependency graph that CI installs and future

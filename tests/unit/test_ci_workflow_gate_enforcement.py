@@ -289,8 +289,35 @@ def test_workflow_policy_gate_requires_blocking_quality_report_gate(tmp_path: Pa
     )
 
     assert quality_report_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: quality report gate job must checkout repository first",
         f"{workflow.as_posix()}: quality report freshness gate must be blocking, "
-        "not continue-on-error"
+        "not continue-on-error",
+    ]
+
+
+def test_workflow_policy_gate_requires_full_history_for_quality_report_gate(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  lint:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+                "      - name: Quality Report Freshness Gate",
+                "        run: make quality-report-gate",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert quality_report_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: quality report gate job must use actions/checkout with "
+        "fetch-depth: 0 so origin/main is available"
     ]
 
 
