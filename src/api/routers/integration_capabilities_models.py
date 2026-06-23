@@ -6,7 +6,14 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-ConsumerSystem = Literal["lotus-gateway", "lotus-performance", "lotus-manage", "UI", "UNKNOWN"]
+ConsumerSystem = Literal[
+    "lotus-gateway",
+    "lotus-performance",
+    "lotus-manage",
+    "lotus-idea",
+    "UI",
+    "UNKNOWN",
+]
 
 
 CAPABILITIES_RESPONSE_EXAMPLES = {

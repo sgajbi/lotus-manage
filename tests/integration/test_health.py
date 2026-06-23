@@ -29,3 +29,15 @@ def test_integration_capabilities_honors_explicit_query_context() -> None:
     body = response.json()
     assert body["consumer_system"] == "lotus-performance"
     assert body["tenant_id"] == "tenant-x"
+
+
+def test_integration_capabilities_accepts_lotus_idea_context() -> None:
+    client = TestClient(app)
+    response = client.get(
+        "/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=default"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["consumer_system"] == "lotus-idea"
+    assert body["tenant_id"] == "default"
