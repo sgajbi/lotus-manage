@@ -22,7 +22,7 @@ EXPECTED_WORKFLOW_PERMISSIONS = {
     "main-releasability.yml": {"contents": "read"},
     "quality-baseline.yml": {"contents": "read"},
     "demo-certification.yml": {"contents": "read"},
-    "pr-auto-merge.yml": {"contents": "write", "pull-requests": "write"},
+    "pr-auto-merge.yml": {"contents": "read"},
 }
 USES_PATTERN = re.compile(r"^\s*(?:-\s*)?uses:\s*[\"']?([^\"'\s#]+)", re.MULTILINE)
 VERSION_TAG_PATTERN = re.compile(r"^v\d+(?:\.\d+){0,2}$")
@@ -184,6 +184,36 @@ def coverage_gate_violations(workflow_path: Path) -> list[str]:
     return violations
 
 
+def auto_merge_workflow_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name != "pr-auto-merge.yml":
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    violations: list[str] = []
+    required_tokens = {
+        "secrets.LOTUS_AUTOMERGE_TOKEN": (
+            "auto-merge must use LOTUS_AUTOMERGE_TOKEN so the merge actor is not GITHUB_TOKEN"
+        ),
+        "LOTUS_AUTOMERGE_TOKEN is required": (
+            "auto-merge must warn and skip cleanly when LOTUS_AUTOMERGE_TOKEN is absent"
+        ),
+        "--auto --rebase --delete-branch": (
+            "auto-merge must queue rebase merge and branch deletion for linear history"
+        ),
+        "timeout-minutes: 10": "auto-merge workflow must have a bounded job timeout",
+    }
+    for token, reason in required_tokens.items():
+        if token not in text:
+            violations.append(f"{workflow_path.as_posix()}: {reason}")
+    forbidden_tokens = {
+        "github.token": "auto-merge must not authenticate with GITHUB_TOKEN",
+        "--auto --merge": "auto-merge must not queue merge commits",
+    }
+    for token, reason in forbidden_tokens.items():
+        if token in text:
+            violations.append(f"{workflow_path.as_posix()}: {reason}")
+    return violations
+
+
 def pr_template_policy_violations(template_path: Path = PR_TEMPLATE_PATH) -> list[str]:
     if not template_path.exists():
         return [f"{template_path.as_posix()}: PR template is missing"]
@@ -206,6 +236,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(quality_report_gate_violations(workflow_path))
         violations.extend(duplicate_implementation_gate_violations(workflow_path))
         violations.extend(coverage_gate_violations(workflow_path))
+        violations.extend(auto_merge_workflow_violations(workflow_path))
     violations.extend(pr_template_policy_violations())
     return violations
 

@@ -4,6 +4,7 @@ from pathlib import Path
 
 from scripts.workflow_policy_gate import (
     action_reference_violations,
+    auto_merge_workflow_violations,
     coverage_gate_violations,
     evaluate_workflow_policy,
     permission_violations,
@@ -209,6 +210,17 @@ def test_workflow_policy_gate_passes_current_repository_workflows() -> None:
     assert evaluate_workflow_policy() == []
 
 
+def test_pr_auto_merge_uses_governed_rebase_actor() -> None:
+    workflow_text = Path(".github/workflows/pr-auto-merge.yml").read_text(encoding="utf-8")
+
+    assert "secrets.LOTUS_AUTOMERGE_TOKEN" in workflow_text
+    assert "LOTUS_AUTOMERGE_TOKEN is required" in workflow_text
+    assert "--auto --rebase --delete-branch" in workflow_text
+    assert "timeout-minutes: 10" in workflow_text
+    assert "github.token" not in workflow_text
+    assert "--auto --merge" not in workflow_text
+
+
 def test_pr_template_policy_gate_passes_current_template() -> None:
     assert pr_template_policy_violations() == []
 
@@ -292,6 +304,43 @@ def test_workflow_policy_gate_rejects_permission_creep(tmp_path: Path) -> None:
         f"{workflow.as_posix()}: permissions must be {{'contents': 'read'}}, "
         "found {'contents': 'write', 'actions': 'write'}"
     ]
+
+
+def test_workflow_policy_gate_rejects_merge_commit_auto_merge(tmp_path: Path) -> None:
+    workflow = tmp_path / "pr-auto-merge.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: write",
+                "  pull-requests: write",
+                "jobs:",
+                "  queue-auto-merge:",
+                "    runs-on: ubuntu-latest",
+                "    steps:",
+                "      - name: Enable auto-merge queue (merge commit)",
+                "        env:",
+                "          GH_TOKEN: ${{ github.token }}",
+                "        run: gh pr merge 1 --auto --merge --delete-branch",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    violations = auto_merge_workflow_violations(workflow)
+
+    assert (
+        f"{workflow.as_posix()}: auto-merge must use LOTUS_AUTOMERGE_TOKEN so the merge actor "
+        "is not GITHUB_TOKEN"
+    ) in violations
+    assert (
+        f"{workflow.as_posix()}: auto-merge must queue rebase merge and branch deletion for "
+        "linear history"
+    ) in violations
+    assert f"{workflow.as_posix()}: auto-merge must not authenticate with GITHUB_TOKEN" in (
+        violations
+    )
+    assert f"{workflow.as_posix()}: auto-merge must not queue merge commits" in violations
 
 
 def test_workflow_policy_gate_requires_blocking_quality_report_gate(tmp_path: Path) -> None:

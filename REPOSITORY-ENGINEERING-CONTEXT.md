@@ -991,6 +991,10 @@ Important validation expectations:
    because RFC-0036 through RFC-0042 work previously exposed a failure mode where
    `docs/rfcs/RFC-worktobedone.md` and an RFC-0041 post-closure documentation correction were
    stranded on unmerged side branches instead of reaching `main`.
+10. PR auto-merge follows the platform linear-history posture: `.github/workflows/pr-auto-merge.yml`
+    uses `LOTUS_AUTOMERGE_TOKEN`, queues `gh pr merge --auto --rebase --delete-branch`, skips
+    cleanly with a warning when the token is absent, and is protected by `make workflow-policy-gate`.
+    The helper must not authenticate with `GITHUB_TOKEN` or queue merge commits.
 
 ## Standards And RFCs That Govern This Repository
 
