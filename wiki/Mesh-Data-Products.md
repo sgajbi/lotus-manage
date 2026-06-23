@@ -7,8 +7,12 @@
 ## Governed products
 
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
-- Product role: governed portfolio action register for management, reporting, gateway, and
-  Workbench discovery flows
+- Product role: governed portfolio action register for management, reporting, gateway,
+  Workbench discovery flows, and Lotus Idea opportunity intelligence consumption
+- Approved consumers: `lotus-gateway`, `lotus-idea`
+- Lotus Idea boundary: `lotus-idea` may consume this product as governed management-action
+  evidence for opportunity intelligence and conversion orchestration; it does not own rebalance
+  execution, PM operating controls, model-portfolio decisions, order routing, or OMS execution.
 - Implemented route families:
   - `/api/v1/rebalance/supportability/summary`
   - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
