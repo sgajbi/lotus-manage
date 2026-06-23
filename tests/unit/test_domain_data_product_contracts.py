@@ -267,7 +267,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     product = by_name["PortfolioActionRegister"]
     assert product["product_version"] == "v1"
     assert product["lifecycle_status"] == "active"
-    assert product["approved_consumers"] == ["lotus-gateway"]
+    assert product["approved_consumers"] == ["lotus-gateway", "lotus-idea"]
     assert product["serving_plane"] == "query_control_plane_service"
     assert product["current_routes"] == [
         "/api/v1/rebalance/supportability/summary",
