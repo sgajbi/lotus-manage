@@ -71,6 +71,21 @@ def test_integration_capabilities_does_not_publish_stateful_without_resolver(mon
     assert body["workflows"][0]["enabled"] is False
 
 
+def test_integration_capabilities_accepts_lotus_idea_consumer() -> None:
+    with TestClient(app) as client:
+        response = client.get(
+            "/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=default"
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["consumer_system"] == "lotus-idea"
+    assert body["tenant_id"] == "default"
+    assert "manage.observability.action_register_supportability" in {
+        item["key"] for item in body["features"]
+    }
+
+
 def test_integration_capabilities_can_publish_both_supported_input_modes(monkeypatch):
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_STATELESS_ENABLED", "true")
     monkeypatch.setenv("DPM_CAP_INPUT_MODE_PORTFOLIO_ID_ENABLED", "true")

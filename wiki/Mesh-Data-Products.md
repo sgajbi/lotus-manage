@@ -13,6 +13,9 @@
 - Lotus Idea boundary: `lotus-idea` may consume this product as governed management-action
   evidence for opportunity intelligence and conversion orchestration; it does not own rebalance
   execution, PM operating controls, model-portfolio decisions, order routing, or OMS execution.
+- Supportability discovery: direct Idea consumers may call
+  `/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=<tenant>` before
+  consuming action-register evidence.
 - Implemented route families:
   - `/api/v1/rebalance/supportability/summary`
   - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
