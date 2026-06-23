@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-05-31T09:54:30.644324+00:00",
+  "generatedAt": "2026-06-23T05:41:22.171929+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -17092,6 +17092,7 @@
         "lotus-gateway",
         "lotus-performance",
         "lotus-manage",
+        "lotus-idea",
         "UI",
         "UNKNOWN"
       ],
