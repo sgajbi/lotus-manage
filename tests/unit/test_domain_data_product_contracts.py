@@ -22,6 +22,7 @@ PRODUCT_DECLARATION_PATH = (
 REQUEST_MODELS_PATH = ROOT / "src" / "api" / "request_models.py"
 UPSTREAM_FAMILY_MAP_PATH = ROOT / "docs" / "standards" / "RFC-0082-upstream-contract-family-map.md"
 DECLARATION_README_PATH = ROOT / "contracts" / "domain-data-products" / "README.md"
+MESH_WIKI_PATH = ROOT / "wiki" / "Mesh-Data-Products.md"
 
 
 def _load_consumer_declaration() -> dict:
@@ -268,6 +269,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert product["product_version"] == "v1"
     assert product["lifecycle_status"] == "active"
     assert product["approved_consumers"] == ["lotus-gateway", "lotus-idea"]
+    mesh_wiki = MESH_WIKI_PATH.read_text(encoding="utf-8")
+    normalized_mesh_wiki = " ".join(mesh_wiki.split())
+    assert "Approved consumers: `lotus-gateway`, `lotus-idea`" in mesh_wiki
+    assert "it does not own rebalance execution" in normalized_mesh_wiki
     assert product["serving_plane"] == "query_control_plane_service"
     assert product["current_routes"] == [
         "/api/v1/rebalance/supportability/summary",
