@@ -18,12 +18,13 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 DEFAULT_BASE_REF = "origin/main"
-DEFAULT_OUTPUT = REPO_ROOT / "quality" / "refactor_health_report.md"
-DEFAULT_BASELINE_OUTPUT = REPO_ROOT / "quality" / "baseline_report.md"
-DEFAULT_SCORECARD_OUTPUT = REPO_ROOT / "quality" / "quality_scorecard.md"
-DEFAULT_ARCHITECTURE_RULES_OUTPUT = REPO_ROOT / "quality" / "architecture_rules.md"
-DEFAULT_API_GOVERNANCE_RULES_OUTPUT = REPO_ROOT / "quality" / "api_governance_rules.md"
-DEFAULT_COMPLEXITY_OUTPUT = REPO_ROOT / "quality" / "complexity_report.md"
+QUALITY_DIR = REPO_ROOT / "quality"
+DEFAULT_OUTPUT = QUALITY_DIR / "refactor_health_report.md"
+DEFAULT_BASELINE_OUTPUT = QUALITY_DIR / "baseline_report.md"
+DEFAULT_SCORECARD_OUTPUT = QUALITY_DIR / "quality_scorecard.md"
+DEFAULT_ARCHITECTURE_RULES_OUTPUT = QUALITY_DIR / "architecture_rules.md"
+DEFAULT_API_GOVERNANCE_RULES_OUTPUT = QUALITY_DIR / "api_governance_rules.md"
+DEFAULT_COMPLEXITY_OUTPUT = QUALITY_DIR / "complexity_report.md"
 PYTHON_ROOTS = ("src", "tests", "scripts")
 SERVICE_LEAKAGE_PATTERNS = (
     "from src.api.routers",
@@ -81,6 +82,7 @@ class SnapshotMetrics:
 class HealthReportContext:
     generated_at: str
     base_ref: str
+    base_source_ref: str
     current_ref: str
     base: SnapshotMetrics
     current: SnapshotMetrics
@@ -118,11 +120,28 @@ def _git_ref_exists(ref: str) -> bool:
     return completed.returncode == 0
 
 
+def _git_resolved_ref(ref: str) -> str:
+    return _git("rev-parse", ref).strip()
+
+
 def _current_ref_name() -> str:
     env_ref_name = os.environ.get("GITHUB_REF_NAME")
     if env_ref_name:
         return env_ref_name
     return _git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+
+def _recorded_quality_baseline_ref() -> str | None:
+    report_path = QUALITY_DIR / "refactor_health_report.md"
+    if not report_path.exists():
+        return None
+    for line in report_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("- Baseline source snapshot: `") and line.endswith("`"):
+            candidate = line.removeprefix("- Baseline source snapshot: `").removesuffix("`")
+            if _git_ref_exists(candidate):
+                return candidate
+            return None
+    return None
 
 
 def _base_ref_for_quality_check() -> tuple[str, str]:
@@ -132,7 +151,7 @@ def _base_ref_for_quality_check() -> tuple[str, str]:
         and not _git_status_porcelain().strip()
         and _git_ref_exists("HEAD^")
     ):
-        return "HEAD^", DEFAULT_BASE_REF
+        return _recorded_quality_baseline_ref() or "HEAD^", DEFAULT_BASE_REF
     return DEFAULT_BASE_REF, DEFAULT_BASE_REF
 
 
@@ -463,6 +482,7 @@ def _report_context(
     return HealthReportContext(
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
         base_ref=display_base_ref,
+        base_source_ref=_git_resolved_ref(base_ref),
         current_ref=_report_source_snapshot(),
         base=base,
         current=current,
@@ -478,6 +498,7 @@ def build_refactor_report(context: HealthReportContext) -> str:
         "# lotus-manage Refactor Health Report",
         f"- Generated at: `{context.generated_at}`",
         f"- Baseline ref: `{context.base_ref}`",
+        f"- Baseline source snapshot: `{context.base_source_ref}`",
         f"- Report source snapshot: `{context.current_ref}`",
         "- Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.",
         "## Scorecard",
@@ -532,6 +553,7 @@ def build_baseline_report(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Baseline Quality Report",
         f"- Generated at: `{context.generated_at}`",
+        f"- Baseline source snapshot: `{context.base_source_ref}`",
         f"- Report source snapshot: `{context.current_ref}`",
         "- Mode: report-only baseline. This records current posture; it does not enforce "
         "thresholds by itself.",
@@ -710,6 +732,7 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Quality Scorecard",
         f"- Generated at: `{context.generated_at}`",
+        f"- Baseline source snapshot: `{context.base_source_ref}`",
         f"- Report source snapshot: `{context.current_ref}`",
         "- Purpose: make enterprise-readiness progress measurable without pretending report-only "
         "baselines are mature enforcement gates.",
@@ -754,6 +777,7 @@ def build_complexity_report(context: HealthReportContext) -> str:
     sections = [
         "# lotus-manage Complexity Report",
         f"- Generated at: `{context.generated_at}`",
+        f"- Baseline source snapshot: `{context.base_source_ref}`",
         f"- Report source snapshot: `{context.current_ref}`",
         "- Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free "
         "AST branch metrics remain report-only.",
