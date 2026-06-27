@@ -116,6 +116,7 @@ def test_quality_report_check_uses_parent_commit_for_clean_mainline(monkeypatch)
     monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
     monkeypatch.setattr(ehr, "_git", fake_git)
     monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "HEAD^")
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: None)
 
     assert ehr._base_ref_for_quality_check() == ("HEAD^", "origin/main")
     assert calls == [
@@ -149,15 +150,66 @@ def test_quality_report_check_uses_github_ref_name_for_mainline(monkeypatch) -> 
     monkeypatch.setenv("GITHUB_REF_NAME", "main")
     monkeypatch.setattr(ehr, "_git", fake_git)
     monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "HEAD^")
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: None)
 
     assert ehr._base_ref_for_quality_check() == ("HEAD^", "origin/main")
     assert calls == [("status", "--porcelain")]
+
+
+def test_quality_report_check_uses_recorded_baseline_for_clean_mainline(
+    monkeypatch,
+) -> None:
+    def fake_git(*args: str) -> str:
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "main\n"
+        if args == ("status", "--porcelain"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref in {"HEAD^", "base1234"})
+    monkeypatch.setattr(ehr, "_recorded_quality_baseline_ref", lambda: "base1234")
+
+    assert ehr._base_ref_for_quality_check() == ("base1234", "origin/main")
+
+
+def test_recorded_quality_baseline_ref_reads_checked_in_report(monkeypatch, tmp_path) -> None:
+    quality_dir = tmp_path / "quality"
+    quality_dir.mkdir()
+    (quality_dir / "refactor_health_report.md").write_text(
+        "# lotus-manage Refactor Health Report\n"
+        "- Baseline ref: `origin/main`\n"
+        "- Baseline source snapshot: `base1234`\n"
+        "- Report source snapshot: `head5678`\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(ehr, "QUALITY_DIR", quality_dir)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "base1234")
+
+    assert ehr._recorded_quality_baseline_ref() == "base1234"
+
+
+def test_recorded_quality_baseline_ref_ignores_missing_git_ref(monkeypatch, tmp_path) -> None:
+    quality_dir = tmp_path / "quality"
+    quality_dir.mkdir()
+    (quality_dir / "refactor_health_report.md").write_text(
+        "- Baseline source snapshot: `missing1234`\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.setattr(ehr, "QUALITY_DIR", quality_dir)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda _ref: False)
+
+    assert ehr._recorded_quality_baseline_ref() is None
 
 
 def _context() -> HealthReportContext:
     return HealthReportContext(
         generated_at="2026-06-02T00:00:00+00:00",
         base_ref="origin/main",
+        base_source_ref="base1234",
         current_ref="abc1234",
         base=_snapshot(label="origin/main"),
         current=_snapshot(
