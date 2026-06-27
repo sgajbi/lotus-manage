@@ -131,6 +131,10 @@ def _current_ref_name() -> str:
     return _git("rev-parse", "--abbrev-ref", "HEAD").strip()
 
 
+def _is_github_mainline_ref(ref_name: str) -> bool:
+    return bool(os.environ.get("GITHUB_REF_NAME")) and ref_name in {"main", "master"}
+
+
 def _recorded_quality_baseline_ref() -> str | None:
     report_path = QUALITY_DIR / "refactor_health_report.md"
     if not report_path.exists():
@@ -146,11 +150,11 @@ def _recorded_quality_baseline_ref() -> str | None:
 
 def _base_ref_for_quality_check() -> tuple[str, str]:
     ref_name = _current_ref_name()
-    if (
-        ref_name in {"main", "master"}
-        and not _git_status_porcelain().strip()
-        and _git_ref_exists("HEAD^")
-    ):
+    if ref_name in {"main", "master"} and _git_ref_exists("HEAD^"):
+        if _is_github_mainline_ref(ref_name):
+            return _recorded_quality_baseline_ref() or "HEAD^", DEFAULT_BASE_REF
+        if _git_status_porcelain().strip():
+            return DEFAULT_BASE_REF, DEFAULT_BASE_REF
         return _recorded_quality_baseline_ref() or "HEAD^", DEFAULT_BASE_REF
     return DEFAULT_BASE_REF, DEFAULT_BASE_REF
 
