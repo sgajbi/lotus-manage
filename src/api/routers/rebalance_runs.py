@@ -152,6 +152,7 @@ _ROUTE_MODULES: tuple[str, ...] = (
     "src.api.routers.rebalance_runs_workflow_state_routes",
     "src.api.routers.rebalance_runs_workflow_action_routes",
     "src.api.routers.rebalance_runs_workflow_history_routes",
+    "src.api.routers.rebalance_runs_idea_action_intake_routes",
 )
 
 register_route_modules(_ROUTE_MODULES)

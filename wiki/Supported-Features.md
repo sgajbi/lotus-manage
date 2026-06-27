@@ -14,6 +14,11 @@ capabilities listed below, but full front-office product claims require the gove
 `lotus-gateway` and `lotus-workbench` realization path to be implemented, validated, merged, and
 published.
 
+Current non-promotion boundary: `POST /api/v1/rebalance/idea-action-intake` exists only as a
+not-certified route foundation for `lotus-idea` conversion-intent handoff evidence. It is not a
+supported feature and does not create action-register records, approve rebalances, create orders,
+authorize client publication, or prove downstream execution.
+
 ```mermaid
 flowchart LR
     Core[lotus-core<br/>portfolio, mandate, tax-lot, tax profile/rule, cashflow, market-data sources]

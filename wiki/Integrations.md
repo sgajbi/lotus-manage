@@ -11,6 +11,9 @@
 - `lotus-advise`
   owner of advisor-led proposal simulation, proposal artifacts, and proposal lifecycle workflows;
   `lotus-manage` must not reintroduce those concerns
+- `lotus-idea`
+  source authority for opportunity candidates and conversion intents that may be handed to Manage
+  through a not-certified action-intake route foundation
 
 ## Boundary rules
 
@@ -22,6 +25,9 @@
 5. advisory proposal workflows should be integrated through `lotus-advise`
 6. risk-aware construction must consume `lotus-risk` authority or source-backed authority context;
    `lotus-manage` must not recalculate risk methodology locally
+7. `lotus-idea` action-intake handoff proves route existence only; it must not be treated as
+   action-register persistence, rebalance approval, order creation, client publication, or
+   supported-feature proof
 
 ## Core Sourcing Target
 
@@ -118,6 +124,9 @@ Strategic downstream consumption should use:
 11. `GET /api/v1/dpm/command-center` bounded command-center summary
 12. `/api/v1/construction/alternative-sets/*` construction alternative generate/read/selection
     routes
+13. `POST /api/v1/rebalance/idea-action-intake` for source-safe `lotus-idea` conversion-intent
+    handoff acknowledgement. This is a not-certified route foundation, not execution or
+    action-register creation proof.
 
 ## Construction Alternatives Upstream Authority
 

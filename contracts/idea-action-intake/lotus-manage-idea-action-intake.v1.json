@@ -1,0 +1,31 @@
+{
+  "schema_version": "lotus-manage.idea-action-intake.v1",
+  "repository": "lotus-manage",
+  "approved_producer_repository": "lotus-idea",
+  "approved_producer_product": "lotus-idea:IdeaCandidate:v1",
+  "owned_product": "lotus-manage:PortfolioActionRegister:v1",
+  "source_authority": "lotus-manage",
+  "lifecycle_status": "implemented",
+  "supportability_status": "not_certified",
+  "target_route": "POST /api/v1/rebalance/idea-action-intake",
+  "route_existence_proven": true,
+  "downstream_execution_proven": false,
+  "supported_feature_promoted": false,
+  "certification_blockers": [
+    "rebalance_execution_authority_remains_lotus_manage",
+    "action_register_persistence_not_certified",
+    "oms_execution_not_certified",
+    "client_publication_authority_blocked"
+  ],
+  "non_proof_boundaries": [
+    "Proves only a live route foundation for lotus-idea conversion-intent handoff into lotus-manage.",
+    "Does not grant suitability, mandate, rebalance, order, OMS, fill, settlement, or client-communication authority.",
+    "Does not create orders, action-register records, execution instructions, fills, settlement records, or client messages.",
+    "Does not promote a supported feature, client-ready workflow, data-product certification, or downstream execution proof."
+  ],
+  "evidence_refs": [
+    "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
+    "src/core/rebalance_runs/idea_action_intake.py",
+    "tests/unit/dpm/api/test_idea_action_intake_api.py"
+  ]
+}
