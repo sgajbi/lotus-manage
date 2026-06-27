@@ -102,6 +102,58 @@ def test_report_source_snapshot_marks_dirty_worktree(monkeypatch) -> None:
     ]
 
 
+def test_quality_report_check_uses_parent_commit_for_clean_mainline(monkeypatch) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def fake_git(*args: str) -> str:
+        calls.append(args)
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "main\n"
+        if args == ("status", "--porcelain"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "HEAD^")
+
+    assert ehr._base_ref_for_quality_check() == ("HEAD^", "origin/main")
+    assert calls == [
+        ("rev-parse", "--abbrev-ref", "HEAD"),
+        ("status", "--porcelain"),
+    ]
+
+
+def test_quality_report_check_uses_origin_main_for_feature_branch(monkeypatch) -> None:
+    def fake_git(*args: str) -> str:
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "feature/example\n"
+        raise AssertionError(args)
+
+    monkeypatch.delenv("GITHUB_REF_NAME", raising=False)
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda _ref: True)
+
+    assert ehr._base_ref_for_quality_check() == ("origin/main", "origin/main")
+
+
+def test_quality_report_check_uses_github_ref_name_for_mainline(monkeypatch) -> None:
+    calls: list[tuple[str, ...]] = []
+
+    def fake_git(*args: str) -> str:
+        calls.append(args)
+        if args == ("status", "--porcelain"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setenv("GITHUB_REF_NAME", "main")
+    monkeypatch.setattr(ehr, "_git", fake_git)
+    monkeypatch.setattr(ehr, "_git_ref_exists", lambda ref: ref == "HEAD^")
+
+    assert ehr._base_ref_for_quality_check() == ("HEAD^", "origin/main")
+    assert calls == [("status", "--porcelain")]
+
+
 def _context() -> HealthReportContext:
     return HealthReportContext(
         generated_at="2026-06-02T00:00:00+00:00",

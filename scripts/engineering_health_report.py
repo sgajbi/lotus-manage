@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import argparse
 import io
+import os
 import subprocess
 import sys
 import tarfile
@@ -104,6 +105,35 @@ def _git(*args: str) -> str:
 
 def _git_status_porcelain() -> str:
     return _git("status", "--porcelain")
+
+
+def _git_ref_exists(ref: str) -> bool:
+    completed = subprocess.run(
+        ["git", "rev-parse", "--verify", ref],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    return completed.returncode == 0
+
+
+def _current_ref_name() -> str:
+    env_ref_name = os.environ.get("GITHUB_REF_NAME")
+    if env_ref_name:
+        return env_ref_name
+    return _git("rev-parse", "--abbrev-ref", "HEAD").strip()
+
+
+def _base_ref_for_quality_check() -> tuple[str, str]:
+    ref_name = _current_ref_name()
+    if (
+        ref_name in {"main", "master"}
+        and not _git_status_porcelain().strip()
+        and _git_ref_exists("HEAD^")
+    ):
+        return "HEAD^", DEFAULT_BASE_REF
+    return DEFAULT_BASE_REF, DEFAULT_BASE_REF
 
 
 def _report_source_snapshot() -> str:
@@ -416,10 +446,15 @@ def _bounded_findings(title: str, findings: list[str]) -> str:
     return f"### {title}\n\n" + "\n".join(f"- `{item}`" for item in shown) + suffix + "\n"
 
 
-def _report_context(base_ref: str = DEFAULT_BASE_REF) -> HealthReportContext:
+def _report_context(
+    base_ref: str = DEFAULT_BASE_REF,
+    *,
+    base_label: str | None = None,
+) -> HealthReportContext:
     base_texts = _python_texts_from_git(base_ref)
+    display_base_ref = base_label or base_ref
     current_paths = _python_paths_from_worktree()
-    base = _snapshot_metrics_from_texts(label=base_ref, texts=base_texts)
+    base = _snapshot_metrics_from_texts(label=display_base_ref, texts=base_texts)
     current = _snapshot_metrics(
         label="current branch",
         paths=current_paths,
@@ -427,7 +462,7 @@ def _report_context(base_ref: str = DEFAULT_BASE_REF) -> HealthReportContext:
     )
     return HealthReportContext(
         generated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        base_ref=base_ref,
+        base_ref=display_base_ref,
         current_ref=_report_source_snapshot(),
         base=base,
         current=current,
@@ -875,7 +910,15 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    context = _report_context()
+    base_ref, base_label = (
+        _base_ref_for_quality_check()
+        if args.check
+        else (
+            DEFAULT_BASE_REF,
+            DEFAULT_BASE_REF,
+        )
+    )
+    context = _report_context(base_ref, base_label=base_label)
     if args.check:
         stale_paths = stale_report_paths(context)
         if stale_paths:
