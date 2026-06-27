@@ -1,7 +1,11 @@
 from fastapi.testclient import TestClient
 
 from src.api.main import app
-from src.core.rebalance_runs import IdeaActionIntakeRequest, acknowledge_idea_action_intake
+from src.core.rebalance_runs import (
+    IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS,
+    IdeaActionIntakeRequest,
+    acknowledge_idea_action_intake,
+)
 
 
 def _payload() -> dict[str, object]:
@@ -43,7 +47,7 @@ def test_idea_action_intake_route_returns_source_safe_non_execution_posture() ->
     assert body["rebalance_execution_authority_granted"] is False
     assert body["order_created"] is False
     assert body["client_publication_authorized"] is False
-    assert body["certification_blockers"] == ["rebalance_execution_authority_remains_lotus_manage"]
+    assert body["certification_blockers"] == IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS
     assert body["correlation_id"] == "corr-idea-action-001"
 
 
