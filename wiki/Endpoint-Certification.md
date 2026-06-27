@@ -729,7 +729,7 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportabili
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
-## Certified endpoint: Idea action-intake route foundation
+## Documented not-certified route foundation: Idea action intake
 
 Route:
 
@@ -753,7 +753,18 @@ Functional coverage:
 - returns `rebalance_execution_authority_granted=false`,
 - returns `order_created=false`,
 - returns `client_publication_authorized=false`,
+- returns all remaining certification blockers:
+  `rebalance_execution_authority_remains_lotus_manage`,
+  `action_register_persistence_not_certified`, `oms_execution_not_certified`, and
+  `client_publication_authority_blocked`,
 - rejects unsupported query parameters.
+
+Certification posture:
+
+- `supportability_status=not_certified`.
+- This route is documented for OpenAPI and route-existence traceability only. It must not be
+  represented as certified endpoint support until a later realization slice persists
+  action-register records and clears all certification blockers.
 
 Downstream consumers:
 

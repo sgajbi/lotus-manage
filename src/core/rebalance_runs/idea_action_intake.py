@@ -10,6 +10,12 @@ from pydantic import BaseModel, Field
 IdeaActionIntakeStatus = Literal["ROUTE_FOUNDATION_ACCEPTED_NOT_CERTIFIED"]
 IdeaActionIntakeSupportabilityStatus = Literal["not_certified"]
 IdeaActionIntentType = Literal["REVIEW_FOR_REBALANCE", "CREATE_MANAGEMENT_ACTION_DRAFT"]
+IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS = [
+    "rebalance_execution_authority_remains_lotus_manage",
+    "action_register_persistence_not_certified",
+    "oms_execution_not_certified",
+    "client_publication_authority_blocked",
+]
 
 IDEA_ACTION_INTAKE_REQUEST_EXAMPLE: dict[str, Any] = {
     "source_system": "lotus-idea",
@@ -39,7 +45,7 @@ IDEA_ACTION_INTAKE_RESPONSE_EXAMPLE: dict[str, Any] = {
     "rebalance_execution_authority_granted": False,
     "order_created": False,
     "client_publication_authorized": False,
-    "certification_blockers": ["rebalance_execution_authority_remains_lotus_manage"],
+    "certification_blockers": IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS,
     "evidence_refs": [
         "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
         "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
@@ -159,7 +165,7 @@ class IdeaActionIntakeResponse(BaseModel):
     )
     certification_blockers: list[str] = Field(
         description="Remaining blockers before this route can support certified realization.",
-        examples=[["rebalance_execution_authority_remains_lotus_manage"]],
+        examples=[IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS],
     )
     evidence_refs: list[str] = Field(
         description="Implementation and contract evidence references for the route foundation.",
@@ -198,7 +204,7 @@ def acknowledge_idea_action_intake(
         rebalance_execution_authority_granted=False,
         order_created=False,
         client_publication_authorized=False,
-        certification_blockers=["rebalance_execution_authority_remains_lotus_manage"],
+        certification_blockers=list(IDEA_ACTION_INTAKE_CERTIFICATION_BLOCKERS),
         evidence_refs=[
             "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
             "src/api/routers/rebalance_runs_idea_action_intake_routes.py",
