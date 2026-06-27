@@ -729,6 +729,48 @@ python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportabili
 LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
 ```
 
+## Certified endpoint: Idea action-intake route foundation
+
+Route:
+
+- `POST /api/v1/rebalance/idea-action-intake`
+
+Purpose:
+
+Source-safe handoff acknowledgement for `lotus-idea` conversion intents that may later become
+Manage-owned action-register work. This is route-existence proof for cross-repo readiness, not
+action-register persistence, rebalance approval, order creation, OMS routing, client contact,
+client publication, or supported-feature promotion.
+
+Functional coverage:
+
+- accepts only `lotus-idea:IdeaCandidate:v1` handoff envelopes,
+- requires at least one source-safe `source_refs` entry,
+- returns deterministic `intake_id` values from the source handoff identity,
+- returns `ROUTE_FOUNDATION_ACCEPTED_NOT_CERTIFIED`,
+- preserves `source_authority=lotus-idea` and `action_authority=lotus-manage`,
+- returns `action_register_created=false`,
+- returns `rebalance_execution_authority_granted=false`,
+- returns `order_created=false`,
+- returns `client_publication_authorized=false`,
+- rejects unsupported query parameters.
+
+Downstream consumers:
+
+- `lotus-idea` consumes the contract as Manage route-foundation evidence for RFC-0002 downstream
+  realization readiness.
+- Gateway and Workbench must not treat this route as a product-surface or client-demo support claim
+  until a later certified realization slice persists action-register records and clears downstream
+  blockers.
+
+Evidence commands:
+
+```bash
+python -m pytest tests/unit/dpm/api/test_idea_action_intake_api.py tests/unit/dpm/contracts/test_idea_action_intake_contract.py tests/unit/test_domain_data_product_contracts.py -q
+python -m pytest tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_error_responses_have_json_examples -q
+make domain-product-validate
+```
+
 ## Certified endpoint: deterministic run artifact
 
 Route:

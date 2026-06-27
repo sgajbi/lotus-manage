@@ -36,13 +36,14 @@
       "serving_plane": "query_control_plane_service",
       "current_routes": [
         "/api/v1/rebalance/supportability/summary",
+        "/api/v1/rebalance/idea-action-intake",
         "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
         "/api/v1/rebalance/workflow/decisions"
       ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs."
+        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. The lotus-idea action-intake route is a not-certified route foundation for source-safe conversion-intent handoff only; it does not create action-register records, grant rebalance authority, create orders, authorize client publication, or promote a supported feature."
       },
       "completeness_policy": {
         "default_status": "complete",

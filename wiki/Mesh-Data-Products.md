@@ -14,13 +14,19 @@
   evidence for opportunity intelligence and conversion orchestration; it does not own rebalance
   execution, PM operating controls, model-portfolio decisions, order routing, or OMS execution.
 - Supportability discovery: direct Idea consumers may call
-  `/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=<tenant>` before
-  consuming action-register evidence.
+   `/api/v1/integration/capabilities?consumer_system=lotus-idea&tenant_id=<tenant>` before
+   consuming action-register evidence.
+- Idea action-intake route foundation: `POST /api/v1/rebalance/idea-action-intake` accepts
+  source-safe `lotus-idea` conversion-intent handoff evidence and returns a not-certified
+  acknowledgement. It is route-existence proof only; it does not create action-register records,
+  approve rebalances, create orders, route OMS instructions, contact clients, authorize
+  publication, or promote a supported feature.
 - Implemented route families:
-  - `/api/v1/rebalance/supportability/summary`
-  - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
-  - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`
-  - `/api/v1/rebalance/workflow/decisions`
+   - `/api/v1/rebalance/supportability/summary`
+   - `/api/v1/rebalance/idea-action-intake`
+   - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
+   - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`
+   - `/api/v1/rebalance/workflow/decisions`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
 - Trust telemetry: `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
 

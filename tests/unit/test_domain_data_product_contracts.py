@@ -276,10 +276,18 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert product["serving_plane"] == "query_control_plane_service"
     assert product["current_routes"] == [
         "/api/v1/rebalance/supportability/summary",
+        "/api/v1/rebalance/idea-action-intake",
         "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
         "/api/v1/rebalance/workflow/decisions",
     ]
+    freshness_description = product["freshness_policy"]["max_allowed_age_description"]
+    assert "not-certified route foundation" in freshness_description
+    assert "does not create action-register records" in freshness_description
+    assert "grant rebalance authority" in freshness_description
+    assert "create orders" in freshness_description
+    assert "authorize client publication" in freshness_description
+    assert "promote a supported feature" in freshness_description
     assert product["lineage_policy"]["lineage_required"] is True
     assert product["lineage_policy"]["lineage_bundle_class_ref"] == "customer_lineage_summary"
 
