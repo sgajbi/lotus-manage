@@ -207,6 +207,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
     )
     monkeypatch.setattr(
         observability_module,
+        "CAMPAIGN_WORKFLOW_TOTAL",
+        _Counter("campaign_workflow"),
+    )
+    monkeypatch.setattr(
+        observability_module,
         "WAVE_SUPPORTABILITY_TOTAL",
         _Counter("wave"),
     )
@@ -231,6 +236,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         surface="run_id:rr_secret",
         action="actor:reviewer_001",
         outcome="portfolio_conflict",
+    )
+    observability_module.record_campaign_workflow(
+        surface="assignment_action/PB_SG_GLOBAL_BAL_001",
+        outcome="actor:pm_001",
+        reason="request_hash:sha256:secret",
     )
     observability_module.record_wave_supportability(
         surface="rebalance/waves/supportability/PB_SG_GLOBAL_BAL_001",
@@ -258,6 +268,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "surface": "run",
         "action": "unknown",
         "outcome": "error",
+    }
+    assert captured["campaign_workflow"] == {
+        "surface": "unknown",
+        "outcome": "error",
+        "reason": "unexpected_error",
     }
     assert captured["wave"] == {
         "surface": "rebalance/waves/supportability",

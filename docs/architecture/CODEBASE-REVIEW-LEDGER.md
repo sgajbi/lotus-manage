@@ -29794,3 +29794,41 @@ and improves internal transaction-cost source posture maintainability only.
 - Wiki decision: wiki source changed because supported-feature truth now includes fail-closed
   command-actor entitlement enforcement. Run repo wiki check-only before PR merge and publish from
   `main` after merge.
+
+## BACKEND-REVIEW-20260706-0580: Campaign workflow mutation product telemetry
+
+- Date: 2026-07-06
+- GitHub issue: #580
+- Scope: campaign approval-decision, assignment-action, assignment-task, maker-checker-control,
+  preview-readiness, launch-package, launch, launch-history route adapters, observability metric
+  contracts, operations runbook, and API/contract tests.
+- Bank-buyable control area: bounded product telemetry, operator triage, campaign workflow
+  supportability, and low-cardinality observability for controlled PM workflow mutations.
+- Finding: campaign workflow mutation, readiness, launch, and launch-history outcomes were visible
+  only through generic HTTP/request telemetry. Operators and product support could not distinguish
+  success, replay, duplicate-reference conflicts, validation failures, entitlement failures,
+  missing resources, blocked launch readiness, or unexpected errors without inspecting request
+  paths, payload context, or logs.
+- Action: added `lotus_manage_campaign_workflow_total` with allowlisted `surface`, `outcome`, and
+  `reason` labels, instrumented the campaign workflow mutation/readiness/launch/read-history route
+  helpers, and updated the monitoring contract with a dashboard panel, alert rule, and runbook
+  anchor. Added tests that prove unknown or sensitive caller values fall back to bounded labels and
+  that mutation/readiness/launch outcomes emit the expected low-cardinality labels without
+  campaign ids, portfolio ids, actor ids, correlation ids, request hashes, or idempotency keys.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for all touched Python files; `python -m ruff
+  format --check` passed for all touched Python files; `python -m mypy --config-file mypy.ini`
+  passed for the touched implementation and contract-validator files; focused telemetry tests
+  reported 3 passed; `python scripts/validate_observability_contracts.py` validated the monitoring
+  contract; `python -m pytest tests/unit/dpm/api/test_observability_api.py
+  tests/unit/dpm/api/test_waves_api.py tests/unit/test_observability_contracts.py -q` reported
+  154 passed.
+- Same-pattern scan: covered the full campaign workflow family named by the issue rather than only
+  assignment mutations, including preview readiness, launch package, launch replay, launch blocked,
+  launch history, and not-found paths.
+- Wiki decision: wiki source changed because the monitoring contract now references a campaign
+  workflow telemetry alert runbook anchor. Run repo wiki check-only before PR merge and publish
+  from `main` after merge. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports
+  expected pre-merge drift for `Operations-Runbook.md` and `Supported-Features.md`. The wiki
+  quality audit no longer flags the changed runbook page; remaining audit failures are existing
+  wiki-wide hygiene findings for `_Sidebar.md` and bare URLs in unchanged pages.

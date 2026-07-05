@@ -139,6 +139,50 @@
       "source": "src.api.observability.record_workflow_decision"
     },
     {
+      "name": "lotus_manage_campaign_workflow_total",
+      "type": "counter",
+      "description": "Counts bounded campaign workflow mutation, readiness, launch, and audit outcomes.",
+      "labels": {
+        "surface": [
+          "approval_decision",
+          "assignment_action",
+          "assignment_task_open",
+          "assignment_task_transition",
+          "maker_checker_control",
+          "preview_readiness",
+          "launch_package",
+          "launch",
+          "launch_history",
+          "unknown"
+        ],
+        "outcome": [
+          "success",
+          "replay",
+          "conflict",
+          "validation_failed",
+          "entitlement_failed",
+          "not_found",
+          "blocked",
+          "error"
+        ],
+        "reason": [
+          "success",
+          "replay",
+          "definition_conflict",
+          "reference_conflict",
+          "validation_error",
+          "entitlement_required",
+          "entitlement_denied",
+          "definition_not_found",
+          "task_not_found",
+          "launch_blocked",
+          "wave_validation_error",
+          "unexpected_error"
+        ]
+      },
+      "source": "src.api.observability.record_campaign_workflow"
+    },
+    {
       "name": "lotus_manage_wave_supportability_total",
       "type": "counter",
       "description": "Counts product-safe rebalance wave supportability endpoint outcomes.",
@@ -238,6 +282,13 @@
           "use_when": "Monitor discretionary mandate review-gate action outcomes without actor, run, or portfolio identifiers."
         },
         {
+          "panel_id": "campaign-workflow-outcomes",
+          "title": "Campaign Workflow Outcomes",
+          "metric": "lotus_manage_campaign_workflow_total",
+          "query": "sum by (surface, outcome, reason) (rate(lotus_manage_campaign_workflow_total[5m]))",
+          "use_when": "Monitor campaign approval, assignment, task, maker-checker, launch, readiness, and launch-history outcomes without campaign, actor, portfolio, correlation, or idempotency identifiers."
+        },
+        {
           "panel_id": "outcome-review-supportability",
           "title": "Post-Trade Outcome Review Supportability",
           "metric": "lotus_manage_outcome_review_supportability_total",
@@ -310,6 +361,15 @@
       "for": "10m",
       "description": "Workflow action requests are conflicting with current discretionary mandate review state.",
       "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-campaign-workflow-errors",
+      "severity": "warning",
+      "metric": "lotus_manage_campaign_workflow_total",
+      "expression": "sum(rate(lotus_manage_campaign_workflow_total{outcome=~\"conflict|entitlement_failed|blocked|error\"}[10m])) > 0",
+      "for": "10m",
+      "description": "Campaign workflow mutation, readiness, or launch outcomes require operator triage.",
+      "runbook": "wiki/Operations-Runbook.md#campaign-workflow-telemetry"
     },
     {
       "alert_id": "lotus-manage-outcome-review-blocked",

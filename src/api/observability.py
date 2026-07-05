@@ -46,6 +46,11 @@ DPM_WORKFLOW_DECISION_TOTAL = Counter(
     "lotus-manage workflow decision outcomes.",
     ["surface", "action", "outcome"],
 )
+CAMPAIGN_WORKFLOW_TOTAL = Counter(
+    "lotus_manage_campaign_workflow_total",
+    "lotus-manage campaign workflow mutation, readiness, launch, and audit outcomes.",
+    ["surface", "outcome", "reason"],
+)
 WAVE_SUPPORTABILITY_TOTAL = Counter(
     "lotus_manage_wave_supportability_total",
     "lotus-manage rebalance wave supportability endpoint outcomes.",
@@ -127,6 +132,48 @@ _ALLOWED_POLICY_PACK_SELECTED = frozenset({"true", "false"})
 _ALLOWED_WORKFLOW_SURFACES = frozenset({"run", "trace", "retry"})
 _ALLOWED_WORKFLOW_ACTIONS = frozenset({"approve", "reject", "request_changes", "unknown"})
 _ALLOWED_WORKFLOW_OUTCOMES = frozenset({"success", "not_found", "disabled", "conflict", "error"})
+_ALLOWED_CAMPAIGN_WORKFLOW_SURFACES = frozenset(
+    {
+        "approval_decision",
+        "assignment_action",
+        "assignment_task_open",
+        "assignment_task_transition",
+        "maker_checker_control",
+        "preview_readiness",
+        "launch_package",
+        "launch",
+        "launch_history",
+        "unknown",
+    }
+)
+_ALLOWED_CAMPAIGN_WORKFLOW_OUTCOMES = frozenset(
+    {
+        "success",
+        "replay",
+        "conflict",
+        "validation_failed",
+        "entitlement_failed",
+        "not_found",
+        "blocked",
+        "error",
+    }
+)
+_ALLOWED_CAMPAIGN_WORKFLOW_REASONS = frozenset(
+    {
+        "success",
+        "replay",
+        "definition_conflict",
+        "reference_conflict",
+        "validation_error",
+        "entitlement_required",
+        "entitlement_denied",
+        "definition_not_found",
+        "task_not_found",
+        "launch_blocked",
+        "wave_validation_error",
+        "unexpected_error",
+    }
+)
 _ALLOWED_WAVE_SUPPORTABILITY_SURFACES = frozenset({"rebalance/waves/supportability"})
 _ALLOWED_WAVE_SUPPORTABILITY_STATES = frozenset({"ready", "degraded", "blocked", "not_found"})
 _ALLOWED_WAVE_SUPPORTABILITY_REASONS = frozenset(
@@ -551,6 +598,31 @@ def record_workflow_decision(
             outcome,
             allowed_values=_ALLOWED_WORKFLOW_OUTCOMES,
             fallback="error",
+        ),
+    ).inc()
+
+
+def record_campaign_workflow(
+    *,
+    surface: str,
+    outcome: str,
+    reason: str,
+) -> None:
+    CAMPAIGN_WORKFLOW_TOTAL.labels(
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_CAMPAIGN_WORKFLOW_SURFACES,
+            fallback="unknown",
+        ),
+        outcome=_safe_metric_label(
+            outcome,
+            allowed_values=_ALLOWED_CAMPAIGN_WORKFLOW_OUTCOMES,
+            fallback="error",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_CAMPAIGN_WORKFLOW_REASONS,
+            fallback="unexpected_error",
         ),
     ).inc()
 
