@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from datetime import date
 from decimal import Decimal
-from typing import cast
+from typing import Any, cast
 
 import pytest
 from fastapi.testclient import TestClient
@@ -6971,3 +6971,354 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "Maximum number of launch audit records to include."
     )
     assert overview_parameters["launch_history_offset"] == "Zero-based launch audit page offset."
+
+
+def _openapi_operation(openapi: dict[str, Any], path: str, method: str) -> dict[str, Any]:
+    assert path in openapi["paths"], f"route presence drift: missing {path}"
+    assert method in openapi["paths"][path], f"method drift: missing {method.upper()} {path}"
+    return cast(dict[str, Any], openapi["paths"][path][method])
+
+
+def _json_response_schema_ref(operation: dict[str, Any], status_code: str) -> str:
+    response = operation["responses"][status_code]
+    schema = response["content"]["application/json"]["schema"]
+    assert "$ref" in schema, f"schema drift: {status_code} response should use a schema ref"
+    return cast(str, schema["$ref"])
+
+
+def _json_response_example(operation: dict[str, Any], status_code: str) -> dict[str, Any]:
+    response = operation["responses"][status_code]
+    content = response["content"]["application/json"]
+    examples = content.get("examples")
+    if isinstance(examples, dict):
+        return cast(dict[str, Any], examples["default"]["value"])
+    example = content.get("example")
+    assert isinstance(example, dict), (
+        f"example drift: {status_code} response should expose a JSON object example"
+    )
+    return cast(dict[str, Any], example)
+
+
+def _json_request_example(operation: dict[str, Any]) -> dict[str, Any]:
+    content = operation["requestBody"]["content"]["application/json"]
+    examples = content.get("examples")
+    if isinstance(examples, dict):
+        return cast(dict[str, Any], examples["default"]["value"])
+    example = content.get("example")
+    assert isinstance(example, dict), "example drift: request should expose a JSON object example"
+    return cast(dict[str, Any], example)
+
+
+def _assert_campaign_operation_metadata(
+    operation: dict[str, Any],
+    *,
+    operation_id: str,
+    summary: str,
+    description_fragments: tuple[str, ...],
+) -> None:
+    assert "lotus-manage Rebalance Waves" in operation["tags"], (
+        f"metadata drift: {operation_id} should stay in the rebalance wave tag group"
+    )
+    assert operation["operationId"] == operation_id, (
+        f"operationId drift: expected stable operationId {operation_id}"
+    )
+    assert operation["summary"] == summary, f"summary drift: {operation_id}"
+    description = operation["description"]
+    for fragment in description_fragments:
+        assert fragment in description, (
+            f"unsupported-boundary drift: {operation_id} missing description fragment {fragment!r}"
+        )
+
+
+def _assert_mutation_problem_details(
+    operation: dict[str, Any],
+    *,
+    not_found_detail: str,
+    conflict_detail: str,
+    validation_detail: str,
+) -> None:
+    expected = {
+        "404": ("Not Found", not_found_detail),
+        "409": ("Conflict", conflict_detail),
+        "422": ("Validation Error", validation_detail),
+    }
+    for status_code, (title, detail) in expected.items():
+        response = operation["responses"][status_code]
+        assert response["description"] == detail, (
+            f"error-doc drift: {status_code} response description changed"
+        )
+        example = _json_response_example(operation, status_code)
+        assert example["title"] == title, f"error-example drift: {status_code} title"
+        assert example["status"] == int(status_code), f"error-example drift: {status_code} status"
+        assert example["detail"] == detail, f"error-example drift: {status_code} detail"
+        assert example["correlation_id"] == "corr_1234abcd"
+
+
+def test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts() -> None:
+    with _client(InMemoryDpmMandateRepository(), InMemoryDpmWaveRepository()) as client:
+        openapi = client.get("/openapi.json").json()
+
+    schemas = openapi["components"]["schemas"]
+    assignment_plan = _openapi_operation(
+        openapi, "/api/v1/rebalance/waves/campaign-assignment-plan", "get"
+    )
+    workflow_automation = _openapi_operation(
+        openapi, "/api/v1/rebalance/waves/campaign-workflow-automation", "get"
+    )
+    assignment_actions_post = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-actions",
+        "post",
+    )
+    assignment_actions_get = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-actions",
+        "get",
+    )
+    assignment_tasks_post = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks",
+        "post",
+    )
+    assignment_tasks_get = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks",
+        "get",
+    )
+    assignment_transition_post = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks/{task_ref}/transitions",
+        "post",
+    )
+    maker_checker_post = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/maker-checker-controls",
+        "post",
+    )
+    maker_checker_get = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/maker-checker-controls",
+        "get",
+    )
+    approval_decisions_post = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/approval-decisions",
+        "post",
+    )
+    approval_decisions_get = _openapi_operation(
+        openapi,
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/approval-decisions",
+        "get",
+    )
+
+    _assert_campaign_operation_metadata(
+        assignment_plan,
+        operation_id=(
+            "list_bulk_review_campaign_assignment_plan_api_v1_rebalance_waves_"
+            "campaign_assignment_plan_get"
+        ),
+        summary="List bulk-review campaign assignment plan",
+        description_fragments=(
+            "read-only assignment and escalation plan",
+            "without mutating assignment state",
+            "creating escalation tasks",
+            "claiming OMS execution",
+        ),
+    )
+    _assert_campaign_operation_metadata(
+        workflow_automation,
+        operation_id=(
+            "list_bulk_review_campaign_workflow_automation_api_v1_rebalance_waves_"
+            "campaign_workflow_automation_get"
+        ),
+        summary="List bulk-review campaign workflow automation readiness",
+        description_fragments=(
+            "read-only Manage-side workflow automation readiness",
+            "does not mutate tasks",
+            "unsupported external workflow orchestration",
+            "ExternalWorkflowOrchestrationRecord:v1",
+        ),
+    )
+
+    promoted_operations = {
+        "assignment-actions post": assignment_actions_post,
+        "assignment-actions get": assignment_actions_get,
+        "assignment-tasks post": assignment_tasks_post,
+        "assignment-tasks get": assignment_tasks_get,
+        "assignment-task-transition post": assignment_transition_post,
+        "maker-checker-controls post": maker_checker_post,
+        "maker-checker-controls get": maker_checker_get,
+        "approval-decisions post": approval_decisions_post,
+        "approval-decisions get": approval_decisions_get,
+    }
+    for label, operation in promoted_operations.items():
+        assert "lotus-manage Rebalance Waves" in operation["tags"], (
+            f"metadata drift: {label} lost rebalance wave tags"
+        )
+        assert operation.get("summary"), f"metadata drift: {label} lost summary"
+        assert (
+            "Manage-owned" in operation["description"] or "Manage-side" in operation["description"]
+        ), f"metadata drift: {label} lost Manage ownership wording"
+
+    assert _json_response_schema_ref(assignment_plan, "200").endswith(
+        "/DpmBulkReviewCampaignAssignmentPlanPage"
+    )
+    assert _json_response_schema_ref(workflow_automation, "200").endswith(
+        "/DpmBulkReviewCampaignWorkflowAutomationPage"
+    )
+    assert _json_response_schema_ref(assignment_actions_get, "200").endswith(
+        "/DpmBulkReviewCampaignDefinitionAssignmentActionPage"
+    )
+    assert _json_response_schema_ref(assignment_tasks_get, "200").endswith(
+        "/DpmBulkReviewCampaignDefinitionAssignmentTaskPage"
+    )
+    assert _json_response_schema_ref(maker_checker_get, "200").endswith(
+        "/DpmBulkReviewCampaignDefinitionMakerCheckerControlPage"
+    )
+    assert _json_response_schema_ref(approval_decisions_get, "200").endswith(
+        "/DpmBulkReviewCampaignDefinitionApprovalDecisionPage"
+    )
+    for operation in (
+        assignment_actions_post,
+        assignment_tasks_post,
+        assignment_transition_post,
+        maker_checker_post,
+        approval_decisions_post,
+    ):
+        assert _json_response_schema_ref(operation, "201").endswith(
+            "/DpmBulkReviewCampaignDefinition"
+        )
+        assert "content_hash" in _json_response_example(operation, "201"), (
+            "success-example drift: mutation response should expose campaign definition example"
+        )
+
+    workflow_page_schema = schemas["DpmBulkReviewCampaignWorkflowAutomationPage"]
+    capability_schema_ref = workflow_page_schema["properties"]["capability_posture"]["$ref"]
+    assert capability_schema_ref.endswith("/DpmBulkReviewCampaignWorkflowCapabilityPosture"), (
+        "schema drift: workflow automation page must expose capability_posture schema"
+    )
+    capability_schema = schemas["DpmBulkReviewCampaignWorkflowCapabilityPosture"]
+    capability_properties = capability_schema["properties"]
+    assert capability_properties["external_workflow_orchestration"]["const"] == "UNSUPPORTED"
+    assert capability_properties["external_workflow_events_projected"]["const"] is False
+    assert capability_properties["required_source_product"]["default"] == (
+        "ExternalWorkflowOrchestrationRecord:v1"
+    )
+    assert (
+        "external workflow" in capability_properties["blocked_capabilities"]["description"].lower()
+    )
+    assert "governance" in capability_properties["promotion_requirements"]["description"].lower()
+    assert capability_properties["content_hash"]["description"].startswith("Canonical hash")
+
+    workflow_example = _json_response_example(workflow_automation, "200")
+    posture_example = workflow_example["capability_posture"]
+    assert posture_example["external_workflow_orchestration"] == "UNSUPPORTED"
+    assert posture_example["external_workflow_events_projected"] is False
+    assert posture_example["required_source_product"] == "ExternalWorkflowOrchestrationRecord:v1"
+    assert "external_workflow_task_creation" in posture_example["blocked_capabilities"]
+    assert "ExternalWorkflowOrchestrationRecord:v1" in posture_example["promotion_requirements"]
+    assert posture_example["content_hash"].startswith("sha256:")
+
+    request_expectations = {
+        "assignment action": (
+            assignment_actions_post,
+            {
+                "action_type",
+                "action_ref",
+                "recorded_by",
+                "action_reason",
+                "escalation_tier",
+                "sla_posture",
+                "correlation_id",
+            },
+        ),
+        "assignment task": (
+            assignment_tasks_post,
+            {
+                "task_ref",
+                "task_type",
+                "opened_by",
+                "task_reason",
+                "assigned_actor_ids",
+                "escalation_tier",
+                "sla_posture",
+                "correlation_id",
+            },
+        ),
+        "assignment task transition": (
+            assignment_transition_post,
+            {
+                "transition_type",
+                "transition_ref",
+                "transitioned_by",
+                "transition_reason",
+                "correlation_id",
+            },
+        ),
+        "maker-checker control": (
+            maker_checker_post,
+            {
+                "control_action",
+                "control_ref",
+                "recorded_by",
+                "control_outcome",
+                "control_reason",
+                "correlation_id",
+            },
+        ),
+        "approval decision": (
+            approval_decisions_post,
+            {
+                "decision_type",
+                "decision_ref",
+                "decided_by",
+                "decision_reason",
+                "correlation_id",
+            },
+        ),
+    }
+    for label, (operation, expected_fields) in request_expectations.items():
+        request_example = _json_request_example(operation)
+        assert expected_fields <= set(request_example), (
+            f"request-example drift: {label} example missing required fields"
+        )
+
+    _assert_mutation_problem_details(
+        assignment_actions_post,
+        not_found_detail="Campaign definition not found.",
+        conflict_detail="Assignment action reference conflict.",
+        validation_detail="Assignment action semantic validation failed.",
+    )
+    _assert_mutation_problem_details(
+        assignment_tasks_post,
+        not_found_detail="Campaign definition not found.",
+        conflict_detail="Assignment task reference conflict.",
+        validation_detail="Assignment task semantic validation failed.",
+    )
+    _assert_mutation_problem_details(
+        assignment_transition_post,
+        not_found_detail="Campaign definition or assignment task not found.",
+        conflict_detail="Assignment task transition reference conflict.",
+        validation_detail="Assignment task transition semantic validation failed.",
+    )
+    _assert_mutation_problem_details(
+        maker_checker_post,
+        not_found_detail="Campaign definition not found.",
+        conflict_detail="Maker-checker control reference conflict.",
+        validation_detail="Maker-checker control semantic validation failed.",
+    )
+    _assert_mutation_problem_details(
+        approval_decisions_post,
+        not_found_detail="Campaign definition not found.",
+        conflict_detail="Approval decision reference conflict.",
+        validation_detail="Approval decision semantic validation failed.",
+    )
