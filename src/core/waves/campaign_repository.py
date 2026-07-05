@@ -50,33 +50,38 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        """Persist launch evidence for a campaign definition."""
+        """Persist launch evidence when the stored definition still matches the expected hash."""
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        """Persist approval-decision evidence for a campaign definition."""
+        """Persist approval-decision evidence with optimistic stale-write protection."""
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        """Persist assignment-action evidence for a campaign definition."""
+        """Persist assignment-action evidence with optimistic stale-write protection."""
 
     def record_definition_assignment_task(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        """Persist assignment-task evidence for a campaign definition."""
+        """Persist assignment-task evidence with optimistic stale-write protection."""
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        """Persist maker-checker control evidence for a campaign definition."""
+        """Persist maker-checker control evidence with optimistic stale-write protection."""

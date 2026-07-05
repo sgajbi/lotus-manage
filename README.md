@@ -295,7 +295,11 @@ limit/offset, and posture/action count maps against the returned rows so audit s
 drift from the page payload. Append-only approval-decision, assignment-action, assignment-task,
 maker-checker-control, and launch-history pages also validate returned row count, page
 limit/offset, assignment-task count-map coverage, open-task coverage, and launch-history total-count
-window posture so audit evidence cannot carry internally inconsistent summaries. Manage also supports append-only
+window posture so audit evidence cannot carry internally inconsistent summaries. Campaign workflow
+evidence persistence uses the caller's base campaign-definition content hash as an optimistic
+compare-and-set guard; same-ref replay remains idempotent, while independently stale appends return
+HTTP 409 with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE` rather than overwriting newer audit
+evidence. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

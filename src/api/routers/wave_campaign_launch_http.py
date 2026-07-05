@@ -96,7 +96,10 @@ def launch_bulk_review_campaign_definition_response(
             idempotency_key=launch_command.idempotency_key,
         )
         if launched_definition.content_hash != definition.content_hash:
-            campaign_definition_repository.record_definition_launch(definition=launched_definition)
+            campaign_definition_repository.record_definition_launch(
+                definition=launched_definition,
+                expected_content_hash=definition.content_hash,
+            )
     except wave_service.DpmWaveValidationError as exc:
         http_exc = wave_validation_http_exception(exc, conflict_codes=())
         record_campaign_workflow_validation_failure(

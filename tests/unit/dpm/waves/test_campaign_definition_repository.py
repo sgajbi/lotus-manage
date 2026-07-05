@@ -457,7 +457,10 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
         idempotency_key="campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready",
     )
 
-    returned = repository.record_definition_launch(definition=launched)
+    returned = repository.record_definition_launch(
+        definition=launched,
+        expected_content_hash=definition.content_hash,
+    )
 
     assert returned == launched
     assert replayed == launched
@@ -471,16 +474,23 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
         )
         == launched
     )
-    assert repository.record_definition_launch(definition=launched) == launched
     assert (
         repository.record_definition_launch(
+            definition=launched,
+            expected_content_hash=definition.content_hash,
+        )
+        == launched
+    )
+    assert (
+        repository.record_definition_launch(
+            expected_content_hash=definition.content_hash,
             definition=DpmBulkReviewCampaignDefinition.model_validate(
                 {
                     **launched.model_dump(mode="python"),
                     "campaign_id": "missing-campaign",
                     "content_hash": "",
                 }
-            )
+            ),
         )
         is None
     )
@@ -535,11 +545,176 @@ def test_campaign_definition_launch_review_and_assignment_lifecycle_conflicts() 
             match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
         ):
             if updated is launched:
-                repository.record_definition_launch(definition=updated)
+                repository.record_definition_launch(
+                    definition=updated,
+                    expected_content_hash=definition.content_hash,
+                )
             elif updated is approved:
-                repository.record_definition_approval_decision(definition=updated)
+                repository.record_definition_approval_decision(
+                    definition=updated,
+                    expected_content_hash=definition.content_hash,
+                )
             else:
-                repository.record_definition_assignment_action(definition=updated)
+                repository.record_definition_assignment_action(
+                    definition=updated,
+                    expected_content_hash=definition.content_hash,
+                )
+
+
+@pytest.mark.parametrize(
+    ("method_name", "first_builder", "second_builder"),
+    [
+        (
+            "record_definition_launch",
+            lambda definition: record_bulk_review_campaign_definition_launch(
+                definition=definition,
+                wave_id="dwv_campaign_launch_001",
+                launched_by="pm_001",
+                requested_as_of_date="2026-05-10",
+                correlation_id="corr-campaign-definition-launch-001",
+                idempotency_key=(
+                    "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready"
+                ),
+            ),
+            lambda definition: record_bulk_review_campaign_definition_launch(
+                definition=definition,
+                wave_id="dwv_campaign_launch_002",
+                launched_by="pm_002",
+                requested_as_of_date="2026-05-10",
+                correlation_id="corr-campaign-definition-launch-002",
+                idempotency_key=(
+                    "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:retry"
+                ),
+            ),
+        ),
+        (
+            "record_definition_approval_decision",
+            lambda definition: record_bulk_review_campaign_definition_approval_decision(
+                definition=definition,
+                decision_type="APPROVED",
+                decision_ref="BRC-APPROVAL-2026-05-001",
+                decided_by="cio_ops_committee",
+                decision_reason="Approved for bounded DPM campaign launch.",
+                correlation_id="corr-campaign-approval-decision-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_approval_decision(
+                definition=definition,
+                decision_type="REJECTED",
+                decision_ref="BRC-APPROVAL-2026-05-002",
+                decided_by="cio_ops_committee",
+                decision_reason="Rejected by an independent review path.",
+                correlation_id="corr-campaign-approval-decision-002",
+            ),
+        ),
+        (
+            "record_definition_assignment_action",
+            lambda definition: record_bulk_review_campaign_definition_assignment_action(
+                definition=definition,
+                action_type="ASSIGNED",
+                action_ref="BRC-ASSIGN-2026-05-001",
+                recorded_by="ops",
+                action_reason="Route campaign to assigned PM.",
+                assigned_actor_ids=["pm_001"],
+                escalation_tier="PM",
+                sla_posture="ON_TRACK",
+                correlation_id="corr-campaign-assignment-action-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_assignment_action(
+                definition=definition,
+                action_type="ESCALATED",
+                action_ref="BRC-ASSIGN-2026-05-002",
+                recorded_by="ops",
+                action_reason="Escalate campaign to governance operations.",
+                assigned_actor_ids=["governance_ops"],
+                escalation_tier="GOVERNANCE",
+                sla_posture="ATTENTION",
+                correlation_id="corr-campaign-assignment-action-002",
+            ),
+        ),
+        (
+            "record_definition_assignment_task",
+            lambda definition: open_bulk_review_campaign_definition_assignment_task(
+                definition=definition,
+                task_ref="BRC-TASK-2026-05-001",
+                task_type="ASSIGNMENT",
+                opened_by="ops",
+                task_reason="Campaign requires PM acknowledgement.",
+                assigned_actor_ids=["pm_001"],
+                escalation_tier="PM",
+                sla_posture="ON_TRACK",
+                correlation_id="corr-campaign-assignment-task-001",
+            ),
+            lambda definition: open_bulk_review_campaign_definition_assignment_task(
+                definition=definition,
+                task_ref="BRC-TASK-2026-05-002",
+                task_type="ESCALATION",
+                opened_by="ops",
+                task_reason="Campaign requires operations escalation.",
+                assigned_actor_ids=["ops_lead"],
+                escalation_tier="OPS",
+                sla_posture="ATTENTION",
+                correlation_id="corr-campaign-assignment-task-002",
+            ),
+        ),
+        (
+            "record_definition_maker_checker_control",
+            lambda definition: record_bulk_review_campaign_definition_maker_checker_control(
+                definition=definition,
+                control_action="SUBMITTED_FOR_REVIEW",
+                control_ref="BRC-MC-2026-05-001",
+                recorded_by="ops",
+                submitter_actor_id="pm_001",
+                control_outcome="PENDING",
+                control_reason="Campaign definition submitted for independent review.",
+                correlation_id="corr-campaign-maker-checker-control-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_maker_checker_control(
+                definition=definition,
+                control_action="SUBMITTED_FOR_REVIEW",
+                control_ref="BRC-MC-2026-05-002",
+                recorded_by="ops",
+                submitter_actor_id="pm_002",
+                control_outcome="PENDING",
+                control_reason="Parallel campaign definition review submission.",
+                correlation_id="corr-campaign-maker-checker-control-002",
+            ),
+        ),
+    ],
+)
+def test_campaign_definition_repository_rejects_stale_independent_workflow_appends(
+    method_name: str,
+    first_builder,
+    second_builder,
+) -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition = _definition()
+    repository.save_definition(definition=definition)
+    first_update = first_builder(definition)
+    stale_update = second_builder(definition)
+
+    assert (
+        getattr(repository, method_name)(
+            definition=first_update,
+            expected_content_hash=definition.content_hash,
+        )
+        == first_update
+    )
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
+    ):
+        getattr(repository, method_name)(
+            definition=stale_update,
+            expected_content_hash=definition.content_hash,
+        )
+
+    assert (
+        repository.get_definition(
+            campaign_id=definition.campaign_id,
+            campaign_version=definition.campaign_version,
+        )
+        == first_update
+    )
 
 
 def test_campaign_definition_launch_history_page_is_bounded_audit_evidence() -> None:
@@ -610,7 +785,10 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
             )
         ],
     )
-    returned = repository.record_definition_approval_decision(definition=approved)
+    returned = repository.record_definition_approval_decision(
+        definition=approved,
+        expected_content_hash=definition.content_hash,
+    )
     page = build_bulk_review_campaign_definition_approval_decision_page(
         definition=approved,
         limit=1,
@@ -635,17 +813,24 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
     )
     assert (
         repository.record_definition_approval_decision(
+            expected_content_hash=definition.content_hash,
             definition=DpmBulkReviewCampaignDefinition.model_validate(
                 {
                     **approved.model_dump(mode="python"),
                     "campaign_id": "missing-campaign",
                     "content_hash": "",
                 }
-            )
+            ),
         )
         is None
     )
-    assert repository.record_definition_approval_decision(definition=approved) == approved
+    assert (
+        repository.record_definition_approval_decision(
+            definition=approved,
+            expected_content_hash=definition.content_hash,
+        )
+        == approved
+    )
 
     with pytest.raises(
         ValueError,
@@ -949,7 +1134,10 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
         sla_posture="ATTENTION",
         correlation_id="corr-campaign-assignment-action-002",
     )
-    returned = repository.record_definition_assignment_action(definition=escalated)
+    returned = repository.record_definition_assignment_action(
+        definition=escalated,
+        expected_content_hash=definition.content_hash,
+    )
     page = build_bulk_review_campaign_definition_assignment_action_page(
         definition=escalated,
         limit=50,
@@ -976,13 +1164,14 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
     )
     assert (
         repository.record_definition_assignment_action(
+            expected_content_hash=definition.content_hash,
             definition=DpmBulkReviewCampaignDefinition.model_validate(
                 {
                     **escalated.model_dump(mode="python"),
                     "campaign_id": "missing-campaign",
                     "content_hash": "",
                 }
-            )
+            ),
         )
         is None
     )
@@ -1029,7 +1218,10 @@ def test_campaign_definition_assignment_tasks_persist_current_state_and_transiti
         transition_reason="PM started campaign review.",
         correlation_id="corr-campaign-assignment-task-transition-001",
     )
-    returned = repository.record_definition_assignment_task(definition=started)
+    returned = repository.record_definition_assignment_task(
+        definition=started,
+        expected_content_hash=definition.content_hash,
+    )
     page = build_bulk_review_campaign_definition_assignment_task_page(
         definition=started,
         limit=50,
@@ -1067,10 +1259,22 @@ def test_campaign_definition_assignment_task_repository_edges() -> None:
         correlation_id="corr-campaign-assignment-task-001",
     )
 
-    assert repository.record_definition_assignment_task(definition=opened) is None
+    assert (
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
+        is None
+    )
 
     repository.save_definition(definition=opened)
-    assert repository.record_definition_assignment_task(definition=opened) == opened
+    assert (
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
+        == opened
+    )
 
     retired = DpmBulkReviewCampaignDefinition.model_validate(
         {
@@ -1100,7 +1304,10 @@ def test_campaign_definition_assignment_task_repository_edges() -> None:
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
     ):
-        repository.record_definition_assignment_task(definition=updated_retired)
+        repository.record_definition_assignment_task(
+            definition=updated_retired,
+            expected_content_hash=definition.content_hash,
+        )
 
 
 def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
@@ -1142,7 +1349,10 @@ def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
         control_reason="Independent reviewer accepted the campaign definition evidence.",
         correlation_id="corr-campaign-maker-checker-control-002",
     )
-    returned = repository.record_definition_maker_checker_control(definition=reviewed)
+    returned = repository.record_definition_maker_checker_control(
+        definition=reviewed,
+        expected_content_hash=definition.content_hash,
+    )
     page = build_bulk_review_campaign_definition_maker_checker_control_page(
         definition=reviewed,
         limit=50,
@@ -1182,10 +1392,22 @@ def test_campaign_definition_maker_checker_repository_edges() -> None:
         correlation_id="corr-campaign-maker-checker-control-001",
     )
 
-    assert repository.record_definition_maker_checker_control(definition=submitted) is None
+    assert (
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
+        is None
+    )
 
     repository.save_definition(definition=submitted)
-    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+    assert (
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
+        == submitted
+    )
 
     retired = DpmBulkReviewCampaignDefinition.model_validate(
         {
@@ -1214,7 +1436,10 @@ def test_campaign_definition_maker_checker_repository_edges() -> None:
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
     ):
-        repository.record_definition_maker_checker_control(definition=updated_retired)
+        repository.record_definition_maker_checker_control(
+            definition=updated_retired,
+            expected_content_hash=definition.content_hash,
+        )
 
 
 def test_campaign_definition_launch_command_is_ready_only() -> None:
@@ -1694,10 +1919,12 @@ class _Cursor:
 class _Connection:
     def __init__(self, cursors: list[_Cursor]) -> None:
         self._cursors = cursors
+        self.statements: list[tuple[str, object]] = []
         self.committed = False
         self.rolled_back = False
 
     def execute(self, _sql: str, _args: object = None) -> _Cursor:
+        self.statements.append((_sql, _args))
         return self._cursors.pop(0)
 
     def commit(self) -> None:
@@ -1842,8 +2069,17 @@ def test_postgres_campaign_definition_repository_records_launch_history() -> Non
     )
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
-    assert repository.record_definition_launch(definition=launched) == launched
+    assert (
+        repository.record_definition_launch(
+            definition=launched,
+            expected_content_hash=definition.content_hash,
+        )
+        == launched
+    )
     assert connection.committed is True
+    update_sql, update_args = connection.statements[1]
+    assert "AND content_hash = %s" in update_sql
+    assert update_args[-1] == definition.content_hash
 
 
 def test_postgres_campaign_definition_repository_records_approval_decisions() -> None:
@@ -1871,7 +2107,13 @@ def test_postgres_campaign_definition_repository_records_approval_decisions() ->
     )
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
-    assert repository.record_definition_approval_decision(definition=approved) == approved
+    assert (
+        repository.record_definition_approval_decision(
+            definition=approved,
+            expected_content_hash=definition.content_hash,
+        )
+        == approved
+    )
     assert connection.committed is True
 
 
@@ -1903,7 +2145,13 @@ def test_postgres_campaign_definition_repository_records_assignment_actions() ->
     )
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
-    assert repository.record_definition_assignment_action(definition=assigned) == assigned
+    assert (
+        repository.record_definition_assignment_action(
+            definition=assigned,
+            expected_content_hash=definition.content_hash,
+        )
+        == assigned
+    )
     assert connection.committed is True
 
 
@@ -1960,7 +2208,13 @@ def test_postgres_campaign_definition_repository_record_mutation_edges(
 
     missing_connection = _Connection([_Cursor(row=None)])
     repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
-    assert getattr(repository, method_name)(definition=updated) is None
+    assert (
+        getattr(repository, method_name)(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        is None
+    )
     assert missing_connection.rolled_back is True
 
     replay_connection = _Connection(
@@ -1975,7 +2229,13 @@ def test_postgres_campaign_definition_repository_record_mutation_edges(
         ]
     )
     repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
-    assert getattr(repository, method_name)(definition=updated) == updated
+    assert (
+        getattr(repository, method_name)(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
+        == updated
+    )
     assert replay_connection.rolled_back is True
 
     retired = DpmBulkReviewCampaignDefinition.model_validate(
@@ -2005,7 +2265,10 @@ def test_postgres_campaign_definition_repository_record_mutation_edges(
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
     ):
-        getattr(repository, method_name)(definition=updated)
+        getattr(repository, method_name)(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
     assert inactive_connection.rolled_back is True
 
     update_cursor = _Cursor()
@@ -2025,10 +2288,168 @@ def test_postgres_campaign_definition_repository_record_mutation_edges(
     repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
     with pytest.raises(
         DpmBulkReviewCampaignDefinitionConflictError,
-        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
     ):
-        getattr(repository, method_name)(definition=updated)
+        getattr(repository, method_name)(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
     assert rowcount_connection.rolled_back is True
+
+
+@pytest.mark.parametrize(
+    ("method_name", "stale_builder", "persisted_builder"),
+    [
+        (
+            "record_definition_launch",
+            lambda definition: record_bulk_review_campaign_definition_launch(
+                definition=definition,
+                wave_id="dwv_campaign_launch_001",
+                launched_by="pm_001",
+                requested_as_of_date="2026-05-10",
+                correlation_id="corr-campaign-definition-launch-001",
+                idempotency_key=(
+                    "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:ready"
+                ),
+            ),
+            lambda definition: record_bulk_review_campaign_definition_launch(
+                definition=definition,
+                wave_id="dwv_campaign_launch_002",
+                launched_by="pm_002",
+                requested_as_of_date="2026-05-10",
+                correlation_id="corr-campaign-definition-launch-002",
+                idempotency_key=(
+                    "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:retry"
+                ),
+            ),
+        ),
+        (
+            "record_definition_approval_decision",
+            lambda definition: record_bulk_review_campaign_definition_approval_decision(
+                definition=definition,
+                decision_type="APPROVED",
+                decision_ref="BRC-APPROVAL-2026-05-001",
+                decided_by="cio_ops_committee",
+                decision_reason="Approved for bounded DPM campaign launch.",
+                correlation_id="corr-campaign-approval-decision-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_approval_decision(
+                definition=definition,
+                decision_type="REJECTED",
+                decision_ref="BRC-APPROVAL-2026-05-002",
+                decided_by="cio_ops_committee",
+                decision_reason="Rejected by an independent review path.",
+                correlation_id="corr-campaign-approval-decision-002",
+            ),
+        ),
+        (
+            "record_definition_assignment_action",
+            lambda definition: record_bulk_review_campaign_definition_assignment_action(
+                definition=definition,
+                action_type="ASSIGNED",
+                action_ref="BRC-ASSIGN-2026-05-001",
+                recorded_by="ops",
+                action_reason="Route campaign to assigned PM.",
+                assigned_actor_ids=["pm_001"],
+                escalation_tier="PM",
+                sla_posture="ON_TRACK",
+                correlation_id="corr-campaign-assignment-action-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_assignment_action(
+                definition=definition,
+                action_type="ESCALATED",
+                action_ref="BRC-ASSIGN-2026-05-002",
+                recorded_by="ops",
+                action_reason="Escalate campaign to governance operations.",
+                assigned_actor_ids=["governance_ops"],
+                escalation_tier="GOVERNANCE",
+                sla_posture="ATTENTION",
+                correlation_id="corr-campaign-assignment-action-002",
+            ),
+        ),
+        (
+            "record_definition_assignment_task",
+            lambda definition: open_bulk_review_campaign_definition_assignment_task(
+                definition=definition,
+                task_ref="BRC-TASK-2026-05-001",
+                task_type="ASSIGNMENT",
+                opened_by="ops",
+                task_reason="Campaign requires PM acknowledgement.",
+                assigned_actor_ids=["pm_001"],
+                escalation_tier="PM",
+                sla_posture="ON_TRACK",
+                correlation_id="corr-campaign-assignment-task-001",
+            ),
+            lambda definition: open_bulk_review_campaign_definition_assignment_task(
+                definition=definition,
+                task_ref="BRC-TASK-2026-05-002",
+                task_type="ESCALATION",
+                opened_by="ops",
+                task_reason="Campaign requires operations escalation.",
+                assigned_actor_ids=["ops_lead"],
+                escalation_tier="OPS",
+                sla_posture="ATTENTION",
+                correlation_id="corr-campaign-assignment-task-002",
+            ),
+        ),
+        (
+            "record_definition_maker_checker_control",
+            lambda definition: record_bulk_review_campaign_definition_maker_checker_control(
+                definition=definition,
+                control_action="SUBMITTED_FOR_REVIEW",
+                control_ref="BRC-MC-2026-05-001",
+                recorded_by="ops",
+                submitter_actor_id="pm_001",
+                control_outcome="PENDING",
+                control_reason="Campaign definition submitted for independent review.",
+                correlation_id="corr-campaign-maker-checker-control-001",
+            ),
+            lambda definition: record_bulk_review_campaign_definition_maker_checker_control(
+                definition=definition,
+                control_action="SUBMITTED_FOR_REVIEW",
+                control_ref="BRC-MC-2026-05-002",
+                recorded_by="ops",
+                submitter_actor_id="pm_002",
+                control_outcome="PENDING",
+                control_reason="Parallel campaign definition review submission.",
+                correlation_id="corr-campaign-maker-checker-control-002",
+            ),
+        ),
+    ],
+)
+def test_postgres_campaign_definition_repository_rejects_stale_workflow_append(
+    method_name: str,
+    stale_builder,
+    persisted_builder,
+) -> None:
+    definition = _definition()
+    stale_update = stale_builder(definition)
+    persisted_update = persisted_builder(definition)
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(
+                row={
+                    "status": "ACTIVE",
+                    "content_hash": persisted_update.content_hash,
+                    "payload_json": persisted_update.model_dump(mode="json"),
+                }
+            ),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    with pytest.raises(
+        DpmBulkReviewCampaignDefinitionConflictError,
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
+    ):
+        getattr(repository, method_name)(
+            definition=stale_update,
+            expected_content_hash=definition.content_hash,
+        )
+
+    assert connection.rolled_back is True
+    assert len(connection.statements) == 1
 
 
 def test_postgres_campaign_definition_repository_records_assignment_tasks() -> None:
@@ -2059,7 +2480,13 @@ def test_postgres_campaign_definition_repository_records_assignment_tasks() -> N
     )
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
-    assert repository.record_definition_assignment_task(definition=opened) == opened
+    assert (
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
+        == opened
+    )
     assert connection.committed is True
 
 
@@ -2080,7 +2507,13 @@ def test_postgres_campaign_definition_repository_records_assignment_task_edges()
     repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
     missing_connection = _Connection([_Cursor(row=None)])
     repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
-    assert repository.record_definition_assignment_task(definition=opened) is None
+    assert (
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
+        is None
+    )
     assert missing_connection.rolled_back is True
 
     replay_connection = _Connection(
@@ -2095,7 +2528,13 @@ def test_postgres_campaign_definition_repository_records_assignment_task_edges()
         ]
     )
     repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
-    assert repository.record_definition_assignment_task(definition=opened) == opened
+    assert (
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
+        == opened
+    )
     assert replay_connection.rolled_back is True
 
     retired = DpmBulkReviewCampaignDefinition.model_validate(
@@ -2125,7 +2564,10 @@ def test_postgres_campaign_definition_repository_records_assignment_task_edges()
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
     ):
-        repository.record_definition_assignment_task(definition=opened)
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
     assert inactive_connection.rolled_back is True
 
     update_cursor = _Cursor()
@@ -2145,9 +2587,12 @@ def test_postgres_campaign_definition_repository_records_assignment_task_edges()
     repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
     with pytest.raises(
         DpmBulkReviewCampaignDefinitionConflictError,
-        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
     ):
-        repository.record_definition_assignment_task(definition=opened)
+        repository.record_definition_assignment_task(
+            definition=opened,
+            expected_content_hash=definition.content_hash,
+        )
     assert rowcount_connection.rolled_back is True
 
 
@@ -2178,7 +2623,13 @@ def test_postgres_campaign_definition_repository_records_maker_checker_controls(
     )
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
-    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+    assert (
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
+        == submitted
+    )
     assert connection.committed is True
 
 
@@ -2198,7 +2649,13 @@ def test_postgres_campaign_definition_repository_records_maker_checker_control_e
     repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
     missing_connection = _Connection([_Cursor(row=None)])
     repository._connect = lambda: missing_connection  # type: ignore[attr-defined, method-assign]
-    assert repository.record_definition_maker_checker_control(definition=submitted) is None
+    assert (
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
+        is None
+    )
     assert missing_connection.rolled_back is True
 
     replay_connection = _Connection(
@@ -2213,7 +2670,13 @@ def test_postgres_campaign_definition_repository_records_maker_checker_control_e
         ]
     )
     repository._connect = lambda: replay_connection  # type: ignore[attr-defined, method-assign]
-    assert repository.record_definition_maker_checker_control(definition=submitted) == submitted
+    assert (
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
+        == submitted
+    )
     assert replay_connection.rolled_back is True
 
     retired = DpmBulkReviewCampaignDefinition.model_validate(
@@ -2243,7 +2706,10 @@ def test_postgres_campaign_definition_repository_records_maker_checker_control_e
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
     ):
-        repository.record_definition_maker_checker_control(definition=submitted)
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
     assert inactive_connection.rolled_back is True
 
     update_cursor = _Cursor()
@@ -2263,9 +2729,12 @@ def test_postgres_campaign_definition_repository_records_maker_checker_control_e
     repository._connect = lambda: rowcount_connection  # type: ignore[attr-defined, method-assign]
     with pytest.raises(
         DpmBulkReviewCampaignDefinitionConflictError,
-        match="BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT",
+        match="BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
     ):
-        repository.record_definition_maker_checker_control(definition=submitted)
+        repository.record_definition_maker_checker_control(
+            definition=submitted,
+            expected_content_hash=definition.content_hash,
+        )
     assert rowcount_connection.rolled_back is True
 
 

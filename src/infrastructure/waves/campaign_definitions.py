@@ -118,45 +118,67 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            return self._record_active_definition_update(definition)
+            return self._record_active_definition_update(
+                definition,
+                expected_content_hash=expected_content_hash,
+            )
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            return self._record_active_definition_update(definition)
+            return self._record_active_definition_update(
+                definition,
+                expected_content_hash=expected_content_hash,
+            )
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            return self._record_active_definition_update(definition)
+            return self._record_active_definition_update(
+                definition,
+                expected_content_hash=expected_content_hash,
+            )
 
     def record_definition_assignment_task(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            return self._record_active_definition_update(definition)
+            return self._record_active_definition_update(
+                definition,
+                expected_content_hash=expected_content_hash,
+            )
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            return self._record_active_definition_update(definition)
+            return self._record_active_definition_update(
+                definition,
+                expected_content_hash=expected_content_hash,
+            )
 
     def _record_active_definition_update(
         self,
         definition: DpmBulkReviewCampaignDefinition,
+        *,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         key = (definition.campaign_id, definition.campaign_version)
         existing = self._definitions.get(key)
@@ -167,6 +189,10 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
         if existing.status != "ACTIVE":
             raise DpmBulkReviewCampaignDefinitionConflictError(
                 "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
+            )
+        if existing.content_hash != expected_content_hash:
+            raise DpmBulkReviewCampaignDefinitionConflictError(
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
             )
         self._definitions[key] = deepcopy(definition)
         return deepcopy(definition)
@@ -411,40 +437,62 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(definition)
+        return self._record_active_definition_update(
+            definition,
+            expected_content_hash=expected_content_hash,
+        )
 
     def record_definition_approval_decision(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(definition)
+        return self._record_active_definition_update(
+            definition,
+            expected_content_hash=expected_content_hash,
+        )
 
     def record_definition_assignment_action(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(definition)
+        return self._record_active_definition_update(
+            definition,
+            expected_content_hash=expected_content_hash,
+        )
 
     def record_definition_maker_checker_control(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(definition)
+        return self._record_active_definition_update(
+            definition,
+            expected_content_hash=expected_content_hash,
+        )
 
     def record_definition_assignment_task(
         self,
         *,
         definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(definition)
+        return self._record_active_definition_update(
+            definition,
+            expected_content_hash=expected_content_hash,
+        )
 
     def _record_active_definition_update(
         self,
         definition: DpmBulkReviewCampaignDefinition,
+        *,
+        expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with closing(self._connect()) as connection:
             persisted = connection.execute(
@@ -467,24 +515,33 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
                 )
+            if existing.content_hash != expected_content_hash:
+                connection.rollback()
+                raise DpmBulkReviewCampaignDefinitionConflictError(
+                    "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
+                )
             updated = connection.execute(
                 """
                 UPDATE dpm_bulk_review_campaign_definitions
                 SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
+                WHERE campaign_id = %s
+                  AND campaign_version = %s
+                  AND status = 'ACTIVE'
+                  AND content_hash = %s
                 """,
                 (
                     definition.content_hash,
                     dump_model_json(definition),
                     definition.campaign_id,
                     definition.campaign_version,
+                    expected_content_hash,
                 ),
             )
             rowcount = getattr(updated, "rowcount", 1)
             if rowcount != 1:
                 connection.rollback()
                 raise DpmBulkReviewCampaignDefinitionConflictError(
-                    "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
+                    "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
                 )
             connection.commit()
             return definition
