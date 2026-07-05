@@ -4,6 +4,12 @@ This page records endpoint-by-endpoint certification evidence for `lotus-manage`
 implementation-backed API readiness before broader Gateway or Workbench integration is treated as
 demo proof.
 
+| Reader | Use This Page To | Evidence Posture |
+| --- | --- | --- |
+| API reviewer | Verify each certified route has functional behavior, non-functional posture, source ownership, Swagger truth, and evidence commands. | Certification is repo-local and implementation-backed; it is not standalone demo proof. |
+| Operations/support | Find the route family, common failure posture, and command evidence for support-safe diagnosis. | Endpoint claims must remain bounded and source-safe. |
+| Future agent or engineer | Keep route behavior, OpenAPI descriptions, tests, and wiki truth synchronized during issue fixes. | Update this page when API semantics or certification evidence changes. |
+
 ## Certification standard
 
 An endpoint is complete only when these checks are true:
@@ -2096,7 +2102,11 @@ Functional behavior:
 
 - searches a bounded Manage-local portfolio-memory index across persisted proof packs, rebalance
   waves, monitoring exceptions, outcome reviews, and optional caller-supplied portfolio ids,
-- filters the search index by event type, supportability state, and represented source system,
+- filters the search index by event type, aggregate supportability state, represented source
+  system, and represented source type,
+- applies `supportability_state` to aggregate portfolio-memory summaries only; matching-event
+  metadata and matching-event facets remain driven by `event_type`, `source_system`, and
+  `source_type`,
 - normalizes leading/trailing whitespace on event-type, supportability-state, and represented
   source-system filters before validation and matching, treating blank text filters as absent,
 - rejects unsupported event-type filters with an explicit

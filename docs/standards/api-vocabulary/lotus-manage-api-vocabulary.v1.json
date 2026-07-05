@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-05T09:23:30.259556+00:00",
+  "generatedAt": "2026-07-05T23:14:18.438597+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -7994,7 +7994,7 @@
       "semanticId": "lotus.matching_event_count",
       "canonicalTerm": "matching_event_count",
       "preferredName": "matching_event_count",
-      "description": "Number of events in this portfolio-memory view that match the applied event, source system, source type, and supportability filters. When no filters are supplied this equals event_count.",
+      "description": "Number of events in this portfolio-memory view that match the applied event, source system, and source type filters. The aggregate supportability_state filter is applied to the portfolio-memory summary and does not filter matching events. When no event/source filters are supplied this equals event_count.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -19950,7 +19950,7 @@
       "location": "query",
       "required": false,
       "type": "object",
-      "description": "Optional aggregate supportability-state filter. Leading and trailing whitespace is normalized before matching. Supported states: `READY`, `PENDING_REVIEW`, `DEGRADED`, `BLOCKED`, `EMPTY`.",
+      "description": "Optional aggregate portfolio-memory supportability-state filter applied to search summaries only; it does not filter matching-event metadata or matching-event facets. Leading and trailing whitespace is normalized before matching. Supported states: `READY`, `PENDING_REVIEW`, `DEGRADED`, `BLOCKED`, `EMPTY`.",
       "example": "STANDARD_VALUE",
       "allowedValues": [],
       "semanticId": "lotus.supportability_state",

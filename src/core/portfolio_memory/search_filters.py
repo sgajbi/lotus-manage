@@ -2,10 +2,7 @@
 
 from collections.abc import Iterable
 
-from src.core.portfolio_memory.models import (
-    DpmPortfolioMemoryEvent,
-    PortfolioMemorySupportabilityState,
-)
+from src.core.portfolio_memory.models import DpmPortfolioMemoryEvent
 from src.core.portfolio_memory.event_projection import (
     event_source_systems as projected_event_source_systems,
     event_source_types as projected_event_source_types,
@@ -25,16 +22,11 @@ def event_matches_search_filters(
     *,
     event: DpmPortfolioMemoryEvent,
     event_type: str | None,
-    supportability_state: PortfolioMemorySupportabilityState | None,
     source_system: str | None,
     source_type: str | None,
 ) -> bool:
     return (
         _event_type_matches(event=event, event_type=event_type)
-        and _event_supportability_matches(
-            event=event,
-            supportability_state=supportability_state,
-        )
         and _event_source_system_matches(event=event, source_system=source_system)
         and _event_source_type_matches(event=event, source_type=source_type)
     )
@@ -42,14 +34,6 @@ def event_matches_search_filters(
 
 def _event_type_matches(*, event: DpmPortfolioMemoryEvent, event_type: str | None) -> bool:
     return event_type is None or event.event_type == event_type
-
-
-def _event_supportability_matches(
-    *,
-    event: DpmPortfolioMemoryEvent,
-    supportability_state: PortfolioMemorySupportabilityState | None,
-) -> bool:
-    return supportability_state is None or event.supportability_state == supportability_state
 
 
 def _event_source_system_matches(

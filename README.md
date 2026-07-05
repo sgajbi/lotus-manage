@@ -153,10 +153,12 @@ type, matched-event supportability state, matched-event source systems, matched-
 types, and represented source system plus matching-event context and stable matching-event
 identity/source coordinates so
 consumers can distinguish the latest overall memory event, aggregate portfolio posture, and
-portfolio-level source-system coverage from the specific event that satisfied an
-event/source/supportability filter without loading every portfolio timeline. The optional
-`source_type` query filter searches the same Manage-local matching-event source type, source refs,
-and artifact refs used for those facets; it is not a global cross-app source-event search.
+portfolio-level source-system coverage from the specific event that satisfied an event/source
+filter without loading every portfolio timeline. The optional `supportability_state` query filter
+is aggregate-only and does not filter matching-event metadata or matching-event facet counts. The
+optional `source_type` query filter searches the same Manage-local matching-event source type,
+source refs, and artifact refs used for those facets; it is not a global cross-app source-event
+search.
 Gateway PR #242 and Workbench PR #350 realize these bounded source-lineage filters and facets
 downstream through Gateway-only portfolio-memory search consumption without broadening Manage into
 global portfolio-universe discovery or cross-app source-event search.

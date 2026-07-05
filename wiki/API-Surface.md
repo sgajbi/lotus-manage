@@ -1,5 +1,18 @@
 # API Surface
 
+## Current Scope And Reader Map
+
+This page maps the current `lotus-manage` API surface to implementation-backed discretionary
+mandate management capabilities. It is an operator and integration guide, not a future-roadmap
+inventory: unsupported OMS execution, client communication, global portfolio-universe discovery,
+and source-owner methodology remain explicit boundaries unless a route section says otherwise.
+
+| Reader | Start Here | Evidence Posture |
+| --- | --- | --- |
+| Gateway or Workbench integrator | Portfolio memory, wave, proof-pack, outcome-review, and PM-quality surfaces | Routes are backed by repo tests, OpenAPI gates, and supported-feature wiki truth. |
+| Operations or support | Run supportability, portfolio memory, and endpoint certification links | Current routes expose bounded supportability, source lineage, and no-claim boundaries. |
+| Future agent or engineer | Route family sections plus README and endpoint certification | Keep route descriptions aligned with code, OpenAPI, API vocabulary, and tests. |
+
 ## Core management surfaces
 
 - `POST /api/v1/rebalance/simulate`
@@ -223,6 +236,8 @@ and solver target generation is runtime-discovered from installed solver depende
   `source_scan_limit`. After trimming blanks and deduplicating values, explicit `portfolio_ids`
   must not exceed `source_scan_limit`; over-limit requests fail with HTTP `422` instead of forcing
   unbounded per-portfolio memory assembly.
+  `supportability_state` is an aggregate summary filter; matching-event metadata and matching-event
+  facets remain driven by `event_type`, `source_system`, and `source_type`.
 - `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`
   returns the deterministic source-backed portfolio timeline for one portfolio. The route returns
   at most `100` events by default and is capped at `500` events for API detail responses.

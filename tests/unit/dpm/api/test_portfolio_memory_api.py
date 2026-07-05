@@ -1603,6 +1603,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
             "/api/v1/rebalance/portfolio-memory/search",
             params={
                 "event_type": "WAVE_HANDOFF_READY",
+                "supportability_state": "DEGRADED",
                 "source_system": "lotus-manage",
                 "source_type": "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
                 "limit": 10,
@@ -1622,7 +1623,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert payload["applied_filters"] == {
         "portfolio_ids": [],
         "event_type": "WAVE_HANDOFF_READY",
-        "supportability_state": None,
+        "supportability_state": "DEGRADED",
         "source_system": "lotus-manage",
         "source_type": "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
     }
@@ -1712,10 +1713,18 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     assert "portfolio_ids" in filter_schema["properties"]
     assert "event_type" in filter_schema["properties"]
     assert "supportability_state" in filter_schema["properties"]
+    assert (
+        "search summaries only"
+        in filter_schema["properties"]["supportability_state"]["description"]
+    )
     assert "source_system" in filter_schema["properties"]
     assert "source_type" in filter_schema["properties"]
     search_item_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemorySearchItem"]
     assert "matching_event_count" in search_item_schema["properties"]
+    assert (
+        "does not filter matching events"
+        in search_item_schema["properties"]["matching_event_count"]["description"]
+    )
     assert "latest_matching_event_type" in search_item_schema["properties"]
     assert "latest_matching_event_identity" in search_item_schema["properties"]
     assert "latest_matching_event_source_system" in search_item_schema["properties"]
