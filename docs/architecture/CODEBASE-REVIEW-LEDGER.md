@@ -29759,3 +29759,38 @@ and improves internal transaction-cost source posture maintainability only.
   affected mutation surface.
 - Wiki decision: no wiki source change required; this corrects API status-code semantics and
   OpenAPI metadata without changing the documented business workflow or operator runbook.
+
+## BACKEND-REVIEW-20260706-0579: Campaign workflow mutation actor entitlements
+
+- Date: 2026-07-06
+- GitHub issue: #579
+- Scope: assignment-action, assignment-task open, assignment-task transition, and maker-checker
+  control domain mutation helpers, API behavior tests, README, repository context, and wiki
+  supported-feature truth.
+- Bank-buyable control area: campaign governance enforcement, controlled workflow mutation
+  authorization, audit posture, and fail-closed evidence mutation for private-banking operators.
+- Finding: preview/create/launch readiness already enforced campaign actor entitlements, but
+  workflow evidence mutation helpers accepted body-supplied actors without checking
+  `governance.entitled_actor_ids`. A governed campaign could therefore accumulate assignment,
+  assignment-task, transition, or maker-checker evidence from an actor outside the campaign
+  allow-list.
+- Action: added a shared campaign command-actor entitlement guard and applied it to assignment
+  actions (`recorded_by`), assignment task opens (`opened_by`), assignment task transitions
+  (`transitioned_by`), and maker-checker controls (`recorded_by`). The guard keeps absent or empty
+  entitlement lists permissive, rejects unlisted command actors with
+  `BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED`, and runs before appending new evidence. Added direct
+  domain tests, API no-persistence tests, and updated README/context/wiki source to reflect the
+  durable command-actor rule.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for the touched core and test files; `python -m ruff
+  format --check` passed for the touched core and test files; `python -m mypy --config-file
+  mypy.ini` passed for the touched core files; focused entitlement tests reported 6 passed;
+  `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py
+  tests/unit/dpm/api/test_waves_api.py -q` reported 246 passed.
+- Same-pattern scan: enforced the rule across every command-actor mutation surface named by the
+  issue rather than only one endpoint. Approval decisions remain outside this slice because their
+  reviewer actor can legitimately sit outside the campaign operating allow-list and the issue did
+  not request a privileged approval actor model change.
+- Wiki decision: wiki source changed because supported-feature truth now includes fail-closed
+  command-actor entitlement enforcement. Run repo wiki check-only before PR merge and publish from
+  `main` after merge.

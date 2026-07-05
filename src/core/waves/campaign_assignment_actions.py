@@ -8,6 +8,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from src.core.waves.campaign_actor_entitlements import validate_campaign_command_actor_entitlement
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentAction,
@@ -96,6 +97,10 @@ def record_bulk_review_campaign_definition_assignment_action(
         assigned_actor_ids=assigned_actor_ids,
         escalation_tier=escalation_tier,
         correlation_id=correlation_id,
+    )
+    validate_campaign_command_actor_entitlement(
+        definition=definition,
+        actor_id=request.recorded_by,
     )
 
     action = _build_action(

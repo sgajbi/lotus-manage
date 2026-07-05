@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from src.core.waves.campaign_actor_entitlements import validate_campaign_command_actor_entitlement
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentTask,
@@ -150,6 +151,10 @@ def open_bulk_review_campaign_definition_assignment_task(
         assigned_actor_ids=assigned_actor_ids,
         correlation_id=correlation_id,
     )
+    validate_campaign_command_actor_entitlement(
+        definition=definition,
+        actor_id=normalized.opened_by,
+    )
 
     task = _build_task(
         definition=definition,
@@ -193,6 +198,10 @@ def transition_bulk_review_campaign_definition_assignment_task(
         transitioned_by=transitioned_by,
         transition_reason=transition_reason,
         correlation_id=correlation_id,
+    )
+    validate_campaign_command_actor_entitlement(
+        definition=definition,
+        actor_id=normalized.transitioned_by,
     )
 
     task_index, task = _assignment_task_for_ref(

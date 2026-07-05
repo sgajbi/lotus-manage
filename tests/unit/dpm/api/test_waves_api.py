@@ -3671,6 +3671,106 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
     assert "oms_execution" in payload["maker_checker_controls"][0]["forbidden_actions"]
 
 
+def test_bulk_review_campaign_workflow_mutations_enforce_actor_entitlement() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition_request = _bulk_review_campaign_definition_request()
+    definition_request["governance"] = {
+        **_bulk_review_campaign_governance(),
+        "entitled_actor_ids": ["pm_001"],
+    }
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=definition_request)
+        assignment_action = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-2026-05-001",
+                "recorded_by": "ops",
+                "action_reason": "Route campaign to assigned PM.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-action-unentitled",
+            },
+        )
+        assignment_actions = client.get(f"{route}/assignment-actions")
+        task_open = client.post(
+            f"{route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-2026-05-001",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "ops",
+                "task_reason": "Campaign requires PM acknowledgement.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-task-unentitled",
+            },
+        )
+        task_open_entitled = client.post(
+            f"{route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-2026-05-001",
+                "task_type": "ASSIGNMENT",
+                "opened_by": "pm_001",
+                "task_reason": "Campaign requires PM acknowledgement.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-task-entitled",
+            },
+        )
+        task_transition = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-001/transitions",
+            json={
+                "transition_type": "ACKNOWLEDGED",
+                "transition_ref": "BRC-TASK-2026-05-001:ack",
+                "transitioned_by": "ops",
+                "transition_reason": "Unentitled acknowledgement.",
+                "correlation_id": "corr-campaign-assignment-task-transition-unentitled",
+            },
+        )
+        assignment_tasks = client.get(f"{route}/assignment-tasks")
+        maker_checker = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "SUBMITTED_FOR_REVIEW",
+                "control_ref": "BRC-MC-2026-05-001",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "control_outcome": "PENDING",
+                "control_reason": "Campaign definition submitted for review.",
+                "correlation_id": "corr-campaign-maker-checker-unentitled",
+            },
+        )
+        maker_checker_controls = client.get(f"{route}/maker-checker-controls")
+
+    assert put_response.status_code == 200
+    for response in (assignment_action, task_open, task_transition, maker_checker):
+        assert response.status_code == 422
+        assert response.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"
+
+    assert assignment_actions.status_code == 200
+    assert assignment_actions.json()["count"] == 0
+    assert task_open_entitled.status_code == 201
+    assert assignment_tasks.status_code == 200
+    task_payload = assignment_tasks.json()
+    assert task_payload["count"] == 1
+    assert task_payload["assignment_tasks"][0]["status"] == "OPEN"
+    assert len(task_payload["assignment_tasks"][0]["transitions"]) == 1
+    assert maker_checker_controls.status_code == 200
+    assert maker_checker_controls.json()["count"] == 0
+
+
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())
