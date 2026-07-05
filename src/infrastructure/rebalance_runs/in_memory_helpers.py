@@ -2,7 +2,7 @@ import json
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from src.core.rebalance_runs.models import (
     DpmAsyncOperationRecord,
@@ -397,13 +397,15 @@ def _operation_request_portfolio_id(request_json: dict[str, object] | None) -> s
             portfolio_snapshot.get("portfolio_id"),
             str,
         ):
-            return portfolio_snapshot["portfolio_id"]
+            portfolio_id = cast(str, portfolio_snapshot["portfolio_id"])
+            return portfolio_id
     portfolio_snapshot = request_json.get("portfolio_snapshot")
     if isinstance(portfolio_snapshot, dict) and isinstance(
         portfolio_snapshot.get("portfolio_id"),
         str,
     ):
-        return portfolio_snapshot["portfolio_id"]
+        portfolio_id = cast(str, portfolio_snapshot["portfolio_id"])
+        return portfolio_id
     return None
 
 
