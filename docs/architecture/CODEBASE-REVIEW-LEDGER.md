@@ -29775,6 +29775,41 @@ and improves internal transaction-cost source posture maintainability only.
   operations documentation guidance already require explicit transaction, recovery, and runbook
   behavior for multi-write state changes.
 
+## BACKEND-REVIEW-20260706-0588: Campaign workflow operations runbook
+
+- Date: 2026-07-06
+- GitHub issue: #588
+- Scope: campaign workflow operator runbook, repo-local service operations runbook, and codebase
+  review ledger.
+- Bank-buyable control area: production supportability, safe replay/recovery guidance,
+  source-safe incident handling, and no-claim operational boundaries.
+- Finding: campaign workflow had grown into a supported control surface across launch history,
+  approval decisions, assignment actions, assignment tasks/transitions, maker-checker controls,
+  workflow board, assignment plan, and workflow automation, but the operations runbook only covered
+  telemetry. Operators lacked concrete symptom triage, route-level diagnosis, replay/recovery
+  posture, data-safety rules, and escalation boundaries.
+- Action: added a full `Campaign workflow operations` section to `wiki/Operations-Runbook.md`
+  covering first checks, diagnosis endpoints, evidence-family triage, safe actions, launch-audit
+  retry, stale-write conflicts, current #580/#582/#583 support, pending #586 materialization scope,
+  no-OMS/no-client-contact/no-external-workflow boundaries, source-safe incident notes, escalation
+  by owner family, and repo-native validation commands. Updated
+  `docs/runbooks/service-operations.md` with a concise pointer and matching safety boundaries.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests/unit/dpm/api/test_waves_api.py
+  tests/unit/dpm/waves/test_campaign_definition_repository.py -q` passed with 207 tests;
+  `python scripts/validate_observability_contracts.py` passed;
+  `python scripts/openapi_quality_gate.py` passed; changed-page wiki audit no longer flags
+  `Operations-Runbook.md` after adding first-screen scope/evidence posture, while legacy failures
+  remain in `_Sidebar.md`, `API-Surface.md`, `Endpoint-Certification.md`, `Integrations.md`,
+  `Overview.md`, and `Validation-and-CI.md`; repo wiki check-only reports expected pre-merge drift
+  for `Operations-Runbook.md` and `Supported-Features.md`.
+- Same-pattern scan: covered both repo-authored wiki source and the repo-local service runbook
+  rather than leaving campaign workflow recovery guidance in only one documentation surface.
+- Wiki decision: wiki source changed; publish from `main` after merge. Pre-merge check-only is
+  expected to report drift for `Operations-Runbook.md` and `Supported-Features.md`.
+- Guidance decision: no platform skill update required; existing README/wiki governance guidance
+  already requires runbooks to expose recovery/replay, data-safety, escalation, and evidence paths.
+
 ## BACKEND-REVIEW-20260706-0584: Campaign read-model pagination after filters
 
 - Date: 2026-07-06
