@@ -767,9 +767,7 @@ def test_repository_scoped_supportability_summary_excludes_wrong_portfolio_opera
             result_json={"ok": True},
             error_json=None,
             request_json={
-                "batch_request": {
-                    "portfolio_snapshot": {"portfolio_id": "pf_repo_scope_1"}
-                }
+                "batch_request": {"portfolio_snapshot": {"portfolio_id": "pf_repo_scope_1"}}
             },
         )
     )
@@ -785,9 +783,7 @@ def test_repository_scoped_supportability_summary_excludes_wrong_portfolio_opera
             result_json=None,
             error_json={"code": "FAILED"},
             request_json={
-                "batch_request": {
-                    "portfolio_snapshot": {"portfolio_id": "pf_repo_scope_2"}
-                }
+                "batch_request": {"portfolio_snapshot": {"portfolio_id": "pf_repo_scope_2"}}
             },
         )
     )
