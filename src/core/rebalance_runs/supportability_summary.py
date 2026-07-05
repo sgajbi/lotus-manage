@@ -21,7 +21,9 @@ def build_supportability_summary_response(
     portfolio_id: str | None = None,
     source_refs: list[dict[str, object]] | None = None,
 ) -> DpmSupportabilitySummaryResponse:
-    portfolio_scope_confirmed = portfolio_id is not None and summary.run_count > 0
+    portfolio_scope_confirmed = portfolio_id is not None and (
+        summary.run_count > 0 or summary.operation_count > 0
+    )
     return DpmSupportabilitySummaryResponse(
         store_backend=store_backend,
         retention_days=retention_days,

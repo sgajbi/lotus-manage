@@ -771,6 +771,15 @@ def test_repository_scoped_supportability_summary_excludes_wrong_portfolio_opera
             },
         )
     )
+    repository.append_lineage_edge(
+        DpmLineageEdgeRecord(
+            source_entity_id="dop_repo_scope_matching",
+            edge_type="OPERATION_TO_CORRELATION",
+            target_entity_id="corr_repo_scope_direct",
+            created_at=now + timedelta(seconds=2),
+            metadata_json={"operation_type": "ANALYZE_SCENARIOS"},
+        )
+    )
     repository.create_operation(
         DpmAsyncOperationRecord(
             operation_id="dop_repo_scope_other",
@@ -792,6 +801,7 @@ def test_repository_scoped_supportability_summary_excludes_wrong_portfolio_opera
 
     assert summary.operation_count == 1
     assert summary.operation_status_counts == {"SUCCEEDED": 1}
+    assert summary.lineage_edge_count == 1
 
 
 def test_repository_workflow_decision_contract(repository):

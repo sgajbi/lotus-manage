@@ -314,7 +314,7 @@ class DpmSupportabilitySummaryResponse(BaseModel):
         examples=[True],
     )
     source_batch_fingerprint: str = Field(
-        description="Deterministic fingerprint for the returned action-register source batch.",
+        description="Deterministic fingerprint for the returned source batch.",
         examples=["sha256:lotus-manage-action-register"],
     )
     source_refs: list[dict[str, object]] = Field(

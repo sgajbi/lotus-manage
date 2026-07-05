@@ -309,6 +309,10 @@ def _supportability_summary_data(
         portfolio_id=portfolio_id,
         correlation_ids=scoped_correlation_ids,
     )
+    scoped_operation_ids = {operation.operation_id for operation in scoped_operations}
+    scoped_operation_correlation_ids = {
+        operation.correlation_id for operation in scoped_operations if operation.correlation_id
+    }
     scoped_workflow_decisions = _scoped_workflow_decisions(
         workflow_decisions=workflow_decisions,
         portfolio_id=portfolio_id,
@@ -317,7 +321,13 @@ def _supportability_summary_data(
     scoped_lineage_edges_by_entity = _scoped_lineage_edges(
         lineage_edges_by_entity=lineage_edges_by_entity,
         portfolio_id=portfolio_id,
-        entity_ids=scoped_run_ids | scoped_correlation_ids | scoped_idempotency_keys,
+        entity_ids=(
+            scoped_run_ids
+            | scoped_correlation_ids
+            | scoped_idempotency_keys
+            | scoped_operation_ids
+            | scoped_operation_correlation_ids
+        ),
     )
     workflow_decision_count, workflow_action_counts, workflow_reason_code_counts = (
         _workflow_decision_counts(scoped_workflow_decisions)

@@ -740,24 +740,43 @@ class PostgresDpmRunRepository:
             GROUP BY reason_code
         """
         lineage_edge_count_query = """
+            WITH scoped_operations AS (
+                SELECT o.operation_id, o.correlation_id
+                FROM dpm_async_operations o
+                WHERE COALESCE(
+                    o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                    o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+                ) = %s
+                OR (
+                    o.correlation_id IN (
+                        SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+                    )
+                    AND (
+                        o.request_json IS NULL
+                        OR COALESCE(
+                            o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                            o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+                        ) = %s
+                    )
+                )
+            ),
+            scoped_entities AS (
+                SELECT rebalance_run_id AS entity_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT correlation_id AS entity_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT idempotency_key AS entity_id FROM dpm_runs
+                WHERE portfolio_id = %s AND idempotency_key IS NOT NULL
+                UNION
+                SELECT operation_id AS entity_id FROM scoped_operations
+                UNION
+                SELECT correlation_id AS entity_id FROM scoped_operations
+                WHERE correlation_id IS NOT NULL
+            )
             SELECT COUNT(*) AS lineage_edge_count
             FROM dpm_lineage_edges
-            WHERE source_entity_id IN (
-                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
-                UNION
-                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
-                UNION
-                SELECT idempotency_key FROM dpm_runs
-                WHERE portfolio_id = %s AND idempotency_key IS NOT NULL
-            )
-            OR target_entity_id IN (
-                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
-                UNION
-                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
-                UNION
-                SELECT idempotency_key FROM dpm_runs
-                WHERE portfolio_id = %s AND idempotency_key IS NOT NULL
-            )
+            WHERE source_entity_id IN (SELECT entity_id FROM scoped_entities)
+            OR target_entity_id IN (SELECT entity_id FROM scoped_entities)
         """
         with closing(self._connect()) as connection:
             run_row = connection.execute(run_query, (portfolio_id,)).fetchone()

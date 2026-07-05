@@ -13141,7 +13141,7 @@
       "semanticId": "lotus.source_batch_fingerprint",
       "canonicalTerm": "source_batch_fingerprint",
       "preferredName": "source_batch_fingerprint",
-      "description": "Deterministic fingerprint for the returned action-register source batch.",
+      "description": "Deterministic fingerprint for the returned source batch.",
       "example": "sample_source_batch_fingerprint",
       "type": "string",
       "locations": [
