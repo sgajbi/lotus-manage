@@ -30098,3 +30098,43 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: README and wiki source changed because the API contract
   semantics changed. Repository context and platform skills do not need updates; this is an
   app-local search contract correction, not a repeatable platform routing or workflow change.
+
+## BACKEND-REVIEW-20260706-0590: Portfolio-memory search source scan batching
+
+- Date: 2026-07-06
+- GitHub issue: #590
+- Scope: portfolio-memory search source collection, search service assembly, OpenAPI/schema
+  descriptions, API vocabulary inventory, README, API surface wiki, and focused source/API tests.
+- Bank-buyable control area: search latency, repository load, bounded audit semantics, and
+  source-lineage preservation without broadening Manage into a global portfolio-universe service.
+- Finding: portfolio-memory search first discovered candidate portfolio ids, then rebuilt a full
+  source-backed memory aggregate for every candidate before pagination. That replayed the same
+  source-family scans across candidates and made default search cost scale with
+  `candidate_count x source_family_count`, while still reporting `source_scan_limit` as if one
+  bounded repository pass controlled the request shape.
+- Action: added a search-specific batch collector that scans each supported Manage-local source
+  family once per bounded request, groups projected events by candidate portfolio id, and feeds
+  grouped events into the existing aggregate/search-page builders. Single-portfolio detail reads
+  keep their existing repository-filtered collection path. Search still reports exact `total_count`
+  and facet counts over the bounded source-family scan, not over a global portfolio universe.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\dpm\portfolio_memory
+  tests\unit\dpm\api\test_portfolio_memory_api.py -q` reported 171 passed; focused Ruff check and
+  format-check passed for touched source/test files; focused mypy passed for changed source files;
+  `python scripts\openapi_quality_gate.py` passed; `python -m pytest
+  tests\unit\test_documentation_current_state.py -q` reported 28 passed; changed `API-Surface.md`
+  wiki quality audit passed.
+- Same-pattern scan: covered proof-pack, wave, outcome-review, mandate exception, campaign
+  definition, PM-quality score-run, review-action, and summary-invocation source families. The
+  regression instruments repository list calls and proves source-family list scans remain one per
+  search while returning multiple portfolio candidates. Construction and mandate-health enrichment
+  remain portfolio-scoped because the repository contracts do not expose global list primitives;
+  the batch path runs them after candidate discovery so result parity is preserved.
+- Design decision: this is a design-modularity and query-shape fix inside the existing
+  `lotus-manage` service. A materialized search read model, repository-level search index, or
+  separate runtime search service remains future work only if latency, retention, repair, or
+  independent scaling evidence justifies it.
+- Docs/wiki/context/skill decision: README, OpenAPI descriptions, API vocabulary, and API-surface
+  wiki source changed because bounded count semantics changed. Repository context and platform
+  skills do not need updates; this is an app-local performance/query-shape correction using the
+  existing issue-fix and pre-merge workflow.

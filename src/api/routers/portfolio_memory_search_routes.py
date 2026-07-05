@@ -52,12 +52,12 @@ def _raise_portfolio_memory_search_validation_error(exc: ValueError) -> NoReturn
         "When: Use when PM, CIO, operations, audit, Gateway, or Workbench consumers need to find "
         "portfolios with existing Manage memory evidence before loading a single portfolio "
         "timeline.\n"
-        "How: The endpoint scans persisted proof packs, rebalance waves, monitoring exceptions, "
-        "campaign definitions, and outcome reviews, then composes each matching portfolio with "
-        "the same source-backed memory assembler used by the detail route. It can filter by "
-        "event type, aggregate supportability state, represented source system, and represented "
-        "source type. Aggregate supportability filtering is applied to portfolio-memory summaries "
-        "only; matching-event metadata and facets remain driven by event/source filters. It does "
+        "How: The endpoint scans each supported Manage-local source family once per bounded "
+        "request, groups projected memory events by candidate portfolio, and returns exact totals "
+        "and facets over that bounded scan. It can filter by event type, aggregate supportability "
+        "state, represented source system, and represented source type. Aggregate supportability "
+        "filtering is applied to portfolio-memory summaries only; matching-event metadata and "
+        "facets remain driven by event/source filters. It does "
         "not discover the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
         "events, project client contact/message/delivery/approval events, or recalculate risk, "
@@ -124,7 +124,11 @@ def search_portfolio_memory_index(
         default=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_DEFAULT,
         ge=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MIN,
         le=PORTFOLIO_MEMORY_SOURCE_SCAN_LIMIT_MAX,
-        description="Maximum rows to scan from each Manage-local evidence repository.",
+        description=(
+            "Maximum rows to scan from each Manage-local evidence repository. Search totals and "
+            "facet counts are exact over the bounded source-family scan, not over a global "
+            "portfolio universe."
+        ),
     ),
     repositories: PortfolioMemorySourceRepositories = Depends(
         get_portfolio_memory_source_repositories

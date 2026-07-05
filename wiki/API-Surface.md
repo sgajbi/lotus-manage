@@ -235,7 +235,9 @@ and solver target generation is runtime-discovered from installed solver depende
   `supportability_state`, `source_system`, `source_type`, `limit`, `offset`, and
   `source_scan_limit`. After trimming blanks and deduplicating values, explicit `portfolio_ids`
   must not exceed `source_scan_limit`; over-limit requests fail with HTTP `422` instead of forcing
-  unbounded per-portfolio memory assembly.
+  unbounded per-portfolio memory assembly. Search scans each supported source family once per
+  bounded request, groups projected events by candidate portfolio, and reports exact `total_count`
+  and facet counts over that bounded scan rather than over a global portfolio universe.
   `supportability_state` is an aggregate summary filter; matching-event metadata and matching-event
   facets remain driven by `event_type`, `source_system`, and `source_type`.
 - `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}`

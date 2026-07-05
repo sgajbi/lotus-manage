@@ -163,13 +163,16 @@ Gateway PR #242 and Workbench PR #350 realize these bounded source-lineage filte
 downstream through Gateway-only portfolio-memory search consumption without broadening Manage into
 global portfolio-universe discovery or cross-app source-event search.
 Portfolio-level source-system coverage includes event owners, source refs, and artifact refs so
-report, AI, and archive handoff evidence is not hidden from audit search facets. Pagination metadata
-also returns `has_more`, `next_offset`, the normalized `applied_filters` echo, and the
-`source_scan_limit` used for each Manage-local evidence repository so consumers can continue
-bounded searches without reconstructing continuation logic, filter posture, or scan-cap posture
-from counts. Search pages validate returned-count, total-count, has-more, next-offset,
-supportability-count, source-system-count, and matching-event-count posture against the returned
-rows. Each portfolio-memory view and search page carries a deterministic `content_hash`
+report, AI, and archive handoff evidence is not hidden from audit search facets. Search scans each
+supported Manage-local source family once per bounded request, groups projected events by candidate
+portfolio, and reports exact `total_count` and facet counts over that bounded source-family scan;
+those counts are not a claim over a global portfolio universe. Pagination metadata also returns
+`has_more`, `next_offset`, the normalized `applied_filters` echo, and the `source_scan_limit` used
+for each Manage-local evidence repository so consumers can continue bounded searches without
+reconstructing continuation logic, filter posture, or scan-cap posture from counts. Search pages
+validate returned-count, total-count, has-more, next-offset, supportability-count,
+source-system-count, and matching-event-count posture against the returned rows. Each
+portfolio-memory view and search page carries a deterministic `content_hash`
 that excludes `generated_at` so audit review can reconcile equivalent source-backed views and
 result pages without timestamp churn. Portfolio-memory aggregate event count, event-type counts,
 source-system coverage, reason-code rollups, supportability state, and governance posture are
