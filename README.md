@@ -351,6 +351,9 @@ using deterministic launch idempotency; and listing append-only launch history a
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-history`
 with wave id, actor, requested as-of date, correlation id, idempotency key, pagination, and
 explicit no-order/no-OMS operating boundaries;
+if durable wave creation succeeds but launch-history persistence returns a 409 stale-write
+conflict, retrying the same launch request reuses the existing wave through the deterministic
+idempotency key and repairs the missing launch audit without creating another wave;
 retired and superseded definitions stay auditable in list/get/discovery/lifecycle-event results but
 fail closed for new preview/create requests. Global portfolio-universe campaign discovery, external
 workflow orchestration beyond Manage-side task readiness and append-only evidence ledgers,
