@@ -3,6 +3,12 @@ from __future__ import annotations
 from typing import Iterable
 
 
+def page_items[T](items: list[T], *, limit: int, offset: int) -> list[T]:
+    """Return a stable page window after read-model filtering and classification."""
+
+    return items[offset : offset + limit]
+
+
 def validate_page_count(*, count: int, item_count: int, field_name: str = "count") -> None:
     """Validate that a page count reflects the returned rows."""
 

@@ -25,7 +25,11 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_OPERATING_QUEUE_BOUNDARIES,
 )
-from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
+from src.core.waves.campaign_page_validation import (
+    page_items,
+    validate_count_map,
+    validate_page_count,
+)
 
 CampaignOperatingQueueStatus = Literal["READY_TO_LAUNCH", "ATTENTION_REQUIRED", "CLOSED"]
 CampaignOperatingQueuePosture = tuple[CampaignOperatingQueueStatus, list[str]]
@@ -183,8 +187,9 @@ def build_bulk_review_campaign_operating_queue_page(
         active_on=active_on,
         include_expired=include_expired,
     )
+    page = page_items(items, limit=limit, offset=offset)
     payload = _operating_queue_page_payload(
-        items=items,
+        items=page,
         limit=limit,
         offset=offset,
     )

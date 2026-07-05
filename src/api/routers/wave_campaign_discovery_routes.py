@@ -18,6 +18,7 @@ from src.core.waves import (
     DpmBulkReviewCampaignDiscoveryPage,
     build_bulk_review_campaign_discovery_item,
 )
+from src.core.waves.campaign_page_validation import page_items
 
 router = APIRouter()
 
@@ -70,9 +71,10 @@ def discover_bulk_review_campaigns(
     ]
     if campaign_query.active_on is not None and not include_expired:
         items = [item for item in items if item.expiry_state != "EXPIRED"]
+    page = page_items(items, limit=limit, offset=offset)
     return DpmBulkReviewCampaignDiscoveryPage(
-        items=items,
+        items=page,
         limit=limit,
         offset=offset,
-        count=len(items),
+        count=len(page),
     )

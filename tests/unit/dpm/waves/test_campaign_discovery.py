@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
+from typing import Any
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -185,6 +186,20 @@ def _definition(
         ],
         created_by="ops",
         correlation_id="corr-campaign-definition-001",
+    )
+
+
+def _definition_with_id(
+    campaign_id: str,
+    *,
+    display_name: str | None = None,
+    **kwargs: Any,
+) -> DpmBulkReviewCampaignDefinition:
+    return _definition(**kwargs).model_copy(
+        update={
+            "campaign_id": campaign_id,
+            "display_name": display_name or campaign_id,
+        }
     )
 
 
@@ -423,6 +438,26 @@ def test_campaign_operating_queue_page_filters_expired_rows_and_counts_statuses(
     assert page.content_hash.startswith("sha256:")
 
 
+def test_campaign_operating_queue_paginates_after_expiry_filtering() -> None:
+    page = build_bulk_review_campaign_operating_queue_page(
+        definitions=[
+            _definition_with_id("campaign-expired-first", expires_on="2026-05-01"),
+            _definition_with_id("campaign-active-first"),
+            _definition_with_id("campaign-active-second"),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_expired=False,
+        limit=1,
+        offset=1,
+    )
+
+    assert page.count == 1
+    assert [item.campaign_id for item in page.items] == ["campaign-active-second"]
+    assert page.status_counts == {"READY_TO_LAUNCH": 1}
+
+
 def test_campaign_approval_inbox_classifies_governance_attention() -> None:
     complete = build_bulk_review_campaign_approval_inbox_item(
         definition=_definition(),
@@ -553,6 +588,37 @@ def test_campaign_approval_inbox_page_filters_closed_and_status() -> None:
     assert page.content_hash.startswith("sha256:")
 
 
+def test_campaign_approval_inbox_paginates_after_status_filtering() -> None:
+    page = build_bulk_review_campaign_approval_inbox_page(
+        definitions=[
+            _definition_with_id("campaign-approved"),
+            _definition_with_id(
+                "campaign-approval-required-first",
+                approval_ref=None,
+                approved_by=None,
+                approved_at=None,
+            ),
+            _definition_with_id(
+                "campaign-approval-required-second",
+                approval_ref=None,
+                approved_by=None,
+                approved_at=None,
+            ),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_closed=False,
+        inbox_status="APPROVAL_REQUIRED",
+        limit=1,
+        offset=1,
+    )
+
+    assert page.count == 1
+    assert [item.campaign_id for item in page.items] == ["campaign-approval-required-second"]
+    assert page.status_counts == {"APPROVAL_REQUIRED": 1}
+
+
 def test_campaign_workflow_board_derives_actor_next_actions() -> None:
     ready = build_bulk_review_campaign_workflow_board_item(
         definition=_definition(),
@@ -675,6 +741,39 @@ def test_campaign_workflow_board_page_filters_next_action_and_counts() -> None:
     assert page.next_action_counts == {"RECORD_APPROVAL_DECISION": 1}
     assert page.items[0].next_action == "RECORD_APPROVAL_DECISION"
     assert page.content_hash.startswith("sha256:")
+
+
+def test_campaign_workflow_board_paginates_after_next_action_filtering() -> None:
+    page = build_bulk_review_campaign_workflow_board_page(
+        definitions=[
+            _definition_with_id("campaign-ready"),
+            _definition_with_id(
+                "campaign-approval-required-first",
+                approval_ref=None,
+                approved_by=None,
+                approved_at=None,
+            ),
+            _definition_with_id(
+                "campaign-approval-required-second",
+                approval_ref=None,
+                approved_by=None,
+                approved_at=None,
+            ),
+        ],
+        requested_as_of_date="2026-05-10",
+        actor_id="pm_001",
+        active_on=date(2026, 5, 16),
+        include_closed=False,
+        board_status=None,
+        next_action="RECORD_APPROVAL_DECISION",
+        limit=1,
+        offset=1,
+    )
+
+    assert page.count == 1
+    assert [item.campaign_id for item in page.items] == ["campaign-approval-required-second"]
+    assert page.status_counts == {"ATTENTION_FOR_ACTOR": 1}
+    assert page.next_action_counts == {"RECORD_APPROVAL_DECISION": 1}
 
 
 def test_campaign_workflow_board_helpers_filter_count_and_hash_rows() -> None:

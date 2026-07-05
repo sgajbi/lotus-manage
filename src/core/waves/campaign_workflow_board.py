@@ -19,7 +19,11 @@ from src.core.waves.campaign_operating_queue import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_WORKFLOW_BOARD_OPERATING_BOUNDARIES,
 )
-from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
+from src.core.waves.campaign_page_validation import (
+    page_items,
+    validate_count_map,
+    validate_page_count,
+)
 
 
 CampaignWorkflowBoardStatus = Literal[
@@ -185,8 +189,9 @@ def build_bulk_review_campaign_workflow_board_page(
         board_status=board_status,
         next_action=next_action,
     )
+    page = page_items(items, limit=limit, offset=offset)
     return DpmBulkReviewCampaignWorkflowBoardPage.model_validate(
-        _workflow_board_page_payload(items=items, limit=limit, offset=offset)
+        _workflow_board_page_payload(items=page, limit=limit, offset=offset)
     )
 
 
