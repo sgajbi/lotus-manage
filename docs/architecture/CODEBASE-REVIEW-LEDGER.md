@@ -30209,3 +30209,38 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: domain-product README and Mesh Data Products wiki source
   changed because active producer trust posture changed. Repository context and platform skills do
   not need updates; the reusable guardrail is now encoded in the Manage test.
+
+## BACKEND-REVIEW-20260706-0575: Local repository navigation READMEs
+
+- Date: 2026-07-06
+- GitHub issue: #575
+- Scope: root README navigation, top-level docs/contracts/scripts/tests/src/quality/monitoring
+  guidance, contract-subtree README coverage, and documentation current-state validation.
+- Bank-buyable control area: agent operability, safe edit boundaries, validation discoverability,
+  and generated-versus-authored source truth.
+- Finding: the root README had a documentation map and wiki-source rule, but durable subtrees that
+  agents frequently edit did not carry local guidance for ownership boundaries, validators,
+  generated-vs-authored truth, or safe edit rules. Contract subfolders for observability and trust
+  telemetry were especially risky because they feed mesh certification and platform trust
+  evidence.
+- Action: added concise local README guidance for `contracts/`, `contracts/idea-action-intake/`,
+  `contracts/observability/`, `contracts/trust-telemetry/`, `docs/`, `scripts/`, `tests/`,
+  `src/`, `quality/`, and `monitoring/`. The root README now links the local navigation set and
+  records why `wiki/` intentionally has no README because every Markdown file under `wiki/` is
+  publishable wiki source.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\test_documentation_current_state.py -q` reported 29
+  passed; `python -m pytest tests\unit\test_trust_telemetry_contracts.py
+  tests\unit\test_domain_data_product_contracts.py -q` reported 10 passed; focused Ruff check and
+  format-check passed for the changed documentation-current-state test.
+- Same-pattern scan: navigation now points contributors to repo-native Make targets, docs/wiki
+  publication checks, contract validators, source layering rules, and generated quality evidence
+  posture before edits happen. Future new durable top-level folders should either include local
+  guidance or have an explicit documented reason why a README would be unsafe or redundant.
+- Design decision: keep local navigation short and operational instead of duplicating the root
+  README or repo engineering context. The folder READMEs name concrete files and validation
+  commands, while detailed domain truth remains in the owning contract, RFC, runbook, API, or wiki
+  artifact.
+- Docs/wiki/context/skill decision: documentation source changed only to improve repo-local
+  navigation. No platform skill/context update is needed; the repeatable rule is the existing Lotus
+  context-maintenance rule plus this repository's local README map.
