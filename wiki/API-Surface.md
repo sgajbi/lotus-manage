@@ -293,7 +293,8 @@ flowchart LR
 ```
 
 Portfolio memory is an audit and lineage read model. It preserves source refs, content hashes,
-retention, redaction, access, audit, source-event family posture, and exact event identity. It does
+retention, redaction, access, audit, source-event family posture, Manage event ids for exact lookup,
+and source-backed event identities for cross-app lineage. It does
 not discover the global portfolio universe, query external source-owner event stores, recalculate
 risk/performance/tax/cash/FX/source-owner methodology, project OMS acknowledgement/fill/settlement
 events, or create client-communication workflow evidence.

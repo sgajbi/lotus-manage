@@ -1165,6 +1165,21 @@ def test_portfolio_memory_report_context_hash_covers_bounded_event_refs() -> Non
     assert [event_ref.event_time for event_ref in narrower_context.event_refs] == [
         memory.events[0].event_time
     ]
+    assert [event_ref.event_id for event_ref in full_context.event_refs] == [
+        event.event_id for event in memory.events
+    ]
+    changed_event_id_memory = memory.model_copy(
+        update={
+            "events": [
+                memory.events[0].model_copy(update={"event_id": "memory:test:changed"}),
+                *memory.events[1:],
+            ]
+        }
+    )
+    changed_event_id_context = build_portfolio_memory_report_context(
+        changed_event_id_memory, event_limit=12
+    )
+    assert changed_event_id_context.context_content_hash != full_context.context_content_hash
     assert "does not project raw source payloads" in full_context.support_boundary
     assert "project OMS acknowledgement/fill/settlement events" in full_context.support_boundary
     assert "project client communication events" in full_context.support_boundary
@@ -1988,6 +2003,22 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     )
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
+    memory = build_portfolio_memory(
+        portfolio_id=PORTFOLIO_ID,
+        proof_pack_repository=proof_pack_repository,
+        construction_repository=construction_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_repository,
+        mandate_repository=mandate_repository,
+        campaign_definition_repository=campaign_repository,
+        generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
+    )
+    report_context = build_portfolio_memory_report_context(memory, event_limit=12)
+    report_event_ref = next(
+        event_ref
+        for event_ref in report_context.event_refs
+        if event_ref.event_type == "WAVE_HANDOFF_READY"
+    )
 
     with TestClient(app) as client:
         search_response = client.get(
@@ -1997,6 +2028,9 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
         event_id = search_response.json()["items"][0]["latest_matching_event_id"]
         lookup_response = client.get(
             f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{event_id}"
+        )
+        report_ref_lookup_response = client.get(
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{report_event_ref.event_id}"
         )
         missing_response = client.get(
             f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/not-a-memory-event"
@@ -2015,6 +2049,10 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     assert payload["event"]["source_type"] == "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF"
     assert payload["event"]["source_id"] == "dwh_001"
     assert payload["event"]["content_hash"] == "sha256:handoff-memory"
+    assert report_event_ref.event_id == payload["event_id"]
+    assert report_event_ref.event_identity == payload["event_identity"]
+    assert report_ref_lookup_response.status_code == 200
+    assert report_ref_lookup_response.json()["event_id"] == report_event_ref.event_id
     assert payload["memory_content_hash"].startswith("sha256:")
     assert payload["content_hash"].startswith("sha256:")
     assert "does not discover the global portfolio universe" in payload["support_boundary"]
@@ -2058,6 +2096,8 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
         in report_context_schema["properties"]["context_content_hash"]["description"]
     )
     event_ref_schema = openapi_json["components"]["schemas"]["DpmPortfolioMemoryReportEventRef"]
+    assert "event_id" in event_ref_schema["properties"]
+    assert "exact event lookup route" in event_ref_schema["properties"]["event_id"]["description"]
     assert "event_time" in event_ref_schema["properties"]
     assert "event_ref_selection_rank" in event_ref_schema["properties"]
     assert event_ref_schema["properties"]["event_ref_selection_rank"]["minimum"] == 1
