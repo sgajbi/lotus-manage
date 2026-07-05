@@ -833,7 +833,11 @@ Current repository posture:
     posture also names blocked external workflow task creation, assignment, synchronization,
     escalation, and completion capabilities, requires future
     `ExternalWorkflowOrchestrationRecord:v1` source ownership, and carries a deterministic content
-    hash. Global
+    hash. Approval-decision, assignment-action, assignment-task, assignment-task transition,
+    maker-checker control, and launch-audit writes persist through an optimistic content-hash
+    compare-and-set contract. Same-ref replay remains idempotent, while independently stale
+    workflow appends fail closed with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409
+    instead of overwriting newer audit evidence. Global
     portfolio-universe campaign discovery,
     broader workflow automation beyond controlled Manage-side assignment tasks, wave
     risk/performance analytics posture, and

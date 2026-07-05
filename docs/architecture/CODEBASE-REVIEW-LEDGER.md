@@ -29698,6 +29698,47 @@ and improves internal transaction-cost source posture maintainability only.
   `lotus-backend-delivery-governance` guidance already covers this manual/report-only promotion
   posture; this slice applies the current guidance locally.
 
+## BACKEND-REVIEW-20260706-0582: Campaign workflow evidence stale-write protection
+
+- Date: 2026-07-06
+- GitHub issue: #582
+- Scope: campaign definition repository port, in-memory/PostgreSQL definition persistence,
+  approval-decision, assignment-action, assignment-task, maker-checker-control, and launch route
+  adapters, README, repository context, and supported-feature wiki truth.
+- Bank-buyable control area: workflow audit correctness, optimistic concurrency, idempotent replay,
+  append-only evidence preservation, and controlled client retry behavior.
+- Finding: campaign workflow mutation APIs loaded a full campaign definition, appended evidence to
+  a domain copy, and persisted the whole updated aggregate without carrying the caller's base
+  content hash into the repository. A concurrent independent append could therefore overwrite newer
+  approval, assignment, task, maker-checker, or launch-audit evidence while returning a valid new
+  content hash.
+- Action: made workflow evidence repository methods require `expected_content_hash`, passed the
+  loaded definition hash from every mutation route, and made both in-memory and PostgreSQL
+  repositories enforce a compare-and-set contract. Same-ref replay is still idempotent because an
+  already-persisted final content hash returns the stored definition before stale-write rejection;
+  independently stale appends now fail with
+  `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409. PostgreSQL updates now include
+  `AND content_hash = <expected>` so the durable row update cannot silently replace newer JSONB
+  payloads.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for all touched Python files; `python -m ruff
+  format --check` passed for all touched Python files; `python -m mypy --config-file mypy.ini`
+  passed for touched source files; `python -m pytest
+  tests/unit/dpm/waves/test_campaign_definition_repository.py
+  tests/unit/dpm/waves/test_campaign_discovery.py tests/unit/dpm/api/test_waves_api.py -q`
+  reported 320 passed.
+- Same-pattern scan: fixed the shared repository helper and every route-level workflow append path
+  named by the issue, including launch audit, rather than only one evidence family.
+- Wiki decision: wiki source changed because supported-feature truth now states the public
+  stale-write conflict contract. Run repo wiki check-only before PR merge and publish from `main`
+  after merge. The changed-page wiki quality audit did not flag `Supported-Features.md`; remaining
+  audit failures are existing legacy wiki-wide findings for `_Sidebar.md` and bare URLs in
+  unchanged pages. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports expected
+  pre-merge drift for `Operations-Runbook.md` and `Supported-Features.md`.
+- Guidance decision: no platform skill update required; existing backend delivery guidance already
+  requires explicit unit-of-work, concurrency, and idempotency contracts, and this slice applies
+  that guidance locally with repository tests.
+
 ## BACKEND-REVIEW-20260706-0584: Campaign read-model pagination after filters
 
 - Date: 2026-07-06

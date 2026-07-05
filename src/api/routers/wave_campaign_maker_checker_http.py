@@ -53,7 +53,10 @@ def record_campaign_definition_maker_checker_control_response(
             correlation_id=request.correlation_id,
             source_refs=request.source_refs,
         )
-        persisted = repository.record_definition_maker_checker_control(definition=updated)
+        persisted = repository.record_definition_maker_checker_control(
+            definition=updated,
+            expected_content_hash=definition.content_hash,
+        )
         response = persisted_definition_or_404(persisted)
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
         http_exc = campaign_definition_conflict_http_exception(exc)
