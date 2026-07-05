@@ -855,8 +855,8 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert supportability_summary["responses"]["200"]["content"]["application/json"]["schema"][
         "$ref"
     ].endswith("/DpmSupportabilitySummaryResponse")
-    assert "store-wide health and retention snapshot" in supportability_summary["description"]
-    assert "does not accept ad hoc query filters" in supportability_summary["description"]
+    assert "supportability storage summary metrics" in supportability_summary["description"]
+    assert "optional `portfolio_id` query parameter" in supportability_summary["description"]
     assert "bounded action-register supportability state" in supportability_summary["description"]
     assert supportability_summary["responses"]["200"]["description"] == (
         "Store-wide supportability summary with counts, freshness, and bounded "
@@ -865,7 +865,26 @@ def test_rebalance_async_and_supportability_endpoints_use_expected_request_respo
     assert supportability_summary["responses"]["404"]["description"] == (
         "Support APIs or supportability summary APIs are disabled."
     )
-    assert "parameters" not in supportability_summary
+    assert supportability_summary["parameters"] == [
+        {
+            "name": "portfolio_id",
+            "in": "query",
+            "required": False,
+            "schema": {
+                "anyOf": [{"type": "string"}, {"type": "null"}],
+                "description": (
+                    "Optional portfolio identifier used to scope run, operation, workflow, "
+                    "lineage, and preserved mandate-health source-ref evidence."
+                ),
+                "examples": ["PB_SG_GLOBAL_BAL_001"],
+                "title": "Portfolio Id",
+            },
+            "description": (
+                "Optional portfolio identifier used to scope run, operation, workflow, "
+                "lineage, and preserved mandate-health source-ref evidence."
+            ),
+        }
+    ]
     assert "422" in supportability_summary["responses"]
     assert supportability_summary["responses"]["503"]["description"] == (
         "Supportability store backend is unavailable or not configured."

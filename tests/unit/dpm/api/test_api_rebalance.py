@@ -1125,6 +1125,8 @@ def test_dpm_supportability_summary_endpoint(client):
     assert body["workflow_action_counts"] == {}
     assert body["workflow_reason_code_counts"] == {}
     assert body["lineage_edge_count"] == 3
+    assert body["portfolio_id"] is None
+    assert body["portfolio_scope_confirmed"] is False
     assert body["oldest_run_created_at"] is not None
     assert body["newest_run_created_at"] is not None
     assert body["oldest_operation_created_at"] is not None
@@ -1136,6 +1138,8 @@ def test_dpm_supportability_summary_endpoint(client):
         "run_count": 1,
         "operation_count": 1,
         "workflow_decision_count": 0,
+        "portfolio_id": None,
+        "portfolio_scope_confirmed": False,
     }
 
     metrics = client.get("/metrics")
