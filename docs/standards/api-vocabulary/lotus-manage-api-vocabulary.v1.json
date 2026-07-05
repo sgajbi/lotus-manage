@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-05T23:14:18.438597+00:00",
+  "generatedAt": "2026-07-05T23:28:18.800318+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -12359,7 +12359,7 @@
       "semanticId": "lotus.scanned_portfolio_count",
       "canonicalTerm": "scanned_portfolio_count",
       "preferredName": "scanned_portfolio_count",
-      "description": "Number of candidate portfolio identifiers scanned from Manage-local evidence.",
+      "description": "Number of candidate portfolio identifiers discovered from explicit input and the bounded Manage-local source-family scan.",
       "example": 10,
       "type": "integer",
       "locations": [
@@ -20010,7 +20010,7 @@
       "location": "query",
       "required": false,
       "type": "integer",
-      "description": "Maximum rows to scan from each Manage-local evidence repository.",
+      "description": "Maximum rows to scan from each Manage-local evidence repository. Search totals and facet counts are exact over the bounded source-family scan, not over a global portfolio universe.",
       "example": 1,
       "allowedValues": [],
       "semanticId": "lotus.source_scan_limit",

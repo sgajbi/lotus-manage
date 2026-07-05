@@ -18,9 +18,6 @@ from src.core.portfolio_memory.models import (
 from src.core.portfolio_memory.aggregate import (
     build_portfolio_memory_aggregate as _build_portfolio_memory_aggregate,
 )
-from src.core.portfolio_memory.candidate_portfolios import (
-    candidate_portfolio_ids_from_sources as _candidate_portfolio_ids_from_sources,
-)
 from src.core.portfolio_memory.search_page import (
     build_search_page as _build_search_page,
     build_search_row as _build_search_row,
@@ -37,6 +34,9 @@ from src.core.portfolio_memory.search_request import (
 )
 from src.core.portfolio_memory.source_collection import (
     collect_portfolio_memory_events as _collect_portfolio_memory_events,
+)
+from src.core.portfolio_memory.search_source_collection import (
+    collect_portfolio_memory_search_events as _collect_portfolio_memory_search_events,
 )
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
@@ -179,16 +179,16 @@ def search_portfolio_memory_from_sources(
         offset=offset,
         source_scan_limit=source_scan_limit,
     )
-    candidate_ids = _candidate_portfolio_ids_from_sources(
+    search_sources = _collect_portfolio_memory_search_events(
         repositories=repositories,
-        portfolio_ids=portfolio_ids,
-        source_scan_limit=search_query.source_scan_limit,
+        portfolio_ids=search_query.explicit_candidate_ids,
+        limit=search_query.source_scan_limit,
     )
     search_rows = []
-    for portfolio_id in candidate_ids:
-        memory = build_portfolio_memory_from_sources(
+    for portfolio_id in search_sources.candidate_portfolio_ids:
+        memory = _build_portfolio_memory_aggregate(
             portfolio_id=portfolio_id,
-            repositories=repositories,
+            events=search_sources.events_by_portfolio_id.get(portfolio_id, []),
             limit=search_query.source_scan_limit,
             generated_at=generated_at,
         )
@@ -204,7 +204,7 @@ def search_portfolio_memory_from_sources(
         search_rows=search_rows,
         filters=search_query.filters,
         explicit_candidate_ids=search_query.explicit_candidate_ids,
-        scanned_portfolio_count=len(candidate_ids),
+        scanned_portfolio_count=len(search_sources.candidate_portfolio_ids),
         source_scan_limit=search_query.source_scan_limit,
         limit=search_query.limit,
         offset=search_query.offset,

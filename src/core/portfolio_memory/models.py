@@ -800,14 +800,18 @@ class DpmPortfolioMemorySearchPage(BaseModel):
     )
     scanned_portfolio_count: int = Field(
         ge=0,
-        description="Number of candidate portfolio identifiers scanned from Manage-local evidence.",
+        description=(
+            "Number of candidate portfolio identifiers discovered from explicit input and the "
+            "bounded Manage-local source-family scan."
+        ),
         examples=[3],
     )
     source_scan_limit: int = Field(
         ge=1,
         description=(
             "Maximum rows requested from each Manage-local evidence repository while building this "
-            "bounded search page."
+            "bounded search page. Search totals and facet counts are exact over this bounded "
+            "source-family scan, not over a global portfolio universe."
         ),
         examples=[500],
     )
