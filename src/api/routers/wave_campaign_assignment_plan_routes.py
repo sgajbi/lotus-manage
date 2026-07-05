@@ -70,6 +70,12 @@ def list_bulk_review_campaign_assignment_plan(
         active_on=active_on,
         limit=limit,
         offset=offset,
+        use_workflow_projection=(
+            requested_as_of_date is None and actor_id is None and active_on is None
+        ),
+        include_closed=include_closed,
+        next_action=next_action,
+        assignment_escalation_tier=escalation_tier,
     )
     return build_bulk_review_campaign_assignment_plan_page(
         definitions=campaign_query.definitions,

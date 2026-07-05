@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
 
@@ -73,6 +74,7 @@ from src.infrastructure.waves.campaign_definitions import (
     _load_campaign_definition_payload,
     _paged_definitions,
     _payload,
+    _workflow_read_model_projection,
 )
 import src.infrastructure.waves.campaign_definitions as campaign_definition_infra
 
@@ -1925,6 +1927,8 @@ class _Connection:
 
     def execute(self, _sql: str, _args: object = None) -> _Cursor:
         self.statements.append((_sql, _args))
+        if not self._cursors:
+            return _Cursor()
         return self._cursors.pop(0)
 
     def commit(self) -> None:
@@ -1945,6 +1949,7 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
         [
             _Cursor(),
             _Cursor(row={"content_hash": definition.content_hash}),
+            _Cursor(),
             _Cursor(row=row),
             _Cursor(rows=[row]),
         ]
@@ -1967,6 +1972,129 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
     assert listed == [definition]
     assert _payload({"payload_json": {"campaign_id": "dict"}}) == {"campaign_id": "dict"}
     assert _payload({"payload_json": 1}) == "1"
+    assert any(
+        "dpm_bulk_review_campaign_workflow_read_model" in sql
+        and "ON CONFLICT (campaign_id, campaign_version) DO UPDATE" in sql
+        for sql, _ in connection.statements
+    )
+
+
+def test_campaign_workflow_projection_captures_indexable_operator_filters() -> None:
+    definition = _definition()
+    with_task = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    controlled = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=with_task,
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+
+    projection = _workflow_read_model_projection(controlled)
+
+    assert projection["projection_name"] == "BulkReviewCampaignWorkflowReadModel"
+    assert projection["durable_source_table"] == "dpm_bulk_review_campaign_definitions"
+    assert projection["definition_content_hash"] == controlled.content_hash
+    assert projection["board_status"] in {"READY_FOR_ACTOR", "ATTENTION_FOR_ACTOR", "CLOSED"}
+    assert projection["next_action"]
+    assert projection["assigned_actor_ids"] == ["pm_001"]
+    assert projection["assignment_task_statuses"] == ["OPEN"]
+    assert projection["assignment_task_escalation_tiers"] == ["PM"]
+    assert projection["assignment_task_sla_postures"] == ["ON_TRACK"]
+    assert projection["maker_checker_outcomes"] == ["PENDING"]
+    assert projection["assignment_task_transition_count"] == 1
+    assert str(projection["workflow_read_model_hash"]).startswith("sha256:")
+
+
+def test_in_memory_campaign_definition_repository_filters_workflow_projection() -> None:
+    definition = _definition()
+    with_task = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-001",
+    )
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    repository.save_definition(definition=with_task)
+
+    assert repository.list_definitions_by_workflow_projection(
+        assigned_actor_id="pm_001",
+        assignment_task_status="OPEN",
+        assignment_sla_posture="ON_TRACK",
+    ) == [with_task]
+    assert (
+        repository.list_definitions_by_workflow_projection(
+            assigned_actor_id="ops_lead",
+            assignment_task_status="OPEN",
+        )
+        == []
+    )
+
+
+def test_postgres_campaign_definition_repository_filters_using_workflow_projection() -> None:
+    definition = _definition()
+    repository = object.__new__(PostgresDpmBulkReviewCampaignDefinitionRepository)
+    connection = _Connection(
+        [
+            _Cursor(rows=[{"payload_json": definition.model_dump(mode="json")}]),
+        ]
+    )
+    repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
+
+    rows = repository.list_definitions_by_workflow_projection(
+        campaign_id=definition.campaign_id,
+        status="ACTIVE",
+        as_of_date=definition.as_of_date,
+        include_closed=False,
+        board_status="ATTENTION_FOR_ACTOR",
+        next_action="REVIEW_CAMPAIGN_ATTENTION",
+        assignment_escalation_tier="OPS",
+        assignment_task_status="OPEN",
+        assigned_actor_id="pm_001",
+        assignment_sla_posture="ATTENTION",
+        maker_checker_outcome="PENDING",
+    )
+
+    assert rows == [definition]
+    sql, args = connection.statements[0]
+    assert "JOIN dpm_bulk_review_campaign_workflow_read_model w" in sql
+    assert "w.board_status = %s" in sql
+    assert "w.next_action = %s" in sql
+    assert "w.assignment_escalation_tier = %s" in sql
+    assert "w.assignment_sla_posture = %s" in sql
+    assert "%s = ANY(w.assignment_task_statuses)" in sql
+    assert "%s = ANY(w.assigned_actor_ids)" in sql
+    assert "%s = ANY(w.maker_checker_outcomes)" in sql
+    assert args == (
+        definition.campaign_id,
+        "ACTIVE",
+        definition.as_of_date,
+        "ATTENTION_FOR_ACTOR",
+        "REVIEW_CAMPAIGN_ATTENTION",
+        "OPS",
+        "ATTENTION",
+        "OPEN",
+        "pm_001",
+        "PENDING",
+    )
 
 
 def test_postgres_campaign_definition_repository_retires_active_definition() -> None:
@@ -2927,6 +3055,42 @@ def test_postgres_campaign_definition_payload_and_driver_import_edges() -> None:
 
     assert psycopg is not None
     assert dict_row is not None
+
+
+def test_campaign_workflow_read_model_migration_declares_projection_contract() -> None:
+    migration = (
+        Path(__file__).parents[4]
+        / "src"
+        / "infrastructure"
+        / "postgres_migrations"
+        / "dpm"
+        / "0015_bulk_review_campaign_workflow_read_model.sql"
+    ).read_text(encoding="utf-8")
+    required_tokens = [
+        "dpm_bulk_review_campaign_workflow_read_model",
+        "definition_content_hash TEXT NOT NULL",
+        "workflow_read_model_hash TEXT NOT NULL",
+        "board_status TEXT NOT NULL",
+        "next_action TEXT NOT NULL",
+        "assignment_escalation_tier TEXT NOT NULL",
+        "assignment_sla_posture TEXT NOT NULL",
+        "assigned_actor_ids TEXT[] NOT NULL DEFAULT '{}'",
+        "assignment_task_statuses TEXT[] NOT NULL DEFAULT '{}'",
+        "maker_checker_outcomes TEXT[] NOT NULL DEFAULT '{}'",
+        "approval_decision_count INTEGER NOT NULL DEFAULT 0",
+        "assignment_action_count INTEGER NOT NULL DEFAULT 0",
+        "assignment_task_transition_count INTEGER NOT NULL DEFAULT 0",
+        "FOREIGN KEY (campaign_id, campaign_version)",
+        "USING GIN (assignment_task_statuses)",
+        "USING GIN (assigned_actor_ids)",
+        "USING GIN (maker_checker_outcomes)",
+        "INSERT INTO dpm_bulk_review_campaign_workflow_read_model",
+        "jsonb_array_elements(COALESCE(payload_json -> 'assignment_tasks'",
+        "AS actor_ids(actor_id)",
+        "ON CONFLICT (campaign_id, campaign_version) DO NOTHING",
+    ]
+
+    assert [token for token in required_tokens if token not in migration] == []
 
 
 def test_postgres_campaign_definition_repository_returns_none_for_missing_definition() -> None:

@@ -88,11 +88,14 @@ market-impact, venue, fill-quality, or best-execution model.
 
 Live proof on 2026-05-02:
 
-1. `POST http://core-control.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+1. `POST /integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context` on
+   [core-control.dev.lotus](http://core-control.dev.lotus)
    returned `404`.
-2. `POST http://core-query.dev.lotus/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context`
+2. `POST /integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-execution-context` on
+   [core-query.dev.lotus](http://core-query.dev.lotus)
    returned `404`.
-3. `POST http://manage.dev.lotus/api/v1/rebalance/simulate` with `input_mode=stateful` returned
+3. `POST /api/v1/rebalance/simulate` on [manage.dev.lotus](http://manage.dev.lotus) with
+   `input_mode=stateful` returned
    `200` with `lineage.input_mode=stateful`, `lineage.source_system=lotus-core`,
    `lineage.source_supportability_state=READY`, model version `2026.04`, and a populated
    `stateful_context_hash`.

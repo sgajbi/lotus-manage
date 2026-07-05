@@ -29828,7 +29828,7 @@ and improves internal transaction-cost source posture maintainability only.
   posture, data-safety rules, and escalation boundaries.
 - Action: added a full `Campaign workflow operations` section to `wiki/Operations-Runbook.md`
   covering first checks, diagnosis endpoints, evidence-family triage, safe actions, launch-audit
-  retry, stale-write conflicts, current #580/#582/#583 support, pending #586 materialization scope,
+  retry, stale-write conflicts, current #580/#582/#583 support, later #586 materialization scope,
   no-OMS/no-client-contact/no-external-workflow boundaries, source-safe incident notes, escalation
   by owner family, and repo-native validation commands. Updated
   `docs/runbooks/service-operations.md` with a concise pointer and matching safety boundaries.
@@ -30018,3 +30018,44 @@ and improves internal transaction-cost source posture maintainability only.
   for `Operations-Runbook.md` and `Supported-Features.md`. The wiki quality audit no longer flags
   the changed `Supported-Features.md` page; remaining audit failures are existing wiki-wide hygiene
   findings for `_Sidebar.md` and bare URLs in unchanged pages.
+
+## BACKEND-REVIEW-20260706-0586: Campaign workflow read-model projection
+
+- Date: 2026-07-06
+- GitHub issue: #586
+- Scope: PostgreSQL campaign workflow projection migration, campaign definition repository
+  projection refresh/filter methods, workflow-board and assignment-plan query loading, README,
+  repository context, service runbook, wiki source, and focused repository/API tests.
+- Bank-buyable control area: data-model quality, operator read-model scalability, indexed
+  supportability filters, lineage-preserving persistence, and design modularity without runtime
+  service splitting.
+- Finding: campaign workflow evidence had grown across approval decisions, assignment actions,
+  assignment tasks/transitions, maker-checker controls, and launch audit evidence, but hot operator
+  filters still depended on full campaign-definition payload replay. That kept board status, next
+  action, assigned actor, task status, escalation tier, SLA posture, and maker-checker outcome out
+  of relational query/index posture.
+- Action: added `dpm_bulk_review_campaign_workflow_read_model` as a governed derived projection
+  with indexed query columns/arrays, content-hash lineage, evidence counts, migration backfill, and
+  repository rebuild/upsert logic after successful definition writes, lifecycle changes, launch
+  audit writes, approval decisions, assignment actions, assignment tasks/transitions, and
+  maker-checker controls. Workflow-board and assignment-plan default reads now use the projection
+  for database-queryable filters when no request-specific actor/as-of/active-on derivation is
+  needed. Parent `dpm_bulk_review_campaign_definitions.payload_json` plus `content_hash` remains
+  the durable evidence source; projection rows are rebuildable and must not be hand-edited as
+  authorization, external workflow, order, OMS, or client-contact truth.
+- Status: fixed locally.
+- Evidence: focused repository/API tests, Ruff, format, mypy, OpenAPI, migration, and wiki
+  check-only evidence are recorded in the issue comment for the local fix commit.
+- Same-pattern scan: covered approval decisions, assignment actions, assignment tasks,
+  assignment-task transitions, maker-checker controls, launch audit writes, lifecycle updates, and
+  the default workflow-board/assignment-plan operator filters rather than only one evidence family.
+- Design decision: design modularity and query-shape hardening inside the same deployable
+  `lotus-manage` service is sufficient for this slice. A normalized append-only evidence store or
+  external workflow service remains future work only if retention, replay, repair, ownership,
+  failure isolation, or scaling evidence justifies a runtime boundary.
+- Wiki decision: README, repository context, repo service runbook, `Operations-Runbook.md`, and
+  `Supported-Features.md` changed because persistence/read-model truth changed. While validating
+  the changed pages, legacy wiki audit failures were also fixed in `_Sidebar.md`,
+  `API-Surface.md`, `Endpoint-Certification.md`, `Integrations.md`, `Overview.md`, and
+  `Validation-and-CI.md` so the changed-page audit can pass cleanly. Run repo wiki check-only before
+  PR merge and publish from `main` after merge.

@@ -32,6 +32,25 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     ) -> list[DpmBulkReviewCampaignDefinition]:
         """Return campaign definitions, optionally bounded by repository-level filters."""
 
+    def list_definitions_by_workflow_projection(
+        self,
+        *,
+        campaign_id: str | None = None,
+        status: str | None = None,
+        as_of_date: str | None = None,
+        include_closed: bool = False,
+        board_status: str | None = None,
+        next_action: str | None = None,
+        assignment_escalation_tier: str | None = None,
+        assignment_task_status: str | None = None,
+        assigned_actor_id: str | None = None,
+        assignment_sla_posture: str | None = None,
+        maker_checker_outcome: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[DpmBulkReviewCampaignDefinition]:
+        """Return definitions using the governed workflow projection where available."""
+
     def retire_definition(
         self,
         *,

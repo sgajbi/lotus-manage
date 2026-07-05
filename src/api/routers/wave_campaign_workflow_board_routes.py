@@ -71,6 +71,12 @@ def list_bulk_review_campaign_workflow_board(
         active_on=active_on,
         limit=limit,
         offset=offset,
+        use_workflow_projection=(
+            requested_as_of_date is None and actor_id is None and active_on is None
+        ),
+        include_closed=include_closed,
+        board_status=board_status,
+        next_action=next_action,
     )
     return build_bulk_review_campaign_workflow_board_page(
         definitions=campaign_query.definitions,

@@ -837,7 +837,18 @@ Current repository posture:
     maker-checker control, and launch-audit writes persist through an optimistic content-hash
     compare-and-set contract. Same-ref replay remains idempotent, while independently stale
     workflow appends fail closed with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409
-    instead of overwriting newer audit evidence. Campaign launch is a recoverable two-write saga:
+    instead of overwriting newer audit evidence. PostgreSQL maintains the derived
+    `dpm_bulk_review_campaign_workflow_read_model` projection for default campaign workflow board
+    and assignment-plan operator filters, including board status, next action, assignment
+    escalation tier, SLA posture, assigned actors, assignment task statuses, maker-checker outcomes,
+    evidence counts, and lineage hashes. The parent `dpm_bulk_review_campaign_definitions`
+    `payload_json` plus `content_hash` remains the durable evidence source; the projection is
+    rebuilt from existing payloads during migration/startup and refreshed after successful
+    definition writes, lifecycle changes, launch audit writes, approval decisions, assignment
+    actions, assignment tasks/transitions, and maker-checker controls. This is design modularity and
+    query-shape hardening inside the same deployable service, not a runtime split or a new source of
+    authorization, external workflow, order, OMS, or client-contact truth. Campaign launch is a
+    recoverable two-write saga:
     if durable wave creation succeeds but launch-history persistence fails with that conflict,
     retrying the same launch request reuses the existing wave through deterministic launch
     idempotency and idempotently repairs the missing launch audit without creating another wave.
