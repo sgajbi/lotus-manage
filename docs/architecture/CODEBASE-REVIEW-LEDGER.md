@@ -30059,3 +30059,42 @@ and improves internal transaction-cost source posture maintainability only.
   `API-Surface.md`, `Endpoint-Certification.md`, `Integrations.md`, `Overview.md`, and
   `Validation-and-CI.md` so the changed-page audit can pass cleanly. Run repo wiki check-only before
   PR merge and publish from `main` after merge.
+
+## BACKEND-REVIEW-20260706-0589: Portfolio-memory aggregate supportability search semantics
+
+- Date: 2026-07-06
+- GitHub issue: #589
+- Scope: `GET /api/v1/rebalance/portfolio-memory/search`, portfolio-memory search filter helpers,
+  OpenAPI descriptions, API vocabulary inventory, README, wiki source, and focused API/filter
+  tests.
+- Bank-buyable control area: API contract correctness, audit search lineage, OpenAPI truth, and
+  source-safe operator supportability filtering.
+- Finding: portfolio-memory search documented `supportability_state` as an aggregate
+  portfolio-memory summary filter but reused the same value inside matching-event filtering. A
+  degraded portfolio could be hidden from an event/source audit search when the event satisfying
+  the source criteria was itself `READY`, collapsing aggregate portfolio posture with
+  matching-event supportability posture.
+- Action: removed aggregate supportability from event-level matching and kept matching-event
+  metadata/facets driven by `event_type`, `source_system`, and `source_type`. The aggregate
+  `supportability_state` filter still applies to the portfolio-memory summary and remains echoed in
+  `DpmPortfolioMemorySearchAppliedFilters`. The regression now queries a `DEGRADED` aggregate row
+  with a `READY` `WAVE_HANDOFF_READY` matching event and proves the row remains visible with
+  separate aggregate and matching-event supportability facet counts.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\dpm\portfolio_memory\test_search_filters.py
+  tests\unit\dpm\api\test_portfolio_memory_api.py -q` reported 29 passed; focused Ruff check and
+  format-check passed for the touched source/test files; focused mypy passed for the touched source
+  files; `python scripts\openapi_quality_gate.py` passed; `python
+  scripts\api_vocabulary_inventory.py --validate-only` passed; `python -m pytest
+  tests\unit\test_documentation_current_state.py -q` reported 28 passed.
+- Same-pattern scan: reviewed the search filter helper, search-page row assembly, applied-filter
+  model, route parameter descriptions, generated API vocabulary, README, API surface wiki, endpoint
+  certification wiki, and supported-feature wiki wording for the same aggregate-versus-matching
+  event collapse. No separate event-level supportability query parameter was introduced because the
+  current issue acceptance criteria are satisfied by preserving the advertised aggregate semantics.
+- Design decision: design modularity inside the existing portfolio-memory search module is the
+  correct scope. A runtime split, external search index, global portfolio universe discovery, or
+  cross-app source-event query remains unsupported.
+- Docs/wiki/context/skill decision: README and wiki source changed because the API contract
+  semantics changed. Repository context and platform skills do not need updates; this is an
+  app-local search contract correction, not a repeatable platform routing or workflow change.

@@ -55,8 +55,10 @@ def _raise_portfolio_memory_search_validation_error(exc: ValueError) -> NoReturn
         "How: The endpoint scans persisted proof packs, rebalance waves, monitoring exceptions, "
         "campaign definitions, and outcome reviews, then composes each matching portfolio with "
         "the same source-backed memory assembler used by the detail route. It can filter by "
-        "event type, supportability state, represented source system, and represented source "
-        "type. It does not discover the global portfolio universe, "
+        "event type, aggregate supportability state, represented source system, and represented "
+        "source type. Aggregate supportability filtering is applied to portfolio-memory summaries "
+        "only; matching-event metadata and facets remain driven by event/source filters. It does "
+        "not discover the global portfolio universe, "
         "query external source-owner event stores, project OMS acknowledgement/fill/settlement "
         "events, project client contact/message/delivery/approval events, or recalculate risk, "
         "performance, execution, tax, cash, FX, mandate-health, PM-quality score/review-action, "
@@ -84,8 +86,9 @@ def search_portfolio_memory_index(
         default=None,
         pattern=_SUPPORTED_SUPPORTABILITY_STATE_PATTERN,
         description=(
-            "Optional aggregate supportability-state filter. Leading and trailing whitespace is "
-            "normalized before matching. Supported states: "
+            "Optional aggregate portfolio-memory supportability-state filter applied to search "
+            "summaries only; it does not filter matching-event metadata or matching-event facets. "
+            "Leading and trailing whitespace is normalized before matching. Supported states: "
             f"{_SUPPORTED_SUPPORTABILITY_STATE_DESCRIPTION}."
         ),
         examples=["READY"],

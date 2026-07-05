@@ -123,7 +123,6 @@ def _filters_require_matching_events(filters: PortfolioMemorySearchFilters) -> b
         filters.event_type is not None
         or filters.source_system is not None
         or filters.source_type is not None
-        or filters.supportability_state is not None
     )
 
 
@@ -224,7 +223,6 @@ def build_search_row(
         if event_matches_search_filters(
             event=event,
             event_type=filters.event_type,
-            supportability_state=filters.supportability_state,
             source_system=filters.source_system,
             source_type=filters.source_type,
         )

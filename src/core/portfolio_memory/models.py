@@ -428,8 +428,9 @@ class DpmPortfolioMemorySearchItem(BaseModel):
         ge=0,
         description=(
             "Number of events in this portfolio-memory view that match the applied event, source "
-            "system, source type, and supportability filters. When no filters are supplied this equals "
-            "event_count."
+            "system, and source type filters. The aggregate supportability_state filter is applied "
+            "to the portfolio-memory summary and does not filter matching events. When no "
+            "event/source filters are supplied this equals event_count."
         ),
         examples=[1],
     )
@@ -744,8 +745,9 @@ class DpmPortfolioMemorySearchAppliedFilters(BaseModel):
     supportability_state: PortfolioMemorySupportabilityState | None = Field(
         default=None,
         description=(
-            "Portfolio-memory supportability-state filter applied to summaries and matching "
-            "events, when supplied."
+            "Aggregate portfolio-memory supportability-state filter applied to search summaries "
+            "only, when supplied. Matching-event metadata and matching-event facet counts remain "
+            "driven by event_type, source_system, and source_type filters."
         ),
     )
     source_system: str | None = Field(
