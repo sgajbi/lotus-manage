@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-06-27T05:08:45.423395+00:00",
+  "generatedAt": "2026-07-05T09:23:30.259556+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -9893,6 +9893,20 @@
       ]
     },
     {
+      "semanticId": "lotus.portfolio_scope_confirmed",
+      "canonicalTerm": "portfolio_scope_confirmed",
+      "preferredName": "portfolio_scope_confirmed",
+      "description": "True when counts and source refs are scoped to the requested portfolio rather than the whole supportability store.",
+      "example": true,
+      "type": "boolean",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "boolean"
+      ]
+    },
+    {
       "semanticId": "lotus.portfolio_snapshot",
       "canonicalTerm": "portfolio_snapshot",
       "preferredName": "portfolio_snapshot",
@@ -13127,13 +13141,14 @@
       "semanticId": "lotus.source_batch_fingerprint",
       "canonicalTerm": "source_batch_fingerprint",
       "preferredName": "source_batch_fingerprint",
-      "description": "Source-owned deterministic fingerprint for the projection batch.",
-      "example": "source_batch_fingerprint_example",
-      "type": "object",
+      "description": "Deterministic fingerprint for the returned action-register source batch.",
+      "example": "sample_source_batch_fingerprint",
+      "type": "string",
       "locations": [
         "body"
       ],
       "observedTypes": [
+        "string",
         "object"
       ]
     },
@@ -13501,9 +13516,11 @@
       "semanticId": "lotus.source_refs",
       "canonicalTerm": "source_refs",
       "preferredName": "source_refs",
-      "description": "Source-safe idea evidence references supplied by lotus-idea.",
+      "description": "Bounded source-product refs preserved from the latest mandate-health snapshot for the scoped portfolio.",
       "example": [
-        "source_refs_item_example"
+        {
+          "sample_key": "sample_value"
+        }
       ],
       "type": "array",
       "locations": [
@@ -16319,6 +16336,18 @@
       "allowedValues": [],
       "semanticId": "lotus.cursor",
       "attributeRef": "#/attributeCatalog/lotus.cursor"
+    },
+    {
+      "name": "portfolio_id",
+      "kind": "request_option",
+      "location": "query",
+      "required": false,
+      "type": "object",
+      "description": "Optional portfolio identifier used to scope run, operation, workflow, lineage, and preserved mandate-health source-ref evidence.",
+      "example": "ENTITY_001",
+      "allowedValues": [],
+      "semanticId": "lotus.portfolio_id",
+      "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
     },
     {
       "name": "correlation_id",
@@ -20788,7 +20817,16 @@
       "operationId": "get_dpm_supportability_summary_api_v1_rebalance_supportability_summary_get",
       "summary": "Get lotus-manage Supportability Summary",
       "request": {
-        "fields": []
+        "fields": [
+          {
+            "name": "portfolio_id",
+            "location": "query",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          }
+        ]
       },
       "response": {
         "fields": [
@@ -20871,6 +20909,38 @@
             "type": "integer",
             "semanticId": "lotus.lineage_edge_count",
             "attributeRef": "#/attributeCatalog/lotus.lineage_edge_count"
+          },
+          {
+            "name": "portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "portfolio_scope_confirmed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.portfolio_scope_confirmed",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_scope_confirmed"
+          },
+          {
+            "name": "source_batch_fingerprint",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.source_batch_fingerprint",
+            "attributeRef": "#/attributeCatalog/lotus.source_batch_fingerprint"
+          },
+          {
+            "name": "source_refs",
+            "location": "body",
+            "required": false,
+            "type": "array",
+            "semanticId": "lotus.source_refs",
+            "attributeRef": "#/attributeCatalog/lotus.source_refs"
           },
           {
             "name": "oldest_run_created_at",
@@ -20959,6 +21029,22 @@
             "type": "integer",
             "semanticId": "lotus.workflow_decision_count",
             "attributeRef": "#/attributeCatalog/lotus.workflow_decision_count"
+          },
+          {
+            "name": "supportability.portfolio_id",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.portfolio_id",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_id"
+          },
+          {
+            "name": "supportability.portfolio_scope_confirmed",
+            "location": "body",
+            "required": false,
+            "type": "boolean",
+            "semanticId": "lotus.portfolio_scope_confirmed",
+            "attributeRef": "#/attributeCatalog/lotus.portfolio_scope_confirmed"
           }
         ]
       }
