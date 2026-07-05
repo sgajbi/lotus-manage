@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-07-05T10:57:17+00:00`
+- Generated at: `2026-07-05T11:14:28+00:00`
 
 - Baseline source snapshot: `acf71880e321fb5c41a1f0fe860597e471b641ba`
 
-- Report source snapshot: `6253002d`
+- Report source snapshot: `c564babe+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -34,7 +34,7 @@
 
 | Rank | Function | File | Complexity | Lines |
 | --- | --- | --- | --- | --- |
-| 1 | build_supportability_summary_response | src/core/rebalance_runs/supportability_summary.py | 8 | 57 |
+| 1 | build_supportability_summary_response | src/core/rebalance_runs/supportability_summary.py | 9 | 59 |
 | 2 | _operation_request_portfolio_id | src/infrastructure/rebalance_runs/in_memory_helpers.py | 7 | 20 |
 | 3 | resolve_freshness_bucket | src/core/rebalance_runs/supportability_summary.py | 6 | 27 |
 | 4 | run_simulation | src/core/rebalance/engine.py | 5 | 145 |

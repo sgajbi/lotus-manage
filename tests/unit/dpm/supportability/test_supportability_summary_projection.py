@@ -96,6 +96,24 @@ def test_supportability_summary_fingerprint_includes_returned_source_refs():
     assert first.source_batch_fingerprint != second.source_batch_fingerprint
 
 
+def test_supportability_summary_confirms_portfolio_scope_for_operation_only_batch():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    response = build_supportability_summary_response(
+        summary=_summary(
+            operation_count=1,
+            operation_status_counts={"ACCEPTED": 1},
+            newest_operation_created_at=now,
+        ),
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+    )
+
+    assert response.portfolio_scope_confirmed is True
+    assert response.supportability.portfolio_scope_confirmed is True
+
+
 def test_supportability_summary_response_classifies_empty_stale_and_degraded_posture():
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
 
