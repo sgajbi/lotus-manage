@@ -672,15 +672,41 @@ class PostgresDpmRunRepository:
                 MIN(o.created_at) AS oldest_operation_created_at,
                 MAX(o.created_at) AS newest_operation_created_at
             FROM dpm_async_operations o
-            WHERE o.correlation_id IN (
-                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+            WHERE COALESCE(
+                o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+            ) = %s
+            OR (
+                o.correlation_id IN (
+                    SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+                )
+                AND (
+                    o.request_json IS NULL
+                    OR COALESCE(
+                        o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                        o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+                    ) = %s
+                )
             )
         """
         operation_status_query = """
             SELECT o.status, COUNT(*) AS status_count
             FROM dpm_async_operations o
-            WHERE o.correlation_id IN (
-                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+            WHERE COALESCE(
+                o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+            ) = %s
+            OR (
+                o.correlation_id IN (
+                    SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+                )
+                AND (
+                    o.request_json IS NULL
+                    OR COALESCE(
+                        o.request_json::jsonb #>> '{batch_request,portfolio_snapshot,portfolio_id}',
+                        o.request_json::jsonb #>> '{portfolio_snapshot,portfolio_id}'
+                    ) = %s
+                )
             )
             GROUP BY o.status
         """
@@ -735,8 +761,14 @@ class PostgresDpmRunRepository:
         """
         with closing(self._connect()) as connection:
             run_row = connection.execute(run_query, (portfolio_id,)).fetchone()
-            operation_row = connection.execute(operation_query, (portfolio_id,)).fetchone()
-            status_rows = connection.execute(operation_status_query, (portfolio_id,)).fetchall()
+            operation_row = connection.execute(
+                operation_query,
+                (portfolio_id, portfolio_id, portfolio_id),
+            ).fetchone()
+            status_rows = connection.execute(
+                operation_status_query,
+                (portfolio_id, portfolio_id, portfolio_id),
+            ).fetchall()
             run_status_rows = connection.execute(run_status_query, (portfolio_id,)).fetchall()
             workflow_row = connection.execute(
                 workflow_decision_count_query, (portfolio_id,)

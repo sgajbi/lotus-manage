@@ -742,6 +742,62 @@ def test_repository_supportability_summary_contract(repository):
     assert summary.newest_operation_created_at == now + timedelta(minutes=2)
 
 
+def test_repository_scoped_supportability_summary_excludes_wrong_portfolio_operations(repository):
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    repository.save_run(
+        DpmRunRecord(
+            rebalance_run_id="rr_repo_scope_1",
+            correlation_id="corr_repo_scope_shared",
+            request_hash="sha256:req-scope-1",
+            idempotency_key="idem_repo_scope_1",
+            portfolio_id="pf_repo_scope_1",
+            created_at=now,
+            result_json={"rebalance_run_id": "rr_repo_scope_1", "status": "READY"},
+        )
+    )
+    repository.create_operation(
+        DpmAsyncOperationRecord(
+            operation_id="dop_repo_scope_matching",
+            operation_type="ANALYZE_SCENARIOS",
+            status="SUCCEEDED",
+            correlation_id="corr_repo_scope_direct",
+            created_at=now + timedelta(seconds=1),
+            started_at=now + timedelta(seconds=1),
+            finished_at=now + timedelta(seconds=2),
+            result_json={"ok": True},
+            error_json=None,
+            request_json={
+                "batch_request": {
+                    "portfolio_snapshot": {"portfolio_id": "pf_repo_scope_1"}
+                }
+            },
+        )
+    )
+    repository.create_operation(
+        DpmAsyncOperationRecord(
+            operation_id="dop_repo_scope_other",
+            operation_type="ANALYZE_SCENARIOS",
+            status="FAILED",
+            correlation_id="corr_repo_scope_shared",
+            created_at=now + timedelta(seconds=3),
+            started_at=now + timedelta(seconds=3),
+            finished_at=now + timedelta(seconds=4),
+            result_json=None,
+            error_json={"code": "FAILED"},
+            request_json={
+                "batch_request": {
+                    "portfolio_snapshot": {"portfolio_id": "pf_repo_scope_2"}
+                }
+            },
+        )
+    )
+
+    summary = repository.get_supportability_summary(portfolio_id="pf_repo_scope_1")
+
+    assert summary.operation_count == 1
+    assert summary.operation_status_counts == {"SUCCEEDED": 1}
+
+
 def test_repository_workflow_decision_contract(repository):
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
     decision_one = DpmRunWorkflowDecisionRecord(
