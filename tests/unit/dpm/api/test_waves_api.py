@@ -2313,10 +2313,43 @@ def test_bulk_review_campaign_definition_approval_decisions_record_and_list() ->
                 ],
             },
         )
+        replay = client.post(
+            f"{route}/approval-decisions",
+            json={
+                "decision_type": "APPROVED",
+                "decision_ref": "BRC-APPROVAL-2026-05-001",
+                "decided_by": "cio_ops_committee",
+                "decision_reason": "Approved for bounded DPM campaign launch.",
+                "correlation_id": "corr-campaign-approval-decision-001",
+                "source_refs": [
+                    {
+                        "source_system": "lotus-manage",
+                        "source_type": "BulkReviewCampaignApprovalMinutes",
+                        "source_id": "minutes-001",
+                    }
+                ],
+            },
+        )
+        conflict = client.post(
+            f"{route}/approval-decisions",
+            json={
+                "decision_type": "REJECTED",
+                "decision_ref": "BRC-APPROVAL-2026-05-001",
+                "decided_by": "cio_ops_committee",
+                "decision_reason": "Conflicting duplicate decision ref.",
+                "correlation_id": "corr-campaign-approval-decision-conflict",
+            },
+        )
         listed = client.get(f"{route}/approval-decisions")
 
     assert put_response.status_code == 200
     assert decision.status_code == 201
+    assert replay.status_code == 201
+    assert len(replay.json()["approval_decisions"]) == 1
+    assert conflict.status_code == 409
+    assert (
+        conflict.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT"
+    )
     decision_payload = decision.json()
     assert len(decision_payload["approval_decisions"]) == 1
     assert decision_payload["approval_decisions"][0]["decision_type"] == "APPROVED"
@@ -3346,7 +3379,7 @@ def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> No
     assert escalated.status_code == 201
     assert replay.status_code == 201
     assert len(replay.json()["assignment_actions"]) == 2
-    assert conflicting.status_code == 422
+    assert conflicting.status_code == 409
     assert (
         conflicting.json()["detail"]["code"]
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
@@ -3392,6 +3425,19 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
                 "escalation_tier": "PM",
                 "sla_posture": "ON_TRACK",
                 "correlation_id": "corr-campaign-assignment-task-001",
+            },
+        )
+        open_conflict = client.post(
+            f"{route}/assignment-tasks",
+            json={
+                "task_ref": "BRC-TASK-2026-05-001",
+                "task_type": "ESCALATION",
+                "opened_by": "ops",
+                "task_reason": "Conflicting duplicate task ref.",
+                "assigned_actor_ids": ["ops_lead"],
+                "escalation_tier": "OPS",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-task-open-conflict",
             },
         )
         acknowledged = client.post(
@@ -3440,6 +3486,16 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
                 "correlation_id": "corr-campaign-assignment-task-transition-conflict",
             },
         )
+        missing_task = client.post(
+            f"{route}/assignment-tasks/BRC-TASK-2026-05-missing/transitions",
+            json={
+                "transition_type": "ACKNOWLEDGED",
+                "transition_ref": "BRC-TASK-2026-05-missing:ack",
+                "transitioned_by": "pm_001",
+                "transition_reason": "Missing task should map to not found.",
+                "correlation_id": "corr-campaign-assignment-task-transition-missing",
+            },
+        )
         missing_assignee = client.post(
             f"{route}/assignment-tasks",
             json={
@@ -3458,15 +3514,22 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
 
     assert put_response.status_code == 200
     assert opened.status_code == 201
+    assert open_conflict.status_code == 409
+    assert (
+        open_conflict.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT"
+    )
     assert acknowledged.status_code == 201
     assert escalated.status_code == 201
     assert replay.status_code == 201
     assert len(replay.json()["assignment_tasks"][0]["transitions"]) == 3
-    assert conflict.status_code == 422
+    assert conflict.status_code == 409
     assert (
         conflict.json()["detail"]["code"]
         == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT"
     )
+    assert missing_task.status_code == 404
+    assert missing_task.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND"
     assert missing_assignee.status_code == 422
     assert (
         missing_assignee.json()["detail"]["code"]
@@ -3553,6 +3616,20 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
                 ],
             },
         )
+        conflict = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "REVIEW_COMPLETED",
+                "control_ref": "BRC-MC-2026-05-002",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "reviewer_actor_id": "portfolio_governance",
+                "required_reviewer_role": "CIO_OPERATIONS_REVIEWER",
+                "control_outcome": "PASSED",
+                "control_reason": "Conflicting duplicate control ref.",
+                "correlation_id": "corr-campaign-maker-checker-control-conflict",
+            },
+        )
         same_actor = client.post(
             f"{route}/maker-checker-controls",
             json={
@@ -3573,6 +3650,11 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
     assert reviewed.status_code == 201
     assert replay.status_code == 201
     assert len(replay.json()["maker_checker_controls"]) == 2
+    assert conflict.status_code == 409
+    assert (
+        conflict.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT"
+    )
     assert same_actor.status_code == 422
     assert (
         same_actor.json()["detail"]["code"]
@@ -6286,10 +6368,26 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/assignment-tasks/{task_ref}/transitions"
     ]["post"]
+    assignment_tasks = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-tasks"
+    ]["post"]
+    assignment_actions = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/assignment-actions"
+    ]["post"]
+    approval_decision_post = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/approval-decisions"
+    ]["post"]
     approval_decisions = openapi["paths"][
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
         "{campaign_version}/approval-decisions"
     ]["get"]
+    maker_checker_controls = openapi["paths"][
+        "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+        "{campaign_version}/maker-checker-controls"
+    ]["post"]
     item_selection = openapi["paths"][
         "/api/v1/rebalance/waves/{wave_id}/items/{wave_item_id}/select"
     ]["post"]
@@ -6387,6 +6485,18 @@ def test_wave_openapi_documents_preview_and_create() -> None:
         for parameter in assignment_transition["parameters"]
     }
     assert assignment_parameters["task_ref"] == "Stable campaign assignment task reference."
+    for mutation in (
+        assignment_tasks,
+        assignment_actions,
+        approval_decision_post,
+        maker_checker_controls,
+    ):
+        assert "404" in mutation["responses"]
+        assert "409" in mutation["responses"]
+        assert "422" in mutation["responses"]
+    assert "404" in assignment_transition["responses"]
+    assert "409" in assignment_transition["responses"]
+    assert "422" in assignment_transition["responses"]
     detail_parameters = {
         parameter["name"]: parameter["description"] for parameter in detail["parameters"]
     }

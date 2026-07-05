@@ -29,6 +29,11 @@ router = APIRouter()
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
     response_model=DpmBulkReviewCampaignDefinition,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"description": "Campaign definition not found."},
+        409: {"description": "Assignment action reference conflict."},
+        422: {"description": "Assignment action semantic validation failed."},
+    },
     summary="Record bulk-review campaign assignment action",
     description=(
         "Records an append-only assignment or escalation action on one active Manage-owned "

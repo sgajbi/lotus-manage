@@ -44,6 +44,38 @@ def campaign_definition_value_http_exception(exc: ValueError) -> HTTPException:
     )
 
 
+_CAMPAIGN_EVIDENCE_CONFLICT_CODES = frozenset(
+    {
+        "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT",
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_TRANSITION_REF_CONFLICT",
+        "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT",
+    }
+)
+
+_CAMPAIGN_EVIDENCE_NOT_FOUND_CODES = frozenset(
+    {
+        "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_NOT_FOUND",
+    }
+)
+
+
+def campaign_definition_evidence_value_http_exception(exc: ValueError) -> HTTPException:
+    code = str(exc)
+    if code in _CAMPAIGN_EVIDENCE_CONFLICT_CODES:
+        return HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": code, "message": code},
+        )
+    if code in _CAMPAIGN_EVIDENCE_NOT_FOUND_CODES:
+        return HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"code": code, "message": code},
+        )
+    return campaign_definition_value_http_exception(exc)
+
+
 def campaign_definition_lifecycle_http_exception(
     exc: DpmBulkReviewCampaignDefinitionLifecycleError,
 ) -> HTTPException:

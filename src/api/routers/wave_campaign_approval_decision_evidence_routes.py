@@ -29,6 +29,11 @@ router = APIRouter()
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
     response_model=DpmBulkReviewCampaignDefinition,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"description": "Campaign definition not found."},
+        409: {"description": "Approval decision reference conflict."},
+        422: {"description": "Approval decision semantic validation failed."},
+    },
     summary="Record bulk-review campaign approval decision",
     description=(
         "Records an append-only approval decision on one active Manage-owned "
