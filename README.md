@@ -745,6 +745,11 @@ Operationally important truths:
 
 ## Documentation Map
 
+- local repository navigation:
+  [docs/README.md](docs/README.md), [contracts/README.md](contracts/README.md),
+  [scripts/README.md](scripts/README.md), [tests/README.md](tests/README.md),
+  [src/README.md](src/README.md), [quality/README.md](quality/README.md), and
+  [monitoring/README.md](monitoring/README.md)
 - project overview:
   [docs/documentation/project-overview.md](docs/documentation/project-overview.md)
 - architecture review ledger:
@@ -765,3 +770,7 @@ Operationally important truths:
 Repository-authored wiki pages live under [wiki/](wiki). If the GitHub wiki is published later,
 keep `wiki/` as the canonical source and treat any separate `*.wiki.git` clone as publication
 plumbing only.
+
+`wiki/` intentionally does not contain a local `README.md` because every Markdown page in that
+folder is authored wiki source and may be published. Use [docs/README.md](docs/README.md) for wiki
+editing and publication guidance.

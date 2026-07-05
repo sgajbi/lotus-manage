@@ -71,6 +71,56 @@ def test_current_docs_do_not_advertise_removed_advisory_runtime_surface() -> Non
     assert failures == []
 
 
+def test_local_repository_navigation_readmes_cover_safe_edit_boundaries() -> None:
+    expected_readmes = [
+        ROOT / "contracts" / "README.md",
+        ROOT / "contracts" / "idea-action-intake" / "README.md",
+        ROOT / "contracts" / "observability" / "README.md",
+        ROOT / "contracts" / "trust-telemetry" / "README.md",
+        ROOT / "docs" / "README.md",
+        ROOT / "monitoring" / "README.md",
+        ROOT / "quality" / "README.md",
+        ROOT / "scripts" / "README.md",
+        ROOT / "src" / "README.md",
+        ROOT / "tests" / "README.md",
+    ]
+
+    assert [path for path in expected_readmes if not path.exists()] == []
+    assert not (ROOT / "wiki" / "README.md").exists()
+
+    root_readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    docs_readme = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    contracts_readme = (ROOT / "contracts" / "README.md").read_text(encoding="utf-8")
+    trust_telemetry_readme = (ROOT / "contracts" / "trust-telemetry" / "README.md").read_text(
+        encoding="utf-8"
+    )
+    scripts_readme = (ROOT / "scripts" / "README.md").read_text(encoding="utf-8")
+    tests_readme = (ROOT / "tests" / "README.md").read_text(encoding="utf-8")
+    monitoring_readme = (ROOT / "monitoring" / "README.md").read_text(encoding="utf-8")
+
+    for required_link in [
+        "docs/README.md",
+        "contracts/README.md",
+        "scripts/README.md",
+        "tests/README.md",
+        "src/README.md",
+        "quality/README.md",
+        "monitoring/README.md",
+    ]:
+        assert required_link in root_readme
+
+    assert "wiki/` intentionally does not contain a local `README.md`" in root_readme
+    assert "wiki/` intentionally has\nno local `README.md`" in docs_readme
+    assert "Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage" in docs_readme
+    assert "make mesh-contract-validate" in contracts_readme
+    assert "make observability-contract-validate" in contracts_readme
+    assert "make trust-telemetry-validate" in trust_telemetry_readme
+    assert "tests/unit/test_trust_telemetry_contracts.py" in trust_telemetry_readme
+    assert "Prefer the Make target that wraps a script" in scripts_readme
+    assert "Do not add superficial coverage" in tests_readme
+    assert "Do not treat generated screenshots" in monitoring_readme
+
+
 def test_core_dpm_portfolio_universe_candidate_consumer_truth_is_documented() -> None:
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     repo_context = (ROOT / "REPOSITORY-ENGINEERING-CONTEXT.md").read_text(encoding="utf-8")
