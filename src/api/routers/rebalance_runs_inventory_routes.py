@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Annotated, Optional
+from collections.abc import Callable
+from typing import Annotated, Optional, cast
 
 from fastapi import Query, Request, status
 
@@ -197,8 +198,11 @@ def get_dpm_supportability_summary(
 
 
 def _mandate_repository_for_request(request: Request) -> DpmMandateRepository:
-    dependency = request.app.dependency_overrides.get(
-        get_mandate_repository,
-        get_mandate_repository,
+    dependency = cast(
+        Callable[[], DpmMandateRepository],
+        request.app.dependency_overrides.get(
+            get_mandate_repository,
+            get_mandate_repository,
+        ),
     )
     return dependency()
