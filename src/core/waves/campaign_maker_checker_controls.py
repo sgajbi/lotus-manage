@@ -48,6 +48,15 @@ class CampaignControlNormalizedInput(NamedTuple):
     required_reviewer_role: str | None
 
 
+class CampaignControlLifecycleState(NamedTuple):
+    has_pending_review: bool
+    pending_submitter_actor_id: str | None
+    pending_reviewer_actor_id: str | None
+    pending_reviewer_role: str | None
+    has_open_exception: bool
+    latest_outcome: CampaignMakerCheckerControlOutcome | None
+
+
 class DpmBulkReviewCampaignDefinitionMakerCheckerControlPage(BaseModel):
     product_name: Literal["BulkReviewCampaignDefinitionMakerCheckerControlPage"] = (
         "BulkReviewCampaignDefinitionMakerCheckerControlPage"
@@ -107,7 +116,7 @@ def record_bulk_review_campaign_definition_maker_checker_control(
         definition=definition,
         actor_id=normalized.recorded_by,
     )
-    _validate_control_action(
+    _validate_control_shape(
         control_action=control_action,
         control_outcome=control_outcome,
         submitter_actor_id=normalized.submitter_actor_id,
@@ -133,6 +142,7 @@ def record_bulk_review_campaign_definition_maker_checker_control(
         if existing.content_hash == control.content_hash:
             return definition
         raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT")
+    _validate_control_lifecycle(definition=definition, control=control)
 
     return _definition_with_appended_control(definition=definition, control=control)
 
@@ -219,7 +229,7 @@ def build_bulk_review_campaign_definition_maker_checker_control_page(
     )
 
 
-def _validate_control_action(
+def _validate_control_shape(
     *,
     control_action: CampaignMakerCheckerControlAction,
     control_outcome: CampaignMakerCheckerControlOutcome,
@@ -235,6 +245,136 @@ def _validate_control_action(
     )
     validator = _CONTROL_ACTION_VALIDATORS.get(control_action, _validate_exception_resolved_control)
     validator(context)
+
+
+def _validate_control_lifecycle(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    control: DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+) -> None:
+    state = _control_lifecycle_state(definition.maker_checker_controls)
+    if control.control_action == "SUBMITTED_FOR_REVIEW":
+        _validate_submission_lifecycle(state)
+        return
+    if control.control_action == "REVIEWER_ASSIGNED":
+        _validate_reviewer_assignment_lifecycle(state=state, control=control)
+        return
+    if control.control_action == "REVIEW_COMPLETED":
+        _validate_review_completed_lifecycle(state=state, control=control)
+        return
+    if control.control_action == "CONTROL_EXCEPTION_RAISED":
+        _validate_exception_raised_lifecycle(state)
+        return
+    _validate_exception_resolved_lifecycle(state)
+
+
+def _control_lifecycle_state(
+    controls: list[DpmBulkReviewCampaignDefinitionMakerCheckerControl],
+) -> CampaignControlLifecycleState:
+    state = CampaignControlLifecycleState(
+        has_pending_review=False,
+        pending_submitter_actor_id=None,
+        pending_reviewer_actor_id=None,
+        pending_reviewer_role=None,
+        has_open_exception=False,
+        latest_outcome=None,
+    )
+    for control in controls:
+        if control.control_action == "SUBMITTED_FOR_REVIEW":
+            state = state._replace(
+                has_pending_review=True,
+                pending_submitter_actor_id=control.submitter_actor_id,
+                pending_reviewer_actor_id=None,
+                pending_reviewer_role=None,
+                has_open_exception=False,
+                latest_outcome=control.control_outcome,
+            )
+        elif control.control_action == "REVIEWER_ASSIGNED":
+            state = state._replace(
+                pending_reviewer_actor_id=control.reviewer_actor_id,
+                pending_reviewer_role=control.required_reviewer_role,
+                latest_outcome=control.control_outcome,
+            )
+        elif control.control_action == "REVIEW_COMPLETED":
+            state = state._replace(
+                has_pending_review=False,
+                latest_outcome=control.control_outcome,
+            )
+        elif control.control_action == "CONTROL_EXCEPTION_RAISED":
+            state = state._replace(
+                has_open_exception=True,
+                latest_outcome=control.control_outcome,
+            )
+        elif control.control_action == "CONTROL_EXCEPTION_RESOLVED":
+            state = state._replace(
+                has_open_exception=False,
+                latest_outcome=control.control_outcome,
+            )
+    return state
+
+
+def _validate_submission_lifecycle(state: CampaignControlLifecycleState) -> None:
+    if state.has_pending_review:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEW_ALREADY_PENDING")
+
+
+def _validate_reviewer_assignment_lifecycle(
+    *,
+    state: CampaignControlLifecycleState,
+    control: DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+) -> None:
+    _validate_pending_review_exists(state)
+    if (
+        state.pending_submitter_actor_id
+        and control.reviewer_actor_id == state.pending_submitter_actor_id
+    ):
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED")
+
+
+def _validate_review_completed_lifecycle(
+    *,
+    state: CampaignControlLifecycleState,
+    control: DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+) -> None:
+    _validate_pending_review_exists(state)
+    _validate_pending_submitter_matches(state=state, control=control)
+    if (
+        state.pending_reviewer_actor_id
+        and control.reviewer_actor_id != state.pending_reviewer_actor_id
+    ):
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_MISMATCH")
+    if (
+        state.pending_reviewer_role
+        and control.required_reviewer_role != state.pending_reviewer_role
+    ):
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_ROLE_MISMATCH")
+
+
+def _validate_exception_raised_lifecycle(state: CampaignControlLifecycleState) -> None:
+    if not state.has_pending_review and state.latest_outcome != "FAILED":
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_REVIEW_REQUIRED")
+
+
+def _validate_exception_resolved_lifecycle(state: CampaignControlLifecycleState) -> None:
+    if not state.has_open_exception:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_EXCEPTION_REQUIRED")
+
+
+def _validate_pending_review_exists(state: CampaignControlLifecycleState) -> None:
+    if not state.has_pending_review:
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_REQUIRED")
+
+
+def _validate_pending_submitter_matches(
+    *,
+    state: CampaignControlLifecycleState,
+    control: DpmBulkReviewCampaignDefinitionMakerCheckerControl,
+) -> None:
+    if (
+        state.pending_submitter_actor_id
+        and control.submitter_actor_id != state.pending_submitter_actor_id
+    ):
+        raise ValueError("BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMITTER_MISMATCH")
 
 
 def _validate_submission_control(context: CampaignControlValidationContext) -> None:

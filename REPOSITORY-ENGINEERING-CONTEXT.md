@@ -821,8 +821,10 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
     Completed reviews require distinct submitter and reviewer actors and preserve deterministic
     control ids, conflict-safe control refs, reviewer role, control outcome, correlation id, and
-    optional source refs. Control recording enforces the campaign command-actor allow-list when
-    campaign governance supplies entitled actors. The control ledger mutates campaign control evidence only and does not
+    optional source refs. Control recording fails closed for review completion before a compatible
+    submission/reviewer cycle and exception resolution before an open exception, and enforces the
+    campaign command-actor allow-list when campaign governance supplies entitled actors. The
+    control ledger mutates campaign control evidence only and does not
     approve trades, generate or route orders, contact clients, orchestrate external workflow
     systems, or claim OMS execution. Workflow-automation responses now carry
     `BulkReviewCampaignWorkflowCapabilityPosture:v1` at page and row level, explicitly separating

@@ -3750,6 +3750,61 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
     assert "oms_execution" in payload["maker_checker_controls"][0]["forbidden_actions"]
 
 
+def test_bulk_review_campaign_maker_checker_controls_reject_invalid_lifecycle_sequence() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        invalid_completion = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "REVIEW_COMPLETED",
+                "control_ref": "BRC-MC-INVALID-001",
+                "recorded_by": "ops",
+                "submitter_actor_id": "pm_001",
+                "reviewer_actor_id": "cio_ops_committee",
+                "required_reviewer_role": "CIO_OPERATIONS_REVIEWER",
+                "control_outcome": "PASSED",
+                "control_reason": "Invalid review completion without submission.",
+                "correlation_id": "corr-campaign-maker-checker-invalid-completion",
+            },
+        )
+        invalid_resolution = client.post(
+            f"{route}/maker-checker-controls",
+            json={
+                "control_action": "CONTROL_EXCEPTION_RESOLVED",
+                "control_ref": "BRC-MC-INVALID-002",
+                "recorded_by": "ops",
+                "control_outcome": "EXCEPTION_RESOLVED",
+                "control_reason": "Invalid exception resolution without open exception.",
+                "correlation_id": "corr-campaign-maker-checker-invalid-resolution",
+            },
+        )
+        listed = client.get(f"{route}/maker-checker-controls")
+
+    assert put_response.status_code == 200
+    assert invalid_completion.status_code == 422
+    assert (
+        invalid_completion.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_REQUIRED"
+    )
+    assert invalid_resolution.status_code == 422
+    assert (
+        invalid_resolution.json()["detail"]["code"]
+        == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_EXCEPTION_REQUIRED"
+    )
+    assert listed.status_code == 200
+    assert listed.json()["count"] == 0
+
+
 def test_bulk_review_campaign_workflow_mutations_enforce_actor_entitlement() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     definition_request = _bulk_review_campaign_definition_request()

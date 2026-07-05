@@ -2958,34 +2958,44 @@ def test_campaign_maker_checker_controls_record_actor_separation() -> None:
 
 
 def test_campaign_maker_checker_controls_record_reviewer_assignment_and_exceptions() -> None:
-    assigned = record_bulk_review_campaign_definition_maker_checker_control(
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
         definition=_definition(),
-        control_action="REVIEWER_ASSIGNED",
+        control_action="SUBMITTED_FOR_REVIEW",
         control_ref="BRC-MC-2026-05-001",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-001",
+    )
+    assigned = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=submitted,
+        control_action="REVIEWER_ASSIGNED",
+        control_ref="BRC-MC-2026-05-002",
         recorded_by="ops",
         reviewer_actor_id="cio_ops_committee",
         required_reviewer_role="CIO_OPERATIONS_REVIEWER",
         control_outcome="PENDING",
         control_reason="Independent reviewer assigned for campaign definition control.",
-        correlation_id="corr-campaign-maker-checker-control-001",
+        correlation_id="corr-campaign-maker-checker-control-002",
     )
     exception_open = record_bulk_review_campaign_definition_maker_checker_control(
         definition=assigned,
         control_action="CONTROL_EXCEPTION_RAISED",
-        control_ref="BRC-MC-2026-05-002",
+        control_ref="BRC-MC-2026-05-003",
         recorded_by="ops",
         control_outcome="EXCEPTION_OPEN",
         control_reason="Control evidence requires remediation.",
-        correlation_id="corr-campaign-maker-checker-control-002",
+        correlation_id="corr-campaign-maker-checker-control-003",
     )
     exception_resolved = record_bulk_review_campaign_definition_maker_checker_control(
         definition=exception_open,
         control_action="CONTROL_EXCEPTION_RESOLVED",
-        control_ref="BRC-MC-2026-05-003",
+        control_ref="BRC-MC-2026-05-004",
         recorded_by="ops",
         control_outcome="EXCEPTION_RESOLVED",
         control_reason="Control evidence remediation accepted.",
-        correlation_id="corr-campaign-maker-checker-control-003",
+        correlation_id="corr-campaign-maker-checker-control-004",
     )
 
     page = build_bulk_review_campaign_definition_maker_checker_control_page(
@@ -2994,9 +3004,68 @@ def test_campaign_maker_checker_controls_record_reviewer_assignment_and_exceptio
         offset=0,
     )
 
-    assert page.count == 3
+    assert page.count == 4
     assert page.latest_control_action == "CONTROL_EXCEPTION_RESOLVED"
     assert page.current_control_outcome == "EXCEPTION_RESOLVED"
+
+
+def test_campaign_maker_checker_controls_reject_invalid_lifecycle_sequences() -> None:
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMISSION_REQUIRED",
+    ):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=_definition(),
+            control_action="REVIEW_COMPLETED",
+            control_ref="BRC-MC-2026-05-001",
+            recorded_by="ops",
+            submitter_actor_id="pm_001",
+            reviewer_actor_id="cio_ops_committee",
+            required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+            control_outcome="PASSED",
+            control_reason="Invalid review completion without submission.",
+            correlation_id="corr-campaign-maker-checker-control-invalid-review",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_EXCEPTION_REQUIRED",
+    ):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=_definition(),
+            control_action="CONTROL_EXCEPTION_RESOLVED",
+            control_ref="BRC-MC-2026-05-002",
+            recorded_by="ops",
+            control_outcome="EXCEPTION_RESOLVED",
+            control_reason="Invalid exception resolution without open exception.",
+            correlation_id="corr-campaign-maker-checker-control-invalid-resolution",
+        )
+
+    submitted = record_bulk_review_campaign_definition_maker_checker_control(
+        definition=_definition(),
+        control_action="SUBMITTED_FOR_REVIEW",
+        control_ref="BRC-MC-2026-05-003",
+        recorded_by="ops",
+        submitter_actor_id="pm_001",
+        control_outcome="PENDING",
+        control_reason="Campaign definition submitted for independent review.",
+        correlation_id="corr-campaign-maker-checker-control-003",
+    )
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_ACTOR_SEPARATION_REQUIRED",
+    ):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=submitted,
+            control_action="REVIEWER_ASSIGNED",
+            control_ref="BRC-MC-2026-05-004",
+            recorded_by="ops",
+            reviewer_actor_id="pm_001",
+            required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+            control_outcome="PENDING",
+            control_reason="Invalid same actor reviewer assignment.",
+            correlation_id="corr-campaign-maker-checker-control-invalid-assignment",
+        )
 
 
 @pytest.mark.parametrize(

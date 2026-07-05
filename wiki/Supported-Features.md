@@ -156,11 +156,12 @@ volatility, drawdown, attribution, benchmark-relative performance, or performanc
 Campaign maker-checker control addendum: Manage now supports append-only
 `BulkReviewCampaignDefinitionMakerCheckerControlPage` evidence through
 `POST` and `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
-Completed review records require distinct submitter and reviewer actors and preserve deterministic
-control ids, conflict-safe control refs, reviewer role, control outcome, correlation id, and source
-refs. This narrows RFC41-WTBD-003's maker-checker gap without promoting trade approval, order
-generation/routing, client contact, external workflow orchestration, OMS execution, or global
-portfolio-universe discovery.
+Completed review records require distinct submitter and reviewer actors, fail closed unless a
+compatible submission/reviewer cycle exists, and preserve deterministic control ids,
+conflict-safe control refs, reviewer role, control outcome, correlation id, and source refs.
+Exception resolution fails closed unless an exception is open. This narrows RFC41-WTBD-003's
+maker-checker gap without promoting trade approval, order generation/routing, client contact,
+external workflow orchestration, OMS execution, or global portfolio-universe discovery.
 
 Campaign workflow-automation promotion posture addendum: `BulkReviewCampaignWorkflowCapabilityPosture:v1`
 now carries machine-readable `promotion_requirements` for certified external workflow source
@@ -929,7 +930,7 @@ flowchart LR
 | Stateful resolver metrics | Enforced with bounded labels | observability tests and stateful resolver API tests |
 | DPM execution and workflow metrics | Enforced with bounded labels | observability tests, API route tests, and monitoring contract validation |
 | Monitoring contract governance | Enforced for implemented custom metrics | observability contract validator, monitoring contract tests, `make mesh-contract-validate` |
-| Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url http://manage.dev.lotus` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality including error examples, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics |
+| Live manage API proof | Passed for implemented stateless/manage API surface after targeted manage refresh | `scripts/validate_live_api.py --base-url $env:MANAGE_BASE_URL` checks demo pack, readiness, capability truth, no advisory/proposal routes, deployed OpenAPI certification quality including error examples, stateful core-sourcing guardrails, async conflict behavior, supportability summary, and metrics against `manage.dev.lotus` |
 | Manage/core integration posture proof | Passed for stateful available posture | `LOTUS_MANAGE_EXPECT_STATEFUL_CORE_SOURCING=available make live-api-validate-core` proves capability truth, composed core sourcing, READY lineage, stateful source-backed construction over cost, cashflow, restriction, and sustainability source products, supportability persistence, metrics, and old monolithic core route absence |
 | Swagger error-response examples | Enforced | central OpenAPI enrichment, `scripts/openapi_quality_gate.py`, contract tests, and live validation require bounded JSON examples for every documented `4xx`, `5xx`, and `default` response |
 
@@ -946,10 +947,11 @@ performance analytics authority, or UI composition.
 Use `docs/demo/README.md` for executable API demo payloads. Demo evidence should be captured from
 the live application only after the relevant API, persistence, and supportability checks pass.
 
-For RFC-0036 final proof, use the direct manage API path first:
+For RFC-0036 final proof, use the direct manage API path first with `MANAGE_BASE_URL` pointing to
+`manage.dev.lotus`:
 
 ```powershell
-python scripts/validate_live_api.py --base-url http://manage.dev.lotus --json-output output/rfc-0036-gold-pass/live-api-summary.json
+python scripts/validate_live_api.py --base-url $env:MANAGE_BASE_URL --json-output output/rfc-0036-gold-pass/live-api-summary.json
 ```
 
 For manage/core integration proof with stateful sourcing active, add the explicit expectation:
