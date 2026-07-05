@@ -73,6 +73,16 @@ Trust telemetry validation:
 make trust-telemetry-validate
 ```
 
+Repo-native trust telemetry snapshots must cover every active producer declaration. Current
+snapshots are:
+
+1. `contracts/trust-telemetry/portfolio-action-register.telemetry.v1.json`
+2. `contracts/trust-telemetry/bulk-review-campaign-membership.telemetry.v1.json`
+3. `contracts/trust-telemetry/pm-operating-quality-score-run.telemetry.v1.json`
+
+These snapshots are deterministic contract fixtures validated by the feature and PR-merge lanes.
+They do not by themselves assert live-environment runtime certification.
+
 Full mesh contract validation:
 
 ```powershell
