@@ -37,6 +37,12 @@ PORTFOLIO_MEMORY_REPORT_CONTEXT_EVENT_REF_GOVERNANCE_FIELDS = {
 
 
 class DpmPortfolioMemoryReportEventRef(BaseModel):
+    event_id: str = Field(
+        description=(
+            "Stable Manage portfolio-memory event id that can be used with the exact event lookup "
+            "route for this portfolio."
+        )
+    )
     event_identity: str = Field(description="Stable source-backed portfolio-memory event identity.")
     event_type: str = Field(description="Portfolio-memory event type.")
     event_time: str = Field(description="UTC event timestamp used for bounded ref selection.")
@@ -181,6 +187,7 @@ def _event_ref(
     event: DpmPortfolioMemoryEvent, *, event_ref_selection_rank: int
 ) -> DpmPortfolioMemoryReportEventRef:
     return DpmPortfolioMemoryReportEventRef(
+        event_id=event.event_id,
         event_identity=event.event_identity,
         event_type=event.event_type,
         event_time=event.event_time,

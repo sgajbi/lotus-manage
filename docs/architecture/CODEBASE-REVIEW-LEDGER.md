@@ -30138,3 +30138,38 @@ and improves internal transaction-cost source posture maintainability only.
   wiki source changed because bounded count semantics changed. Repository context and platform
   skills do not need updates; this is an app-local performance/query-shape correction using the
   existing issue-fix and pre-merge workflow.
+
+## BACKEND-REVIEW-20260706-0591: Portfolio-memory report event drilldown keys
+
+- Date: 2026-07-06
+- GitHub issue: #591
+- Scope: bounded portfolio-memory report/AI handoff event refs, exact event lookup bridge,
+  OpenAPI schema, API vocabulary inventory, README, API surface wiki, and focused handoff/API
+  tests.
+- Bank-buyable control area: audit drilldown, generated-evidence traceability, API contract
+  clarity, and report/AI no-raw-payload lineage support.
+- Finding: `DpmPortfolioMemoryReportEventRef` carried stable cross-app `event_identity`, source
+  coordinates, timestamps, rank, content hash, and governance fields, but dropped the Manage
+  `event_id` used by `GET /api/v1/rebalance/portfolio-memory/{portfolio_id}/events/{event_id}`.
+  Report and AI consumers could reconcile source identity but could not directly drill back from a
+  bounded handoff ref to the exact Manage memory event.
+- Action: added `event_id` to `DpmPortfolioMemoryReportEventRef` as the report-safe Manage lookup
+  key and populate it from each selected `DpmPortfolioMemoryEvent`. `event_identity` remains the
+  cross-app/source-backed lineage identity. The `context_content_hash` continues to cover the
+  bounded event-ref envelope, now including the lookup identifier.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\dpm\portfolio_memory
+  tests\unit\dpm\api\test_portfolio_memory_api.py tests\unit\test_documentation_current_state.py
+  -q` reported 199 passed; focused Ruff check and format-check passed for the changed handoff/API
+  tests; focused mypy passed for `src\core\portfolio_memory\handoffs.py`; `python
+  scripts\openapi_quality_gate.py` passed; `python scripts\api_vocabulary_inventory.py
+  --validate-only` passed; changed `API-Surface.md` wiki quality audit passed.
+- Same-pattern scan: compared search-result `latest_matching_event_id`, exact event lookup route
+  semantics, report-context OpenAPI schema, README, API surface wiki, and generated API vocabulary
+  so the Manage route key and cross-app event identity are documented as separate identifiers.
+- Design decision: adding a bounded lookup key to the existing handoff ref is the smallest
+  contract-preserving design. No raw source payload, global source-event query, report-owned event
+  store, or runtime service boundary is needed.
+- Docs/wiki/context/skill decision: README, API-surface wiki, OpenAPI descriptions, and API
+  vocabulary changed because the handoff contract changed. Repository context and platform skills
+  do not need updates; this is app-local API/handoff contract truth.

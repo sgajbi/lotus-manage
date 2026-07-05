@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-05T23:28:18.800318+00:00",
+  "generatedAt": "2026-07-05T23:34:15.493144+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -67372,6 +67372,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_refs"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].event_identity",
             "location": "body",
             "required": true,
@@ -68017,6 +68025,14 @@
             "type": "array",
             "semanticId": "lotus.event_refs",
             "attributeRef": "#/attributeCatalog/lotus.event_refs"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
           },
           {
             "name": "portfolio_memory_context.event_refs[].event_identity",
@@ -110075,6 +110091,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_refs"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].event_identity",
             "location": "body",
             "required": true,
@@ -117499,6 +117523,14 @@
             "attributeRef": "#/attributeCatalog/lotus.event_refs"
           },
           {
+            "name": "portfolio_memory_context.event_refs[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
+          },
+          {
             "name": "portfolio_memory_context.event_refs[].event_identity",
             "location": "body",
             "required": true,
@@ -118048,6 +118080,14 @@
             "type": "array",
             "semanticId": "lotus.event_refs",
             "attributeRef": "#/attributeCatalog/lotus.event_refs"
+          },
+          {
+            "name": "portfolio_memory_context.event_refs[].event_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.event_id",
+            "attributeRef": "#/attributeCatalog/lotus.event_id"
           },
           {
             "name": "portfolio_memory_context.event_refs[].event_identity",

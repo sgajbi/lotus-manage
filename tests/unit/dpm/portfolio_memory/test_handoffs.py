@@ -28,6 +28,7 @@ def _governance_policy() -> dict[str, str]:
 
 def _event_ref(*, rank: int = 1) -> DpmPortfolioMemoryReportEventRef:
     return DpmPortfolioMemoryReportEventRef(
+        event_id="memory:proof_pack:dpp_001:created",
         event_identity="lotus-manage:PROOF_PACK:dpp_001:sha256:proof-pack",
         event_type="PROOF_PACK_CREATED",
         event_time="2026-05-07T10:00:00Z",
