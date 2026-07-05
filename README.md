@@ -316,8 +316,10 @@ or claim OMS execution. Manage also supports
 append-only maker-checker control evidence at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
 plus listing it at the same route with `GET`, requiring distinct submitter and reviewer actors for
-completed reviews and enforcing the command actor allow-list when supplied while avoiding trade approval, order generation/routing, client contact,
-external workflow orchestration, or OMS claims. Manage also supports
+completed reviews, enforcing fail-closed submission/reviewer/completion and open-exception
+sequencing, and enforcing the command actor allow-list when supplied while avoiding trade
+approval, order generation/routing, client contact, external workflow orchestration, or OMS claims.
+Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;
 and superseding older definitions with active replacement versions at

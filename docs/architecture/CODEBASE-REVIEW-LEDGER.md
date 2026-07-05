@@ -29832,3 +29832,39 @@ and improves internal transaction-cost source posture maintainability only.
   expected pre-merge drift for `Operations-Runbook.md` and `Supported-Features.md`. The wiki
   quality audit no longer flags the changed runbook page; remaining audit failures are existing
   wiki-wide hygiene findings for `_Sidebar.md` and bare URLs in unchanged pages.
+
+## BACKEND-REVIEW-20260706-0578: Campaign maker-checker lifecycle sequencing
+
+- Date: 2026-07-06
+- GitHub issue: #578
+- Scope: maker-checker control domain helper, campaign API behavior tests, campaign domain tests,
+  README, repository context, and supported-feature wiki truth.
+- Bank-buyable control area: maker-checker workflow correctness, audit posture, current-state
+  supportability, and fail-closed campaign control evidence.
+- Finding: maker-checker control records validated each action/outcome shape but did not validate
+  the append-only sequence before reporting latest/current posture. A caller could record
+  `REVIEW_COMPLETED` without a prior compatible submission/reviewer cycle or
+  `CONTROL_EXCEPTION_RESOLVED` without an outstanding open exception, and the page would report
+  that invalid terminal posture as current truth.
+- Action: added a domain lifecycle-state validator that derives pending review, reviewer
+  assignment, open-exception, and latest-outcome state from existing append-only controls before
+  accepting a new control. Identical `control_ref` replay still returns the existing definition,
+  conflicting duplicate refs still fail as conflicts, and new invalid lifecycle shortcuts fail with
+  stable 422 reason codes through the API. Updated tests and durable README/context/wiki wording for
+  the supported lifecycle semantics without introducing external workflow, trade approval, order,
+  client-contact, or OMS behavior.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for the touched domain and test files; `python -m
+  mypy --config-file mypy.ini src/core/waves/campaign_maker_checker_controls.py` passed; focused
+  maker-checker domain/API/repository tests reported 24 passed; `python -m pytest
+  tests/unit/dpm/waves/test_campaign_discovery.py tests/unit/dpm/waves/test_campaign_definition_repository.py
+  tests/unit/dpm/api/test_waves_api.py -q` reported 310 passed.
+- Same-pattern scan: compared the adjacent controlled assignment-task lifecycle implementation,
+  which already validates transition state before mutation; no same-pattern assignment-task fix was
+  required in this slice.
+- Wiki decision: wiki source changed because supported-feature truth now includes fail-closed
+  maker-checker sequencing. Run repo wiki check-only before PR merge and publish from `main` after
+  merge. `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports expected pre-merge drift
+  for `Operations-Runbook.md` and `Supported-Features.md`. The wiki quality audit no longer flags
+  the changed `Supported-Features.md` page; remaining audit failures are existing wiki-wide hygiene
+  findings for `_Sidebar.md` and bare URLs in unchanged pages.
