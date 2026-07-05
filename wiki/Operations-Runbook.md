@@ -1,5 +1,12 @@
 # Operations Runbook
 
+This page is the current operator runbook for `lotus-manage` runtime support, supportability
+diagnostics, campaign workflow recovery, outcome-review support, and container readiness. Its
+evidence posture is implementation-backed by the named API routes, bounded metrics, repository
+tests, OpenAPI/observability validators, and wiki publication checks referenced below; unsupported
+external workflow, OMS/order, fill/settlement, and client-contact behavior remains out of Manage
+scope unless a future source-owning service publishes and certifies that capability.
+
 ## Reader Map
 
 | Reader need | Use this section | Evidence source |
@@ -7,6 +14,7 @@
 | First response and runtime checks | Important operational checks | `/health/ready`, `/metrics`, repo-native smoke checks |
 | Action-register observability | RFC-0108 action register supportability | `lotus_manage_action_register_supportability_total` and related supportability metrics |
 | Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total` and monitoring contract alerts |
+| Campaign recovery and replay | Campaign workflow operations | Campaign definition routes, launch history, workflow board, assignment tasks, and maker-checker pages |
 | Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
 | Container readiness | Docker production readiness | Compose health, migrations, and readiness logs |
 
@@ -101,6 +109,73 @@
   `contracts/observability/lotus-manage-monitoring.v1.json`. Run
   `python scripts/validate_observability_contracts.py` after changing campaign workflow metric code
   or monitoring contracts.
+
+## Campaign workflow operations
+
+Campaign workflow evidence is Manage-owned audit and supportability state. Operators should use the
+public campaign routes, bounded metrics, and repo-native tests as the normal support path; manual
+database edits are not the normal recovery mechanism.
+
+First checks:
+
+| Check | Route or command | Operator decision |
+| --- | --- | --- |
+| Service readiness | `GET /health/ready` | Stop if migrations or persistence guardrails are not ready. |
+| Current campaign definition | `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}` | Confirm lifecycle status, content hash, governance, and source-backed candidate posture. |
+| Workflow overview | `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview` | Compare readiness, lifecycle, launch-history, and optional launch-package posture in one read model. |
+| Product queue posture | `GET /api/v1/rebalance/waves/campaign-operating-queue`, `GET /api/v1/rebalance/waves/campaign-approval-inbox`, `GET /api/v1/rebalance/waves/campaign-workflow-board` | Decide whether the issue is launch readiness, approval posture, actor routing, or closed/inactive state. |
+| Assignment posture | `GET /api/v1/rebalance/waves/campaign-assignment-plan`, `GET /api/v1/rebalance/waves/campaign-workflow-automation` | Distinguish read-only assignment readiness from actual task mutation. |
+| Metrics | `/metrics`, `lotus_manage_campaign_workflow_total` | Classify failures by bounded `surface`, `outcome`, and `reason`; never add campaign ids, actor ids, portfolio ids, idempotency keys, or correlation ids as labels. |
+
+Evidence-family triage:
+
+| Symptom | Diagnosis endpoint | Safe action |
+| --- | --- | --- |
+| Missing or stale launch history after a launch response | `GET .../launch-history` and `GET .../lifecycle-events` | Retry the same launch request with the same requested as-of date, actor, and correlation/idempotency context. The deterministic launch idempotency key must replay the existing wave and append the missing launch audit without creating another wave. |
+| Approval-decision conflict | `GET .../approval-decisions` | Treat duplicate `decision_ref` with changed payload as a 409 conflict. Do not rewrite stored approval evidence; issue a new decision ref or escalate to engineering if the original evidence is wrong. |
+| Assignment-action conflict or stale posture | `GET .../assignment-actions`, `GET .../campaign-assignment-plan` | Use the latest action page and assignment plan. Duplicate changed action refs are conflicts; record a new action ref for a new assignment decision. |
+| Assignment-task transition conflict | `GET .../assignment-tasks?status=<state>` | Confirm current task status and transition refs. Replay identical transition refs only when payload matches; otherwise use a new transition ref or escalate for incorrect stored evidence. |
+| Maker-checker exception or invalid completion posture | `GET .../maker-checker-controls` | Confirm a compatible submission/reviewer cycle and open exception exists before completion/resolution. Invalid shortcuts must fail closed; do not infer approval state from free text. |
+| Workflow board or automation page is empty/stale | `GET .../campaign-workflow-board`, `GET .../campaign-workflow-automation`, then `GET .../workflow-overview` | Confirm active lifecycle, approval/expiry/entitlement posture, assignment-plan posture, and existing task state. Empty may be correct for closed, ineligible, unsupported, or not-ready campaigns. |
+| External workflow, OMS, or client-contact assumption appears in an incident | Supported-feature page and route payload boundaries | Escalate as a non-claim. Manage does not orchestrate external workflow systems, contact clients, approve trades, generate orders, route orders, claim OMS execution, ingest fills, or settle trades. |
+
+Recovery and replay posture:
+
+- Approval decisions, assignment actions, assignment tasks/transitions, maker-checker controls, and
+  launch audit writes use stable refs or deterministic launch idempotency. Identical replay is
+  safe; same-ref changed payloads must fail as conflicts.
+- Campaign workflow appends use optimistic content-hash protection. A stale append returns
+  `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409 rather than overwriting newer evidence.
+- Campaign launch is recoverable after partial wave creation as described above. This is the only
+  current cross-aggregate campaign recovery path; other workflow evidence families remain
+  single-aggregate appends guarded by refs and content hashes.
+- Campaign workflow telemetry from #580, stale-write protection from #582, and launch-audit retry
+  proof from #583 are implemented on this branch. Materialized campaign workflow evidence for
+  larger read-model scaling remains the separate #586 scope until that issue is fixed and merged.
+- Keep incident notes source-safe. Do not paste raw campaign payloads, portfolio ids, client data,
+  actor ids, idempotency keys, correlation ids, request hashes, source hashes, or diagnostics
+  payloads into screenshots, logs, metric labels, or public incident summaries.
+
+Escalation:
+
+- Escalate Manage-owned state issues when campaign definition lifecycle, launch history, assignment
+  tasks, maker-checker controls, or workflow read models contradict their persisted evidence pages.
+- Escalate source-owner issues to the owning service when candidate membership, source refs,
+  mandate binding, PM-book, risk-event, tactical house-view, risk, performance, market-data, or
+  portfolio facts are unavailable, incomplete, degraded, or stale.
+- Escalate Gateway/Workbench issues when Manage responses are correct but downstream BFF/UI
+  rendering, pagination, empty-state, or boundary presentation is wrong.
+- Escalate external workflow, OMS, order, fill, settlement, and client-communication requests as
+  unsupported owner-scope gaps unless a future source-owning service publishes and certifies the
+  required source product.
+
+Validation after supportability changes:
+
+```powershell
+python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_campaign_definition_repository.py -q
+python scripts/validate_observability_contracts.py
+python scripts/openapi_quality_gate.py
+```
 
 ## RFC-0042 outcome review supportability
 
