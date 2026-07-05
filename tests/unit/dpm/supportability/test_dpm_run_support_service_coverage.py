@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 
@@ -39,10 +40,20 @@ def _build_service(*, workflow_enabled: bool = False) -> DpmRunSupportService:
     )
 
 
-def _sample_result():
+def _sample_result(
+    *,
+    portfolio_id: str = "pf_service_artifact_1",
+    correlation_id: str = "corr_service_artifact_1",
+    pending_review: bool = False,
+):
+    options = (
+        EngineOptions(single_position_max_weight=Decimal("0.5"))
+        if pending_review
+        else EngineOptions()
+    )
     return run_simulation(
         portfolio_snapshot(
-            portfolio_id="pf_service_artifact_1",
+            portfolio_id=portfolio_id,
             base_currency="SGD",
             positions=[],
             cash_balances=[cash("SGD", "10000.00")],
@@ -50,9 +61,9 @@ def _sample_result():
         market_data_snapshot(prices=[price("EQ_1", "100.00", "SGD")], fx_rates=[]),
         model_portfolio(targets=[target("EQ_1", "1.0")]),
         [shelf_entry("EQ_1", status="APPROVED")],
-        EngineOptions(),
-        request_hash="sha256:req-service-artifact-1",
-        correlation_id="corr_service_artifact_1",
+        options,
+        request_hash=f"sha256:req-{portfolio_id}",
+        correlation_id=correlation_id,
     )
 
 
@@ -227,6 +238,68 @@ def test_supportability_summary_posture_empty_ready_stale_and_degraded():
     assert degraded.supportability.state == "degraded"
     assert degraded.supportability.reason == "supportability_summary_degraded"
     assert degraded.supportability.freshness_bucket == "current"
+
+
+def test_supportability_summary_can_be_scoped_to_portfolio() -> None:
+    service = _build_service(workflow_enabled=True)
+    scoped_result = _sample_result(
+        portfolio_id="pf-scoped",
+        correlation_id="corr-scoped",
+        pending_review=True,
+    )
+    other_result = _sample_result(
+        portfolio_id="pf-other",
+        correlation_id="corr-other",
+    )
+    service.record_run(
+        result=scoped_result,
+        request_hash="sha256:req-scoped",
+        portfolio_id="pf-scoped",
+        idempotency_key="idem-scoped",
+    )
+    service.record_run(
+        result=other_result,
+        request_hash="sha256:req-other",
+        portfolio_id="pf-other",
+        idempotency_key="idem-other",
+    )
+    operation = service.submit_analyze_async(
+        correlation_id="corr-scoped",
+        request_json={"portfolio_id": "pf-scoped"},
+    )
+    service.complete_operation_success(
+        operation_id=operation.operation_id, result_json={"ok": True}
+    )
+    service.apply_workflow_action(
+        rebalance_run_id=scoped_result.rebalance_run_id,
+        action="APPROVE",
+        reason_code="REVIEW_APPROVED",
+        actor_id="pm-1",
+        comment=None,
+        correlation_id="corr-workflow-scoped",
+    )
+
+    store_wide = service.get_supportability_summary(
+        store_backend="INMEMORY",
+        retention_days=7,
+    )
+    scoped = service.get_supportability_summary(
+        store_backend="INMEMORY",
+        retention_days=7,
+        portfolio_id="pf-scoped",
+    )
+
+    assert store_wide.run_count == 2
+    assert store_wide.portfolio_scope_confirmed is False
+    assert scoped.portfolio_id == "pf-scoped"
+    assert scoped.portfolio_scope_confirmed is True
+    assert scoped.run_count == 1
+    assert scoped.operation_count == 1
+    assert scoped.workflow_decision_count == 1
+    assert scoped.lineage_edge_count >= 1
+    assert scoped.supportability.portfolio_id == "pf-scoped"
+    assert scoped.supportability.portfolio_scope_confirmed is True
+    assert scoped.source_batch_fingerprint.startswith("sha256:")
 
 
 def test_support_bundle_helpers_project_optional_sections_and_sort_evidence():

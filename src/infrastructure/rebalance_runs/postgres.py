@@ -561,7 +561,11 @@ class PostgresDpmRunRepository:
             for row in rows
         ]
 
-    def get_supportability_summary(self) -> DpmSupportabilitySummaryData:
+    def get_supportability_summary(
+        self, *, portfolio_id: Optional[str] = None
+    ) -> DpmSupportabilitySummaryData:
+        if portfolio_id is not None:
+            return self._get_scoped_supportability_summary(portfolio_id=portfolio_id)
         run_query = """
             SELECT
                 COUNT(*) AS run_count,
@@ -640,6 +644,145 @@ class PostgresDpmRunRepository:
             workflow_decision_count=int(workflow_row["workflow_decision_count"]),
             workflow_action_counts=workflow_action_counts,
             workflow_reason_code_counts=workflow_reason_code_counts,
+            lineage_edge_count=int(lineage_row["lineage_edge_count"]),
+            oldest_run_created_at=_optional_datetime(run_row["oldest_run_created_at"]),
+            newest_run_created_at=_optional_datetime(run_row["newest_run_created_at"]),
+            oldest_operation_created_at=_optional_datetime(
+                operation_row["oldest_operation_created_at"]
+            ),
+            newest_operation_created_at=_optional_datetime(
+                operation_row["newest_operation_created_at"]
+            ),
+        )
+
+    def _get_scoped_supportability_summary(
+        self, *, portfolio_id: str
+    ) -> DpmSupportabilitySummaryData:
+        run_query = """
+            SELECT
+                COUNT(*) AS run_count,
+                MIN(created_at) AS oldest_run_created_at,
+                MAX(created_at) AS newest_run_created_at
+            FROM dpm_runs
+            WHERE portfolio_id = %s
+        """
+        operation_query = """
+            SELECT
+                COUNT(*) AS operation_count,
+                MIN(o.created_at) AS oldest_operation_created_at,
+                MAX(o.created_at) AS newest_operation_created_at
+            FROM dpm_async_operations o
+            WHERE o.correlation_id IN (
+                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+            )
+        """
+        operation_status_query = """
+            SELECT o.status, COUNT(*) AS status_count
+            FROM dpm_async_operations o
+            WHERE o.correlation_id IN (
+                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+            )
+            GROUP BY o.status
+        """
+        run_status_query = """
+            SELECT result_json::jsonb ->> 'status' AS status, COUNT(*) AS status_count
+            FROM dpm_runs
+            WHERE portfolio_id = %s
+            GROUP BY result_json::jsonb ->> 'status'
+        """
+        workflow_decision_count_query = """
+            SELECT COUNT(*) AS workflow_decision_count
+            FROM dpm_workflow_decisions
+            WHERE run_id IN (
+                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
+            )
+        """
+        workflow_action_counts_query = """
+            SELECT action, COUNT(*) AS action_count
+            FROM dpm_workflow_decisions
+            WHERE run_id IN (
+                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
+            )
+            GROUP BY action
+        """
+        workflow_reason_code_counts_query = """
+            SELECT reason_code, COUNT(*) AS reason_code_count
+            FROM dpm_workflow_decisions
+            WHERE run_id IN (
+                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
+            )
+            GROUP BY reason_code
+        """
+        lineage_edge_count_query = """
+            SELECT COUNT(*) AS lineage_edge_count
+            FROM dpm_lineage_edges
+            WHERE source_entity_id IN (
+                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT idempotency_key FROM dpm_runs
+                WHERE portfolio_id = %s AND idempotency_key IS NOT NULL
+            )
+            OR target_entity_id IN (
+                SELECT rebalance_run_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT correlation_id FROM dpm_runs WHERE portfolio_id = %s
+                UNION
+                SELECT idempotency_key FROM dpm_runs
+                WHERE portfolio_id = %s AND idempotency_key IS NOT NULL
+            )
+        """
+        with closing(self._connect()) as connection:
+            run_row = connection.execute(run_query, (portfolio_id,)).fetchone()
+            operation_row = connection.execute(operation_query, (portfolio_id,)).fetchone()
+            status_rows = connection.execute(operation_status_query, (portfolio_id,)).fetchall()
+            run_status_rows = connection.execute(run_status_query, (portfolio_id,)).fetchall()
+            workflow_row = connection.execute(
+                workflow_decision_count_query, (portfolio_id,)
+            ).fetchone()
+            workflow_action_rows = connection.execute(
+                workflow_action_counts_query, (portfolio_id,)
+            ).fetchall()
+            workflow_reason_code_rows = connection.execute(
+                workflow_reason_code_counts_query, (portfolio_id,)
+            ).fetchall()
+            lineage_row = connection.execute(
+                lineage_edge_count_query,
+                (
+                    portfolio_id,
+                    portfolio_id,
+                    portfolio_id,
+                    portfolio_id,
+                    portfolio_id,
+                    portfolio_id,
+                ),
+            ).fetchone()
+
+        return DpmSupportabilitySummaryData(
+            run_count=int(run_row["run_count"]),
+            operation_count=int(operation_row["operation_count"]),
+            operation_status_counts={
+                row["status"]: int(row["status_count"])
+                for row in status_rows
+                if row["status"] is not None
+            },
+            run_status_counts={
+                row["status"]: int(row["status_count"])
+                for row in run_status_rows
+                if row["status"] is not None
+            },
+            workflow_decision_count=int(workflow_row["workflow_decision_count"]),
+            workflow_action_counts={
+                row["action"]: int(row["action_count"])
+                for row in workflow_action_rows
+                if row["action"] is not None
+            },
+            workflow_reason_code_counts={
+                row["reason_code"]: int(row["reason_code_count"])
+                for row in workflow_reason_code_rows
+                if row["reason_code"] is not None
+            },
             lineage_edge_count=int(lineage_row["lineage_edge_count"]),
             oldest_run_created_at=_optional_datetime(run_row["oldest_run_created_at"]),
             newest_run_created_at=_optional_datetime(run_row["newest_run_created_at"]),

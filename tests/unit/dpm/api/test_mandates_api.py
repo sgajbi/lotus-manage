@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any
 
@@ -13,6 +13,7 @@ from src.api.dependencies import get_mandate_repository
 from src.api.main import app
 import src.api.routers.mandates as mandates_router
 from src.api.routers.mandates import get_core_resolver_client
+from src.api.services.mandate_health_source_refs import source_refs_for_portfolio_mandate_health
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
@@ -720,6 +721,17 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
         score["reason_code"] == "SOURCE_RISK_HEALTH_ATTENTION"
         for score in recalculated.json()["dimension_scores"]
     )
+    source_refs = source_refs_for_portfolio_mandate_health(
+        repository=repository,
+        portfolio_id=PORTFOLIO_ID,
+        now=datetime(2026, 5, 3, 12, 0, tzinfo=timezone.utc),
+    )
+    assert {ref["productId"] for ref in source_refs} == {
+        "lotus-risk:MandateRiskHealthContext:v1",
+        "lotus-performance:MandatePerformanceHealthContext:v1",
+    }
+    assert all(ref["freshness"] == "current" for ref in source_refs)
+    assert all(str(ref["content_hash"]).startswith("sha256:") for ref in source_refs)
     assert latest.status_code == 200
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
 

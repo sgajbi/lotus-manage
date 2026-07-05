@@ -247,13 +247,16 @@ class InMemoryDpmRunRepository(DpmRunRepository):
             edges = self._lineage_edges_by_entity.get(entity_id, [])
             return [deepcopy(edge) for edge in edges]
 
-    def get_supportability_summary(self) -> DpmSupportabilitySummaryData:
+    def get_supportability_summary(
+        self, *, portfolio_id: Optional[str] = None
+    ) -> DpmSupportabilitySummaryData:
         with self._lock:
             return _supportability_summary_data(
                 runs=list(self._runs.values()),
                 operations=list(self._operations.values()),
                 workflow_decisions=self._workflow_decisions,
                 lineage_edges_by_entity=self._lineage_edges_by_entity,
+                portfolio_id=portfolio_id,
             )
 
     def purge_expired_runs(self, *, retention_days: int, now: datetime) -> int:

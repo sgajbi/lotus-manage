@@ -7,8 +7,13 @@ from src.api.observability import (
     ACTION_REGISTER_SUPPORTABILITY_SURFACE,
     record_action_register_supportability,
 )
+from src.api.dependencies import get_mandate_repository
 from src.api.routers import rebalance_runs as shared
 from src.api.services import rebalance_run_support_config
+from src.api.services.mandate_health_source_refs import (
+    source_refs_for_portfolio_mandate_health,
+)
+from src.core.mandate_repository import DpmMandateRepository
 from src.core.rebalance_runs import (
     DpmRunListResponse,
     DpmRunSupportService,
@@ -124,9 +129,10 @@ def list_runs(
     description=(
         "Returns supportability storage summary metrics (runs, operations, status counts, "
         "and temporal bounds) for operational investigation without direct database access. "
-        "Use this endpoint when operators need a store-wide health and retention snapshot; "
-        "it does not accept ad hoc query filters. The response includes bounded action-register "
-        "supportability state for Gateway and Workbench portfolio-management readiness surfaces."
+        "Use the optional `portfolio_id` query parameter when a downstream proof or operator "
+        "review must confirm portfolio-scoped action-register posture. The response includes "
+        "bounded action-register supportability state for Gateway, Workbench, and governed "
+        "opportunity-intelligence readiness surfaces."
     ),
     responses={
         200: {
@@ -148,16 +154,38 @@ def list_runs(
 )
 def get_dpm_supportability_summary(
     request: Request,
+    portfolio_id: Annotated[
+        Optional[str],
+        Query(
+            description=(
+                "Optional portfolio identifier used to scope run, operation, workflow, lineage, "
+                "and preserved mandate-health source-ref evidence."
+            ),
+            examples=["PB_SG_GLOBAL_BAL_001"],
+        ),
+    ] = None,
     service: DpmRunSupportService = shared.Depends(shared.get_dpm_run_support_service),
 ) -> DpmSupportabilitySummaryResponse:
     shared._assert_support_apis_enabled()
     shared._assert_supportability_summary_apis_enabled()
-    shared._reject_unexpected_query_params(request, allowed_params=set())
+    shared._reject_unexpected_query_params(request, allowed_params={"portfolio_id"})
+    now = datetime.now().astimezone()
+    source_refs = (
+        source_refs_for_portfolio_mandate_health(
+            repository=_mandate_repository_for_request(request),
+            portfolio_id=portfolio_id,
+            now=now,
+        )
+        if portfolio_id is not None
+        else []
+    )
     response = service.get_supportability_summary(
         store_backend=shared._supportability_store_backend_name(),
         retention_days=rebalance_run_support_config.env_non_negative_int(
             "DPM_SUPPORTABILITY_RETENTION_DAYS", 0
         ),
+        portfolio_id=portfolio_id,
+        source_refs=source_refs,
     )
     record_action_register_supportability(
         surface=ACTION_REGISTER_SUPPORTABILITY_SURFACE,
@@ -166,3 +194,11 @@ def get_dpm_supportability_summary(
         freshness_bucket=response.supportability.freshness_bucket,
     )
     return response
+
+
+def _mandate_repository_for_request(request: Request) -> DpmMandateRepository:
+    dependency = request.app.dependency_overrides.get(
+        get_mandate_repository,
+        get_mandate_repository,
+    )
+    return dependency()

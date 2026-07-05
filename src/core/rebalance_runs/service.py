@@ -349,16 +349,25 @@ class DpmRunSupportService:
         return to_lineage_response(entity_id=entity_id, edges=page, next_cursor=next_cursor)
 
     def get_supportability_summary(
-        self, *, store_backend: str, retention_days: int
+        self,
+        *,
+        store_backend: str,
+        retention_days: int,
+        portfolio_id: Optional[str] = None,
+        source_refs: Optional[list[dict[str, object]]] = None,
     ) -> DpmSupportabilitySummaryResponse:
         self._cleanup_expired_operations()
         self._cleanup_expired_supportability()
-        summary: DpmSupportabilitySummaryData = self._repository.get_supportability_summary()
+        summary: DpmSupportabilitySummaryData = self._repository.get_supportability_summary(
+            portfolio_id=portfolio_id
+        )
         return build_supportability_summary_response(
             summary=summary,
             store_backend=store_backend,
             retention_days=retention_days,
             now=_utc_now(),
+            portfolio_id=portfolio_id,
+            source_refs=source_refs,
         )
 
     def get_run_support_bundle(

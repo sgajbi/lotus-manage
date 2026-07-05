@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timezone
 
 from src.core.rebalance_runs.models import (
@@ -16,7 +17,10 @@ def build_supportability_summary_response(
     store_backend: str,
     retention_days: int,
     now: datetime,
+    portfolio_id: str | None = None,
+    source_refs: list[dict[str, object]] | None = None,
 ) -> DpmSupportabilitySummaryResponse:
+    portfolio_scope_confirmed = portfolio_id is not None and summary.run_count > 0
     return DpmSupportabilitySummaryResponse(
         store_backend=store_backend,
         retention_days=retention_days,
@@ -28,6 +32,14 @@ def build_supportability_summary_response(
         workflow_action_counts=summary.workflow_action_counts,
         workflow_reason_code_counts=summary.workflow_reason_code_counts,
         lineage_edge_count=summary.lineage_edge_count,
+        portfolio_id=portfolio_id,
+        portfolio_scope_confirmed=portfolio_scope_confirmed,
+        source_batch_fingerprint=_source_batch_fingerprint(
+            summary=summary,
+            store_backend=store_backend,
+            portfolio_id=portfolio_id,
+        ),
+        source_refs=source_refs or [],
         oldest_run_created_at=(
             summary.oldest_run_created_at.isoformat()
             if summary.oldest_run_created_at is not None
@@ -48,7 +60,12 @@ def build_supportability_summary_response(
             if summary.newest_operation_created_at is not None
             else None
         ),
-        supportability=resolve_action_register_supportability(summary=summary, now=now),
+        supportability=resolve_action_register_supportability(
+            summary=summary,
+            now=now,
+            portfolio_id=portfolio_id,
+            portfolio_scope_confirmed=portfolio_scope_confirmed,
+        ),
     )
 
 
@@ -56,6 +73,8 @@ def resolve_action_register_supportability(
     *,
     summary: DpmSupportabilitySummaryData,
     now: datetime,
+    portfolio_id: str | None = None,
+    portfolio_scope_confirmed: bool = False,
 ) -> DpmActionRegisterSupportability:
     freshness_bucket = resolve_freshness_bucket(summary=summary, now=now)
     has_records = summary.run_count > 0 or summary.operation_count > 0
@@ -80,6 +99,8 @@ def resolve_action_register_supportability(
         run_count=summary.run_count,
         operation_count=summary.operation_count,
         workflow_decision_count=summary.workflow_decision_count,
+        portfolio_id=portfolio_id,
+        portfolio_scope_confirmed=portfolio_scope_confirmed,
     )
 
 
@@ -110,3 +131,27 @@ def resolve_freshness_bucket(
     if age_days <= 1:
         return "same_day"
     return "stale"
+
+
+def _source_batch_fingerprint(
+    *,
+    summary: DpmSupportabilitySummaryData,
+    store_backend: str,
+    portfolio_id: str | None,
+) -> str:
+    parts = [
+        "lotus-manage",
+        "PortfolioActionRegister:v1",
+        store_backend,
+        portfolio_id or "store-wide",
+        str(summary.run_count),
+        str(summary.operation_count),
+        str(summary.workflow_decision_count),
+        str(summary.lineage_edge_count),
+        summary.newest_run_created_at.isoformat() if summary.newest_run_created_at else "",
+        summary.newest_operation_created_at.isoformat()
+        if summary.newest_operation_created_at
+        else "",
+    ]
+    digest = hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+    return f"sha256:{digest}"

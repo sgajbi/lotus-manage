@@ -1,8 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from src.api.dependencies import get_mandate_repository
 from src.api.main import app, get_db_session
 from src.api.routers.rebalance_runs import reset_dpm_run_support_service_for_tests
+from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from tests.shared.factories import valid_api_payload
 
 
@@ -98,6 +100,35 @@ def test_supportability_summary_rejects_unsupported_query_parameters() -> None:
     assert response.json()["detail"] == (
         "UNSUPPORTED_QUERY_PARAMETER: status not supported for this endpoint"
     )
+
+
+def test_supportability_summary_accepts_portfolio_scope() -> None:
+    payload = valid_api_payload()
+    portfolio_id = payload["portfolio_snapshot"]["portfolio_id"]
+    headers = {
+        "Idempotency-Key": "integration-dpm-scoped-summary-1",
+        "X-Correlation-Id": "corr-integration-dpm-scoped-summary-1",
+    }
+
+    app.dependency_overrides[get_mandate_repository] = lambda: InMemoryDpmMandateRepository()
+    with TestClient(app) as client:
+        simulate = client.post(
+            "/api/v1/rebalance/simulate",
+            json=_stateless_envelope(payload),
+            headers=headers,
+        )
+        assert simulate.status_code == 200
+        response = client.get(
+            f"/api/v1/rebalance/supportability/summary?portfolio_id={portfolio_id}"
+        )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["portfolio_id"] == portfolio_id
+    assert body["portfolio_scope_confirmed"] is True
+    assert body["supportability"]["portfolio_id"] == portfolio_id
+    assert body["supportability"]["portfolio_scope_confirmed"] is True
+    assert body["source_batch_fingerprint"].startswith("sha256:")
 
 
 def test_run_list_rejects_unsupported_query_parameters() -> None:
