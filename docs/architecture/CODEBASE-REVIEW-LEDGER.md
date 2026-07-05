@@ -29729,3 +29729,33 @@ and improves internal transaction-cost source posture maintainability only.
   read-model shape.
 - Wiki decision: no wiki source change required; this corrects implementation behavior to the
   existing bounded pagination contract and does not change operator-facing API semantics.
+
+## BACKEND-REVIEW-20260706-0585: Campaign evidence mutation HTTP semantics
+
+- Date: 2026-07-06
+- GitHub issue: #585
+- Scope: campaign approval-decision, assignment-action, assignment-task, assignment-task
+  transition, maker-checker-control mutation adapters, OpenAPI route metadata, and waves API
+  tests.
+- Bank-buyable control area: controlled workflow mutation supportability, idempotent replay,
+  conflict telemetry, missing subresource handling, and operator/client retry behavior.
+- Finding: duplicate evidence references with different payloads were raised by the domain as
+  stable `ValueError` codes but mapped through the generic 422 semantic-validation helper. Missing
+  assignment task references on transition routes also mapped to 422, so client agents could not
+  distinguish malformed commands from path-resource absence or retry/idempotency conflicts.
+- Action: added a shared campaign evidence mutation error classifier that maps duplicate
+  approval-decision, assignment-action, assignment-task, assignment-task-transition, and
+  maker-checker-control reference conflicts to HTTP 409, maps missing assignment task references to
+  HTTP 404, and preserves HTTP 422 for true semantic validation failures. Applied the classifier
+  across the campaign evidence mutation HTTP adapters and updated OpenAPI response metadata for the
+  affected POST routes.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for all touched files; `python -m ruff format --check`
+  passed for all touched files; `python -m mypy --config-file mypy.ini` passed for the touched
+  route implementation files; focused API/OpenAPI tests for the affected routes reported 5 passed;
+  `python -m pytest tests/unit/dpm/api/test_waves_api.py -q` reported 132 passed.
+- Same-pattern scan: fixed all campaign evidence mutation adapters called out by the issue rather
+  than only the assignment-task transition path, and pinned OpenAPI response metadata for each
+  affected mutation surface.
+- Wiki decision: no wiki source change required; this corrects API status-code semantics and
+  OpenAPI metadata without changing the documented business workflow or operator runbook.

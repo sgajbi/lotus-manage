@@ -29,6 +29,11 @@ router = APIRouter()
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls",
     response_model=DpmBulkReviewCampaignDefinition,
     status_code=status.HTTP_201_CREATED,
+    responses={
+        404: {"description": "Campaign definition not found."},
+        409: {"description": "Maker-checker control reference conflict."},
+        422: {"description": "Maker-checker control semantic validation failed."},
+    },
     summary="Record bulk-review campaign maker-checker control",
     description=(
         "Records append-only maker-checker control evidence on one active Manage-owned "

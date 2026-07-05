@@ -3,7 +3,7 @@ from __future__ import annotations
 from src.api.routers.wave_campaign_action_common import persisted_definition_or_404
 from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
-    campaign_definition_value_http_exception,
+    campaign_definition_evidence_value_http_exception,
 )
 from src.api.routers.wave_campaign_definition_read_http import get_campaign_definition_or_404
 from src.api.routers.wave_campaign_models import (
@@ -52,7 +52,7 @@ def open_campaign_definition_assignment_task_response(
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
+        raise campaign_definition_evidence_value_http_exception(exc) from exc
     return persisted_definition_or_404(persisted)
 
 
@@ -88,7 +88,7 @@ def transition_campaign_definition_assignment_task_response(
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
         raise campaign_definition_conflict_http_exception(exc) from exc
     except ValueError as exc:
-        raise campaign_definition_value_http_exception(exc) from exc
+        raise campaign_definition_evidence_value_http_exception(exc) from exc
     return persisted_definition_or_404(persisted)
 
 
