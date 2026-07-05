@@ -66,8 +66,9 @@ for the revamp surface.
 
 Current code has strengthened API, OpenAPI, mesh, observability, mandate health, command-center,
 and live core-sourcing validation. The RFC-0036 proof path passed direct canonical-host manage API
-proof against `http://manage.dev.lotus`, `http://core-control.dev.lotus`, and
-`http://core-query.dev.lotus`. RFC-0038 additionally passed local manage proof and local canonical
+proof against [manage.dev.lotus](http://manage.dev.lotus),
+[core-control.dev.lotus](http://core-control.dev.lotus), and
+[core-query.dev.lotus](http://core-query.dev.lotus). RFC-0038 additionally passed local manage proof and local canonical
 manage plus live `lotus-core` proof for the mandate/monitoring/command-center backend foundation.
 
 That proof covers the implemented stateless API surface and the explicitly gated stateful

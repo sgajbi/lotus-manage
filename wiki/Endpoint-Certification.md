@@ -20,6 +20,12 @@ An endpoint is complete only when these checks are true:
    bounded JSON error example,
 6. live API evidence has been captured against a running `lotus-manage` instance.
 
+Command examples use these variables:
+
+- `LOTUS_MANAGE_BASE_URL`: [local manage API](http://127.0.0.1:8001)
+- `LOTUS_MANAGE_AUTHORITY_BASE_URL`: local manage authority-proof API on port `8020`
+- `LOTUS_MANAGE_PROOF_BASE_URL`: local manage proof-pack API on port `8024`
+
 ## Certified endpoint family: service health probes
 
 Routes:
@@ -89,7 +95,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_observability_api.py::test_health_endpoints_available tests/unit/dpm/api/test_observability_api.py::test_health_ready_validates_cutover_migrations_in_production tests/unit/dpm/api/test_observability_api.py::test_health_ready_skips_cutover_migrations_outside_production tests/unit/dpm/api/test_observability_api.py::test_health_live_does_not_touch_readiness_dependencies tests/unit/dpm/api/test_observability_api.py::test_action_register_supportability_metric_labels_are_bounded tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_json_requests_and_responses_have_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_openapi_error_responses_have_json_examples tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_metrics_openapi_documents_prometheus_text_response tests/unit/test_validate_live_api.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 The live validator now also checks the deployed OpenAPI certification contract. A runtime with
@@ -162,7 +168,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint family: mandate digital twin foundation
@@ -267,7 +273,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_mandates_api.py tests/unit/dpm/core/test_mandate_health.py tests/unit/dpm/supportability/test_dpm_mandate_repository.py tests/integration/test_openapi_certification_matrix.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint family: construction alternatives foundation
@@ -377,7 +383,7 @@ python -m pytest tests/unit/dpm/infrastructure/test_risk_authority_client.py -q
 python scripts/openapi_quality_gate.py
 python -m pytest tests/integration/test_openapi_certification_matrix.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8020
-python scripts/validate_live_api.py --base-url http://127.0.0.1:8020 --skip-demo-pack --json-output output/rfc0039-proof/<timestamp>-authority-backed-canonical/summary.json
+python scripts/validate_live_api.py --base-url "$LOTUS_MANAGE_AUTHORITY_BASE_URL" --skip-demo-pack --json-output output/rfc0039-proof/<timestamp>-authority-backed-canonical/summary.json
 ```
 
 ## Certified endpoint family: policy-pack read supportability
@@ -456,7 +462,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_effective_policy_pack_endpoint_resolution_precedence tests/unit/dpm/api/test_api_rebalance.py::test_policy_pack_supportability_routes_reject_unexpected_query_params tests/unit/dpm/api/test_api_rebalance.py::test_policy_pack_catalog_endpoint_returns_resolution_and_items tests/unit/dpm/api/test_dpm_policy_pack_config.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint family: policy-pack catalog administration
@@ -523,7 +529,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_dpm_policy_pack_admin_api.py tests/unit/dpm/supportability/test_dpm_policy_pack_postgres_repository.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: run inventory
@@ -581,7 +587,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_runs_list_filters_and_cursor tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_list_runs_filter_and_cursor_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_list_runs_filters_and_cursor tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint family: direct run lookup
@@ -667,7 +673,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_lookup_by_run_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_not_found_and_disabled tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: supportability summary
@@ -726,7 +732,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_endpoint tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_backend_init_error_returns_503 tests/unit/dpm/api/test_api_rebalance.py::test_dpm_supportability_summary_rejects_unexpected_query_params tests/unit/dpm/supportability/test_dpm_run_repository_backends.py::test_repository_supportability_summary_contract tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py::test_postgres_repository_supportability_summary tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Documented not-certified route foundation: Idea action intake
@@ -841,7 +847,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_lookup_by_run_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_support_apis_not_found_and_disabled tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py::test_service_persisted_artifact_mode_stores_and_reads_artifact tests/unit/dpm/supportability/test_dpm_run_support_service_coverage.py::test_service_persisted_artifact_mode_backfills_missing_persisted_artifact tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: run supportability bundle
@@ -907,7 +913,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint_by_correlation_and_idempotency tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_support_bundle_endpoint_by_operation tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: supportability lineage lookup
@@ -968,7 +974,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_dpm_lineage_filters.py tests/unit/dpm/api/test_api_rebalance.py::test_dpm_lineage_api_disabled_and_enabled tests/unit/dpm/api/test_api_rebalance.py::test_lineage_supportability_route_rejects_unexpected_query_params tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: idempotency history lookup
@@ -1025,7 +1031,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_idempotency_history_api_disabled_enabled_and_history_payload tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts tests/unit/test_local_docker_runtime_contract.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint family: workflow review supportability
@@ -1123,7 +1129,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_workflow_endpoints_happy_path_and_invalid_transition tests/unit/dpm/api/test_api_rebalance.py::test_dpm_workflow_decision_list_endpoint_filters_and_cursor tests/unit/dpm/api/test_api_rebalance.py::test_dpm_run_workflow_endpoints_disabled_and_not_required_behavior tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: single rebalance simulation
@@ -1217,7 +1223,7 @@ Evidence commands:
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
 python -m pytest tests/unit/dpm/api/test_integration_capabilities_api.py tests/unit/dpm/api/test_api_rebalance.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: synchronous what-if analysis
@@ -1285,7 +1291,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: async what-if analysis submission
@@ -1351,7 +1357,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: async operation manual execution
@@ -1411,7 +1417,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: async operation list
@@ -1468,7 +1474,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_and_cursor tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_list_filters_by_created_window_and_operation_type tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: async operation detail by id
@@ -1524,7 +1530,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: async operation detail by correlation id
@@ -1579,7 +1585,7 @@ Evidence commands:
 
 ```bash
 python -m pytest tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_id_and_correlation tests/unit/dpm/api/test_api_rebalance.py::test_dpm_async_operation_lookup_by_correlation_returns_typed_terminal_result tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py::test_rebalance_async_and_supportability_endpoints_use_expected_request_response_contracts -q
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 ## Certified endpoint: proof-pack generation
@@ -1658,7 +1664,7 @@ Evidence commands:
 python -m pytest tests/unit/dpm/api/test_proof_pack_api.py -q
 python -m pytest tests/unit/dpm/proof_packs/test_proof_pack_builder.py::test_mandate_context_degrades_when_only_identifier_is_available -q
 python -m pytest tests/unit/test_rfc0040_evidence_script.py tests/unit/dpm/proof_packs/test_proof_pack_service.py -q
-python scripts/generate_rfc0040_proof_pack_evidence.py --base-url http://127.0.0.1:8024
+python scripts/generate_rfc0040_proof_pack_evidence.py --base-url "$LOTUS_MANAGE_PROOF_BASE_URL"
 python scripts/openapi_quality_gate.py
 ```
 
@@ -1935,7 +1941,7 @@ python -m pytest tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_ob
 python -m ruff check src/api/services/wave_service.py src/api/routers/waves.py src/api/observability.py src/api/services/construction_service.py scripts/generate_rfc0041_wave_evidence.py tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/api/test_observability_api.py tests/unit/test_rfc0041_evidence_script.py
 python scripts/openapi_quality_gate.py
 python scripts/api_vocabulary_inventory.py --validate-only
-python scripts/generate_rfc0041_wave_evidence.py --base-url http://127.0.0.1:8001
+python scripts/generate_rfc0041_wave_evidence.py --base-url "$LOTUS_MANAGE_BASE_URL"
 ```
 
 Live evidence:
@@ -2064,7 +2070,7 @@ python -m pytest tests/unit/core/test_outcome_handoffs.py -q
 python -m pytest tests/unit/dpm/api/test_observability_api.py tests/unit/test_observability_contracts.py -q
 python scripts/validate_observability_contracts.py
 powershell -ExecutionPolicy Bypass -File scripts/Start-CanonicalManage.ps1 -Port 8001
-python scripts/generate_rfc0042_outcome_evidence.py --base-url http://127.0.0.1:8001
+python scripts/generate_rfc0042_outcome_evidence.py --base-url "$LOTUS_MANAGE_BASE_URL"
 python -m ruff check scripts/generate_rfc0042_outcome_evidence.py src/api/routers/outcome_reviews.py src/api/services/outcome_review_service.py tests/unit/api/test_outcome_reviews_api.py
 ```
 

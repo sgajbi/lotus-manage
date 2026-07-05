@@ -4,14 +4,22 @@ import json
 from collections.abc import Iterable
 from copy import deepcopy
 from contextlib import closing
+from datetime import datetime, timezone
 from threading import Lock
 from typing import Any
 
 from src.core.common.capabilities import has_psycopg
+from src.core.common.canonical import hash_canonical_payload, strip_keys
+from src.core.waves.campaign_assignment_plan import (
+    build_bulk_review_campaign_assignment_plan_item,
+)
 from src.core.waves.campaign_definitions import DpmBulkReviewCampaignDefinition
 from src.core.waves.campaign_repository import (
     DpmBulkReviewCampaignDefinitionConflictError,
     DpmBulkReviewCampaignDefinitionRepository,
+)
+from src.core.waves.campaign_workflow_board import (
+    build_bulk_review_campaign_workflow_board_item,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -75,6 +83,49 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
                     offset=offset,
                 )
             )
+
+    def list_definitions_by_workflow_projection(
+        self,
+        *,
+        campaign_id: str | None = None,
+        status: str | None = None,
+        as_of_date: str | None = None,
+        include_closed: bool = False,
+        board_status: str | None = None,
+        next_action: str | None = None,
+        assignment_escalation_tier: str | None = None,
+        assignment_task_status: str | None = None,
+        assigned_actor_id: str | None = None,
+        assignment_sla_posture: str | None = None,
+        maker_checker_outcome: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[DpmBulkReviewCampaignDefinition]:
+        definitions = [
+            definition
+            for definition in self._definitions.values()
+            if _definition_matches_filters(
+                definition,
+                campaign_id=campaign_id,
+                status=status,
+                as_of_date=as_of_date,
+            )
+            and _workflow_projection_matches(
+                definition=definition,
+                include_closed=include_closed,
+                board_status=board_status,
+                next_action=next_action,
+                assignment_escalation_tier=assignment_escalation_tier,
+                assignment_task_status=assignment_task_status,
+                assigned_actor_id=assigned_actor_id,
+                assignment_sla_posture=assignment_sla_posture,
+                maker_checker_outcome=maker_checker_outcome,
+            )
+        ]
+        definitions.sort(key=_definition_sort_key, reverse=True)
+        if limit is None:
+            return deepcopy(definitions[offset:])
+        return deepcopy(definitions[offset : offset + limit])
 
     def retire_definition(
         self,
@@ -287,6 +338,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT"
                 )
+            _upsert_workflow_read_model_projection(connection=connection, definition=definition)
             connection.commit()
 
     def get_definition(
@@ -345,6 +397,69 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             ).fetchall()
         return [_load_campaign_definition_payload(_payload(row)) for row in rows]
 
+    def list_definitions_by_workflow_projection(
+        self,
+        *,
+        campaign_id: str | None = None,
+        status: str | None = None,
+        as_of_date: str | None = None,
+        include_closed: bool = False,
+        board_status: str | None = None,
+        next_action: str | None = None,
+        assignment_escalation_tier: str | None = None,
+        assignment_task_status: str | None = None,
+        assigned_actor_id: str | None = None,
+        assignment_sla_posture: str | None = None,
+        maker_checker_outcome: str | None = None,
+        limit: int | None = None,
+        offset: int = 0,
+    ) -> list[DpmBulkReviewCampaignDefinition]:
+        clauses: list[str] = []
+        args: list[Any] = []
+        for column, value in (
+            ("d.campaign_id", campaign_id),
+            ("d.status", status),
+            ("d.as_of_date", as_of_date),
+            ("w.board_status", board_status),
+            ("w.next_action", next_action),
+            ("w.assignment_escalation_tier", assignment_escalation_tier),
+            ("w.assignment_sla_posture", assignment_sla_posture),
+        ):
+            if value is not None:
+                clauses.append(f"{column} = %s")
+                args.append(value)
+        if not include_closed:
+            clauses.append("w.board_status <> 'CLOSED'")
+        if assignment_task_status is not None:
+            clauses.append("%s = ANY(w.assignment_task_statuses)")
+            args.append(assignment_task_status)
+        if assigned_actor_id is not None:
+            clauses.append("%s = ANY(w.assigned_actor_ids)")
+            args.append(assigned_actor_id)
+        if maker_checker_outcome is not None:
+            clauses.append("%s = ANY(w.maker_checker_outcomes)")
+            args.append(maker_checker_outcome)
+        where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+        pagination = ""
+        if limit is not None:
+            pagination = "LIMIT %s OFFSET %s"
+            args.extend([limit, offset])
+        with closing(self._connect()) as connection:
+            rows = connection.execute(
+                f"""
+                SELECT d.payload_json
+                FROM dpm_bulk_review_campaign_definitions d
+                JOIN dpm_bulk_review_campaign_workflow_read_model w
+                  ON w.campaign_id = d.campaign_id
+                 AND w.campaign_version = d.campaign_version
+                {where}
+                ORDER BY d.as_of_date DESC, d.campaign_id DESC, d.campaign_version DESC
+                {pagination}
+                """,
+                tuple(args),
+            ).fetchall()
+        return [_load_campaign_definition_payload(_payload(row)) for row in rows]
+
     def retire_definition(
         self,
         *,
@@ -386,6 +501,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
                 )
+            _upsert_workflow_read_model_projection(connection=connection, definition=definition)
             connection.commit()
             return definition
 
@@ -430,6 +546,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_LIFECYCLE_CONFLICT"
                 )
+            _upsert_workflow_read_model_projection(connection=connection, definition=definition)
             connection.commit()
             return definition
 
@@ -543,6 +660,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 raise DpmBulkReviewCampaignDefinitionConflictError(
                     "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
                 )
+            _upsert_workflow_read_model_projection(connection=connection, definition=definition)
             connection.commit()
             return definition
 
@@ -553,6 +671,229 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
             apply_postgres_migrations(connection=connection, namespace="dpm")
+            _rebuild_workflow_read_model_projection(connection=connection)
+
+
+def _workflow_projection_matches(
+    *,
+    definition: DpmBulkReviewCampaignDefinition,
+    include_closed: bool,
+    board_status: str | None,
+    next_action: str | None,
+    assignment_escalation_tier: str | None,
+    assignment_task_status: str | None,
+    assigned_actor_id: str | None,
+    assignment_sla_posture: str | None,
+    maker_checker_outcome: str | None,
+) -> bool:
+    projection = _workflow_read_model_projection(definition)
+    return (
+        (include_closed or projection["board_status"] != "CLOSED")
+        and _optional_text_filter_matches(str(projection["board_status"]), board_status)
+        and _optional_text_filter_matches(str(projection["next_action"]), next_action)
+        and _optional_text_filter_matches(
+            str(projection["assignment_escalation_tier"]),
+            assignment_escalation_tier,
+        )
+        and _optional_text_filter_matches(
+            str(projection["assignment_sla_posture"]),
+            assignment_sla_posture,
+        )
+        and _optional_member_filter_matches(
+            projection["assignment_task_statuses"],
+            assignment_task_status,
+        )
+        and _optional_member_filter_matches(
+            projection["assigned_actor_ids"],
+            assigned_actor_id,
+        )
+        and _optional_member_filter_matches(
+            projection["maker_checker_outcomes"],
+            maker_checker_outcome,
+        )
+    )
+
+
+def _optional_member_filter_matches(values: object, expected: str | None) -> bool:
+    return expected is None or expected in set(values if isinstance(values, list) else [])
+
+
+def _rebuild_workflow_read_model_projection(*, connection: Any) -> None:
+    rows = connection.execute(
+        """
+        SELECT payload_json
+        FROM dpm_bulk_review_campaign_definitions
+        """
+    ).fetchall()
+    for row in rows:
+        _upsert_workflow_read_model_projection(
+            connection=connection,
+            definition=_load_campaign_definition_payload(_payload(row)),
+        )
+    connection.commit()
+
+
+def _upsert_workflow_read_model_projection(
+    *,
+    connection: Any,
+    definition: DpmBulkReviewCampaignDefinition,
+) -> None:
+    projection = _workflow_read_model_projection(definition)
+    connection.execute(
+        """
+        INSERT INTO dpm_bulk_review_campaign_workflow_read_model (
+            campaign_id,
+            campaign_version,
+            definition_status,
+            as_of_date,
+            definition_content_hash,
+            workflow_read_model_hash,
+            board_status,
+            next_action,
+            assignment_escalation_tier,
+            assignment_sla_posture,
+            assigned_actor_ids,
+            assignment_task_statuses,
+            assignment_task_escalation_tiers,
+            assignment_task_sla_postures,
+            maker_checker_outcomes,
+            approval_decision_types,
+            approval_decision_count,
+            assignment_action_count,
+            assignment_task_count,
+            assignment_task_transition_count,
+            maker_checker_control_count,
+            projection_payload_json,
+            projected_at
+        ) VALUES (
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+        )
+        ON CONFLICT (campaign_id, campaign_version) DO UPDATE SET
+            definition_status = EXCLUDED.definition_status,
+            as_of_date = EXCLUDED.as_of_date,
+            definition_content_hash = EXCLUDED.definition_content_hash,
+            workflow_read_model_hash = EXCLUDED.workflow_read_model_hash,
+            board_status = EXCLUDED.board_status,
+            next_action = EXCLUDED.next_action,
+            assignment_escalation_tier = EXCLUDED.assignment_escalation_tier,
+            assignment_sla_posture = EXCLUDED.assignment_sla_posture,
+            assigned_actor_ids = EXCLUDED.assigned_actor_ids,
+            assignment_task_statuses = EXCLUDED.assignment_task_statuses,
+            assignment_task_escalation_tiers = EXCLUDED.assignment_task_escalation_tiers,
+            assignment_task_sla_postures = EXCLUDED.assignment_task_sla_postures,
+            maker_checker_outcomes = EXCLUDED.maker_checker_outcomes,
+            approval_decision_types = EXCLUDED.approval_decision_types,
+            approval_decision_count = EXCLUDED.approval_decision_count,
+            assignment_action_count = EXCLUDED.assignment_action_count,
+            assignment_task_count = EXCLUDED.assignment_task_count,
+            assignment_task_transition_count = EXCLUDED.assignment_task_transition_count,
+            maker_checker_control_count = EXCLUDED.maker_checker_control_count,
+            projection_payload_json = EXCLUDED.projection_payload_json,
+            projected_at = EXCLUDED.projected_at
+        """,
+        (
+            projection["campaign_id"],
+            projection["campaign_version"],
+            projection["definition_status"],
+            projection["as_of_date"],
+            projection["definition_content_hash"],
+            projection["workflow_read_model_hash"],
+            projection["board_status"],
+            projection["next_action"],
+            projection["assignment_escalation_tier"],
+            projection["assignment_sla_posture"],
+            projection["assigned_actor_ids"],
+            projection["assignment_task_statuses"],
+            projection["assignment_task_escalation_tiers"],
+            projection["assignment_task_sla_postures"],
+            projection["maker_checker_outcomes"],
+            projection["approval_decision_types"],
+            projection["approval_decision_count"],
+            projection["assignment_action_count"],
+            projection["assignment_task_count"],
+            projection["assignment_task_transition_count"],
+            projection["maker_checker_control_count"],
+            json.dumps(projection, sort_keys=True, separators=(",", ":"), default=str),
+            datetime.now(timezone.utc),
+        ),
+    )
+
+
+def _workflow_read_model_projection(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> dict[str, object]:
+    board = build_bulk_review_campaign_workflow_board_item(
+        definition=definition,
+        requested_as_of_date=definition.as_of_date,
+        actor_id=None,
+        active_on=None,
+    )
+    assignment_plan = build_bulk_review_campaign_assignment_plan_item(
+        definition=definition,
+        requested_as_of_date=definition.as_of_date,
+        actor_id=None,
+        active_on=None,
+    )
+    assignment_task_transition_count = sum(
+        len(task.transitions) for task in definition.assignment_tasks
+    )
+    assigned_actor_ids = sorted(
+        {
+            actor_id
+            for values in [
+                board.assigned_actor_ids,
+                assignment_plan.assigned_actor_ids,
+                *[action.assigned_actor_ids for action in definition.assignment_actions],
+                *[task.assigned_actor_ids for task in definition.assignment_tasks],
+            ]
+            for actor_id in values
+            if actor_id
+        }
+    )
+    projection: dict[str, object] = {
+        "projection_name": "BulkReviewCampaignWorkflowReadModel",
+        "projection_version": "v1",
+        "projection_owner": "lotus-manage",
+        "durable_source_table": "dpm_bulk_review_campaign_definitions",
+        "durable_source_payload": "payload_json",
+        "campaign_id": definition.campaign_id,
+        "campaign_version": definition.campaign_version,
+        "definition_status": definition.status,
+        "as_of_date": definition.as_of_date,
+        "definition_content_hash": definition.content_hash,
+        "board_status": board.board_status,
+        "next_action": board.next_action,
+        "assignment_escalation_tier": assignment_plan.escalation_tier,
+        "assignment_sla_posture": assignment_plan.sla_posture,
+        "assigned_actor_ids": assigned_actor_ids,
+        "assignment_task_statuses": sorted({task.status for task in definition.assignment_tasks}),
+        "assignment_task_escalation_tiers": sorted(
+            {task.escalation_tier for task in definition.assignment_tasks}
+        ),
+        "assignment_task_sla_postures": sorted(
+            {task.sla_posture for task in definition.assignment_tasks}
+        ),
+        "maker_checker_outcomes": sorted(
+            {control.control_outcome for control in definition.maker_checker_controls}
+        ),
+        "approval_decision_types": sorted(
+            {decision.decision_type for decision in definition.approval_decisions}
+        ),
+        "approval_decision_count": len(definition.approval_decisions),
+        "assignment_action_count": len(definition.assignment_actions),
+        "assignment_task_count": len(definition.assignment_tasks),
+        "assignment_task_transition_count": assignment_task_transition_count,
+        "maker_checker_control_count": len(definition.maker_checker_controls),
+        "lineage": {
+            "definition_content_hash": definition.content_hash,
+            "board_content_hash": board.content_hash,
+            "assignment_plan_content_hash": assignment_plan.content_hash,
+        },
+    }
+    projection["workflow_read_model_hash"] = hash_canonical_payload(
+        strip_keys(projection, exclude={"workflow_read_model_hash"})
+    )
+    return projection
 
 
 def _payload(row: Any) -> str | dict[str, Any]:

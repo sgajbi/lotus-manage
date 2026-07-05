@@ -232,16 +232,19 @@ and solver target generation is runtime-discovered from installed solver depende
 
 Copy-paste examples:
 
+Set `LOTUS_MANAGE_BASE_URL` to the [local manage API](http://localhost:8001) before running these
+examples.
+
 ```bash
-curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/search?portfolio_ids=PB_SG_GLOBAL_BAL_001&event_type=PROOF_PACK_CREATED&source_system=lotus-manage&limit=25"
+curl "${LOTUS_MANAGE_BASE_URL}/api/v1/rebalance/portfolio-memory/search?portfolio_ids=PB_SG_GLOBAL_BAL_001&event_type=PROOF_PACK_CREATED&source_system=lotus-manage&limit=25"
 ```
 
 ```bash
-curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001?limit=100"
+curl "${LOTUS_MANAGE_BASE_URL}/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001?limit=100"
 ```
 
 ```bash
-curl "http://localhost:8001/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001/events/memory-event-id?limit=500"
+curl "${LOTUS_MANAGE_BASE_URL}/api/v1/rebalance/portfolio-memory/PB_SG_GLOBAL_BAL_001/events/memory-event-id?limit=500"
 ```
 
 ```mermaid

@@ -299,7 +299,14 @@ window posture so audit evidence cannot carry internally inconsistent summaries.
 evidence persistence uses the caller's base campaign-definition content hash as an optimistic
 compare-and-set guard; same-ref replay remains idempotent, while independently stale appends return
 HTTP 409 with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE` rather than overwriting newer audit
-evidence. Manage also supports append-only
+evidence. PostgreSQL also maintains the derived
+`dpm_bulk_review_campaign_workflow_read_model` projection from the durable campaign definition
+payload. The projection materializes board status, next action, assignment escalation tier, SLA
+posture, assigned actors, assignment task statuses, maker-checker outcomes, evidence counts, and
+lineage hashes for indexed operator filtering. `payload_json` plus `content_hash` remains the
+durable evidence source; the projection is rebuildable from the parent definition and does not
+authorize edits, create external workflow tasks, approve trades, route orders, contact clients, or
+claim OMS execution. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

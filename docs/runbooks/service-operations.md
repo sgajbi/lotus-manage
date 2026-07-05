@@ -31,6 +31,10 @@
 - Retry-safe paths are bounded by deterministic launch idempotency, conflict-safe evidence refs,
   and campaign definition content-hash protection. Manual database edits are not the normal
   campaign workflow recovery mechanism.
+- For default workflow-board and assignment-plan filter drift, compare public route output with the
+  `dpm_bulk_review_campaign_workflow_read_model` projection. The projection is rebuildable from
+  `dpm_bulk_review_campaign_definitions.payload_json`; do not hand-edit projection rows as durable
+  truth.
 - Preserve no-claim boundaries in incident notes: no OMS/order routing, no client contact, no
   external workflow orchestration, and no raw portfolio/client/actor/idempotency/correlation
   identifiers in logs, metrics, screenshots, or public incident summaries.

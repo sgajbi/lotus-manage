@@ -33,8 +33,11 @@
 
 Use this before claiming `lotus-manage` API readiness:
 
+Set `LOTUS_MANAGE_BASE_URL` to the [local manage API](http://127.0.0.1:8001) for local evidence
+runs.
+
 ```bash
-LOTUS_MANAGE_BASE_URL=http://127.0.0.1:8001 make live-api-validate
+LOTUS_MANAGE_BASE_URL=$LOTUS_MANAGE_BASE_URL make live-api-validate
 ```
 
 The validator runs the live demo pack and focused production-readiness probes:
@@ -50,7 +53,7 @@ The validator runs the live demo pack and focused production-readiness probes:
 For reusable evidence, write the JSON summary directly:
 
 ```bash
-python scripts/validate_live_api.py --base-url http://127.0.0.1:8001 --json-output output/live-api/summary.json
+python scripts/validate_live_api.py --base-url "$LOTUS_MANAGE_BASE_URL" --json-output output/live-api/summary.json
 ```
 
 Use this before claiming manage/core integration readiness with stateful sourcing enabled:

@@ -149,9 +149,11 @@ Recovery and replay posture:
 - Campaign launch is recoverable after partial wave creation as described above. This is the only
   current cross-aggregate campaign recovery path; other workflow evidence families remain
   single-aggregate appends guarded by refs and content hashes.
-- Campaign workflow telemetry from #580, stale-write protection from #582, and launch-audit retry
-  proof from #583 are implemented on this branch. Materialized campaign workflow evidence for
-  larger read-model scaling remains the separate #586 scope until that issue is fixed and merged.
+- Campaign workflow telemetry from #580, stale-write protection from #582, launch-audit retry
+  proof from #583, and the #586 PostgreSQL workflow projection are implemented on this branch.
+  The projection is derived from `dpm_bulk_review_campaign_definitions.payload_json` and
+  `content_hash`, refreshed after successful writes, and queryable for default board/assignment
+  filters. Treat it as a rebuildable operator read model, not the durable evidence source.
 - Keep incident notes source-safe. Do not paste raw campaign payloads, portfolio ids, client data,
   actor ids, idempotency keys, correlation ids, request hashes, source hashes, or diagnostics
   payloads into screenshots, logs, metric labels, or public incident summaries.
