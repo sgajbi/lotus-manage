@@ -25,11 +25,71 @@ from src.core.waves import (
 
 router = APIRouter()
 
+WORKFLOW_AUTOMATION_RESPONSE_EXAMPLE = {
+    "product_name": "BulkReviewCampaignWorkflowAutomation",
+    "product_version": "v1",
+    "items": [],
+    "limit": 50,
+    "offset": 0,
+    "count": 0,
+    "automation_status_counts": {},
+    "automation_action_counts": {},
+    "capability_posture": {
+        "product_name": "BulkReviewCampaignWorkflowCapabilityPosture",
+        "product_version": "v1",
+        "manage_assignment_task_readiness": "SUPPORTED",
+        "manage_assignment_task_mutation": "CONTROLLED_ENDPOINT_ONLY",
+        "external_workflow_orchestration": "UNSUPPORTED",
+        "external_workflow_events_projected": False,
+        "external_workflow_owner_posture": "DEFERRED_SOURCE_OWNER",
+        "required_source_product": "ExternalWorkflowOrchestrationRecord:v1",
+        "blocked_capabilities": [
+            "external_workflow_task_creation",
+            "external_workflow_task_assignment",
+            "external_workflow_task_synchronization",
+            "external_workflow_task_escalation",
+            "external_workflow_task_completion",
+        ],
+        "promotion_requirements": [
+            "certified_external_workflow_source_owner",
+            "ExternalWorkflowOrchestrationRecord:v1",
+            "gateway_workbench_external_workflow_contracts",
+            "source_safe_lineage_and_audit_evidence",
+        ],
+        "controlled_assignment_task_endpoint": (
+            "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/"
+            "{campaign_version}/assignment-tasks"
+        ),
+        "operating_boundaries": [
+            "no_external_workflow_orchestration",
+            "no_external_workflow_task_projection",
+            "no_order_generation",
+            "no_client_contact",
+            "no_oms_execution_claim",
+        ],
+        "content_hash": "sha256:workflow-capability-posture-example",
+    },
+    "content_hash": "sha256:workflow-automation-page-example",
+}
+
 
 @router.get(
     "/campaign-workflow-automation",
     response_model=DpmBulkReviewCampaignWorkflowAutomationPage,
     status_code=status.HTTP_200_OK,
+    responses={
+        200: {
+            "description": (
+                "Read-only campaign workflow automation page with explicit Manage task "
+                "readiness and unsupported external-workflow posture."
+            ),
+            "content": {
+                "application/json": {
+                    "example": WORKFLOW_AUTOMATION_RESPONSE_EXAMPLE,
+                }
+            },
+        },
+    },
     summary="List bulk-review campaign workflow automation readiness",
     description=(
         "Returns read-only Manage-side workflow automation readiness over persisted "

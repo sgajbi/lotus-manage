@@ -29775,6 +29775,44 @@ and improves internal transaction-cost source posture maintainability only.
   operations documentation guidance already require explicit transaction, recovery, and runbook
   behavior for multi-write state changes.
 
+## BACKEND-REVIEW-20260706-0587: Campaign workflow OpenAPI contract certification
+
+- Date: 2026-07-06
+- GitHub issue: #587
+- Scope: campaign workflow OpenAPI contract assertions and workflow-automation response example.
+- Bank-buyable control area: API contract quality, downstream integration safety, OpenAPI
+  evidence, unsupported-capability boundary preservation, and meaningful regression tests.
+- Finding: promoted campaign workflow routes for assignment plans, workflow automation, assignment
+  actions, assignment tasks/transitions, maker-checker controls, and approval decisions were
+  exposed and covered by runtime tests, but route-level OpenAPI certification did not pin all
+  promoted methods, schema refs, generated examples, bounded problem-details responses, operation
+  metadata, or the workflow-automation no-external-workflow capability posture.
+- Action: added a focused OpenAPI certification test that enumerates all promoted campaign
+  workflow assignment and automation routes, asserts route/method presence, operation IDs, tags,
+  summaries, Manage ownership wording, request examples, success schema/example posture, bounded
+  404/409/422 error examples, and the
+  `DpmBulkReviewCampaignWorkflowCapabilityPosture` schema/example boundary. Replaced the generic
+  workflow-automation response placeholder with a source-safe example that exposes
+  `external_workflow_orchestration=UNSUPPORTED`, no external workflow event projection, required
+  `ExternalWorkflowOrchestrationRecord:v1`, blocked capabilities, promotion requirements, and
+  content hashes.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests/unit/dpm/api/test_waves_api.py -q` passed with 138 tests;
+  `python scripts/openapi_quality_gate.py` passed; `python -m ruff check
+  src/api/routers/wave_campaign_workflow_automation_routes.py
+  tests/unit/dpm/api/test_waves_api.py` passed; `python -m ruff format --check
+  src/api/routers/wave_campaign_workflow_automation_routes.py
+  tests/unit/dpm/api/test_waves_api.py` passed; `python -m mypy --config-file mypy.ini
+  src/api/routers/wave_campaign_workflow_automation_routes.py` passed.
+- Same-pattern scan: covered the adjacent assignment-plan, workflow-automation,
+  assignment-action, assignment-task, maker-checker, approval-decision, and task-transition route
+  families in one contract test instead of pinning only the originally named workflow-automation
+  route.
+- Wiki decision: no wiki source change; this slice tightens generated OpenAPI/test evidence for
+  already documented current API surface.
+- Guidance decision: no platform skill update required; existing backend and CI governance already
+  require promoted routes to carry contract tests and OpenAPI evidence.
+
 ## BACKEND-REVIEW-20260706-0588: Campaign workflow operations runbook
 
 - Date: 2026-07-06
