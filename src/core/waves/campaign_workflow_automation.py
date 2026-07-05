@@ -21,7 +21,11 @@ from src.core.waves.campaign_definitions import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_WORKFLOW_AUTOMATION_OPERATING_BOUNDARIES,
 )
-from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
+from src.core.waves.campaign_page_validation import (
+    page_items,
+    validate_count_map,
+    validate_page_count,
+)
 
 
 CampaignWorkflowAutomationStatus = Literal[
@@ -360,8 +364,9 @@ def build_bulk_review_campaign_workflow_automation_page(
         automation_status=automation_status,
         automation_action=automation_action,
     )
+    page = page_items(items, limit=limit, offset=offset)
     return DpmBulkReviewCampaignWorkflowAutomationPage.model_validate(
-        _workflow_automation_page_payload(items=items, limit=limit, offset=offset)
+        _workflow_automation_page_payload(items=page, limit=limit, offset=offset)
     )
 
 

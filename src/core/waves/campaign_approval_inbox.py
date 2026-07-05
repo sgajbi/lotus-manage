@@ -22,7 +22,11 @@ from src.core.waves.campaign_discovery import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_APPROVAL_INBOX_OPERATING_BOUNDARIES,
 )
-from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
+from src.core.waves.campaign_page_validation import (
+    page_items,
+    validate_count_map,
+    validate_page_count,
+)
 
 
 CampaignApprovalInboxStatus = Literal[
@@ -195,8 +199,9 @@ def build_bulk_review_campaign_approval_inbox_page(
         include_closed=include_closed,
         inbox_status=inbox_status,
     )
+    page = page_items(items, limit=limit, offset=offset)
     payload = _approval_inbox_page_payload(
-        items=items,
+        items=page,
         limit=limit,
         offset=offset,
     )

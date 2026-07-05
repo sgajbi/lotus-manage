@@ -2661,6 +2661,12 @@ def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_clo
             "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
             "&include_expired=true"
         )
+        limited_active_queue = client.get(
+            "/api/v1/rebalance/waves/campaign-operating-queue?"
+            "campaign_status=ACTIVE&active_on=2026-05-10&requested_as_of_date=2026-05-10"
+            "&actor_id=pm_001"
+            "&limit=1"
+        )
         invalid = client.get("/api/v1/rebalance/waves/campaign-operating-queue?active_on=bad-date")
 
     assert active_put.status_code == 200
@@ -2694,6 +2700,11 @@ def test_bulk_review_campaign_operating_queue_summarizes_ready_attention_and_clo
         "ATTENTION_REQUIRED": 1,
         "CLOSED": 1,
     }
+    assert limited_active_queue.status_code == 200
+    limited_payload = limited_active_queue.json()
+    assert limited_payload["count"] == 1
+    assert limited_payload["items"][0]["campaign_id"] == "campaign-holdings-apple-tesla-20260510"
+    assert limited_payload["status_counts"] == {"READY_TO_LAUNCH": 1}
     assert invalid.status_code == 422
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"
 
@@ -2792,6 +2803,11 @@ def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_row
             "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
             "&inbox_status=APPROVAL_REQUIRED"
         )
+        limited_filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-approval-inbox?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&inbox_status=APPROVAL_REQUIRED&limit=1"
+        )
         unauthorized = client.get(
             "/api/v1/rebalance/waves/campaign-approval-inbox?"
             "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_999"
@@ -2829,6 +2845,11 @@ def test_bulk_review_campaign_approval_inbox_summarizes_governance_attention_row
     assert filtered.status_code == 200
     assert filtered.json()["count"] == 1
     assert filtered.json()["items"][0]["inbox_status"] == "APPROVAL_REQUIRED"
+    assert limited_filtered.status_code == 200
+    assert limited_filtered.json()["count"] == 1
+    assert limited_filtered.json()["items"][0]["campaign_id"] == (
+        "campaign-holdings-approval-required-20260510"
+    )
 
     assert unauthorized.status_code == 200
     unauthorized_payload = unauthorized.json()
@@ -2919,6 +2940,11 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
             "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
             "&next_action=RECORD_APPROVAL_DECISION"
         )
+        limited_filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-board?"
+            "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
+            "&next_action=RECORD_APPROVAL_DECISION&limit=1"
+        )
         invalid = client.get("/api/v1/rebalance/waves/campaign-workflow-board?active_on=bad-date")
 
     assert ready_put.status_code == 200
@@ -2960,6 +2986,11 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
     assert filtered.status_code == 200
     assert filtered.json()["count"] == 1
     assert filtered.json()["items"][0]["next_action"] == "RECORD_APPROVAL_DECISION"
+    assert limited_filtered.status_code == 200
+    assert limited_filtered.json()["count"] == 1
+    assert limited_filtered.json()["items"][0]["campaign_id"] == (
+        "campaign-holdings-approval-required-20260510"
+    )
 
     assert invalid.status_code == 422
     assert invalid.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DISCOVERY_DATE_INVALID"

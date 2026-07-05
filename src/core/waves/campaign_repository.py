@@ -27,10 +27,10 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
-        limit: int = 50,
+        limit: int | None = 50,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
-        """Return a bounded page of campaign definitions."""
+        """Return campaign definitions, optionally bounded by repository-level filters."""
 
     def retire_definition(
         self,

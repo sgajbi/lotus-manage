@@ -16,7 +16,11 @@ from src.core.waves.campaign_workflow_board import (
 from src.core.waves.campaign_operating_boundaries import (
     CAMPAIGN_ASSIGNMENT_PLAN_OPERATING_BOUNDARIES,
 )
-from src.core.waves.campaign_page_validation import validate_count_map, validate_page_count
+from src.core.waves.campaign_page_validation import (
+    page_items,
+    validate_count_map,
+    validate_page_count,
+)
 
 
 CampaignAssignmentEscalationTier = Literal["NONE", "PM", "OPS", "GOVERNANCE"]
@@ -159,8 +163,9 @@ def build_bulk_review_campaign_assignment_plan_page(
         escalation_tier=escalation_tier,
         next_action=next_action,
     )
+    page = page_items(items, limit=limit, offset=offset)
     payload = _assignment_plan_page_payload(
-        items=items,
+        items=page,
         limit=limit,
         offset=offset,
     )

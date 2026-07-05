@@ -36,8 +36,8 @@ def load_campaign_read_model_query(
         campaign_id=campaign_id,
         status=campaign_status,
         as_of_date=as_of_date,
-        limit=limit,
-        offset=offset,
+        limit=None,
+        offset=0,
     )
     return DpmBulkReviewCampaignReadModelQuery(
         definitions=definitions,

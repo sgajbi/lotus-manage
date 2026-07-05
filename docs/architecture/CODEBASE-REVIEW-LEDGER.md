@@ -29697,3 +29697,35 @@ and improves internal transaction-cost source posture maintainability only.
   `lotus-demo-readiness-certification`, `lotus-ci-enforcement-governance`, and
   `lotus-backend-delivery-governance` guidance already covers this manual/report-only promotion
   posture; this slice applies the current guidance locally.
+
+## BACKEND-REVIEW-20260706-0584: Campaign read-model pagination after filters
+
+- Date: 2026-07-06
+- GitHub issue: #584
+- Scope: campaign discovery, operating queue, approval inbox, workflow board, assignment plan,
+  workflow automation, shared campaign read-model query loading, and campaign definition
+  repositories.
+- Bank-buyable control area: PM operating queue correctness, maker-checker inbox supportability,
+  workflow-board triage, and deterministic paged read-model evidence for front-office operators.
+- Finding: campaign read-model pages could apply repository offset/limit before endpoint-specific
+  read-model filters and classification. That could hide eligible rows when earlier repository
+  rows were filtered out by active-date, status, next-action, or supportability filters. Several
+  adjacent campaign projections also assembled filtered lists without a single shared page-window
+  helper, increasing the chance that the same defect would return in a nearby read model.
+- Action: changed shared campaign read-model query loading to fetch all repository-filtered
+  campaign definitions before endpoint-specific filtering, added a shared `page_items` helper, and
+  applied filter-then-page behavior across discovery, operating queue, approval inbox, workflow
+  board, assignment plan, and workflow automation projections. Updated in-memory and PostgreSQL
+  definition repositories to support unbounded filtered reads for read-model composition while
+  preserving bounded list semantics for normal repository callers. Added focused unit and API
+  coverage for small limits after active-date, status, and next-action filters.
+- Status: fixed locally.
+- Evidence: `python -m ruff check` passed for all touched files; `python -m ruff format --check`
+  passed for all touched files; `python -m mypy --config-file mypy.ini` passed for the touched
+  implementation files; `python -m pytest tests/unit/dpm/waves/test_campaign_discovery.py
+  tests/unit/dpm/api/test_waves_api.py -q` reported 243 passed.
+- Same-pattern scan: fixed the issue in the three reported surfaces and the neighboring campaign
+  discovery, assignment-plan, and workflow-automation projections that used the same filtered
+  read-model shape.
+- Wiki decision: no wiki source change required; this corrects implementation behavior to the
+  existing bounded pagination contract and does not change operator-facing API semantics.

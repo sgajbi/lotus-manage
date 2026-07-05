@@ -61,7 +61,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
-        limit: int = 50,
+        limit: int | None = 50,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
         with self._lock:
@@ -178,7 +178,7 @@ def _paged_definitions(
     campaign_id: str | None,
     status: str | None,
     as_of_date: str | None,
-    limit: int,
+    limit: int | None,
     offset: int,
 ) -> list[DpmBulkReviewCampaignDefinition]:
     filtered = [
@@ -192,6 +192,8 @@ def _paged_definitions(
         )
     ]
     filtered.sort(key=_definition_sort_key, reverse=True)
+    if limit is None:
+        return filtered[offset:]
     return filtered[offset : offset + limit]
 
 
@@ -286,7 +288,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
-        limit: int = 50,
+        limit: int | None = 50,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
         clauses: list[str] = []
@@ -300,7 +302,10 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 clauses.append(f"{column} = %s")
                 args.append(value)
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-        args.extend([limit, offset])
+        pagination = ""
+        if limit is not None:
+            pagination = "LIMIT %s OFFSET %s"
+            args.extend([limit, offset])
         with closing(self._connect()) as connection:
             rows = connection.execute(
                 f"""
@@ -308,7 +313,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
                 FROM dpm_bulk_review_campaign_definitions
                 {where}
                 ORDER BY as_of_date DESC, campaign_id DESC, campaign_version DESC
-                LIMIT %s OFFSET %s
+                {pagination}
                 """,
                 tuple(args),
             ).fetchall()
