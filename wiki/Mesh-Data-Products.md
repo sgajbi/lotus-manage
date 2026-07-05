@@ -4,6 +4,15 @@
 
 `lotus-manage` is a maturity-wave producer in the Lotus enterprise data mesh.
 
+## Reader map
+
+| Topic | Current source of truth | Evidence posture |
+| --- | --- | --- |
+| Active producer contracts | `contracts/domain-data-products/lotus-manage-products.v1.json` | Three active products: portfolio action register, bulk-review campaign membership, and PM operating quality score runs. |
+| Repo-native trust telemetry | `contracts/trust-telemetry/*.telemetry.v1.json` | One deterministic contract snapshot per active product; validated by feature and PR-merge lanes. |
+| Certification limits | Each telemetry snapshot `certification_limits` block | Checked-in snapshots do not assert live-environment runtime certification. |
+| Runtime boundaries | Product-specific boundary notes below | Manage owns workflow evidence; source data, performance, risk, HR, conduct, order, OMS, and execution claims stay outside this repo. |
+
 ## Governed products
 
 - Product ID: `lotus-manage:PortfolioActionRegister:v1`
@@ -38,6 +47,7 @@
   - `/api/v1/rebalance/waves/preview`
   - `/api/v1/rebalance/waves`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
+- Trust telemetry: `contracts/trust-telemetry/bulk-review-campaign-membership.telemetry.v1.json`
 
 - Product ID: `lotus-manage:PmOperatingQualityScoreRun:v1`
 - Product role: governed PM operating quality policy administration, score-run preview,
@@ -63,6 +73,7 @@
   - `/api/v1/rebalance/pm-operating-quality/summary-invocations`
   - `/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`
 - Source declaration: `contracts/domain-data-products/lotus-manage-products.v1.json`
+- Trust telemetry: `contracts/trust-telemetry/pm-operating-quality-score-run.telemetry.v1.json`
 - Boundary: scoring is disabled by default, missing required evidence blocks the run, and HR,
   compensation, conduct-enforcement, autonomous-ranking, AI-generated scoring, source-owner risk,
   performance, execution, and tax methodology remain outside the product contract. PM-book scope
@@ -102,10 +113,13 @@
 ## Operating rule
 
 Portfolio action state, campaign membership evidence, and explicit PM operating quality score-run
-lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when
-action-register telemetry, lifecycle, access, SLO, or evidence posture drifts. PM operating quality
-score-run lifecycle is not portfolio-memory event projection and should not be treated as an
-execution, compensation, HR, conduct, or autonomous-ranking product.
+lifecycle evidence belong in `lotus-manage`. Platform certification can block publication when any
+active producer product is missing repo-native trust telemetry, serving-route coverage, lifecycle,
+access, SLO, or evidence posture. The checked-in snapshots are deterministic contract fixtures
+validated by feature and PR-merge lanes; they do not by themselves assert live-environment runtime
+certification. PM operating quality score-run lifecycle is not portfolio-memory event projection
+and should not be treated as an execution, compensation, HR, conduct, or autonomous-ranking
+product.
 
 Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is
 implemented, but live source-data dependency declaration waits for RFC-087 `lotus-core` composed

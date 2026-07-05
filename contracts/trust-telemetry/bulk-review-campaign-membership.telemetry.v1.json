@@ -1,0 +1,84 @@
+{
+  "contract_id": "lotus-domain-product-trust-telemetry-snapshot",
+  "contract_version": "1.0.0",
+  "governed_by_rfcs": [
+    "RFC-0087",
+    "RFC-0091"
+  ],
+  "emitted_at_utc": "2026-07-06T00:00:00Z",
+  "product_id": "lotus-manage:BulkReviewCampaignMembership:v1",
+  "producer_repository": "lotus-manage",
+  "product_name": "BulkReviewCampaignMembership",
+  "product_version": "v1",
+  "source_repository": "lotus-manage",
+  "serving_routes": [
+    "/api/v1/rebalance/waves/campaign-definitions",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch-package",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/launch",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/approval-decisions",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks/{task_ref}/transitions",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview",
+    "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/preview-readiness",
+    "/api/v1/rebalance/waves/campaign-operating-queue",
+    "/api/v1/rebalance/waves/campaign-approval-inbox",
+    "/api/v1/rebalance/waves/campaign-workflow-board",
+    "/api/v1/rebalance/waves/campaign-assignment-plan",
+    "/api/v1/rebalance/waves/campaign-workflow-automation",
+    "/api/v1/rebalance/waves/preview",
+    "/api/v1/rebalance/waves"
+  ],
+  "runtime_source": {
+    "emission_mode": "deterministic_local_management_fixture",
+    "service_version": "rfc-0091",
+    "environment": "local"
+  },
+  "freshness": {
+    "freshness_class": "daily",
+    "freshness_state": "current",
+    "evaluated_at_utc": "2026-07-06T00:00:00Z",
+    "observed_at_utc": "2026-07-06T00:00:00Z",
+    "age_seconds": 0,
+    "max_allowed_age_seconds": 86400
+  },
+  "completeness_status": "complete",
+  "reconciliation_status": "reconciled",
+  "data_quality_status": "quality_passed",
+  "lineage": {
+    "lineage_materialized": true,
+    "lineage_bundle_id": "lineage:lotus-manage:bulk-review-campaign-membership:2026-07-06",
+    "evidence_access_class": "customer_consumable",
+    "evidence_uris": [
+      "lotus-manage://evidence/bulk-review-campaign-membership/PB_SG_GLOBAL_BAL_001/2026-07-06"
+    ]
+  },
+  "blocking": {
+    "blocked": false
+  },
+  "certification_limits": {
+    "runtime_certification": "repo_native_contract_fixture",
+    "live_environment_certification": "not_asserted_by_snapshot",
+    "promotion_limit": "validated by feature and pr-merge lanes only"
+  },
+  "observed_trust_metadata": {
+    "product_name": "BulkReviewCampaignMembership",
+    "product_version": "v1",
+    "generated_at": "2026-07-06T00:00:00Z",
+    "as_of_date": "2026-07-06",
+    "data_quality_status": "quality_passed",
+    "source_batch_fingerprint": "sha256:bulk-review-campaign-membership-demo",
+    "correlation_id": "rfc-0091-lotus-manage-bulk-review-campaign-membership"
+  },
+  "evidence": {
+    "correlation_id": "rfc-0091-lotus-manage-bulk-review-campaign-membership",
+    "validation_lanes": [
+      "feature",
+      "pr-merge"
+    ],
+    "source_event_id": "source-event:lotus-manage:bulk-review-campaign-membership:2026-07-06",
+    "source_artifact_uri": "lotus-manage://contracts/trust-telemetry/bulk-review-campaign-membership.telemetry.v1.json"
+  }
+}

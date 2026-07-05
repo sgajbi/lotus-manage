@@ -1,0 +1,82 @@
+{
+  "contract_id": "lotus-domain-product-trust-telemetry-snapshot",
+  "contract_version": "1.0.0",
+  "governed_by_rfcs": [
+    "RFC-0087",
+    "RFC-0091"
+  ],
+  "emitted_at_utc": "2026-07-06T00:00:00Z",
+  "product_id": "lotus-manage:PmOperatingQualityScoreRun:v1",
+  "producer_repository": "lotus-manage",
+  "product_name": "PmOperatingQualityScoreRun",
+  "product_version": "v1",
+  "source_repository": "lotus-manage",
+  "serving_routes": [
+    "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+    "/api/v1/rebalance/pm-operating-quality/policies",
+    "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+    "/api/v1/rebalance/pm-operating-quality/score-runs",
+    "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+    "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+    "/api/v1/rebalance/pm-operating-quality/review-actions",
+    "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",
+    "/api/v1/rebalance/portfolio-memory/search",
+    "/api/v1/rebalance/portfolio-memory/{portfolio_id}"
+  ],
+  "runtime_source": {
+    "emission_mode": "deterministic_local_management_fixture",
+    "service_version": "rfc-0091",
+    "environment": "local"
+  },
+  "freshness": {
+    "freshness_class": "intraday",
+    "freshness_state": "current",
+    "evaluated_at_utc": "2026-07-06T00:00:00Z",
+    "observed_at_utc": "2026-07-06T00:00:00Z",
+    "age_seconds": 0,
+    "max_allowed_age_seconds": 14400
+  },
+  "completeness_status": "complete",
+  "reconciliation_status": "reconciled",
+  "data_quality_status": "quality_passed",
+  "lineage": {
+    "lineage_materialized": true,
+    "lineage_bundle_id": "lineage:lotus-manage:pm-operating-quality-score-run:2026-07-06",
+    "evidence_access_class": "customer_consumable",
+    "evidence_uris": [
+      "lotus-manage://evidence/pm-operating-quality-score-run/PB_SG_GLOBAL_BAL_001/2026-07-06"
+    ]
+  },
+  "blocking": {
+    "blocked": false
+  },
+  "certification_limits": {
+    "runtime_certification": "repo_native_contract_fixture",
+    "live_environment_certification": "not_asserted_by_snapshot",
+    "promotion_limit": "validated by feature and pr-merge lanes only"
+  },
+  "observed_trust_metadata": {
+    "product_name": "PmOperatingQualityScoreRun",
+    "product_version": "v1",
+    "generated_at": "2026-07-06T00:00:00Z",
+    "as_of_date": "2026-07-06",
+    "data_quality_status": "quality_passed",
+    "source_batch_fingerprint": "sha256:pm-operating-quality-score-run-demo",
+    "correlation_id": "rfc-0091-lotus-manage-pm-operating-quality-score-run"
+  },
+  "evidence": {
+    "correlation_id": "rfc-0091-lotus-manage-pm-operating-quality-score-run",
+    "validation_lanes": [
+      "feature",
+      "pr-merge"
+    ],
+    "source_event_id": "source-event:lotus-manage:pm-operating-quality-score-run:2026-07-06",
+    "source_artifact_uri": "lotus-manage://contracts/trust-telemetry/pm-operating-quality-score-run.telemetry.v1.json"
+  }
+}

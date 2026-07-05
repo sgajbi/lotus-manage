@@ -11,6 +11,13 @@
   "product_name": "PortfolioActionRegister",
   "product_version": "v1",
   "source_repository": "lotus-manage",
+  "serving_routes": [
+    "/api/v1/rebalance/supportability/summary",
+    "/api/v1/rebalance/idea-action-intake",
+    "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
+    "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
+    "/api/v1/rebalance/workflow/decisions"
+  ],
   "runtime_source": {
     "emission_mode": "deterministic_local_management_fixture",
     "service_version": "rfc-0091",
@@ -37,6 +44,11 @@
   },
   "blocking": {
     "blocked": false
+  },
+  "certification_limits": {
+    "runtime_certification": "repo_native_contract_fixture",
+    "live_environment_certification": "not_asserted_by_snapshot",
+    "promotion_limit": "validated by feature and pr-merge lanes only"
   },
   "observed_trust_metadata": {
     "product_name": "PortfolioActionRegister",

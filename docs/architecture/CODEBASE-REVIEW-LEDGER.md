@@ -30173,3 +30173,39 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: README, API-surface wiki, OpenAPI descriptions, and API
   vocabulary changed because the handoff contract changed. Repository context and platform skills
   do not need updates; this is app-local API/handoff contract truth.
+
+## BACKEND-REVIEW-20260706-0592: Trust telemetry active-product coverage
+
+- Date: 2026-07-06
+- GitHub issue: #592
+- Scope: repo-native trust telemetry snapshots, declaration-driven telemetry coverage tests,
+  mesh data-product docs, domain-product README, and codebase review ledger.
+- Bank-buyable control area: data-product trust, publication readiness, evidence lineage, and
+  platform certification guardrails for active Manage producer contracts.
+- Finding: `lotus-manage-products.v1.json` declared three active producer products, but
+  repo-native telemetry covered only `PortfolioActionRegister:v1`. The focused test hard-coded
+  `products[0]` and a one-file directory expectation, so `BulkReviewCampaignMembership:v1` and
+  `PmOperatingQualityScoreRun:v1` could remain active without route, freshness, quality,
+  reconciliation, lineage, source-artifact, validation-lane, or certification-limit telemetry.
+- Action: added deterministic contract telemetry snapshots for bulk-review campaign membership
+  and PM operating quality score runs, enriched the existing action-register snapshot with
+  serving-route and certification-limit fields, and changed the test to derive exact telemetry
+  coverage from active producer declarations.
+- Status: fixed locally.
+- Evidence: `python scripts\validate_trust_telemetry_contracts.py` reported 3 repo-native
+  snapshots validated; `python scripts\validate_domain_data_product_contracts.py` passed;
+  `python -m pytest tests\unit\test_trust_telemetry_contracts.py
+  tests\unit\test_documentation_current_state.py tests\unit\test_domain_data_product_contracts.py
+  -q` reported 38 passed; focused Ruff check and format-check passed for the changed telemetry
+  test; changed `Mesh-Data-Products.md` wiki quality audit passed.
+- Same-pattern scan: active producer coverage now fails closed on missing or unexpected telemetry
+  files, product-id drift, stale route lists, freshness-class drift, required trust metadata
+  mismatches, missing lineage evidence refs, missing source artifact URIs, and unsupported
+  certification posture. The same declaration-driven pattern should be used when future Manage
+  producer products are added.
+- Design decision: this remains repo-native deterministic trust telemetry, not a live runtime
+  certification claim. Live certification must come from a promoted runtime evidence lane before
+  changing the `certification_limits` posture.
+- Docs/wiki/context/skill decision: domain-product README and Mesh Data Products wiki source
+  changed because active producer trust posture changed. Repository context and platform skills do
+  not need updates; the reusable guardrail is now encoded in the Manage test.
