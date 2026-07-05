@@ -300,7 +300,7 @@ assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with
 assigned actors, escalation tier, SLA posture, correlation id, source refs, deterministic action ids,
-and conflict-safe action refs; it does not mutate approval state, mutate maker-checker control state,
+conflict-safe action refs, and the campaign actor allow-list when supplied; it does not mutate approval state, mutate maker-checker control state,
 approve trades, generate or route orders, contact clients, or claim OMS execution. Manage also supports
 controlled assignment and escalation tasks at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
@@ -310,13 +310,13 @@ and task listing at
 `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`,
 mutating only Manage-side assignment task state with append-only transition evidence, current
 status, assignees, escalation tier, SLA posture, due-date posture, deterministic task/transition
-ids, and conflict-safe refs; it does not mutate approval state, mutate maker-checker control state,
+ids, conflict-safe refs, and command-actor allow-list enforcement when supplied; it does not mutate approval state, mutate maker-checker control state,
 approve trades, generate or route orders, contact clients, orchestrate external workflow systems,
 or claim OMS execution. Manage also supports
 append-only maker-checker control evidence at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`
 plus listing it at the same route with `GET`, requiring distinct submitter and reviewer actors for
-completed reviews while avoiding trade approval, order generation/routing, client contact,
+completed reviews and enforcing the command actor allow-list when supplied while avoiding trade approval, order generation/routing, client contact,
 external workflow orchestration, or OMS claims. Manage also supports
 retiring persisted campaign definitions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;

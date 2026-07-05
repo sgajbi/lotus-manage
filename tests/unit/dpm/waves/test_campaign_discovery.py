@@ -1128,6 +1128,92 @@ def test_campaign_assignment_actions_validate_conflicts_and_resolved_state() -> 
         raise AssertionError("Expected duplicate assignment action ref conflict")
 
 
+def test_campaign_workflow_mutations_enforce_command_actor_entitlements() -> None:
+    definition = _definition(entitled_actor_ids=["pm_001"])
+
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"):
+        record_bulk_review_campaign_definition_assignment_action(
+            definition=definition,
+            action_type="ASSIGNED",
+            action_ref="BRC-ASSIGN-2026-05-001",
+            recorded_by="ops",
+            action_reason="Route ready campaign to assigned PM.",
+            assigned_actor_ids=["pm_001"],
+            escalation_tier="PM",
+            sla_posture="ON_TRACK",
+            correlation_id="corr-campaign-assignment-action-unentitled",
+        )
+    assert definition.assignment_actions == []
+
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"):
+        open_bulk_review_campaign_definition_assignment_task(
+            definition=definition,
+            task_ref="BRC-TASK-2026-05-001",
+            task_type="ASSIGNMENT",
+            opened_by="ops",
+            task_reason="Campaign requires PM acknowledgement.",
+            assigned_actor_ids=["pm_001"],
+            escalation_tier="PM",
+            sla_posture="ON_TRACK",
+            correlation_id="corr-campaign-assignment-task-unentitled",
+        )
+    assert definition.assignment_tasks == []
+
+    opened = open_bulk_review_campaign_definition_assignment_task(
+        definition=definition,
+        task_ref="BRC-TASK-2026-05-001",
+        task_type="ASSIGNMENT",
+        opened_by="pm_001",
+        task_reason="Campaign requires PM acknowledgement.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-task-entitled",
+    )
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"):
+        transition_bulk_review_campaign_definition_assignment_task(
+            definition=opened,
+            task_ref="BRC-TASK-2026-05-001",
+            transition_type="ACKNOWLEDGED",
+            transition_ref="BRC-TASK-2026-05-001:ack",
+            transitioned_by="ops",
+            transition_reason="Unentitled acknowledgement.",
+            correlation_id="corr-campaign-assignment-task-transition-unentitled",
+        )
+    assert len(opened.assignment_tasks[0].transitions) == 1
+
+    with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED"):
+        record_bulk_review_campaign_definition_maker_checker_control(
+            definition=definition,
+            control_action="SUBMITTED_FOR_REVIEW",
+            control_ref="BRC-MC-2026-05-001",
+            recorded_by="ops",
+            submitter_actor_id="pm_001",
+            control_outcome="PENDING",
+            control_reason="Submit for review.",
+            correlation_id="corr-campaign-maker-checker-unentitled",
+        )
+    assert definition.maker_checker_controls == []
+
+
+def test_campaign_workflow_mutations_allow_absent_entitlement_list() -> None:
+    definition = _definition(entitled_actor_ids=[])
+
+    updated = record_bulk_review_campaign_definition_assignment_action(
+        definition=definition,
+        action_type="ASSIGNED",
+        action_ref="BRC-ASSIGN-2026-05-001",
+        recorded_by="ops",
+        action_reason="Route ready campaign to assigned PM.",
+        assigned_actor_ids=["pm_001"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-campaign-assignment-action-no-entitlements",
+    )
+
+    assert [action.recorded_by for action in updated.assignment_actions] == ["ops"]
+
+
 def test_assignment_action_request_normalizes_actor_ids_and_text_fields() -> None:
     request = _assignment_action_request(
         action_type="ASSIGNED",

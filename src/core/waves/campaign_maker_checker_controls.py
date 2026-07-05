@@ -7,6 +7,7 @@ from typing import Callable, Literal, NamedTuple
 
 from pydantic import BaseModel, Field, model_validator
 
+from src.core.waves.campaign_actor_entitlements import validate_campaign_command_actor_entitlement
 from src.core.waves.campaign_definitions import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionMakerCheckerControl,
@@ -102,6 +103,10 @@ def record_bulk_review_campaign_definition_maker_checker_control(
         required_reviewer_role=required_reviewer_role,
     )
     _validate_required_control_fields(normalized)
+    validate_campaign_command_actor_entitlement(
+        definition=definition,
+        actor_id=normalized.recorded_by,
+    )
     _validate_control_action(
         control_action=control_action,
         control_outcome=control_outcome,

@@ -799,7 +799,8 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`.
     These actions record assignment, reassignment, escalation, de-escalation, and resolution
     posture with deterministic action ids, conflict-safe action refs, assigned actor ids,
-    escalation tier, SLA posture, correlation id, and optional source refs. They mutate assignment
+    escalation tier, SLA posture, correlation id, optional source refs, and command-actor
+    allow-list enforcement when campaign governance supplies entitled actors. They mutate assignment
     posture evidence only and do not mutate approval state, mutate maker-checker control state, approve
     trades, generate or route orders, contact clients, or claim OMS execution.
     Manage now also exposes controlled campaign assignment and escalation tasks at
@@ -810,7 +811,8 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-tasks`.
     These tasks preserve current status, assignees, escalation tier, SLA posture, optional due
     date, deterministic task/transition ids, conflict-safe refs, and append-only transition
-    evidence while mutating only Manage-side assignment task state, not approval state,
+    evidence. Task opens and transitions enforce the campaign command-actor allow-list when
+    campaign governance supplies entitled actors while mutating only Manage-side assignment task state, not approval state,
     maker-checker control-state mutation, trade approval, order generation/routing, client contact, external
     workflow orchestration, or OMS execution.
     Manage now also exposes append-only campaign maker-checker controls at
@@ -819,7 +821,8 @@ Current repository posture:
     `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/maker-checker-controls`.
     Completed reviews require distinct submitter and reviewer actors and preserve deterministic
     control ids, conflict-safe control refs, reviewer role, control outcome, correlation id, and
-    optional source refs. The control ledger mutates campaign control evidence only and does not
+    optional source refs. Control recording enforces the campaign command-actor allow-list when
+    campaign governance supplies entitled actors. The control ledger mutates campaign control evidence only and does not
     approve trades, generate or route orders, contact clients, orchestrate external workflow
     systems, or claim OMS execution. Workflow-automation responses now carry
     `BulkReviewCampaignWorkflowCapabilityPosture:v1` at page and row level, explicitly separating
