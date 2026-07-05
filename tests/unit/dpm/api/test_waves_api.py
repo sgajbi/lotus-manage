@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from decimal import Decimal
 from typing import cast
@@ -19,6 +20,7 @@ from src.api.dependencies import (
 )
 from src.api.main import app
 from src.api.request_models import RebalanceRequest
+from src.api.routers import wave_campaign_workflow_telemetry as campaign_workflow_telemetry
 from src.api.routers import waves as waves_router
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionRequest
 from src.api.routers.rebalance_runs import get_dpm_run_support_service
@@ -2534,6 +2536,83 @@ def test_bulk_review_campaign_definition_launch_fails_closed_when_readiness_bloc
     assert missing.json()["detail"]["code"] == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
+def test_bulk_review_campaign_launch_and_readiness_telemetry_is_bounded(monkeypatch) -> None:
+    captured: list[dict[str, str]] = []
+    monkeypatch.setattr(
+        campaign_workflow_telemetry,
+        "record_campaign_workflow",
+        lambda **labels: captured.append(labels),
+    )
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        readiness = client.get(
+            f"{route}/preview-readiness?requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+        blocked_readiness = client.get(
+            f"{route}/preview-readiness?requested_as_of_date=2026-05-10&actor_id=pm_999"
+        )
+        package = client.get(
+            f"{route}/launch-package?requested_as_of_date=2026-05-10&actor_id=pm_001"
+        )
+        first_launch = client.post(
+            f"{route}/launch",
+            json={
+                "requested_as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+                "correlation_id": "corr-campaign-telemetry-launch",
+            },
+        )
+        replay_launch = client.post(
+            f"{route}/launch",
+            json={
+                "requested_as_of_date": "2026-05-10",
+                "actor_id": "pm_001",
+                "correlation_id": "corr-campaign-telemetry-launch",
+            },
+        )
+        launch_history = client.get(f"{route}/launch-history")
+        missing_history = client.get(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/launch-history"
+        )
+
+    assert put_response.status_code == 200
+    assert readiness.status_code == 200
+    assert blocked_readiness.status_code == 200
+    assert package.status_code == 200
+    assert first_launch.status_code == 201
+    assert replay_launch.status_code == 201
+    assert launch_history.status_code == 200
+    assert missing_history.status_code == 404
+
+    assert {(entry["surface"], entry["outcome"], entry["reason"]) for entry in captured} >= {
+        ("preview_readiness", "success", "success"),
+        ("preview_readiness", "blocked", "launch_blocked"),
+        ("launch_package", "success", "success"),
+        ("launch", "success", "success"),
+        ("launch", "replay", "replay"),
+        ("launch_history", "success", "success"),
+        ("launch_history", "not_found", "definition_not_found"),
+    }
+    telemetry_json = json.dumps(captured)
+    assert "PB_SG_GLOBAL_BAL_001" not in telemetry_json
+    assert "corr-campaign-telemetry-launch" not in telemetry_json
+    assert "pm_001" not in telemetry_json
+
+
 def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> None:
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 
@@ -3769,6 +3848,117 @@ def test_bulk_review_campaign_workflow_mutations_enforce_actor_entitlement() -> 
     assert len(task_payload["assignment_tasks"][0]["transitions"]) == 1
     assert maker_checker_controls.status_code == 200
     assert maker_checker_controls.json()["count"] == 0
+
+
+def test_bulk_review_campaign_mutation_telemetry_is_bounded(monkeypatch) -> None:
+    captured: list[dict[str, str]] = []
+    monkeypatch.setattr(
+        campaign_workflow_telemetry,
+        "record_campaign_workflow",
+        lambda **labels: captured.append(labels),
+    )
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition_request = _bulk_review_campaign_definition_request()
+    definition_request["governance"] = {
+        **_bulk_review_campaign_governance(),
+        "entitled_actor_ids": ["pm_001"],
+    }
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=definition_request)
+        success = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-TELEMETRY-001",
+                "recorded_by": "pm_001",
+                "action_reason": "Route campaign to assigned PM.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-telemetry-success",
+            },
+        )
+        replay = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-TELEMETRY-001",
+                "recorded_by": "pm_001",
+                "action_reason": "Route campaign to assigned PM.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-telemetry-success",
+            },
+        )
+        conflict = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ESCALATED",
+                "action_ref": "BRC-ASSIGN-TELEMETRY-001",
+                "recorded_by": "pm_001",
+                "action_reason": "Conflicting duplicate action ref.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ATTENTION",
+                "correlation_id": "corr-campaign-assignment-telemetry-conflict",
+            },
+        )
+        entitlement_failed = client.post(
+            f"{route}/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-TELEMETRY-002",
+                "recorded_by": "ops",
+                "action_reason": "Unentitled mutation attempt.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-telemetry-entitlement",
+            },
+        )
+        missing = client.post(
+            "/api/v1/rebalance/waves/campaign-definitions/missing-campaign/"
+            "versions/2026.05/assignment-actions",
+            json={
+                "action_type": "ASSIGNED",
+                "action_ref": "BRC-ASSIGN-TELEMETRY-003",
+                "recorded_by": "pm_001",
+                "action_reason": "Missing definition.",
+                "assigned_actor_ids": ["pm_001"],
+                "escalation_tier": "PM",
+                "sla_posture": "ON_TRACK",
+                "correlation_id": "corr-campaign-assignment-telemetry-missing",
+            },
+        )
+
+    assert put_response.status_code == 200
+    assert success.status_code == 201
+    assert replay.status_code == 201
+    assert conflict.status_code == 409
+    assert entitlement_failed.status_code == 422
+    assert missing.status_code == 404
+    assert {(entry["surface"], entry["outcome"], entry["reason"]) for entry in captured} >= {
+        ("assignment_action", "success", "success"),
+        ("assignment_action", "replay", "replay"),
+        ("assignment_action", "conflict", "reference_conflict"),
+        ("assignment_action", "entitlement_failed", "entitlement_denied"),
+        ("assignment_action", "not_found", "definition_not_found"),
+    }
+    telemetry_json = json.dumps(captured)
+    assert "PB_SG_GLOBAL_BAL_001" not in telemetry_json
+    assert "corr-campaign-assignment-telemetry" not in telemetry_json
+    assert "pm_001" not in telemetry_json
+    assert "ops" not in telemetry_json
 
 
 def test_bulk_review_campaign_definition_retirement_blocks_new_wave_use() -> None:

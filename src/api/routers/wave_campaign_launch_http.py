@@ -2,11 +2,19 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from fastapi import HTTPException
+
 from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_launch_blocked_http_exception,
 )
 from src.api.routers.wave_campaign_definition_read_http import get_campaign_definition_or_404
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_success,
+    record_campaign_workflow_unexpected_error,
+    record_campaign_workflow_validation_failure,
+)
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionLaunchRequest
 from src.api.routers.wave_http_errors import wave_validation_http_exception
 from src.api.routers.wave_portfolio_resolution import resolve_portfolio_inputs_for_request
@@ -34,12 +42,13 @@ def launch_bulk_review_campaign_definition_response(
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     core_resolver_factory: Callable[[], object],
 ) -> DpmWaveResponse:
-    definition = get_campaign_definition_or_404(
-        repository=campaign_definition_repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
+    surface = "launch"
     try:
+        definition = get_campaign_definition_or_404(
+            repository=campaign_definition_repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
         launch_command = build_bulk_review_campaign_definition_launch_command(
             definition=definition,
             requested_as_of_date=request.requested_as_of_date,
@@ -47,7 +56,13 @@ def launch_bulk_review_campaign_definition_response(
             correlation_id=request.correlation_id,
         )
     except DpmBulkReviewCampaignDefinitionLaunchBlocked as exc:
-        raise campaign_definition_launch_blocked_http_exception(exc) from exc
+        http_exc = campaign_definition_launch_blocked_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except HTTPException as exc:
+        raise campaign_workflow_http_exception(surface=surface, exc=exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
     wave_request = DpmWavePreviewRequest.model_validate(
         launch_command.create_request.model_dump(mode="json")
     )
@@ -83,10 +98,22 @@ def launch_bulk_review_campaign_definition_response(
         if launched_definition.content_hash != definition.content_hash:
             campaign_definition_repository.record_definition_launch(definition=launched_definition)
     except wave_service.DpmWaveValidationError as exc:
-        raise wave_validation_http_exception(exc, conflict_codes=()) from exc
+        http_exc = wave_validation_http_exception(exc, conflict_codes=())
+        record_campaign_workflow_validation_failure(
+            surface=surface,
+            reason="wave_validation_error",
+        )
+        raise http_exc from exc
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(
+        http_exc = campaign_definition_conflict_http_exception(
             exc,
             message="Bulk-review campaign definition launch audit could not be recorded.",
-        ) from exc
+        )
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except HTTPException as exc:
+        raise campaign_workflow_http_exception(surface=surface, exc=exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=replay)
     return wave_response(wave=wave, durable=True, idempotent_replay=replay)

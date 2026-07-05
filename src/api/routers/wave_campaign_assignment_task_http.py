@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+from fastapi import HTTPException
+
 from src.api.routers.wave_campaign_action_common import persisted_definition_or_404
 from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_conflict_http_exception,
     campaign_definition_evidence_value_http_exception,
 )
 from src.api.routers.wave_campaign_definition_read_http import get_campaign_definition_or_404
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_success,
+    record_campaign_workflow_unexpected_error,
+)
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
@@ -29,12 +36,13 @@ def open_campaign_definition_assignment_task_response(
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
+    surface = "assignment_task_open"
     try:
+        definition = get_campaign_definition_or_404(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
         updated = open_bulk_review_campaign_definition_assignment_task(
             definition=definition,
             task_ref=request.task_ref,
@@ -49,11 +57,20 @@ def open_campaign_definition_assignment_task_response(
             source_refs=request.source_refs,
         )
         persisted = repository.record_definition_assignment_task(definition=updated)
+        response = persisted_definition_or_404(persisted)
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
+        http_exc = campaign_definition_conflict_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
     except ValueError as exc:
-        raise campaign_definition_evidence_value_http_exception(exc) from exc
-    return persisted_definition_or_404(persisted)
+        http_exc = campaign_definition_evidence_value_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except HTTPException as exc:
+        raise campaign_workflow_http_exception(surface=surface, exc=exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=updated is definition)
+    return response
 
 
 def transition_campaign_definition_assignment_task_response(
@@ -64,12 +81,13 @@ def transition_campaign_definition_assignment_task_response(
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmBulkReviewCampaignDefinition:
-    definition = get_campaign_definition_or_404(
-        repository=repository,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
+    surface = "assignment_task_transition"
     try:
+        definition = get_campaign_definition_or_404(
+            repository=repository,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
         updated = transition_bulk_review_campaign_definition_assignment_task(
             definition=definition,
             task_ref=task_ref,
@@ -85,11 +103,20 @@ def transition_campaign_definition_assignment_task_response(
             source_refs=request.source_refs,
         )
         persisted = repository.record_definition_assignment_task(definition=updated)
+        response = persisted_definition_or_404(persisted)
     except DpmBulkReviewCampaignDefinitionConflictError as exc:
-        raise campaign_definition_conflict_http_exception(exc) from exc
+        http_exc = campaign_definition_conflict_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
     except ValueError as exc:
-        raise campaign_definition_evidence_value_http_exception(exc) from exc
-    return persisted_definition_or_404(persisted)
+        http_exc = campaign_definition_evidence_value_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except HTTPException as exc:
+        raise campaign_workflow_http_exception(surface=surface, exc=exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=updated is definition)
+    return response
 
 
 def list_campaign_definition_assignment_tasks_response(

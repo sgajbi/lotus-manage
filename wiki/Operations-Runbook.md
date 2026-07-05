@@ -1,5 +1,15 @@
 # Operations Runbook
 
+## Reader Map
+
+| Reader need | Use this section | Evidence source |
+| --- | --- | --- |
+| First response and runtime checks | Important operational checks | `/health/ready`, `/metrics`, repo-native smoke checks |
+| Action-register observability | RFC-0108 action register supportability | `lotus_manage_action_register_supportability_total` and related supportability metrics |
+| Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total` and monitoring contract alerts |
+| Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
+| Container readiness | Docker production readiness | Compose health, migrations, and readiness logs |
+
 ## Important operational checks
 
 - verify readiness and migration posture before trusting supportability endpoints
@@ -62,6 +72,29 @@
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.
+
+## Campaign workflow telemetry
+
+- `/metrics` exposes `lotus_manage_campaign_workflow_total` with bounded `surface`, `outcome`,
+  and `reason` labels for campaign workflow mutation, preview readiness, launch package, launch,
+  and launch-history surfaces.
+- Surfaces are route-family values such as `approval_decision`, `assignment_action`,
+  `assignment_task_open`, `assignment_task_transition`, `maker_checker_control`,
+  `preview_readiness`, `launch_package`, `launch`, and `launch_history`. Do not use campaign ids,
+  portfolio ids, actor ids, request hashes, idempotency keys, correlation ids, or trace ids as
+  metric labels.
+- Outcomes distinguish `success`, `replay`, `conflict`, `validation_failed`,
+  `entitlement_failed`, `not_found`, `blocked`, and `error`. Reasons are low-cardinality codes
+  such as `reference_conflict`, `entitlement_denied`, `definition_not_found`, `task_not_found`,
+  `launch_blocked`, `validation_error`, and `unexpected_error`.
+- First response should separate operator action by outcome: investigate `entitlement_failed` as a
+  campaign governance or actor-allow-list defect, `conflict` as a duplicate reference or
+  idempotency mismatch, `not_found` as stale workflow references, `blocked` as readiness failure,
+  and `error` as an implementation or infrastructure fault.
+- Dashboard panels and alert rules are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`. Run
+  `python scripts/validate_observability_contracts.py` after changing campaign workflow metric code
+  or monitoring contracts.
 
 ## RFC-0042 outcome review supportability
 
