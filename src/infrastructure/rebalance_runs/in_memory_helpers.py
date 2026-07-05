@@ -362,7 +362,49 @@ def _scoped_operations(
 ) -> list[DpmAsyncOperationRecord]:
     if portfolio_id is None:
         return operations
-    return [operation for operation in operations if operation.correlation_id in correlation_ids]
+    return [
+        operation
+        for operation in operations
+        if _operation_matches_portfolio_scope(
+            operation=operation,
+            portfolio_id=portfolio_id,
+            correlation_ids=correlation_ids,
+        )
+    ]
+
+
+def _operation_matches_portfolio_scope(
+    *,
+    operation: DpmAsyncOperationRecord,
+    portfolio_id: str,
+    correlation_ids: set[str],
+) -> bool:
+    request_portfolio_id = _operation_request_portfolio_id(operation.request_json)
+    if request_portfolio_id == portfolio_id:
+        return True
+    if operation.correlation_id not in correlation_ids:
+        return False
+    return request_portfolio_id is None
+
+
+def _operation_request_portfolio_id(request_json: dict[str, object] | None) -> str | None:
+    if request_json is None:
+        return None
+    batch_request = request_json.get("batch_request")
+    if isinstance(batch_request, dict):
+        portfolio_snapshot = batch_request.get("portfolio_snapshot")
+        if isinstance(portfolio_snapshot, dict) and isinstance(
+            portfolio_snapshot.get("portfolio_id"),
+            str,
+        ):
+            return portfolio_snapshot["portfolio_id"]
+    portfolio_snapshot = request_json.get("portfolio_snapshot")
+    if isinstance(portfolio_snapshot, dict) and isinstance(
+        portfolio_snapshot.get("portfolio_id"),
+        str,
+    ):
+        return portfolio_snapshot["portfolio_id"]
+    return None
 
 
 def _scoped_workflow_decisions(

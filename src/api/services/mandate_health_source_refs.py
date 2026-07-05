@@ -54,7 +54,7 @@ def _source_context_ref_payload(
         "content_hash": content_hash,
         "generated_at": snapshot.calculated_at.isoformat(),
         "freshness": _freshness_bucket(snapshot.calculated_at, now),
-        "data_quality_status": snapshot.health_state.value.lower(),
+        "source_ref_status": "available",
     }
 
 

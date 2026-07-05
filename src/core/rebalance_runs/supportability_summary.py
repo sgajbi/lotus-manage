@@ -1,4 +1,5 @@
 import hashlib
+import json
 from datetime import datetime, timezone
 
 from src.core.rebalance_runs.models import (
@@ -38,6 +39,7 @@ def build_supportability_summary_response(
             summary=summary,
             store_backend=store_backend,
             portfolio_id=portfolio_id,
+            source_refs=source_refs or [],
         ),
         source_refs=source_refs or [],
         oldest_run_created_at=(
@@ -138,6 +140,7 @@ def _source_batch_fingerprint(
     summary: DpmSupportabilitySummaryData,
     store_backend: str,
     portfolio_id: str | None,
+    source_refs: list[dict[str, object]],
 ) -> str:
     parts = [
         "lotus-manage",
@@ -152,6 +155,7 @@ def _source_batch_fingerprint(
         summary.newest_operation_created_at.isoformat()
         if summary.newest_operation_created_at
         else "",
+        json.dumps(source_refs, sort_keys=True, separators=(",", ":"), default=str),
     ]
     digest = hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
     return f"sha256:{digest}"

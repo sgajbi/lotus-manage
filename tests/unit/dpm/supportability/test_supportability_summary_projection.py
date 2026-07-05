@@ -65,6 +65,37 @@ def test_supportability_summary_response_projects_counts_timestamps_and_ready_po
     assert response.supportability.freshness_bucket == "current"
 
 
+def test_supportability_summary_fingerprint_includes_returned_source_refs():
+    now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
+    summary = _summary(
+        run_count=1,
+        operation_count=1,
+        newest_run_created_at=now,
+        newest_operation_created_at=now,
+    )
+
+    first = build_supportability_summary_response(
+        summary=summary,
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=[{"productId": "lotus-risk:MandateRiskHealthContext:v1"}],
+    )
+    second = build_supportability_summary_response(
+        summary=summary,
+        store_backend="INMEMORY",
+        retention_days=7,
+        now=now,
+        portfolio_id="PB_SG_GLOBAL_BAL_001",
+        source_refs=[{"productId": "lotus-performance:MandatePerformanceHealthContext:v1"}],
+    )
+
+    assert first.source_batch_fingerprint.startswith("sha256:")
+    assert second.source_batch_fingerprint.startswith("sha256:")
+    assert first.source_batch_fingerprint != second.source_batch_fingerprint
+
+
 def test_supportability_summary_response_classifies_empty_stale_and_degraded_posture():
     now = datetime(2026, 2, 20, 12, 0, tzinfo=timezone.utc)
 
