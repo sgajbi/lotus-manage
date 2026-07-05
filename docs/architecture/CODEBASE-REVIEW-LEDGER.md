@@ -30244,3 +30244,39 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: documentation source changed only to improve repo-local
   navigation. No platform skill/context update is needed; the repeatable rule is the existing Lotus
   context-maintenance rule plus this repository's local README map.
+
+## BACKEND-REVIEW-20260706-0574: Generated artifact cleanup policy
+
+- Date: 2026-07-06
+- GitHub issue: #574
+- Scope: `make clean`, generated-artifact cleanup script, cleanup unit tests, scripts README, and
+  codebase review ledger.
+- Bank-buyable control area: repo hygiene, repeatable local review posture, generated evidence
+  handling, and safe automation.
+- Finding: `make clean` used an inline Python one-liner that removed only a few root caches and
+  `.coverage`. It did not cover nested `__pycache__`, `*.pyc`, build/package output, Manage logs,
+  or generated `output/` evidence even though those artifacts are ignored by repository policy.
+- Action: replaced the inline target with `scripts/clean_generated_artifacts.py`, which uses
+  explicit repo-root-relative allowlists, skips protected workspace folders during traversal,
+  preserves Git-tracked evidence paths, removes nested bytecode and generated root artifacts,
+  supports dry-run mode, and refuses resolved deletion paths outside the repository root. Added
+  focused temp-tree tests for generated outputs, tracked output evidence preservation, dry-run
+  preservation, source preservation, and outside-root refusal.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\test_clean_generated_artifacts.py -q` reported 4
+  passed; focused Ruff check and format-check passed for the cleanup script and test; `python -m
+  mypy scripts\clean_generated_artifacts.py` passed; initial dry run reported 1,529 generated
+  artifact paths from accumulated local caches/output; final `make clean` removed 577 generated
+  paths from the validation run while preserving tracked output evidence; `git status --ignored
+  --short` then showed no ignored generated artifacts.
+- Same-pattern scan: `scripts/README.md` now records that `make clean` removes untracked generated
+  `output/` evidence while preserving Git-tracked evidence, so issue/PR/audit evidence must be
+  moved to an authored governed location before cleanup. The cleanup allowlist matches `.gitignore`
+  generated artifact families while preserving source, docs, wiki source, contracts, tracked
+  evidence, and `.git` content.
+- Design decision: `.venv` and other developer dependency caches remain skipped during traversal
+  rather than deleted by default. The target is meant to return the repository review surface to a
+  predictable state, not destroy local development environments.
+- Docs/wiki/context/skill decision: scripts README changed because generated evidence preservation
+  semantics are now explicit. Repository context and platform skills do not need updates; this is
+  repo-local cleanup policy.

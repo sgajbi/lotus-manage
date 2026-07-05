@@ -152,7 +152,7 @@ format:
 	python -m ruff format .
 
 clean:
-	python -c "import shutil, pathlib; [shutil.rmtree(p, ignore_errors=True) for p in ['__pycache__', '.pytest_cache', 'htmlcov', '.ruff_cache', '.mypy_cache']]; pathlib.Path('.coverage').unlink(missing_ok=True)"
+	python scripts/clean_generated_artifacts.py
 
 run:
 	uvicorn src.api.main:app --reload --port 8000
