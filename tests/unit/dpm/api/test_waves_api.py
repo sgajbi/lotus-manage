@@ -66,6 +66,7 @@ from src.infrastructure.advise_authority import (
 )
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
+    DpmBulkReviewCampaignDefinitionConflictError,
     DpmWaveAlreadyExistsError,
     DpmRebalanceWave,
     DpmRebalanceWaveItem,
@@ -885,6 +886,28 @@ class _SaveConflictWaveRepository(InMemoryDpmWaveRepository):
 class _VersionConflictWaveRepository(InMemoryDpmWaveRepository):
     def update_wave(self, *, wave: DpmRebalanceWave, expected_version: int) -> None:
         raise DpmWaveVersionConflictError("stale durable wave version")
+
+
+class _FailOnceCampaignLaunchAuditRepository(InMemoryDpmBulkReviewCampaignDefinitionRepository):
+    def __init__(self) -> None:
+        super().__init__()
+        self.launch_audit_failures_remaining = 1
+
+    def record_definition_launch(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        if self.launch_audit_failures_remaining > 0:
+            self.launch_audit_failures_remaining -= 1
+            raise DpmBulkReviewCampaignDefinitionConflictError(
+                "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE"
+            )
+        return super().record_definition_launch(
+            definition=definition,
+            expected_content_hash=expected_content_hash,
+        )
 
 
 def _save_wave_for_service(
@@ -2488,6 +2511,62 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
     assert (
         missing_launch_history.json()["detail"]["code"]
         == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
+    )
+
+
+def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() -> None:
+    mandate_repository = InMemoryDpmMandateRepository()
+    mandate_repository.save_mandate_snapshot(_twin())
+    wave_repository = InMemoryDpmWaveRepository()
+    campaign_repository = _FailOnceCampaignLaunchAuditRepository()
+
+    with _client(
+        mandate_repository,
+        wave_repository,
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        route = (
+            "/api/v1/rebalance/waves/campaign-definitions/"
+            "campaign-holdings-apple-tesla-20260510/versions/2026.05"
+        )
+        put_response = client.put(route, json=_bulk_review_campaign_definition_request())
+        launch_request = {
+            "requested_as_of_date": "2026-05-10",
+            "actor_id": "pm_001",
+            "correlation_id": "corr-campaign-definition-launch-001",
+        }
+        failed = client.post(f"{route}/launch", json=launch_request)
+        persisted_waves_after_failure = wave_repository.list_waves(
+            trigger_type="BULK_REVIEW_CAMPAIGN"
+        )
+        missing_audit = client.get(f"{route}/launch-history")
+        repaired = client.post(f"{route}/launch", json=launch_request)
+        replayed = client.post(f"{route}/launch", json=launch_request)
+        repaired_audit = client.get(f"{route}/launch-history")
+
+    assert put_response.status_code == 200
+    assert failed.status_code == 409
+    assert failed.json()["detail"] == {
+        "code": "BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE",
+        "message": "Bulk-review campaign definition launch audit could not be recorded.",
+    }
+    assert len(persisted_waves_after_failure) == 1
+    durable_wave = persisted_waves_after_failure[0]
+    assert durable_wave.trigger.trigger_type == "BULK_REVIEW_CAMPAIGN"
+    assert missing_audit.status_code == 200
+    assert missing_audit.json()["total_count"] == 0
+    assert repaired.status_code == 201
+    assert repaired.json()["idempotent_replay"] is True
+    assert repaired.json()["wave"]["wave_id"] == durable_wave.wave_id
+    assert len(wave_repository.list_waves(trigger_type="BULK_REVIEW_CAMPAIGN")) == 1
+    assert replayed.status_code == 201
+    assert replayed.json()["idempotent_replay"] is True
+    assert replayed.json()["wave"]["wave_id"] == durable_wave.wave_id
+    repaired_payload = repaired_audit.json()
+    assert repaired_payload["total_count"] == 1
+    assert repaired_payload["items"][0]["wave_id"] == durable_wave.wave_id
+    assert repaired_payload["items"][0]["idempotency_key"].startswith(
+        "campaign-launch:campaign-holdings-apple-tesla-20260510:2026.05:"
     )
 
 

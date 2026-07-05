@@ -29739,6 +29739,42 @@ and improves internal transaction-cost source posture maintainability only.
   requires explicit unit-of-work, concurrency, and idempotency contracts, and this slice applies
   that guidance locally with repository tests.
 
+## BACKEND-REVIEW-20260706-0583: Campaign launch audit recovery after partial wave creation
+
+- Date: 2026-07-06
+- GitHub issue: #583
+- Scope: campaign launch API behavior, launch audit recovery tests, README, repository context,
+  operations runbook, and codebase review ledger.
+- Bank-buyable control area: recoverable saga behavior, durable audit posture, idempotent retry,
+  operator diagnostics, and no-duplicate-wave launch supportability.
+- Finding: durable campaign launch spans two aggregates: the DPM wave is persisted by the wave
+  repository, then launch history is appended to the campaign definition. Existing launch replay
+  already uses a deterministic idempotency key, but there was no regression proof or operator
+  guidance showing that a launch-history write conflict after wave creation can be retried to
+  repair the missing audit record without creating a duplicate wave.
+- Action: added an API regression test with a fail-once campaign definition repository that raises
+  `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE` after the wave write. The test proves the first
+  response is an explicit 409 audit-not-recorded state, the durable wave exists, the launch-history
+  page is empty before repair, retry reuses the existing wave through idempotency, appends the
+  missing launch audit, and a later replay does not duplicate launch history. Updated README,
+  repository context, and the operations runbook with the recoverable two-write saga contract.
+- Status: fixed locally.
+- Evidence: `python -m ruff check tests/unit/dpm/api/test_waves_api.py` passed; `python -m ruff
+  format --check tests/unit/dpm/api/test_waves_api.py` passed; `python -m pytest
+  tests/unit/dpm/api/test_waves_api.py tests/unit/dpm/waves/test_campaign_definition_repository.py
+  -q` reported 207 passed.
+- Same-pattern scan: scoped to campaign launch because the reported partial failure crosses the
+  wave repository and campaign definition repository. Other campaign workflow appends stay inside
+  the campaign definition aggregate and were hardened separately by #582.
+- Wiki decision: wiki source changed because operator retry guidance changed. Changed-page wiki
+  audit did not flag `Operations-Runbook.md` or `Supported-Features.md`; remaining audit failures
+  are existing legacy wiki-wide findings for `_Sidebar.md` and bare URLs in unchanged pages.
+  `Sync-RepoWikis.ps1 -CheckOnly -Repository lotus-manage` reports expected pre-merge drift for
+  `Operations-Runbook.md` and `Supported-Features.md`; publish from `main` after merge.
+- Guidance decision: no platform skill update required; the existing backend delivery and
+  operations documentation guidance already require explicit transaction, recovery, and runbook
+  behavior for multi-write state changes.
+
 ## BACKEND-REVIEW-20260706-0584: Campaign read-model pagination after filters
 
 - Date: 2026-07-06

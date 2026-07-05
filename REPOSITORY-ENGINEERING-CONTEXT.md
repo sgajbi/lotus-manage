@@ -837,7 +837,11 @@ Current repository posture:
     maker-checker control, and launch-audit writes persist through an optimistic content-hash
     compare-and-set contract. Same-ref replay remains idempotent, while independently stale
     workflow appends fail closed with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409
-    instead of overwriting newer audit evidence. Global
+    instead of overwriting newer audit evidence. Campaign launch is a recoverable two-write saga:
+    if durable wave creation succeeds but launch-history persistence fails with that conflict,
+    retrying the same launch request reuses the existing wave through deterministic launch
+    idempotency and idempotently repairs the missing launch audit without creating another wave.
+    Global
     portfolio-universe campaign discovery,
     broader workflow automation beyond controlled Manage-side assignment tasks, wave
     risk/performance analytics posture, and
