@@ -298,30 +298,99 @@ def _supportability_summary_data(
     operations: list[DpmAsyncOperationRecord],
     workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
     lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]],
+    portfolio_id: str | None = None,
 ) -> DpmSupportabilitySummaryData:
+    scoped_runs = _scoped_runs(runs=runs, portfolio_id=portfolio_id)
+    scoped_run_ids = {run.rebalance_run_id for run in scoped_runs}
+    scoped_correlation_ids = {run.correlation_id for run in scoped_runs}
+    scoped_idempotency_keys = {run.idempotency_key for run in scoped_runs if run.idempotency_key}
+    scoped_operations = _scoped_operations(
+        operations=operations,
+        portfolio_id=portfolio_id,
+        correlation_ids=scoped_correlation_ids,
+    )
+    scoped_workflow_decisions = _scoped_workflow_decisions(
+        workflow_decisions=workflow_decisions,
+        portfolio_id=portfolio_id,
+        run_ids=scoped_run_ids,
+    )
+    scoped_lineage_edges_by_entity = _scoped_lineage_edges(
+        lineage_edges_by_entity=lineage_edges_by_entity,
+        portfolio_id=portfolio_id,
+        entity_ids=scoped_run_ids | scoped_correlation_ids | scoped_idempotency_keys,
+    )
     workflow_decision_count, workflow_action_counts, workflow_reason_code_counts = (
-        _workflow_decision_counts(workflow_decisions)
+        _workflow_decision_counts(scoped_workflow_decisions)
     )
     oldest_run_created_at, newest_run_created_at = _datetime_bounds(
-        [run.created_at for run in runs]
+        [run.created_at for run in scoped_runs]
     )
     oldest_operation_created_at, newest_operation_created_at = _datetime_bounds(
-        [operation.created_at for operation in operations]
+        [operation.created_at for operation in scoped_operations]
     )
     return DpmSupportabilitySummaryData(
-        run_count=len(runs),
-        operation_count=len(operations),
-        operation_status_counts=_status_counts([operation.status for operation in operations]),
-        run_status_counts=_status_counts([str(run.result_json.get("status", "")) for run in runs]),
+        run_count=len(scoped_runs),
+        operation_count=len(scoped_operations),
+        operation_status_counts=_status_counts(
+            [operation.status for operation in scoped_operations]
+        ),
+        run_status_counts=_status_counts(
+            [str(run.result_json.get("status", "")) for run in scoped_runs]
+        ),
         workflow_decision_count=workflow_decision_count,
         workflow_action_counts=workflow_action_counts,
         workflow_reason_code_counts=workflow_reason_code_counts,
-        lineage_edge_count=_unique_lineage_edge_count(lineage_edges_by_entity),
+        lineage_edge_count=_unique_lineage_edge_count(scoped_lineage_edges_by_entity),
         oldest_run_created_at=oldest_run_created_at,
         newest_run_created_at=newest_run_created_at,
         oldest_operation_created_at=oldest_operation_created_at,
         newest_operation_created_at=newest_operation_created_at,
     )
+
+
+def _scoped_runs(*, runs: list[DpmRunRecord], portfolio_id: str | None) -> list[DpmRunRecord]:
+    if portfolio_id is None:
+        return runs
+    return [run for run in runs if run.portfolio_id == portfolio_id]
+
+
+def _scoped_operations(
+    *,
+    operations: list[DpmAsyncOperationRecord],
+    portfolio_id: str | None,
+    correlation_ids: set[str],
+) -> list[DpmAsyncOperationRecord]:
+    if portfolio_id is None:
+        return operations
+    return [operation for operation in operations if operation.correlation_id in correlation_ids]
+
+
+def _scoped_workflow_decisions(
+    *,
+    workflow_decisions: dict[str, list[DpmRunWorkflowDecisionRecord]],
+    portfolio_id: str | None,
+    run_ids: set[str],
+) -> dict[str, list[DpmRunWorkflowDecisionRecord]]:
+    if portfolio_id is None:
+        return workflow_decisions
+    return {
+        run_id: decisions for run_id, decisions in workflow_decisions.items() if run_id in run_ids
+    }
+
+
+def _scoped_lineage_edges(
+    *,
+    lineage_edges_by_entity: dict[str, list[DpmLineageEdgeRecord]],
+    portfolio_id: str | None,
+    entity_ids: set[str],
+) -> dict[str, list[DpmLineageEdgeRecord]]:
+    if portfolio_id is None:
+        return lineage_edges_by_entity
+    return {
+        entity_id: edges
+        for entity_id, edges in lineage_edges_by_entity.items()
+        if entity_id in entity_ids
+    }
 
 
 def _all_workflow_decisions(

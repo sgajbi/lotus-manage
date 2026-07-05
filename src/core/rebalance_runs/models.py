@@ -243,6 +243,16 @@ class DpmActionRegisterSupportability(BaseModel):
         description="Total persisted workflow decisions considered for this posture.",
         examples=[16],
     )
+    portfolio_id: Optional[str] = Field(
+        default=None,
+        description="Portfolio identifier when the summary was explicitly portfolio scoped.",
+        examples=["PB_SG_GLOBAL_BAL_001"],
+    )
+    portfolio_scope_confirmed: bool = Field(
+        default=False,
+        description="True when the supportability posture is scoped to the requested portfolio.",
+        examples=[True],
+    )
 
 
 class DpmSupportabilitySummaryResponse(BaseModel):
@@ -289,6 +299,30 @@ class DpmSupportabilitySummaryResponse(BaseModel):
     lineage_edge_count: int = Field(
         description="Total persisted lineage edge records.",
         examples=[260],
+    )
+    portfolio_id: Optional[str] = Field(
+        default=None,
+        description="Portfolio identifier when the summary was explicitly portfolio scoped.",
+        examples=["PB_SG_GLOBAL_BAL_001"],
+    )
+    portfolio_scope_confirmed: bool = Field(
+        default=False,
+        description=(
+            "True when counts and source refs are scoped to the requested portfolio rather than "
+            "the whole supportability store."
+        ),
+        examples=[True],
+    )
+    source_batch_fingerprint: str = Field(
+        description="Deterministic fingerprint for the returned action-register source batch.",
+        examples=["sha256:lotus-manage-action-register"],
+    )
+    source_refs: list[dict[str, object]] = Field(
+        default_factory=list,
+        description=(
+            "Bounded source-product refs preserved from the latest mandate-health snapshot for "
+            "the scoped portfolio."
+        ),
     )
     oldest_run_created_at: Optional[str] = Field(
         default=None,
