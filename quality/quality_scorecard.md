@@ -24,6 +24,7 @@
 | Workflow policy | Active gate | `make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, coverage-gate drift, and PR evidence drift. |
 | Local CI parity | Active gate | `make check`, `make ci`, and `make ci-local` share `make static-quality-gates` so local proof cannot omit active static gates. |
 | Coverage gate parity | Active gate | `scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate. |
+| Test-family proof breadth | Active gate | `make test-family-inventory` checks `quality/test_family_inventory_baseline.json` and blocks loss of API/runtime, contract/governance, observability/security, domain/lifecycle/methodology, and integration/runtime proof-family file counts. |
 | Dead code | Active gate | `make dead-code-gate` runs vulture over `src` and `tests`; baseline workflow still captures expanded output. |
 | Dependency architecture | Active gate | `make architecture-gate` and `make dependency-hygiene-gate` run import-linter and deptry. |
 | Security depth | Active project dependency gate | `make security-audit` runs high-severity Bandit over `src` plus project-scoped `python -m pip_audit .`; `quality-baseline.yml` captures the same scanner family as report-only evidence. |

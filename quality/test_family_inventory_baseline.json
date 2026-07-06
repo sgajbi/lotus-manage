@@ -1,0 +1,14 @@
+{
+  "allowed_uncategorized": [],
+  "baseline_source": "python scripts/test_family_inventory.py",
+  "minimum_family_counts": {
+    "api_runtime": 53,
+    "contract_governance": 17,
+    "domain_lifecycle_methodology": 207,
+    "integration_runtime": 20,
+    "observability_security": 9
+  },
+  "owner": "lotus-manage",
+  "policy": "Block loss of measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology, and integration/runtime test-file breadth. New uncategorized tests must either be classified by deterministic taxonomy or added here with an explicit quality-review reason.",
+  "schema_version": 1
+}

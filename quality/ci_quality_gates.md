@@ -39,6 +39,9 @@ The following commands are active repository gates:
     guidance decisions, coverage evidence, and blocking workflow coverage-gate drift)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
+  - `make test-family-inventory` (`python scripts/test_family_inventory.py --check`;
+    blocks loss of measured proof-family breadth and rejects new uncategorized tests against
+    `quality/test_family_inventory_baseline.json`)
   - `make coverage-gate` (`python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)`;
     combines unit/integration/e2e coverage artifacts and enforces the shared coverage floor)
 
@@ -67,6 +70,7 @@ The following commands are active repository gates:
   - `service-boundary-gate` + `router-infrastructure-gate`
   - `architecture-gate` + `complexity-gate` + `dependency-hygiene-gate` + `dead-code-gate`
   - `duplicate-implementation-gate` for exact duplicate implementation non-regression
+  - `test-family-inventory` for semantic proof-family breadth non-regression
   - unit tests
 
 ### PR Merge Gate
@@ -82,6 +86,7 @@ The following commands are active repository gates:
   - combined coverage floor (`99`)
   - workflow policy integrity
   - checked-in quality report freshness
+  - test-family breadth inventory (`make test-family-inventory`)
   - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
   - Docker image evidence (`make docker-image-evidence`, uploaded from
     `output/docker-image-evidence`)
@@ -104,6 +109,26 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 - `bandit` + project-scoped `pip-audit`
 - `interrogate`
 - `spectral` via `.spectral.yaml`
+
+## Test-Family Breadth Evidence
+
+`make test-family-inventory` inventories test files by proof family and checks the current
+baseline in `quality/test_family_inventory_baseline.json`.
+
+Current measured baseline:
+
+| Family | Minimum file count | Purpose |
+| --- | ---: | --- |
+| API/runtime | 53 | Route, OpenAPI, live API, health, and runtime surface proof. |
+| Contract/governance | 17 | Contract, documentation, workflow, CI, and governance proof. |
+| Domain/lifecycle/methodology | 207 | Domain, lifecycle, calculation, source, and methodology proof. |
+| Integration/runtime | 20 | Integration, E2E, Docker, migration, Postgres, and runtime parity proof. |
+| Observability/security | 9 | Observability, audit, warning, security, telemetry, and correlation proof. |
+| Uncategorized | 0 allowed | New uncategorized tests must be classified or explicitly reviewed in the baseline. |
+
+The gate intentionally does not replace the 99% combined coverage floor. Coverage remains a
+separate execution signal; the test-family inventory prevents agents from preserving total coverage
+while deleting or thinning bank-buyable proof families.
 
 ## Docker Image Evidence
 

@@ -7,6 +7,7 @@ runtime validation, and release evidence.
 | --- | --- | --- |
 | `validate_*_contracts.py` | Domain-product, trust-telemetry, live API, and observability contract validation. | `make mesh-contract-validate` or the focused Make target. |
 | `*_gate.py` | API vocabulary, OpenAPI, service-boundary, router, workflow, duplicate, and coverage gates. | `make static-quality-gates` |
+| `test_family_inventory.py` | Inventories API/runtime, contract/governance, observability/security, domain/lifecycle/methodology, integration/runtime, and uncategorized test proof families. | `make test-family-inventory` |
 | `generate_rfc*_evidence.py` | RFC evidence generation for proof packs, waves, and outcome reviews. | Run only with current RFC/runbook context. |
 | `clean_generated_artifacts.py` | Removes ignored generated caches, coverage files, build output, logs, and `output/` evidence. | `make clean` |
 | `docker_image_evidence.py` | Writes Docker release manifest, image inspect, SBOM/scan/signature status, and provenance summary evidence. | `make docker-image-evidence` |

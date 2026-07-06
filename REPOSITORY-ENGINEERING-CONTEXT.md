@@ -983,6 +983,8 @@ Use these commands as the primary local contract:
    `make demo-certify`
 8. domain-data-product contract validation
    `make domain-product-validate`
+9. test-family proof-breadth validation
+   `make test-family-inventory`
 
 ## Validation And CI Expectations
 
@@ -1000,18 +1002,22 @@ Important validation expectations:
    Releasability; the separate Quality Baseline workflow remains report-only for expanded trend
    capture,
 3. PR-grade validation includes coverage-backed full test execution,
-4. host/runtime coexistence assumptions matter for canonical front-office startup,
-5. README changes should preserve the local Docker runtime contract language enforced by
+4. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
+   measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,
+   and integration/runtime proof-family floors in `quality/test_family_inventory_baseline.json`;
+   coverage remains a separate combined execution floor rather than the only test-quality signal,
+5. host/runtime coexistence assumptions matter for canonical front-office startup,
+6. README changes should preserve the local Docker runtime contract language enforced by
    `tests/unit/test_local_docker_runtime_contract.py`,
-6. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
+7. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
    `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
-7. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
+8. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
    `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
    debug paths.
-8. app-level demo certification is repo-native through `make demo-certify`; it is exposed through a
+9. app-level demo certification is repo-native through `make demo-certify`; it is exposed through a
    manual GitHub workflow with uploaded evidence and report-only command-contract coverage until the
    canonical live stack is proven stable inside CI.
-9. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
+10. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
    closure, post-merge audit, and move-on to the next RFC. Run `git fetch origin --prune` and
    `git branch -r --no-merged origin/main`, inspect unmerged branches touching `docs/rfcs/`,
    `wiki/`, `README.md`, `REPOSITORY-ENGINEERING-CONTEXT.md`, `AGENTS.md`, contracts, standards,
