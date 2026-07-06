@@ -147,9 +147,18 @@ def test_campaign_workflow_telemetry_records_bounded_outcomes(
         ),
         (HTTPException(status_code=404, detail="missing"), ("not_found", "definition_not_found")),
         (HTTPException(status_code=409, detail="conflict"), ("conflict", "definition_conflict")),
-        (HTTPException(status_code=422, detail="invalid"), ("validation_failed", "validation_error")),
-        (HTTPException(status_code=500, detail=[1, {"message": "boom"}]), ("error", "unexpected_error")),
-        (HTTPException(status_code=500, detail=[{"message": "boom"}]), ("error", "unexpected_error")),
+        (
+            HTTPException(status_code=422, detail="invalid"),
+            ("validation_failed", "validation_error"),
+        ),
+        (
+            HTTPException(status_code=500, detail=[1, {"message": "boom"}]),
+            ("error", "unexpected_error"),
+        ),
+        (
+            HTTPException(status_code=500, detail=[{"message": "boom"}]),
+            ("error", "unexpected_error"),
+        ),
     ],
 )
 def test_campaign_workflow_http_exception_records_classified_outcomes(
