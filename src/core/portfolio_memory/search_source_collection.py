@@ -43,13 +43,15 @@ def collect_portfolio_memory_search_events(
     """Scan each search source family once and group projected events by portfolio."""
 
     limit = validate_portfolio_memory_read_limit(limit=limit)
-    candidates = set(portfolio_ids)
+    explicit_portfolio_ids = set(portfolio_ids)
+    candidates = set(explicit_portfolio_ids)
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]] = defaultdict(list)
     for portfolio_id in candidates:
         events_by_portfolio_id.setdefault(portfolio_id, [])
 
     _collect_proof_pack_events(
         repositories=repositories,
+        explicit_portfolio_ids=explicit_portfolio_ids,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
         limit=limit,
@@ -62,6 +64,7 @@ def collect_portfolio_memory_search_events(
     )
     _collect_outcome_review_events(
         repositories=repositories,
+        explicit_portfolio_ids=explicit_portfolio_ids,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
         limit=limit,
@@ -105,13 +108,26 @@ def collect_portfolio_memory_search_events(
 def _collect_proof_pack_events(
     *,
     repositories: PortfolioMemorySourceRepositories,
+    explicit_portfolio_ids: set[str],
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
     limit: int,
 ) -> None:
+    seen_proof_pack_ids: set[str] = set()
     for proof_pack in repositories.proof_pack_repository.list_proof_packs(limit=limit):
+        seen_proof_pack_ids.add(proof_pack.proof_pack_id)
         candidates.add(proof_pack.portfolio_id)
         events_by_portfolio_id[proof_pack.portfolio_id].extend(proof_pack_events(proof_pack))
+    for portfolio_id in sorted(explicit_portfolio_ids):
+        for proof_pack in repositories.proof_pack_repository.list_proof_packs(
+            portfolio_id=portfolio_id,
+            limit=limit,
+        ):
+            if proof_pack.proof_pack_id in seen_proof_pack_ids:
+                continue
+            seen_proof_pack_ids.add(proof_pack.proof_pack_id)
+            candidates.add(proof_pack.portfolio_id)
+            events_by_portfolio_id[proof_pack.portfolio_id].extend(proof_pack_events(proof_pack))
 
 
 def _collect_wave_events(
@@ -135,11 +151,14 @@ def _collect_wave_events(
 def _collect_outcome_review_events(
     *,
     repositories: PortfolioMemorySourceRepositories,
+    explicit_portfolio_ids: set[str],
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
     limit: int,
 ) -> None:
+    seen_review_ids: set[str] = set()
     for review in repositories.outcome_review_repository.list_outcome_reviews(limit=limit):
+        seen_review_ids.add(review.outcome_review_id)
         candidates.add(review.portfolio_id)
         persisted_events = repositories.outcome_review_repository.list_events(
             outcome_review_id=review.outcome_review_id
@@ -147,6 +166,21 @@ def _collect_outcome_review_events(
         events_by_portfolio_id[review.portfolio_id].extend(
             outcome_review_events(review=review, persisted_events=persisted_events)
         )
+    for portfolio_id in sorted(explicit_portfolio_ids):
+        for review in repositories.outcome_review_repository.list_outcome_reviews(
+            portfolio_id=portfolio_id,
+            limit=limit,
+        ):
+            if review.outcome_review_id in seen_review_ids:
+                continue
+            seen_review_ids.add(review.outcome_review_id)
+            candidates.add(review.portfolio_id)
+            persisted_events = repositories.outcome_review_repository.list_events(
+                outcome_review_id=review.outcome_review_id
+            )
+            events_by_portfolio_id[review.portfolio_id].extend(
+                outcome_review_events(review=review, persisted_events=persisted_events)
+            )
 
 
 def _collect_mandate_exception_events(
