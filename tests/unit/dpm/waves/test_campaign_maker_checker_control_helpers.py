@@ -2,7 +2,7 @@ import pytest
 
 from src.core.waves.campaign_maker_checker_controls import (
     _normalize_control_request,
-    _validate_control_action,
+    _validate_control_shape,
     _validate_required_control_fields,
 )
 
@@ -69,7 +69,7 @@ def test_validate_control_action_accepts_valid_action_outcome_pairs(
     reviewer_actor_id: str | None,
     required_reviewer_role: str | None,
 ) -> None:
-    _validate_control_action(
+    _validate_control_shape(
         control_action=control_action,
         control_outcome=control_outcome,
         submitter_actor_id=submitter_actor_id,
@@ -139,7 +139,7 @@ def test_validate_control_action_rejects_invalid_action_outcome_pairs(
     expected_error: str,
 ) -> None:
     with pytest.raises(ValueError, match=expected_error):
-        _validate_control_action(
+        _validate_control_shape(
             control_action=control_action,
             control_outcome=control_outcome,
             submitter_actor_id=submitter_actor_id,

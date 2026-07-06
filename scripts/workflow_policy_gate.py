@@ -16,6 +16,7 @@ COVERAGE_WORKFLOW_NAMES = {
     "pr-merge-gate.yml",
     "main-releasability.yml",
 }
+RAW_PYTEST_PATTERN = re.compile(r"(^|\n)\s+(?:run:\s*)?python\s+-m\s+pytest\b")
 EXPECTED_WORKFLOW_PERMISSIONS = {
     "feature-lane.yml": {"contents": "read"},
     "pr-merge-gate.yml": {"contents": "read"},
@@ -205,6 +206,30 @@ def coverage_gate_violations(workflow_path: Path) -> list[str]:
     return violations
 
 
+def repo_native_test_target_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name not in BLOCKING_WORKFLOW_NAMES:
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    violations: list[str] = []
+    if RAW_PYTEST_PATTERN.search(text):
+        violations.append(
+            f"{workflow_path.as_posix()}: blocking workflow test jobs must use "
+            "repo-native Make test targets instead of raw python -m pytest"
+        )
+    if workflow_path.name == "feature-lane.yml" and "make test-unit" not in text:
+        violations.append(
+            f"{workflow_path.as_posix()}: Feature Lane unit tests must run make test-unit"
+        )
+    if workflow_path.name in COVERAGE_WORKFLOW_NAMES and (
+        "make test-${{ matrix.suite }}-coverage" not in text
+    ):
+        violations.append(
+            f"{workflow_path.as_posix()}: suite coverage jobs must run "
+            "make test-${{ matrix.suite }}-coverage"
+        )
+    return violations
+
+
 def docker_image_evidence_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
         return []
@@ -279,6 +304,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(quality_report_gate_violations(workflow_path))
         violations.extend(duplicate_implementation_gate_violations(workflow_path))
         violations.extend(family_inventory_gate_violations(workflow_path))
+        violations.extend(repo_native_test_target_violations(workflow_path))
         violations.extend(coverage_gate_violations(workflow_path))
         violations.extend(docker_image_evidence_violations(workflow_path))
         violations.extend(auto_merge_workflow_violations(workflow_path))

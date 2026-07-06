@@ -36,7 +36,8 @@ The following commands are active repository gates:
   - `make workflow-policy-gate` (`python scripts/workflow_policy_gate.py`; blocks unpinned
     action references, unexpected workflow permissions, missing blocking quality-report checks, and
     PR-template evidence drift for local gates, CI lanes, security, stranded truth, wiki decisions,
-    guidance decisions, coverage evidence, and blocking workflow coverage-gate drift)
+    guidance decisions, coverage evidence, blocking workflow coverage-gate drift, and raw pytest
+    shortcuts in blocking workflows when repo-native Make test targets exist)
   - `make quality-report-gate` (`python scripts/engineering_health_report.py --check`;
     ignores volatile report provenance while enforcing measured report content)
   - `make test-family-inventory` (`python scripts/test_family_inventory.py --check`;
@@ -58,7 +59,9 @@ The following commands are active repository gates:
 - `make ci-local`
   - everything in `make static-quality-gates`
   - `python -m pip check`
-  - matrix-style unit/integration/e2e coverage files and shared `make coverage-gate`
+  - matrix-style unit/integration/e2e coverage files through `make test-unit-coverage`,
+    `make test-integration-coverage`, and `make test-e2e-coverage`
+  - shared `make coverage-gate`
 
 ## GitHub CI Lanes
 
@@ -88,6 +91,8 @@ The following commands are active repository gates:
   - checked-in quality report freshness
   - test-family breadth inventory (`make test-family-inventory`)
   - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
+  - suite tests through `make test-${{ matrix.suite }}-coverage`, preserving
+    `.coverage.unit`, `.coverage.integration`, and `.coverage.e2e` artifact names
   - Docker image evidence (`make docker-image-evidence`, uploaded from
     `output/docker-image-evidence`)
 

@@ -38,7 +38,84 @@ def _load_campaign_definition_payload(
         return DpmBulkReviewCampaignDefinition.model_validate(legacy_payload)
 
 
-class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDefinitionRepository):
+_WORKFLOW_UPDATE_OPERATIONS = frozenset(
+    {
+        "approval_decision",
+        "assignment_action",
+        "assignment_task",
+        "launch",
+        "maker_checker_control",
+    }
+)
+
+
+def _validate_workflow_update_operation(operation: str) -> None:
+    if operation not in _WORKFLOW_UPDATE_OPERATIONS:
+        raise ValueError(f"Unsupported campaign workflow update operation: {operation}")
+
+
+class _CampaignWorkflowUpdateMixin:
+    def record_definition_launch(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_workflow_definition_update(definition, expected_content_hash, "launch")
+
+    def record_definition_approval_decision(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_workflow_definition_update(
+            definition, expected_content_hash, "approval_decision"
+        )
+
+    def record_definition_assignment_action(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_workflow_definition_update(
+            definition, expected_content_hash, "assignment_action"
+        )
+
+    def record_definition_assignment_task(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_workflow_definition_update(
+            definition, expected_content_hash, "assignment_task"
+        )
+
+    def record_definition_maker_checker_control(
+        self,
+        *,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        return self._record_workflow_definition_update(
+            definition, expected_content_hash, "maker_checker_control"
+        )
+
+    def _record_workflow_definition_update(
+        self,
+        definition: DpmBulkReviewCampaignDefinition,
+        expected_content_hash: str,
+        operation: str,
+    ) -> DpmBulkReviewCampaignDefinition | None:
+        raise NotImplementedError
+
+
+class InMemoryDpmBulkReviewCampaignDefinitionRepository(
+    _CampaignWorkflowUpdateMixin,
+    DpmBulkReviewCampaignDefinitionRepository,
+):
     def __init__(self) -> None:
         self._lock = Lock()
         self._definitions: dict[tuple[str, str], DpmBulkReviewCampaignDefinition] = {}
@@ -165,60 +242,13 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(DpmBulkReviewCampaignDef
             self._definitions[key] = deepcopy(definition)
             return deepcopy(definition)
 
-    def record_definition_launch(
+    def _record_workflow_definition_update(
         self,
-        *,
         definition: DpmBulkReviewCampaignDefinition,
         expected_content_hash: str,
+        operation: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        with self._lock:
-            return self._record_active_definition_update(
-                definition,
-                expected_content_hash=expected_content_hash,
-            )
-
-    def record_definition_approval_decision(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        with self._lock:
-            return self._record_active_definition_update(
-                definition,
-                expected_content_hash=expected_content_hash,
-            )
-
-    def record_definition_assignment_action(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        with self._lock:
-            return self._record_active_definition_update(
-                definition,
-                expected_content_hash=expected_content_hash,
-            )
-
-    def record_definition_assignment_task(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        with self._lock:
-            return self._record_active_definition_update(
-                definition,
-                expected_content_hash=expected_content_hash,
-            )
-
-    def record_definition_maker_checker_control(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
+        _validate_workflow_update_operation(operation)
         with self._lock:
             return self._record_active_definition_update(
                 definition,
@@ -298,7 +328,7 @@ def _definition_sort_key(
     return (definition.as_of_date, definition.campaign_id, definition.campaign_version)
 
 
-class PostgresDpmBulkReviewCampaignDefinitionRepository:
+class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateMixin):
     def __init__(self, *, dsn: str) -> None:
         if not dsn:
             raise RuntimeError("DPM_CAMPAIGN_DEFINITION_POSTGRES_DSN_REQUIRED")
@@ -550,56 +580,13 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository:
             connection.commit()
             return definition
 
-    def record_definition_launch(
+    def _record_workflow_definition_update(
         self,
-        *,
         definition: DpmBulkReviewCampaignDefinition,
         expected_content_hash: str,
+        operation: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(
-            definition,
-            expected_content_hash=expected_content_hash,
-        )
-
-    def record_definition_approval_decision(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(
-            definition,
-            expected_content_hash=expected_content_hash,
-        )
-
-    def record_definition_assignment_action(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(
-            definition,
-            expected_content_hash=expected_content_hash,
-        )
-
-    def record_definition_maker_checker_control(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
-        return self._record_active_definition_update(
-            definition,
-            expected_content_hash=expected_content_hash,
-        )
-
-    def record_definition_assignment_task(
-        self,
-        *,
-        definition: DpmBulkReviewCampaignDefinition,
-        expected_content_hash: str,
-    ) -> DpmBulkReviewCampaignDefinition | None:
+        _validate_workflow_update_operation(operation)
         return self._record_active_definition_update(
             definition,
             expected_content_hash=expected_content_hash,
