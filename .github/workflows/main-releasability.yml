@@ -73,6 +73,8 @@ jobs:
         run: make workflow-policy-gate
       - name: Quality Report Freshness Gate
         run: make quality-report-gate
+      - name: Test Family Inventory Gate
+        run: make test-family-inventory
       - name: Security Audit
         run: make security-audit
 

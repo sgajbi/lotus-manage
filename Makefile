@@ -1,4 +1,4 @@
-.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 IMAGE_NAME ?= lotus-manage
@@ -33,7 +33,8 @@ pre-commit:
 
 static-quality-gates: lint no-alias-gate typecheck typecheck-tests-critical openapi-gate api-vocabulary-gate \
 	service-boundary-gate router-infrastructure-gate mesh-contract-validate architecture-gate complexity-gate \
-	duplicate-implementation-gate dependency-hygiene-gate dead-code-gate workflow-policy-gate quality-report-gate
+	duplicate-implementation-gate dependency-hygiene-gate dead-code-gate workflow-policy-gate quality-report-gate \
+	test-family-inventory
 
 check: static-quality-gates test
 
@@ -146,6 +147,9 @@ workflow-policy-gate:
 
 quality-report-gate:
 	python scripts/engineering_health_report.py --check
+
+test-family-inventory:
+	python scripts/test_family_inventory.py --check
 
 coverage-gate:
 	python scripts/coverage_gate.py --fail-under $(COVERAGE_FAIL_UNDER)

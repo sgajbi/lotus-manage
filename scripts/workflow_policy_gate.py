@@ -35,6 +35,7 @@ PR_TEMPLATE_REQUIRED_TOKENS = {
     "local_parity": "`make ci-local`",
     "workflow_policy": "`make workflow-policy-gate`",
     "quality_report": "`make quality-report-gate`",
+    "test_family_inventory": "`make test-family-inventory`",
     "coverage_gate": "`make coverage-gate`",
     "duplicate_implementation": "`make duplicate-implementation-gate`",
     "openapi": "`make openapi-gate`",
@@ -164,6 +165,26 @@ def duplicate_implementation_gate_violations(workflow_path: Path) -> list[str]:
     return []
 
 
+def family_inventory_gate_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name not in BLOCKING_WORKFLOW_NAMES:
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    if "make test-family-inventory" not in text:
+        return [
+            f"{workflow_path.as_posix()}: blocking workflow must run make test-family-inventory"
+        ]
+    start = text.index("make test-family-inventory")
+    step_start = text.rfind("\n      - name:", 0, start)
+    step_end = text.find("\n      - name:", start)
+    step_block = text[step_start:] if step_end == -1 else text[step_start:step_end]
+    if "continue-on-error" in step_block:
+        return [
+            f"{workflow_path.as_posix()}: test-family inventory gate must be blocking, "
+            "not continue-on-error"
+        ]
+    return []
+
+
 def coverage_gate_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
         return []
@@ -257,6 +278,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(action_reference_violations(workflow_path))
         violations.extend(quality_report_gate_violations(workflow_path))
         violations.extend(duplicate_implementation_gate_violations(workflow_path))
+        violations.extend(family_inventory_gate_violations(workflow_path))
         violations.extend(coverage_gate_violations(workflow_path))
         violations.extend(docker_image_evidence_violations(workflow_path))
         violations.extend(auto_merge_workflow_violations(workflow_path))

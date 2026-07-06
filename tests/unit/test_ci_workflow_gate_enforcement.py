@@ -11,6 +11,7 @@ from scripts.workflow_policy_gate import (
     permission_violations,
     pr_template_policy_violations,
     quality_report_gate_violations,
+    family_inventory_gate_violations,
 )
 
 
@@ -50,6 +51,7 @@ STATIC_QUALITY_GATE_TARGETS = {
     "dead-code-gate",
     "workflow-policy-gate",
     "quality-report-gate",
+    "test-family-inventory",
 }
 
 
@@ -377,6 +379,32 @@ def test_workflow_policy_gate_requires_blocking_quality_report_gate(tmp_path: Pa
     assert quality_report_gate_violations(workflow) == [
         f"{workflow.as_posix()}: quality report gate job must checkout repository first",
         f"{workflow.as_posix()}: quality report freshness gate must be blocking, "
+        "not continue-on-error",
+    ]
+
+
+def test_workflow_policy_gate_requires_blocking_test_family_inventory_gate(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  lint:",
+                "    steps:",
+                "      - name: Test Family Inventory Gate",
+                "        continue-on-error: true",
+                "        run: make test-family-inventory",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert family_inventory_gate_violations(workflow) == [
+        f"{workflow.as_posix()}: test-family inventory gate must be blocking, "
         "not continue-on-error",
     ]
 

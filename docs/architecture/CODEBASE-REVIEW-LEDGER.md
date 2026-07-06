@@ -30326,3 +30326,38 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: README, quality gate docs, and source-layout guidance changed
   because the CI evidence and layering posture changed. Platform skills do not need updates for
   this repo-local Docker supply-chain enforcement.
+
+## BACKEND-REVIEW-20260706-0571: Test-family breadth inventory
+
+- Date: 2026-07-06
+- GitHub issue: #571
+- Scope: test-family inventory script, Make static-quality gate wiring, proof-family baseline,
+  quality docs, README, repository context, scripts guidance, and focused gate tests.
+- Bank-buyable control area: testing quality, agent-proof preservation, CI enforcement, and
+  semantic evidence breadth beyond total coverage.
+- Finding: `lotus-manage` had strong suite separation and a 99 percent combined coverage floor, but
+  no repo-native semantic inventory for API/runtime, contract/governance,
+  observability/security, domain/lifecycle/methodology, or integration/runtime proof families.
+  Future changes could preserve total coverage while deleting high-value proof files.
+- Action: added `scripts/test_family_inventory.py`, `make test-family-inventory`, and
+  `quality/test_family_inventory_baseline.json`. The gate measures 306 current test files, blocks
+  drops below the measured family floors, and rejects new uncategorized tests unless the baseline
+  records an explicit exception. `make static-quality-gates`, `make check`, `make ci`, and the
+  existing GitHub lanes inherit the deterministic blocking portion through the repo-native Make
+  aggregate.
+- Status: fixed locally.
+- Evidence: focused tests cover representative API/runtime, contract/governance,
+  observability/security, domain/lifecycle/methodology, integration/runtime, and uncategorized
+  examples; validation evidence is recorded in the issue comment and PR evidence for this branch.
+- Same-pattern scan: current uncategorized backlog was reduced to zero by deterministic classifier
+  tokens for correlation, evidence scripts, cleanup, coverage, duplicate implementation,
+  service-layer architecture boundaries, and the test-family inventory gate itself. Coverage
+  remains a separate combined execution signal; this gate preserves semantic proof-family breadth.
+- Design decision: this is a design-time CI/quality control inside the existing repository. It does
+  not add runtime code, lower coverage, or require manual test tagging in the first slice because
+  path/name-based classification is deterministic and currently low-noise.
+- Docs/wiki/context/skill decision: README, quality docs, scripts README, repository context, and
+  this ledger changed because repo-native validation truth changed. No wiki source change is
+  needed; the gate is engineering/agent-facing rather than operator or product-facing. No platform
+  skill update is needed because the existing CI-enforcement skill already covers test-family
+  breadth promotion and uncategorized-test caps.
