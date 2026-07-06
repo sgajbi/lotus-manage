@@ -53,6 +53,7 @@ class _FakeConnection:
             or sql.startswith("CREATE INDEX")
             or sql.startswith("CREATE UNIQUE INDEX")
             or sql.startswith("ALTER TABLE")
+            or sql.startswith("INSERT INTO dpm_bulk_review_campaign_workflow_read_model")
         ):
             return _FakeCursor(None)
         if "FROM schema_migrations" in sql:

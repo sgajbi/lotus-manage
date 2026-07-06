@@ -30361,3 +30361,41 @@ and improves internal transaction-cost source posture maintainability only.
   needed; the gate is engineering/agent-facing rather than operator or product-facing. No platform
   skill update is needed because the existing CI-enforcement skill already covers test-family
   breadth promotion and uncategorized-test caps.
+
+## BACKEND-REVIEW-20260706-0569: Repo-native workflow test targets
+
+- Date: 2026-07-06
+- GitHub issue: #569
+- Scope: Make test target contract, Feature/PR/Main workflow test steps, workflow-policy guard,
+  campaign workflow repository duplicate-adapter cleanup, README, quality docs, repository context,
+  and focused CI policy tests.
+- Bank-buyable control area: CI release evidence, local/remote validation parity, and
+  agent-resistant workflow governance.
+- Finding: blocking GitHub test lanes ran raw `python -m pytest` commands even though the
+  repository had Make-backed unit, integration, and e2e test targets. The workflow policy gate
+  protected coverage combine/report behavior but did not reject raw pytest shortcuts, allowing
+  local and remote proof contracts to drift.
+- Action: added repo-native `test-unit-coverage`, `test-integration-coverage`, and
+  `test-e2e-coverage` targets plus `UNIT_TESTS`, `INTEGRATION_TESTS`, and `E2E_TESTS` focused-path
+  overrides. Feature Lane now runs `make test-unit`; PR Merge and Main Releasability now run
+  `make test-${{ matrix.suite }}-coverage` while preserving `.coverage.unit`,
+  `.coverage.integration`, and `.coverage.e2e` artifact names. The workflow policy gate now rejects
+  raw `python -m pytest` in blocking workflows and requires the Make-backed test targets.
+- Status: fixed locally.
+- Evidence: focused CI policy tests cover raw-pytest rejection, Make-backed suite-target acceptance,
+  Makefile suite coverage targets, and current workflow command shape. Validation evidence is
+  recorded in the issue comment and PR evidence for this branch.
+- Same-pattern scan: report-only `quality-baseline.yml` keeps raw pytest because #569 explicitly
+  excludes converting report-only lanes. Blocking Feature, PR Merge, and Main Releasability lanes
+  now use Make test targets, and the workflow policy gate prevents regression to raw pytest. The
+  full gate also exposed duplicate public workflow-update wrappers across in-memory and Postgres
+  campaign definition adapters; those are now centralized behind one shared adapter mixin while
+  keeping adapter-specific persistence operations separate.
+- Design decision: this is primarily a CI command-contract hardening slice. It does not change
+  coverage thresholds, suite membership, or artifact naming. The existing `coverage_gate.py`
+  remains the single combined coverage enforcement path. The narrow runtime-code change is limited
+  to removing duplicate adapter wrappers discovered by the duplicate implementation gate.
+- Docs/wiki/context/skill decision: README, quality docs, repository context, and this ledger
+  changed because repo-native command truth changed. No wiki source change is needed. No platform
+  skill update is needed because the CI-enforcement skill already contains this Make-target
+  workflow rule.

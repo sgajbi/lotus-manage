@@ -603,6 +603,12 @@ Repo-native gate mapping:
 - `make check`
   lint, no-alias, typecheck, OpenAPI gate, API vocabulary gate, test-family inventory, and unit
   tests
+- `make test-unit`, `make test-integration`, `make test-e2e`
+  repo-native suite execution; override paths with `UNIT_TESTS`, `INTEGRATION_TESTS`, or
+  `E2E_TESTS` for focused local proof
+- `make test-unit-coverage`, `make test-integration-coverage`, `make test-e2e-coverage`
+  repo-native suite coverage execution used by PR Merge and Main Releasability workflows; the
+  combined coverage decision remains `make coverage-gate`
 - `make test-family-inventory`
   validates the current test proof-family baseline in `quality/test_family_inventory_baseline.json`
   across API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,

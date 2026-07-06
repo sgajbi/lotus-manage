@@ -11,6 +11,7 @@ from scripts.workflow_policy_gate import (
     permission_violations,
     pr_template_policy_violations,
     quality_report_gate_violations,
+    repo_native_test_target_violations,
     family_inventory_gate_violations,
 )
 
@@ -142,8 +143,43 @@ def test_local_ci_uses_shared_coverage_gate_script() -> None:
         coverage_gate_recipe
     )
     assert "$(MAKE) coverage-gate" in ci_local_recipe
+    assert "$(MAKE) test-unit-coverage" in ci_local_recipe
+    assert "$(MAKE) test-integration-coverage" in ci_local_recipe
+    assert "$(MAKE) test-e2e-coverage" in ci_local_recipe
     assert "python -m coverage combine" not in ci_local_recipe
     assert "python -m coverage report" not in ci_local_recipe
+
+
+def test_makefile_exposes_repo_native_suite_coverage_targets() -> None:
+    makefile_text = Path("Makefile").read_text(encoding="utf-8")
+
+    assert "UNIT_TESTS ?= tests/unit" in makefile_text
+    assert "INTEGRATION_TESTS ?= tests/integration" in makefile_text
+    assert "E2E_TESTS ?= tests/e2e" in makefile_text
+    assert "test-unit-coverage" in _make_target_prerequisites(makefile_text, ".PHONY")
+    assert "python -m pytest $(UNIT_TESTS) --cov=src --cov-report=" in (
+        _make_target_recipe(makefile_text, "test-unit-coverage")
+    )
+    assert "python -m pytest $(INTEGRATION_TESTS) --cov=src --cov-report=" in (
+        _make_target_recipe(makefile_text, "test-integration-coverage")
+    )
+    assert "python -m pytest $(E2E_TESTS) --cov=src --cov-report=" in (
+        _make_target_recipe(makefile_text, "test-e2e-coverage")
+    )
+
+
+def test_blocking_workflows_use_repo_native_test_targets() -> None:
+    feature_text = Path(".github/workflows/feature-lane.yml").read_text(encoding="utf-8")
+    assert "run: make test-unit" in feature_text
+    assert "run: python -m pytest tests/unit" not in feature_text
+
+    for workflow_path in [
+        Path(".github/workflows/pr-merge-gate.yml"),
+        Path(".github/workflows/main-releasability.yml"),
+    ]:
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+        assert "run: make test-${{ matrix.suite }}-coverage" in workflow_text
+        assert "python -m pytest ${{ matrix.path }}" not in workflow_text
 
 
 def test_blocking_workflows_use_shared_coverage_gate_script() -> None:
@@ -459,6 +495,53 @@ def test_workflow_policy_gate_rejects_ad_hoc_coverage_commands(tmp_path: Path) -
         f"{workflow.as_posix()}: coverage enforcement must not duplicate ad hoc coverage "
         "combine/report commands",
     ]
+
+
+def test_workflow_policy_gate_rejects_raw_pytest_workflow_shortcuts(
+    tmp_path: Path,
+) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  test-suites:",
+                "    steps:",
+                "      - name: Run tests with coverage data",
+                "        run: python -m pytest ${{ matrix.path }} --cov=src --cov-report=",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert repo_native_test_target_violations(workflow) == [
+        f"{workflow.as_posix()}: blocking workflow test jobs must use repo-native Make "
+        "test targets instead of raw python -m pytest",
+        f"{workflow.as_posix()}: suite coverage jobs must run "
+        "make test-${{ matrix.suite }}-coverage",
+    ]
+
+
+def test_workflow_policy_gate_accepts_make_backed_suite_targets(tmp_path: Path) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  test-suites:",
+                "    steps:",
+                "      - name: Run tests with coverage data",
+                "        run: make test-${{ matrix.suite }}-coverage",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert repo_native_test_target_violations(workflow) == []
 
 
 def test_workflow_policy_gate_rejects_build_only_docker_lane(tmp_path: Path) -> None:

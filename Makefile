@@ -1,10 +1,13 @@
-.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate test-family-inventory coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-unit-coverage test-integration-coverage test-e2e-coverage test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
 IMAGE_NAME ?= lotus-manage
 IMAGE_REF ?= $(IMAGE_NAME):$(IMAGE_TAG)
 REPO_URL ?= https://github.com/sgajbi/lotus-manage
 CI_PIPELINE_ID ?= local
+UNIT_TESTS ?= tests/unit
+INTEGRATION_TESTS ?= tests/integration
+E2E_TESTS ?= tests/e2e
 
 ifeq ($(origin GIT_SHA), undefined)
 GIT_SHA := $(shell git rev-parse HEAD)
@@ -44,13 +47,22 @@ test:
 	$(MAKE) test-unit
 
 test-unit:
-	python -m pytest tests/unit
+	python -m pytest $(UNIT_TESTS)
 
 test-integration:
-	python -m pytest tests/integration
+	python -m pytest $(INTEGRATION_TESTS)
 
 test-e2e:
-	python -m pytest tests/e2e
+	python -m pytest $(E2E_TESTS)
+
+test-unit-coverage:
+	python -m pytest $(UNIT_TESTS) --cov=src --cov-report=
+
+test-integration-coverage:
+	python -m pytest $(INTEGRATION_TESTS) --cov=src --cov-report=
+
+test-e2e-coverage:
+	python -m pytest $(E2E_TESTS) --cov=src --cov-report=
 
 test-all:
 	python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=$(COVERAGE_FAIL_UNDER)
@@ -73,9 +85,9 @@ test-all-parallel:
 
 # Local execution flow aligned with the Pull Request Merge Gate workflow
 ci-local: static-quality-gates check-deps
-	COVERAGE_FILE=.coverage.unit python -m pytest tests/unit --cov=src --cov-report=
-	COVERAGE_FILE=.coverage.integration python -m pytest tests/integration --cov=src --cov-report=
-	COVERAGE_FILE=.coverage.e2e python -m pytest tests/e2e --cov=src --cov-report=
+	COVERAGE_FILE=.coverage.unit $(MAKE) test-unit-coverage
+	COVERAGE_FILE=.coverage.integration $(MAKE) test-integration-coverage
+	COVERAGE_FILE=.coverage.e2e $(MAKE) test-e2e-coverage
 	$(MAKE) coverage-gate
 
 ci-local-docker:

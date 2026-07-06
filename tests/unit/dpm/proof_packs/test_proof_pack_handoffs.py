@@ -139,6 +139,7 @@ def test_report_input_carries_portfolio_memory_without_changing_evidence_hash() 
             },
             "event_refs": [
                 {
+                    "event_id": f"memory:proof_pack:{proof_pack.proof_pack_id}:created",
                     "event_identity": "lotus-manage:DPM_PRE_TRADE_PROOF_PACK:dpp_001:sha256:proof-pack",
                     "event_type": "PROOF_PACK_CREATED",
                     "event_time": "2026-05-03T09:00:00+00:00",
@@ -191,6 +192,7 @@ def test_ai_evidence_input_carries_portfolio_memory_without_changing_evidence_ha
             },
             "event_refs": [
                 {
+                    "event_id": f"memory:proof_pack:{proof_pack.proof_pack_id}:created",
                     "event_identity": "lotus-manage:DPM_PRE_TRADE_PROOF_PACK:dpp_001:sha256:proof-pack",
                     "event_type": "PROOF_PACK_CREATED",
                     "event_time": "2026-05-03T09:00:00+00:00",

@@ -103,7 +103,7 @@ jobs:
       - name: Run tests with coverage data
         env:
           COVERAGE_FILE: .coverage.${{ matrix.suite }}
-        run: python -m pytest ${{ matrix.path }} --cov=src --cov-report=
+        run: make test-${{ matrix.suite }}-coverage
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
         with:

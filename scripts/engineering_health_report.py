@@ -686,7 +686,7 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
         [
             "Workflow policy",
             "Active gate",
-            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, coverage-gate drift, and PR evidence drift.",
+            "`make workflow-policy-gate` blocks unpinned action refs, permission creep, blocking quality-report drift, raw blocking-workflow pytest shortcuts, coverage-gate drift, and PR evidence drift.",
         ],
         [
             "Local CI parity",
@@ -697,6 +697,11 @@ def build_quality_scorecard(context: HealthReportContext) -> str:
             "Coverage gate parity",
             "Active gate",
             "`scripts/coverage_gate.py` is the shared local and GitHub combined coverage gate.",
+        ],
+        [
+            "Test-family proof breadth",
+            "Active gate",
+            "`make test-family-inventory` checks `quality/test_family_inventory_baseline.json` and blocks loss of API/runtime, contract/governance, observability/security, domain/lifecycle/methodology, and integration/runtime proof-family file counts.",
         ],
         [
             "Dead code",

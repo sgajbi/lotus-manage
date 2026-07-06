@@ -84,6 +84,7 @@ def test_outcome_report_input_carries_portfolio_memory_without_changing_hash() -
             },
             "event_refs": [
                 {
+                    "event_id": f"memory:outcome:{review.outcome_review_id}:created",
                     "event_identity": "lotus-manage:DPM_POST_TRADE_OUTCOME_REVIEW:dor_001:sha256:review",
                     "event_type": "OUTCOME_REVIEW_CREATED",
                     "event_time": "2026-05-03T09:00:00+00:00",
@@ -136,6 +137,7 @@ def test_outcome_ai_evidence_input_carries_portfolio_memory_without_changing_has
             },
             "event_refs": [
                 {
+                    "event_id": f"memory:outcome:{review.outcome_review_id}:created",
                     "event_identity": "lotus-manage:DPM_POST_TRADE_OUTCOME_REVIEW:dor_001:sha256:review",
                     "event_type": "OUTCOME_REVIEW_CREATED",
                     "event_time": "2026-05-03T09:00:00+00:00",

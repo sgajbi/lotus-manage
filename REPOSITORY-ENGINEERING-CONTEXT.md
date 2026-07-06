@@ -1006,18 +1006,22 @@ Important validation expectations:
    measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,
    and integration/runtime proof-family floors in `quality/test_family_inventory_baseline.json`;
    coverage remains a separate combined execution floor rather than the only test-quality signal,
-5. host/runtime coexistence assumptions matter for canonical front-office startup,
-6. README changes should preserve the local Docker runtime contract language enforced by
+5. Feature, PR Merge, and Main Releasability workflows must invoke repo-native Make test targets
+   (`make test-unit` and `make test-${{ matrix.suite }}-coverage`) instead of raw workflow-level
+   pytest commands. `UNIT_TESTS`, `INTEGRATION_TESTS`, and `E2E_TESTS` provide focused path
+   overrides without bypassing the Make contract,
+6. host/runtime coexistence assumptions matter for canonical front-office startup,
+7. README changes should preserve the local Docker runtime contract language enforced by
    `tests/unit/test_local_docker_runtime_contract.py`,
-7. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
+8. DPM supportability and OpenAPI-facing docs changes should respect the targeted contract tests in
    `tests/unit/dpm/contracts/test_contract_openapi_supportability_docs.py`,
-8. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
+9. current operational evidence docs under `docs/demo/` and runbooks should preserve canonical
    `lotus-manage` service, image, and ingress identity while clearly labeling historical local-only
    debug paths.
-9. app-level demo certification is repo-native through `make demo-certify`; it is exposed through a
+10. app-level demo certification is repo-native through `make demo-certify`; it is exposed through a
    manual GitHub workflow with uploaded evidence and report-only command-contract coverage until the
    canonical live stack is proven stable inside CI.
-10. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
+11. RFC/docs/wiki/context work must include stranded-truth reconciliation before RFC start, final
    closure, post-merge audit, and move-on to the next RFC. Run `git fetch origin --prune` and
    `git branch -r --no-merged origin/main`, inspect unmerged branches touching `docs/rfcs/`,
    `wiki/`, `README.md`, `REPOSITORY-ENGINEERING-CONTEXT.md`, `AGENTS.md`, contracts, standards,

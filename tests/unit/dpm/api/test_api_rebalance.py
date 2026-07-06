@@ -2567,6 +2567,7 @@ def test_openapi_exposes_only_canonical_product_routes(client):
         "/health/live",
         "/health/ready",
         "/metrics",
+        "/version",
     }
     unversioned_paths = {path for path in paths if not path.startswith("/api/v1")}
 
