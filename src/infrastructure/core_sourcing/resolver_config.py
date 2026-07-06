@@ -45,6 +45,9 @@ class DpmCoreResolverConfig:
     instrument_eligibility_path_template: str = "/integration/instruments/eligibility-bulk"
     portfolio_tax_lots_path_template: str = "/integration/portfolios/{portfolio_id}/tax-lots"
     market_data_coverage_path_template: str = "/integration/market-data/coverage"
+    dpm_source_readiness_path_template: str = (
+        "/integration/portfolios/{portfolio_id}/dpm-source-readiness"
+    )
     portfolio_snapshot_path_template: str = "/integration/portfolios/{portfolio_id}/core-snapshot"
     transaction_cost_curve_path_template: str = (
         "/integration/portfolios/{portfolio_id}/transaction-cost-curve"
@@ -166,6 +169,14 @@ class DpmCoreResolverConfig:
             base_url=self.base_url,
             path_template=self.market_data_coverage_path_template,
             unavailable_code="DPM_CORE_MARKET_DATA_COVERAGE_UNAVAILABLE",
+        )
+
+    def resolve_dpm_source_readiness_url(self, portfolio_id: str) -> str:
+        return _resolved_core_url(
+            base_url=self.base_url,
+            path_template=self.dpm_source_readiness_path_template,
+            unavailable_code="DPM_CORE_SOURCE_READINESS_UNAVAILABLE",
+            portfolio_id=portfolio_id,
         )
 
     def resolve_portfolio_snapshot_url(self, portfolio_id: str) -> str:

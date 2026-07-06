@@ -3,6 +3,7 @@ from src.core.dpm_source_context import (
     DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePolicyContext,
+    DpmCoreSourceReadinessResponse,
     DpmCoreSourceLineage,
     DpmCoreSupportability,
     DpmStatefulInput,
@@ -79,4 +80,31 @@ def ready_execution_context_supportability() -> DpmCoreSupportability:
         freshness_bucket="current",
         missing_source_families=[],
         degraded_source_families=[],
+    )
+
+
+def execution_context_supportability_from_source_readiness(
+    readiness: DpmCoreSourceReadinessResponse,
+) -> DpmCoreSupportability:
+    missing_source_families = sorted(
+        {
+            family.family
+            for family in readiness.families
+            if family.state in {"INCOMPLETE", "UNAVAILABLE"}
+        }
+    )
+    degraded_source_families = sorted(
+        {family.family for family in readiness.families if family.state == "DEGRADED"}
+    )
+    reason = (
+        "DPM_CORE_CONTEXT_READY"
+        if readiness.supportability.state == "READY"
+        else readiness.supportability.reason
+    )
+    return DpmCoreSupportability(
+        state=readiness.supportability.state,
+        reason=reason,
+        freshness_bucket=readiness.data_quality_status or "source_readiness_unknown",
+        missing_source_families=missing_source_families,
+        degraded_source_families=degraded_source_families,
     )

@@ -1,12 +1,12 @@
 # lotus-manage Refactor Health Report
 
-- Generated at: `2026-07-06T00:31:21+00:00`
+- Generated at: `2026-07-06T00:40:19+00:00`
 
 - Baseline ref: `origin/main`
 
 - Baseline source snapshot: `46dbf0ff47bfa2afbfdfc4560e637cbff42af940`
 
-- Report source snapshot: `6e51ba03+worktree`
+- Report source snapshot: `20db02b0+worktree`
 
 - Scope: Python code under `src/`, `tests/`, and `scripts/`; current OpenAPI schema.
 
@@ -15,8 +15,8 @@
 | Metric | origin/main | current branch | Delta |
 | --- | --- | --- | --- |
 | Python files | 883 | 892 | +9 |
-| Total Python LOC | 187218 | 192084 | +4866 |
-| Test functions | 2771 | 2811 | +40 |
+| Total Python LOC | 187218 | 192383 | +5165 |
+| Test functions | 2771 | 2812 | +41 |
 | Service boundary findings | 0 | 0 | +0 |
 | Router infrastructure imports | 0 | 0 | +0 |
 
@@ -58,8 +58,8 @@
 | 4 | tests/unit/dpm/waves/test_campaign_discovery.py | 3214 |
 | 5 | tests/unit/dpm/waves/test_campaign_definition_repository.py | 3122 |
 | 6 | tests/unit/test_documentation_current_state.py | 2771 |
-| 7 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2649 |
-| 8 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2531 |
+| 7 | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 2665 |
+| 8 | tests/unit/dpm/api/test_portfolio_memory_api.py | 2649 |
 | 9 | tests/unit/core/test_risk_realized_outcome_sources.py | 1811 |
 | 10 | tests/unit/api/test_pm_operating_quality_api.py | 1745 |
 
@@ -123,7 +123,7 @@
 | 5 | execute | tests/unit/dpm/supportability/test_dpm_postgres_repository_scaffold.py | 96 | 383 |
 | 6 | test_manage_consumer_declaration_tracks_current_core_inputs | tests/unit/test_domain_data_product_contracts.py | 87 | 148 |
 | 7 | test_rfc0041_slice0_source_map_guardrails_stay_truthful | tests/unit/test_documentation_current_state.py | 80 | 128 |
-| 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 72 | 133 |
+| 8 | test_core_resolver_posts_selector_payload_and_correlation_header | tests/unit/dpm/infrastructure/test_core_sourcing_client.py | 78 | 140 |
 | 9 | test_portfolio_memory_api_returns_queryable_source_backed_memory | tests/unit/dpm/api/test_portfolio_memory_api.py | 71 | 328 |
 | 10 | test_wave_openapi_documents_preview_and_create | tests/unit/dpm/api/test_waves_api.py | 68 | 209 |
 

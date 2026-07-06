@@ -43,11 +43,12 @@ Current posture under RFC-0082:
 2. `input_mode=stateless` is the supported default execution mode for caller-supplied source
    bundles
 3. stateful `portfolio_id` mode is implemented behind explicit runtime gates and remains anchored
-   to governed `lotus-core` authority; it is advertised in `/api/v1/integration/capabilities` only
-   when the stateful capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all
-   configured, and the retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL`
-   is also required when stateful construction consumes query-plane source products such as
-   `PortfolioCashflowProjection:v1`.
+   to governed `lotus-core` authority. Manage composes the current source products and consumes
+   `DpmSourceReadiness:v1` as the source-family promotion gate before treating stateful execution
+   context as ready; it is advertised in `/api/v1/integration/capabilities` only when the stateful
+   capability flag, stateful sourcing gate, and `DPM_CORE_BASE_URL` are all configured, and the
+   retired monolithic core route is not configured. `DPM_CORE_QUERY_BASE_URL` is also required when
+   stateful construction consumes query-plane source products such as `PortfolioCashflowProjection:v1`.
 4. advisor-led proposal simulation, artifacts, consent, and lifecycle workflows are out of scope
    for this repository and belong in `lotus-advise`
 
