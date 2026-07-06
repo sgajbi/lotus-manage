@@ -1,5 +1,21 @@
 # Integrations
 
+## Current scope
+
+Current scope: this page maps implementation-backed `lotus-manage` integration boundaries for
+management execution, supportability, source-data consumption, and downstream publication. It does
+not promote advisory proposal ownership, order routing, client contact, or unsupported source-data
+authority into Manage.
+
+## Reader map
+
+| Reader need | Use this section | Evidence posture |
+| --- | --- | --- |
+| Source-data ownership | Upstream and downstream posture; Boundary rules | Repo context, source-product contracts, and live-proof notes identify which service owns each fact family. |
+| Stateful DPM sourcing | Core Sourcing Target | Implementation-backed resolver and transformer paths consume governed Core products when explicit feature gates are enabled. |
+| Cross-service publication | Gateway and idea boundaries | Manage exposes bounded contracts; Gateway, Advise, Idea, Core, Risk, and Performance keep their own authority. |
+| Operational limits | Boundary rules; Current source-product integration status | Unsupported publication, order, treasury, OMS, and client-contact claims are called out before deep details. |
+
 ## Upstream and downstream posture
 
 - `lotus-core`
