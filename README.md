@@ -666,6 +666,18 @@ lineage endpoint certification or supportability incident drills.
 Idempotency history remains feature-gated by default; set
 `DPM_IDEMPOTENCY_HISTORY_APIS_ENABLED=true` for retry-history certification or incident drills.
 
+Docker supply-chain evidence is repo-native:
+
+```powershell
+make docker-build
+make docker-image-evidence
+```
+
+`make docker-image-evidence` writes `output/docker-image-evidence/release-manifest.json` plus
+image inspect, SBOM status, vulnerability scan status, signature status, and provenance summary
+files. The Dockerfile sets non-secret OCI labels for Git SHA, branch, build timestamp, repo URL,
+image digest, CI run id, and app version. `/version` exposes the same runtime metadata.
+
 Operationally important truths:
 
 1. readiness and migration posture matter because supportability flows depend on persistence truth

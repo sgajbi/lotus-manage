@@ -6,6 +6,7 @@ from scripts.workflow_policy_gate import (
     action_reference_violations,
     auto_merge_workflow_violations,
     coverage_gate_violations,
+    docker_image_evidence_violations,
     evaluate_workflow_policy,
     permission_violations,
     pr_template_policy_violations,
@@ -155,6 +156,18 @@ def test_blocking_workflows_use_shared_coverage_gate_script() -> None:
         ) in workflow_text
         assert "python -m coverage combine coverage-data" not in workflow_text
         assert "python -m coverage report --fail-under" not in workflow_text
+
+
+def test_blocking_workflows_upload_docker_image_evidence() -> None:
+    for workflow_path in [
+        Path(".github/workflows/pr-merge-gate.yml"),
+        Path(".github/workflows/main-releasability.yml"),
+    ]:
+        workflow_text = workflow_path.read_text(encoding="utf-8")
+        assert "make docker-image-evidence" in workflow_text
+        assert "actions/upload-artifact@v7" in workflow_text
+        assert "output/docker-image-evidence" in workflow_text
+        assert "run: make docker-build" not in workflow_text
 
 
 def test_artifact_workflows_opt_into_node24_action_runtime() -> None:
@@ -417,4 +430,29 @@ def test_workflow_policy_gate_rejects_ad_hoc_coverage_commands(tmp_path: Path) -
         f"{workflow.as_posix()}: blocking coverage workflow must use scripts/coverage_gate.py",
         f"{workflow.as_posix()}: coverage enforcement must not duplicate ad hoc coverage "
         "combine/report commands",
+    ]
+
+
+def test_workflow_policy_gate_rejects_build_only_docker_lane(tmp_path: Path) -> None:
+    workflow = tmp_path / "pr-merge-gate.yml"
+    workflow.write_text(
+        "\n".join(
+            [
+                "permissions:",
+                "  contents: read",
+                "jobs:",
+                "  docker-build:",
+                "    steps:",
+                "      - uses: actions/checkout@v6",
+                "      - name: Build Docker image",
+                "        run: make docker-build",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert docker_image_evidence_violations(workflow) == [
+        f"{workflow.as_posix()}: blocking Docker workflow must run make docker-image-evidence",
+        f"{workflow.as_posix()}: blocking Docker workflow must not stop at build-only validation",
+        f"{workflow.as_posix()}: Docker workflow must upload image evidence artifacts",
     ]

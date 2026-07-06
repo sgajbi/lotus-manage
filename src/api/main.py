@@ -1,6 +1,7 @@
 """FILE: src/api/main.py"""
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator, Literal
 
@@ -67,6 +68,17 @@ class HealthStatusResponse(BaseModel):
         ),
         examples=["ready"],
     )
+
+
+class VersionMetadataResponse(BaseModel):
+    service_name: str = Field(description="Lotus service name.", examples=["lotus-manage"])
+    version: str = Field(description="Application version exposed by FastAPI metadata.")
+    git_commit_sha: str = Field(description="Git commit SHA used to build the image.")
+    git_branch: str = Field(description="Git branch or ref used to build the image.")
+    build_timestamp: str = Field(description="UTC image build timestamp.")
+    repo_url: str = Field(description="Source repository URL used for the image build.")
+    image_digest: str = Field(description="OCI image digest or local image id when not pushed.")
+    ci_pipeline_id: str = Field(description="CI pipeline or run identifier for the image build.")
 
 
 _HEALTH_RESPONSES: dict[int | str, dict[str, Any]] = {
@@ -215,6 +227,30 @@ app.include_router(pm_operating_quality_router, prefix="/api/v1")
 )
 def health() -> HealthStatusResponse:
     return HealthStatusResponse(status="ok")
+
+
+@app.get(
+    "/version",
+    response_model=VersionMetadataResponse,
+    summary="lotus-manage Version Metadata",
+    description=(
+        "Returns the same release metadata expected on OCI image labels and release manifests: "
+        "Git commit, branch, build timestamp, repository URL, image digest, CI run id, and app "
+        "version."
+    ),
+    tags=["Health"],
+)
+def version_metadata() -> VersionMetadataResponse:
+    return VersionMetadataResponse(
+        service_name="lotus-manage",
+        version=app.version,
+        git_commit_sha=os.getenv("LOTUS_IMAGE_GIT_SHA", "unknown"),
+        git_branch=os.getenv("LOTUS_IMAGE_GIT_BRANCH", "unknown"),
+        build_timestamp=os.getenv("LOTUS_IMAGE_BUILD_TIMESTAMP", "unknown"),
+        repo_url=os.getenv("LOTUS_IMAGE_REPO_URL", "unknown"),
+        image_digest=os.getenv("LOTUS_IMAGE_DIGEST", "unknown"),
+        ci_pipeline_id=os.getenv("LOTUS_IMAGE_CI_PIPELINE_ID", "local"),
+    )
 
 
 @app.get(

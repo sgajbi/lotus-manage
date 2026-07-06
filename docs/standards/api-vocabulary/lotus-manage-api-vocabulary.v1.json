@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-05T23:34:15.493144+00:00",
+  "generatedAt": "2026-07-06T00:01:27.156174+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -1766,6 +1766,20 @@
       ]
     },
     {
+      "semanticId": "lotus.build_timestamp",
+      "canonicalTerm": "build_timestamp",
+      "preferredName": "build_timestamp",
+      "description": "UTC image build timestamp.",
+      "example": "2026-03-02T10:30:00Z",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.business_rationale",
       "canonicalTerm": "business_rationale",
       "preferredName": "business_rationale",
@@ -2181,6 +2195,20 @@
       ],
       "observedTypes": [
         "array"
+      ]
+    },
+    {
+      "semanticId": "lotus.ci_pipeline_id",
+      "canonicalTerm": "ci_pipeline_id",
+      "preferredName": "ci_pipeline_id",
+      "description": "CI pipeline or run identifier for the image build.",
+      "example": "CI_PIPELINE_001",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -5879,6 +5907,34 @@
       ]
     },
     {
+      "semanticId": "lotus.git_branch",
+      "canonicalTerm": "git_branch",
+      "preferredName": "git_branch",
+      "description": "Git branch or ref used to build the image.",
+      "example": "sample_git_branch",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.git_commit_sha",
+      "canonicalTerm": "git_commit_sha",
+      "preferredName": "git_commit_sha",
+      "description": "Git commit SHA used to build the image.",
+      "example": "sample_git_commit_sha",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.global_portfolio_universe_discovery",
       "canonicalTerm": "global_portfolio_universe_discovery",
       "preferredName": "global_portfolio_universe_discovery",
@@ -6349,6 +6405,20 @@
       ],
       "observedTypes": [
         "boolean"
+      ]
+    },
+    {
+      "semanticId": "lotus.image_digest",
+      "canonicalTerm": "image_digest",
+      "preferredName": "image_digest",
+      "description": "OCI image digest or local image id when not pushed.",
+      "example": "sample_image_digest",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
       ]
     },
     {
@@ -11209,6 +11279,20 @@
       ]
     },
     {
+      "semanticId": "lotus.repo_url",
+      "canonicalTerm": "repo_url",
+      "preferredName": "repo_url",
+      "description": "Source repository URL used for the image build.",
+      "example": "sample_repo_url",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
       "semanticId": "lotus.report_audience",
       "canonicalTerm": "report_audience",
       "preferredName": "report_audience",
@@ -12863,6 +12947,20 @@
       "preferredName": "sell_currency",
       "description": "Currency sold by this FX trade.",
       "example": "USD",
+      "type": "string",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "string"
+      ]
+    },
+    {
+      "semanticId": "lotus.service_name",
+      "canonicalTerm": "service_name",
+      "preferredName": "service_name",
+      "description": "Lotus service name.",
+      "example": "sample_service_name",
       "type": "string",
       "locations": [
         "body"
@@ -134174,6 +134272,84 @@
             "type": "string",
             "semanticId": "lotus.status",
             "attributeRef": "#/attributeCatalog/lotus.status"
+          }
+        ]
+      }
+    },
+    {
+      "domain": "health",
+      "method": "GET",
+      "path": "/version",
+      "operationId": "version_metadata_version_get",
+      "summary": "lotus-manage Version Metadata",
+      "request": {
+        "fields": []
+      },
+      "response": {
+        "fields": [
+          {
+            "name": "service_name",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.service_name",
+            "attributeRef": "#/attributeCatalog/lotus.service_name"
+          },
+          {
+            "name": "version",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.version",
+            "attributeRef": "#/attributeCatalog/lotus.version"
+          },
+          {
+            "name": "git_commit_sha",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.git_commit_sha",
+            "attributeRef": "#/attributeCatalog/lotus.git_commit_sha"
+          },
+          {
+            "name": "git_branch",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.git_branch",
+            "attributeRef": "#/attributeCatalog/lotus.git_branch"
+          },
+          {
+            "name": "build_timestamp",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.build_timestamp",
+            "attributeRef": "#/attributeCatalog/lotus.build_timestamp"
+          },
+          {
+            "name": "repo_url",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.repo_url",
+            "attributeRef": "#/attributeCatalog/lotus.repo_url"
+          },
+          {
+            "name": "image_digest",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.image_digest",
+            "attributeRef": "#/attributeCatalog/lotus.image_digest"
+          },
+          {
+            "name": "ci_pipeline_id",
+            "location": "body",
+            "required": true,
+            "type": "string",
+            "semanticId": "lotus.ci_pipeline_id",
+            "attributeRef": "#/attributeCatalog/lotus.ci_pipeline_id"
           }
         ]
       }

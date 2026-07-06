@@ -141,10 +141,23 @@ jobs:
           if-no-files-found: error
 
   docker-build:
-    name: Main Releasability / Validate Docker Build
+    name: Main Releasability / Docker Image Evidence
     needs: [coverage-gate]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Build Docker image
-        run: make docker-build
+        with:
+          fetch-depth: 0
+      - name: Build Docker image and write evidence
+        env:
+          GIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          CI_PIPELINE_ID: ${{ github.run_id }}
+        run: make docker-image-evidence
+      - name: Upload Docker image evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: main-releasability-docker-image-evidence
+          path: output/docker-image-evidence
+          if-no-files-found: error

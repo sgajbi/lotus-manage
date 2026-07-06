@@ -1,6 +1,23 @@
-.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-up docker-down
+.PHONY: architecture-gate complexity-gate duplicate-implementation-gate dead-code-gate dependency-hygiene-gate workflow-policy-gate quality-report-gate coverage-gate static-quality-gates install install-ci check check-all test test-unit test-integration test-e2e test-all test-fast test-all-fast test-all-no-cov test-all-parallel ci ci-local ci-local-docker ci-local-docker-down typecheck typecheck-tests-critical lint monetary-float-guard domain-product-validate trust-telemetry-validate observability-contract-validate mesh-contract-validate no-alias-gate openapi-gate api-vocabulary-gate service-boundary-gate router-infrastructure-gate live-api-validate live-api-validate-core demo-certify format clean run check-deps security-audit migration-smoke migration-apply pre-commit docker-build docker-image-evidence docker-up docker-down
 
 COVERAGE_FAIL_UNDER ?= 99
+IMAGE_NAME ?= lotus-manage
+IMAGE_REF ?= $(IMAGE_NAME):$(IMAGE_TAG)
+REPO_URL ?= https://github.com/sgajbi/lotus-manage
+CI_PIPELINE_ID ?= local
+
+ifeq ($(origin GIT_SHA), undefined)
+GIT_SHA := $(shell git rev-parse HEAD)
+endif
+ifeq ($(origin GIT_BRANCH), undefined)
+GIT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+endif
+ifeq ($(origin IMAGE_TAG), undefined)
+IMAGE_TAG := $(shell git rev-parse --short HEAD)
+endif
+ifeq ($(origin BUILD_TIMESTAMP), undefined)
+BUILD_TIMESTAMP := $(shell python -c "from datetime import datetime, timezone; print(datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))")
+endif
 
 install:
 	python -m pip install --upgrade pip
@@ -172,7 +189,25 @@ security-audit:
 	python -m pip_audit . --ignore-vuln PYSEC-2024-277 --ignore-vuln PYSEC-2022-42969
 
 docker-build:
-	docker build -t lotus-manage:ci .
+	docker build \
+		--build-arg GIT_SHA=$(GIT_SHA) \
+		--build-arg GIT_BRANCH=$(GIT_BRANCH) \
+		--build-arg BUILD_TIMESTAMP=$(BUILD_TIMESTAMP) \
+		--build-arg REPO_URL=$(REPO_URL) \
+		--build-arg IMAGE_DIGEST=local-build-pending-push \
+		--build-arg CI_PIPELINE_ID=$(CI_PIPELINE_ID) \
+		--build-arg APP_VERSION=0.1.0 \
+		-t $(IMAGE_REF) \
+		-t lotus-manage:ci .
+
+docker-image-evidence: docker-build
+	python scripts/docker_image_evidence.py \
+		--image $(IMAGE_REF) \
+		--git-sha $(GIT_SHA) \
+		--git-branch $(GIT_BRANCH) \
+		--build-timestamp $(BUILD_TIMESTAMP) \
+		--repo-url $(REPO_URL) \
+		--ci-pipeline-id $(CI_PIPELINE_ID)
 
 docker-up:
 	docker compose up -d --build

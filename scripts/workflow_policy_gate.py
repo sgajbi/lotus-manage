@@ -184,6 +184,28 @@ def coverage_gate_violations(workflow_path: Path) -> list[str]:
     return violations
 
 
+def docker_image_evidence_violations(workflow_path: Path) -> list[str]:
+    if workflow_path.name not in COVERAGE_WORKFLOW_NAMES:
+        return []
+    text = workflow_path.read_text(encoding="utf-8")
+    violations: list[str] = []
+    if "make docker-image-evidence" not in text:
+        violations.append(
+            f"{workflow_path.as_posix()}: blocking Docker workflow must run "
+            "make docker-image-evidence"
+        )
+    if "run: make docker-build" in text:
+        violations.append(
+            f"{workflow_path.as_posix()}: blocking Docker workflow must not stop at "
+            "build-only validation"
+        )
+    if "output/docker-image-evidence" not in text or "actions/upload-artifact@v7" not in text:
+        violations.append(
+            f"{workflow_path.as_posix()}: Docker workflow must upload image evidence artifacts"
+        )
+    return violations
+
+
 def auto_merge_workflow_violations(workflow_path: Path) -> list[str]:
     if workflow_path.name != "pr-auto-merge.yml":
         return []
@@ -236,6 +258,7 @@ def evaluate_workflow_policy(workflow_dir: Path = WORKFLOW_DIR) -> list[str]:
         violations.extend(quality_report_gate_violations(workflow_path))
         violations.extend(duplicate_implementation_gate_violations(workflow_path))
         violations.extend(coverage_gate_violations(workflow_path))
+        violations.extend(docker_image_evidence_violations(workflow_path))
         violations.extend(auto_merge_workflow_violations(workflow_path))
     violations.extend(pr_template_policy_violations())
     return violations
