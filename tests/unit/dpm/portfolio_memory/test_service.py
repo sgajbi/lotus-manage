@@ -236,6 +236,92 @@ def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> N
     assert summary_invocation_repository.list_calls == 1
 
 
+def test_search_portfolio_memory_from_sources_supplements_explicit_portfolio_sources() -> None:
+    proof_pack_repository = _CountingProofPackRepository()
+    proof_pack_repository.save_proof_pack(
+        proof_pack=_proof_pack().model_copy(
+            update={
+                "proof_pack_id": "dpp_other_newer",
+                "portfolio_id": "PB_OTHER_NEWER",
+                "created_at": datetime(2026, 6, 2, 9, 0, tzinfo=timezone.utc),
+            }
+        ),
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+    proof_pack_repository.save_proof_pack(
+        proof_pack=_proof_pack().model_copy(
+            update={
+                "proof_pack_id": "dpp_other_second",
+                "portfolio_id": "PB_OTHER_SECOND",
+                "created_at": datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc),
+            }
+        ),
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+    proof_pack_repository.save_proof_pack(
+        proof_pack=_proof_pack().model_copy(
+            update={
+                "proof_pack_id": "dpp_explicit_older",
+                "portfolio_id": PORTFOLIO_ID,
+                "created_at": datetime(2026, 5, 31, 9, 0, tzinfo=timezone.utc),
+            }
+        ),
+        idempotency_key=None,
+        retention_expires_at=None,
+    )
+    outcome_repository = _CountingOutcomeReviewRepository()
+    outcome_repository.save_outcome_review(
+        review=_review(outcome_review_id="dor_other_newer").model_copy(
+            update={
+                "portfolio_id": "PB_OTHER_NEWER",
+                "created_at": datetime(2026, 6, 2, 10, 0, tzinfo=timezone.utc),
+                "idempotency_key": "idem_dor_other_newer",
+            }
+        ),
+        retention_expires_at=None,
+    )
+    outcome_repository.save_outcome_review(
+        review=_review(outcome_review_id="dor_other_second").model_copy(
+            update={
+                "portfolio_id": "PB_OTHER_SECOND",
+                "created_at": datetime(2026, 6, 1, 10, 0, tzinfo=timezone.utc),
+                "idempotency_key": "idem_dor_other_second",
+            }
+        ),
+        retention_expires_at=None,
+    )
+    outcome_repository.save_outcome_review(
+        review=_review(outcome_review_id="dor_explicit_older").model_copy(
+            update={
+                "portfolio_id": PORTFOLIO_ID,
+                "created_at": datetime(2026, 5, 31, 10, 0, tzinfo=timezone.utc),
+                "idempotency_key": "idem_dor_explicit_older",
+            }
+        ),
+        retention_expires_at=None,
+    )
+
+    page = search_portfolio_memory_from_sources(
+        repositories=build_portfolio_memory_source_repositories(
+            proof_pack_repository=proof_pack_repository,
+            wave_repository=InMemoryDpmWaveRepository(),
+            outcome_review_repository=outcome_repository,
+        ),
+        portfolio_ids=[PORTFOLIO_ID],
+        source_scan_limit=2,
+        generated_at=datetime(2026, 5, 31, 11, 0, tzinfo=timezone.utc),
+    )
+
+    explicit_item = next(item for item in page.items if item.portfolio_id == PORTFOLIO_ID)
+    assert explicit_item.event_type_counts["PROOF_PACK_CREATED"] == 1
+    assert explicit_item.event_type_counts["OUTCOME_REVIEW_CREATED"] == 1
+    assert proof_pack_repository.list_calls == 2
+    assert outcome_repository.list_calls == 2
+    assert outcome_repository.list_event_calls == 3
+
+
 @pytest.mark.parametrize("limit", [0, 1001])
 def test_build_portfolio_memory_from_sources_rejects_unsafe_event_limits(limit: int) -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
