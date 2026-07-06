@@ -10,6 +10,7 @@ from src.core.dpm_source_context import (
     DpmCoreMandateBindingResponse,
     DpmCoreModelPortfolioTargetResponse,
     DpmCorePolicyContext,
+    DpmCoreSourceReadinessResponse,
     DpmStatefulInput,
 )
 from src.infrastructure.core_sourcing import (
@@ -23,6 +24,7 @@ from src.infrastructure.core_sourcing.client import (
     _execution_context_exposure_currencies,
     _execution_context_lineage,
     _execution_context_policy,
+    _execution_context_supportability_from_source_readiness,
     _portfolio_snapshot_from_core_snapshot,
     _ready_execution_context_supportability,
     _requested_execution_instrument_ids,
@@ -1019,6 +1021,92 @@ def _stateful_input() -> DpmStatefulInput:
     )
 
 
+def _source_readiness_payload(
+    *,
+    state: str = "READY",
+    family_state: str = "READY",
+) -> dict:
+    families = [
+        {
+            "family": "mandate",
+            "product_name": "DiscretionaryMandateBinding",
+            "state": "READY",
+            "reason": "MANDATE_BINDING_READY",
+            "missing_items": [],
+            "stale_items": [],
+            "evidence_count": 1,
+        },
+        {
+            "family": "model_targets",
+            "product_name": "DpmModelPortfolioTarget",
+            "state": "READY",
+            "reason": "MODEL_TARGETS_READY",
+            "missing_items": [],
+            "stale_items": [],
+            "evidence_count": 2,
+        },
+        {
+            "family": "eligibility",
+            "product_name": "InstrumentEligibilityProfile",
+            "state": family_state,
+            "reason": "INSTRUMENT_ELIGIBILITY_READY"
+            if family_state == "READY"
+            else "INSTRUMENT_ELIGIBILITY_INCOMPLETE",
+            "missing_items": [] if family_state == "READY" else ["FI_US_TREASURY_10Y"],
+            "stale_items": [],
+            "evidence_count": 2 if family_state == "READY" else 1,
+        },
+        {
+            "family": "tax_lots",
+            "product_name": "PortfolioTaxLotWindow",
+            "state": "READY",
+            "reason": "TAX_LOTS_READY",
+            "missing_items": [],
+            "stale_items": [],
+            "evidence_count": 1,
+        },
+        {
+            "family": "market_data",
+            "product_name": "MarketDataCoverageWindow",
+            "state": "READY",
+            "reason": "MARKET_DATA_READY",
+            "missing_items": [],
+            "stale_items": [],
+            "evidence_count": 3,
+        },
+    ]
+    return {
+        "product_name": "DpmSourceReadiness",
+        "product_version": "v1",
+        "portfolio_id": "PB_SG_GLOBAL_BAL_001",
+        "as_of_date": "2026-03-25",
+        "mandate_id": "MANDATE_PB_SG_GLOBAL_BAL_001",
+        "model_portfolio_id": "MODEL_PB_SG_GLOBAL_BAL_DPM",
+        "evaluated_instrument_ids": ["EQ_US_AAPL", "FI_US_TREASURY_10Y"],
+        "families": families,
+        "supportability": {
+            "state": state,
+            "reason": "DPM_SOURCE_READINESS_READY"
+            if state == "READY"
+            else "DPM_SOURCE_READINESS_INCOMPLETE",
+            "ready_family_count": 5 if state == "READY" else 4,
+            "degraded_family_count": 0,
+            "incomplete_family_count": 0 if state == "READY" else 1,
+            "unavailable_family_count": 0,
+        },
+        "lineage": {
+            "source_system": "lotus-core",
+            "contract_version": "rfc_087_v1",
+            "readiness_scope": "dpm_source_family",
+        },
+        "data_quality_status": "COMPLETE" if state == "READY" else "PARTIAL",
+        "latest_evidence_timestamp": "2026-03-25T09:00:00Z",
+        "source_batch_fingerprint": "sha256:dpm-source-readiness",
+        "snapshot_id": "PB_SG_GLOBAL_BAL_001:2026-03-25:dpm-source-readiness",
+        "correlation_id": "corr-core-001",
+    }
+
+
 def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
     path = request.url.path
     if path.endswith("/mandate-binding"):
@@ -1033,6 +1121,8 @@ def _composed_context_response_for(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=_portfolio_tax_lots_payload())
     if path.endswith("/coverage"):
         return httpx.Response(200, json=_market_data_coverage_payload())
+    if path.endswith("/dpm-source-readiness"):
+        return httpx.Response(200, json=_source_readiness_payload())
     if path.endswith("/transaction-cost-curve"):
         return httpx.Response(200, json=_transaction_cost_curve_payload())
     if path.endswith("/cashflow-projection"):
@@ -1114,6 +1204,14 @@ def test_core_execution_context_helpers_build_source_ids_policy_and_supportabili
     assert supportability.reason == "DPM_CORE_CONTEXT_READY"
     assert supportability.missing_source_families == []
     assert supportability.degraded_source_families == []
+    readiness_supportability = _execution_context_supportability_from_source_readiness(
+        DpmCoreSourceReadinessResponse.model_validate(
+            _source_readiness_payload(state="INCOMPLETE", family_state="INCOMPLETE")
+        )
+    )
+    assert readiness_supportability.state == "INCOMPLETE"
+    assert readiness_supportability.reason == "DPM_SOURCE_READINESS_INCOMPLETE"
+    assert readiness_supportability.missing_source_families == ["eligibility"]
 
 
 def test_core_resolver_posts_selector_payload_and_correlation_header():
@@ -1148,6 +1246,7 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
         "https://core.example.test/integration/instruments/eligibility-bulk",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/tax-lots",
         "https://core.example.test/integration/market-data/coverage",
+        "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/dpm-source-readiness",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/transaction-cost-curve",
         "https://core.example.test/portfolios/PB_SG_GLOBAL_BAL_001/cashflow-projection?as_of_date=2026-03-25&horizon_days=90&include_projected=true",
         "https://core.example.test/integration/portfolios/PB_SG_GLOBAL_BAL_001/client-income-needs-schedule",
@@ -1166,29 +1265,32 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert b'"sections":["positions_baseline","portfolio_totals"]' in seen[2][2]
     assert b'"security_ids":["EQ_US_AAPL"]' in seen[4][2]
     assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[5][2]
-    assert b'"window":{"start_date":"2025-02-18","end_date":"2026-03-25"}' in seen[6][2]
-    assert b'"transaction_types":["BUY","SELL"]' in seen[6][2]
-    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[8][2]
-    assert b'"include_inactive_schedules":false' in seen[8][2]
-    assert b'"include_inactive_requirements":false' in seen[9][2]
-    assert b'"horizon_days":365' in seen[10][2]
-    assert b'"include_inactive_withdrawals":false' in seen[10][2]
-    assert b'"reporting_currency":"SGD"' in seen[11][2]
-    assert b'"exposure_currencies":["USD"]' in seen[11][2]
+    assert b'"model_portfolio_id":"model_balanced_sgd"' in seen[6][2]
+    assert b'"instrument_ids":["EQ_US_AAPL","FI_US_TREASURY_10Y"]' in seen[6][2]
+    assert b'"currency_pairs":[{"from_currency":"USD","to_currency":"SGD"}]' in seen[6][2]
+    assert b'"window":{"start_date":"2025-02-18","end_date":"2026-03-25"}' in seen[7][2]
+    assert b'"transaction_types":["BUY","SELL"]' in seen[7][2]
+    assert b'"mandate_id":"mandate_balanced_discretionary"' in seen[9][2]
+    assert b'"include_inactive_schedules":false' in seen[9][2]
+    assert b'"include_inactive_requirements":false' in seen[10][2]
+    assert b'"horizon_days":365' in seen[11][2]
+    assert b'"include_inactive_withdrawals":false' in seen[11][2]
     assert b'"reporting_currency":"SGD"' in seen[12][2]
     assert b'"exposure_currencies":["USD"]' in seen[12][2]
     assert b'"reporting_currency":"SGD"' in seen[13][2]
     assert b'"exposure_currencies":["USD"]' in seen[13][2]
     assert b'"reporting_currency":"SGD"' in seen[14][2]
     assert b'"exposure_currencies":["USD"]' in seen[14][2]
-    assert b'"instrument_types":["FX_FORWARD","FX_SWAP"]' in seen[14][2]
-    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen[15][2]
     assert b'"reporting_currency":"SGD"' in seen[15][2]
     assert b'"exposure_currencies":["USD"]' in seen[15][2]
-    assert b'"execution_intent_id":null' in seen[16][2]
-    assert b'"order_reference_ids":[]' in seen[16][2]
-    assert b'"include_inactive_restrictions":false' in seen[17][2]
-    assert b'"include_inactive_preferences":false' in seen[18][2]
+    assert b'"instrument_types":["FX_FORWARD","FX_SWAP"]' in seen[15][2]
+    assert b'"portfolio_id":"PB_SG_GLOBAL_BAL_001"' in seen[16][2]
+    assert b'"reporting_currency":"SGD"' in seen[16][2]
+    assert b'"exposure_currencies":["USD"]' in seen[16][2]
+    assert b'"execution_intent_id":null' in seen[17][2]
+    assert b'"order_reference_ids":[]' in seen[17][2]
+    assert b'"include_inactive_restrictions":false' in seen[18][2]
+    assert b'"include_inactive_preferences":false' in seen[19][2]
     assert context.source_lineage.portfolio_snapshot_id == "core-pf-snap-001"
     assert context.source_lineage.model_portfolio_id == "MODEL_PB_SG_GLOBAL_BAL_DPM"
     assert context.portfolio_snapshot.cash_balances[0].currency == "SGD"
@@ -1249,6 +1351,38 @@ def test_core_resolver_posts_selector_payload_and_correlation_header():
     assert context.client_restriction_profile.supportability.state == "READY"
     assert context.sustainability_preference_profile is not None
     assert context.sustainability_preference_profile.supportability.state == "READY"
+    assert context.source_readiness is not None
+    assert context.source_readiness.supportability.state == "READY"
+    assert context.source_readiness.lineage["source_system"] == "lotus-core"
+
+
+def test_core_resolver_preserves_incomplete_source_readiness_without_promoting_context():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/dpm-source-readiness"):
+            return httpx.Response(
+                200,
+                json=_source_readiness_payload(
+                    state="INCOMPLETE",
+                    family_state="INCOMPLETE",
+                ),
+            )
+        return _composed_context_response_for(request)
+
+    client = DpmCoreResolverClient(
+        config=DpmCoreResolverConfig(base_url="https://core.example.test"),
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    context = client.resolve_execution_context(
+        stateful_input=_stateful_input(),
+        correlation_id="corr-core-incomplete-readiness",
+    )
+
+    assert context.supportability.state == "INCOMPLETE"
+    assert context.supportability.reason == "DPM_SOURCE_READINESS_INCOMPLETE"
+    assert context.supportability.missing_source_families == ["eligibility"]
+    assert context.source_readiness is not None
+    assert context.source_readiness.families[2].missing_items == ["FI_US_TREASURY_10Y"]
 
 
 def test_core_resolver_routes_cashflow_projection_to_query_base_url():

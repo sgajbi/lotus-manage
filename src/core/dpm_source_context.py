@@ -156,6 +156,70 @@ class DpmCoreSupportability(BaseModel):
     )
 
 
+class DpmCoreSourceReadinessFamily(BaseModel):
+    family: str = Field(description="Core source family represented by this readiness row.")
+    product_name: str = Field(description="Core source-data product used for this family.")
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Source-family readiness state."
+    )
+    reason: str = Field(description="Source-owned bounded reason code.")
+    missing_items: list[str] = Field(
+        default_factory=list,
+        description="Bounded missing source identifiers or source-family names.",
+    )
+    stale_items: list[str] = Field(
+        default_factory=list,
+        description="Bounded stale source identifiers or FX pairs.",
+    )
+    evidence_count: int = Field(
+        default=0,
+        ge=0,
+        description="Source-family evidence count reported by lotus-core.",
+    )
+
+
+class DpmCoreSourceReadinessSupportability(BaseModel):
+    state: Literal["READY", "DEGRADED", "INCOMPLETE", "UNAVAILABLE"] = Field(
+        description="Overall Core DPM source-readiness state."
+    )
+    reason: str = Field(description="Core source-readiness reason code.")
+    ready_family_count: int = Field(ge=0)
+    degraded_family_count: int = Field(ge=0)
+    incomplete_family_count: int = Field(ge=0)
+    unavailable_family_count: int = Field(ge=0)
+
+
+class DpmCoreSourceReadinessResponse(BaseModel):
+    product_name: Literal["DpmSourceReadiness"] = Field(description="Core source product name.")
+    product_version: Literal["v1"] = Field(description="Core source product version.")
+    portfolio_id: str = Field(description="Portfolio whose DPM source readiness was evaluated.")
+    as_of_date: date = Field(description="Readiness as-of date.")
+    mandate_id: str | None = Field(default=None, description="Resolved mandate identifier.")
+    model_portfolio_id: str | None = Field(
+        default=None,
+        description="Resolved model portfolio identifier.",
+    )
+    evaluated_instrument_ids: list[str] = Field(
+        default_factory=list,
+        description="Instrument universe evaluated by Core source readiness.",
+    )
+    families: list[DpmCoreSourceReadinessFamily] = Field(
+        description="Source-family readiness rows from Core."
+    )
+    supportability: DpmCoreSourceReadinessSupportability = Field(
+        description="Overall source-readiness posture from Core."
+    )
+    lineage: dict[str, str] = Field(
+        default_factory=dict,
+        description="Core readiness lineage metadata.",
+    )
+    data_quality_status: str | None = Field(default=None)
+    latest_evidence_timestamp: str | None = Field(default=None)
+    source_batch_fingerprint: str | None = Field(default=None)
+    snapshot_id: str | None = Field(default=None)
+    correlation_id: str | None = Field(default=None)
+
+
 class DpmCoreExecutionContext(BaseModel):
     portfolio_snapshot: PortfolioSnapshot = Field(
         description="Core-governed portfolio holdings and cash snapshot."
@@ -174,6 +238,13 @@ class DpmCoreExecutionContext(BaseModel):
     source_lineage: DpmCoreSourceLineage = Field(description="Core source-lineage identifiers.")
     supportability: DpmCoreSupportability = Field(
         description="Completeness and freshness posture for the context."
+    )
+    source_readiness: Optional[DpmCoreSourceReadinessResponse] = Field(
+        default=None,
+        description=(
+            "Core-owned DpmSourceReadiness:v1 envelope used to gate stateful source promotion "
+            "and preserve source-family diagnostics."
+        ),
     )
     transaction_cost_curve: Optional[DpmCoreTransactionCostCurveResponse] = Field(
         default=None,

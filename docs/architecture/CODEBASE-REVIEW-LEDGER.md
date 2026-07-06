@@ -30399,3 +30399,37 @@ and improves internal transaction-cost source posture maintainability only.
   changed because repo-native command truth changed. No wiki source change is needed. No platform
   skill update is needed because the CI-enforcement skill already contains this Make-target
   workflow rule.
+
+## BACKEND-REVIEW-20260706-0563: Core DPM source-readiness gate
+
+- Date: 2026-07-06
+- GitHub issue: #563
+- Scope: stateful core-sourcing DTOs, resolver config, composed source-product adapter, focused
+  core-sourcing tests, README, repository context, and quality evidence.
+- Bank-buyable control area: source authority, stateful DPM supportability, lineage, and fail-closed
+  execution promotion.
+- Finding: `lotus-manage` already consumed the composed `lotus-core` DPM source products for model
+  targets, mandate binding, instrument eligibility, tax lots, and market-data coverage, but the
+  composed resolver still synthesized local `DPM_CORE_CONTEXT_READY` supportability instead of
+  consuming Core's `DpmSourceReadiness:v1` control-plane source product as the source-family
+  promotion gate.
+- Action: added typed Manage consumer models for `DpmSourceReadiness:v1`, a resolver config path
+  for `/integration/portfolios/{portfolio_id}/dpm-source-readiness`, and a resolver call after
+  market-data coverage and before optional enrichment products. The resolved execution context now
+  preserves the full Core readiness envelope and maps Core readiness state, reason, missing-family,
+  and degraded-family posture into `DpmCoreSupportability`.
+- Status: fixed locally.
+- Evidence: focused core-sourcing tests prove the readiness request carries mandate, model,
+  instrument, currency, and correlation selectors; ready Core readiness produces ready local
+  supportability; incomplete Core readiness remains incomplete with the missing source family and
+  exact missing item preserved.
+- Same-pattern scan: consumer declaration, README, and repository context already listed
+  `DpmSourceReadiness:v1`; the implementation now matches that documentation instead of leaving a
+  declared-but-not-consumed source product. Optional source products remain optional enrichment
+  evidence and do not replace the readiness gate.
+- Design decision: this keeps Core as source-data authority and leaves Manage as a consumer. Manage
+  does not recompute source-family readiness, mandate approval, suitability, valuation, FX
+  attribution, liquidity, execution, OMS, fill, or settlement truth.
+- Docs/wiki/context/skill decision: README, repository context, and this ledger changed because
+  current implementation truth changed. No wiki source change is needed; the existing backend
+  delivery and CI skills already route this class of repo-local source-authority fix.

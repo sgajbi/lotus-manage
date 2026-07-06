@@ -61,7 +61,10 @@ Current repository posture:
     `MarketDataCoverageWindow:v1` through `/integration/market-data/coverage`, and
     `DpmSourceReadiness:v1` through `/integration/portfolios/{portfolio_id}/dpm-source-readiness`,
     and `TransactionCostCurve:v1` through
-    `/integration/portfolios/{portfolio_id}/transaction-cost-curve`.
+    `/integration/portfolios/{portfolio_id}/transaction-cost-curve`. Manage preserves the full
+    `DpmSourceReadiness:v1` family-row envelope on the resolved execution context and maps its
+    source-owned state, reason, missing-family, and degraded-family posture into local
+    `DpmCoreSupportability` before stateful execution promotion.
     The repo-native domain-data-product consumer declaration now also records the broader current
     source-consumer surface for mandate health, construction, proof-pack, wave, outcome-review,
     PM-quality, and portfolio-memory paths, including projected cashflow, liquidity/income

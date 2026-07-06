@@ -24,6 +24,7 @@ from src.core.dpm_source_context import (
     DpmCorePortfolioCashflowProjectionResponse,
     DpmCorePortfolioUniverseCandidateResponse,
     DpmCorePortfolioManagerBookMembershipResponse,
+    DpmCoreSourceReadinessResponse,
     DpmCorePortfolioTaxLotWindowResponse,
     DpmCoreSustainabilityPreferenceProfileResponse,
     DpmCoreTransactionCostCurveResponse,
@@ -80,6 +81,9 @@ _execution_context_policy = _execution_context_assembly.execution_context_policy
 _execution_context_lineage = _execution_context_assembly.execution_context_lineage
 _ready_execution_context_supportability = (
     _execution_context_assembly.ready_execution_context_supportability
+)
+_execution_context_supportability_from_source_readiness = (
+    _execution_context_assembly.execution_context_supportability_from_source_readiness
 )
 
 
@@ -229,6 +233,17 @@ class DpmCoreResolverClient:
             tenant_id=stateful_input.tenant_id,
             correlation_id=correlation_id,
         )
+        source_readiness = self.resolve_dpm_source_readiness(
+            portfolio_id=stateful_input.portfolio_id,
+            as_of_date=stateful_input.as_of,
+            tenant_id=stateful_input.tenant_id,
+            mandate_id=stateful_input.mandate_id,
+            model_portfolio_id=model_portfolio_id,
+            instrument_ids=requested_instrument_ids,
+            currency_pairs=currency_pairs,
+            valuation_currency=portfolio_snapshot.base_currency,
+            correlation_id=correlation_id,
+        )
         transaction_cost_curve = self._try_resolve_transaction_cost_curve(
             portfolio_id=stateful_input.portfolio_id,
             as_of_date=stateful_input.as_of,
@@ -355,7 +370,10 @@ class DpmCoreResolverClient:
                 eligibility=eligibility,
                 mandate=mandate,
             ),
-            supportability=_ready_execution_context_supportability(),
+            supportability=_execution_context_supportability_from_source_readiness(
+                source_readiness
+            ),
+            source_readiness=source_readiness,
             transaction_cost_curve=transaction_cost_curve,
             portfolio_cashflow_projection=portfolio_cashflow_projection,
             client_income_needs_schedule=client_income_needs_schedule,
@@ -641,6 +659,43 @@ class DpmCoreResolverClient:
             incomplete_code="DPM_CORE_MARKET_DATA_COVERAGE_INCOMPLETE",
         )
         return DpmCoreMarketDataCoverageWindowResponse.model_validate(response)
+
+    def resolve_dpm_source_readiness(
+        self,
+        *,
+        portfolio_id: str,
+        as_of_date: date,
+        tenant_id: Optional[str] = None,
+        mandate_id: Optional[str] = None,
+        model_portfolio_id: Optional[str] = None,
+        instrument_ids: Optional[list[str]] = None,
+        currency_pairs: Optional[list[tuple[str, str]]] = None,
+        valuation_currency: Optional[str] = None,
+        max_staleness_days: int = 5,
+        correlation_id: Optional[str],
+    ) -> DpmCoreSourceReadinessResponse:
+        url = self._config.resolve_dpm_source_readiness_url(portfolio_id)
+        payload = {
+            "as_of_date": as_of_date.isoformat(),
+            "tenant_id": tenant_id,
+            "mandate_id": mandate_id,
+            "model_portfolio_id": model_portfolio_id,
+            "instrument_ids": instrument_ids or [],
+            "currency_pairs": [
+                {"from_currency": from_currency, "to_currency": to_currency}
+                for from_currency, to_currency in (currency_pairs or [])
+            ],
+            "valuation_currency": valuation_currency,
+            "max_staleness_days": max_staleness_days,
+        }
+        response = self._post_source_product(
+            url=url,
+            payload=payload,
+            correlation_id=correlation_id,
+            unavailable_code="DPM_CORE_SOURCE_READINESS_UNAVAILABLE",
+            incomplete_code="DPM_CORE_SOURCE_READINESS_INCOMPLETE",
+        )
+        return DpmCoreSourceReadinessResponse.model_validate(response)
 
     def resolve_transaction_cost_curve(
         self,
