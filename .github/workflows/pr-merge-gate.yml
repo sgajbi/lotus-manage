@@ -132,10 +132,23 @@ jobs:
         run: python scripts/coverage_gate.py --coverage-dir coverage-data --fail-under ${{ env.COVERAGE_FAIL_UNDER }}
 
   docker-build:
-    name: PR Merge Gate / Validate Docker Build
+    name: PR Merge Gate / Docker Image Evidence
     needs: [coverage-gate]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Build Docker image
-        run: make docker-build
+        with:
+          fetch-depth: 0
+      - name: Build Docker image and write evidence
+        env:
+          GIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          CI_PIPELINE_ID: ${{ github.run_id }}
+        run: make docker-image-evidence
+      - name: Upload Docker image evidence
+        uses: actions/upload-artifact@v7
+        with:
+          name: pr-merge-docker-image-evidence
+          path: output/docker-image-evidence
+          if-no-files-found: error

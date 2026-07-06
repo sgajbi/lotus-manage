@@ -30280,3 +30280,49 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: scripts README changed because generated evidence preservation
   semantics are now explicit. Repository context and platform skills do not need updates; this is
   repo-local cleanup policy.
+
+## BACKEND-REVIEW-20260706-0572: Docker build context and image evidence
+
+- Date: 2026-07-06
+- GitHub issue: #572
+- Scope: `.dockerignore`, Dockerfile labels/runtime metadata, `/version` endpoint, Docker evidence
+  script, Make targets, PR/Main workflow Docker lanes, quality docs, README, source layering
+  guidance, and focused tests.
+- Bank-buyable control area: image build-context hygiene, release evidence, image metadata
+  traceability, and supply-chain review posture.
+- Finding: the repository had a hardened production Dockerfile, but no `.dockerignore` and CI
+  Docker lanes stopped at build-only validation. That allowed generated artifacts, caches, logs,
+  and secret-like local files into the build context and left PR/main review without SBOM, scan,
+  digest, label, signature, or provenance evidence.
+- Action: added a conservative `.dockerignore`; added non-secret Docker build args, OCI labels,
+  and runtime env vars for commit, branch, build timestamp, repo URL, image digest, CI run id, and
+  app version; exposed the same metadata through `/version`; added `make docker-image-evidence`
+  and `scripts/docker_image_evidence.py` to write release manifest, image inspect, SBOM/scan/sign
+  status, and provenance summary evidence; changed PR Merge/Main Releasability Docker lanes to run
+  the evidence target and upload `output/docker-image-evidence`; and recorded the route-to-adapter
+  layering map in `src/README.md` as a refactor guard.
+- Status: fixed locally.
+- Evidence: `python -m pytest tests\unit\test_docker_supply_chain_contract.py
+  tests\unit\test_ci_workflow_gate_enforcement.py tests\integration\test_health.py
+  tests\unit\test_documentation_current_state.py -q` reported 61 passed; focused Ruff check and
+  format-check passed for the Docker evidence script, workflow policy gate, `/version` endpoint,
+  and tests; `python -m mypy scripts\docker_image_evidence.py scripts\workflow_policy_gate.py`
+  passed; `python scripts\workflow_policy_gate.py` passed; `python scripts\openapi_quality_gate.py`
+  passed; `python scripts\api_vocabulary_inventory.py --validate-only` passed after regeneration;
+  `make docker-image-evidence` built `lotus-manage:455f54f0` and wrote
+  `output/docker-image-evidence/release-manifest.json` with image digest
+  `lotus-manage@sha256:efe2e0621041da852e0a86dccfc806f40cf0e7504357601a0a0375664a2f4072`;
+  release-manifest and OCI label build timestamps both resolved to `2026-07-06T00:02:37Z`.
+  Local Syft, Trivy, and Cosign were not installed, so their evidence status files recorded
+  `not_available_report_only`.
+- Same-pattern scan: focused tests now block missing `.dockerignore` exclusions, missing OCI
+  labels, build-secret-like Dockerfile ARG/ENV names, workflow drift back to `make docker-build`,
+  missing evidence upload, and release-manifest digest/label regressions.
+- Design decision: SBOM, vulnerability scan, signature, and provenance tooling is report-only when
+  Syft, Trivy, or Cosign are absent from the runner. Registry push, signature creation, provenance
+  attestation upload, Kubernetes digest deployment, and same-image promotion are not claimed until
+  the platform registry/promotion lane exists for this repo; the local contract now emits the
+  metadata and evidence envelope required by that lane.
+- Docs/wiki/context/skill decision: README, quality gate docs, and source-layout guidance changed
+  because the CI evidence and layering posture changed. Platform skills do not need updates for
+  this repo-local Docker supply-chain enforcement.

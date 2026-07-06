@@ -83,7 +83,8 @@ The following commands are active repository gates:
   - workflow policy integrity
   - checked-in quality report freshness
   - shared coverage gate script for downloaded unit/integration/e2e coverage artifacts
-  - Docker build validation
+  - Docker image evidence (`make docker-image-evidence`, uploaded from
+    `output/docker-image-evidence`)
 
 ### Main Releasability Gate
 
@@ -103,6 +104,26 @@ The `quality-baseline.yml` workflow runs additional quality snapshots in report-
 - `bandit` + project-scoped `pip-audit`
 - `interrogate`
 - `spectral` via `.spectral.yaml`
+
+## Docker Image Evidence
+
+`make docker-build` remains the fast local image build proof. `make docker-image-evidence` wraps
+that build and writes source-safe evidence under `output/docker-image-evidence`:
+
+- `release-manifest.json` with Git commit SHA, branch, build timestamp, repo URL, CI run id,
+  OCI labels, local image id, and pushed repo digest when available.
+- `image-inspect.json` from Docker inspect for label and runtime metadata review.
+- `sbom-status.json`, `vulnerability-scan-status.json`, and `signature-status.json` describing
+  Syft, Trivy, and Cosign availability/result. These are report-only when the tool is not present
+  in the runner.
+- `provenance-summary.json` tying the image subject to the repo, commit, branch, run id, and
+  build timestamp.
+
+The Dockerfile sets non-secret build args as OCI labels and runtime environment variables. The
+`/version` endpoint exposes the same commit, branch, build timestamp, repo URL, image digest,
+CI run id, and app version. Registry push, signature creation, provenance attestation upload, and
+cross-environment digest promotion remain platform release-pipeline responsibilities until a
+managed registry promotion lane is configured for this repo.
 
 ## Enforcement Posture
 
