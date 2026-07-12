@@ -103,6 +103,41 @@ class DpmPmOperatingQualityApplicationService:
         ).save_score_run(score_run=score_run)
         return score_run
 
+    def list_score_runs(
+        self,
+        *,
+        pm_id: str | None = None,
+        book_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmOperatingQualityScoreRun]:
+        return _required_repository(
+            self.score_run_repository,
+            "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+        ).list_score_runs(
+            pm_id=pm_id,
+            book_id=book_id,
+            policy_id=policy_id,
+            as_of_date=as_of_date,
+            state=state,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_score_run(self, *, score_run_id: str) -> DpmPmOperatingQualityScoreRun:
+        score_run = _required_repository(
+            self.score_run_repository,
+            "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+        ).get_score_run(score_run_id=score_run_id)
+        if score_run is None:
+            raise DpmPmOperatingQualityServiceError(
+                f"PM_QUALITY_SCORE_RUN_NOT_FOUND:{score_run_id}"
+            )
+        return score_run
+
     def preview_fairness_analysis(
         self,
         command: DpmPmQualityFairnessAnalysisCommand,
@@ -124,6 +159,43 @@ class DpmPmOperatingQualityApplicationService:
             self.fairness_repository,
             "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
         ).save_fairness_analysis(analysis=fairness_analysis)
+        return fairness_analysis
+
+    def list_fairness_analyses(
+        self,
+        *,
+        policy_id: str | None = None,
+        policy_version: str | None = None,
+        as_of_date: str | None = None,
+        state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityFairnessAnalysis]:
+        return _required_repository(
+            self.fairness_repository,
+            "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
+        ).list_fairness_analyses(
+            policy_id=policy_id,
+            policy_version=policy_version,
+            as_of_date=as_of_date,
+            state=state,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_fairness_analysis(
+        self,
+        *,
+        fairness_analysis_id: str,
+    ) -> DpmPmQualityFairnessAnalysis:
+        fairness_analysis = _required_repository(
+            self.fairness_repository,
+            "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
+        ).get_fairness_analysis(fairness_analysis_id=fairness_analysis_id)
+        if fairness_analysis is None:
+            raise DpmPmOperatingQualityServiceError(
+                f"PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:{fairness_analysis_id}"
+            )
         return fairness_analysis
 
     def preview_review_action(
@@ -153,6 +225,41 @@ class DpmPmOperatingQualityApplicationService:
         ).save_review_action(action=review_action)
         return review_action
 
+    def list_review_actions(
+        self,
+        *,
+        target_type: str | None = None,
+        target_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        action_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualityReviewAction]:
+        return _required_repository(
+            self.review_action_repository,
+            "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
+        ).list_review_actions(
+            target_type=target_type,
+            target_id=target_id,
+            policy_id=policy_id,
+            as_of_date=as_of_date,
+            action_state=action_state,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_review_action(self, *, review_action_id: str) -> DpmPmQualityReviewAction:
+        review_action = _required_repository(
+            self.review_action_repository,
+            "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
+        ).get_review_action(review_action_id=review_action_id)
+        if review_action is None:
+            raise DpmPmOperatingQualityServiceError(
+                f"PM_QUALITY_REVIEW_ACTION_NOT_FOUND:{review_action_id}"
+            )
+        return review_action
+
     def preview_summary_invocation(
         self,
         command: DpmPmQualitySummaryInvocationCommand,
@@ -178,6 +285,45 @@ class DpmPmOperatingQualityApplicationService:
             self.summary_invocation_repository,
             "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
         ).save_summary_invocation(invocation=summary_invocation)
+        return summary_invocation
+
+    def list_summary_invocations(
+        self,
+        *,
+        score_run_id: str | None = None,
+        review_action_id: str | None = None,
+        policy_id: str | None = None,
+        as_of_date: str | None = None,
+        invocation_state: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmQualitySummaryInvocation]:
+        return _required_repository(
+            self.summary_invocation_repository,
+            "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
+        ).list_summary_invocations(
+            score_run_id=score_run_id,
+            review_action_id=review_action_id,
+            policy_id=policy_id,
+            as_of_date=as_of_date,
+            invocation_state=invocation_state,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_summary_invocation(
+        self,
+        *,
+        summary_invocation_id: str,
+    ) -> DpmPmQualitySummaryInvocation:
+        summary_invocation = _required_repository(
+            self.summary_invocation_repository,
+            "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
+        ).get_summary_invocation(summary_invocation_id=summary_invocation_id)
+        if summary_invocation is None:
+            raise DpmPmOperatingQualityServiceError(
+                f"PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:{summary_invocation_id}"
+            )
         return summary_invocation
 
 

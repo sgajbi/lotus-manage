@@ -80,6 +80,7 @@ def _pm_quality_not_found_detail(code: str) -> str | None:
         "PM_QUALITY_SCORE_RUN_NOT_FOUND:",
         "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:",
         "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:",
+        "PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:",
     )
     for prefix in not_found_prefixes:
         if code.startswith(prefix):

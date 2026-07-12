@@ -4,13 +4,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_pm_quality_score_run_repository
-from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
+from src.api.dependencies import get_pm_quality_score_run_application_service
+from src.api.routers.pm_operating_quality_http import pm_quality_service_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewResponse,
     DpmPmOperatingQualityScoreRunListResponse,
 )
-from src.core.pm_quality import DpmPmQualityScoreRunRepository
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 
 
 def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
@@ -37,9 +40,11 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
         state: Annotated[str | None, Query(description="Filter by score-run state.")] = None,
         limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
         offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
-        repository: DpmPmQualityScoreRunRepository = Depends(get_pm_quality_score_run_repository),
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_score_run_application_service
+        ),
     ) -> DpmPmOperatingQualityScoreRunListResponse:
-        score_runs = repository.list_score_runs(
+        score_runs = application_service.list_score_runs(
             pm_id=pm_id,
             book_id=book_id,
             policy_id=policy_id,
@@ -69,12 +74,12 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
     )
     def get_pm_operating_quality_score_run_endpoint(
         score_run_id: str,
-        repository: DpmPmQualityScoreRunRepository = Depends(get_pm_quality_score_run_repository),
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_score_run_application_service
+        ),
     ) -> DpmPmOperatingQualityScorePreviewResponse:
-        score_run = repository.get_score_run(score_run_id=score_run_id)
-        if score_run is None:
-            raise pm_quality_not_found_http_exception(
-                code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
-                identifier=score_run_id,
-            )
+        try:
+            score_run = application_service.get_score_run(score_run_id=score_run_id)
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)
