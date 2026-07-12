@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 
 from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
     DpmPmQualityBookScopeCommand,
     DpmPmQualityFairnessAnalysisCommand,
@@ -40,6 +41,7 @@ from src.core.pm_quality import (
     build_pm_quality_review_action,
 )
 from src.infrastructure.pm_quality import (
+    InMemoryDpmPmQualitySummaryInvocationRepository,
     InMemoryDpmPmQualityReviewActionRepository,
     InMemoryDpmPmQualityFairnessAnalysisRepository,
     InMemoryDpmPmQualityScoreRunRepository,
@@ -144,6 +146,26 @@ def _score_run(*, pm_id: str, score: Decimal, correlation_id: str) -> DpmPmOpera
     )
 
 
+def _application_service(
+    *,
+    policy_repository: InMemoryDpmPmQualityPolicyRepository | None = None,
+    score_run_repository: InMemoryDpmPmQualityScoreRunRepository | None = None,
+    fairness_repository: InMemoryDpmPmQualityFairnessAnalysisRepository | None = None,
+    review_action_repository: InMemoryDpmPmQualityReviewActionRepository | None = None,
+    summary_invocation_repository: InMemoryDpmPmQualitySummaryInvocationRepository | None = None,
+) -> DpmPmOperatingQualityApplicationService:
+    return DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
+        policy_repository=policy_repository or InMemoryDpmPmQualityPolicyRepository(),
+        score_run_repository=score_run_repository or InMemoryDpmPmQualityScoreRunRepository(),
+        fairness_repository=fairness_repository or InMemoryDpmPmQualityFairnessAnalysisRepository(),
+        review_action_repository=review_action_repository
+        or InMemoryDpmPmQualityReviewActionRepository(),
+        summary_invocation_repository=summary_invocation_repository
+        or InMemoryDpmPmQualitySummaryInvocationRepository(),
+    )
+
+
 def test_pm_quality_service_reuses_policy_when_injected() -> None:
     policy = _enabled_policy()
     resolved = resolve_pm_quality_policy_from_command(
@@ -154,6 +176,174 @@ def test_pm_quality_service_reuses_policy_when_injected() -> None:
     )
 
     assert resolved == policy
+
+
+def test_pm_quality_application_service_creates_score_run_through_repository_port() -> None:
+    policy_repository = InMemoryDpmPmQualityPolicyRepository()
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    policy_repository.save_policy(policy=_enabled_policy())
+    service = _application_service(
+        policy_repository=policy_repository,
+        score_run_repository=score_run_repository,
+    )
+
+    score_run = service.create_score_run(
+        DpmPmQualityScoreRunCommand(
+            pm_id="pm_001",
+            book_id="sg_dpm_book",
+            as_of_date="2026-05-12",
+            policy=None,
+            policy_id="pmq_sg_dpm",
+            policy_version="2026.05",
+            evidence_items=[
+                DpmPmQualityEvidenceItem(
+                    indicator="SOURCE_QUALITY",
+                    evidence_state="READY",
+                    score=Decimal("92"),
+                    source_system="lotus-core",
+                    source_type="PortfolioManagerBookMembership",
+                    source_id="pm-book-001",
+                )
+            ],
+            outcome_review_ids=[],
+            actor_id="ops",
+            correlation_id="corr-create-score-run",
+        )
+    )
+
+    persisted = score_run_repository.get_score_run(score_run_id=score_run.score_run_id)
+    assert persisted is not None
+    assert persisted.content_hash == score_run.content_hash
+    assert persisted.correlation_id == "corr-create-score-run"
+
+
+def test_pm_quality_application_service_creates_fairness_analysis_through_repository_port() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    balanced = _score_run(pm_id="pm_balanced", score=Decimal("91"), correlation_id="corr-1")
+    growth = _score_run(pm_id="pm_growth", score=Decimal("59"), correlation_id="corr-2")
+    score_run_repository.save_score_run(score_run=balanced)
+    score_run_repository.save_score_run(score_run=growth)
+    service = _application_service(
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+    )
+
+    analysis = service.create_fairness_analysis(
+        DpmPmQualityFairnessAnalysisCommand(
+            policy_id="pmq_sg_dpm",
+            policy_version="2026.05",
+            as_of_date="2026-05-12",
+            segments=[
+                DpmPmQualityFairnessSegmentCommand(
+                    segment_id="balanced",
+                    segment_type="MANDATE_TYPE",
+                    display_name="Balanced mandates",
+                    score_run_ids=[balanced.score_run_id],
+                ),
+                DpmPmQualityFairnessSegmentCommand(
+                    segment_id="growth",
+                    segment_type="MANDATE_TYPE",
+                    display_name="Growth mandates",
+                    score_run_ids=[growth.score_run_id],
+                ),
+            ],
+            minimum_segment_score_run_count=1,
+            maximum_average_score_spread=Decimal("15"),
+            actor_id="ops",
+            correlation_id="corr-create-fairness",
+        )
+    )
+
+    persisted = fairness_repository.get_fairness_analysis(
+        fairness_analysis_id=analysis.fairness_analysis_id
+    )
+    assert persisted is not None
+    assert persisted.content_hash == analysis.content_hash
+    assert persisted.correlation_id == "corr-create-fairness"
+
+
+def test_pm_quality_application_service_creates_review_action_through_repository_port() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    review_action_repository = InMemoryDpmPmQualityReviewActionRepository()
+    score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-target")
+    score_run_repository.save_score_run(score_run=score_run)
+    service = _application_service(
+        score_run_repository=score_run_repository,
+        review_action_repository=review_action_repository,
+    )
+
+    review_action = service.create_review_action(
+        DpmPmQualityReviewActionCommand(
+            target_type="SCORE_RUN",
+            target_id=score_run.score_run_id,
+            action_type="ACKNOWLEDGE",
+            review_action_ref="PMQ-REVIEW-2026-05-101",
+            review_reason="Reviewed through application service.",
+            actor_id="ops",
+            remediation_due_date=None,
+            source_refs=[],
+            correlation_id="corr-create-review-action",
+        )
+    )
+
+    persisted = review_action_repository.get_review_action(
+        review_action_id=review_action.review_action_id
+    )
+    assert persisted is not None
+    assert persisted.content_hash == review_action.content_hash
+    assert persisted.correlation_id == "corr-create-review-action"
+
+
+def test_pm_quality_application_service_creates_summary_invocation_through_repository_port() -> (
+    None
+):
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    review_action_repository = InMemoryDpmPmQualityReviewActionRepository()
+    summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
+    score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-summary")
+    score_run_repository.save_score_run(score_run=score_run)
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-102",
+        review_reason="Reviewed for summary invocation.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-summary-review",
+    )
+    review_action_repository.save_review_action(action=review_action)
+    service = _application_service(
+        score_run_repository=score_run_repository,
+        review_action_repository=review_action_repository,
+        summary_invocation_repository=summary_repository,
+    )
+
+    invocation = service.create_summary_invocation(
+        DpmPmQualitySummaryInvocationCommand(
+            score_run_id=score_run.score_run_id,
+            review_action_id=review_action.review_action_id,
+            invocation_state="COMPLETED",
+            summary_ref="PMQ-SUMMARY-2026-05-101",
+            workflow_pack_name="pm_quality_summary.pack",
+            workflow_pack_version="v1",
+            requested_by="ops",
+            workflow_run_id="pmq-summary-run-101",
+            summary_artifact_ref="pmq-summary-artifact-101",
+            summary_content_hash="sha256:pmq-summary-101",
+            source_refs=[],
+            correlation_id="corr-create-summary",
+        )
+    )
+
+    persisted = summary_repository.get_summary_invocation(
+        summary_invocation_id=invocation.summary_invocation_id
+    )
+    assert persisted is not None
+    assert persisted.content_hash == invocation.content_hash
+    assert persisted.correlation_id == "corr-create-summary"
 
 
 def test_pm_quality_service_builds_fairness_analysis_from_persisted_score_runs() -> None:

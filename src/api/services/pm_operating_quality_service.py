@@ -33,6 +33,7 @@ from src.core.pm_quality import (
     build_pm_operating_quality_fairness_analysis,
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityReviewActionRepository,
+    DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
 
@@ -57,6 +58,91 @@ class DpmPmOperatingQualityServiceError(ValueError):
     def __init__(self, code: str) -> None:
         super().__init__(code)
         self.code = code
+
+
+@dataclass(frozen=True)
+class DpmPmOperatingQualityApplicationService:
+    """PM operating-quality use cases over repository ports."""
+
+    outcome_review_repository: DpmOutcomeReviewRepository
+    policy_repository: DpmPmQualityPolicyRepository
+    score_run_repository: DpmPmQualityScoreRunRepository
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository
+    review_action_repository: DpmPmQualityReviewActionRepository
+    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository
+    core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client
+
+    def preview_score_run(
+        self,
+        command: DpmPmQualityScoreRunCommand,
+    ) -> DpmPmOperatingQualityScoreRun:
+        return build_pm_quality_score_run_from_command(
+            command=command,
+            outcome_review_repository=self.outcome_review_repository,
+            policy_repository=self.policy_repository,
+            core_resolver_factory=self.core_resolver_factory,
+        )
+
+    def create_score_run(
+        self,
+        command: DpmPmQualityScoreRunCommand,
+    ) -> DpmPmOperatingQualityScoreRun:
+        score_run = self.preview_score_run(command)
+        self.score_run_repository.save_score_run(score_run=score_run)
+        return score_run
+
+    def preview_fairness_analysis(
+        self,
+        command: DpmPmQualityFairnessAnalysisCommand,
+    ) -> DpmPmQualityFairnessAnalysis:
+        return build_pm_quality_fairness_analysis_from_command(
+            command=command,
+            score_run_repository=self.score_run_repository,
+        )
+
+    def create_fairness_analysis(
+        self,
+        command: DpmPmQualityFairnessAnalysisCommand,
+    ) -> DpmPmQualityFairnessAnalysis:
+        fairness_analysis = self.preview_fairness_analysis(command)
+        self.fairness_repository.save_fairness_analysis(analysis=fairness_analysis)
+        return fairness_analysis
+
+    def preview_review_action(
+        self,
+        command: DpmPmQualityReviewActionCommand,
+    ) -> DpmPmQualityReviewAction:
+        return build_pm_quality_review_action_from_command(
+            command=command,
+            score_run_repository=self.score_run_repository,
+            fairness_repository=self.fairness_repository,
+        )
+
+    def create_review_action(
+        self,
+        command: DpmPmQualityReviewActionCommand,
+    ) -> DpmPmQualityReviewAction:
+        review_action = self.preview_review_action(command)
+        self.review_action_repository.save_review_action(action=review_action)
+        return review_action
+
+    def preview_summary_invocation(
+        self,
+        command: DpmPmQualitySummaryInvocationCommand,
+    ) -> DpmPmQualitySummaryInvocation:
+        return build_pm_quality_summary_invocation_from_command(
+            command=command,
+            score_run_repository=self.score_run_repository,
+            review_action_repository=self.review_action_repository,
+        )
+
+    def create_summary_invocation(
+        self,
+        command: DpmPmQualitySummaryInvocationCommand,
+    ) -> DpmPmQualitySummaryInvocation:
+        summary_invocation = self.preview_summary_invocation(command)
+        self.summary_invocation_repository.save_summary_invocation(invocation=summary_invocation)
+        return summary_invocation
 
 
 @dataclass(frozen=True)
