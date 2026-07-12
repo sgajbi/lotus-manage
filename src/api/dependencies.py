@@ -257,6 +257,18 @@ def get_pm_quality_score_run_application_service(
     )
 
 
+def get_pm_quality_score_run_preview_application_service(
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return score-run preview use cases without score-run persistence initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=outcome_review_repository,
+        policy_repository=policy_repository,
+    )
+
+
 def get_pm_quality_fairness_application_service(
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
@@ -270,6 +282,18 @@ def get_pm_quality_fairness_application_service(
     return DpmPmOperatingQualityApplicationService(
         score_run_repository=score_run_repository,
         fairness_repository=fairness_repository,
+    )
+
+
+def get_pm_quality_fairness_preview_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return fairness preview use cases without fairness persistence initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
     )
 
 
@@ -293,6 +317,22 @@ def get_pm_quality_review_action_application_service(
     )
 
 
+def get_pm_quality_review_action_preview_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return review-action preview use cases without action persistence initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+    )
+
+
 def get_pm_quality_summary_invocation_application_service(
     score_run_repository: DpmPmQualityScoreRunRepository = Depends(
         get_pm_quality_score_run_repository
@@ -310,6 +350,22 @@ def get_pm_quality_summary_invocation_application_service(
         score_run_repository=score_run_repository,
         review_action_repository=review_action_repository,
         summary_invocation_repository=summary_invocation_repository,
+    )
+
+
+def get_pm_quality_summary_invocation_preview_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return summary preview use cases without summary persistence initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
+        review_action_repository=review_action_repository,
     )
 
 

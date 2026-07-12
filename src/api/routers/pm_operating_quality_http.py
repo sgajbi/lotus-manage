@@ -59,7 +59,7 @@ def pm_quality_service_http_exception(exc: DpmPmOperatingQualityServiceError) ->
                 "message": "PM-book membership returned no portfolios for PM operating quality.",
             },
         )
-    if exc.code.startswith("DPM_CORE_PM_BOOK_MEMBERSHIP_"):
+    if exc.code.startswith(("DPM_CORE_PM_BOOK_MEMBERSHIP_", "DPM_CORE_PM_BOOK_")):
         return HTTPException(
             status_code=status.HTTP_424_FAILED_DEPENDENCY,
             detail={

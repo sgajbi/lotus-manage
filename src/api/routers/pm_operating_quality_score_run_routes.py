@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
-    get_outcome_review_repository,
+    get_pm_quality_score_run_preview_application_service,
     get_pm_quality_score_run_application_service,
-    get_pm_quality_policy_repository,
 )
 from src.api.routers.pm_operating_quality_command_mapping import score_run_command_from_request
 from src.api.routers.pm_operating_quality_models import (
@@ -22,32 +19,15 @@ from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorre
 from src.api.routers.pm_operating_quality_score_run_read_routes import (
     register_pm_quality_score_run_read_routes as register_pm_quality_score_run_read_routes,
 )
-from src.core.outcomes.repository import DpmOutcomeReviewRepository
-from src.core.pm_quality import (
-    DpmPmOperatingQualityScoreRun,
-    DpmPmQualityPolicyRepository,
-    DpmPmQualityScoreRunConflictError,
-)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
 )
-
-
-ScoreRunBuilder = Callable[
-    [
-        DpmPmOperatingQualityScorePreviewRequest,
-        str | None,
-        DpmOutcomeReviewRepository,
-        DpmPmQualityPolicyRepository,
-    ],
-    DpmPmOperatingQualityScoreRun,
-]
+from src.core.pm_quality import DpmPmQualityScoreRunConflictError
 
 
 def register_pm_quality_score_run_command_routes(
     router: APIRouter,
-    build_score_run: ScoreRunBuilder,
 ) -> None:
     @router.post(
         "/score-runs/preview",
@@ -71,15 +51,19 @@ def register_pm_quality_score_run_command_routes(
     def preview_pm_operating_quality_score_run_endpoint(
         request: DpmPmOperatingQualityScorePreviewRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
-        outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-        policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_score_run_preview_application_service
+        ),
     ) -> DpmPmOperatingQualityScorePreviewResponse:
-        score_run = build_score_run(
-            request,
-            x_correlation_id,
-            outcome_repository,
-            policy_repository,
-        )
+        try:
+            score_run = application_service.preview_score_run(
+                score_run_command_from_request(
+                    request=request,
+                    x_correlation_id=x_correlation_id,
+                )
+            )
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)
 
     @router.post(

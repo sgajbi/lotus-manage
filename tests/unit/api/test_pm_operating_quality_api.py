@@ -9,7 +9,9 @@ from src.api.dependencies import get_outcome_review_repository
 from src.api.dependencies import get_pm_quality_fairness_analysis_repository
 from src.api.dependencies import get_pm_quality_policy_repository
 from src.api.dependencies import get_pm_quality_review_action_repository
+from src.api.dependencies import get_pm_quality_review_action_preview_application_service
 from src.api.dependencies import get_pm_quality_score_run_repository
+from src.api.dependencies import get_pm_quality_score_run_preview_application_service
 from src.api.dependencies import get_pm_quality_summary_invocation_repository
 from src.api.main import app
 from src.api.routers import pm_operating_quality as pmq_router
@@ -29,6 +31,9 @@ from src.api.routers.pm_operating_quality_models import (
     _validate_summary_invocation_required_ids,
     _validate_summary_invocation_required_workflow_fields,
     _validate_summary_workflow_pack_name,
+)
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
 )
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
@@ -549,12 +554,19 @@ def test_pm_operating_quality_api_scores_persisted_outcome_review_evidence() -> 
     assert "autonomous_pm_ranking" in score_run["forbidden_uses"]
 
 
-def test_pm_operating_quality_api_materializes_pm_book_scope(monkeypatch) -> None:
+def test_pm_operating_quality_api_materializes_pm_book_scope(
+    _pm_quality_policy_repository_override: InMemoryDpmPmQualityPolicyRepository,
+) -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
     repository.save_outcome_review(review=_review(), retention_expires_at=None)
     resolver = _PmBookResolver(_pm_book_membership_payload())
-    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
-    monkeypatch.setattr(pmq_router, "build_core_resolver_client", lambda: resolver)
+    app.dependency_overrides[get_pm_quality_score_run_preview_application_service] = lambda: (
+        DpmPmOperatingQualityApplicationService(
+            outcome_review_repository=repository,
+            policy_repository=_pm_quality_policy_repository_override,
+            core_resolver_factory=lambda: resolver,
+        )
+    )
     payload = {
         **_request(),
         "pm_book_scope": {
@@ -622,15 +634,20 @@ def test_pm_operating_quality_api_materializes_pm_book_scope(monkeypatch) -> Non
     ],
 )
 def test_pm_operating_quality_api_fails_closed_for_pm_book_scope(
-    monkeypatch,
+    _pm_quality_policy_repository_override: InMemoryDpmPmQualityPolicyRepository,
     resolver,
     expected_status: int,
     expected_code: str,
 ) -> None:
     repository = InMemoryDpmOutcomeReviewRepository()
     repository.save_outcome_review(review=_review(), retention_expires_at=None)
-    app.dependency_overrides[get_outcome_review_repository] = lambda: repository
-    monkeypatch.setattr(pmq_router, "build_core_resolver_client", lambda: resolver)
+    app.dependency_overrides[get_pm_quality_score_run_preview_application_service] = lambda: (
+        DpmPmOperatingQualityApplicationService(
+            outcome_review_repository=repository,
+            policy_repository=_pm_quality_policy_repository_override,
+            core_resolver_factory=lambda: resolver,
+        )
+    )
     payload = {
         **_request(),
         "pm_book_scope": {"booking_center_code": "Singapore", "portfolio_types": ["DPM"]},
@@ -1176,7 +1193,13 @@ def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_
             def _raise_value_error(**_kwargs: object) -> None:
                 raise ValueError("PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH")
 
-            monkeypatch.setattr(pmq_router, "build_pm_quality_review_action", _raise_value_error)
+            app.dependency_overrides[get_pm_quality_review_action_preview_application_service] = (
+                lambda: DpmPmOperatingQualityApplicationService(
+                    score_run_repository=score_repository,
+                    fairness_repository=InMemoryDpmPmQualityFairnessAnalysisRepository(),
+                    review_action_builder=_raise_value_error,
+                )
+            )
             invalid_target = client.post(
                 "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
                 json=request,
