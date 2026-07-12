@@ -2,18 +2,21 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_pm_quality_policy_repository
+from src.api.dependencies import get_pm_quality_policy_application_service
 from src.api.routers.pm_operating_quality_http import (
     pm_quality_conflict_http_exception,
-    pm_quality_not_found_http_exception,
+    pm_quality_service_http_exception,
 )
 from src.api.routers.pm_operating_quality_models import DpmPmOperatingQualityPolicyListResponse
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 from src.core.pm_quality import (
     DpmPmOperatingQualityPolicy,
     DpmPmQualityPolicyConflictError,
-    DpmPmQualityPolicyRepository,
 )
 
 
@@ -40,18 +43,20 @@ def put_pm_operating_quality_policy_endpoint(
     policy_id: str,
     policy_version: str,
     policy: DpmPmOperatingQualityPolicy,
-    repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_policy_application_service
+    ),
 ) -> DpmPmOperatingQualityPolicy:
-    if policy.policy_id != policy_id or policy.policy_version != policy_version:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-            detail="PM_QUALITY_POLICY_PATH_BODY_MISMATCH",
-        )
     try:
-        repository.save_policy(policy=policy)
+        return application_service.save_policy(
+            policy_id=policy_id,
+            policy_version=policy_version,
+            policy=policy,
+        )
     except DpmPmQualityPolicyConflictError as exc:
         raise pm_quality_conflict_http_exception(exc) from exc
-    return policy
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
 
 
 @router.get(
@@ -72,9 +77,11 @@ def list_pm_operating_quality_policies_endpoint(
     as_of_date: Annotated[str | None, Query(description="Filter by policy as-of date.")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
     offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
-    repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_policy_application_service
+    ),
 ) -> DpmPmOperatingQualityPolicyListResponse:
-    policies = repository.list_policies(
+    policies = application_service.list_policies(
         policy_id=policy_id,
         enabled=enabled,
         as_of_date=as_of_date,
@@ -104,13 +111,14 @@ def list_pm_operating_quality_policies_endpoint(
 def get_pm_operating_quality_policy_endpoint(
     policy_id: str,
     policy_version: str,
-    repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_policy_application_service
+    ),
 ) -> DpmPmOperatingQualityPolicy:
-    policy = repository.get_policy(policy_id=policy_id, policy_version=policy_version)
-    if policy is None:
-        raise pm_quality_not_found_http_exception(
-            code="PM_QUALITY_POLICY_NOT_FOUND",
-            identifier=policy_id,
-            secondary_identifier=policy_version,
+    try:
+        return application_service.get_policy(
+            policy_id=policy_id,
+            policy_version=policy_version,
         )
-    return policy
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc

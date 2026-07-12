@@ -178,6 +178,43 @@ def test_pm_quality_service_reuses_policy_when_injected() -> None:
     assert resolved == policy
 
 
+def test_pm_quality_application_service_administers_policies_through_repository_port() -> None:
+    policy_repository = InMemoryDpmPmQualityPolicyRepository()
+    policy = _enabled_policy()
+    service = _application_service(policy_repository=policy_repository)
+
+    saved = service.save_policy(
+        policy_id=policy.policy_id,
+        policy_version=policy.policy_version,
+        policy=policy,
+    )
+    listed = service.list_policies(policy_id=policy.policy_id, enabled=True)
+    fetched = service.get_policy(
+        policy_id=policy.policy_id,
+        policy_version=policy.policy_version,
+    )
+
+    assert saved.policy_id == policy.policy_id
+    assert saved.policy_version == policy.policy_version
+    assert [item.policy_version for item in listed] == [policy.policy_version]
+    assert fetched.policy_id == policy.policy_id
+    assert fetched.policy_version == policy.policy_version
+    with pytest.raises(
+        DpmPmOperatingQualityServiceError,
+        match="PM_QUALITY_POLICY_PATH_BODY_MISMATCH",
+    ):
+        service.save_policy(
+            policy_id=policy.policy_id,
+            policy_version="wrong-version",
+            policy=policy,
+        )
+    with pytest.raises(
+        DpmPmOperatingQualityServiceError,
+        match="PM_QUALITY_POLICY_NOT_FOUND:missing:2026.05",
+    ):
+        service.get_policy(policy_id="missing", policy_version="2026.05")
+
+
 def test_pm_quality_application_service_creates_score_run_through_repository_port() -> None:
     policy_repository = InMemoryDpmPmQualityPolicyRepository()
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
