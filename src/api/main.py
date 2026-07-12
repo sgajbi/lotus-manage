@@ -46,6 +46,10 @@ from src.api.routers.mandates import router as mandates_router
 from src.api.routers.monitoring import router as monitoring_router
 from src.api.routers.portfolio_memory import router as portfolio_memory_router
 from src.api.routers.pm_operating_quality import router as pm_operating_quality_router
+from src.api.routers.pm_operating_quality_http import (
+    PmQualityProblemDetailsException,
+    pm_quality_problem_details_exception_handler,
+)
 from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.routers.outcome_reviews import (
     router as outcome_reviews_router,
@@ -286,6 +290,12 @@ def health_ready() -> HealthStatusResponse:
     if app_persistence_profile_name() == "PRODUCTION":
         validate_cutover_migrations_applied()
     return HealthStatusResponse(status="ready")
+
+
+app.add_exception_handler(
+    PmQualityProblemDetailsException,
+    pm_quality_problem_details_exception_handler,
+)
 
 
 @app.exception_handler(Exception)

@@ -262,6 +262,17 @@ def _error_status(status_code: str) -> int:
     return 500
 
 
+def _error_reason_code(status_code: str) -> str:
+    return {
+        "404": "RESOURCE_NOT_FOUND",
+        "409": "IMMUTABLE_CONFLICT",
+        "422": "SEMANTIC_VALIDATION_FAILED",
+        "424": "DEPENDENCY_NOT_READY",
+        "503": "DEPENDENCY_UNAVAILABLE",
+        "default": "UNEXPECTED_ERROR",
+    }.get(status_code, "REQUEST_FAILED")
+
+
 def _ensure_error_response_content(
     *,
     response: dict[str, Any],
@@ -281,7 +292,9 @@ def _ensure_error_response_content(
                         "type": "string",
                         "example": response.get("description") or "Request failed.",
                     },
-                    "correlation_id": {"type": "string", "example": "corr_1234abcd"},
+                    "reasonCode": {"type": "string", "example": _error_reason_code(status_code)},
+                    "correlationId": {"type": "string", "example": "corr_1234abcd"},
+                    "instance": {"type": "string", "example": "/api/v1/rebalance/example"},
                 },
             }
         },
@@ -574,7 +587,51 @@ def _ensure_property_documentation(
 
 
 def enrich_openapi_schema(schema: dict[str, Any], *, service_name: str) -> dict[str, Any]:
+    _ensure_pm_quality_problem_schema(schema)
     _ensure_operation_documentation(schema, service_name=service_name)
     _ensure_schema_documentation(schema)
     _ensure_request_and_response_examples(schema)
     return schema
+
+
+def _ensure_pm_quality_problem_schema(schema: dict[str, Any]) -> None:
+    components = schema.setdefault("components", {})
+    if not isinstance(components, dict):
+        return
+    schemas = components.setdefault("schemas", {})
+    if not isinstance(schemas, dict):
+        return
+    schemas.setdefault(
+        "PmQualityProblemDetails",
+        {
+            "title": "PmQualityProblemDetails",
+            "type": "object",
+            "required": [
+                "type",
+                "title",
+                "status",
+                "detail",
+                "reasonCode",
+                "correlationId",
+                "instance",
+            ],
+            "properties": {
+                "type": {"type": "string", "example": "about:blank"},
+                "title": {"type": "string", "example": "Validation Error"},
+                "status": {"type": "integer", "example": 422},
+                "detail": {
+                    "type": "string",
+                    "example": "PM-quality request failed semantic validation.",
+                },
+                "reasonCode": {
+                    "type": "string",
+                    "example": "PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH",
+                },
+                "correlationId": {"type": "string", "example": "corr_1234abcd"},
+                "instance": {
+                    "type": "string",
+                    "example": "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                },
+            },
+        },
+    )
