@@ -217,6 +217,24 @@ def test_pm_quality_application_service_creates_score_run_through_repository_por
     assert persisted.correlation_id == "corr-create-score-run"
 
 
+def test_pm_quality_application_service_queries_score_runs_through_repository_port() -> None:
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
+    score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-query")
+    score_run_repository.save_score_run(score_run=score_run)
+    service = _application_service(score_run_repository=score_run_repository)
+
+    listed = service.list_score_runs(pm_id="pm_001", policy_id="pmq_sg_dpm")
+    fetched = service.get_score_run(score_run_id=score_run.score_run_id)
+
+    assert [item.score_run_id for item in listed] == [score_run.score_run_id]
+    assert fetched.content_hash == score_run.content_hash
+    with pytest.raises(
+        DpmPmOperatingQualityServiceError,
+        match="PM_QUALITY_SCORE_RUN_NOT_FOUND:missing-score-run",
+    ):
+        service.get_score_run(score_run_id="missing-score-run")
+
+
 def test_pm_quality_application_service_creates_fairness_analysis_through_repository_port() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()

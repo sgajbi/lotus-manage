@@ -4,14 +4,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_pm_quality_summary_invocation_repository
-from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
+from src.api.dependencies import get_pm_quality_summary_invocation_application_service
+from src.api.routers.pm_operating_quality_http import pm_quality_service_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationListResponse,
     DpmPmQualitySummaryInvocationResponse,
 )
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 from src.core.pm_quality import (
-    DpmPmQualitySummaryInvocationRepository,
     PmQualitySummaryInvocationState,
 )
 
@@ -48,11 +51,11 @@ def list_pm_quality_summary_invocations_endpoint(
     ] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
     offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
-    repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_summary_invocation_application_service
     ),
 ) -> DpmPmQualitySummaryInvocationListResponse:
-    invocations = repository.list_summary_invocations(
+    invocations = application_service.list_summary_invocations(
         score_run_id=score_run_id,
         review_action_id=review_action_id,
         policy_id=policy_id,
@@ -85,14 +88,14 @@ def list_pm_quality_summary_invocations_endpoint(
 )
 def get_pm_quality_summary_invocation_endpoint(
     summary_invocation_id: str,
-    repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_summary_invocation_application_service
     ),
 ) -> DpmPmQualitySummaryInvocationResponse:
-    invocation = repository.get_summary_invocation(summary_invocation_id=summary_invocation_id)
-    if invocation is None:
-        raise pm_quality_not_found_http_exception(
-            code="PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND",
-            identifier=summary_invocation_id,
+    try:
+        invocation = application_service.get_summary_invocation(
+            summary_invocation_id=summary_invocation_id
         )
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
     return DpmPmQualitySummaryInvocationResponse(summary_invocation=invocation)

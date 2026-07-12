@@ -4,13 +4,16 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_pm_quality_fairness_analysis_repository
-from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
+from src.api.dependencies import get_pm_quality_fairness_application_service
+from src.api.routers.pm_operating_quality_http import pm_quality_service_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessAnalysisListResponse,
     DpmPmQualityFairnessPreviewResponse,
 )
-from src.core.pm_quality import DpmPmQualityFairnessAnalysisRepository
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 
 router = APIRouter()
 
@@ -35,11 +38,11 @@ def list_pm_quality_fairness_analyses_endpoint(
     state: Annotated[str | None, Query(description="Filter by fairness-analysis state.")] = None,
     limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
     offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
-    repository: DpmPmQualityFairnessAnalysisRepository = Depends(
-        get_pm_quality_fairness_analysis_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_fairness_application_service
     ),
 ) -> DpmPmQualityFairnessAnalysisListResponse:
-    fairness_analyses = repository.list_fairness_analyses(
+    fairness_analyses = application_service.list_fairness_analyses(
         policy_id=policy_id,
         policy_version=policy_version,
         as_of_date=as_of_date,
@@ -69,14 +72,14 @@ def list_pm_quality_fairness_analyses_endpoint(
 )
 def get_pm_quality_fairness_analysis_endpoint(
     fairness_analysis_id: str,
-    repository: DpmPmQualityFairnessAnalysisRepository = Depends(
-        get_pm_quality_fairness_analysis_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_fairness_application_service
     ),
 ) -> DpmPmQualityFairnessPreviewResponse:
-    fairness_analysis = repository.get_fairness_analysis(fairness_analysis_id=fairness_analysis_id)
-    if fairness_analysis is None:
-        raise pm_quality_not_found_http_exception(
-            code="PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND",
-            identifier=fairness_analysis_id,
+    try:
+        fairness_analysis = application_service.get_fairness_analysis(
+            fairness_analysis_id=fairness_analysis_id
         )
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)

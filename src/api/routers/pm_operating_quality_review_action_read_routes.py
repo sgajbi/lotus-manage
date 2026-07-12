@@ -4,14 +4,17 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_pm_quality_review_action_repository
-from src.api.routers.pm_operating_quality_http import pm_quality_not_found_http_exception
+from src.api.dependencies import get_pm_quality_review_action_application_service
+from src.api.routers.pm_operating_quality_http import pm_quality_service_http_exception
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionListResponse,
     DpmPmQualityReviewActionResponse,
 )
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 from src.core.pm_quality import (
-    DpmPmQualityReviewActionRepository,
     PmQualityReviewActionState,
     PmQualityReviewActionTargetType,
 )
@@ -52,11 +55,11 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
         ] = None,
         limit: Annotated[int, Query(ge=1, le=100, description="Maximum rows to return.")] = 50,
         offset: Annotated[int, Query(ge=0, description="Rows to skip.")] = 0,
-        repository: DpmPmQualityReviewActionRepository = Depends(
-            get_pm_quality_review_action_repository
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_review_action_application_service
         ),
     ) -> DpmPmQualityReviewActionListResponse:
-        review_actions = repository.list_review_actions(
+        review_actions = application_service.list_review_actions(
             target_type=target_type,
             target_id=target_id,
             policy_id=policy_id,
@@ -87,14 +90,12 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
     )
     def get_pm_quality_review_action_endpoint(
         review_action_id: str,
-        repository: DpmPmQualityReviewActionRepository = Depends(
-            get_pm_quality_review_action_repository
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_review_action_application_service
         ),
     ) -> DpmPmQualityReviewActionResponse:
-        review_action = repository.get_review_action(review_action_id=review_action_id)
-        if review_action is None:
-            raise pm_quality_not_found_http_exception(
-                code="PM_QUALITY_REVIEW_ACTION_NOT_FOUND",
-                identifier=review_action_id,
-            )
+        try:
+            review_action = application_service.get_review_action(review_action_id=review_action_id)
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmQualityReviewActionResponse(review_action=review_action)
