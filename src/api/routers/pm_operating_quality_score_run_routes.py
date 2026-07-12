@@ -6,14 +6,18 @@ from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_outcome_review_repository,
+    get_pm_quality_score_run_application_service,
     get_pm_quality_policy_repository,
-    get_pm_quality_score_run_repository,
 )
+from src.api.routers.pm_operating_quality_command_mapping import score_run_command_from_request
 from src.api.routers.pm_operating_quality_models import (
     DpmPmOperatingQualityScorePreviewRequest,
     DpmPmOperatingQualityScorePreviewResponse,
 )
-from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_conflict_http_exception,
+    pm_quality_service_http_exception,
+)
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_score_run_read_routes import (
     register_pm_quality_score_run_read_routes as register_pm_quality_score_run_read_routes,
@@ -23,7 +27,10 @@ from src.core.pm_quality import (
     DpmPmOperatingQualityScoreRun,
     DpmPmQualityPolicyRepository,
     DpmPmQualityScoreRunConflictError,
-    DpmPmQualityScoreRunRepository,
+)
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
 )
 
 
@@ -96,20 +103,19 @@ def register_pm_quality_score_run_command_routes(
     def create_pm_operating_quality_score_run_endpoint(
         request: DpmPmOperatingQualityScorePreviewRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
-        outcome_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
-        policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
-        score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-            get_pm_quality_score_run_repository
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_score_run_application_service
         ),
     ) -> DpmPmOperatingQualityScorePreviewResponse:
-        score_run = build_score_run(
-            request,
-            x_correlation_id,
-            outcome_repository,
-            policy_repository,
-        )
         try:
-            score_run_repository.save_score_run(score_run=score_run)
+            score_run = application_service.create_score_run(
+                score_run_command_from_request(
+                    request=request,
+                    x_correlation_id=x_correlation_id,
+                )
+            )
         except DpmPmQualityScoreRunConflictError as exc:
             raise pm_quality_conflict_http_exception(exc) from exc
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmOperatingQualityScorePreviewResponse(score_run=score_run)

@@ -1,9 +1,14 @@
 import os
 from typing import AsyncIterator
 
+from fastapi import Depends
+
 from src.infrastructure.advise_authority import (
     LotusAdviseAuthorityClient,
     LotusAdviseAuthorityConfig,
+)
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
 )
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
@@ -206,6 +211,106 @@ def get_pm_quality_summary_invocation_repository() -> DpmPmQualitySummaryInvocat
             )
         return _POSTGRES_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY
     return _PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY
+
+
+def get_pm_operating_quality_application_service(
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return the PM operating quality application use-case service."""
+
+    return DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=outcome_review_repository,
+        policy_repository=policy_repository,
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+        review_action_repository=review_action_repository,
+        summary_invocation_repository=summary_invocation_repository,
+    )
+
+
+def get_pm_quality_score_run_application_service(
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return PM-quality score-run use cases without unrelated adapter initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        outcome_review_repository=outcome_review_repository,
+        policy_repository=policy_repository,
+        score_run_repository=score_run_repository,
+    )
+
+
+def get_pm_quality_fairness_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return PM-quality fairness use cases without unrelated adapter initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+    )
+
+
+def get_pm_quality_review_action_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
+        get_pm_quality_fairness_analysis_repository
+    ),
+    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return PM-quality review-action use cases without unrelated adapter initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
+        fairness_repository=fairness_repository,
+        review_action_repository=review_action_repository,
+    )
+
+
+def get_pm_quality_summary_invocation_application_service(
+    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return PM-quality summary use cases without unrelated adapter initialization."""
+
+    return DpmPmOperatingQualityApplicationService(
+        score_run_repository=score_run_repository,
+        review_action_repository=review_action_repository,
+        summary_invocation_repository=summary_invocation_repository,
+    )
 
 
 def get_wave_repository() -> DpmWaveRepository:

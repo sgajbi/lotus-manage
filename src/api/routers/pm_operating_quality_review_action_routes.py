@@ -6,14 +6,20 @@ from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_pm_quality_fairness_analysis_repository,
-    get_pm_quality_review_action_repository,
+    get_pm_quality_review_action_application_service,
     get_pm_quality_score_run_repository,
+)
+from src.api.routers.pm_operating_quality_command_mapping import (
+    review_action_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionRequest,
     DpmPmQualityReviewActionResponse,
 )
-from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_conflict_http_exception,
+    pm_quality_service_http_exception,
+)
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_review_action_read_routes import (
     register_pm_quality_review_action_read_routes,
@@ -22,8 +28,11 @@ from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityReviewAction,
     DpmPmQualityReviewActionConflictError,
-    DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
+)
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
 )
 
 
@@ -96,26 +105,21 @@ def register_pm_quality_review_action_routes(
     def create_pm_quality_review_action_endpoint(
         request: DpmPmQualityReviewActionRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
-        score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-            get_pm_quality_score_run_repository
-        ),
-        fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
-            get_pm_quality_fairness_analysis_repository
-        ),
-        review_action_repository: DpmPmQualityReviewActionRepository = Depends(
-            get_pm_quality_review_action_repository
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_review_action_application_service
         ),
     ) -> DpmPmQualityReviewActionResponse:
-        review_action = build_review_action(
-            request,
-            x_correlation_id,
-            score_run_repository,
-            fairness_repository,
-        )
         try:
-            review_action_repository.save_review_action(action=review_action)
+            review_action = application_service.create_review_action(
+                review_action_command_from_request(
+                    request=request,
+                    x_correlation_id=x_correlation_id,
+                )
+            )
         except DpmPmQualityReviewActionConflictError as exc:
             raise pm_quality_conflict_http_exception(exc) from exc
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmQualityReviewActionResponse(review_action=review_action)
 
     register_pm_quality_review_action_read_routes(router)

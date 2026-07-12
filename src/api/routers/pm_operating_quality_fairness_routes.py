@@ -3,8 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
-    get_pm_quality_fairness_analysis_repository,
+    get_pm_quality_fairness_application_service,
     get_pm_quality_score_run_repository,
+)
+from src.api.routers.pm_operating_quality_command_mapping import (
+    fairness_analysis_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessPreviewRequest,
@@ -16,11 +19,17 @@ from src.api.routers.pm_operating_quality_fairness_builder import (
 from src.api.routers.pm_operating_quality_fairness_read_routes import (
     router as fairness_read_router,
 )
-from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_conflict_http_exception,
+    pm_quality_service_http_exception,
+)
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
+)
 from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
-    DpmPmQualityFairnessAnalysisRepository,
     DpmPmQualityScoreRunRepository,
 )
 
@@ -78,22 +87,21 @@ def preview_pm_quality_fairness_analysis_endpoint(
 def create_pm_quality_fairness_analysis_endpoint(
     request: DpmPmQualityFairnessPreviewRequest,
     x_correlation_id: PmQualityCorrelationIdHeader = None,
-    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-        get_pm_quality_score_run_repository
-    ),
-    fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
-        get_pm_quality_fairness_analysis_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_fairness_application_service
     ),
 ) -> DpmPmQualityFairnessPreviewResponse:
-    fairness_analysis = build_fairness_analysis_response_model(
-        request=request,
-        x_correlation_id=x_correlation_id,
-        repository=score_run_repository,
-    )
     try:
-        fairness_repository.save_fairness_analysis(analysis=fairness_analysis)
+        fairness_analysis = application_service.create_fairness_analysis(
+            fairness_analysis_command_from_request(
+                request=request,
+                x_correlation_id=x_correlation_id,
+            )
+        )
     except DpmPmQualityFairnessAnalysisConflictError as exc:
         raise pm_quality_conflict_http_exception(exc) from exc
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)
 
 

@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Protocol
+from typing import Protocol, TypeVar
 
 from src.api.services.core_resolver_service import CoreResolverError, CoreResolverUnavailableError
 from src.api.services.core_resolver_service import build_core_resolver_client
@@ -38,6 +38,9 @@ from src.core.pm_quality import (
 from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
 
 
+RepositoryT = TypeVar("RepositoryT")
+
+
 class CoreResolverProtocol(Protocol):
     def resolve_portfolio_manager_book_membership(
         self,
@@ -64,12 +67,12 @@ class DpmPmOperatingQualityServiceError(ValueError):
 class DpmPmOperatingQualityApplicationService:
     """PM operating-quality use cases over repository ports."""
 
-    outcome_review_repository: DpmOutcomeReviewRepository
-    policy_repository: DpmPmQualityPolicyRepository
-    score_run_repository: DpmPmQualityScoreRunRepository
-    fairness_repository: DpmPmQualityFairnessAnalysisRepository
-    review_action_repository: DpmPmQualityReviewActionRepository
-    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository
+    outcome_review_repository: DpmOutcomeReviewRepository | None = None
+    policy_repository: DpmPmQualityPolicyRepository | None = None
+    score_run_repository: DpmPmQualityScoreRunRepository | None = None
+    fairness_repository: DpmPmQualityFairnessAnalysisRepository | None = None
+    review_action_repository: DpmPmQualityReviewActionRepository | None = None
+    summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None = None
     core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client
 
     def preview_score_run(
@@ -78,8 +81,14 @@ class DpmPmOperatingQualityApplicationService:
     ) -> DpmPmOperatingQualityScoreRun:
         return build_pm_quality_score_run_from_command(
             command=command,
-            outcome_review_repository=self.outcome_review_repository,
-            policy_repository=self.policy_repository,
+            outcome_review_repository=_required_repository(
+                self.outcome_review_repository,
+                "PM_QUALITY_OUTCOME_REPOSITORY_NOT_CONFIGURED",
+            ),
+            policy_repository=_required_repository(
+                self.policy_repository,
+                "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
+            ),
             core_resolver_factory=self.core_resolver_factory,
         )
 
@@ -88,7 +97,10 @@ class DpmPmOperatingQualityApplicationService:
         command: DpmPmQualityScoreRunCommand,
     ) -> DpmPmOperatingQualityScoreRun:
         score_run = self.preview_score_run(command)
-        self.score_run_repository.save_score_run(score_run=score_run)
+        _required_repository(
+            self.score_run_repository,
+            "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+        ).save_score_run(score_run=score_run)
         return score_run
 
     def preview_fairness_analysis(
@@ -97,7 +109,10 @@ class DpmPmOperatingQualityApplicationService:
     ) -> DpmPmQualityFairnessAnalysis:
         return build_pm_quality_fairness_analysis_from_command(
             command=command,
-            score_run_repository=self.score_run_repository,
+            score_run_repository=_required_repository(
+                self.score_run_repository,
+                "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+            ),
         )
 
     def create_fairness_analysis(
@@ -105,7 +120,10 @@ class DpmPmOperatingQualityApplicationService:
         command: DpmPmQualityFairnessAnalysisCommand,
     ) -> DpmPmQualityFairnessAnalysis:
         fairness_analysis = self.preview_fairness_analysis(command)
-        self.fairness_repository.save_fairness_analysis(analysis=fairness_analysis)
+        _required_repository(
+            self.fairness_repository,
+            "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
+        ).save_fairness_analysis(analysis=fairness_analysis)
         return fairness_analysis
 
     def preview_review_action(
@@ -114,8 +132,14 @@ class DpmPmOperatingQualityApplicationService:
     ) -> DpmPmQualityReviewAction:
         return build_pm_quality_review_action_from_command(
             command=command,
-            score_run_repository=self.score_run_repository,
-            fairness_repository=self.fairness_repository,
+            score_run_repository=_required_repository(
+                self.score_run_repository,
+                "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+            ),
+            fairness_repository=_required_repository(
+                self.fairness_repository,
+                "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
+            ),
         )
 
     def create_review_action(
@@ -123,7 +147,10 @@ class DpmPmOperatingQualityApplicationService:
         command: DpmPmQualityReviewActionCommand,
     ) -> DpmPmQualityReviewAction:
         review_action = self.preview_review_action(command)
-        self.review_action_repository.save_review_action(action=review_action)
+        _required_repository(
+            self.review_action_repository,
+            "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
+        ).save_review_action(action=review_action)
         return review_action
 
     def preview_summary_invocation(
@@ -132,8 +159,14 @@ class DpmPmOperatingQualityApplicationService:
     ) -> DpmPmQualitySummaryInvocation:
         return build_pm_quality_summary_invocation_from_command(
             command=command,
-            score_run_repository=self.score_run_repository,
-            review_action_repository=self.review_action_repository,
+            score_run_repository=_required_repository(
+                self.score_run_repository,
+                "PM_QUALITY_SCORE_RUN_REPOSITORY_NOT_CONFIGURED",
+            ),
+            review_action_repository=_required_repository(
+                self.review_action_repository,
+                "PM_QUALITY_REVIEW_ACTION_REPOSITORY_NOT_CONFIGURED",
+            ),
         )
 
     def create_summary_invocation(
@@ -141,8 +174,17 @@ class DpmPmOperatingQualityApplicationService:
         command: DpmPmQualitySummaryInvocationCommand,
     ) -> DpmPmQualitySummaryInvocation:
         summary_invocation = self.preview_summary_invocation(command)
-        self.summary_invocation_repository.save_summary_invocation(invocation=summary_invocation)
+        _required_repository(
+            self.summary_invocation_repository,
+            "PM_QUALITY_SUMMARY_REPOSITORY_NOT_CONFIGURED",
+        ).save_summary_invocation(invocation=summary_invocation)
         return summary_invocation
+
+
+def _required_repository(repository: RepositoryT | None, code: str) -> RepositoryT:
+    if repository is None:
+        raise DpmPmOperatingQualityServiceError(code)
+    return repository
 
 
 @dataclass(frozen=True)

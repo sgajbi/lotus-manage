@@ -5,13 +5,19 @@ from fastapi import APIRouter, Depends, status
 from src.api.dependencies import (
     get_pm_quality_review_action_repository,
     get_pm_quality_score_run_repository,
-    get_pm_quality_summary_invocation_repository,
+    get_pm_quality_summary_invocation_application_service,
+)
+from src.api.routers.pm_operating_quality_command_mapping import (
+    summary_invocation_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationRequest,
     DpmPmQualitySummaryInvocationResponse,
 )
-from src.api.routers.pm_operating_quality_http import pm_quality_conflict_http_exception
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_conflict_http_exception,
+    pm_quality_service_http_exception,
+)
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_summary_invocation_builder import (
     build_summary_invocation_response_model,
@@ -23,7 +29,10 @@ from src.core.pm_quality import (
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunRepository,
     DpmPmQualitySummaryInvocationConflictError,
-    DpmPmQualitySummaryInvocationRepository,
+)
+from src.api.services.pm_operating_quality_service import (
+    DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
 )
 
 
@@ -85,26 +94,21 @@ def preview_pm_quality_summary_invocation_endpoint(
 def create_pm_quality_summary_invocation_endpoint(
     request: DpmPmQualitySummaryInvocationRequest,
     x_correlation_id: PmQualityCorrelationIdHeader = None,
-    score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-        get_pm_quality_score_run_repository
-    ),
-    review_action_repository: DpmPmQualityReviewActionRepository = Depends(
-        get_pm_quality_review_action_repository
-    ),
-    summary_repository: DpmPmQualitySummaryInvocationRepository = Depends(
-        get_pm_quality_summary_invocation_repository
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_summary_invocation_application_service
     ),
 ) -> DpmPmQualitySummaryInvocationResponse:
-    invocation = build_summary_invocation_response_model(
-        request=request,
-        x_correlation_id=x_correlation_id,
-        score_run_repository=score_run_repository,
-        review_action_repository=review_action_repository,
-    )
     try:
-        summary_repository.save_summary_invocation(invocation=invocation)
+        invocation = application_service.create_summary_invocation(
+            summary_invocation_command_from_request(
+                request=request,
+                x_correlation_id=x_correlation_id,
+            )
+        )
     except DpmPmQualitySummaryInvocationConflictError as exc:
         raise pm_quality_conflict_http_exception(exc) from exc
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
     return DpmPmQualitySummaryInvocationResponse(summary_invocation=invocation)
 
 
