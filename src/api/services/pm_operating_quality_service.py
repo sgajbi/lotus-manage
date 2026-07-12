@@ -74,6 +74,7 @@ class DpmPmOperatingQualityApplicationService:
     review_action_repository: DpmPmQualityReviewActionRepository | None = None
     summary_invocation_repository: DpmPmQualitySummaryInvocationRepository | None = None
     core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client
+    review_action_builder: Callable[..., DpmPmQualityReviewAction] = build_pm_quality_review_action
 
     def preview_score_run(
         self,
@@ -212,6 +213,7 @@ class DpmPmOperatingQualityApplicationService:
                 self.fairness_repository,
                 "PM_QUALITY_FAIRNESS_REPOSITORY_NOT_CONFIGURED",
             ),
+            review_action_builder=self.review_action_builder,
         )
 
     def create_review_action(

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_pm_quality_fairness_application_service,
-    get_pm_quality_score_run_repository,
+    get_pm_quality_fairness_preview_application_service,
 )
 from src.api.routers.pm_operating_quality_command_mapping import (
     fairness_analysis_command_from_request,
@@ -12,9 +12,6 @@ from src.api.routers.pm_operating_quality_command_mapping import (
 from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityFairnessPreviewRequest,
     DpmPmQualityFairnessPreviewResponse,
-)
-from src.api.routers.pm_operating_quality_fairness_builder import (
-    build_fairness_analysis_response_model,
 )
 from src.api.routers.pm_operating_quality_fairness_read_routes import (
     router as fairness_read_router,
@@ -28,10 +25,7 @@ from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
 )
-from src.core.pm_quality import (
-    DpmPmQualityFairnessAnalysisConflictError,
-    DpmPmQualityScoreRunRepository,
-)
+from src.core.pm_quality import DpmPmQualityFairnessAnalysisConflictError
 
 
 router = APIRouter()
@@ -58,13 +52,19 @@ router = APIRouter()
 def preview_pm_quality_fairness_analysis_endpoint(
     request: DpmPmQualityFairnessPreviewRequest,
     x_correlation_id: PmQualityCorrelationIdHeader = None,
-    repository: DpmPmQualityScoreRunRepository = Depends(get_pm_quality_score_run_repository),
+    application_service: DpmPmOperatingQualityApplicationService = Depends(
+        get_pm_quality_fairness_preview_application_service
+    ),
 ) -> DpmPmQualityFairnessPreviewResponse:
-    fairness_analysis = build_fairness_analysis_response_model(
-        request=request,
-        x_correlation_id=x_correlation_id,
-        repository=repository,
-    )
+    try:
+        fairness_analysis = application_service.preview_fairness_analysis(
+            fairness_analysis_command_from_request(
+                request=request,
+                x_correlation_id=x_correlation_id,
+            )
+        )
+    except DpmPmOperatingQualityServiceError as exc:
+        raise pm_quality_service_http_exception(exc) from exc
     return DpmPmQualityFairnessPreviewResponse(fairness_analysis=fairness_analysis)
 
 

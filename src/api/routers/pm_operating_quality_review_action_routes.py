@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-
 from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
-    get_pm_quality_fairness_analysis_repository,
     get_pm_quality_review_action_application_service,
-    get_pm_quality_score_run_repository,
+    get_pm_quality_review_action_preview_application_service,
 )
 from src.api.routers.pm_operating_quality_command_mapping import (
     review_action_command_from_request,
@@ -24,32 +21,15 @@ from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorre
 from src.api.routers.pm_operating_quality_review_action_read_routes import (
     register_pm_quality_review_action_read_routes,
 )
-from src.core.pm_quality import (
-    DpmPmQualityFairnessAnalysisRepository,
-    DpmPmQualityReviewAction,
-    DpmPmQualityReviewActionConflictError,
-    DpmPmQualityScoreRunRepository,
-)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
 )
-
-
-ReviewActionBuilder = Callable[
-    [
-        DpmPmQualityReviewActionRequest,
-        str | None,
-        DpmPmQualityScoreRunRepository,
-        DpmPmQualityFairnessAnalysisRepository,
-    ],
-    DpmPmQualityReviewAction,
-]
+from src.core.pm_quality import DpmPmQualityReviewActionConflictError
 
 
 def register_pm_quality_review_action_routes(
     router: APIRouter,
-    build_review_action: ReviewActionBuilder,
 ) -> None:
     @router.post(
         "/review-actions/preview",
@@ -71,19 +51,19 @@ def register_pm_quality_review_action_routes(
     def preview_pm_quality_review_action_endpoint(
         request: DpmPmQualityReviewActionRequest,
         x_correlation_id: PmQualityCorrelationIdHeader = None,
-        score_run_repository: DpmPmQualityScoreRunRepository = Depends(
-            get_pm_quality_score_run_repository
-        ),
-        fairness_repository: DpmPmQualityFairnessAnalysisRepository = Depends(
-            get_pm_quality_fairness_analysis_repository
+        application_service: DpmPmOperatingQualityApplicationService = Depends(
+            get_pm_quality_review_action_preview_application_service
         ),
     ) -> DpmPmQualityReviewActionResponse:
-        review_action = build_review_action(
-            request,
-            x_correlation_id,
-            score_run_repository,
-            fairness_repository,
-        )
+        try:
+            review_action = application_service.preview_review_action(
+                review_action_command_from_request(
+                    request=request,
+                    x_correlation_id=x_correlation_id,
+                )
+            )
+        except DpmPmOperatingQualityServiceError as exc:
+            raise pm_quality_service_http_exception(exc) from exc
         return DpmPmQualityReviewActionResponse(review_action=review_action)
 
     @router.post(
