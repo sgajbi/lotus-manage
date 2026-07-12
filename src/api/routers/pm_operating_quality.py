@@ -12,6 +12,7 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationRequest,
 )
 from src.api.routers.pm_operating_quality_policy_routes import router as policy_router
+from src.api.routers.pm_operating_quality_http import PM_QUALITY_PROBLEM_RESPONSES
 from src.api.routers.pm_operating_quality_review_action_routes import (
     register_pm_quality_review_action_routes,
 )
@@ -35,6 +36,7 @@ __all__ = [
 router = APIRouter(
     prefix="/rebalance/pm-operating-quality",
     tags=["lotus-manage PM Operating Quality"],
+    responses=PM_QUALITY_PROBLEM_RESPONSES,
 )
 
 

@@ -253,6 +253,27 @@ def _source_only_score_run(
     )
 
 
+def _assert_pm_quality_problem(
+    response,
+    *,
+    status_code: int,
+    reason_code: str,
+    correlation_id: str | None = None,
+) -> dict:
+    assert response.status_code == status_code
+    assert response.headers["content-type"].startswith("application/problem+json")
+    body = response.json()
+    assert body["type"] == "about:blank"
+    assert body["status"] == status_code
+    assert body["reasonCode"] == reason_code
+    assert isinstance(body["detail"], str)
+    assert body["correlationId"] == response.headers["X-Correlation-Id"]
+    if correlation_id is not None:
+        assert body["correlationId"] == correlation_id
+    assert body["instance"].startswith("/api/v1/rebalance/pm-operating-quality")
+    return body
+
+
 def _pm_book_membership_payload(
     *, supportability_state: str = "READY", members: list | None = None
 ):
@@ -478,7 +499,11 @@ def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
         for error in missing_policy_detail
     )
     assert invalid_book_scope_date.status_code == 422
-    assert invalid_book_scope_date.json()["detail"] == "INVALID_AS_OF_DATE"
+    _assert_pm_quality_problem(
+        invalid_book_scope_date,
+        status_code=422,
+        reason_code="INVALID_AS_OF_DATE",
+    )
 
 
 class _PmBookResolver:
@@ -661,8 +686,11 @@ def test_pm_operating_quality_api_fails_closed_for_pm_book_scope(
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == expected_status
-    assert response.json()["detail"]["code"] == expected_code
+    _assert_pm_quality_problem(
+        response,
+        status_code=expected_status,
+        reason_code=expected_code,
+    )
 
 
 def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() -> None:
@@ -709,8 +737,11 @@ def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() ->
     assert preview.json()["score_run"]["policy_id"] == "pmq_sg_dpm"
     assert created.status_code == 201
     assert created.json()["score_run"]["policy_version"] == "2026.05"
-    assert missing.status_code == 404
-    assert missing.json()["detail"] == "PM_QUALITY_POLICY_NOT_FOUND:pmq_missing:2026.05"
+    _assert_pm_quality_problem(
+        missing,
+        status_code=404,
+        reason_code="PM_QUALITY_POLICY_NOT_FOUND",
+    )
 
 
 def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
@@ -751,8 +782,11 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
         "PM_QUALITY_PEER_GROUP_MATERIALIZED",
         "PM_QUALITY_LOOKBACK_WINDOW_MATERIALIZED",
     ]
-    assert stale.status_code == 422
-    assert stale.json()["detail"] == "PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW"
+    _assert_pm_quality_problem(
+        stale,
+        status_code=422,
+        reason_code="PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW",
+    )
 
 
 def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() -> None:
@@ -793,14 +827,26 @@ def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() 
         app.dependency_overrides.clear()
 
     assert saved.status_code == 200
-    assert conflict.status_code == 409
-    assert conflict.json()["detail"] == "PM_QUALITY_POLICY_IMMUTABLE_CONFLICT"
-    assert mismatch.status_code == 422
-    assert mismatch.json()["detail"] == "PM_QUALITY_POLICY_PATH_BODY_MISMATCH"
-    assert missing_policy_ref.status_code == 404
-    assert missing_policy_ref.json()["detail"] == "PM_QUALITY_POLICY_NOT_FOUND:pmq_missing:2026.05"
-    assert missing_ref.status_code == 404
-    assert missing_ref.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND:dor_001"
+    _assert_pm_quality_problem(
+        conflict,
+        status_code=409,
+        reason_code="PM_QUALITY_POLICY_IMMUTABLE_CONFLICT",
+    )
+    _assert_pm_quality_problem(
+        mismatch,
+        status_code=422,
+        reason_code="PM_QUALITY_POLICY_PATH_BODY_MISMATCH",
+    )
+    _assert_pm_quality_problem(
+        missing_policy_ref,
+        status_code=404,
+        reason_code="PM_QUALITY_POLICY_NOT_FOUND",
+    )
+    _assert_pm_quality_problem(
+        missing_ref,
+        status_code=404,
+        reason_code="OUTCOME_REVIEW_NOT_FOUND",
+    )
 
 
 @pytest.mark.parametrize(
@@ -845,7 +891,14 @@ def test_pm_operating_quality_api_fails_closed_for_invalid_governance(
         app.dependency_overrides.clear()
 
     assert response.status_code == 422
-    assert expected_detail in str(response.json()["detail"])
+    if response.headers["content-type"].startswith("application/problem+json"):
+        _assert_pm_quality_problem(
+            response,
+            status_code=422,
+            reason_code=expected_detail,
+        )
+    else:
+        assert expected_detail in str(response.json()["detail"])
 
 
 def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() -> None:
@@ -880,8 +933,11 @@ def test_pm_operating_quality_api_creates_gets_and_lists_persisted_score_runs() 
     assert listed.status_code == 200
     assert listed.json()["count"] == 1
     assert listed.json()["score_runs"][0]["score_run_id"] == score_run_id
-    assert missing.status_code == 404
-    assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing,
+        status_code=404,
+        reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+    )
 
 
 def test_pm_operating_quality_api_maps_persistence_conflicts_to_409() -> None:
@@ -900,8 +956,11 @@ def test_pm_operating_quality_api_maps_persistence_conflicts_to_409() -> None:
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT"
+    _assert_pm_quality_problem(
+        response,
+        status_code=409,
+        reason_code="PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT",
+    )
 
 
 def test_pm_operating_quality_api_previews_source_segment_fairness_analysis() -> None:
@@ -1066,8 +1125,11 @@ def test_pm_operating_quality_api_creates_gets_and_lists_fairness_analyses() -> 
     assert listed.status_code == 200
     assert listed.json()["count"] == 1
     assert listed.json()["fairness_analyses"][0]["fairness_analysis_id"] == fairness_analysis_id
-    assert missing.status_code == 404
-    assert missing.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing,
+        status_code=404,
+        reason_code="PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND",
+    )
 
 
 def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> None:
@@ -1147,10 +1209,16 @@ def test_pm_operating_quality_api_creates_gets_and_lists_review_actions() -> Non
     assert listed.status_code == 200
     assert listed.json()["count"] == 1
     assert listed.json()["review_actions"][0]["review_action_id"] == review_action_id
-    assert missing_target.status_code == 404
-    assert missing_target.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
-    assert missing_action.status_code == 404
-    assert missing_action.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing_target,
+        status_code=404,
+        reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+    )
+    _assert_pm_quality_problem(
+        missing_action,
+        status_code=404,
+        reason_code="PM_QUALITY_REVIEW_ACTION_NOT_FOUND",
+    )
 
 
 def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_edges(
@@ -1208,14 +1276,21 @@ def test_pm_operating_quality_api_review_action_validation_conflict_and_failure_
         app.dependency_overrides.clear()
 
     assert bad_due_date.status_code == 422
-    assert missing_fairness_target.status_code == 404
-    assert (
-        missing_fairness_target.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing_fairness_target,
+        status_code=404,
+        reason_code="PM_QUALITY_FAIRNESS_ANALYSIS_NOT_FOUND",
     )
-    assert conflict.status_code == 409
-    assert conflict.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT"
-    assert invalid_target.status_code == 422
-    assert invalid_target.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH"
+    _assert_pm_quality_problem(
+        conflict,
+        status_code=409,
+        reason_code="PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT",
+    )
+    _assert_pm_quality_problem(
+        invalid_target,
+        status_code=422,
+        reason_code="PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_MISMATCH",
+    )
 
 
 def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -> None:
@@ -1327,10 +1402,16 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
     assert listed.status_code == 200
     assert listed.json()["count"] == 1
     assert listed.json()["summary_invocations"][0]["summary_invocation_id"] == summary_invocation_id
-    assert missing_score_run.status_code == 404
-    assert missing_score_run.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
-    assert missing_invocation.status_code == 404
-    assert missing_invocation.json()["detail"] == "PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing_score_run,
+        status_code=404,
+        reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+    )
+    _assert_pm_quality_problem(
+        missing_invocation,
+        status_code=404,
+        reason_code="PM_QUALITY_SUMMARY_INVOCATION_NOT_FOUND",
+    )
 
 
 @pytest.mark.parametrize(
@@ -1467,15 +1548,21 @@ def test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and
     finally:
         app.dependency_overrides.clear()
 
-    assert missing_review_action.status_code == 404
-    assert missing_review_action.json()["detail"] == "PM_QUALITY_REVIEW_ACTION_NOT_FOUND:missing"
-    assert mismatched_review_action_response.status_code == 422
-    assert (
-        mismatched_review_action_response.json()["detail"]
-        == "PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH"
+    _assert_pm_quality_problem(
+        missing_review_action,
+        status_code=404,
+        reason_code="PM_QUALITY_REVIEW_ACTION_NOT_FOUND",
     )
-    assert conflict.status_code == 409
-    assert conflict.json()["detail"] == "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
+    _assert_pm_quality_problem(
+        mismatched_review_action_response,
+        status_code=422,
+        reason_code="PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH",
+    )
+    _assert_pm_quality_problem(
+        conflict,
+        status_code=409,
+        reason_code="PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT",
+    )
 
 
 def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -> None:
@@ -1526,8 +1613,11 @@ def test_pm_operating_quality_api_maps_fairness_persistence_conflicts_to_409() -
     finally:
         app.dependency_overrides.clear()
 
-    assert response.status_code == 409
-    assert response.json()["detail"] == "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
+    _assert_pm_quality_problem(
+        response,
+        status_code=409,
+        reason_code="PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT",
+    )
 
 
 def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_runs() -> None:
@@ -1591,8 +1681,11 @@ def test_pm_operating_quality_api_fairness_analysis_fails_closed_for_bad_score_r
     finally:
         app.dependency_overrides.clear()
 
-    assert missing.status_code == 404
-    assert missing.json()["detail"] == "PM_QUALITY_SCORE_RUN_NOT_FOUND:missing"
+    _assert_pm_quality_problem(
+        missing,
+        status_code=404,
+        reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+    )
     assert blocked.status_code == 200
     fairness_analysis = blocked.json()["fairness_analysis"]
     assert fairness_analysis["state"] == "BLOCKED"
@@ -1642,10 +1735,16 @@ def test_pm_operating_quality_api_fails_closed_for_missing_review_and_policy_mis
     finally:
         app.dependency_overrides.clear()
 
-    assert missing.status_code == 404
-    assert missing.json()["detail"] == "OUTCOME_REVIEW_NOT_FOUND:missing"
-    assert mismatch.status_code == 422
-    assert mismatch.json()["detail"] == "PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH"
+    _assert_pm_quality_problem(
+        missing,
+        status_code=404,
+        reason_code="OUTCOME_REVIEW_NOT_FOUND",
+    )
+    _assert_pm_quality_problem(
+        mismatch,
+        status_code=422,
+        reason_code="PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH",
+    )
 
 
 def test_pm_operating_quality_openapi_contract_is_documented() -> None:
@@ -1659,6 +1758,20 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert all(marker in operation["description"] for marker in ["What:", "When:", "How:"])
     assert "requestBody" in operation
     assert "200" in operation["responses"]
+    problem_schema = schema["components"]["schemas"]["PmQualityProblemDetails"]
+    assert set(problem_schema["properties"]) >= {
+        "type",
+        "title",
+        "status",
+        "detail",
+        "reasonCode",
+        "correlationId",
+        "instance",
+    }
+    assert (
+        operation["responses"]["404"]["content"]["application/problem+json"]["schema"]["$ref"]
+        == "#/components/schemas/PmQualityProblemDetails"
+    )
     assert "compensation" in operation["description"]
     correlation_header = next(
         parameter
