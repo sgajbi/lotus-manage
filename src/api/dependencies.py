@@ -241,6 +241,16 @@ def get_pm_operating_quality_application_service(
     )
 
 
+def get_pm_quality_policy_application_service(
+    policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),
+) -> DpmPmOperatingQualityApplicationService:
+    """Return PM-quality policy administration use cases."""
+
+    return DpmPmOperatingQualityApplicationService(
+        policy_repository=policy_repository,
+    )
+
+
 def get_pm_quality_score_run_application_service(
     outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
     policy_repository: DpmPmQualityPolicyRepository = Depends(get_pm_quality_policy_repository),

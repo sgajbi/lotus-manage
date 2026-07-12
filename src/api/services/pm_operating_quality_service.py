@@ -76,6 +76,57 @@ class DpmPmOperatingQualityApplicationService:
     core_resolver_factory: Callable[[], CoreResolverProtocol] = build_core_resolver_client
     review_action_builder: Callable[..., DpmPmQualityReviewAction] = build_pm_quality_review_action
 
+    def save_policy(
+        self,
+        *,
+        policy_id: str,
+        policy_version: str,
+        policy: DpmPmOperatingQualityPolicy,
+    ) -> DpmPmOperatingQualityPolicy:
+        if policy.policy_id != policy_id or policy.policy_version != policy_version:
+            raise DpmPmOperatingQualityServiceError("PM_QUALITY_POLICY_PATH_BODY_MISMATCH")
+        _required_repository(
+            self.policy_repository,
+            "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
+        ).save_policy(policy=policy)
+        return policy
+
+    def list_policies(
+        self,
+        *,
+        policy_id: str | None = None,
+        enabled: bool | None = None,
+        as_of_date: str | None = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> list[DpmPmOperatingQualityPolicy]:
+        return _required_repository(
+            self.policy_repository,
+            "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
+        ).list_policies(
+            policy_id=policy_id,
+            enabled=enabled,
+            as_of_date=as_of_date,
+            limit=limit,
+            offset=offset,
+        )
+
+    def get_policy(
+        self,
+        *,
+        policy_id: str,
+        policy_version: str,
+    ) -> DpmPmOperatingQualityPolicy:
+        policy = _required_repository(
+            self.policy_repository,
+            "PM_QUALITY_POLICY_REPOSITORY_NOT_CONFIGURED",
+        ).get_policy(policy_id=policy_id, policy_version=policy_version)
+        if policy is None:
+            raise DpmPmOperatingQualityServiceError(
+                f"PM_QUALITY_POLICY_NOT_FOUND:{policy_id}:{policy_version}"
+            )
+        return policy
+
     def preview_score_run(
         self,
         command: DpmPmQualityScoreRunCommand,
