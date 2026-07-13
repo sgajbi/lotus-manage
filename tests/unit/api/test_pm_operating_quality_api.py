@@ -746,7 +746,9 @@ def test_pm_operating_quality_api_administers_policies_and_uses_policy_refs() ->
 
 def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
     policy_repository = InMemoryDpmPmQualityPolicyRepository()
+    score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     app.dependency_overrides[get_pm_quality_policy_repository] = lambda: policy_repository
+    app.dependency_overrides[get_pm_quality_score_run_repository] = lambda: score_run_repository
     app.dependency_overrides[get_outcome_review_repository] = lambda: (
         InMemoryDpmOutcomeReviewRepository()
     )
@@ -770,6 +772,20 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
                 "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
                 json=stale_request,
             )
+            mixed_undated_request = _scope_request()
+            mixed_undated_request["evidence_items"][1]["source_refs"][0].pop("source_version")
+            mixed_undated = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                json=mixed_undated_request,
+            )
+            invalid_date_request = _scope_request()
+            invalid_date_request["evidence_items"][0]["source_refs"][0]["source_version"] = (
+                "2026.05"
+            )
+            invalid_date = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs",
+                json=invalid_date_request,
+            )
     finally:
         app.dependency_overrides.clear()
 
@@ -786,6 +802,16 @@ def test_pm_operating_quality_api_materializes_policy_scope_context() -> None:
         stale,
         status_code=422,
         reason_code="PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW",
+    )
+    _assert_pm_quality_problem(
+        mixed_undated,
+        status_code=422,
+        reason_code="PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED",
+    )
+    _assert_pm_quality_problem(
+        invalid_date,
+        status_code=422,
+        reason_code="PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID",
     )
 
 

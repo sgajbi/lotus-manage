@@ -2323,8 +2323,11 @@ Functional coverage:
 - score-run preview/create fails closed for missing governance approval, invalid or expired
   governance expiry, and unauthorized actors,
 - optional peer-group and lookback-window policy evidence is materialized into score-run
-  `scope_evidence`, included in source refs and content hash, and fails closed for dated evidence
-  outside the approved lookback window,
+  `scope_evidence`, included in source refs and content hash, and fails closed when any
+  score-contributing source evidence lacks a valid ISO `YYYY-MM-DD` business date, carries an
+  invalid date, or falls outside the approved lookback window; the first
+  `source_ref.source_version` on each signal is the governing business date when lookback is
+  enabled,
 - persisted outcome reviews can be included as source-backed outcome-discipline and source-quality
   evidence,
 - optional PM-book scope resolves from lotus-core, records returned portfolio count,
