@@ -256,6 +256,8 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
             }
 
         if product_id == "lotus-manage:BulkReviewCampaignMembership:v1":
+            assert telemetry["observed_trust_metadata"]["tenant_id"] == "tenant-sg"
+            assert "/tenant-sg/" in telemetry["lineage"]["evidence_uris"][0]
             assert (
                 telemetry["certification_limits"]["platform_maturity_state"]
                 == product["mesh_maturity_posture"]["maturity_state"]

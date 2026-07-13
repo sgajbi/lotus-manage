@@ -7,6 +7,10 @@ from src.api.routers.wave_campaign_definition_lifecycle_http import (
     retire_campaign_definition_response,
     supersede_campaign_definition_response,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
@@ -40,11 +44,13 @@ def retire_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRetirementRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return retire_campaign_definition_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,
@@ -69,11 +75,13 @@ def supersede_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return supersede_campaign_definition_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,

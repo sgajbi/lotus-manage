@@ -16,6 +16,7 @@ class DpmBulkReviewCampaignDefinitionLifecycleError(ValueError):
 def retire_bulk_review_campaign_definition(
     *,
     repository: DpmBulkReviewCampaignDefinitionRepository,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     retired_by: str,
@@ -24,6 +25,7 @@ def retire_bulk_review_campaign_definition(
     retired_at: datetime | None = None,
 ) -> DpmBulkReviewCampaignDefinition | None:
     existing = repository.get_definition(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
@@ -54,6 +56,7 @@ def retire_bulk_review_campaign_definition(
 def supersede_bulk_review_campaign_definition(
     *,
     repository: DpmBulkReviewCampaignDefinitionRepository,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     replacement_version: str,
@@ -63,6 +66,7 @@ def supersede_bulk_review_campaign_definition(
     superseded_at: datetime | None = None,
 ) -> DpmBulkReviewCampaignDefinition | None:
     existing = repository.get_definition(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
@@ -80,6 +84,7 @@ def supersede_bulk_review_campaign_definition(
         current_version=campaign_version,
     )
     replacement = repository.get_definition(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=replacement_version,
     )

@@ -38,6 +38,7 @@ certification blockers are merged to `main` and the trust snapshot is deliberate
 `bulk-review-campaign-membership.telemetry.v1.json` is intentionally blocked while the platform
 maturity matrix classifies `lotus-manage:BulkReviewCampaignMembership:v1` as
 `deferred`/`future_wave` and product-specific mesh SLO, access, evidence-pack, and runtime
-certification evidence are missing. It must remain operator-only `quality_blocked` telemetry until
-those policy and certification gaps are deliberately closed.
+certification evidence are missing. The fixture carries `tenant_id=tenant-sg` to match the
+tenant-scoped campaign-definition repository boundary, but it must remain operator-only
+`quality_blocked` telemetry until those policy and certification gaps are deliberately closed.
 

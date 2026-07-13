@@ -13,6 +13,7 @@ from src.core.waves import (
 
 def get_campaign_definition_workflow_overview_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     requested_as_of_date: str,
@@ -26,6 +27,7 @@ def get_campaign_definition_workflow_overview_response(
 ) -> DpmBulkReviewCampaignDefinitionWorkflowOverview:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

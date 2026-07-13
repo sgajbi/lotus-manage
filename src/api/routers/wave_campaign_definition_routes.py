@@ -10,6 +10,10 @@ from src.api.routers.wave_campaign_definition_read_http import (
 from src.api.routers.wave_campaign_definition_write_http import (
     put_campaign_definition_response,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionPage,
     DpmBulkReviewCampaignDefinitionRequest,
@@ -49,11 +53,13 @@ def put_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return put_campaign_definition_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,
@@ -74,11 +80,13 @@ def list_bulk_review_campaign_definitions(
     as_of_date: CampaignDefinitionAsOfDateQuery = None,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionPage:
     return list_campaign_definitions_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,
@@ -98,11 +106,13 @@ def list_bulk_review_campaign_definitions(
 def get_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return get_campaign_definition_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         repository=repository,

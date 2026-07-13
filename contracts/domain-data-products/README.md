@@ -50,7 +50,9 @@ Current declarations:
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence and optional persisted
-   `BulkReviewCampaignDefinition:v1` definitions. This product is catalog-visible but
+   `BulkReviewCampaignDefinition:v1` definitions. Persisted definitions and workflow read models
+   require trusted `tenant_id` metadata and tenant-scoped repository predicates. This product is
+   catalog-visible but
    mesh-deferred/future-wave until platform SLO, access, evidence-pack, and runtime certification
    evidence are promoted,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating

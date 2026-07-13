@@ -4,6 +4,10 @@ from fastapi import APIRouter, Depends, Query, status
 
 from src.api.dependencies import get_campaign_definition_repository
 from src.api.routers.wave_campaign_read_model_query import load_campaign_read_model_query
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignActiveOnQuery,
     CampaignActorIdQuery,
@@ -53,12 +57,14 @@ def list_bulk_review_campaign_approval_inbox(
     include_closed: CampaignIncludeClosedQuery = False,
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignApprovalInboxPage:
     campaign_query = load_campaign_read_model_query(
         repository=repository,
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,

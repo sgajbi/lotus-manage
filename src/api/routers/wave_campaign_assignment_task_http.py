@@ -31,6 +31,7 @@ from src.core.waves import (
 
 def open_campaign_definition_assignment_task_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
@@ -40,6 +41,7 @@ def open_campaign_definition_assignment_task_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -78,6 +80,7 @@ def open_campaign_definition_assignment_task_response(
 
 def transition_campaign_definition_assignment_task_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     task_ref: str,
@@ -88,6 +91,7 @@ def transition_campaign_definition_assignment_task_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -127,6 +131,7 @@ def transition_campaign_definition_assignment_task_response(
 
 def list_campaign_definition_assignment_tasks_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     status: CampaignAssignmentTaskStatus | None,
@@ -136,6 +141,7 @@ def list_campaign_definition_assignment_tasks_response(
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

@@ -49,6 +49,7 @@ def _definition(
             "retirement_correlation_id": "corr-campaign-definition-retire-001",
         }
     return DpmBulkReviewCampaignDefinition(
+        tenant_id="tenant-sg",
         campaign_id="campaign-holdings-apple-tesla-20260510",
         campaign_version="2026.05",
         display_name="Apple and Tesla holdings review",
@@ -156,6 +157,7 @@ def test_request_with_campaign_definition_projects_persisted_campaign_request() 
 
     resolved = request_with_campaign_definition(
         request=_request(),
+        tenant_id="tenant-sg",
         repository=repository,
     )
 
@@ -174,6 +176,7 @@ def test_request_with_campaign_definition_rejects_retired_definition() -> None:
     with pytest.raises(DpmWaveValidationError) as exc_info:
         request_with_campaign_definition(
             request=_request(),
+            tenant_id="tenant-sg",
             repository=repository,
         )
 

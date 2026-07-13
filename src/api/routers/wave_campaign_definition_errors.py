@@ -44,6 +44,16 @@ def campaign_definition_value_http_exception(exc: ValueError) -> HTTPException:
     )
 
 
+def campaign_definition_trusted_tenant_http_exception() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail={
+            "code": "BULK_REVIEW_CAMPAIGN_TRUSTED_TENANT_REQUIRED",
+            "message": "X-Tenant-Id is required for bulk-review campaign definition operations.",
+        },
+    )
+
+
 _CAMPAIGN_EVIDENCE_CONFLICT_CODES = frozenset(
     {
         "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT",

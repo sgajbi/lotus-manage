@@ -18,6 +18,7 @@ from src.api.services.authority_client_service import (
 def preview_wave_response(
     *,
     request: DpmWavePreviewRequest,
+    tenant_id: str | None,
     correlation_id: str,
     mandate_repository: DpmMandateRepository,
     advise_authority_client: AdviseAuthorityClient | None,
@@ -28,6 +29,7 @@ def preview_wave_response(
     try:
         portfolios = resolve_portfolio_inputs_for_request(
             request=request,
+            tenant_id=tenant_id,
             correlation_id=correlation_id,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
@@ -52,6 +54,7 @@ def preview_wave_response(
 def create_wave_response(
     *,
     request: DpmWavePreviewRequest,
+    tenant_id: str | None,
     idempotency_key: str,
     correlation_id: str,
     mandate_repository: DpmMandateRepository,
@@ -64,6 +67,7 @@ def create_wave_response(
     try:
         portfolios = resolve_portfolio_inputs_for_request(
             request=request,
+            tenant_id=tenant_id,
             correlation_id=correlation_id,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,

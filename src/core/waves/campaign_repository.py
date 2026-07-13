@@ -16,6 +16,7 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     def get_definition(
         self,
         *,
+        tenant_id: str,
         campaign_id: str,
         campaign_version: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
@@ -24,6 +25,7 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     def list_definitions(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
@@ -35,6 +37,7 @@ class DpmBulkReviewCampaignDefinitionRepository(Protocol):
     def list_definitions_by_workflow_projection(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,

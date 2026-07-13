@@ -7,6 +7,7 @@ from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRe
 
 def campaign_definition_memory_events(
     *,
+    tenant_id: str,
     portfolio_id: str,
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
     limit: int,
@@ -15,7 +16,10 @@ def campaign_definition_memory_events(
 
     definitions = [
         definition
-        for definition in campaign_definition_repository.list_definitions(limit=limit)
+        for definition in campaign_definition_repository.list_definitions(
+            tenant_id=tenant_id,
+            limit=limit,
+        )
         if any(candidate.portfolio_id == portfolio_id for candidate in definition.candidates)
     ]
     events: list[DpmPortfolioMemoryEvent] = []

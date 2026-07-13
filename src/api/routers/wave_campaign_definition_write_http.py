@@ -14,6 +14,7 @@ from src.core.waves import (
 
 def put_campaign_definition_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionRequest,
@@ -21,6 +22,7 @@ def put_campaign_definition_response(
 ) -> DpmBulkReviewCampaignDefinition:
     try:
         definition = DpmBulkReviewCampaignDefinition(
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
             display_name=request.display_name,

@@ -28,6 +28,7 @@ from src.core.waves import (
 
 def record_campaign_definition_approval_decision_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
@@ -37,6 +38,7 @@ def record_campaign_definition_approval_decision_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -71,6 +73,7 @@ def record_campaign_definition_approval_decision_response(
 
 def list_campaign_definition_approval_decisions_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     limit: int,
@@ -79,6 +82,7 @@ def list_campaign_definition_approval_decisions_response(
 ) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

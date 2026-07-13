@@ -132,6 +132,7 @@ def _definition(
     entitled_actor_ids: list[str] | None = None,
 ) -> DpmBulkReviewCampaignDefinition:
     return DpmBulkReviewCampaignDefinition(
+        tenant_id="tenant-sg",
         campaign_id="campaign-holdings-apple-tesla-20260510",
         campaign_version="2026.05",
         display_name="Apple and Tesla holdings review",

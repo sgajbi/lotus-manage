@@ -792,7 +792,7 @@ def _client(
     if risk_authority_client is not None:
         app.dependency_overrides[get_risk_authority_client] = lambda: risk_authority_client
     app.openapi_schema = None
-    return TestClient(app)
+    return TestClient(app, headers={"X-Tenant-Id": "tenant-sg"})
 
 
 def _run_service() -> DpmRunSupportService:
@@ -1708,6 +1708,7 @@ def test_bulk_review_campaign_definition_reference_validation(
     )
     campaign_repository.save_definition(
         definition=DpmBulkReviewCampaignDefinition(
+            tenant_id="tenant-sg",
             campaign_id="campaign-holdings-apple-tesla-20260510",
             campaign_version="2026.05",
             **definition_request.model_dump(),
@@ -7051,7 +7052,7 @@ def _assert_mutation_problem_details(
         assert example["title"] == title, f"error-example drift: {status_code} title"
         assert example["status"] == int(status_code), f"error-example drift: {status_code} status"
         assert example["detail"] == detail, f"error-example drift: {status_code} detail"
-        assert example["correlation_id"] == "corr_1234abcd"
+        assert example.get("correlation_id", example.get("correlationId")) == "corr_1234abcd"
 
 
 def test_wave_openapi_pins_campaign_workflow_assignment_and_automation_contracts() -> None:

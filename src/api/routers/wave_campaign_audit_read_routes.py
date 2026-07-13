@@ -7,6 +7,10 @@ from src.api.routers.wave_campaign_audit_read_http import (
     list_campaign_definition_launch_history_response,
     list_campaign_definition_lifecycle_events_response,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
@@ -41,11 +45,13 @@ router = APIRouter(tags=["lotus-manage Rebalance Waves"])
 def list_bulk_review_campaign_definition_lifecycle_events(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
     return list_campaign_definition_lifecycle_events_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         repository=repository,
@@ -70,11 +76,13 @@ def list_bulk_review_campaign_definition_launch_history(
     campaign_version: CampaignDefinitionVersionPath,
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
     return list_campaign_definition_launch_history_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         limit=limit,

@@ -21,12 +21,14 @@ from src.core.waves.campaign_definition_events import (
 
 def list_campaign_definition_lifecycle_events_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
@@ -35,6 +37,7 @@ def list_campaign_definition_lifecycle_events_response(
 
 def list_campaign_definition_launch_history_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     limit: int,
@@ -45,6 +48,7 @@ def list_campaign_definition_launch_history_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )

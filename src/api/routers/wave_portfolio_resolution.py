@@ -53,6 +53,7 @@ from src.api.services.authority_client_service import (
 @dataclass(frozen=True)
 class _PortfolioResolutionContext:
     request: DpmWavePreviewRequest
+    tenant_id: str | None
     correlation_id: str
     advise_authority_client: AdviseAuthorityClient | None
     risk_authority_client: RiskAuthorityClient | None
@@ -71,6 +72,7 @@ class _RiskEventAuthorityRequest:
 def resolve_portfolio_inputs_for_request(
     *,
     request: DpmWavePreviewRequest,
+    tenant_id: str | None = None,
     correlation_id: str,
     advise_authority_client: AdviseAuthorityClient | None,
     risk_authority_client: RiskAuthorityClient | None,
@@ -79,6 +81,7 @@ def resolve_portfolio_inputs_for_request(
 ) -> list[dict[str, object]]:
     context = _PortfolioResolutionContext(
         request=request,
+        tenant_id=tenant_id,
         correlation_id=correlation_id,
         advise_authority_client=advise_authority_client,
         risk_authority_client=risk_authority_client,
@@ -143,6 +146,7 @@ def _resolve_bulk_review_campaign_request_portfolios(
 ) -> list[dict[str, object]]:
     resolved_request = request_with_campaign_definition(
         request=context.request,
+        tenant_id=context.tenant_id,
         repository=context.campaign_definition_repository,
     )
     return resolve_bulk_review_campaign_portfolios(

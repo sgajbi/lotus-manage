@@ -14,12 +14,19 @@ from src.core.waves import (
 def request_with_campaign_definition(
     *,
     request: DpmWavePreviewRequest,
+    tenant_id: str | None,
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmWavePreviewRequest:
     if request.campaign_definition_id is None and request.campaign_definition_version is None:
         return request
+    if tenant_id is None or not tenant_id.strip():
+        raise wave_service.DpmWaveValidationError(
+            "BULK_REVIEW_CAMPAIGN_TRUSTED_TENANT_REQUIRED",
+            "X-Tenant-Id is required when resolving persisted bulk-review campaign definitions.",
+        )
     campaign_id, campaign_version = _validate_campaign_definition_reference_request(request)
     definition = repository.get_definition(
+        tenant_id=tenant_id.strip(),
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

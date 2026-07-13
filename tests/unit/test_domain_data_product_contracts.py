@@ -323,6 +323,8 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["lifecycle_status"] == "active"
     assert campaign_membership["request_scope"]["supports_bulk"] is True
     assert campaign_membership["approved_consumers"] == ["lotus-gateway"]
+    assert "tenant_id" in campaign_membership["required_trust_metadata"]
+    assert "tenant_id" in campaign_membership["identifier_refs"]
     assert campaign_membership["mesh_maturity_posture"] == {
         "maturity_state": "deferred",
         "maturity_wave": "future_wave",
@@ -360,6 +362,10 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["lineage_policy"]["lineage_required"] is True
     assert (
         "BulkReviewCampaignDefinition:v1"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "tenant-scoped source-backed candidate set"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
     assert (
