@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_assignment_task_http import (
-    list_campaign_definition_assignment_tasks_response,
-    open_campaign_definition_assignment_task_response,
-    transition_campaign_definition_assignment_task_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_evidence_value_http_exception,
+    campaign_definition_not_found_http_exception,
 )
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
@@ -23,11 +23,22 @@ from src.api.routers.wave_route_parameters import (
     CampaignEvidenceLimitQuery,
     CampaignEvidenceOffsetQuery,
 )
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_success,
+    record_campaign_workflow_unexpected_error,
+)
+from src.api.services.wave_campaign_application import (
+    DpmCampaignDefinitionAssignmentTaskOpenCommand,
+    DpmCampaignDefinitionAssignmentTaskTransitionCommand,
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
+)
 from src.core.waves import (
     CampaignAssignmentTaskStatus,
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionAssignmentTaskPage,
-    DpmBulkReviewCampaignDefinitionRepository,
+    DpmBulkReviewCampaignDefinitionConflictError,
 )
 
 router = APIRouter()
@@ -56,17 +67,45 @@ def open_bulk_review_campaign_definition_assignment_task_endpoint(
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return open_campaign_definition_assignment_task_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
+    surface = "assignment_task_open"
+    try:
+        result = application_service.open_campaign_definition_assignment_task(
+            command=DpmCampaignDefinitionAssignmentTaskOpenCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                task_ref=request.task_ref,
+                task_type=request.task_type,
+                opened_by=request.opened_by,
+                task_reason=request.task_reason,
+                assigned_actor_ids=request.assigned_actor_ids,
+                escalation_tier=request.escalation_tier,
+                sla_posture=request.sla_posture,
+                due_at=request.due_at,
+                correlation_id=request.correlation_id,
+                source_refs=request.source_refs,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        http_exc = campaign_definition_conflict_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_workflow_http_exception(
+            surface=surface,
+            exc=campaign_definition_not_found_http_exception(),
+        ) from exc
+    except ValueError as exc:
+        http_exc = campaign_definition_evidence_value_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=result.replay)
+    return result.definition
 
 
 @router.post(
@@ -93,18 +132,46 @@ def transition_bulk_review_campaign_definition_assignment_task_endpoint(
     task_ref: CampaignAssignmentTaskRefPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return transition_campaign_definition_assignment_task_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        task_ref=task_ref,
-        request=request,
-        repository=repository,
-    )
+    surface = "assignment_task_transition"
+    try:
+        result = application_service.transition_campaign_definition_assignment_task(
+            command=DpmCampaignDefinitionAssignmentTaskTransitionCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                task_ref=task_ref,
+                transition_type=request.transition_type,
+                transition_ref=request.transition_ref,
+                transitioned_by=request.transitioned_by,
+                transition_reason=request.transition_reason,
+                assigned_actor_ids=request.assigned_actor_ids,
+                escalation_tier=request.escalation_tier,
+                sla_posture=request.sla_posture,
+                due_at=request.due_at,
+                correlation_id=request.correlation_id,
+                source_refs=request.source_refs,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        http_exc = campaign_definition_conflict_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_workflow_http_exception(
+            surface=surface,
+            exc=campaign_definition_not_found_http_exception(),
+        ) from exc
+    except ValueError as exc:
+        http_exc = campaign_definition_evidence_value_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=result.replay)
+    return result.definition
 
 
 @router.get(
@@ -127,16 +194,18 @@ def list_bulk_review_campaign_definition_assignment_tasks(
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
-    return list_campaign_definition_assignment_tasks_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        status=status,
-        limit=limit,
-        offset=offset,
-        repository=repository,
-    )
+    try:
+        return application_service.list_campaign_definition_assignment_tasks(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            status=status,
+            limit=limit,
+            offset=offset,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc

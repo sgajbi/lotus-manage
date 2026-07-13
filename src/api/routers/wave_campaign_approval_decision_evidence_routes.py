@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_approval_decision_http import (
-    list_campaign_definition_approval_decisions_response,
-    record_campaign_definition_approval_decision_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_evidence_value_http_exception,
+    campaign_definition_not_found_http_exception,
 )
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
@@ -20,10 +21,20 @@ from src.api.routers.wave_route_parameters import (
     CampaignEvidenceLimitQuery,
     CampaignEvidenceOffsetQuery,
 )
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_success,
+    record_campaign_workflow_unexpected_error,
+)
+from src.api.services.wave_campaign_application import (
+    DpmCampaignDefinitionApprovalDecisionCommand,
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
+)
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionApprovalDecisionPage,
-    DpmBulkReviewCampaignDefinitionRepository,
+    DpmBulkReviewCampaignDefinitionConflictError,
 )
 
 router = APIRouter()
@@ -51,17 +62,41 @@ def record_bulk_review_campaign_definition_approval_decision_endpoint(
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return record_campaign_definition_approval_decision_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
+    surface = "approval_decision"
+    try:
+        result = application_service.record_campaign_definition_approval_decision(
+            command=DpmCampaignDefinitionApprovalDecisionCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                decision_type=request.decision_type,
+                decision_ref=request.decision_ref,
+                decided_by=request.decided_by,
+                decision_reason=request.decision_reason,
+                correlation_id=request.correlation_id,
+                source_refs=request.source_refs,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        http_exc = campaign_definition_conflict_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_workflow_http_exception(
+            surface=surface,
+            exc=campaign_definition_not_found_http_exception(),
+        ) from exc
+    except ValueError as exc:
+        http_exc = campaign_definition_evidence_value_http_exception(exc)
+        raise campaign_workflow_http_exception(surface=surface, exc=http_exc) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface, replay=result.replay)
+    return result.definition
 
 
 @router.get(
@@ -82,15 +117,17 @@ def list_bulk_review_campaign_definition_approval_decisions(
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
-    return list_campaign_definition_approval_decisions_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        limit=limit,
-        offset=offset,
-        repository=repository,
-    )
+    try:
+        return application_service.list_campaign_definition_approval_decisions(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            limit=limit,
+            offset=offset,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc
