@@ -17,8 +17,10 @@ from src.core.pm_quality.repository import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
@@ -369,6 +371,7 @@ class PostgresDpmPmQualityReviewActionRepository:
 
     def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
         with closing(self._connect()) as connection:
+            _validate_postgres_review_action_parent(connection=connection, action=action)
             connection.execute(
                 """
                 INSERT INTO dpm_pm_quality_review_actions (
@@ -488,38 +491,51 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
 
     def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
         with closing(self._connect()) as connection:
-            connection.execute(
-                """
-                INSERT INTO dpm_pm_quality_summary_invocations (
-                    summary_invocation_id, score_run_id, review_action_id, policy_id,
-                    policy_version, as_of_date, invocation_state, summary_ref,
-                    workflow_pack_name, workflow_pack_version, workflow_run_id,
-                    summary_artifact_ref, summary_content_hash, content_hash,
-                    generated_at, requested_by, correlation_id, payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (summary_invocation_id) DO NOTHING
-                """,
-                (
-                    invocation.summary_invocation_id,
-                    invocation.score_run_id,
-                    invocation.review_action_id,
-                    invocation.policy_id,
-                    invocation.policy_version,
-                    invocation.as_of_date,
-                    invocation.invocation_state,
-                    invocation.summary_ref,
-                    invocation.workflow_pack_name,
-                    invocation.workflow_pack_version,
-                    invocation.workflow_run_id,
-                    invocation.summary_artifact_ref,
-                    invocation.summary_content_hash,
-                    invocation.content_hash,
-                    invocation.generated_at.isoformat(),
-                    invocation.requested_by,
-                    invocation.correlation_id,
-                    dump_model_json(invocation),
-                ),
+            _validate_postgres_summary_invocation_parents(
+                connection=connection,
+                invocation=invocation,
             )
+            try:
+                connection.execute(
+                    """
+                    INSERT INTO dpm_pm_quality_summary_invocations (
+                        summary_invocation_id, score_run_id, review_action_id, policy_id,
+                        policy_version, as_of_date, invocation_state, summary_ref,
+                        workflow_pack_name, workflow_pack_version, workflow_run_id,
+                        summary_artifact_ref, summary_content_hash, content_hash,
+                        generated_at, requested_by, correlation_id, payload_json
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (summary_invocation_id) DO NOTHING
+                    """,
+                    (
+                        invocation.summary_invocation_id,
+                        invocation.score_run_id,
+                        invocation.review_action_id,
+                        invocation.policy_id,
+                        invocation.policy_version,
+                        invocation.as_of_date,
+                        invocation.invocation_state,
+                        invocation.summary_ref,
+                        invocation.workflow_pack_name,
+                        invocation.workflow_pack_version,
+                        invocation.workflow_run_id,
+                        invocation.summary_artifact_ref,
+                        invocation.summary_content_hash,
+                        invocation.content_hash,
+                        invocation.generated_at.isoformat(),
+                        invocation.requested_by,
+                        invocation.correlation_id,
+                        dump_model_json(invocation),
+                    ),
+                )
+            except Exception as exc:
+                _raise_if_foreign_key_violation(
+                    exc,
+                    DpmPmQualitySummaryInvocationIntegrityError(
+                        "PM_QUALITY_SUMMARY_INVOCATION_PARENT_NOT_FOUND"
+                    ),
+                )
+                raise
             persisted = connection.execute(
                 """
                 SELECT content_hash
@@ -598,6 +614,115 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
             apply_postgres_migrations(connection=connection, namespace="dpm")
+
+
+def _validate_postgres_review_action_parent(
+    *,
+    connection: Any,
+    action: DpmPmQualityReviewAction,
+) -> None:
+    if action.target_type == "SCORE_RUN":
+        row = _pm_quality_parent_row(
+            connection=connection,
+            table="dpm_pm_quality_score_runs",
+            id_column="score_run_id",
+            identifier=action.target_id,
+        )
+    elif action.target_type == "FAIRNESS_ANALYSIS":
+        row = _pm_quality_parent_row(
+            connection=connection,
+            table="dpm_pm_quality_fairness_analyses",
+            id_column="fairness_analysis_id",
+            identifier=action.target_id,
+        )
+    else:
+        raise DpmPmQualityReviewActionIntegrityError(
+            "PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_UNSUPPORTED"
+        )
+    if row is None:
+        raise DpmPmQualityReviewActionIntegrityError("PM_QUALITY_REVIEW_ACTION_TARGET_NOT_FOUND")
+    if (
+        row["content_hash"] != action.target_content_hash
+        or row["policy_id"] != action.policy_id
+        or row["policy_version"] != action.policy_version
+        or row["as_of_date"] != action.as_of_date
+        or row["state"] != action.target_state
+    ):
+        raise DpmPmQualityReviewActionIntegrityError("PM_QUALITY_REVIEW_ACTION_TARGET_MISMATCH")
+
+
+def _validate_postgres_summary_invocation_parents(
+    *,
+    connection: Any,
+    invocation: DpmPmQualitySummaryInvocation,
+) -> None:
+    score_run = _pm_quality_parent_row(
+        connection=connection,
+        table="dpm_pm_quality_score_runs",
+        id_column="score_run_id",
+        identifier=invocation.score_run_id,
+    )
+    if score_run is None:
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_SCORE_RUN_NOT_FOUND"
+        )
+    if (
+        score_run["content_hash"] != invocation.score_run_content_hash
+        or score_run["policy_id"] != invocation.policy_id
+        or score_run["policy_version"] != invocation.policy_version
+        or score_run["as_of_date"] != invocation.as_of_date
+    ):
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_SCORE_RUN_MISMATCH"
+        )
+    review_action = connection.execute(
+        """
+        SELECT content_hash, target_type, target_id, policy_id, policy_version, as_of_date
+        FROM dpm_pm_quality_review_actions
+        WHERE review_action_id = %s
+        """,
+        (invocation.review_action_id,),
+    ).fetchone()
+    if review_action is None:
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_REVIEW_ACTION_NOT_FOUND"
+        )
+    if (
+        review_action["content_hash"] != invocation.review_action_content_hash
+        or review_action["target_type"] != "SCORE_RUN"
+        or review_action["target_id"] != invocation.score_run_id
+        or review_action["policy_id"] != invocation.policy_id
+        or review_action["policy_version"] != invocation.policy_version
+        or review_action["as_of_date"] != invocation.as_of_date
+    ):
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_REVIEW_ACTION_MISMATCH"
+        )
+
+
+def _pm_quality_parent_row(
+    *,
+    connection: Any,
+    table: str,
+    id_column: str,
+    identifier: str,
+) -> Any:
+    return connection.execute(
+        f"""
+        SELECT content_hash, policy_id, policy_version, as_of_date, state
+        FROM {table}
+        WHERE {id_column} = %s
+        """,
+        (identifier,),
+    ).fetchone()
+
+
+def _raise_if_foreign_key_violation(exc: Exception, replacement: Exception) -> None:
+    sqlstate = getattr(exc, "sqlstate", None)
+    if sqlstate is None:
+        sqlstate = getattr(getattr(exc, "diag", None), "sqlstate", None)
+    if sqlstate == "23503":
+        raise replacement from exc
 
 
 def _payload(row: Any) -> str | dict[str, Any]:

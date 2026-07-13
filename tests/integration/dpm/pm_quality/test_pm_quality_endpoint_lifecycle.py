@@ -109,6 +109,11 @@ class _PmQualityPostgresConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_score_runs"):
             row = self.score_runs.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, policy_id, policy_version, as_of_date, state "
+            "FROM dpm_pm_quality_score_runs"
+        ):
+            return _FakeCursor(_parent_evidence_row(self.score_runs.get(str(params[0]))))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_score_runs WHERE")
             and "score_run_id = %s" in normalized
@@ -143,6 +148,11 @@ class _PmQualityPostgresConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_fairness_analyses"):
             row = self.fairness_analyses.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, policy_id, policy_version, as_of_date, state "
+            "FROM dpm_pm_quality_fairness_analyses"
+        ):
+            return _FakeCursor(_parent_evidence_row(self.fairness_analyses.get(str(params[0]))))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses WHERE")
             and "fairness_analysis_id = %s" in normalized
@@ -179,6 +189,11 @@ class _PmQualityPostgresConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_review_actions"):
             row = self.review_actions.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, target_type, target_id, policy_id, policy_version, as_of_date "
+            "FROM dpm_pm_quality_review_actions"
+        ):
+            return _FakeCursor(_review_action_parent_row(self.review_actions.get(str(params[0]))))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions WHERE")
             and "review_action_id = %s" in normalized
@@ -289,6 +304,31 @@ class _PmQualityPostgresConnection:
 
     def close(self) -> None:
         return None
+
+
+def _parent_evidence_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    return {
+        "content_hash": row["content_hash"],
+        "policy_id": row["policy_id"],
+        "policy_version": row["policy_version"],
+        "as_of_date": row["as_of_date"],
+        "state": row["state"],
+    }
+
+
+def _review_action_parent_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    return {
+        "content_hash": row["content_hash"],
+        "target_type": row["target_type"],
+        "target_id": row["target_id"],
+        "policy_id": row["policy_id"],
+        "policy_version": row["policy_version"],
+        "as_of_date": row["as_of_date"],
+    }
 
 
 @pytest.fixture

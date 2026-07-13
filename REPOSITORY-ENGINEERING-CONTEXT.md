@@ -607,7 +607,12 @@ Current repository posture:
     trade, order, OMS, or execution decisions. `REQUESTED` rows reject result and failure evidence,
     `COMPLETED` rows require workflow run, artifact reference, and `sha256:` artifact hash, and
     `FAILED` rows require workflow run plus non-sensitive `failure_reason_code` while rejecting
-    completed artifact evidence.
+    completed artifact evidence. PM-quality persistence enforces audit-lineage integrity below
+    HTTP lookup: review-action adapters validate persisted score-run or fairness-analysis targets,
+    summary-invocation adapters validate score-run/review-action parent coherence, and DPM
+    Postgres migration `0016_pm_quality_lineage_integrity.sql` adds non-cascading
+    `ON DELETE RESTRICT` summary parent foreign keys. Existing orphan summary rows must be
+    remediated before that migration can apply.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary

@@ -475,7 +475,11 @@ routing orders, or claiming OMS execution. Each row carries structured
 `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a deterministic content hash, proving Manage
 records invocation history only and does not store or expose generated summary text, project
 downstream summary UX, reconstruct prompts or model responses, generate client messages, approve
-trades, route orders, or claim OMS execution.
+trades, route orders, or claim OMS execution. PM-quality persistence enforces audit-lineage
+integrity below HTTP lookup: review actions validate persisted score-run or fairness-analysis
+targets, summary invocations validate score-run/review-action parent coherence before insert, and
+Postgres migration `0016_pm_quality_lineage_integrity.sql` adds `ON DELETE RESTRICT` summary
+parent foreign keys so immutable lineage cannot be silently cascaded away.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,

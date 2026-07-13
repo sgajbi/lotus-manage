@@ -25,7 +25,10 @@ from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
 )
-from src.core.pm_quality import DpmPmQualityReviewActionConflictError
+from src.core.pm_quality import (
+    DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
+)
 
 
 def register_pm_quality_review_action_routes(
@@ -96,7 +99,10 @@ def register_pm_quality_review_action_routes(
                     x_correlation_id=x_correlation_id,
                 )
             )
-        except DpmPmQualityReviewActionConflictError as exc:
+        except (
+            DpmPmQualityReviewActionConflictError,
+            DpmPmQualityReviewActionIntegrityError,
+        ) as exc:
             raise pm_quality_conflict_http_exception(exc) from exc
         except DpmPmOperatingQualityServiceError as exc:
             raise pm_quality_service_http_exception(exc) from exc

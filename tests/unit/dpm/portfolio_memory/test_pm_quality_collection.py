@@ -80,6 +80,31 @@ def test_pm_quality_memory_events_skips_downstream_scans_without_portfolio_scope
     assert summary_invocation_repository.list_summary_invocations_call_count == 0
 
 
+def test_pm_quality_memory_events_omits_unresolved_summary_lineage() -> None:
+    score_run_repository = _CountingScoreRunRepository()
+    summary_invocation_repository = _CountingSummaryInvocationRepository()
+    score_run_repository.save_score_run(score_run=_pm_quality_score_run())
+    summary_invocation_repository.save_summary_invocation(
+        invocation=_pm_quality_summary_invocation().model_copy(
+            update={
+                "summary_invocation_id": "pmq_summary_orphan",
+                "score_run_id": "pmq_score_run_missing",
+                "content_hash": "sha256:pmq-summary-orphan",
+            }
+        )
+    )
+
+    events = pm_quality_memory_events(
+        portfolio_id=PORTFOLIO_ID,
+        score_run_repository=score_run_repository,
+        summary_invocation_repository=summary_invocation_repository,
+        limit=100,
+    )
+
+    assert [event.event_type for event in events] == ["PM_QUALITY_SCORE_RUN"]
+    assert summary_invocation_repository.list_summary_invocations_call_count == 1
+
+
 class _CountingScoreRunRepository(InMemoryDpmPmQualityScoreRunRepository):
     def __init__(self) -> None:
         super().__init__()

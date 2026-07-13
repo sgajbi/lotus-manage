@@ -4,6 +4,7 @@ from decimal import Decimal
 import json
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 from types import ModuleType
 from typing import Any
 
@@ -15,8 +16,10 @@ from src.core.pm_quality import (
     DpmPmQualityGovernanceApproval,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
     DpmPmQualityWeight,
     DpmPmQualityFairnessSegmentInput,
     build_pm_operating_quality_fairness_analysis,
@@ -62,6 +65,9 @@ from src.infrastructure.pm_quality.postgres import (
     PostgresDpmPmQualityScoreRunRepository,
     PostgresDpmPmQualitySummaryInvocationRepository,
 )
+
+
+ROOT = Path(__file__).resolve().parents[4]
 
 
 def _governance_approval() -> DpmPmQualityGovernanceApproval:
@@ -194,6 +200,31 @@ def _summary_invocation():
     )
 
 
+def _summary_invocation_with_parents():
+    score_run = _score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+    invocation = build_pm_quality_summary_invocation(
+        score_run=score_run,
+        review_action=review_action,
+        invocation_state="REQUESTED",
+        summary_ref="PMQ-SUMMARY-2026-05-001",
+        requested_by="ops",
+        source_refs=[],
+        correlation_id="corr-summary",
+    )
+    return score_run, review_action, invocation
+
+
 class _FakeCursor:
     def __init__(self, row: dict[str, Any] | None = None, rows: list[dict[str, Any]] | None = None):
         self._row = row
@@ -238,6 +269,12 @@ class _FakePolicyConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_score_runs"):
             row = self.score_runs.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, policy_id, policy_version, as_of_date, state "
+            "FROM dpm_pm_quality_score_runs"
+        ):
+            row = self.score_runs.get(str(params[0]))
+            return _FakeCursor(row=_parent_evidence_row(row))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_score_runs WHERE")
             and "score_run_id = %s" in normalized
@@ -263,6 +300,12 @@ class _FakePolicyConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_fairness_analyses"):
             row = self.fairness_analyses.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, policy_id, policy_version, as_of_date, state "
+            "FROM dpm_pm_quality_fairness_analyses"
+        ):
+            row = self.fairness_analyses.get(str(params[0]))
+            return _FakeCursor(row=_parent_evidence_row(row))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses WHERE")
             and "fairness_analysis_id = %s" in normalized
@@ -294,6 +337,12 @@ class _FakePolicyConnection:
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_review_actions"):
             row = self.review_actions.get(str(params[0]))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
+        if normalized.startswith(
+            "SELECT content_hash, target_type, target_id, policy_id, policy_version, as_of_date "
+            "FROM dpm_pm_quality_review_actions"
+        ):
+            row = self.review_actions.get(str(params[0]))
+            return _FakeCursor(row=_review_action_parent_row(row))
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions WHERE")
             and "review_action_id = %s" in normalized
@@ -474,6 +523,87 @@ class _FakePolicyConnection:
 
     def close(self) -> None:
         self.closed = True
+
+
+def _parent_evidence_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    return {
+        "content_hash": row["content_hash"],
+        "policy_id": row["policy_id"],
+        "policy_version": row["policy_version"],
+        "as_of_date": row["as_of_date"],
+        "state": row["state"],
+    }
+
+
+def _review_action_parent_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
+    if row is None:
+        return None
+    return {
+        "content_hash": row["content_hash"],
+        "target_type": row["target_type"],
+        "target_id": row["target_id"],
+        "policy_id": row["policy_id"],
+        "policy_version": row["policy_version"],
+        "as_of_date": row["as_of_date"],
+    }
+
+
+def _seed_score_run_parent(
+    connection: _FakePolicyConnection,
+    score_run: Any,
+) -> None:
+    connection.score_runs[score_run.score_run_id] = {
+        "score_run_id": score_run.score_run_id,
+        "pm_id": score_run.pm_id,
+        "book_id": score_run.book_id,
+        "policy_id": score_run.policy_id,
+        "policy_version": score_run.policy_version,
+        "as_of_date": score_run.as_of_date,
+        "state": score_run.state,
+        "content_hash": score_run.content_hash,
+        "generated_at": score_run.generated_at.isoformat(),
+        "payload_json": score_run.model_dump(mode="json"),
+    }
+
+
+def _seed_fairness_analysis_parent(
+    connection: _FakePolicyConnection,
+    analysis: Any,
+) -> None:
+    connection.fairness_analyses[analysis.fairness_analysis_id] = {
+        "fairness_analysis_id": analysis.fairness_analysis_id,
+        "policy_id": analysis.policy_id,
+        "policy_version": analysis.policy_version,
+        "as_of_date": analysis.as_of_date,
+        "state": analysis.state,
+        "content_hash": analysis.content_hash,
+        "generated_at": analysis.generated_at.isoformat(),
+        "payload_json": analysis.model_dump(mode="json"),
+    }
+
+
+def _seed_review_action_parent(
+    connection: _FakePolicyConnection,
+    action: Any,
+) -> None:
+    connection.review_actions[action.review_action_id] = {
+        "review_action_id": action.review_action_id,
+        "review_action_ref": action.review_action_ref,
+        "target_type": action.target_type,
+        "target_id": action.target_id,
+        "policy_id": action.policy_id,
+        "policy_version": action.policy_version,
+        "as_of_date": action.as_of_date,
+        "target_state": action.target_state,
+        "action_type": action.action_type,
+        "action_state": action.action_state,
+        "content_hash": action.content_hash,
+        "generated_at": action.generated_at.isoformat(),
+        "actor_id": action.actor_id,
+        "payload_json": action.model_dump(mode="json"),
+    }
 
 
 @pytest.fixture
@@ -860,6 +990,45 @@ def test_in_memory_pm_quality_repository_persists_immutable_review_actions() -> 
         repository.save_review_action(action=changed)
 
 
+def test_in_memory_pm_quality_repository_validates_review_action_parents() -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
+    repository = InMemoryDpmPmQualityReviewActionRepository(
+        score_run_repository=score_repository,
+        fairness_analysis_repository=fairness_repository,
+    )
+    score_action = _review_action()
+
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_NOT_FOUND"):
+        repository.save_review_action(action=score_action)
+
+    score_repository.save_score_run(score_run=_score_run())
+    changed_score_action = score_action.model_copy(update={"target_content_hash": "sha256:stale"})
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_MISMATCH"):
+        repository.save_review_action(action=changed_score_action)
+
+    repository.save_review_action(action=score_action)
+    repository.save_review_action(action=score_action)
+
+    fairness_analysis = _fairness_analysis()
+    fairness_action = build_pm_quality_review_action(
+        target=fairness_analysis,
+        target_type="FAIRNESS_ANALYSIS",
+        action_type="ESCALATE_MODEL_RISK_REVIEW",
+        review_action_ref="PMQ-FAIRNESS-REVIEW-2026-05-001",
+        review_reason="Escalated for governed fairness review.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-fairness-review",
+    )
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_NOT_FOUND"):
+        repository.save_review_action(action=fairness_action)
+
+    fairness_repository.save_fairness_analysis(analysis=fairness_analysis)
+    repository.save_review_action(action=fairness_action)
+
+
 def test_in_memory_pm_quality_repository_lists_review_actions() -> None:
     repository = InMemoryDpmPmQualityReviewActionRepository()
     action = _review_action()
@@ -1006,6 +1175,53 @@ def test_in_memory_pm_quality_repository_persists_immutable_summary_invocations(
         repository.save_summary_invocation(invocation=changed)
 
 
+def test_in_memory_pm_quality_repository_validates_summary_invocation_parents() -> None:
+    score_repository = InMemoryDpmPmQualityScoreRunRepository()
+    review_repository = InMemoryDpmPmQualityReviewActionRepository(
+        score_run_repository=score_repository
+    )
+    repository = InMemoryDpmPmQualitySummaryInvocationRepository(
+        score_run_repository=score_repository,
+        review_action_repository=review_repository,
+    )
+    score_run, review_action, invocation = _summary_invocation_with_parents()
+
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="SCORE_RUN_NOT_FOUND",
+    ):
+        repository.save_summary_invocation(invocation=invocation)
+
+    score_repository.save_score_run(score_run=score_run)
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="REVIEW_ACTION_NOT_FOUND",
+    ):
+        repository.save_summary_invocation(invocation=invocation)
+
+    review_repository.save_review_action(action=review_action)
+    changed_score_hash = invocation.model_copy(
+        update={"score_run_content_hash": "sha256:stale-score"}
+    )
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="SCORE_RUN_MISMATCH",
+    ):
+        repository.save_summary_invocation(invocation=changed_score_hash)
+
+    changed_review_hash = invocation.model_copy(
+        update={"review_action_content_hash": "sha256:stale-review"}
+    )
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="REVIEW_ACTION_MISMATCH",
+    ):
+        repository.save_summary_invocation(invocation=changed_review_hash)
+
+    repository.save_summary_invocation(invocation=invocation)
+    repository.save_summary_invocation(invocation=invocation)
+
+
 def test_in_memory_pm_quality_repository_lists_summary_invocations() -> None:
     repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     invocation = _summary_invocation()
@@ -1088,6 +1304,7 @@ def test_postgres_pm_quality_review_action_repository_round_trips_actions(
 ) -> None:
     repository, connection = fake_postgres_review_action_repository
     action = _review_action()
+    _seed_score_run_parent(connection, _score_run())
 
     repository.save_review_action(action=action)
     repository.save_review_action(action=action)
@@ -1102,13 +1319,52 @@ def test_postgres_pm_quality_review_action_repository_round_trips_actions(
     assert connection.commits == 2
 
 
+def test_postgres_pm_quality_review_action_repository_validates_parent_lineage(
+    fake_postgres_review_action_repository: tuple[
+        PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection
+    ],
+) -> None:
+    repository, connection = fake_postgres_review_action_repository
+    score_action = _review_action()
+
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_NOT_FOUND"):
+        repository.save_review_action(action=score_action)
+
+    _seed_score_run_parent(connection, _score_run())
+    changed_score_action = score_action.model_copy(update={"target_content_hash": "sha256:stale"})
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_MISMATCH"):
+        repository.save_review_action(action=changed_score_action)
+
+    repository.save_review_action(action=score_action)
+
+    fairness_analysis = _fairness_analysis()
+    fairness_action = build_pm_quality_review_action(
+        target=fairness_analysis,
+        target_type="FAIRNESS_ANALYSIS",
+        action_type="ESCALATE_MODEL_RISK_REVIEW",
+        review_action_ref="PMQ-FAIRNESS-REVIEW-2026-05-001",
+        review_reason="Escalated for governed fairness review.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-fairness-review",
+    )
+    with pytest.raises(DpmPmQualityReviewActionIntegrityError, match="TARGET_NOT_FOUND"):
+        repository.save_review_action(action=fairness_action)
+
+    _seed_fairness_analysis_parent(connection, fairness_analysis)
+    repository.save_review_action(action=fairness_action)
+
+
 def test_postgres_pm_quality_summary_invocation_repository_round_trips_invocations(
     fake_postgres_summary_invocation_repository: tuple[
         PostgresDpmPmQualitySummaryInvocationRepository, _FakePolicyConnection
     ],
 ) -> None:
     repository, connection = fake_postgres_summary_invocation_repository
-    invocation = _summary_invocation()
+    score_run, review_action, invocation = _summary_invocation_with_parents()
+    _seed_score_run_parent(connection, score_run)
+    _seed_review_action_parent(connection, review_action)
 
     repository.save_summary_invocation(invocation=invocation)
     repository.save_summary_invocation(invocation=invocation)
@@ -1130,6 +1386,50 @@ def test_postgres_pm_quality_summary_invocation_repository_round_trips_invocatio
     assert connection.commits == 2
 
 
+def test_postgres_pm_quality_summary_invocation_repository_validates_parent_lineage(
+    fake_postgres_summary_invocation_repository: tuple[
+        PostgresDpmPmQualitySummaryInvocationRepository, _FakePolicyConnection
+    ],
+) -> None:
+    repository, connection = fake_postgres_summary_invocation_repository
+    score_run, review_action, invocation = _summary_invocation_with_parents()
+
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="SCORE_RUN_NOT_FOUND",
+    ):
+        repository.save_summary_invocation(invocation=invocation)
+
+    _seed_score_run_parent(connection, score_run)
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="REVIEW_ACTION_NOT_FOUND",
+    ):
+        repository.save_summary_invocation(invocation=invocation)
+
+    _seed_review_action_parent(connection, review_action)
+    changed_score_hash = invocation.model_copy(
+        update={"score_run_content_hash": "sha256:stale-score"}
+    )
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="SCORE_RUN_MISMATCH",
+    ):
+        repository.save_summary_invocation(invocation=changed_score_hash)
+
+    changed_review_hash = invocation.model_copy(
+        update={"review_action_content_hash": "sha256:stale-review"}
+    )
+    with pytest.raises(
+        DpmPmQualitySummaryInvocationIntegrityError,
+        match="REVIEW_ACTION_MISMATCH",
+    ):
+        repository.save_summary_invocation(invocation=changed_review_hash)
+
+    repository.save_summary_invocation(invocation=invocation)
+    repository.save_summary_invocation(invocation=invocation)
+
+
 def test_postgres_pm_quality_review_action_repository_conflict_and_configuration_paths(
     fake_postgres_review_action_repository: tuple[
         PostgresDpmPmQualityReviewActionRepository, _FakePolicyConnection
@@ -1138,6 +1438,7 @@ def test_postgres_pm_quality_review_action_repository_conflict_and_configuration
 ) -> None:
     repository, connection = fake_postgres_review_action_repository
     action = _review_action()
+    _seed_score_run_parent(connection, _score_run())
     repository.save_review_action(action=action)
 
     changed = action.model_copy(update={"content_hash": "sha256:different"})
@@ -1161,7 +1462,9 @@ def test_postgres_pm_quality_summary_invocation_repository_conflict_and_configur
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     repository, connection = fake_postgres_summary_invocation_repository
-    invocation = _summary_invocation()
+    score_run, review_action, invocation = _summary_invocation_with_parents()
+    _seed_score_run_parent(connection, score_run)
+    _seed_review_action_parent(connection, review_action)
     repository.save_summary_invocation(invocation=invocation)
 
     changed = invocation.model_copy(update={"content_hash": "sha256:different"})
@@ -1194,6 +1497,26 @@ def test_pm_quality_postgres_helpers_normalize_payloads_and_import_driver(
     assert postgres_module._payload({"payload_json": {"a": 1}}) == {"a": 1}
     assert postgres_module._payload({"payload_json": 3}) == "3"
     assert postgres_module._payload({"payload_json": '{"a":1}'}) == '{"a":1}'
+
+
+def test_pm_quality_lineage_integrity_migration_declares_restrictive_summary_parents() -> None:
+    migration = (
+        ROOT
+        / "src"
+        / "infrastructure"
+        / "postgres_migrations"
+        / "dpm"
+        / "0016_pm_quality_lineage_integrity.sql"
+    ).read_text(encoding="utf-8")
+
+    required_tokens = [
+        "fk_pm_quality_summary_invocations_score_run",
+        "REFERENCES dpm_pm_quality_score_runs(score_run_id)",
+        "fk_pm_quality_summary_invocations_review_action",
+        "REFERENCES dpm_pm_quality_review_actions(review_action_id)",
+        "ON DELETE RESTRICT",
+    ]
+    assert [token for token in required_tokens if token not in migration] == []
 
 
 def test_in_memory_pm_quality_repository_persists_immutable_score_runs() -> None:

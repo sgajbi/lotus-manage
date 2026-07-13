@@ -35,10 +35,12 @@ from src.core.pm_quality.repository import (
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
     DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
     DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
     DpmPmQualitySummaryInvocationRepository,
 )
 from src.core.pm_quality.review_actions import build_pm_quality_review_action
@@ -72,6 +74,7 @@ __all__ = [
     "DpmPmQualityPolicyRepository",
     "DpmPmQualityReviewAction",
     "DpmPmQualityReviewActionConflictError",
+    "DpmPmQualityReviewActionIntegrityError",
     "DpmPmQualityReviewActionRepository",
     "DpmPmQualityScopeEvidence",
     "DpmPmQualityScoreRunConflictError",
@@ -79,6 +82,7 @@ __all__ = [
     "DpmPmQualitySummaryTextBoundaryEvidence",
     "DpmPmQualitySummaryInvocation",
     "DpmPmQualitySummaryInvocationConflictError",
+    "DpmPmQualitySummaryInvocationIntegrityError",
     "DpmPmQualitySummaryInvocationRepository",
     "DpmPmQualityValidationError",
     "DpmPmQualityWeight",

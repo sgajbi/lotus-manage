@@ -17,15 +17,19 @@ from src.core.pm_quality import (
     DpmPmQualityFairnessAnalysisConflictError,
     DpmPmQualityPolicyConflictError,
     DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
 )
 
 PmQualityConflictError = (
     DpmPmQualityScoreRunConflictError
     | DpmPmQualityFairnessAnalysisConflictError
     | DpmPmQualityReviewActionConflictError
+    | DpmPmQualityReviewActionIntegrityError
     | DpmPmQualitySummaryInvocationConflictError
+    | DpmPmQualitySummaryInvocationIntegrityError
     | DpmPmQualityPolicyConflictError
 )
 
