@@ -1,3 +1,4 @@
+import time
 from typing import Any, Literal, Optional, cast
 
 import httpx
@@ -78,7 +79,9 @@ def source_product_payload_with_retries(
     headers: dict[str, str],
     unavailable_code: str,
     incomplete_code: str,
+    source_service: str = "lotus-core",
 ) -> dict[str, Any]:
+    started_at = time.perf_counter()
     last_error: Exception | None = None
     for attempt in range(attempts):
         try:
@@ -92,18 +95,96 @@ def source_product_payload_with_retries(
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             last_error = exc
             if final_source_product_attempt(attempt_index=attempt, attempts=attempts):
+                _record_source_http_request(
+                    source_service=source_service,
+                    method=method,
+                    outcome="unavailable",
+                    elapsed_seconds=time.perf_counter() - started_at,
+                )
                 raise DpmCoreResolverUnavailableError(unavailable_code) from exc
+            _record_source_http_retry(
+                source_service=source_service,
+                method=method,
+                reason="transport_error",
+            )
             continue
         if should_retry_transient_source_status(
             response,
             attempt_index=attempt,
             attempts=attempts,
         ):
+            _record_source_http_retry(
+                source_service=source_service,
+                method=method,
+                reason="transient_status",
+            )
             continue
-        raise_for_source_product_status(
-            response,
-            unavailable_code=unavailable_code,
-            incomplete_code=incomplete_code,
+        try:
+            raise_for_source_product_status(
+                response,
+                unavailable_code=unavailable_code,
+                incomplete_code=incomplete_code,
+            )
+            payload = source_product_response_payload(response, incomplete_code=incomplete_code)
+        except DpmCoreResolverUnavailableError:
+            _record_source_http_request(
+                source_service=source_service,
+                method=method,
+                outcome="unavailable",
+                elapsed_seconds=time.perf_counter() - started_at,
+            )
+            raise
+        except DpmCoreResolverError:
+            _record_source_http_request(
+                source_service=source_service,
+                method=method,
+                outcome="incomplete",
+                elapsed_seconds=time.perf_counter() - started_at,
+            )
+            raise
+        _record_source_http_request(
+            source_service=source_service,
+            method=method,
+            outcome="success",
+            elapsed_seconds=time.perf_counter() - started_at,
         )
-        return source_product_response_payload(response, incomplete_code=incomplete_code)
+        return payload
+    _record_source_http_request(
+        source_service=source_service,
+        method=method,
+        outcome="unavailable",
+        elapsed_seconds=time.perf_counter() - started_at,
+    )
     raise DpmCoreResolverUnavailableError(unavailable_code) from last_error
+
+
+def _record_source_http_request(
+    *,
+    source_service: str,
+    method: SourceProductMethod,
+    outcome: str,
+    elapsed_seconds: float,
+) -> None:
+    from src.api.observability import record_source_http_request
+
+    record_source_http_request(
+        source_service=source_service,
+        method=method,
+        outcome=outcome,
+        elapsed_seconds=elapsed_seconds,
+    )
+
+
+def _record_source_http_retry(
+    *,
+    source_service: str,
+    method: SourceProductMethod,
+    reason: str,
+) -> None:
+    from src.api.observability import record_source_http_retry
+
+    record_source_http_retry(
+        source_service=source_service,
+        method=method,
+        reason=reason,
+    )

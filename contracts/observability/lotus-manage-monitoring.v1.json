@@ -281,6 +281,53 @@
         ]
       },
       "source": "src.api.observability.record_outcome_review_supportability"
+    },
+    {
+      "name": "lotus_manage_source_http_request_total",
+      "type": "counter",
+      "description": "Counts source-owner HTTP adapter request outcomes for Core, Risk, and Advise.",
+      "labels": {
+        "source_service": ["lotus-core", "lotus-risk", "lotus-advise", "unknown"],
+        "method": ["get", "post"],
+        "outcome": [
+          "success",
+          "unavailable",
+          "incomplete",
+          "rejected",
+          "invalid_response",
+          "error"
+        ]
+      },
+      "source": "src.api.observability.record_source_http_request"
+    },
+    {
+      "name": "lotus_manage_source_http_request_duration_seconds_bucket",
+      "type": "histogram",
+      "description": "Buckets source-owner HTTP adapter request duration for Core, Risk, and Advise.",
+      "labels": {
+        "source_service": ["lotus-core", "lotus-risk", "lotus-advise", "unknown"],
+        "method": ["get", "post"],
+        "outcome": [
+          "success",
+          "unavailable",
+          "incomplete",
+          "rejected",
+          "invalid_response",
+          "error"
+        ]
+      },
+      "source": "src.api.observability.record_source_http_request"
+    },
+    {
+      "name": "lotus_manage_source_http_retry_total",
+      "type": "counter",
+      "description": "Counts bounded source-owner HTTP adapter retries for transport errors and transient source statuses.",
+      "labels": {
+        "source_service": ["lotus-core", "lotus-risk", "lotus-advise", "unknown"],
+        "method": ["get", "post"],
+        "reason": ["transport_error", "transient_status"]
+      },
+      "source": "src.api.observability.record_source_http_retry"
     }
   ],
   "dashboards": [
@@ -301,6 +348,27 @@
           "metric": "lotus_manage_core_resolver_total",
           "query": "sum by (outcome, supportability_state, reason) (rate(lotus_manage_core_resolver_total[5m]))",
           "use_when": "Monitor stateful resolver readiness after the governed lotus-core DPM execution-context contract is available."
+        },
+        {
+          "panel_id": "source-http-request-outcomes",
+          "title": "Source HTTP Request Outcomes",
+          "metric": "lotus_manage_source_http_request_total",
+          "query": "sum by (source_service, method, outcome) (rate(lotus_manage_source_http_request_total[5m]))",
+          "use_when": "Monitor Core, Risk, and Advise source-owner HTTP request outcomes without portfolio ids, payload values, source refs, correlation ids, or raw upstream errors."
+        },
+        {
+          "panel_id": "source-http-retries",
+          "title": "Source HTTP Retries",
+          "metric": "lotus_manage_source_http_retry_total",
+          "query": "sum by (source_service, method, reason) (rate(lotus_manage_source_http_retry_total[5m]))",
+          "use_when": "Monitor bounded source-owner HTTP retry pressure caused by transport errors or transient source statuses."
+        },
+        {
+          "panel_id": "source-http-latency",
+          "title": "Source HTTP Latency",
+          "metric": "lotus_manage_source_http_request_duration_seconds_bucket",
+          "query": "histogram_quantile(0.95, sum by (source_service, method, outcome, le) (rate(lotus_manage_source_http_request_duration_seconds_bucket[5m])))",
+          "use_when": "Monitor bounded source-owner HTTP latency by source service, method, and outcome without payload, identifier, URL, or correlation labels."
         },
         {
           "panel_id": "dpm-execution-outcomes",
@@ -388,6 +456,24 @@
       "for": "15m",
       "description": "lotus-core returned an incomplete or invalid DPM execution context.",
       "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-source-http-unavailable",
+      "severity": "critical",
+      "metric": "lotus_manage_source_http_request_total",
+      "expression": "sum(rate(lotus_manage_source_http_request_total{outcome=\"unavailable\"}[5m])) > 0",
+      "for": "5m",
+      "description": "A source-owner HTTP adapter is reporting unavailable outcomes.",
+      "runbook": "wiki/Operations-Runbook.md#source-http-transport-operations"
+    },
+    {
+      "alert_id": "lotus-manage-source-http-retry-pressure",
+      "severity": "warning",
+      "metric": "lotus_manage_source_http_retry_total",
+      "expression": "sum(rate(lotus_manage_source_http_retry_total[5m])) > 5",
+      "for": "10m",
+      "description": "Source-owner HTTP adapter retries are elevated.",
+      "runbook": "wiki/Operations-Runbook.md#source-http-transport-operations"
     },
     {
       "alert_id": "lotus-manage-execution-errors",

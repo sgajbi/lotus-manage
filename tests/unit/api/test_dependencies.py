@@ -1,4 +1,6 @@
 from src.api import dependencies
+from src.api.services import core_resolver_service
+from src.infrastructure.advise_authority import LotusAdviseAuthorityClient
 from src.infrastructure.construction import InMemoryConstructionRepository
 from src.infrastructure.mandates import InMemoryDpmMandateRepository
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
@@ -11,6 +13,7 @@ from src.infrastructure.pm_quality import (
 )
 from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient
+from src.infrastructure.source_http_clients import close_shared_source_http_clients
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from src.infrastructure.waves.campaign_definitions import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
@@ -245,20 +248,72 @@ def test_extended_repository_dependencies_use_specific_and_fallback_postgres_dsn
 
 
 def test_risk_authority_dependency_is_configured_from_environment(monkeypatch) -> None:
+    close_shared_source_http_clients()
     monkeypatch.setenv("DPM_RISK_BASE_URL", "http://risk.local")
+    monkeypatch.setenv("DPM_RISK_AUTHORITY_TIMEOUT_SECONDS", "1.5")
+    monkeypatch.setenv("DPM_RISK_AUTHORITY_MAX_ATTEMPTS", "3")
 
     client = dependencies.get_risk_authority_client()
 
     assert isinstance(client, LotusRiskAuthorityClient)
+    assert client._config.timeout_seconds == 1.5
+    assert client._config.max_attempts == 3
+    assert client._client is not None
+    assert client._owns_client is False
+    close_shared_source_http_clients()
 
 
 def test_advise_authority_dependency_is_configured_from_environment(monkeypatch) -> None:
+    close_shared_source_http_clients()
     monkeypatch.delenv("DPM_ADVISE_BASE_URL", raising=False)
     assert dependencies.get_advise_authority_client() is None
 
     monkeypatch.setenv("DPM_ADVISE_BASE_URL", "http://advise.local")
+    monkeypatch.setenv("DPM_ADVISE_AUTHORITY_TIMEOUT_SECONDS", "1.25")
+    monkeypatch.setenv("DPM_ADVISE_AUTHORITY_MAX_ATTEMPTS", "4")
 
     client = dependencies.get_advise_authority_client()
 
     assert client is not None
+    assert isinstance(client, LotusAdviseAuthorityClient)
     assert client._config.base_url == "http://advise.local"
+    assert client._config.timeout_seconds == 1.25
+    assert client._config.max_attempts == 4
+    assert client._client is not None
+    assert client._owns_client is False
+    close_shared_source_http_clients()
+
+
+def test_source_adapter_dependencies_reuse_shared_bounded_http_clients(monkeypatch) -> None:
+    close_shared_source_http_clients()
+    monkeypatch.setenv("DPM_CORE_BASE_URL", "http://core.local")
+    monkeypatch.setenv("DPM_RISK_BASE_URL", "http://risk.local")
+    monkeypatch.setenv("DPM_ADVISE_BASE_URL", "http://advise.local")
+
+    core_first = core_resolver_service.build_core_resolver_client()
+    core_second = core_resolver_service.build_core_resolver_client()
+    risk_first = dependencies.get_risk_authority_client()
+    risk_second = dependencies.get_risk_authority_client()
+    advise_first = dependencies.get_advise_authority_client()
+    advise_second = dependencies.get_advise_authority_client()
+
+    try:
+        assert core_first._client is core_second._client
+        assert core_first._owns_client is False
+        assert risk_first is not None
+        assert risk_second is not None
+        assert risk_first._client is risk_second._client
+        assert risk_first._owns_client is False
+        assert advise_first is not None
+        assert advise_second is not None
+        assert advise_first._client is advise_second._client
+        assert advise_first._owns_client is False
+    finally:
+        core_http_client = core_first._client
+        risk_http_client = risk_first._client if risk_first is not None else None
+        advise_http_client = advise_first._client if advise_first is not None else None
+        close_shared_source_http_clients()
+
+    assert core_http_client is not None and core_http_client.is_closed
+    assert risk_http_client is not None and risk_http_client.is_closed
+    assert advise_http_client is not None and advise_http_client.is_closed

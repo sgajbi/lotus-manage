@@ -47,6 +47,10 @@ from src.infrastructure.pm_quality import (
     PostgresDpmPmQualitySummaryInvocationRepository,
 )
 from src.infrastructure.risk_authority import LotusRiskAuthorityClient, LotusRiskAuthorityConfig
+from src.infrastructure.source_http_clients import (
+    build_source_http_client_policy,
+    get_shared_source_http_client,
+)
 from src.infrastructure.waves import (
     InMemoryDpmBulkReviewCampaignDefinitionRepository,
     InMemoryDpmWaveRepository,
@@ -417,7 +421,21 @@ def get_risk_authority_client() -> LotusRiskAuthorityClient | None:
     base_url = os.getenv("DPM_RISK_BASE_URL", "").strip()
     if not base_url:
         return None
-    return LotusRiskAuthorityClient(config=LotusRiskAuthorityConfig(base_url=base_url))
+    config = LotusRiskAuthorityConfig(
+        base_url=base_url,
+        timeout_seconds=_env_float("DPM_RISK_AUTHORITY_TIMEOUT_SECONDS", 2.0),
+        max_attempts=_env_int("DPM_RISK_AUTHORITY_MAX_ATTEMPTS", 2),
+    )
+    return LotusRiskAuthorityClient(
+        config=config,
+        client=get_shared_source_http_client(
+            "risk",
+            policy=build_source_http_client_policy(
+                "risk",
+                request_timeout_seconds=config.timeout_seconds,
+            ),
+        ),
+    )
 
 
 def get_advise_authority_client() -> LotusAdviseAuthorityClient | None:
@@ -426,7 +444,21 @@ def get_advise_authority_client() -> LotusAdviseAuthorityClient | None:
     base_url = os.getenv("DPM_ADVISE_BASE_URL", "").strip()
     if not base_url:
         return None
-    return LotusAdviseAuthorityClient(config=LotusAdviseAuthorityConfig(base_url=base_url))
+    config = LotusAdviseAuthorityConfig(
+        base_url=base_url,
+        timeout_seconds=_env_float("DPM_ADVISE_AUTHORITY_TIMEOUT_SECONDS", 2.0),
+        max_attempts=_env_int("DPM_ADVISE_AUTHORITY_MAX_ATTEMPTS", 2),
+    )
+    return LotusAdviseAuthorityClient(
+        config=config,
+        client=get_shared_source_http_client(
+            "advise",
+            policy=build_source_http_client_policy(
+                "advise",
+                request_timeout_seconds=config.timeout_seconds,
+            ),
+        ),
+    )
 
 
 def _repository_dsn(primary_env_name: str) -> str:
@@ -435,3 +467,17 @@ def _repository_dsn(primary_env_name: str) -> str:
         or os.getenv("DPM_MANAGE_POSTGRES_DSN", "").strip()
         or os.getenv("DPM_SUPPORTABILITY_POSTGRES_DSN", "").strip()
     )
+
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.getenv(name, str(default)))
+    except ValueError:
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    try:
+        return float(os.getenv(name, str(default)))
+    except ValueError:
+        return default

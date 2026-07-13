@@ -66,6 +66,15 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         f"{observability.OUTCOME_REVIEW_SUPPORTABILITY_TOTAL._name}_total": tuple(
             observability.OUTCOME_REVIEW_SUPPORTABILITY_TOTAL._labelnames
         ),
+        f"{observability.SOURCE_HTTP_REQUEST_TOTAL._name}_total": tuple(
+            observability.SOURCE_HTTP_REQUEST_TOTAL._labelnames
+        ),
+        f"{observability.SOURCE_HTTP_REQUEST_DURATION_SECONDS._name}_bucket": tuple(
+            observability.SOURCE_HTTP_REQUEST_DURATION_SECONDS._labelnames
+        ),
+        f"{observability.SOURCE_HTTP_RETRY_TOTAL._name}_total": tuple(
+            observability.SOURCE_HTTP_RETRY_TOTAL._labelnames
+        ),
     }
 
 

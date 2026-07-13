@@ -33,6 +33,11 @@ For full repo-native evidence in production-oriented work, run:
   responses. Use
   [docs/methodologies/pm-quality/scoring-and-fairness.md](methodologies/pm-quality/scoring-and-fairness.md)
   for score, fairness, lookback, and validation interpretation.
+- For Core, Risk, or Advise source HTTP transport incidents, use
+  [wiki/Operations-Runbook.md#source-http-transport-operations](../wiki/Operations-Runbook.md#source-http-transport-operations)
+  and triage with `lotus_manage_source_http_request_total`,
+  `lotus_manage_source_http_request_duration_seconds_bucket`, and
+  `lotus_manage_source_http_retry_total`.
 - For OpenAPI or contract drift, run:
   - `python scripts/openapi_quality_gate.py`
   - `python scripts/api_vocabulary_inventory.py --validate-only`

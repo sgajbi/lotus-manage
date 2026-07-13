@@ -8,7 +8,7 @@ from typing import Any, Awaitable, Callable
 from uuid import uuid4
 
 from fastapi import FastAPI, Request, Response
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 from src.api.response_headers import apply_observability_headers
 
@@ -70,6 +70,22 @@ OUTCOME_REVIEW_SUPPORTABILITY_TOTAL = Counter(
     "lotus_manage_outcome_review_supportability_total",
     "lotus-manage outcome review API and supportability outcomes.",
     ["surface", "supportability_state", "reason"],
+)
+SOURCE_HTTP_REQUEST_TOTAL = Counter(
+    "lotus_manage_source_http_request_total",
+    "lotus-manage source-owner HTTP adapter request outcomes.",
+    ["source_service", "method", "outcome"],
+)
+SOURCE_HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "lotus_manage_source_http_request_duration_seconds",
+    "lotus-manage source-owner HTTP adapter request duration.",
+    ["source_service", "method", "outcome"],
+    buckets=(0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0),
+)
+SOURCE_HTTP_RETRY_TOTAL = Counter(
+    "lotus_manage_source_http_retry_total",
+    "lotus-manage source-owner HTTP adapter retry observations.",
+    ["source_service", "method", "reason"],
 )
 HTTP_REQUESTS_TOTAL = Counter(
     "http_requests",
@@ -144,9 +160,7 @@ _ALLOWED_POSTGRES_ACCESS_OUTCOMES = frozenset({"success", "failure"})
 _ALLOWED_POSTGRES_ACCESS_REASONS = frozenset(
     {"connected", "acquire_timeout", "connection_unavailable"}
 )
-_ALLOWED_POSTGRES_ACCESS_CLASSIFICATIONS = frozenset(
-    {"none", "transient", "permanent", "unknown"}
-)
+_ALLOWED_POSTGRES_ACCESS_CLASSIFICATIONS = frozenset({"none", "transient", "permanent", "unknown"})
 _ALLOWED_PM_QUALITY_SURFACES = frozenset(
     {
         "policy",
@@ -269,6 +283,12 @@ _ALLOWED_OUTCOME_REVIEW_REASONS = frozenset(
         "outcome_review_error",
     }
 )
+_ALLOWED_SOURCE_HTTP_SERVICES = frozenset({"lotus-core", "lotus-risk", "lotus-advise", "unknown"})
+_ALLOWED_SOURCE_HTTP_METHODS = frozenset({"get", "post"})
+_ALLOWED_SOURCE_HTTP_OUTCOMES = frozenset(
+    {"success", "unavailable", "incomplete", "rejected", "invalid_response", "error"}
+)
+_ALLOWED_SOURCE_HTTP_RETRY_REASONS = frozenset({"transport_error", "transient_status"})
 _SENSITIVE_LOG_FIELD_NAMES = frozenset(
     {
         "account_id",
@@ -694,6 +714,62 @@ def record_pm_quality_http_result(*, path: str, status_code: int) -> None:
         return
     outcome, reason = _pm_quality_outcome_reason(status_code=status_code)
     record_pm_quality_lifecycle(surface=surface, outcome=outcome, reason=reason)
+
+
+def record_source_http_request(
+    *,
+    source_service: str,
+    method: str,
+    outcome: str,
+    elapsed_seconds: float | None = None,
+) -> None:
+    labels = {
+        "source_service": _safe_metric_label(
+            source_service,
+            allowed_values=_ALLOWED_SOURCE_HTTP_SERVICES,
+            fallback="unknown",
+        ),
+        "method": _safe_metric_label(
+            method.lower(),
+            allowed_values=_ALLOWED_SOURCE_HTTP_METHODS,
+            fallback="post",
+        ),
+        "outcome": _safe_metric_label(
+            outcome,
+            allowed_values=_ALLOWED_SOURCE_HTTP_OUTCOMES,
+            fallback="error",
+        ),
+    }
+    SOURCE_HTTP_REQUEST_TOTAL.labels(**labels).inc()
+    if elapsed_seconds is not None:
+        SOURCE_HTTP_REQUEST_DURATION_SECONDS.labels(**labels).observe(
+            max(float(elapsed_seconds), 0.0)
+        )
+
+
+def record_source_http_retry(
+    *,
+    source_service: str,
+    method: str,
+    reason: str,
+) -> None:
+    SOURCE_HTTP_RETRY_TOTAL.labels(
+        source_service=_safe_metric_label(
+            source_service,
+            allowed_values=_ALLOWED_SOURCE_HTTP_SERVICES,
+            fallback="unknown",
+        ),
+        method=_safe_metric_label(
+            method.lower(),
+            allowed_values=_ALLOWED_SOURCE_HTTP_METHODS,
+            fallback="post",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_SOURCE_HTTP_RETRY_REASONS,
+            fallback="transport_error",
+        ),
+    ).inc()
 
 
 def _pm_quality_surface_from_path(path: str) -> str | None:

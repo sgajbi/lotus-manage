@@ -215,6 +215,7 @@ def _post_with_retries(
             unavailable_error="LOTUS_RISK_UNAVAILABLE",
             rejected_error=rejected_error,
             invalid_response_error="LOTUS_RISK_INVALID_RESPONSE",
+            source_service="lotus-risk",
         )
     except AuthorityHttpError as exc:
         raise LotusRiskAuthorityUnavailableError(exc.code) from exc
