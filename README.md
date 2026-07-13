@@ -419,8 +419,10 @@ in the content hash, and fail closed when any score-contributing source evidence
 ISO `YYYY-MM-DD` business date or falls outside the approved lookback window. The first
 `source_ref.source_version` on each signal is treated as the governing business date when lookback
 is enabled; the policy timezone names the business calendar and does not permit timestamp
-conversion or month-version fallback. Manage records this comparison context only; it does not
-discover peers, rank PMs, or own source methodology.
+conversion or month-version fallback. PM-quality date-only fields reject timestamps and non-canonical
+date text before hashing or persistence; approval, fairness-review, and generated instants require
+timezone-aware timestamps and normalize to UTC. Manage records this comparison context only; it does
+not discover peers, rank PMs, or own source methodology.
 When `pm_book_scope` is supplied, score-run preview/create materializes source-owned lotus-core
 `PortfolioManagerBookMembership:v1` evidence, records `book_scope_evidence` including bounded
 member portfolio ids, and fails closed for unavailable, incomplete, degraded, or empty PM-book

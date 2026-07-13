@@ -88,7 +88,10 @@ Manage consumes source-owned evidence; it does not recalculate upstream methodol
 - Scores are bounded decimal points on a `0..100` scale.
 - Weights are relative positive decimal weights, not percentages that must sum to `100`.
 - Thresholds are decimal score points on the same `0..100` scale.
-- Dates are ISO `YYYY-MM-DD` business dates.
+- Date-only business fields are canonical ISO `YYYY-MM-DD` strings. They reject timestamps,
+  compact dates, month labels, and arbitrary text before hashing or persistence.
+- Approval, fairness-review, and generated-at instants are timezone-aware UTC timestamps.
+  Offset-bearing inputs normalize to UTC before persisted evidence and content hashes are built.
 - `DpmPmQualityLookbackWindowPolicy.timezone` records the approved business-calendar context; the
   implementation does not convert timestamps or infer business dates from month labels.
 
@@ -213,12 +216,14 @@ Fairness-analysis algorithm:
 
 | Condition | Behavior or error |
 | --- | --- |
+| Malformed date-only PM-quality field | `INVALID_PM_QUALITY_BUSINESS_DATE:<field>` at API/domain validation boundary |
+| Malformed PM-quality UTC timestamp | `INVALID_PM_QUALITY_UTC_TIMESTAMP:<field>` at API/domain validation boundary |
 | Policy/date mismatch | `PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH` |
 | Enabled policy missing governance approval | `PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED` |
-| Governance expiry date invalid | `PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID` |
+| Governance expiry date invalid after boundary bypass | `PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID` |
 | Governance expired before run date | `PM_QUALITY_GOVERNANCE_EXPIRED` |
 | Actor not entitled when allow-list is supplied | `PM_QUALITY_ACTOR_NOT_ENTITLED` |
-| Lookback date invalid on policy | `PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID` |
+| Lookback date invalid after boundary bypass | `PM_QUALITY_LOOKBACK_WINDOW_DATE_INVALID` |
 | Lookback enabled but a signal has no business date | `PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED` |
 | Signal business date is invalid | `PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID` |
 | Signal business date outside inclusive window | `PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW` |

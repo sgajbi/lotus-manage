@@ -23,6 +23,7 @@ from src.core.pm_quality import (
     DpmPmQualityEvidenceItem,
 )
 from src.core.pm_quality.book_scope_refs import pm_book_member_source_refs
+from src.core.pm_quality.temporal import canonical_pm_quality_business_date
 from src.api.services.core_resolver_service import (
     CoreResolverError,
     CoreResolverUnavailableError,
@@ -50,7 +51,9 @@ def resolve_pm_book_scope_evidence(
 
 def _parse_pm_book_scope_preview_as_of_date(as_of_date: str) -> date:
     try:
-        return date.fromisoformat(as_of_date)
+        return date.fromisoformat(
+            canonical_pm_quality_business_date(as_of_date, field_name="as_of_date")
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

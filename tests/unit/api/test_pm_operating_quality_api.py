@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -518,11 +519,72 @@ def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
         for error in missing_policy_detail
     )
     assert invalid_book_scope_date.status_code == 422
-    _assert_pm_quality_problem(
-        invalid_book_scope_date,
-        status_code=422,
-        reason_code="INVALID_AS_OF_DATE",
+    assert "INVALID_PM_QUALITY_BUSINESS_DATE:as_of_date" in invalid_book_scope_date.text
+
+
+def test_pm_quality_request_models_canonicalize_date_only_fields() -> None:
+    score_request = pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_validate(
+        {**_request(), "as_of_date": date(2026, 5, 12)}
     )
+    fairness_request = pmq_router.DpmPmQualityFairnessPreviewRequest.model_validate(
+        {
+            "policy_id": "pmq_sg_dpm",
+            "policy_version": "2026.05",
+            "as_of_date": date(2026, 5, 12),
+            "segments": [
+                {
+                    "segment_id": "balanced",
+                    "segment_type": "MANDATE_TYPE",
+                    "display_name": "Balanced",
+                    "score_run_ids": ["score-1"],
+                },
+                {
+                    "segment_id": "income",
+                    "segment_type": "MANDATE_TYPE",
+                    "display_name": "Income",
+                    "score_run_ids": ["score-2"],
+                },
+            ],
+            "actor_id": "ops",
+        }
+    )
+    review_request = pmq_router.DpmPmQualityReviewActionRequest.model_validate(
+        {
+            "target_type": "SCORE_RUN",
+            "target_id": "score-1",
+            "action_type": "ACKNOWLEDGE",
+            "review_action_ref": "PMQ-REVIEW-2026-05-001",
+            "review_reason": "Reviewed.",
+            "remediation_due_date": date(2026, 6, 15),
+            "actor_id": "ops",
+        }
+    )
+
+    assert score_request.as_of_date == "2026-05-12"
+    assert fairness_request.as_of_date == "2026-05-12"
+    assert review_request.remediation_due_date == "2026-06-15"
+
+
+def test_pm_quality_list_filters_reject_invalid_as_of_date_before_repository_resolution() -> None:
+    endpoints = [
+        "/api/v1/rebalance/pm-operating-quality/policies",
+        "/api/v1/rebalance/pm-operating-quality/score-runs",
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+        "/api/v1/rebalance/pm-operating-quality/review-actions",
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+    ]
+
+    with TestClient(app) as client:
+        responses = [
+            client.get(f"{endpoint}?as_of_date=2026-05-12T00:00:00Z") for endpoint in endpoints
+        ]
+
+    for response in responses:
+        _assert_pm_quality_problem(
+            response,
+            status_code=422,
+            reason_code="INVALID_AS_OF_DATE",
+        )
 
 
 def test_pm_operating_quality_authz_rejects_missing_identity_and_capability(
@@ -1016,7 +1078,7 @@ def test_pm_operating_quality_api_rejects_policy_admin_conflicts_and_bad_refs() 
         (
             {"governance_approval": {**_governance_approval(), "expires_on": "bad"}},
             "ops",
-            "PM_QUALITY_GOVERNANCE_EXPIRY_DATE_INVALID",
+            "INVALID_PM_QUALITY_BUSINESS_DATE:expires_on",
         ),
         (
             {"governance_approval": {**_governance_approval(), "entitled_actor_ids": ["ops_2"]}},
