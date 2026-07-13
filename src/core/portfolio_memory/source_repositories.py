@@ -36,6 +36,10 @@ def pm_quality_sources_present(repositories: PortfolioMemorySourceRepositories) 
     )
 
 
+def campaign_definition_sources_present(repositories: PortfolioMemorySourceRepositories) -> bool:
+    return repositories.campaign_definition_repository is not None
+
+
 def require_pm_quality_tenant_id(
     *,
     tenant_id: str | None,
@@ -45,6 +49,20 @@ def require_pm_quality_tenant_id(
         return None
     if tenant_id is None or not tenant_id.strip():
         raise ValueError("tenant_id is required when portfolio memory includes PM-quality sources")
+    return tenant_id.strip()
+
+
+def require_campaign_definition_tenant_id(
+    *,
+    tenant_id: str | None,
+    repositories: PortfolioMemorySourceRepositories,
+) -> str | None:
+    if not campaign_definition_sources_present(repositories):
+        return None
+    if tenant_id is None or not tenant_id.strip():
+        raise ValueError(
+            "tenant_id is required when portfolio memory includes campaign-definition sources"
+        )
     return tenant_id.strip()
 
 

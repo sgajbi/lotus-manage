@@ -24,6 +24,7 @@ from src.core.waves.campaign_definition_lifecycle import (
 
 def retire_campaign_definition_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionRetirementRequest,
@@ -32,6 +33,7 @@ def retire_campaign_definition_response(
     try:
         retired = retire_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
             retired_by=request.retired_by,
@@ -51,6 +53,7 @@ def retire_campaign_definition_response(
 
 def supersede_campaign_definition_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
@@ -59,6 +62,7 @@ def supersede_campaign_definition_response(
     try:
         superseded = supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
             replacement_version=request.superseded_by_campaign_version,

@@ -39,6 +39,12 @@ def _load_campaign_definition_payload(
         return DpmBulkReviewCampaignDefinition.model_validate(legacy_payload)
 
 
+def _campaign_definition_key(
+    definition: DpmBulkReviewCampaignDefinition,
+) -> tuple[str, str, str]:
+    return (definition.tenant_id, definition.campaign_id, definition.campaign_version)
+
+
 _WORKFLOW_UPDATE_OPERATIONS = frozenset(
     {
         "approval_decision",
@@ -119,10 +125,10 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
 ):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._definitions: dict[tuple[str, str], DpmBulkReviewCampaignDefinition] = {}
+        self._definitions: dict[tuple[str, str, str], DpmBulkReviewCampaignDefinition] = {}
 
     def save_definition(self, *, definition: DpmBulkReviewCampaignDefinition) -> None:
-        key = (definition.campaign_id, definition.campaign_version)
+        key = _campaign_definition_key(definition)
         with self._lock:
             existing = self._definitions.get(key)
             if existing is not None and existing.content_hash != definition.content_hash:
@@ -134,16 +140,18 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
     def get_definition(
         self,
         *,
+        tenant_id: str,
         campaign_id: str,
         campaign_version: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
         with self._lock:
-            definition = self._definitions.get((campaign_id, campaign_version))
+            definition = self._definitions.get((tenant_id, campaign_id, campaign_version))
             return deepcopy(definition) if definition is not None else None
 
     def list_definitions(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
@@ -154,6 +162,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
             return deepcopy(
                 _paged_definitions(
                     definitions=self._definitions.values(),
+                    tenant_id=tenant_id,
                     campaign_id=campaign_id,
                     status=status,
                     as_of_date=as_of_date,
@@ -165,6 +174,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
     def list_definitions_by_workflow_projection(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
@@ -184,6 +194,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
             for definition in self._definitions.values()
             if _definition_matches_filters(
                 definition,
+                tenant_id=tenant_id,
                 campaign_id=campaign_id,
                 status=status,
                 as_of_date=as_of_date,
@@ -210,7 +221,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
+        key = _campaign_definition_key(definition)
         with self._lock:
             existing = self._definitions.get(key)
             if existing is None:
@@ -229,7 +240,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
         *,
         definition: DpmBulkReviewCampaignDefinition,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
+        key = _campaign_definition_key(definition)
         with self._lock:
             existing = self._definitions.get(key)
             if existing is None:
@@ -262,7 +273,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
         *,
         expected_content_hash: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
-        key = (definition.campaign_id, definition.campaign_version)
+        key = _campaign_definition_key(definition)
         existing = self._definitions.get(key)
         if existing is None:
             return None
@@ -283,6 +294,7 @@ class InMemoryDpmBulkReviewCampaignDefinitionRepository(
 def _paged_definitions(
     *,
     definitions: Iterable[DpmBulkReviewCampaignDefinition],
+    tenant_id: str,
     campaign_id: str | None,
     status: str | None,
     as_of_date: str | None,
@@ -294,6 +306,7 @@ def _paged_definitions(
         for definition in definitions
         if _definition_matches_filters(
             definition,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             status=status,
             as_of_date=as_of_date,
@@ -308,12 +321,14 @@ def _paged_definitions(
 def _definition_matches_filters(
     definition: DpmBulkReviewCampaignDefinition,
     *,
+    tenant_id: str,
     campaign_id: str | None,
     status: str | None,
     as_of_date: str | None,
 ) -> bool:
     return (
-        _optional_text_filter_matches(definition.campaign_id, campaign_id)
+        definition.tenant_id == tenant_id
+        and _optional_text_filter_matches(definition.campaign_id, campaign_id)
         and _optional_text_filter_matches(definition.status, status)
         and _optional_text_filter_matches(definition.as_of_date, as_of_date)
     )
@@ -343,11 +358,13 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
             connection.execute(
                 """
                 INSERT INTO dpm_bulk_review_campaign_definitions (
-                    campaign_id, campaign_version, status, as_of_date, content_hash, payload_json
-                ) VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (campaign_id, campaign_version) DO NOTHING
+                    tenant_id, campaign_id, campaign_version, status, as_of_date, content_hash,
+                    payload_json
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (tenant_id, campaign_id, campaign_version) DO NOTHING
                 """,
                 (
+                    definition.tenant_id,
                     definition.campaign_id,
                     definition.campaign_version,
                     definition.status,
@@ -360,9 +377,9 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 SELECT content_hash
                 FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
+                WHERE tenant_id = %s AND campaign_id = %s AND campaign_version = %s
                 """,
-                (definition.campaign_id, definition.campaign_version),
+                (definition.tenant_id, definition.campaign_id, definition.campaign_version),
             ).fetchone()
             if persisted is None or persisted["content_hash"] != definition.content_hash:
                 connection.rollback()
@@ -375,6 +392,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
     def get_definition(
         self,
         *,
+        tenant_id: str,
         campaign_id: str,
         campaign_version: str,
     ) -> DpmBulkReviewCampaignDefinition | None:
@@ -383,9 +401,9 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 SELECT payload_json
                 FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
+                WHERE tenant_id = %s AND campaign_id = %s AND campaign_version = %s
                 """,
-                (campaign_id, campaign_version),
+                (tenant_id, campaign_id, campaign_version),
             ).fetchone()
         if row is None:
             return None
@@ -394,14 +412,15 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
     def list_definitions(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
         limit: int | None = 50,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["tenant_id = %s"]
+        args: list[Any] = [tenant_id]
         for column, value in (
             ("campaign_id", campaign_id),
             ("status", status),
@@ -431,6 +450,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
     def list_definitions_by_workflow_projection(
         self,
         *,
+        tenant_id: str,
         campaign_id: str | None = None,
         status: str | None = None,
         as_of_date: str | None = None,
@@ -445,8 +465,8 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
         limit: int | None = None,
         offset: int = 0,
     ) -> list[DpmBulkReviewCampaignDefinition]:
-        clauses: list[str] = []
-        args: list[Any] = []
+        clauses: list[str] = ["d.tenant_id = %s", "w.tenant_id = %s"]
+        args: list[Any] = [tenant_id, tenant_id]
         for column, value in (
             ("d.campaign_id", campaign_id),
             ("d.status", status),
@@ -481,7 +501,8 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 SELECT d.payload_json
                 FROM dpm_bulk_review_campaign_definitions d
                 JOIN dpm_bulk_review_campaign_workflow_read_model w
-                  ON w.campaign_id = d.campaign_id
+                  ON w.tenant_id = d.tenant_id
+                 AND w.campaign_id = d.campaign_id
                  AND w.campaign_version = d.campaign_version
                 {where}
                 ORDER BY d.as_of_date DESC, d.campaign_id DESC, d.campaign_version DESC
@@ -501,9 +522,9 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 SELECT status, payload_json
                 FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
+                WHERE tenant_id = %s AND campaign_id = %s AND campaign_version = %s
                 """,
-                (definition.campaign_id, definition.campaign_version),
+                (definition.tenant_id, definition.campaign_id, definition.campaign_version),
             ).fetchone()
             if persisted is None:
                 connection.rollback()
@@ -516,12 +537,16 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 UPDATE dpm_bulk_review_campaign_definitions
                 SET status = %s, content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
+                WHERE tenant_id = %s
+                  AND campaign_id = %s
+                  AND campaign_version = %s
+                  AND status = 'ACTIVE'
                 """,
                 (
                     definition.status,
                     definition.content_hash,
                     dump_model_json(definition),
+                    definition.tenant_id,
                     definition.campaign_id,
                     definition.campaign_version,
                 ),
@@ -546,9 +571,9 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 SELECT status, payload_json
                 FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
+                WHERE tenant_id = %s AND campaign_id = %s AND campaign_version = %s
                 """,
-                (definition.campaign_id, definition.campaign_version),
+                (definition.tenant_id, definition.campaign_id, definition.campaign_version),
             ).fetchone()
             if persisted is None:
                 connection.rollback()
@@ -561,12 +586,16 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 UPDATE dpm_bulk_review_campaign_definitions
                 SET status = %s, content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s AND campaign_version = %s AND status = 'ACTIVE'
+                WHERE tenant_id = %s
+                  AND campaign_id = %s
+                  AND campaign_version = %s
+                  AND status = 'ACTIVE'
                 """,
                 (
                     definition.status,
                     definition.content_hash,
                     dump_model_json(definition),
+                    definition.tenant_id,
                     definition.campaign_id,
                     definition.campaign_version,
                 ),
@@ -604,9 +633,9 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 SELECT status, content_hash, payload_json
                 FROM dpm_bulk_review_campaign_definitions
-                WHERE campaign_id = %s AND campaign_version = %s
+                WHERE tenant_id = %s AND campaign_id = %s AND campaign_version = %s
                 """,
-                (definition.campaign_id, definition.campaign_version),
+                (definition.tenant_id, definition.campaign_id, definition.campaign_version),
             ).fetchone()
             if persisted is None:
                 connection.rollback()
@@ -629,7 +658,8 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 """
                 UPDATE dpm_bulk_review_campaign_definitions
                 SET content_hash = %s, payload_json = %s
-                WHERE campaign_id = %s
+                WHERE tenant_id = %s
+                  AND campaign_id = %s
                   AND campaign_version = %s
                   AND status = 'ACTIVE'
                   AND content_hash = %s
@@ -637,6 +667,7 @@ class PostgresDpmBulkReviewCampaignDefinitionRepository(_CampaignWorkflowUpdateM
                 (
                     definition.content_hash,
                     dump_model_json(definition),
+                    definition.tenant_id,
                     definition.campaign_id,
                     definition.campaign_version,
                     expected_content_hash,
@@ -735,6 +766,7 @@ def _upsert_workflow_read_model_projection(
     connection.execute(
         """
         INSERT INTO dpm_bulk_review_campaign_workflow_read_model (
+            tenant_id,
             campaign_id,
             campaign_version,
             definition_status,
@@ -759,9 +791,9 @@ def _upsert_workflow_read_model_projection(
             projection_payload_json,
             projected_at
         ) VALUES (
-            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
+            %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s
         )
-        ON CONFLICT (campaign_id, campaign_version) DO UPDATE SET
+        ON CONFLICT (tenant_id, campaign_id, campaign_version) DO UPDATE SET
             definition_status = EXCLUDED.definition_status,
             as_of_date = EXCLUDED.as_of_date,
             definition_content_hash = EXCLUDED.definition_content_hash,
@@ -785,6 +817,7 @@ def _upsert_workflow_read_model_projection(
             projected_at = EXCLUDED.projected_at
         """,
         (
+            projection["tenant_id"],
             projection["campaign_id"],
             projection["campaign_version"],
             projection["definition_status"],
@@ -849,6 +882,7 @@ def _workflow_read_model_projection(
         "projection_owner": "lotus-manage",
         "durable_source_table": "dpm_bulk_review_campaign_definitions",
         "durable_source_payload": "payload_json",
+        "tenant_id": definition.tenant_id,
         "campaign_id": definition.campaign_id,
         "campaign_version": definition.campaign_version,
         "definition_status": definition.status,

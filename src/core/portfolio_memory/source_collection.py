@@ -8,7 +8,10 @@ from src.core.portfolio_memory.outcome_collection import outcome_review_memory_e
 from src.core.portfolio_memory.pm_quality_collection import pm_quality_memory_events
 from src.core.portfolio_memory.proof_pack_collection import proof_pack_memory_events
 from src.core.portfolio_memory.read_request import validate_portfolio_memory_read_limit
-from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    require_campaign_definition_tenant_id,
+)
 from src.core.portfolio_memory.wave_collection import wave_memory_events
 
 
@@ -60,6 +63,10 @@ def collect_portfolio_memory_events(
     if repositories.campaign_definition_repository is not None:
         events.extend(
             campaign_definition_memory_events(
+                tenant_id=require_campaign_definition_tenant_id(
+                    tenant_id=tenant_id,
+                    repositories=repositories,
+                ),
                 portfolio_id=portfolio_id,
                 campaign_definition_repository=repositories.campaign_definition_repository,
                 limit=limit,

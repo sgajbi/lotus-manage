@@ -866,7 +866,12 @@ Current repository posture:
     `payload_json` plus `content_hash` remains the durable evidence source; the projection is
     rebuilt from existing payloads during migration/startup and refreshed after successful
     definition writes, lifecycle changes, launch audit writes, approval decisions, assignment
-    actions, assignment tasks/transitions, and maker-checker controls. This is design modularity and
+    actions, assignment tasks/transitions, and maker-checker controls. As of the issue #613 tenant
+    isolation fix, persisted campaign definitions and the workflow projection are keyed by
+    `(tenant_id, campaign_id, campaign_version)`; all campaign definition routes require trusted
+    `X-Tenant-Id`, repository read/list/workflow predicates include tenant scope, and
+    portfolio-memory campaign scans require tenant context when the campaign repository is present.
+    This is design modularity and
     query-shape hardening inside the same deployable service, not a runtime split or a new source of
     authorization, external workflow, order, OMS, or client-contact truth. Campaign launch is a
     recoverable two-write saga:

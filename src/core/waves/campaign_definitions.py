@@ -406,6 +406,10 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
 
     product_name: Literal["BulkReviewCampaignDefinition"] = "BulkReviewCampaignDefinition"
     product_version: Literal["v1"] = "v1"
+    tenant_id: str = Field(
+        description="Trusted tenant scope for this Manage-owned campaign definition.",
+        examples=["tenant-sg"],
+    )
     campaign_id: str = Field(examples=["campaign-holdings-apple-tesla-20260510"])
     campaign_version: str = Field(examples=["2026.05"])
     display_name: str = Field(examples=["Apple and Tesla holdings review"])
@@ -583,6 +587,8 @@ class DpmBulkReviewCampaignDefinition(BaseModel):
 
     @model_validator(mode="after")
     def validate_definition(self) -> "DpmBulkReviewCampaignDefinition":
+        if not self.tenant_id.strip():
+            raise ValueError("BULK_REVIEW_CAMPAIGN_TENANT_REQUIRED")
         if self.status == "ACTIVE":
             self._validate_active_lifecycle()
         elif self.status == "RETIRED":

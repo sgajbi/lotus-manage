@@ -19,6 +19,7 @@ from src.core.waves.campaign_definitions import (
 
 def _definition() -> DpmBulkReviewCampaignDefinition:
     return DpmBulkReviewCampaignDefinition(
+        tenant_id="tenant-sg",
         campaign_id="campaign-holdings-apple-tesla-20260510",
         campaign_version="2026.05",
         display_name="Apple and Tesla holdings review",

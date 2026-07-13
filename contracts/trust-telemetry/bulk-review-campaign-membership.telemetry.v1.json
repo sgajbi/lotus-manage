@@ -52,7 +52,7 @@
     "lineage_bundle_id": "lineage:lotus-manage:bulk-review-campaign-membership:2026-07-06",
     "evidence_access_class": "operator_only",
     "evidence_uris": [
-      "lotus-manage://evidence/bulk-review-campaign-membership/PB_SG_GLOBAL_BAL_001/2026-07-06"
+      "lotus-manage://evidence/bulk-review-campaign-membership/tenant-sg/PB_SG_GLOBAL_BAL_001/2026-07-06"
     ]
   },
   "blocking": {
@@ -85,6 +85,7 @@
   "observed_trust_metadata": {
     "product_name": "BulkReviewCampaignMembership",
     "product_version": "v1",
+    "tenant_id": "tenant-sg",
     "generated_at": "2026-07-06T00:00:00Z",
     "as_of_date": "2026-07-06",
     "data_quality_status": "quality_blocked",

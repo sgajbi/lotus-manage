@@ -24,7 +24,10 @@ from src.core.portfolio_memory.pm_quality_projection import (
 )
 from src.core.portfolio_memory.proof_pack_projection import proof_pack_events
 from src.core.portfolio_memory.read_request import validate_portfolio_memory_read_limit
-from src.core.portfolio_memory.source_repositories import PortfolioMemorySourceRepositories
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    require_campaign_definition_tenant_id,
+)
 from src.core.portfolio_memory.wave_projection import wave_events
 
 
@@ -77,6 +80,10 @@ def collect_portfolio_memory_search_events(
         limit=limit,
     )
     _collect_campaign_definition_events(
+        tenant_id=require_campaign_definition_tenant_id(
+            tenant_id=tenant_id,
+            repositories=repositories,
+        ),
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -255,6 +262,7 @@ def _collect_construction_events(
 
 def _collect_campaign_definition_events(
     *,
+    tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
@@ -262,7 +270,14 @@ def _collect_campaign_definition_events(
 ) -> None:
     if repositories.campaign_definition_repository is None:
         return
-    for definition in repositories.campaign_definition_repository.list_definitions(limit=limit):
+    if tenant_id is None:
+        raise ValueError(
+            "tenant_id is required when portfolio memory includes campaign-definition sources"
+        )
+    for definition in repositories.campaign_definition_repository.list_definitions(
+        tenant_id=tenant_id,
+        limit=limit,
+    ):
         matching_portfolio_ids = {
             candidate.portfolio_id
             for candidate in definition.candidates

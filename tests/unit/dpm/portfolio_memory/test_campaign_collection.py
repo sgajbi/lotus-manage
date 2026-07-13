@@ -11,6 +11,7 @@ def test_campaign_definition_memory_events_projects_matching_campaign_workflow()
     repository.save_definition(definition=_campaign_definition())
 
     events = campaign_definition_memory_events(
+        tenant_id="tenant-sg",
         portfolio_id=PORTFOLIO_ID,
         campaign_definition_repository=repository,
         limit=100,
@@ -45,6 +46,7 @@ def test_campaign_definition_memory_events_skips_non_matching_campaign_candidate
     )
 
     events = campaign_definition_memory_events(
+        tenant_id="tenant-sg",
         portfolio_id=PORTFOLIO_ID,
         campaign_definition_repository=repository,
         limit=100,

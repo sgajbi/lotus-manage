@@ -49,6 +49,17 @@ WaveCorrelationIdHeader = Annotated[
         examples=["corr-wave-command-001"],
     ),
 ]
+WaveTenantIdHeader = Annotated[
+    str | None,
+    Header(
+        alias="X-Tenant-Id",
+        description=(
+            "Trusted tenant id. Required when resolving persisted bulk-review campaign "
+            "definitions."
+        ),
+        examples=["tenant-sg"],
+    ),
+]
 WaveCreateIdempotencyKeyHeader = Annotated[
     str,
     Header(

@@ -10,6 +10,10 @@ from src.api.routers.wave_campaign_approval_decision_http import (
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
@@ -46,11 +50,13 @@ def record_bulk_review_campaign_definition_approval_decision_endpoint(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionApprovalDecisionRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return record_campaign_definition_approval_decision_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,
@@ -75,11 +81,13 @@ def list_bulk_review_campaign_definition_approval_decisions(
     campaign_version: CampaignDefinitionVersionPath,
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionApprovalDecisionPage:
     return list_campaign_definition_approval_decisions_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         limit=limit,

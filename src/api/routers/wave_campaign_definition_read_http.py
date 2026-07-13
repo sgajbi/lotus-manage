@@ -13,10 +13,12 @@ from src.core.waves import (
 def get_campaign_definition_or_404(
     *,
     repository: DpmBulkReviewCampaignDefinitionRepository,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
 ) -> DpmBulkReviewCampaignDefinition:
     definition = repository.get_definition(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
@@ -27,12 +29,14 @@ def get_campaign_definition_or_404(
 
 def get_campaign_definition_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmBulkReviewCampaignDefinition:
     return get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )
@@ -40,6 +44,7 @@ def get_campaign_definition_response(
 
 def list_campaign_definitions_response(
     *,
+    tenant_id: str,
     campaign_id: str | None,
     campaign_status: str | None,
     as_of_date: str | None,
@@ -48,6 +53,7 @@ def list_campaign_definitions_response(
     repository: DpmBulkReviewCampaignDefinitionRepository,
 ) -> DpmBulkReviewCampaignDefinitionPage:
     items = repository.list_definitions(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         status=campaign_status,
         as_of_date=as_of_date,

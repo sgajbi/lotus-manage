@@ -18,6 +18,7 @@ from src.api.routers.wave_response_contracts import DpmWaveResponse
 from src.api.routers.wave_route_parameters import (
     WaveCorrelationIdHeader,
     WaveCreateIdempotencyKeyHeader,
+    WaveTenantIdHeader,
 )
 from src.api.services.core_resolver_service import build_core_resolver_client
 from src.api.services.authority_client_service import (
@@ -87,6 +88,7 @@ def register_wave_create_preview_routes(
     def preview_wave(
         request: DpmWavePreviewRequest,
         x_correlation_id: WaveCorrelationIdHeader = None,
+        x_tenant_id: WaveTenantIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
         advise_authority_client: AdviseAuthorityClient | None = Depends(
             get_advise_authority_client
@@ -99,6 +101,7 @@ def register_wave_create_preview_routes(
         correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
         return preview_wave_response(
             request=request,
+            tenant_id=x_tenant_id,
             correlation_id=correlation_id,
             mandate_repository=mandate_repository,
             advise_authority_client=advise_authority_client,
@@ -167,6 +170,7 @@ def register_wave_create_preview_routes(
         request: DpmWavePreviewRequest,
         idempotency_key: WaveCreateIdempotencyKeyHeader,
         x_correlation_id: WaveCorrelationIdHeader = None,
+        x_tenant_id: WaveTenantIdHeader = None,
         mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
         wave_repository: DpmWaveRepository = Depends(get_wave_repository),
         advise_authority_client: AdviseAuthorityClient | None = Depends(
@@ -180,6 +184,7 @@ def register_wave_create_preview_routes(
         correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
         return create_wave_response(
             request=request,
+            tenant_id=x_tenant_id,
             idempotency_key=idempotency_key,
             correlation_id=correlation_id,
             mandate_repository=mandate_repository,

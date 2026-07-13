@@ -6,6 +6,10 @@ from src.api.dependencies import get_campaign_definition_repository
 from src.api.routers.wave_campaign_launch_package_http import (
     get_campaign_definition_launch_package_response,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
@@ -42,11 +46,13 @@ def get_bulk_review_campaign_definition_launch_package(
     requested_as_of_date: CampaignLaunchRequestedAsOfDateQuery,
     actor_id: CampaignLaunchActorIdRequiredQuery,
     correlation_id: CampaignLaunchCorrelationIdQuery = None,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchPackage:
     return get_campaign_definition_launch_package_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         requested_as_of_date=requested_as_of_date,

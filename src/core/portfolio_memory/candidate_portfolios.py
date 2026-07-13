@@ -7,6 +7,7 @@ from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories,
+    require_campaign_definition_tenant_id,
     require_pm_quality_tenant_id,
 )
 from src.core.portfolio_memory.search_request import validate_portfolio_memory_source_scan_limit
@@ -56,7 +57,13 @@ def candidate_portfolio_ids_from_sources(
     candidates.update(_wave_candidate_ids(repositories, source_scan_limit))
     candidates.update(_outcome_review_candidate_ids(repositories, source_scan_limit))
     candidates.update(_mandate_exception_candidate_ids(repositories, source_scan_limit))
-    candidates.update(_campaign_definition_candidate_ids(repositories, source_scan_limit))
+    candidates.update(
+        _campaign_definition_candidate_ids(
+            require_campaign_definition_tenant_id(tenant_id=tenant_id, repositories=repositories),
+            repositories,
+            source_scan_limit,
+        )
+    )
     candidates.update(
         _pm_quality_candidate_ids(
             require_pm_quality_tenant_id(tenant_id=tenant_id, repositories=repositories),
@@ -124,14 +131,20 @@ def _mandate_exception_candidate_ids(
 
 
 def _campaign_definition_candidate_ids(
+    tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
     source_scan_limit: int,
 ) -> set[str]:
     if repositories.campaign_definition_repository is None:
         return set()
+    if tenant_id is None:
+        raise ValueError(
+            "tenant_id is required when portfolio memory includes campaign-definition sources"
+        )
     return {
         candidate.portfolio_id
         for definition in repositories.campaign_definition_repository.list_definitions(
+            tenant_id=tenant_id,
             limit=source_scan_limit
         )
         for candidate in definition.candidates

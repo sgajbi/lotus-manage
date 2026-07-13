@@ -81,10 +81,12 @@ import src.infrastructure.waves.campaign_definitions as campaign_definition_infr
 
 def _definition(
     *,
+    tenant_id: str = "tenant-sg",
     campaign_id: str = "campaign-holdings-apple-tesla-20260510",
     display_name: str = "Apple and Tesla holdings review",
 ) -> DpmBulkReviewCampaignDefinition:
     return DpmBulkReviewCampaignDefinition(
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version="2026.05",
         display_name=display_name,
@@ -137,6 +139,7 @@ def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> Non
 
     with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPES_REQUIRED"):
         DpmBulkReviewCampaignDefinition(
+            tenant_id="tenant-sg",
             campaign_id="campaign-empty-types",
             campaign_version="2026.05",
             display_name="Empty type campaign",
@@ -150,6 +153,7 @@ def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> Non
 
     with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_CANDIDATE_PORTFOLIOS_REQUIRED"):
         DpmBulkReviewCampaignDefinition(
+            tenant_id="tenant-sg",
             campaign_id="campaign-empty-candidates",
             campaign_version="2026.05",
             display_name="Empty candidate campaign",
@@ -162,6 +166,7 @@ def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> Non
 
     with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_DEFINITION_HASH_MISMATCH"):
         DpmBulkReviewCampaignDefinition(
+            tenant_id="tenant-sg",
             campaign_id="campaign-bad-hash",
             campaign_version="2026.05",
             display_name="Bad hash campaign",
@@ -387,21 +392,95 @@ def test_in_memory_campaign_definition_repository_filters_and_conflicts() -> Non
 
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
         == definition
     )
-    assert repository.get_definition(campaign_id="missing", campaign_version="2026.05") is None
-    assert repository.list_definitions(campaign_id=definition.campaign_id) == [definition]
-    assert repository.list_definitions(status="ACTIVE", as_of_date="2026-05-10") == [definition]
-    assert repository.list_definitions(offset=1) == []
+    assert (
+        repository.get_definition(
+            tenant_id=definition.tenant_id,
+            campaign_id="missing",
+            campaign_version="2026.05",
+        )
+        is None
+    )
+    assert repository.list_definitions(
+        tenant_id=definition.tenant_id,
+        campaign_id=definition.campaign_id,
+    ) == [definition]
+    assert repository.list_definitions(
+        tenant_id=definition.tenant_id,
+        status="ACTIVE",
+        as_of_date="2026-05-10",
+    ) == [definition]
+    assert repository.list_definitions(tenant_id=definition.tenant_id, offset=1) == []
 
     with pytest.raises(
         DpmBulkReviewCampaignDefinitionConflictError,
         match="BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT",
     ):
         repository.save_definition(definition=_definition(display_name="Changed name"))
+
+
+def test_in_memory_campaign_definition_repository_isolates_tenant_scope() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    tenant_a = _definition(tenant_id="tenant-a", display_name="Tenant A campaign")
+    tenant_b = _definition(tenant_id="tenant-b", display_name="Tenant B campaign")
+
+    repository.save_definition(definition=tenant_a)
+    repository.save_definition(definition=tenant_b)
+
+    assert (
+        repository.get_definition(
+            tenant_id="tenant-a",
+            campaign_id=tenant_a.campaign_id,
+            campaign_version=tenant_a.campaign_version,
+        )
+        == tenant_a
+    )
+    assert (
+        repository.get_definition(
+            tenant_id="tenant-b",
+            campaign_id=tenant_b.campaign_id,
+            campaign_version=tenant_b.campaign_version,
+        )
+        == tenant_b
+    )
+    assert repository.list_definitions(tenant_id="tenant-a") == [tenant_a]
+    assert repository.list_definitions(tenant_id="tenant-b") == [tenant_b]
+    assert repository.list_definitions(
+        tenant_id="tenant-a",
+        campaign_id=tenant_b.campaign_id,
+    ) == [tenant_a]
+
+    tenant_b_task = open_bulk_review_campaign_definition_assignment_task(
+        definition=tenant_b,
+        task_ref="BRC-TASK-TENANT-B",
+        task_type="ASSIGNMENT",
+        opened_by="ops",
+        task_reason="Tenant B PM acknowledgement.",
+        assigned_actor_ids=["pm_tenant_b"],
+        escalation_tier="PM",
+        sla_posture="ON_TRACK",
+        correlation_id="corr-tenant-b-task",
+    )
+    repository.record_definition_assignment_task(
+        definition=tenant_b_task,
+        expected_content_hash=tenant_b.content_hash,
+    )
+
+    assert repository.list_definitions_by_workflow_projection(
+        tenant_id="tenant-a",
+        assigned_actor_id="pm_tenant_b",
+        assignment_task_status="OPEN",
+    ) == []
+    assert repository.list_definitions_by_workflow_projection(
+        tenant_id="tenant-b",
+        assigned_actor_id="pm_tenant_b",
+        assignment_task_status="OPEN",
+    ) == [tenant_b_task]
 
 
 def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> None:
@@ -415,12 +494,14 @@ def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> 
 
     assert _definition_matches_filters(
         newer,
+        tenant_id=newer.tenant_id,
         campaign_id="campaign-zulu",
         status="ACTIVE",
         as_of_date="2026-05-11",
     )
     assert not _definition_matches_filters(
         retired,
+        tenant_id=retired.tenant_id,
         campaign_id=None,
         status="ACTIVE",
         as_of_date=None,
@@ -428,6 +509,7 @@ def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> 
     assert _definition_sort_key(newer) > _definition_sort_key(older)
     assert _paged_definitions(
         definitions=[older, newer, retired],
+        tenant_id=newer.tenant_id,
         campaign_id=None,
         status="ACTIVE",
         as_of_date=None,
@@ -471,6 +553,7 @@ def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> N
     assert launched.launch_history[0].wave_id == "dwv_campaign_launch_001"
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -712,6 +795,7 @@ def test_campaign_definition_repository_rejects_stale_independent_workflow_appen
 
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -808,6 +892,7 @@ def test_campaign_definition_approval_decisions_are_append_only() -> None:
     assert page.count == 1
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -1159,6 +1244,7 @@ def test_campaign_definition_assignment_actions_are_append_only() -> None:
     assert page.current_sla_posture == "ATTENTION"
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -1239,6 +1325,7 @@ def test_campaign_definition_assignment_tasks_persist_current_state_and_transiti
     assert page.open_task_count == 1
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -1373,6 +1460,7 @@ def test_campaign_definition_maker_checker_controls_are_append_only() -> None:
     assert page.current_reviewer_actor_id == "cio_ops_committee"
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
@@ -1520,13 +1608,14 @@ def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> 
     assert returned.content_hash != definition.content_hash
     assert (
         repository.get_definition(
+            tenant_id=definition.tenant_id,
             campaign_id=definition.campaign_id,
             campaign_version=definition.campaign_version,
         )
         == retired
     )
-    assert repository.list_definitions(status="ACTIVE") == []
-    assert repository.list_definitions(status="RETIRED") == [retired]
+    assert repository.list_definitions(tenant_id=definition.tenant_id, status="ACTIVE") == []
+    assert repository.list_definitions(tenant_id=definition.tenant_id, status="RETIRED") == [retired]
     assert repository.retire_definition(definition=retired) == retired
     assert (
         repository.retire_definition(
@@ -1593,8 +1682,12 @@ def test_campaign_definition_supersession_validation_and_in_memory_lifecycle() -
 
     assert returned is not None
     assert returned == superseded
-    assert repository.list_definitions(status="ACTIVE") == [replacement]
-    assert repository.list_definitions(status="SUPERSEDED") == [superseded]
+    assert repository.list_definitions(tenant_id=original.tenant_id, status="ACTIVE") == [
+        replacement
+    ]
+    assert repository.list_definitions(tenant_id=original.tenant_id, status="SUPERSEDED") == [
+        superseded
+    ]
     assert repository.supersede_definition(definition=superseded) == superseded
     assert (
         repository.supersede_definition(
@@ -1628,6 +1721,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     assert (
         retire_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=original.tenant_id,
             campaign_id="missing",
             campaign_version="2026.05",
             retired_by="ops",
@@ -1638,6 +1732,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     )
     superseded = supersede_bulk_review_campaign_definition(
         repository=repository,
+        tenant_id=original.tenant_id,
         campaign_id=original.campaign_id,
         campaign_version=original.campaign_version,
         replacement_version=replacement.campaign_version,
@@ -1652,6 +1747,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     assert (
         supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=original.tenant_id,
             campaign_id=original.campaign_id,
             campaign_version=original.campaign_version,
             replacement_version=replacement.campaign_version,
@@ -1667,6 +1763,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     ):
         retire_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=original.tenant_id,
             campaign_id=original.campaign_id,
             campaign_version=original.campaign_version,
             retired_by="ops",
@@ -1679,6 +1776,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     ):
         supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=replacement.tenant_id,
             campaign_id=replacement.campaign_id,
             campaign_version=replacement.campaign_version,
             replacement_version=replacement.campaign_version,
@@ -1692,6 +1790,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     ):
         supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=replacement.tenant_id,
             campaign_id=replacement.campaign_id,
             campaign_version=replacement.campaign_version,
             replacement_version="2026.07",
@@ -1703,6 +1802,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     assert (
         supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=original.tenant_id,
             campaign_id="missing",
             campaign_version="2026.05",
             replacement_version=replacement.campaign_version,
@@ -1715,6 +1815,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
 
     retired_replacement = retire_bulk_review_campaign_definition(
         repository=repository,
+        tenant_id=replacement.tenant_id,
         campaign_id=replacement.campaign_id,
         campaign_version=replacement.campaign_version,
         retired_by="ops",
@@ -1727,6 +1828,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     assert (
         retire_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=replacement.tenant_id,
             campaign_id=replacement.campaign_id,
             campaign_version=replacement.campaign_version,
             retired_by="ops",
@@ -1741,6 +1843,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     ):
         supersede_bulk_review_campaign_definition(
             repository=repository,
+            tenant_id=replacement.tenant_id,
             campaign_id=replacement.campaign_id,
             campaign_version=replacement.campaign_version,
             replacement_version="2026.08",
@@ -1774,6 +1877,7 @@ def test_campaign_definition_lifecycle_helpers_are_idempotent_and_fail_closed() 
     ):
         supersede_bulk_review_campaign_definition(
             repository=not_active_repository,
+            tenant_id=not_active_original.tenant_id,
             campaign_id=not_active_original.campaign_id,
             campaign_version=not_active_original.campaign_version,
             replacement_version=not_active_replacement.campaign_version,
@@ -1958,10 +2062,12 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
 
     repository.save_definition(definition=definition)
     fetched = repository.get_definition(
+        tenant_id=definition.tenant_id,
         campaign_id=definition.campaign_id,
         campaign_version=definition.campaign_version,
     )
     listed = repository.list_definitions(
+        tenant_id=definition.tenant_id,
         campaign_id=definition.campaign_id,
         status="ACTIVE",
         as_of_date="2026-05-10",
@@ -1974,7 +2080,7 @@ def test_postgres_campaign_definition_repository_uses_payload_rows() -> None:
     assert _payload({"payload_json": 1}) == "1"
     assert any(
         "dpm_bulk_review_campaign_workflow_read_model" in sql
-        and "ON CONFLICT (campaign_id, campaign_version) DO UPDATE" in sql
+        and "ON CONFLICT (tenant_id, campaign_id, campaign_version) DO UPDATE" in sql
         for sql, _ in connection.statements
     )
 
@@ -2036,12 +2142,14 @@ def test_in_memory_campaign_definition_repository_filters_workflow_projection() 
     repository.save_definition(definition=with_task)
 
     assert repository.list_definitions_by_workflow_projection(
+        tenant_id=definition.tenant_id,
         assigned_actor_id="pm_001",
         assignment_task_status="OPEN",
         assignment_sla_posture="ON_TRACK",
     ) == [with_task]
     assert (
         repository.list_definitions_by_workflow_projection(
+            tenant_id=definition.tenant_id,
             assigned_actor_id="ops_lead",
             assignment_task_status="OPEN",
         )
@@ -2060,6 +2168,7 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
     repository._connect = lambda: connection  # type: ignore[attr-defined, method-assign]
 
     rows = repository.list_definitions_by_workflow_projection(
+        tenant_id=definition.tenant_id,
         campaign_id=definition.campaign_id,
         status="ACTIVE",
         as_of_date=definition.as_of_date,
@@ -2076,6 +2185,9 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
     assert rows == [definition]
     sql, args = connection.statements[0]
     assert "JOIN dpm_bulk_review_campaign_workflow_read_model w" in sql
+    assert "w.tenant_id = d.tenant_id" in sql
+    assert "d.tenant_id = %s" in sql
+    assert "w.tenant_id = %s" in sql
     assert "w.board_status = %s" in sql
     assert "w.next_action = %s" in sql
     assert "w.assignment_escalation_tier = %s" in sql
@@ -2084,6 +2196,8 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
     assert "%s = ANY(w.assigned_actor_ids)" in sql
     assert "%s = ANY(w.maker_checker_outcomes)" in sql
     assert args == (
+        definition.tenant_id,
+        definition.tenant_id,
         definition.campaign_id,
         "ACTIVE",
         definition.as_of_date,
@@ -3105,6 +3219,7 @@ def test_postgres_campaign_definition_repository_returns_none_for_missing_defini
 
     assert (
         repository.get_definition(
+            tenant_id="tenant-sg",
             campaign_id="missing",
             campaign_version="2026.05",
         )

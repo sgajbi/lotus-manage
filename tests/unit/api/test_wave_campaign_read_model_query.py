@@ -20,6 +20,7 @@ def _campaign_definition(
     status: Literal["ACTIVE", "RETIRED", "SUPERSEDED"] = "ACTIVE",
 ) -> DpmBulkReviewCampaignDefinition:
     return DpmBulkReviewCampaignDefinition(
+        tenant_id="tenant-sg",
         campaign_id=campaign_id,
         campaign_version="2026.05",
         display_name=f"{campaign_id} review",
@@ -61,6 +62,7 @@ def test_campaign_read_model_query_centralizes_repository_filters_and_active_dat
 
     query = load_campaign_read_model_query(
         repository=repository,
+        tenant_id="tenant-sg",
         campaign_id=None,
         campaign_status="ACTIVE",
         as_of_date="2026-05-10",
@@ -80,6 +82,7 @@ def test_campaign_read_model_query_reuses_invalid_active_date_error_contract() -
     try:
         load_campaign_read_model_query(
             repository=repository,
+            tenant_id="tenant-sg",
             campaign_id=None,
             campaign_status=None,
             as_of_date=None,

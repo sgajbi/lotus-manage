@@ -11,6 +11,10 @@ from src.api.routers.wave_campaign_launch_http import (
     launch_bulk_review_campaign_definition_response,
 )
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignDefinitionLaunchRequest
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_response_contracts import DpmWaveResponse
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
@@ -44,6 +48,7 @@ def launch_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionLaunchRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
     wave_repository: DpmWaveRepository = Depends(get_wave_repository),
     campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
@@ -51,6 +56,7 @@ def launch_bulk_review_campaign_definition(
     ),
 ) -> DpmWaveResponse:
     return launch_bulk_review_campaign_definition_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,

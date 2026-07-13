@@ -28,6 +28,7 @@ from src.core.waves import (
 
 def record_campaign_definition_assignment_action_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
@@ -37,6 +38,7 @@ def record_campaign_definition_assignment_action_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -74,6 +76,7 @@ def record_campaign_definition_assignment_action_response(
 
 def list_campaign_definition_assignment_actions_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     limit: int,
@@ -82,6 +85,7 @@ def list_campaign_definition_assignment_actions_response(
 ) -> DpmBulkReviewCampaignDefinitionAssignmentActionPage:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

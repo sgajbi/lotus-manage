@@ -21,6 +21,7 @@ class DpmBulkReviewCampaignReadModelQuery:
 def load_campaign_read_model_query(
     *,
     repository: DpmBulkReviewCampaignDefinitionRepository,
+    tenant_id: str,
     campaign_id: str | None,
     campaign_status: str | None,
     as_of_date: str | None,
@@ -43,6 +44,7 @@ def load_campaign_read_model_query(
     )
     if use_workflow_projection:
         definitions = repository.list_definitions_by_workflow_projection(
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             status=campaign_status,
             as_of_date=as_of_date,
@@ -59,6 +61,7 @@ def load_campaign_read_model_query(
         )
     else:
         definitions = repository.list_definitions(
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             status=campaign_status,
             as_of_date=as_of_date,

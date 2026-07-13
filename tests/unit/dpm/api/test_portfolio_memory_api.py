@@ -462,6 +462,7 @@ def _campaign_definition() -> DpmBulkReviewCampaignDefinition:
         content_hash="sha256:pm-book-campaign",
     )
     definition = DpmBulkReviewCampaignDefinition(
+        tenant_id=TENANT_ID,
         campaign_id="campaign-memory-review-20260513",
         campaign_version="2026.05",
         display_name="Memory-backed campaign review",

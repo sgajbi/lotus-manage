@@ -28,6 +28,7 @@ from src.core.waves import (
 
 def record_campaign_definition_maker_checker_control_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionMakerCheckerControlRequest,
@@ -37,6 +38,7 @@ def record_campaign_definition_maker_checker_control_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -75,6 +77,7 @@ def record_campaign_definition_maker_checker_control_response(
 
 def list_campaign_definition_maker_checker_controls_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     limit: int,
@@ -83,6 +86,7 @@ def list_campaign_definition_maker_checker_controls_response(
 ) -> DpmBulkReviewCampaignDefinitionMakerCheckerControlPage:
     definition = get_campaign_definition_or_404(
         repository=repository,
+        tenant_id=tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
     )

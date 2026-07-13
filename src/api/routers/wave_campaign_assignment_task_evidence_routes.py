@@ -12,6 +12,10 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
     DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
 )
+from src.api.routers.wave_campaign_trusted_context import (
+    CampaignTrustedContext,
+    campaign_trusted_context_required,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignAssignmentTaskRefPath,
     CampaignDefinitionIdPath,
@@ -51,11 +55,13 @@ def open_bulk_review_campaign_definition_assignment_task_endpoint(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskOpenRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return open_campaign_definition_assignment_task_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         request=request,
@@ -86,11 +92,13 @@ def transition_bulk_review_campaign_definition_assignment_task_endpoint(
     campaign_version: CampaignDefinitionVersionPath,
     task_ref: CampaignAssignmentTaskRefPath,
     request: DpmBulkReviewCampaignDefinitionAssignmentTaskTransitionRequest,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinition:
     return transition_campaign_definition_assignment_task_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         task_ref=task_ref,
@@ -118,11 +126,13 @@ def list_bulk_review_campaign_definition_assignment_tasks(
     status: CampaignAssignmentTaskStatus | None = Query(default=None),
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
+    trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
     repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
         get_campaign_definition_repository
     ),
 ) -> DpmBulkReviewCampaignDefinitionAssignmentTaskPage:
     return list_campaign_definition_assignment_tasks_response(
+        tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_version=campaign_version,
         status=status,

@@ -34,6 +34,7 @@ from src.core.waves import (
 
 def launch_bulk_review_campaign_definition_response(
     *,
+    tenant_id: str,
     campaign_id: str,
     campaign_version: str,
     request: DpmBulkReviewCampaignDefinitionLaunchRequest,
@@ -46,6 +47,7 @@ def launch_bulk_review_campaign_definition_response(
     try:
         definition = get_campaign_definition_or_404(
             repository=campaign_definition_repository,
+            tenant_id=tenant_id,
             campaign_id=campaign_id,
             campaign_version=campaign_version,
         )
@@ -69,6 +71,7 @@ def launch_bulk_review_campaign_definition_response(
     try:
         portfolios = resolve_portfolio_inputs_for_request(
             request=wave_request,
+            tenant_id=tenant_id,
             correlation_id=launch_command.correlation_id,
             advise_authority_client=None,
             risk_authority_client=None,
