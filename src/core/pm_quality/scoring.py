@@ -312,10 +312,11 @@ def _validate_lookback_window(
     if window_dates is None:
         return
     start_date, end_date = window_dates
-    dated_signals = [signal for signal in signals if signal.as_of_date is not None]
-    if not dated_signals:
+    if not signals:
         raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED")
-    for signal in dated_signals:
+    for signal in signals:
+        if signal.as_of_date is None:
+            raise DpmPmQualityValidationError("PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED")
         signal_date = _signal_as_of_business_date(signal)
         if not _date_in_inclusive_window(signal_date, start_date, end_date):
             raise DpmPmQualityValidationError("PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW")
@@ -353,10 +354,7 @@ def _date_in_inclusive_window(
 def _signal_as_of_date(source_refs: list[DpmOutcomeSourceRef]) -> str | None:
     for ref in source_refs:
         if ref.source_version:
-            try:
-                return date.fromisoformat(ref.source_version).isoformat()
-            except ValueError:
-                continue
+            return ref.source_version
     return None
 
 

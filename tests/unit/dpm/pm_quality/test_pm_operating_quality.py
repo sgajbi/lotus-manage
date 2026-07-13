@@ -110,6 +110,32 @@ def _source_ref(*, source_version: str = "2026-05-12") -> DpmOutcomeSourceRef:
     )
 
 
+def _lookback_evidence_item(
+    *,
+    indicator: str,
+    source_id: str,
+    source_version: str | None,
+    score: Decimal = Decimal("92"),
+) -> DpmPmQualityEvidenceItem:
+    source_refs = [
+        DpmOutcomeSourceRef(
+            source_system="lotus-manage",
+            source_type=f"{indicator}_SOURCE",
+            source_id=source_id,
+            source_version=source_version,
+        )
+    ]
+    return DpmPmQualityEvidenceItem(
+        indicator=indicator,
+        evidence_state="READY",
+        score=score,
+        source_system="lotus-manage",
+        source_type=f"{indicator}_SOURCE",
+        source_id=source_id,
+        source_refs=source_refs,
+    )
+
+
 def _ready_score_run(
     *,
     pm_id: str = "pm_001",
@@ -1351,6 +1377,58 @@ def test_pm_quality_lookback_window_requires_dated_valid_evidence() -> None:
                     as_of_date="2026-05-12",
                 )
             ],
+        )
+
+
+def test_pm_quality_lookback_window_fails_closed_for_mixed_undated_evidence() -> None:
+    with pytest.raises(
+        DpmPmQualityValidationError,
+        match="PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED",
+    ):
+        build_pm_operating_quality_score_run(
+            pm_id="pm_001",
+            book_id="sg_dpm_book",
+            as_of_date="2026-05-12",
+            policy=_scope_policy(),
+            evidence_items=[
+                _lookback_evidence_item(
+                    indicator="OUTCOME_DISCIPLINE",
+                    source_id="pm_outcome_dated",
+                    source_version="2026-05-10",
+                ),
+                _lookback_evidence_item(
+                    indicator="SOURCE_QUALITY",
+                    source_id="pm_source_undated",
+                    source_version=None,
+                    score=Decimal("88"),
+                ),
+            ],
+            outcome_reviews=[],
+            generated_by="ops",
+            correlation_id="corr-mixed-undated-lookback",
+        )
+
+
+def test_pm_quality_lookback_window_fails_closed_for_invalid_source_version_date() -> None:
+    with pytest.raises(
+        DpmPmQualityValidationError,
+        match="PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID",
+    ):
+        build_pm_operating_quality_score_run(
+            pm_id="pm_001",
+            book_id="sg_dpm_book",
+            as_of_date="2026-05-12",
+            policy=_scope_policy(),
+            evidence_items=[
+                _lookback_evidence_item(
+                    indicator="OUTCOME_DISCIPLINE",
+                    source_id="pm_outcome_invalid_date",
+                    source_version="2026.05",
+                )
+            ],
+            outcome_reviews=[],
+            generated_by="ops",
+            correlation_id="corr-invalid-lookback-date",
         )
 
 

@@ -1345,7 +1345,10 @@ def test_rfc0042_gold_standard_tightening_preserves_source_boundaries() -> None:
     assert "peer_group_policy" in rfc
     assert "lookback_window_policy" in rfc
     assert "scope_evidence" in rfc
+    assert "PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED" in rfc
+    assert "PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID" in rfc
     assert "PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW" in rfc
+    assert "source_ref.source_version" in rfc
     assert "`lotus-gateway` PR #213 (`62ce4c4`)" in rfc
     assert "/api/v1/dpm/command-center/pm-operating-quality/*" in rfc
     assert "published Gateway wiki source at `a4c9db9`" in rfc
