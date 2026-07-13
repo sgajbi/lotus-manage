@@ -51,7 +51,10 @@ Current declarations:
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence and optional persisted
    `BulkReviewCampaignDefinition:v1` definitions. Persisted definitions and workflow read models
-   require trusted `tenant_id` metadata and tenant-scoped repository predicates. This product is
+   require trusted `tenant_id` metadata and tenant-scoped repository predicates. Inline and
+   persisted candidates must carry approved source-contract refs with READY supportability,
+   source version, and required content hash or approved batch or definition fingerprint coverage
+   before membership can be published as READY. This product is
    catalog-visible but
    mesh-deferred/future-wave until platform SLO, access, evidence-pack, and runtime certification
    evidence are promoted,

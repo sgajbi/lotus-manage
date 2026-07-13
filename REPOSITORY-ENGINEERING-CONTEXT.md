@@ -745,7 +745,12 @@ Current repository posture:
     discovery as unsupported without recalculating campaign membership or owning source facts. The
     posture now also carries deferred source-owner posture, required future
     `GlobalPortfolioUniverseCampaignCandidateSet:v1`, blocked bank-wide candidate-discovery
-    capabilities, and a deterministic content hash.
+    capabilities, and a deterministic content hash. Inline and persisted bulk-review campaign
+    candidates now fail closed before READY membership publication unless each included candidate
+    carries an approved source-contract ref with source id, source version, READY supportability,
+    and required content hash or approved batch or definition fingerprint coverage. Do not reintroduce
+    arbitrary caller refs, stale refs, missing supportability, or missing hashes as READY
+    `BulkReviewCampaignMembership:v1` evidence.
     Manage can retire
     persisted campaign definitions through
     `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/retire`;

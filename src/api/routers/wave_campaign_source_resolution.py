@@ -28,6 +28,10 @@ from src.api.routers.wave_source_refs import (
     source_refs_payload,
 )
 from src.api.services import wave_service
+from src.core.waves.campaign_candidate_source_contracts import (
+    DpmBulkReviewCampaignSourceContractError,
+    validate_bulk_review_campaign_candidate_source_refs,
+)
 
 
 def resolve_bulk_review_campaign_portfolios(
@@ -88,6 +92,7 @@ def resolve_bulk_review_campaign_portfolios(
         )
 
     candidate_payloads = _candidate_payloads(included_candidates)
+    _validate_candidate_payload_source_contracts(candidate_payloads)
     membership_hash = campaign_membership_hash(
         trigger_id=request.trigger_id,
         as_of_date=campaign_as_of_date,
@@ -117,6 +122,22 @@ def resolve_bulk_review_campaign_portfolios(
 
 def _candidate_payloads(candidates: Sequence[object]) -> list[dict[str, object]]:
     return [_candidate_payload(candidate) for candidate in candidates]
+
+
+def _validate_candidate_payload_source_contracts(
+    candidate_payloads: Sequence[dict[str, object]],
+) -> None:
+    for payload in candidate_payloads:
+        try:
+            validate_bulk_review_campaign_candidate_source_refs(
+                portfolio_id=cast("str", payload["portfolio_id"]),
+                source_refs=[
+                    DpmWaveSourceRef.model_validate(ref)
+                    for ref in cast(Sequence[object], payload["source_refs"])
+                ],
+            )
+        except DpmBulkReviewCampaignSourceContractError as exc:
+            raise wave_service.DpmWaveValidationError(exc.code, exc.message) from exc
 
 
 def _candidate_payload(candidate: object) -> dict[str, object]:
