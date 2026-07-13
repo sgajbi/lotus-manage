@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_read_model_query import load_campaign_read_model_query
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    parse_optional_campaign_discovery_date,
+)
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
 )
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.api.routers.wave_route_parameters import (
     CampaignActiveOnQuery,
     CampaignActorIdQuery,
@@ -22,7 +25,6 @@ from src.api.routers.wave_route_parameters import (
 from src.core.waves import (
     CampaignWorkflowBoardStatus,
     CampaignWorkflowNextAction,
-    DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignWorkflowBoardPage,
     build_bulk_review_campaign_workflow_board_page,
 )
@@ -64,19 +66,20 @@ def list_bulk_review_campaign_workflow_board(
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignWorkflowBoardPage:
-    campaign_query = load_campaign_read_model_query(
-        repository=repository,
+    active_on_date = parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    campaign_query = application_service.load_campaign_read_model_query(
         tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,
-        active_on=active_on,
-        limit=limit,
-        offset=offset,
+        active_on=active_on_date,
         use_workflow_projection=(
             requested_as_of_date is None and actor_id is None and active_on is None
         ),
