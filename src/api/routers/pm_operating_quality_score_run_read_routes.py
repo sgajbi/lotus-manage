@@ -26,7 +26,8 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
             "What: Return a bounded page of persisted PM operating quality score runs.\n"
             "When: Use for PM operating-quality governance review and supportability diagnostics.\n"
             "How: Filter by PM, book, policy, as-of date, or bounded state. The response returns "
-            "stored score-run evidence only and does not recompute scores."
+            "stored score-run evidence only, follows methodology "
+            "docs/methodologies/pm-quality/scoring-and-fairness.md, and does not recompute scores."
         ),
     )
     def list_pm_operating_quality_score_runs_endpoint(
@@ -69,7 +70,8 @@ def register_pm_quality_score_run_read_routes(router: APIRouter) -> None:
             "What: Return one persisted PM operating quality score run by stable id.\n"
             "When: Use for audit, supportability review, and downstream evidence retrieval.\n"
             "How: The endpoint returns immutable stored score-run evidence and does not recompute "
-            "source facts or policy output."
+            "source facts or policy output. Methodology: "
+            "docs/methodologies/pm-quality/scoring-and-fairness.md."
         ),
     )
     def get_pm_operating_quality_score_run_endpoint(

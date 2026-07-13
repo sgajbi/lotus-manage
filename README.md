@@ -407,7 +407,9 @@ RFC42-WTBD-008 now has a bounded Manage-owned PM operating quality backend found
 `GET /policies`, and `GET /policies/{policy_id}/versions/{policy_version}` administer immutable
 bank policy versions for reuse. `POST /score-runs`, `GET /score-runs`, and
 `GET /score-runs/{score_run_id}` persist and retrieve immutable score-run evidence. Scoring is
-disabled by default, enabled policies require bank approval and fairness-review evidence, fail
+documented in
+[docs/methodologies/pm-quality/scoring-and-fairness.md](docs/methodologies/pm-quality/scoring-and-fairness.md).
+It is disabled by default, enabled policies require bank approval and fairness-review evidence, fail
 closed for missing required evidence, invalid or expired governance approval, and unauthorized
 actors, and prohibited HR, compensation, conduct-enforcement, and autonomous-ranking uses remain
 outside the product contract.

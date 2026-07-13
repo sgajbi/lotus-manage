@@ -48,8 +48,9 @@ router = APIRouter()
         "source refs. Manage validates the score runs share policy and as-of date, requires a "
         "minimum scorable count per segment, compares segment average scores against a governed "
         "spread threshold, and returns review-required posture when the spread exceeds policy. "
-        "This endpoint does not infer protected classes, rank PMs, administer compensation or HR "
-        "decisions, perform conduct enforcement, or calculate source-owned risk/performance facts."
+        "Methodology: docs/methodologies/pm-quality/scoring-and-fairness.md. This endpoint does "
+        "not infer protected classes, rank PMs, administer compensation or HR decisions, perform "
+        "conduct enforcement, or calculate source-owned risk/performance facts."
     ),
 )
 def preview_pm_quality_fairness_analysis_endpoint(
@@ -82,9 +83,10 @@ def preview_pm_quality_fairness_analysis_endpoint(
         "When: Use after a bank needs auditable fairness governance evidence for PM operating "
         "quality score runs created under one approved policy.\n"
         "How: Supply the same source-segment contract as preview. The persisted analysis is "
-        "content-addressed and can be listed or retrieved for governance review. This endpoint "
-        "does not infer protected classes, rank PMs, administer compensation or HR decisions, "
-        "perform conduct enforcement, or calculate source-owned risk/performance facts."
+        "content-addressed and can be listed or retrieved for governance review. Methodology: "
+        "docs/methodologies/pm-quality/scoring-and-fairness.md. This endpoint does not infer "
+        "protected classes, rank PMs, administer compensation or HR decisions, perform conduct "
+        "enforcement, or calculate source-owned risk/performance facts."
     ),
 )
 def create_pm_quality_fairness_analysis_endpoint(

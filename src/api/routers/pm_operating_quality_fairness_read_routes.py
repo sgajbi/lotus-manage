@@ -28,7 +28,9 @@ router = APIRouter()
         "When: Use for PM operating-quality governance review, supportability diagnostics, and "
         "model-risk evidence retrieval.\n"
         "How: Filter by policy, as-of date, or bounded state. The response returns stored "
-        "fairness-analysis evidence only and does not recompute score runs or segment posture."
+        "fairness-analysis evidence only, follows methodology "
+        "docs/methodologies/pm-quality/scoring-and-fairness.md, and does not recompute score runs "
+        "or segment posture."
     ),
 )
 def list_pm_quality_fairness_analyses_endpoint(
@@ -67,7 +69,8 @@ def list_pm_quality_fairness_analyses_endpoint(
         "What: Return one persisted PM operating quality fairness analysis by stable id.\n"
         "When: Use for audit, model-risk review, and downstream governance evidence retrieval.\n"
         "How: The endpoint returns immutable stored fairness-analysis evidence and does not "
-        "recompute score runs, infer protected classes, or rank PMs."
+        "recompute score runs, infer protected classes, or rank PMs. Methodology: "
+        "docs/methodologies/pm-quality/scoring-and-fairness.md."
     ),
 )
 def get_pm_quality_fairness_analysis_endpoint(

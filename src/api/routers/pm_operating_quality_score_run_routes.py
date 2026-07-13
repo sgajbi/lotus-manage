@@ -47,7 +47,8 @@ def register_pm_quality_score_run_command_routes(
             "Disabled policies return a DISABLED run with no score; missing required evidence "
             "blocks the run. Optionally supply pm_book_scope to attach source-owned lotus-core "
             "PM-book membership evidence; unavailable, incomplete, degraded, or empty membership "
-            "fails closed. The endpoint does not create HR, compensation, conduct-enforcement, "
+            "fails closed. Methodology: docs/methodologies/pm-quality/scoring-and-fairness.md. "
+            "The endpoint does not create HR, compensation, conduct-enforcement, "
             "autonomous ranking, AI-generated, risk, performance, execution, or tax methodology."
         ),
     )
@@ -84,7 +85,8 @@ def register_pm_quality_score_run_command_routes(
             "score-run lifecycle evidence.\n"
             "How: Supply the same evidence contract as preview. The persisted run is "
             "content-addressed and can be retrieved or listed for governance review. This endpoint "
-            "does not administer policies, create HR or compensation decisions, perform conduct "
+            "uses methodology docs/methodologies/pm-quality/scoring-and-fairness.md and does not "
+            "administer policies, create HR or compensation decisions, perform conduct "
             "enforcement, autonomously rank PMs, or calculate source-owned "
             "risk/performance/tax facts."
         ),

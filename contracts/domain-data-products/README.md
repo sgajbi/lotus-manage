@@ -53,7 +53,9 @@ Current declarations:
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
    quality policy administration, bank approval and fairness-review governance evidence, optional
    source-owned PM-book scope evidence, preview, create/read/list score-run lifecycle,
-   review-action ledger, and summary-invocation history routes.
+   review-action ledger, and summary-invocation history routes. The scoring and fairness
+   methodology is published at
+   `docs/methodologies/pm-quality/scoring-and-fairness.md`.
 
 Local validation:
 

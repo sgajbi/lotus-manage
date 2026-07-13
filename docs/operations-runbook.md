@@ -30,7 +30,9 @@ For full repo-native evidence in production-oriented work, run:
   Triage by Problem Details `reasonCode`, `correlationId`, route `instance`, content hash,
   `lotus_manage_pm_quality_lifecycle_total`, and `lotus_manage_postgres_access_total`; do not
   inspect raw score payloads, review rationale, generated summary text, prompts, or model
-  responses.
+  responses. Use
+  [docs/methodologies/pm-quality/scoring-and-fairness.md](methodologies/pm-quality/scoring-and-fairness.md)
+  for score, fairness, lookback, and validation interpretation.
 - For OpenAPI or contract drift, run:
   - `python scripts/openapi_quality_gate.py`
   - `python scripts/api_vocabulary_inventory.py --validate-only`
