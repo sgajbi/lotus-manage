@@ -323,6 +323,20 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["lifecycle_status"] == "active"
     assert campaign_membership["request_scope"]["supports_bulk"] is True
     assert campaign_membership["approved_consumers"] == ["lotus-gateway"]
+    assert campaign_membership["mesh_maturity_posture"] == {
+        "maturity_state": "deferred",
+        "maturity_wave": "future_wave",
+        "platform_maturity_source": "lotus-platform/generated/enterprise-mesh-maturity-matrix.md",
+        "consumer_interpretation": "catalog_visible_deferred_product_not_customer_reliance_ready",
+        "missing_policy_refs": [
+            "platform-contracts/mesh-slo/lotus-manage-bulk-review-campaign-membership.slo.v1.json",
+            "platform-contracts/mesh-access/lotus-manage-bulk-review-campaign-membership.access.v1.json",
+            (
+                "platform-contracts/mesh-evidence/"
+                "lotus-manage-bulk-review-campaign-membership.evidence-pack-policy.v1.json"
+            ),
+        ],
+    }
     assert campaign_membership["current_routes"] == [
         "/api/v1/rebalance/waves/campaign-definitions",
         "/api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}",
@@ -346,6 +360,14 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert campaign_membership["lineage_policy"]["lineage_required"] is True
     assert (
         "BulkReviewCampaignDefinition:v1"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "catalog-visible but mesh-deferred/future-wave"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "platform SLO, access, evidence-pack, and runtime certification evidence"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
     assert (

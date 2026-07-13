@@ -83,6 +83,10 @@ Current repository posture:
     the source owner for market data, valuation, risk, performance, tax, financial planning,
     benchmark composition, benchmark analytics, scenario methodology, treasury, execution, OMS,
     fill, or settlement facts.
+    `BulkReviewCampaignMembership:v1` remains catalog-visible but mesh-deferred/future-wave in
+    trust telemetry until product-specific platform SLO, access, evidence-pack, and runtime
+    certification evidence are promoted. Active product declaration coverage alone must not publish
+    `quality_passed` customer-consumable trust.
 11. RFC-0037 through RFC-0043 define the strategic revamp into a DPM operating system.
     RFC-0038, RFC-0039, RFC-0040, the manage-owned explicit portfolio-list wave scope of
     RFC-0041, Gateway RFC-0098 wave composition, and the first-wave Workbench wave command center

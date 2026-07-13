@@ -38,37 +38,56 @@
   },
   "freshness": {
     "freshness_class": "daily",
-    "freshness_state": "current",
+    "freshness_state": "unknown",
     "evaluated_at_utc": "2026-07-06T00:00:00Z",
     "observed_at_utc": "2026-07-06T00:00:00Z",
     "age_seconds": 0,
     "max_allowed_age_seconds": 86400
   },
-  "completeness_status": "complete",
-  "reconciliation_status": "reconciled",
-  "data_quality_status": "quality_passed",
+  "completeness_status": "blocked",
+  "reconciliation_status": "blocked",
+  "data_quality_status": "quality_blocked",
   "lineage": {
     "lineage_materialized": true,
     "lineage_bundle_id": "lineage:lotus-manage:bulk-review-campaign-membership:2026-07-06",
-    "evidence_access_class": "customer_consumable",
+    "evidence_access_class": "operator_only",
     "evidence_uris": [
       "lotus-manage://evidence/bulk-review-campaign-membership/PB_SG_GLOBAL_BAL_001/2026-07-06"
     ]
   },
   "blocking": {
-    "blocked": false
+    "blocked": true,
+    "blocked_reason": "BULK_REVIEW_MESH_CERTIFICATION_DEFERRED",
+    "blocker_reason_codes": [
+      "BULK_REVIEW_MESH_MATURITY_DEFERRED",
+      "BULK_REVIEW_MESH_SLO_POLICY_MISSING",
+      "BULK_REVIEW_MESH_ACCESS_POLICY_MISSING",
+      "BULK_REVIEW_MESH_EVIDENCE_POLICY_MISSING",
+      "BULK_REVIEW_RUNTIME_CERTIFICATION_PENDING"
+    ],
+    "blocker_issue_refs": [
+      "sgajbi/lotus-manage#612"
+    ]
   },
   "certification_limits": {
-    "runtime_certification": "repo_native_contract_fixture",
+    "runtime_certification": "repo_native_contract_fixture_blocked",
     "live_environment_certification": "not_asserted_by_snapshot",
-    "promotion_limit": "validated by feature and pr-merge lanes only"
+    "promotion_limit": "blocked until platform mesh maturity, product-specific SLO/access/evidence policies, and runtime trust evidence are promoted",
+    "certification_ready": false,
+    "platform_maturity_state": "deferred",
+    "maturity_wave": "future_wave",
+    "required_policy_refs": [
+      "platform-contracts/mesh-slo/lotus-manage-bulk-review-campaign-membership.slo.v1.json",
+      "platform-contracts/mesh-access/lotus-manage-bulk-review-campaign-membership.access.v1.json",
+      "platform-contracts/mesh-evidence/lotus-manage-bulk-review-campaign-membership.evidence-pack-policy.v1.json"
+    ]
   },
   "observed_trust_metadata": {
     "product_name": "BulkReviewCampaignMembership",
     "product_version": "v1",
     "generated_at": "2026-07-06T00:00:00Z",
     "as_of_date": "2026-07-06",
-    "data_quality_status": "quality_passed",
+    "data_quality_status": "quality_blocked",
     "source_batch_fingerprint": "sha256:bulk-review-campaign-membership-demo",
     "correlation_id": "rfc-0091-lotus-manage-bulk-review-campaign-membership"
   },

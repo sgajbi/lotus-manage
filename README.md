@@ -565,6 +565,8 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/waves/{wave_id}/proof-pack`,
   `/api/v1/rebalance/waves/{wave_id}/report-input`,
   `/api/v1/rebalance/waves/{wave_id}/supportability`
+  Bulk-review campaign membership is catalog-visible but mesh-deferred/future-wave in trust
+  telemetry until product-specific platform policy and runtime certification evidence are promoted.
 - integration capabilities
   `/api/v1/integration/capabilities`
 - platform surfaces
