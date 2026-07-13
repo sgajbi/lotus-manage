@@ -455,6 +455,7 @@ class DpmPmQualitySummaryInvocationCommand:
     workflow_run_id: str | None
     summary_artifact_ref: str | None
     summary_content_hash: str | None
+    failure_reason_code: str | None
     source_refs: list[DpmOutcomeSourceRef]
     correlation_id: str
 
@@ -756,6 +757,7 @@ def build_pm_quality_summary_invocation_from_command(
             workflow_run_id=command.workflow_run_id,
             summary_artifact_ref=command.summary_artifact_ref,
             summary_content_hash=command.summary_content_hash,
+            failure_reason_code=command.failure_reason_code,
             requested_by=command.requested_by,
             source_refs=command.source_refs,
             correlation_id=command.correlation_id,

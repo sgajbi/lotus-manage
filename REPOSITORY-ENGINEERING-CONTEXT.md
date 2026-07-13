@@ -600,11 +600,14 @@ Current repository posture:
     `GET /api/v1/rebalance/pm-operating-quality/summary-invocations`, and
     `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`
     through `PmOperatingQualitySummaryInvocation:v1`: callers reference an existing persisted
-    score run and persisted review action, supply a bounded summary reference plus workflow/run
-    and artifact identity, and Manage records append-only history without storing generated AI
-    narrative text, exposing raw review rationale, recalculating scores, recomputing fairness,
-    ranking PMs, or making HR, compensation, conduct, client-contact, trade, order, OMS, or
-    execution decisions.
+    score run and persisted review action, supply a bounded summary reference plus state-specific
+    workflow, artifact, hash, or bounded failure evidence, and Manage records append-only history
+    without storing generated AI narrative text, exposing raw review rationale, recalculating
+    scores, recomputing fairness, ranking PMs, or making HR, compensation, conduct, client-contact,
+    trade, order, OMS, or execution decisions. `REQUESTED` rows reject result and failure evidence,
+    `COMPLETED` rows require workflow run, artifact reference, and `sha256:` artifact hash, and
+    `FAILED` rows require workflow run plus non-sensitive `failure_reason_code` while rejecting
+    completed artifact evidence.
     `lotus-gateway` PR #213 (`62ce4c4`) adds the bounded PM operating quality BFF route family at
     `/api/v1/dpm/command-center/pm-operating-quality/*` and published Gateway wiki source at
     `a4c9db9`, preserving Manage policy, score-run, fairness-analysis, and PM-quality summary
@@ -684,7 +687,8 @@ Current repository posture:
     Workbench PM-quality summary invocation is bounded product-realized through Gateway PR #213,
     Gateway PR #239, Workbench PR #245, Workbench PR #341, Workbench PR #342, and Workbench PR
     #343; Workbench PR #344 adds focused test hardening only. Manage-owned persisted summary
-    invocation history is now bounded to review-gated workflow/run/artifact identity only.
+    invocation history is now bounded to review-gated workflow handoff, completed artifact
+    identity, or failed invocation reason evidence only.
     Approval workflow beyond immutable review actions remains future product depth, not part of the
     current support claim.
     CIO model-change discovery is now

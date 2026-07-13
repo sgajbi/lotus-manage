@@ -105,6 +105,7 @@ def summary_invocation_command_from_request(
         workflow_run_id=request.workflow_run_id,
         summary_artifact_ref=request.summary_artifact_ref,
         summary_content_hash=request.summary_content_hash,
+        failure_reason_code=request.failure_reason_code,
         source_refs=list(request.source_refs),
         correlation_id=x_correlation_id or request.requested_by,
     )

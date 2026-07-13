@@ -2306,8 +2306,8 @@ segments for governance review. The review-action route family emits and persist
 evidence without mutating the reviewed evidence.
 The summary-invocation route family emits and persists bounded
 `PmOperatingQualitySummaryInvocation:v1` history over persisted score-run and review-action
-evidence, preserving workflow/run/artifact identity and hashes without storing generated AI
-narrative text.
+evidence, preserving state-specific workflow, completed artifact, hash, or bounded failure
+evidence without storing generated AI narrative text.
 
 Functional coverage:
 
@@ -2339,9 +2339,9 @@ Functional coverage:
   immutable/listable/retrievable ledger evidence without mutating target records,
 - summary-invocation preview/create validates a persisted score-run target and persisted
   review-action gate, preserves score-run and review-action content hashes, records bounded
-  workflow/run/artifact refs, optional artifact hash, requested-by actor, correlation id, source
-  refs, generated content hash, forbidden-use posture, and immutable/listable/retrievable history
-  without storing generated summary text,
+  workflow handoff, completed artifact refs and hashes, or failed invocation reason evidence,
+  requested-by actor, correlation id, source refs, generated content hash, forbidden-use posture,
+  and immutable/listable/retrievable history without storing generated summary text,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 

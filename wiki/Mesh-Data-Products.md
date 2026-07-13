@@ -87,10 +87,12 @@
   policy approval, client approval, trade approval, HR/conduct, order-routing, or OMS execution
   claims.
   Summary invocation rows carry structured `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a
-  deterministic content hash, proving Manage records workflow/run/artifact refs and hashes only
-  without storing or exposing generated summary text, reconstructing prompts or model responses,
-  projecting downstream summary UX, contacting clients, approving trades, routing orders, or
-  claiming OMS execution.
+  deterministic content hash. `REQUESTED` rows reject result/failure evidence, `COMPLETED` rows
+  require workflow run, artifact reference, and `sha256:` artifact hash, and `FAILED` rows require
+  workflow run plus non-sensitive `failure_reason_code` while rejecting completed artifact
+  evidence. Manage records no generated summary text, reconstructs no prompts or model responses,
+  projects no downstream summary UX, contacts no clients, approves no trades, routes no orders, and
+  claims no OMS execution.
 
 - Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
 - Product role: governed PM operating quality fairness-analysis evidence generated from persisted

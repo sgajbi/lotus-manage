@@ -341,6 +341,10 @@ class DpmPmQualitySummaryInvocationRequest(BaseModel):
         default=None,
         description="Hash of the downstream summary artifact. Narrative text is not accepted.",
     )
+    failure_reason_code: str | None = Field(
+        default=None,
+        description="Non-sensitive bounded failure reason when invocation_state is FAILED.",
+    )
     requested_by: str = Field(
         min_length=1,
         description="Actor or service recording support-summary history.",
@@ -359,6 +363,7 @@ class DpmPmQualitySummaryInvocationRequest(BaseModel):
         self.workflow_pack_version = _required_summary_text(self.workflow_pack_version)
         self.workflow_run_id = _optional_summary_text(self.workflow_run_id)
         self.summary_artifact_ref = _optional_summary_text(self.summary_artifact_ref)
+        self.failure_reason_code = _optional_summary_text(self.failure_reason_code)
         self.requested_by = _required_summary_text(self.requested_by)
         _validate_summary_invocation_required_ids(
             score_run_id=self.score_run_id,
