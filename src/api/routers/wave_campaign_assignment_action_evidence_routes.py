@@ -8,6 +8,7 @@ from src.api.routers.wave_campaign_definition_errors import (
     campaign_definition_evidence_value_http_exception,
     campaign_definition_not_found_http_exception,
 )
+from src.api.routers.wave_campaign_problem_details import campaign_problem_responses
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionAssignmentActionRequest,
 )
@@ -44,11 +45,13 @@ router = APIRouter()
     "/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions",
     response_model=DpmBulkReviewCampaignDefinition,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        404: {"description": "Campaign definition not found."},
-        409: {"description": "Assignment action reference conflict."},
-        422: {"description": "Assignment action semantic validation failed."},
-    },
+    responses=campaign_problem_responses(
+        {
+            404: "Campaign definition not found.",
+            409: "Assignment action reference conflict.",
+            422: "Assignment action semantic validation failed.",
+        }
+    ),
     summary="Record bulk-review campaign assignment action",
     description=(
         "Records an append-only assignment or escalation action on one active Manage-owned "

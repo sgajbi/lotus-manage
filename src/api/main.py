@@ -50,6 +50,10 @@ from src.api.routers.pm_operating_quality_http import (
     PmQualityProblemDetailsException,
     pm_quality_problem_details_exception_handler,
 )
+from src.api.routers.wave_campaign_problem_details import (
+    CampaignProblemDetailsException,
+    campaign_problem_details_exception_handler,
+)
 from src.api.routers.proof_packs import router as proof_pack_router
 from src.api.routers.outcome_reviews import (
     router as outcome_reviews_router,
@@ -299,6 +303,10 @@ def health_ready() -> HealthStatusResponse:
 app.add_exception_handler(
     PmQualityProblemDetailsException,
     pm_quality_problem_details_exception_handler,
+)
+app.add_exception_handler(
+    CampaignProblemDetailsException,
+    campaign_problem_details_exception_handler,
 )
 
 

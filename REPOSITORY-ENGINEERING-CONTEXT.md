@@ -863,7 +863,11 @@ Current repository posture:
     maker-checker control, and launch-audit writes persist through an optimistic content-hash
     compare-and-set contract. Same-ref replay remains idempotent, while independently stale
     workflow appends fail closed with `BULK_REVIEW_CAMPAIGN_DEFINITION_STALE_WRITE`/HTTP 409
-    instead of overwriting newer audit evidence. PostgreSQL maintains the derived
+    instead of overwriting newer audit evidence. Handled campaign workflow errors return
+    `application/problem+json` with top-level Problem Details fields, bounded `reasonCode`,
+    compatibility `code`, `correlationId`, and route `instance`; launch-blocked failures also
+    expose top-level `reasonCodes` and `readiness` supportability evidence. PostgreSQL maintains
+    the derived
     `dpm_bulk_review_campaign_workflow_read_model` projection for default campaign workflow board
     and assignment-plan operator filters, including board status, next action, assignment
     escalation tier, SLA posture, assigned actors, assignment task statuses, maker-checker outcomes,

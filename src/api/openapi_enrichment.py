@@ -279,6 +279,8 @@ def _ensure_error_response_content(
     status_code: str,
 ) -> None:
     content = response.setdefault("content", {})
+    if "application/problem+json" in content:
+        return
     json_content = content.setdefault(
         _JSON_MEDIA_TYPE,
         {

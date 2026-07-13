@@ -560,7 +560,9 @@ def test_openapi_enrichment_response_body_example_helper_enriches_success_and_er
         "title": "Conflict",
         "status": 409,
         "detail": "Conflict detected.",
-        "correlation_id": "corr_1234abcd",
+        "reasonCode": "IMMUTABLE_CONFLICT",
+        "correlationId": "corr_1234abcd",
+        "instance": "/api/v1/rebalance/example",
     }
 
 

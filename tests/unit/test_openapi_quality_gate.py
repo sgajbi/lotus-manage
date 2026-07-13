@@ -100,3 +100,43 @@ def test_openapi_quality_gate_requires_error_json_content_examples() -> None:
     errors = evaluate_schema(schema, service_name="lotus-manage")
 
     assert "  - POST /api/v1/example: missing 404 error response JSON content" in errors
+
+
+def test_openapi_quality_gate_accepts_problem_json_error_content() -> None:
+    schema = _minimal_schema(
+        {
+            "summary": "Create example",
+            "description": "Creates an example resource.",
+            "tags": ["Example"],
+            "responses": {
+                "200": {
+                    "description": "Created.",
+                    "content": {
+                        "application/json": {
+                            "schema": {"type": "object"},
+                            "examples": {"default": {"value": {}}},
+                        }
+                    },
+                },
+                "404": {
+                    "description": "Example not found.",
+                    "content": {
+                        "application/problem+json": {
+                            "schema": {"type": "object"},
+                            "example": {
+                                "type": "about:blank",
+                                "title": "Not Found",
+                                "status": 404,
+                                "detail": "Example not found.",
+                                "reasonCode": "EXAMPLE_NOT_FOUND",
+                                "correlationId": "corr_1234abcd",
+                                "instance": "/api/v1/example",
+                            },
+                        }
+                    },
+                },
+            },
+        }
+    )
+
+    assert evaluate_schema(schema, service_name="lotus-manage") == []
