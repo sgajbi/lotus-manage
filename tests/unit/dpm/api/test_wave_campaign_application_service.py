@@ -130,6 +130,9 @@ def test_campaign_definition_routes_depend_on_application_service_boundary() -> 
         Path("src/api/routers/wave_campaign_discovery_routes.py"),
         Path("src/api/routers/wave_campaign_operating_queue_routes.py"),
         Path("src/api/routers/wave_campaign_approval_inbox_routes.py"),
+        Path("src/api/routers/wave_campaign_workflow_board_routes.py"),
+        Path("src/api/routers/wave_campaign_assignment_plan_routes.py"),
+        Path("src/api/routers/wave_campaign_workflow_automation_routes.py"),
     ]
 
     for route_path in route_paths:
