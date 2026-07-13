@@ -416,6 +416,10 @@ It is disabled by default, enabled policies require bank approval and fairness-r
 closed for missing required evidence, invalid or expired governance approval, and unauthorized
 actors, and prohibited HR, compensation, conduct-enforcement, and autonomous-ranking uses remain
 outside the product contract.
+PM-quality policy, score-run, fairness-analysis, review-action, summary-invocation, and
+PM-quality-backed portfolio-memory reads are tenant-scoped from trusted Gateway identity. The API
+requires `X-Actor-Id`, `X-Tenant-Id`, and `X-Role`; request bodies cannot override the trusted
+tenant, and tenant mismatches fail closed before persistence or source lookup.
 Policies may also carry bank-defined `peer_group_policy` and `lookback_window_policy` evidence.
 Score runs materialize that context into `scope_evidence`, include the peer-group and lookback refs
 in the content hash, and fail closed when any score-contributing source evidence lacks a valid
@@ -489,7 +493,9 @@ trades, route orders, or claim OMS execution. PM-quality persistence enforces au
 integrity below HTTP lookup: review actions validate persisted score-run or fairness-analysis
 targets, summary invocations validate score-run/review-action parent coherence before insert, and
 Postgres migration `0016_pm_quality_lineage_integrity.sql` adds `ON DELETE RESTRICT` summary
-parent foreign keys so immutable lineage cannot be silently cascaded away.
+parent foreign keys so immutable lineage cannot be silently cascaded away. Postgres migration
+`0017_pm_quality_tenant_scope.sql` tenant-scopes PM-quality tables, composite keys, lookup indexes,
+and summary parent foreign keys so cross-tenant reads or parent links cannot reuse global ids.
 `lotus-gateway` PR #213 (`62ce4c4`) now exposes the bounded PM operating quality BFF route family at
 `/api/v1/dpm/command-center/pm-operating-quality/*`, forwarding Manage policy and score-run
 payloads without calculating scores, ranking PMs, administering policy locally, or creating HR,

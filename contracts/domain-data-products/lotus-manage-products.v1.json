@@ -164,6 +164,7 @@
       "required_trust_metadata": [
         "product_name",
         "product_version",
+        "tenant_id",
         "generated_at",
         "as_of_date",
         "data_quality_status",
@@ -191,7 +192,7 @@
       ],
       "freshness_policy": {
         "freshness_class": "intraday",
-        "max_allowed_age_description": "PM operating quality score runs are generated from explicit bank policy, bank approval and fairness-review evidence, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization. Fairness analyses are generated from persisted score runs and source-defined operating segments. Review actions are immutable ledger rows over existing score-run or fairness-analysis evidence and preserve target content hashes without recalculating scores or recomputing fairness posture. Summary invocations are immutable history rows over existing score-run and review-action evidence and carry PM_QUALITY_SUMMARY_TEXT_BOUNDARY evidence proving Manage records workflow, run, artifact refs, and hashes only, without storing or exposing generated summary text or projecting downstream summary UX. Portfolio memory projects bounded score-run lineage only when persisted Core PM-book member evidence includes the requested portfolio."
+        "max_allowed_age_description": "PM operating quality score runs are generated from trusted Gateway tenant identity, explicit bank policy, bank approval and fairness-review evidence, current source-backed evidence supplied or referenced by the request, and optional lotus-core PortfolioManagerBookMembership:v1 scope materialization. Fairness analyses are generated from persisted tenant-scoped score runs and source-defined operating segments. Review actions are immutable tenant-scoped ledger rows over existing score-run or fairness-analysis evidence and preserve target content hashes without recalculating scores or recomputing fairness posture. Summary invocations are immutable tenant-scoped history rows over existing score-run and review-action evidence and carry PM_QUALITY_SUMMARY_TEXT_BOUNDARY evidence proving Manage records workflow, run, artifact refs, and hashes only, without storing or exposing generated summary text or projecting downstream summary UX. Portfolio memory projects bounded score-run lineage only when persisted Core PM-book member evidence includes the requested portfolio under the trusted tenant scope."
       },
       "completeness_policy": {
         "default_status": "complete",
@@ -212,6 +213,7 @@
         "successor_product": null
       },
       "identifier_refs": [
+        "tenant_id",
         "portfolio_id",
         "correlation_id"
       ],

@@ -12,6 +12,8 @@ explicitly excluded.
 - Wave lifecycle preview/create/read/list item/simulate/approve flows.
 - Portfolio-memory persistence search and bounded retrieval.
 - Monitoring, exceptions, and command-center read/write for managed domains.
+- PM operating quality policy, score-run, fairness-analysis, review-action, summary-invocation,
+  and PM-quality-backed portfolio-memory reads with trusted-identity tenant isolation.
 
 ## Explicitly unsupported in `lotus-manage`
 
