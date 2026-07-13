@@ -8,7 +8,7 @@
       "openApiVersion": "3.1.0"
     }
   ],
-  "generatedAt": "2026-07-06T00:01:27.156174+00:00",
+  "generatedAt": "2026-07-13T07:16:04.264556+00:00",
   "attributeCatalog": [
     {
       "semanticId": "lotus.access_classification",
@@ -5337,6 +5337,20 @@
       "preferredName": "failure_reason",
       "description": "Bounded failure reason when the monitoring run failed.",
       "example": "failure_reason_example",
+      "type": "object",
+      "locations": [
+        "body"
+      ],
+      "observedTypes": [
+        "object"
+      ]
+    },
+    {
+      "semanticId": "lotus.failure_reason_code",
+      "canonicalTerm": "failure_reason_code",
+      "preferredName": "failure_reason_code",
+      "description": "Non-sensitive bounded failure reason when invocation_state is FAILED.",
+      "example": "failure_reason_code_example",
       "type": "object",
       "locations": [
         "body"
@@ -130007,6 +130021,14 @@
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
           },
           {
+            "name": "failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
+          },
+          {
             "name": "requested_by",
             "location": "body",
             "required": true,
@@ -130209,6 +130231,14 @@
             "type": "object",
             "semanticId": "lotus.summary_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
+          },
+          {
+            "name": "summary_invocation.failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
           },
           {
             "name": "summary_invocation.requested_by",
@@ -130534,6 +130564,14 @@
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
           },
           {
+            "name": "failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
+          },
+          {
             "name": "requested_by",
             "location": "body",
             "required": true,
@@ -130736,6 +130774,14 @@
             "type": "object",
             "semanticId": "lotus.summary_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
+          },
+          {
+            "name": "summary_invocation.failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
           },
           {
             "name": "summary_invocation.requested_by",
@@ -131185,6 +131231,14 @@
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
           },
           {
+            "name": "summary_invocations[].failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
+          },
+          {
             "name": "summary_invocations[].requested_by",
             "location": "body",
             "required": true,
@@ -131606,6 +131660,14 @@
             "type": "object",
             "semanticId": "lotus.summary_content_hash",
             "attributeRef": "#/attributeCatalog/lotus.summary_content_hash"
+          },
+          {
+            "name": "summary_invocation.failure_reason_code",
+            "location": "body",
+            "required": false,
+            "type": "object",
+            "semanticId": "lotus.failure_reason_code",
+            "attributeRef": "#/attributeCatalog/lotus.failure_reason_code"
           },
           {
             "name": "summary_invocation.requested_by",

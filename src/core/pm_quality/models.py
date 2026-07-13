@@ -850,6 +850,10 @@ class DpmPmQualitySummaryInvocation(BaseModel):
         default=None,
         description="Hash of the downstream summary artifact when available.",
     )
+    failure_reason_code: str | None = Field(
+        default=None,
+        description="Non-sensitive bounded failure reason when invocation_state is FAILED.",
+    )
     requested_by: str = Field(min_length=1, description="Actor or service requesting history.")
     reason_codes: list[str] = Field(description="Bounded invocation reason codes.")
     source_refs: list[DpmOutcomeSourceRef] = Field(

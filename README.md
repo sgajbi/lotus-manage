@@ -425,10 +425,11 @@ membership. Persisted source-backed score runs are visible in portfolio memory a
 refs, actor, and action posture without projecting raw rationale, score values, PM rankings,
 client-contact, trade, order, OMS, or execution claims. Support-summary invocations over those
 score runs are visible as bounded `PM_QUALITY_SUMMARY_INVOCATION` lineage events that preserve
-score-run, review-action, workflow-run, artifact refs, hashes, and the summary-text boundary
-posture without storing or exposing generated summary text, reconstructing prompts or model
-responses, projecting downstream summary UX, ranking PMs, contacting clients, approving trades,
-routing orders, or claiming OMS execution. The fairness-analysis route family now
+score-run and review-action identity, state-specific workflow, artifact, hash, or bounded failure
+evidence, and the summary-text boundary posture without storing or exposing generated summary
+text, reconstructing prompts or model responses, projecting downstream summary UX, ranking PMs,
+contacting clients, approving trades, routing orders, or claiming OMS execution. The
+fairness-analysis route family now
 supports preview and immutable create/read/list lifecycle at
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses/preview`,
 `POST /api/v1/rebalance/pm-operating-quality/fairness-analyses`,
@@ -464,10 +465,13 @@ create/read/list lifecycle at
 `GET /api/v1/rebalance/pm-operating-quality/summary-invocations`, and
 `GET /api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}`. It emits
 bounded `PmOperatingQualitySummaryInvocation:v1` rows over persisted score-run and review-action
-evidence, recording workflow/run/artifact identity and hashes without storing generated AI
-narrative text, exposing raw review rationale, recalculating scores, recomputing fairness, ranking
-PMs, creating HR/compensation/conduct decisions, contacting clients, approving trades, routing
-orders, or claiming OMS execution. Each row carries structured
+evidence. `REQUESTED` rows may carry downstream workflow-run handoff identity but no result or
+failure evidence; `COMPLETED` rows require workflow run, artifact reference, and `sha256:` content
+hash; `FAILED` rows require workflow run plus a non-sensitive `failure_reason_code` and reject
+completed artifact evidence. Manage records append-only invocation state without storing generated
+AI narrative text, exposing raw review rationale, recalculating scores, recomputing fairness,
+ranking PMs, creating HR/compensation/conduct decisions, contacting clients, approving trades,
+routing orders, or claiming OMS execution. Each row carries structured
 `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence with a deterministic content hash, proving Manage
 records invocation history only and does not store or expose generated summary text, project
 downstream summary UX, reconstruct prompts or model responses, generate client messages, approve
@@ -763,10 +767,11 @@ Operationally important truths:
     approval workflow state, approve policies or trades, contact clients, create HR or conduct
     decisions, route orders, or claim OMS execution.
 16. PM operating-quality summary invocations expose structured
-    `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence. Manage records workflow/run/artifact references
-    and hashes only; it does not store or expose generated summary text, project downstream
-    summary UX, reconstruct prompts or model responses, contact clients, generate client-ready
-    messages, approve trades, route orders, or claim OMS execution.
+    `PM_QUALITY_SUMMARY_TEXT_BOUNDARY` evidence. Manage records score-run/review-action identity
+    and state-specific workflow, artifact, hash, or bounded failure evidence only; it does not
+    store or expose generated summary text, project downstream summary UX, reconstruct prompts or
+    model responses, contact clients, generate client-ready messages, approve trades, route
+    orders, or claim OMS execution.
 
 ## Documentation Map
 

@@ -1371,6 +1371,27 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
                 json={**request, "score_run_id": "missing"},
             )
+            requested_with_result = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={**request, "invocation_state": "REQUESTED"},
+            )
+            completed_without_artifact = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={
+                    **request,
+                    "summary_artifact_ref": None,
+                    "summary_content_hash": "sha256:pmq-summary",
+                },
+            )
+            failed_without_reason = client.post(
+                "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+                json={
+                    **request,
+                    "invocation_state": "FAILED",
+                    "summary_artifact_ref": None,
+                    "summary_content_hash": None,
+                },
+            )
             missing_invocation = client.get(
                 "/api/v1/rebalance/pm-operating-quality/summary-invocations/missing"
             )
@@ -1406,6 +1427,21 @@ def test_pm_operating_quality_api_creates_gets_and_lists_summary_invocations() -
         missing_score_run,
         status_code=404,
         reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+    )
+    _assert_pm_quality_problem(
+        requested_with_result,
+        status_code=422,
+        reason_code="PM_QUALITY_SUMMARY_REQUESTED_RESULT_EVIDENCE_FORBIDDEN",
+    )
+    _assert_pm_quality_problem(
+        completed_without_artifact,
+        status_code=422,
+        reason_code="PM_QUALITY_SUMMARY_COMPLETED_ARTIFACT_REF_REQUIRED",
+    )
+    _assert_pm_quality_problem(
+        failed_without_reason,
+        status_code=422,
+        reason_code="PM_QUALITY_SUMMARY_FAILED_REASON_CODE_REQUIRED",
     )
     _assert_pm_quality_problem(
         missing_invocation,
@@ -1873,6 +1909,7 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     )
     summary_schema = schema["components"]["schemas"]["DpmPmQualitySummaryInvocation"]
     assert "summary_text_boundary" in summary_schema["properties"]
+    assert "failure_reason_code" in summary_schema["properties"]
     assert "DpmPmQualitySummaryTextBoundaryEvidence" in schema["components"]["schemas"]
     summary_boundary_schema = schema["components"]["schemas"][
         "DpmPmQualitySummaryTextBoundaryEvidence"

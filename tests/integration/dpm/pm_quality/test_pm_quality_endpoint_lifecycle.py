@@ -488,6 +488,11 @@ def test_pm_quality_endpoint_lifecycle_uses_canonical_app_and_postgres_adapter(
     assert summary_create.json()["summary_invocation"]["invocation_state"] == "COMPLETED"
     assert summary_failed.json()["summary_invocation"]["invocation_state"] == "FAILED"
     assert (
+        summary_failed.json()["summary_invocation"]["failure_reason_code"]
+        == "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT"
+    )
+    assert summary_failed.json()["summary_invocation"]["summary_artifact_ref"] is None
+    assert (
         summary_create.json()["summary_invocation"]["score_run_content_hash"]
         == score_runs[0]["content_hash"]
     )
@@ -655,7 +660,7 @@ def _summary_invocation_request(
     state: str,
     summary_ref: str,
 ) -> dict[str, Any]:
-    return {
+    request = {
         "score_run_id": score_run_id,
         "review_action_id": review_action_id,
         "invocation_state": state,
@@ -663,8 +668,6 @@ def _summary_invocation_request(
         "workflow_pack_name": "pm_quality_summary.pack",
         "workflow_pack_version": "v1",
         "workflow_run_id": f"{summary_ref.lower()}-workflow",
-        "summary_artifact_ref": f"{summary_ref.lower()}-artifact",
-        "summary_content_hash": f"sha256:{summary_ref.lower()}",
         "requested_by": "ops",
         "source_refs": [
             {
@@ -676,6 +679,12 @@ def _summary_invocation_request(
             }
         ],
     }
+    if state == "FAILED":
+        request["failure_reason_code"] = "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT"
+        return request
+    request["summary_artifact_ref"] = f"{summary_ref.lower()}-artifact"
+    request["summary_content_hash"] = f"sha256:{summary_ref.lower()}"
+    return request
 
 
 def _assert_problem(response: Any, status_code: int, reason_code: str) -> None:

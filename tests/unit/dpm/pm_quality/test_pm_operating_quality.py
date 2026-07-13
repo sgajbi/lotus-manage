@@ -361,6 +361,215 @@ def test_pm_quality_summary_invocation_records_history_without_summary_text() ->
         )
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected_code"),
+    [
+        (
+            {
+                "invocation_state": "REQUESTED",
+                "summary_artifact_ref": "pmq-summary-artifact-001",
+                "summary_content_hash": "sha256:pmq-summary",
+            },
+            "PM_QUALITY_SUMMARY_REQUESTED_RESULT_EVIDENCE_FORBIDDEN",
+        ),
+        (
+            {
+                "invocation_state": "REQUESTED",
+                "failure_reason_code": "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+            },
+            "PM_QUALITY_SUMMARY_REQUESTED_FAILURE_EVIDENCE_FORBIDDEN",
+        ),
+        (
+            {"invocation_state": "COMPLETED"},
+            "PM_QUALITY_SUMMARY_COMPLETED_WORKFLOW_RUN_REQUIRED",
+        ),
+        (
+            {
+                "invocation_state": "COMPLETED",
+                "workflow_run_id": "pmq-summary-run-001",
+                "summary_content_hash": "sha256:pmq-summary",
+            },
+            "PM_QUALITY_SUMMARY_COMPLETED_ARTIFACT_REF_REQUIRED",
+        ),
+        (
+            {
+                "invocation_state": "COMPLETED",
+                "workflow_run_id": "pmq-summary-run-001",
+                "summary_artifact_ref": "pmq-summary-artifact-001",
+            },
+            "PM_QUALITY_SUMMARY_COMPLETED_CONTENT_HASH_REQUIRED",
+        ),
+        (
+            {
+                "invocation_state": "COMPLETED",
+                "workflow_run_id": "pmq-summary-run-001",
+                "summary_artifact_ref": "pmq-summary-artifact-001",
+                "summary_content_hash": "sha256:pmq-summary",
+                "failure_reason_code": "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+            },
+            "PM_QUALITY_SUMMARY_COMPLETED_FAILURE_EVIDENCE_FORBIDDEN",
+        ),
+        (
+            {
+                "invocation_state": "FAILED",
+                "failure_reason_code": "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+            },
+            "PM_QUALITY_SUMMARY_FAILED_WORKFLOW_RUN_REQUIRED",
+        ),
+        (
+            {
+                "invocation_state": "FAILED",
+                "workflow_run_id": "pmq-summary-run-001",
+            },
+            "PM_QUALITY_SUMMARY_FAILED_REASON_CODE_REQUIRED",
+        ),
+        (
+            {
+                "invocation_state": "FAILED",
+                "workflow_run_id": "pmq-summary-run-001",
+                "failure_reason_code": "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+                "summary_artifact_ref": "pmq-summary-artifact-001",
+            },
+            "PM_QUALITY_SUMMARY_FAILED_RESULT_EVIDENCE_FORBIDDEN",
+        ),
+    ],
+)
+def test_pm_quality_summary_invocation_state_evidence_matrix_rejects_invalid_rows(
+    payload: dict[str, object],
+    expected_code: str,
+) -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+    with pytest.raises(ValueError, match=expected_code):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action,
+            summary_ref="PMQ-SUMMARY-2026-05-MATRIX",
+            requested_by="ops",
+            source_refs=[],
+            correlation_id="corr-summary-matrix",
+            **payload,
+        )
+
+
+def test_pm_quality_summary_invocation_records_failed_state_with_bounded_reason() -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+    invocation = build_pm_quality_summary_invocation(
+        score_run=score_run,
+        review_action=review_action,
+        invocation_state="FAILED",
+        summary_ref="PMQ-SUMMARY-2026-05-FAILED",
+        workflow_run_id="pmq-summary-run-failed-001",
+        failure_reason_code="PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+        requested_by="ops",
+        source_refs=[],
+        correlation_id="corr-summary-failed",
+    )
+
+    assert invocation.invocation_state == "FAILED"
+    assert invocation.failure_reason_code == "PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT"
+    assert invocation.summary_artifact_ref is None
+    assert invocation.summary_content_hash is None
+    assert any(ref.source_type == "PM_QUALITY_SUMMARY_FAILURE" for ref in invocation.source_refs)
+
+
+@pytest.mark.parametrize(
+    ("source_ref", "expected_code"),
+    [
+        (
+            DpmOutcomeSourceRef(
+                source_system="lotus-ai",
+                source_type="pm_quality_summary.pack",
+                source_id="other-workflow-run",
+                source_version="v1",
+            ),
+            "PM_QUALITY_SUMMARY_WORKFLOW_SOURCE_REF_MISMATCH",
+        ),
+        (
+            DpmOutcomeSourceRef(
+                source_system="lotus-ai",
+                source_type="PM_QUALITY_SUMMARY_ARTIFACT",
+                source_id="other-artifact",
+                source_version="v1",
+                content_hash="sha256:pmq-summary",
+            ),
+            "PM_QUALITY_SUMMARY_ARTIFACT_SOURCE_REF_MISMATCH",
+        ),
+        (
+            DpmOutcomeSourceRef(
+                source_system="lotus-manage",
+                source_type="PM_QUALITY_SUMMARY_FAILURE",
+                source_id="pmq-summary-run-001",
+                source_version="OTHER_REASON",
+            ),
+            "PM_QUALITY_SUMMARY_FAILURE_SOURCE_REF_MISMATCH",
+        ),
+    ],
+)
+def test_pm_quality_summary_invocation_rejects_mismatched_source_refs(
+    source_ref: DpmOutcomeSourceRef,
+    expected_code: str,
+) -> None:
+    score_run = _ready_score_run()
+    review_action = build_pm_quality_review_action(
+        target=score_run,
+        target_type="SCORE_RUN",
+        action_type="ACKNOWLEDGE",
+        review_action_ref="PMQ-REVIEW-2026-05-001",
+        review_reason="Reviewed and acknowledged for supervisory evidence.",
+        actor_id="ops",
+        source_refs=[],
+        remediation_due_date=None,
+        correlation_id="corr-review-action",
+    )
+
+    with pytest.raises(ValueError, match=expected_code):
+        build_pm_quality_summary_invocation(
+            score_run=score_run,
+            review_action=review_action,
+            invocation_state="FAILED"
+            if source_ref.source_type == "PM_QUALITY_SUMMARY_FAILURE"
+            else "COMPLETED",
+            summary_ref="PMQ-SUMMARY-2026-05-SOURCE-REF",
+            workflow_run_id="pmq-summary-run-001",
+            summary_artifact_ref=None
+            if source_ref.source_type == "PM_QUALITY_SUMMARY_FAILURE"
+            else "pmq-summary-artifact-001",
+            summary_content_hash=None
+            if source_ref.source_type == "PM_QUALITY_SUMMARY_FAILURE"
+            else "sha256:pmq-summary",
+            failure_reason_code="PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT"
+            if source_ref.source_type == "PM_QUALITY_SUMMARY_FAILURE"
+            else None,
+            requested_by="ops",
+            source_refs=[source_ref],
+            correlation_id="corr-summary-source-ref",
+        )
+
+
 def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai_refs() -> None:
     score_run = _ready_score_run()
     review_action = build_pm_quality_review_action(
@@ -388,6 +597,7 @@ def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai
         workflow_run_id=" pmq-summary-run-001 ",
         summary_artifact_ref=" pmq-summary-artifact-001 ",
         summary_content_hash="sha256:pmq-summary",
+        failure_reason_code=None,
         source_refs=[caller_ref],
     )
 
@@ -400,6 +610,24 @@ def test_pm_quality_summary_invocation_source_ref_helpers_project_managed_and_ai
     assert refs[0].source_id == "pmq-summary-artifact-001"
     assert refs[1].source_id == "pmq-summary-run-001"
     assert refs[3].source_version == "duplicate"
+
+    failure_refs = summary_history._summary_invocation_source_refs(
+        score_run=score_run,
+        review_action=review_action,
+        workflow_pack_version="v1",
+        workflow_run_id=" pmq-summary-run-failed-001 ",
+        summary_artifact_ref=None,
+        summary_content_hash=None,
+        failure_reason_code="PM_QUALITY_SUMMARY_PROVIDER_TIMEOUT",
+        source_refs=[],
+    )
+
+    assert [ref.source_type for ref in failure_refs] == [
+        "pm_quality_summary.pack",
+        "PM_QUALITY_SUMMARY_FAILURE",
+        "PmOperatingQualityReviewAction",
+        "PmOperatingQualityScoreRun",
+    ]
 
 
 def test_pm_quality_summary_invocation_validation_helpers_classify_guardrails() -> None:
@@ -451,8 +679,13 @@ def test_pm_quality_summary_invocation_validation_checks_preserve_error_order() 
     checks = summary_history._summary_invocation_validation_checks(
         score_run=score_run,
         review_action=review_action,
+        invocation_state="REQUESTED",
         workflow_pack_name="unsupported.pack",
+        workflow_run_id=None,
+        summary_artifact_ref=None,
         summary_content_hash="not-a-sha256-hash",
+        failure_reason_code=None,
+        source_refs=[],
     )
 
     assert [error_code for failed, error_code in checks if failed] == [
@@ -460,6 +693,7 @@ def test_pm_quality_summary_invocation_validation_checks_preserve_error_order() 
         "PM_QUALITY_SUMMARY_REVIEW_ACTION_HASH_MISMATCH",
         "PM_QUALITY_SUMMARY_WORKFLOW_PACK_UNSUPPORTED",
         "PM_QUALITY_SUMMARY_CONTENT_HASH_INVALID",
+        "PM_QUALITY_SUMMARY_REQUESTED_RESULT_EVIDENCE_FORBIDDEN",
     ]
 
 
