@@ -300,13 +300,31 @@ def health_ready() -> HealthStatusResponse:
     return HealthStatusResponse(status="ready")
 
 
+async def _pm_quality_problem_details_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    if not isinstance(exc, PmQualityProblemDetailsException):
+        raise exc
+    return await pm_quality_problem_details_exception_handler(request, exc)
+
+
+async def _campaign_problem_details_exception_handler(
+    request: Request,
+    exc: Exception,
+) -> JSONResponse:
+    if not isinstance(exc, CampaignProblemDetailsException):
+        raise exc
+    return await campaign_problem_details_exception_handler(request, exc)
+
+
 app.add_exception_handler(
     PmQualityProblemDetailsException,
-    pm_quality_problem_details_exception_handler,
+    _pm_quality_problem_details_exception_handler,
 )
 app.add_exception_handler(
     CampaignProblemDetailsException,
-    campaign_problem_details_exception_handler,
+    _campaign_problem_details_exception_handler,
 )
 
 

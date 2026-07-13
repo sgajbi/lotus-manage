@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -41,7 +42,7 @@ def _pm_quality_problem_response(
     title: str,
     reason_code: str,
     detail: str,
-) -> dict[str, object]:
+) -> dict[str, Any]:
     return {
         "description": description,
         "content": {
@@ -61,7 +62,7 @@ def _pm_quality_problem_response(
     }
 
 
-PM_QUALITY_PROBLEM_RESPONSES: dict[int, dict[str, object]] = {
+PM_QUALITY_PROBLEM_RESPONSES: dict[int | str, dict[str, Any]] = {
     403: _pm_quality_problem_response(
         description="PM-quality request is not authorized for the trusted caller identity.",
         status_code=403,

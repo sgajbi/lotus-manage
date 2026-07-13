@@ -16,6 +16,7 @@ from src.core.waves import (
     CampaignAssignmentTaskStatus,
     CampaignAssignmentTaskTransitionType,
     CampaignAssignmentTaskType,
+    CampaignDefinitionStatus,
     CampaignMakerCheckerControlAction,
     CampaignMakerCheckerControlOutcome,
     DpmBulkReviewCampaignDefinition,
@@ -69,7 +70,7 @@ class DpmCampaignDefinitionCreateCommand:
     campaign_id: str
     campaign_version: str
     display_name: str
-    status: str
+    status: CampaignDefinitionStatus
     as_of_date: str
     rationale: str
     eligible_portfolio_types: list[str]

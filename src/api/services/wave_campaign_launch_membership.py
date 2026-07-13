@@ -5,6 +5,11 @@ import hashlib
 import json
 
 from src.api.services import wave_service
+from src.api.services.wave_campaign_governance import (
+    campaign_actor_entitlement_state,
+    campaign_approval_status,
+    campaign_expiry_state,
+)
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -35,7 +40,10 @@ def build_campaign_definition_launch_portfolios(
     included_candidates: list[DpmBulkReviewCampaignDefinitionCandidate] = []
     excluded_candidate_count = 0
     for candidate in definition.candidates:
-        if _normalize_campaign_portfolio_type(candidate.portfolio_type) not in eligible_portfolio_types:
+        if (
+            _normalize_campaign_portfolio_type(candidate.portfolio_type)
+            not in eligible_portfolio_types
+        ):
             excluded_candidate_count += 1
             continue
         included_candidates.append(candidate)
@@ -209,16 +217,16 @@ def _campaign_governance_diagnostics_and_refs(
             },
             [],
         )
-    approval_status = _campaign_approval_status(
+    approval_status = campaign_approval_status(
         approval_ref=governance.approval_ref,
         approved_by=governance.approved_by,
         approved_at=governance.approved_at,
     )
-    expiry_state = _campaign_expiry_state(
+    expiry_state = campaign_expiry_state(
         expires_on=governance.expires_on,
         campaign_as_of_date=campaign_as_of_date,
     )
-    actor_entitlement_state = _campaign_actor_entitlement_state(
+    actor_entitlement_state = campaign_actor_entitlement_state(
         entitled_actor_ids=governance.entitled_actor_ids,
         actor_id=actor_id,
     )
@@ -257,60 +265,6 @@ def _campaign_governance_diagnostics_and_refs(
     )
 
 
-def _campaign_approval_status(
-    *,
-    approval_ref: str | None,
-    approved_by: str | None,
-    approved_at: str | None,
-) -> str:
-    approval_fields = [approval_ref, approved_by, approved_at]
-    supplied_approval_fields = [value for value in approval_fields if value]
-    if supplied_approval_fields and len(supplied_approval_fields) != len(approval_fields):
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_APPROVAL_EVIDENCE_INCOMPLETE",
-            "Bulk-review campaign approval evidence requires approval_ref, approved_by, and approved_at.",
-        )
-    return "APPROVED" if len(supplied_approval_fields) == len(approval_fields) else "NOT_SUPPLIED"
-
-
-def _campaign_expiry_state(
-    *,
-    expires_on: str | None,
-    campaign_as_of_date: date,
-) -> str:
-    if not expires_on:
-        return "NOT_SUPPLIED"
-    try:
-        expiry_date = date.fromisoformat(expires_on)
-    except ValueError as exc:
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_EXPIRY_DATE_INVALID",
-            "campaign_governance.expires_on must be an ISO date.",
-        ) from exc
-    if expiry_date < campaign_as_of_date:
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_EXPIRED",
-            "Bulk-review campaign governance is expired for the requested as_of_date.",
-        )
-    return "ACTIVE"
-
-
-def _campaign_actor_entitlement_state(
-    *,
-    entitled_actor_ids: list[str],
-    actor_id: str,
-) -> str:
-    entitled_actors = {actor.strip() for actor in entitled_actor_ids if actor.strip()}
-    if not entitled_actors:
-        return "NOT_SUPPLIED"
-    if actor_id not in entitled_actors:
-        raise wave_service.DpmWaveValidationError(
-            "BULK_REVIEW_CAMPAIGN_ACTOR_NOT_ENTITLED",
-            "actor_id is not entitled for this bulk-review campaign.",
-        )
-    return "AUTHORIZED"
-
-
 def _campaign_membership_hash(
     *,
     trigger_id: str,
@@ -334,9 +288,7 @@ def _source_refs_payload(refs: object) -> list[dict[str, object]]:
     if not isinstance(refs, list):
         raise TypeError("DpmWaveSourceRef payload must be a list.")
     return [
-        ref.model_dump(mode="json", exclude_none=True)
-        if hasattr(ref, "model_dump")
-        else dict(ref)
+        ref.model_dump(mode="json", exclude_none=True) if hasattr(ref, "model_dump") else dict(ref)
         for ref in refs
     ]
 

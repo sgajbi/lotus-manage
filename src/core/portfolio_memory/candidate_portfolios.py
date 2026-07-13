@@ -144,8 +144,7 @@ def _campaign_definition_candidate_ids(
     return {
         candidate.portfolio_id
         for definition in repositories.campaign_definition_repository.list_definitions(
-            tenant_id=tenant_id,
-            limit=source_scan_limit
+            tenant_id=tenant_id, limit=source_scan_limit
         )
         for candidate in definition.candidates
     }

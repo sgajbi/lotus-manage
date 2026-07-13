@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import Header, Path, Query
 
-
-CampaignDefinitionStatus = Literal["ACTIVE", "RETIRED", "SUPERSEDED"]
+from src.core.waves import CampaignDefinitionStatus
 
 CampaignDefinitionIdPath = Annotated[
     str,
@@ -52,10 +51,8 @@ WaveCorrelationIdHeader = Annotated[
 WaveTenantIdHeader = Annotated[
     str | None,
     Header(
-        alias="X-Tenant-Id",
         description=(
-            "Trusted tenant id. Required when resolving persisted bulk-review campaign "
-            "definitions."
+            "Trusted tenant id. Required when resolving persisted bulk-review campaign definitions."
         ),
         examples=["tenant-sg"],
     ),
