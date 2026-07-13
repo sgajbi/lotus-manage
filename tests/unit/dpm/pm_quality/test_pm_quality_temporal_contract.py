@@ -44,6 +44,14 @@ def test_pm_quality_business_dates_are_canonical_date_only_values() -> None:
         with pytest.raises(ValueError, match="INVALID_PM_QUALITY_BUSINESS_DATE:as_of_date"):
             canonical_pm_quality_business_date(value, field_name="as_of_date")
 
+    for value in (
+        datetime(2026, 5, 12, 0, 0, tzinfo=timezone.utc),
+        object(),
+        "2026-02-30",
+    ):
+        with pytest.raises(ValueError, match="INVALID_PM_QUALITY_BUSINESS_DATE:as_of_date"):
+            canonical_pm_quality_business_date(value, field_name="as_of_date")
+
 
 def test_pm_quality_utc_timestamps_require_timezone_and_normalize_to_utc() -> None:
     assert (
@@ -61,6 +69,9 @@ def test_pm_quality_utc_timestamps_require_timezone_and_normalize_to_utc() -> No
     for value in ("2026-05-10", "2026-05-10T09:00:00", "not-a-timestamp"):
         with pytest.raises(ValueError, match="INVALID_PM_QUALITY_UTC_TIMESTAMP:approved_at"):
             canonical_pm_quality_utc_timestamp(value, field_name="approved_at")
+
+    with pytest.raises(ValueError, match="INVALID_PM_QUALITY_UTC_TIMESTAMP:approved_at"):
+        canonical_pm_quality_utc_timestamp(object(), field_name="approved_at")
 
 
 def test_pm_quality_policy_temporal_fields_are_normalized_before_persistence() -> None:

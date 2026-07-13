@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any
 
 import httpx
@@ -13,7 +14,10 @@ from src.api.dependencies import get_mandate_repository
 from src.api.main import app
 import src.api.routers.mandates as mandates_router
 from src.api.routers.mandates import get_core_resolver_client
-from src.api.services.mandate_health_source_refs import source_refs_for_portfolio_mandate_health
+from src.api.services.mandate_health_source_refs import (
+    _source_context_ref_payload,
+    source_refs_for_portfolio_mandate_health,
+)
 from src.core.dpm_source_context import (
     DpmCoreBenchmarkAssignmentResponse,
     DpmCoreClientRestrictionProfileResponse,
@@ -734,6 +738,65 @@ def test_health_recalculate_and_read_latest_health_snapshot() -> None:
     assert all(str(ref["content_hash"]).startswith("sha256:") for ref in source_refs)
     assert latest.status_code == 200
     assert latest.json()["health_snapshot_id"] == recalculated.json()["health_snapshot_id"]
+
+
+def test_mandate_health_source_refs_fail_closed_for_missing_and_malformed_lineage() -> None:
+    repository = InMemoryDpmMandateRepository()
+    now = datetime(2026, 5, 6, 12, 0, tzinfo=timezone.utc)
+
+    assert (
+        source_refs_for_portfolio_mandate_health(
+            repository=repository,
+            portfolio_id=None,
+            now=now,
+        )
+        == []
+    )
+    assert (
+        source_refs_for_portfolio_mandate_health(
+            repository=repository,
+            portfolio_id=PORTFOLIO_ID,
+            now=now,
+        )
+        == []
+    )
+
+    repository.save_mandate_snapshot(_twin())
+    assert (
+        source_refs_for_portfolio_mandate_health(
+            repository=repository,
+            portfolio_id=PORTFOLIO_ID,
+            now=now,
+        )
+        == []
+    )
+
+    snapshot = SimpleNamespace(calculated_at=datetime(2026, 5, 3, 9, 0))
+    assert (
+        _source_context_ref_payload(
+            "malformed-ref",
+            snapshot=snapshot,  # type: ignore[arg-type]
+            now=now,
+        )
+        is None
+    )
+    assert (
+        _source_context_ref_payload(
+            "lotus-risk:MandateRiskHealthContext:v1:not-a-hash",
+            snapshot=snapshot,  # type: ignore[arg-type]
+            now=now,
+        )
+        is None
+    )
+    stale = _source_context_ref_payload(
+        "lotus-risk:MandateRiskHealthContext:v1:sha256:risk-context",
+        snapshot=snapshot,  # type: ignore[arg-type]
+        now=now,
+    )
+
+    assert stale is not None
+    assert stale["freshness"] == "stale"
+    assert stale["generated_at"] == "2026-05-03T09:00:00"
 
 
 def test_health_read_and_recalculate_error_mapping() -> None:

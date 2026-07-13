@@ -1,9 +1,18 @@
 import pytest
 
 from src.core.waves.campaign_maker_checker_controls import (
+    CampaignControlLifecycleState,
+    _control_lifecycle_state,
     _normalize_control_request,
     _validate_control_shape,
+    _validate_exception_raised_lifecycle,
+    _validate_pending_submitter_matches,
+    _validate_review_completed_lifecycle,
     _validate_required_control_fields,
+    _validate_submission_lifecycle,
+)
+from src.core.waves.campaign_definitions import (
+    DpmBulkReviewCampaignDefinitionMakerCheckerControl,
 )
 
 
@@ -145,4 +154,161 @@ def test_validate_control_action_rejects_invalid_action_outcome_pairs(
             submitter_actor_id=submitter_actor_id,
             reviewer_actor_id=reviewer_actor_id,
             required_reviewer_role=required_reviewer_role,
+        )
+
+
+def _control(
+    *,
+    control_action: str,
+    control_outcome: str,
+    submitter_actor_id: str | None = None,
+    reviewer_actor_id: str | None = None,
+    required_reviewer_role: str | None = None,
+) -> DpmBulkReviewCampaignDefinitionMakerCheckerControl:
+    return DpmBulkReviewCampaignDefinitionMakerCheckerControl(
+        control_id=f"brc_maker_checker_control_{control_action.lower()}",
+        control_action=control_action,  # type: ignore[arg-type]
+        control_ref=f"BRC-MC-{control_action}",
+        recorded_by="ops",
+        submitter_actor_id=submitter_actor_id,
+        reviewer_actor_id=reviewer_actor_id,
+        required_reviewer_role=required_reviewer_role,
+        control_outcome=control_outcome,  # type: ignore[arg-type]
+        control_reason="Campaign definition control lifecycle evidence.",
+        correlation_id=f"corr-{control_action.lower()}",
+        content_hash=f"sha256:{control_action.lower()}",
+    )
+
+
+def test_control_lifecycle_state_tracks_completed_reviews_and_resolved_exceptions() -> None:
+    state = _control_lifecycle_state(
+        [
+            _control(
+                control_action="SUBMITTED_FOR_REVIEW",
+                control_outcome="PENDING",
+                submitter_actor_id="pm_001",
+            ),
+            _control(
+                control_action="REVIEWER_ASSIGNED",
+                control_outcome="PENDING",
+                reviewer_actor_id="cio_ops_committee",
+                required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+            ),
+            _control(
+                control_action="REVIEW_COMPLETED",
+                control_outcome="FAILED",
+                submitter_actor_id="pm_001",
+                reviewer_actor_id="cio_ops_committee",
+                required_reviewer_role="CIO_OPERATIONS_REVIEWER",
+            ),
+            _control(
+                control_action="CONTROL_EXCEPTION_RAISED",
+                control_outcome="EXCEPTION_OPEN",
+            ),
+            _control(
+                control_action="CONTROL_EXCEPTION_RESOLVED",
+                control_outcome="EXCEPTION_RESOLVED",
+            ),
+        ]
+    )
+
+    assert state.has_pending_review is False
+    assert state.has_open_exception is False
+    assert state.latest_outcome == "EXCEPTION_RESOLVED"
+
+
+def test_control_lifecycle_guards_reject_duplicate_submission() -> None:
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEW_ALREADY_PENDING",
+    ):
+        _validate_submission_lifecycle(
+            CampaignControlLifecycleState(
+                has_pending_review=True,
+                pending_submitter_actor_id="pm_001",
+                pending_reviewer_actor_id=None,
+                pending_reviewer_role=None,
+                has_open_exception=False,
+                latest_outcome="PENDING",
+            )
+        )
+
+
+@pytest.mark.parametrize(
+    ("reviewer_actor_id", "reviewer_role", "expected_error"),
+    [
+        (
+            "unexpected_reviewer",
+            "CIO_OPERATIONS_REVIEWER",
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_MISMATCH",
+        ),
+        (
+            "cio_ops_committee",
+            "UNSUPPORTED_REVIEWER",
+            "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_REVIEWER_ROLE_MISMATCH",
+        ),
+    ],
+)
+def test_review_completed_lifecycle_guards_assigned_reviewer_and_role(
+    reviewer_actor_id: str,
+    reviewer_role: str,
+    expected_error: str,
+) -> None:
+    with pytest.raises(ValueError, match=expected_error):
+        _validate_review_completed_lifecycle(
+            state=CampaignControlLifecycleState(
+                has_pending_review=True,
+                pending_submitter_actor_id="pm_001",
+                pending_reviewer_actor_id="cio_ops_committee",
+                pending_reviewer_role="CIO_OPERATIONS_REVIEWER",
+                has_open_exception=False,
+                latest_outcome="PENDING",
+            ),
+            control=_control(
+                control_action="REVIEW_COMPLETED",
+                control_outcome="PASSED",
+                submitter_actor_id="pm_001",
+                reviewer_actor_id=reviewer_actor_id,
+                required_reviewer_role=reviewer_role,
+            ),
+        )
+
+
+def test_exception_lifecycle_requires_open_review_or_failed_outcome() -> None:
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_OPEN_REVIEW_REQUIRED",
+    ):
+        _validate_exception_raised_lifecycle(
+            CampaignControlLifecycleState(
+                has_pending_review=False,
+                pending_submitter_actor_id=None,
+                pending_reviewer_actor_id=None,
+                pending_reviewer_role=None,
+                has_open_exception=False,
+                latest_outcome="PASSED",
+            )
+        )
+
+
+def test_pending_submitter_guard_rejects_submitter_drift() -> None:
+    with pytest.raises(
+        ValueError,
+        match="BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_SUBMITTER_MISMATCH",
+    ):
+        _validate_pending_submitter_matches(
+            state=CampaignControlLifecycleState(
+                has_pending_review=True,
+                pending_submitter_actor_id="pm_001",
+                pending_reviewer_actor_id=None,
+                pending_reviewer_role=None,
+                has_open_exception=False,
+                latest_outcome="PENDING",
+            ),
+            control=_control(
+                control_action="REVIEW_COMPLETED",
+                control_outcome="PASSED",
+                submitter_actor_id="pm_002",
+                reviewer_actor_id="cio_ops_committee",
+            ),
         )
