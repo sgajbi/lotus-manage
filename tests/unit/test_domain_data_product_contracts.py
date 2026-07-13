@@ -382,6 +382,8 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         "/api/v1/rebalance/portfolio-memory/{portfolio_id}",
     ]
     assert pm_quality["lineage_policy"]["lineage_required"] is True
+    assert "tenant_id" in pm_quality["required_trust_metadata"]
+    assert "tenant_id" in pm_quality["identifier_refs"]
     assert "portfolio_id" in pm_quality["identifier_refs"]
     assert (
         "bank approval and fairness-review evidence"
@@ -392,7 +394,7 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         in (pm_quality["freshness_policy"]["max_allowed_age_description"])
     )
     assert (
-        "Review actions are immutable ledger rows"
+        "Review actions are immutable tenant-scoped ledger rows"
         in (pm_quality["freshness_policy"]["max_allowed_age_description"])
     )
     assert (
