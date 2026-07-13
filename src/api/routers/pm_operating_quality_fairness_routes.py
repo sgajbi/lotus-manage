@@ -21,6 +21,9 @@ from src.api.routers.pm_operating_quality_http import (
     pm_quality_service_http_exception,
 )
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    fairness_request_with_trusted_identity,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -50,7 +53,7 @@ router = APIRouter()
     ),
 )
 def preview_pm_quality_fairness_analysis_endpoint(
-    request: DpmPmQualityFairnessPreviewRequest,
+    request: DpmPmQualityFairnessPreviewRequest = Depends(fairness_request_with_trusted_identity),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_preview_application_service
@@ -85,7 +88,7 @@ def preview_pm_quality_fairness_analysis_endpoint(
     ),
 )
 def create_pm_quality_fairness_analysis_endpoint(
-    request: DpmPmQualityFairnessPreviewRequest,
+    request: DpmPmQualityFairnessPreviewRequest = Depends(fairness_request_with_trusted_identity),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_application_service

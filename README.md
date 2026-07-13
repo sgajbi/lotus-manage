@@ -679,8 +679,11 @@ is published for local API access.
 
 Docker startup applies the forward-only PostgreSQL migrations before `uvicorn` starts, and the
 container healthcheck uses `/health/ready` rather than `/docs`. In production profile,
-`/health/ready` validates persistence guardrails and applied migration versions so supportability
-APIs cannot look healthy while their backing store is missing or unmigrated.
+`/health/ready` validates persistence guardrails, applied migration versions, and trusted write
+authorization posture so supportability APIs cannot look healthy while their backing store,
+authz enforcement, primary key id, or capability policy is missing. The checked-in Compose defaults
+enable authz for local production-profile proof; real deployments must replace the local key id and
+capability policy with bank-managed identity configuration.
 
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+from src.api.enterprise_readiness import load_capability_rules
 from src.api.services.rebalance_policy_pack_service import (
     policy_pack_catalog_backend_name,
 )
@@ -38,7 +39,20 @@ def _persistence_profile_guardrail_error() -> str | None:
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES"
     if not supportability_postgres_dsn():
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"
+    authz_error = _production_authz_guardrail_error()
+    if authz_error is not None:
+        return authz_error
     return _policy_pack_catalog_guardrail_error(required=policy_pack_catalog_required_in_profile())
+
+
+def _production_authz_guardrail_error() -> str | None:
+    if not _env_flag("ENTERPRISE_ENFORCE_AUTHZ", False):
+        return "PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_AUTHZ"
+    if not os.getenv("ENTERPRISE_PRIMARY_KEY_ID", "").strip():
+        return "PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_PRIMARY_KEY_ID"
+    if not load_capability_rules():
+        return "PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_CAPABILITY_RULES"
+    return None
 
 
 def _policy_pack_catalog_guardrail_error(*, required: bool) -> str | None:

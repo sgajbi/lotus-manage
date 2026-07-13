@@ -7,3 +7,6 @@ services:
       - DPM_POLICY_PACKS_ENABLED=true
       - DPM_POLICY_PACK_CATALOG_BACKEND=POSTGRES
       - DPM_POLICY_PACK_POSTGRES_DSN=postgresql://manage:manage@postgres:5432/manage_supportability
+      - ENTERPRISE_ENFORCE_AUTHZ=true
+      - ENTERPRISE_PRIMARY_KEY_ID=production-key-id-required
+      - 'ENTERPRISE_CAPABILITY_RULES_JSON={"POST /api/v1":"manage.write","PUT /api/v1":"manage.write","PATCH /api/v1":"manage.write","DELETE /api/v1":"manage.write"}'

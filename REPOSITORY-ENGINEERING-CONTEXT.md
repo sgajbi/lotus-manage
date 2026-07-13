@@ -1012,12 +1012,15 @@ Use these commands as the primary local contract:
 Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
-2. architecture, complexity, exact duplicate implementation non-regression, dependency-hygiene,
+2. production profile readiness requires explicit write authorization enforcement, enterprise
+   primary key id, and a non-empty capability policy in addition to Postgres persistence guardrails;
+   PM-quality write routes reject body/header actor mismatches when authz is enabled,
+3. architecture, complexity, exact duplicate implementation non-regression, dependency-hygiene,
    and dead-code gates are active in Remote Feature Lane, Pull Request Merge Gate, and Main
    Releasability; the separate Quality Baseline workflow remains report-only for expanded trend
    capture,
-3. PR-grade validation includes coverage-backed full test execution,
-4. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
+4. PR-grade validation includes coverage-backed full test execution,
+5. `make static-quality-gates` includes `make test-family-inventory`, which blocks loss of the
    measured API/runtime, contract/governance, observability/security, domain/lifecycle/methodology,
    and integration/runtime proof-family floors in `quality/test_family_inventory_baseline.json`;
    coverage remains a separate combined execution floor rather than the only test-quality signal,

@@ -186,6 +186,10 @@ def _missing_capability_reason(
 
 
 def _write_authorization_required(method: str) -> bool:
+    return write_authorization_required(method)
+
+
+def write_authorization_required(method: str) -> bool:
     return method.upper() in _WRITE_METHODS and _env_enabled(
         "ENTERPRISE_ENFORCE_AUTHZ",
         "false",
@@ -287,7 +291,16 @@ def _emit_denied_write_audit(request: Request, *, reason: str | None) -> None:
 def _authorization_denied_response(reason: str | None) -> JSONResponse:
     return JSONResponse(
         status_code=403,
-        content={"detail": "authorization_policy_denied", "reason": reason},
+        media_type="application/problem+json",
+        content={
+            "type": "about:blank",
+            "title": "Forbidden",
+            "status": 403,
+            "detail": "authorization_policy_denied",
+            "reasonCode": reason or "authorization_policy_denied",
+            "correlationId": "",
+            "instance": "",
+        },
     )
 
 

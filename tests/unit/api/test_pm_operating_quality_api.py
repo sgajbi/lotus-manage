@@ -1,4 +1,5 @@
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -59,6 +60,8 @@ from src.core.pm_quality import (
     build_pm_operating_quality_score_run,
 )
 from tests.unit.infrastructure.test_outcome_review_repository import _review
+
+ROOT = Path(__file__).resolve().parents[3]
 
 
 @pytest.fixture(autouse=True)
@@ -150,6 +153,22 @@ def _governance_approval() -> dict:
                 "content_hash": "sha256:pmq-approval",
             }
         ],
+    }
+
+
+def _trusted_pm_quality_headers(
+    *,
+    actor_id: str = "ops",
+    tenant_id: str = "tenant-sg",
+    capabilities: str = "pm_quality.write",
+) -> dict[str, str]:
+    return {
+        "X-Actor-Id": actor_id,
+        "X-Tenant-Id": tenant_id,
+        "X-Role": "operator",
+        "X-Correlation-Id": "corr-trusted",
+        "X-Service-Identity": "lotus-gateway",
+        "X-Capabilities": capabilities,
     }
 
 
@@ -504,6 +523,116 @@ def test_pm_operating_quality_router_private_edges_fail_closed() -> None:
         status_code=422,
         reason_code="INVALID_AS_OF_DATE",
     )
+
+
+def test_pm_operating_quality_authz_rejects_missing_identity_and_capability(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
+    monkeypatch.setenv(
+        "ENTERPRISE_CAPABILITY_RULES_JSON",
+        '{"POST /api/v1/rebalance/pm-operating-quality": "pm_quality.write"}',
+    )
+    with TestClient(app) as client:
+        missing_identity = client.post(
+            "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            json=_scope_request(),
+        )
+        missing_capability = client.post(
+            "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            headers=_trusted_pm_quality_headers(capabilities="pm_quality.read"),
+            json=_scope_request(),
+        )
+
+    assert missing_identity.status_code == 403
+    assert missing_identity.headers["content-type"].startswith("application/problem+json")
+    assert missing_identity.json()["reasonCode"].startswith("missing_headers:")
+    assert missing_capability.status_code == 403
+    assert missing_capability.json()["reasonCode"] == "missing_capability:pm_quality.write"
+
+
+def test_pm_operating_quality_write_authz_rejects_body_header_actor_and_tenant_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
+    with TestClient(app) as client:
+        actor_mismatch = client.post(
+            "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            headers=_trusted_pm_quality_headers(actor_id="trusted-ops"),
+            json=_scope_request(),
+        )
+        tenant_request = _scope_request()
+        tenant_request["actor_id"] = "trusted-ops"
+        tenant_request["pm_book_scope"] = {
+            "tenant_id": "tenant-other",
+            "booking_center_code": "Singapore",
+            "portfolio_types": ["DPM"],
+        }
+        tenant_mismatch = client.post(
+            "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+            headers=_trusted_pm_quality_headers(actor_id="trusted-ops", tenant_id="tenant-sg"),
+            json=tenant_request,
+        )
+
+    _assert_pm_quality_problem(
+        actor_mismatch,
+        status_code=403,
+        reason_code="PM_QUALITY_TRUSTED_ACTOR_MISMATCH",
+    )
+    _assert_pm_quality_problem(
+        tenant_mismatch,
+        status_code=403,
+        reason_code="PM_QUALITY_TRUSTED_TENANT_MISMATCH",
+    )
+
+
+def test_pm_operating_quality_write_authz_accepts_trusted_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("ENTERPRISE_ENFORCE_AUTHZ", "true")
+    request = _scope_request()
+    request["actor_id"] = "ops"
+    app.dependency_overrides[get_outcome_review_repository] = lambda: (
+        InMemoryDpmOutcomeReviewRepository()
+    )
+
+    try:
+        with TestClient(app) as client:
+            response = client.post(
+                "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+                headers=_trusted_pm_quality_headers(actor_id="ops"),
+                json=request,
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["score_run"]["generated_by"] == "ops"
+
+
+def test_pm_operating_quality_write_routes_use_trusted_identity_guard() -> None:
+    route_files = {
+        "score": (
+            ROOT / "src/api/routers/pm_operating_quality_score_run_routes.py",
+            "score_run_request_with_trusted_identity",
+        ),
+        "fairness": (
+            ROOT / "src/api/routers/pm_operating_quality_fairness_routes.py",
+            "fairness_request_with_trusted_identity",
+        ),
+        "review": (
+            ROOT / "src/api/routers/pm_operating_quality_review_action_routes.py",
+            "review_action_request_with_trusted_identity",
+        ),
+        "summary": (
+            ROOT / "src/api/routers/pm_operating_quality_summary_routes.py",
+            "summary_invocation_request_with_trusted_identity",
+        ),
+    }
+
+    for family, (route_file, guard_name) in route_files.items():
+        text = route_file.read_text(encoding="utf-8")
+        assert guard_name in text, family
 
 
 class _PmBookResolver:

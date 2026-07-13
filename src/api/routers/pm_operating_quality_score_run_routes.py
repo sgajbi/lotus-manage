@@ -19,6 +19,9 @@ from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorre
 from src.api.routers.pm_operating_quality_score_run_read_routes import (
     register_pm_quality_score_run_read_routes as register_pm_quality_score_run_read_routes,
 )
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    score_run_request_with_trusted_identity,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -49,7 +52,9 @@ def register_pm_quality_score_run_command_routes(
         ),
     )
     def preview_pm_operating_quality_score_run_endpoint(
-        request: DpmPmOperatingQualityScorePreviewRequest,
+        request: DpmPmOperatingQualityScorePreviewRequest = Depends(
+            score_run_request_with_trusted_identity
+        ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_score_run_preview_application_service
@@ -85,7 +90,9 @@ def register_pm_quality_score_run_command_routes(
         ),
     )
     def create_pm_operating_quality_score_run_endpoint(
-        request: DpmPmOperatingQualityScorePreviewRequest,
+        request: DpmPmOperatingQualityScorePreviewRequest = Depends(
+            score_run_request_with_trusted_identity
+        ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_score_run_application_service
