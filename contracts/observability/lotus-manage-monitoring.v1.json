@@ -141,6 +141,42 @@
       "source": "src.api.observability.record_postgres_access"
     },
     {
+      "name": "lotus_manage_pm_quality_lifecycle_total",
+      "type": "counter",
+      "description": "Counts bounded PM operating-quality route-family lifecycle outcomes.",
+      "labels": {
+        "surface": [
+          "policy",
+          "score_run",
+          "fairness_analysis",
+          "review_action",
+          "summary_invocation",
+          "unknown"
+        ],
+        "outcome": [
+          "success",
+          "forbidden",
+          "not_found",
+          "conflict",
+          "validation_failed",
+          "dependency_failed",
+          "unavailable",
+          "error"
+        ],
+        "reason": [
+          "success",
+          "forbidden",
+          "not_found",
+          "immutable_conflict",
+          "validation_error",
+          "dependency_incomplete",
+          "dependency_unavailable",
+          "unexpected_error"
+        ]
+      },
+      "source": "src.api.observability.record_pm_quality_lifecycle"
+    },
+    {
       "name": "lotus_manage_workflow_decision_total",
       "type": "counter",
       "description": "Counts workflow action outcomes for discretionary mandate review gates.",
@@ -295,6 +331,13 @@
           "use_when": "Monitor runtime Postgres connection acquisition, timeout, and driver failure posture without DSNs, query text, table names, or caller identifiers."
         },
         {
+          "panel_id": "pm-quality-lifecycle-outcomes",
+          "title": "PM Quality Lifecycle Outcomes",
+          "metric": "lotus_manage_pm_quality_lifecycle_total",
+          "query": "sum by (surface, outcome, reason) (rate(lotus_manage_pm_quality_lifecycle_total[5m]))",
+          "use_when": "Monitor PM-quality route-family success, validation, conflict, dependency, and unavailable posture without PM ids, portfolio ids, content hashes, source refs, review rationale, or generated summary text."
+        },
+        {
           "panel_id": "workflow-decision-outcomes",
           "title": "Workflow Decision Outcomes",
           "metric": "lotus_manage_workflow_decision_total",
@@ -381,6 +424,15 @@
       "for": "5m",
       "description": "Runtime Postgres connection acquisition or driver access is failing.",
       "runbook": "wiki/Operations-Runbook.md#docker-production-readiness"
+    },
+    {
+      "alert_id": "lotus-manage-pm-quality-lifecycle-failures",
+      "severity": "warning",
+      "metric": "lotus_manage_pm_quality_lifecycle_total",
+      "expression": "sum(rate(lotus_manage_pm_quality_lifecycle_total{outcome=~\"conflict|validation_failed|dependency_failed|unavailable|error\"}[10m])) > 0",
+      "for": "10m",
+      "description": "PM-quality route-family outcomes require operator triage.",
+      "runbook": "wiki/Operations-Runbook.md#pm-quality-lifecycle-operations"
     },
     {
       "alert_id": "lotus-manage-workflow-decision-conflicts",

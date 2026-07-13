@@ -212,6 +212,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
     )
     monkeypatch.setattr(
         observability_module,
+        "PM_QUALITY_LIFECYCLE_TOTAL",
+        _Counter("pm_quality"),
+    )
+    monkeypatch.setattr(
+        observability_module,
         "CAMPAIGN_WORKFLOW_TOTAL",
         _Counter("campaign_workflow"),
     )
@@ -247,6 +252,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         outcome="failed_for_portfolio",
         reason="dsn:postgresql://user:secret@host/manage",
         classification="sqlstate:08006",
+    )
+    observability_module.record_pm_quality_lifecycle(
+        surface="score_run/PB_SG_GLOBAL_BAL_001",
+        outcome="content_hash_conflict",
+        reason="PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT:sha256:secret",
     )
     observability_module.record_campaign_workflow(
         surface="assignment_action/PB_SG_GLOBAL_BAL_001",
@@ -286,6 +296,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "reason": "connection_unavailable",
         "classification": "unknown",
     }
+    assert captured["pm_quality"] == {
+        "surface": "unknown",
+        "outcome": "error",
+        "reason": "unexpected_error",
+    }
     assert captured["campaign_workflow"] == {
         "surface": "unknown",
         "outcome": "error",
@@ -305,6 +320,37 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
     assert "postgresql://user:secret" not in json.dumps(captured)
     assert "sha256:secret" not in json.dumps(captured)
     assert "reviewer_001" not in json.dumps(captured)
+
+
+def test_pm_quality_http_metric_uses_bounded_route_family(monkeypatch):
+    captured: list[dict[str, str]] = []
+
+    class _Counter:
+        def labels(self, **labels):
+            captured.append(labels)
+            return self
+
+        def inc(self):
+            return None
+
+    monkeypatch.setattr(observability_module, "PM_QUALITY_LIFECYCLE_TOTAL", _Counter())
+
+    observability_module.record_pm_quality_http_result(
+        path="/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",
+        status_code=409,
+    )
+    observability_module.record_pm_quality_http_result(
+        path="/api/v1/rebalance/outcome-reviews/{outcome_review_id}",
+        status_code=200,
+    )
+
+    assert captured == [
+        {
+            "surface": "summary_invocation",
+            "outcome": "conflict",
+            "reason": "immutable_conflict",
+        }
+    ]
 
 
 def test_json_formatter_redacts_sensitive_extra_fields():

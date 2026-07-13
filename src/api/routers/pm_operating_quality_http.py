@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
-from src.api.observability import correlation_id_var
+from src.api.observability import correlation_id_var, record_pm_quality_http_result
 from src.api.response_headers import apply_observability_headers
 from src.api.services.core_resolver_service import (
     CoreResolverError,
@@ -123,6 +123,7 @@ async def pm_quality_problem_details_exception_handler(
     request: Request,
     exc: PmQualityProblemDetailsException,
 ) -> JSONResponse:
+    record_pm_quality_http_result(path=str(request.url.path), status_code=exc.status_code)
     response = JSONResponse(
         status_code=exc.status_code,
         media_type="application/problem+json",

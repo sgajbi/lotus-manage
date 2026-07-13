@@ -13,6 +13,7 @@ scope unless a future source-owning service publishes and certifies that capabil
 | --- | --- | --- |
 | First response and runtime checks | Important operational checks | `/health/ready`, `/metrics`, repo-native smoke checks |
 | Action-register observability | RFC-0108 action register supportability | `lotus_manage_action_register_supportability_total` and related supportability metrics |
+| PM-quality lifecycle triage | PM-quality lifecycle operations | PM-quality Problem Details, `lotus_manage_pm_quality_lifecycle_total`, score-run/review/summary routes |
 | Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total` and monitoring contract alerts |
 | Campaign recovery and replay | Campaign workflow operations | Campaign definition routes, launch history, workflow board, assignment tasks, and maker-checker pages |
 | Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
@@ -63,6 +64,11 @@ scope unless a future source-owning service publishes and certifies that capabil
   `reason`, and `classification` labels for runtime Postgres connection acquisition and driver
   failures. Do not add DSNs, portfolio ids, request hashes, query text, table names, or payload
   content to these labels or related log fields.
+- `/metrics` exposes `lotus_manage_pm_quality_lifecycle_total` with bounded `surface`, `outcome`,
+  and `reason` labels for PM operating-quality route-family outcomes. Surfaces are route families
+  such as `policy`, `score_run`, `fairness_analysis`, `review_action`, and `summary_invocation`;
+  labels must not contain PM ids, portfolio ids, content hashes, source refs, review rationale, or
+  generated summary text.
 - `/metrics` exposes `lotus_manage_workflow_decision_total` with bounded `surface`, `action`, and
   `outcome` labels for mandate workflow actions. `surface` uses route-family values such as `run`,
   `trace`, and `retry`; it must not use raw correlation, idempotency, request, actor, run, or
@@ -85,6 +91,73 @@ scope unless a future source-owning service publishes and certifies that capabil
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.
+
+## PM-quality lifecycle operations
+
+PM operating-quality evidence is immutable governance and supportability state, not an HR,
+compensation, conduct, client-contact, trade, order, OMS, or autonomous-ranking system. Operators
+should use public PM-quality routes, Problem Details fields, bounded metrics, and content hashes as
+correlation handles. Do not inspect or copy raw database payloads, source payloads, review
+rationale, generated summary text, prompts, model responses, portfolio lists, or client data into
+logs, support bundles, dashboards, or incident summaries.
+
+First checks:
+
+| Check | Route, field, or command | Operator decision |
+| --- | --- | --- |
+| Service readiness | `GET /health/ready` | Stop if production profile, Postgres policy, authz, or migrations are not ready. |
+| Metric posture | `/metrics`, `lotus_manage_pm_quality_lifecycle_total` | Classify by bounded `surface`, `outcome`, and `reason`; use Problem Details for exact `reasonCode`. |
+| Exact failure code | Problem Details `reasonCode`, `correlationId`, and `instance` | Decide whether the issue is policy/gate validation, immutable conflict, Core PM-book dependency, Postgres persistence, or downstream summary artifact evidence. |
+| Stored evidence lookup | `GET .../score-runs/{score_run_id}`, `GET .../fairness-analyses/{fairness_analysis_id}`, `GET .../review-actions/{review_action_id}`, `GET .../summary-invocations/{summary_invocation_id}` | Compare stored `content_hash`, source refs, state, review gate, and summary artifact/failure fields without reading raw storage rows. |
+| Certification evidence | `python -m pytest tests/unit/api/test_pm_operating_quality_api.py tests/unit/dpm/pm_quality/test_pm_quality_repository.py tests/integration/dpm/pm_quality/test_pm_quality_endpoint_lifecycle.py -q` | Prove API, domain, in-memory/Postgres repository, lineage integrity, and canonical app lifecycle behavior before declaring a code fix. |
+
+State semantics:
+
+| State | Meaning | Safe action |
+| --- | --- | --- |
+| `DISABLED` | Policy is intentionally off; score-run preview/create returns no score. | Do not escalate as outage. Confirm bank policy enablement and approval posture. |
+| `BLOCKED` | Mandatory evidence, governance approval, entitlement, lookback date, PM-book source, parent lineage, or summary artifact state is missing/invalid. | Fix the missing owner evidence first; do not force persistence or infer readiness. |
+| `DEGRADED` | Source posture is partial, stale, unavailable, or not fully supportable but still represented as bounded evidence. | Escalate to source owner if source quality is unexpected; do not recalculate locally. |
+| `PENDING_REVIEW` | Score/fairness posture requires governed supervisory review. | Create or inspect a review action; do not treat as failure. |
+| `READY` | Evidence satisfies the configured policy threshold and mandatory gates. | Store or consume immutable evidence as allowed by route contract. |
+| `REQUESTED` | Summary invocation was handed off and may carry workflow-run identity only. | Poll/list invocation history or downstream workflow owner; no result/failure evidence is expected yet. |
+| `COMPLETED` | Summary invocation has workflow run, artifact ref, and `sha256:` content hash. | Verify artifact identity and hash; do not store or expose generated summary text in Manage. |
+| `FAILED` | Summary invocation has workflow run plus bounded `failure_reason_code`. | Escalate by failure code to workflow/artifact owner; do not attach completed artifact evidence. |
+
+Failure-family triage:
+
+| Symptom | Diagnostic signal | Owner and safe action |
+| --- | --- | --- |
+| Blocked score-run preview/create | `422` with `PM_QUALITY_*` validation `reasonCode`, score-run state `BLOCKED`, or reason codes such as missing governance, missing evidence, missing lookback business date, invalid date, or outside lookback window | Correct policy, source evidence, entitlement, or lookback data. Preview is retry-safe after inputs/source evidence change; create remains immutable once persisted. |
+| Missing or incomplete PM-book scope | `424`/`503` with `DPM_CORE_PM_BOOK_MEMBERSHIP_*` or `DPM_CORE_PM_BOOK_*` | Escalate to `lotus-core` source-product owner. Manage must not infer PM-book membership, global portfolio universe, or readiness locally. |
+| Immutable create conflict | `409` with score-run, fairness-analysis, review-action, summary-invocation, or policy conflict code | Fetch the existing record and compare `content_hash`. Identical replay is safe only when the persisted content matches; changed same-id payloads require a new id/reference or engineering investigation. |
+| Review-action parent mismatch | `422`/`409` with review target mismatch or integrity code | Fetch target score-run/fairness-analysis and verify target content hash. Do not mutate reviewed evidence or rewrite rationale. |
+| Summary invocation review gate mismatch | `422`/`409` with `PM_QUALITY_SUMMARY_*` or summary integrity code | Fetch score-run and review-action, verify target ids/hashes, then retry preview/create with coherent parent evidence. |
+| Missing completed summary artifact evidence | `422` with completed workflow/artifact/hash validation code | Escalate to `lotus-ai`, archive, or generated-artifact owner. Manage records artifact identity/hash only; it must not reconstruct prompts, model output, or summary text. |
+| Postgres unavailable or saturated | `POSTGRES_CONNECTION_ACQUIRE_TIMEOUT`, `POSTGRES_CONNECTION_UNAVAILABLE`, `/health/ready` failure, or `lotus_manage_postgres_access_total{outcome="failure"}` | Treat as infrastructure/capacity incident. Follow Docker/Postgres readiness guidance; do not add blind write retries around immutable PM-quality creates. |
+
+Replay and privacy rules:
+
+- Preview routes are retry-safe because they do not persist evidence.
+- Create routes are immutable. Replay only when the caller uses the same request identity and the
+  stored `content_hash` proves the payload is identical. Same id/ref with changed content is a
+  conflict, not a support edit.
+- Correlate incidents with `correlationId`, route `instance`, `content_hash`, bounded source-ref
+  counts, workflow-run ids, artifact refs, and failure reason codes. Keep raw source refs,
+  generated summary text, review rationale, prompt bodies, model responses, portfolio lists,
+  client data, and database rows out of support notes.
+- Dashboard panels and alerts are governed by
+  `contracts/observability/lotus-manage-monitoring.v1.json`. Run
+  `python scripts/validate_observability_contracts.py` after changing PM-quality metric code,
+  monitoring contract entries, or runbook anchors.
+
+Incident drill commands:
+
+```powershell
+python -m pytest tests/unit/api/test_pm_operating_quality_api.py::test_pm_operating_quality_api_fails_closed_for_missing_review_and_policy_mismatch tests/unit/api/test_pm_operating_quality_api.py::test_pm_operating_quality_api_returns_disabled_score_run_without_score tests/unit/api/test_pm_operating_quality_api.py::test_pm_operating_quality_api_summary_invocation_missing_review_mismatch_and_conflict tests/unit/dpm/pm_quality/test_pm_quality_repository.py::test_in_memory_pm_quality_repository_validates_review_action_parents tests/unit/dpm/pm_quality/test_pm_quality_repository.py::test_in_memory_pm_quality_repository_validates_summary_invocation_parents -q
+python -m pytest tests/integration/dpm/pm_quality/test_pm_quality_endpoint_lifecycle.py -q
+python scripts/validate_observability_contracts.py
+```
 
 ## Campaign workflow telemetry
 
