@@ -44,8 +44,9 @@ Current declarations:
    external OMS acknowledgement boundary evidence.
 2. `lotus-manage-products.v1.json`
    Producer declaration for `lotus-manage:PortfolioActionRegister:v1`, surfaced through the
-   implemented rebalance supportability, not-certified `lotus-idea` action-intake
-   route-foundation, artifact, and workflow route families, and
+   implemented rebalance supportability, artifact, and workflow route families. The not-certified
+   `lotus-idea` action-intake route is tracked separately under `route_foundations`, not under
+   certified `current_routes`, and
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence and optional persisted
@@ -123,4 +124,5 @@ Current watchlist:
 4. The `lotus-idea` action-intake route is route-foundation evidence only. It clears the
    cross-repo missing-route proof when validated by `lotus-idea`, but it does not persist an action
    register row, grant rebalance authority, create orders, authorize client publication, or promote
-   a supported feature.
+   a supported feature. It must remain outside certified product `current_routes` and unblocked
+   trust-telemetry `serving_routes` unless those blockers are deliberately cleared.

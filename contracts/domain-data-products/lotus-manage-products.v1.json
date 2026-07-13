@@ -36,14 +36,32 @@
       "serving_plane": "query_control_plane_service",
       "current_routes": [
         "/api/v1/rebalance/supportability/summary",
-        "/api/v1/rebalance/idea-action-intake",
         "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
         "/api/v1/rebalance/workflow/decisions"
       ],
+      "route_foundations": [
+        {
+          "route": "POST /api/v1/rebalance/idea-action-intake",
+          "contract_ref": "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
+          "supportability_status": "not_certified",
+          "supported_feature_promoted": false,
+          "route_existence_proven": true,
+          "action_register_created": false,
+          "rebalance_execution_authority_granted": false,
+          "order_created": false,
+          "client_publication_authorized": false,
+          "certification_blockers": [
+            "rebalance_execution_authority_remains_lotus_manage",
+            "action_register_persistence_not_certified",
+            "oms_execution_not_certified",
+            "client_publication_authority_blocked"
+          ]
+        }
+      ],
       "freshness_policy": {
         "freshness_class": "daily",
-        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. The lotus-idea action-intake route is a not-certified route foundation for source-safe conversion-intent handoff only; it does not create action-register records, grant rebalance authority, create orders, authorize client publication, or promote a supported feature."
+        "max_allowed_age_description": "Portfolio action registers are refreshed from current management workflow state and governed portfolio-state inputs. Certified PortfolioActionRegister routes exclude the lotus-idea action-intake route foundation, which is tracked separately as a not-certified route foundation for source-safe conversion-intent handoff evidence only; it does not create action-register records, grant rebalance authority, create orders, authorize client publication, or promote a supported feature."
       },
       "completeness_policy": {
         "default_status": "complete",

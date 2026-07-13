@@ -276,12 +276,39 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
     assert product["serving_plane"] == "query_control_plane_service"
     assert product["current_routes"] == [
         "/api/v1/rebalance/supportability/summary",
-        "/api/v1/rebalance/idea-action-intake",
         "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
         "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
         "/api/v1/rebalance/workflow/decisions",
     ]
+    route_foundations = product["route_foundations"]
+    assert route_foundations == [
+        {
+            "route": "POST /api/v1/rebalance/idea-action-intake",
+            "contract_ref": "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
+            "supportability_status": "not_certified",
+            "supported_feature_promoted": False,
+            "route_existence_proven": True,
+            "action_register_created": False,
+            "rebalance_execution_authority_granted": False,
+            "order_created": False,
+            "client_publication_authorized": False,
+            "certification_blockers": [
+                "rebalance_execution_authority_remains_lotus_manage",
+                "action_register_persistence_not_certified",
+                "oms_execution_not_certified",
+                "client_publication_authority_blocked",
+            ],
+        }
+    ]
+    assert all(
+        foundation["route"].removeprefix("POST ") not in product["current_routes"]
+        for foundation in route_foundations
+        if foundation["supportability_status"] == "not_certified"
+        or foundation["supported_feature_promoted"] is False
+        or foundation["certification_blockers"]
+    )
     freshness_description = product["freshness_policy"]["max_allowed_age_description"]
+    assert "Certified PortfolioActionRegister routes exclude" in freshness_description
     assert "not-certified route foundation" in freshness_description
     assert "does not create action-register records" in freshness_description
     assert "grant rebalance authority" in freshness_description
