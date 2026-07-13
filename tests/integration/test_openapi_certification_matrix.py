@@ -42,8 +42,57 @@ OPENAPI_PATHS_UNDER_CERTIFICATION = [
     "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow",
     "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/actions",
     "/api/v1/rebalance/runs/idempotency/{idempotency_key}/workflow/history",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview",
+    "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+    "/api/v1/rebalance/pm-operating-quality/policies",
+    "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+    "/api/v1/rebalance/pm-operating-quality/review-actions",
+    "/api/v1/rebalance/pm-operating-quality/review-actions/preview",
+    "/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}",
+    "/api/v1/rebalance/pm-operating-quality/score-runs",
+    "/api/v1/rebalance/pm-operating-quality/score-runs/preview",
+    "/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations/preview",
+    "/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",
     "/api/v1/rebalance/supportability/summary",
     "/api/v1/rebalance/workflow/decisions",
+]
+
+
+PM_QUALITY_OPENAPI_OPERATIONS_UNDER_CERTIFICATION = [
+    ("/api/v1/rebalance/pm-operating-quality/fairness-analyses", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/fairness-analyses", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/fairness-analyses/preview", "post"),
+    (
+        "/api/v1/rebalance/pm-operating-quality/fairness-analyses/{fairness_analysis_id}",
+        "get",
+    ),
+    ("/api/v1/rebalance/pm-operating-quality/policies", "get"),
+    (
+        "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+        "get",
+    ),
+    (
+        "/api/v1/rebalance/pm-operating-quality/policies/{policy_id}/versions/{policy_version}",
+        "put",
+    ),
+    ("/api/v1/rebalance/pm-operating-quality/review-actions", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/review-actions", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/review-actions/preview", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/review-actions/{review_action_id}", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/score-runs", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/score-runs", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/score-runs/preview", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/score-runs/{score_run_id}", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/summary-invocations", "get"),
+    ("/api/v1/rebalance/pm-operating-quality/summary-invocations", "post"),
+    ("/api/v1/rebalance/pm-operating-quality/summary-invocations/preview", "post"),
+    (
+        "/api/v1/rebalance/pm-operating-quality/summary-invocations/{summary_invocation_id}",
+        "get",
+    ),
 ]
 
 
@@ -67,3 +116,33 @@ def test_openapi_json_responses_have_examples_for_certified_paths(path: str) -> 
             json_content = response.get("content", {}).get("application/json")
             if json_content is not None:
                 assert "example" in json_content or "examples" in json_content
+
+
+@pytest.mark.parametrize(
+    ("path", "method"),
+    PM_QUALITY_OPENAPI_OPERATIONS_UNDER_CERTIFICATION,
+)
+def test_pm_quality_openapi_operation_contract_is_certified(
+    path: str,
+    method: str,
+) -> None:
+    operation = app.openapi()["paths"][path][method]
+
+    assert operation["summary"]
+    assert all(marker in operation["description"] for marker in ("What:", "When:", "How:"))
+    assert operation["tags"] == ["lotus-manage PM Operating Quality"]
+    assert operation["operationId"]
+    assert set(operation["responses"]) >= {"404", "409", "422", "424", "503"}
+
+    problem_schema = {
+        response_code: operation["responses"][response_code]["content"]["application/problem+json"][
+            "schema"
+        ]["$ref"]
+        for response_code in ("404", "409", "422", "424", "503")
+    }
+    assert set(problem_schema.values()) == {"#/components/schemas/PmQualityProblemDetails"}
+
+    for response in operation["responses"].values():
+        for media_type, content in response.get("content", {}).items():
+            if media_type in {"application/json", "application/problem+json"}:
+                assert "example" in content or "examples" in content

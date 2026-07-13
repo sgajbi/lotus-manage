@@ -29,47 +29,70 @@ PmQualityConflictError = (
     | DpmPmQualityPolicyConflictError
 )
 
+
+def _pm_quality_problem_response(
+    *,
+    description: str,
+    status_code: int,
+    title: str,
+    reason_code: str,
+    detail: str,
+) -> dict[str, object]:
+    return {
+        "description": description,
+        "content": {
+            "application/problem+json": {
+                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"},
+                "example": {
+                    "type": "about:blank",
+                    "title": title,
+                    "status": status_code,
+                    "detail": detail,
+                    "reasonCode": reason_code,
+                    "correlationId": "corr-pm-quality-example",
+                    "instance": "/api/v1/rebalance/pm-operating-quality/score-runs/example",
+                },
+            }
+        },
+    }
+
+
 PM_QUALITY_PROBLEM_RESPONSES: dict[int, dict[str, object]] = {
-    404: {
-        "description": "PM-quality resource was not found.",
-        "content": {
-            "application/problem+json": {
-                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"}
-            }
-        },
-    },
-    409: {
-        "description": "PM-quality immutable persistence conflict.",
-        "content": {
-            "application/problem+json": {
-                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"}
-            }
-        },
-    },
-    422: {
-        "description": "PM-quality semantic validation failed.",
-        "content": {
-            "application/problem+json": {
-                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"}
-            }
-        },
-    },
-    424: {
-        "description": "PM-quality source dependency is incomplete or not ready.",
-        "content": {
-            "application/problem+json": {
-                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"}
-            }
-        },
-    },
-    503: {
-        "description": "PM-quality source dependency is unavailable.",
-        "content": {
-            "application/problem+json": {
-                "schema": {"$ref": "#/components/schemas/PmQualityProblemDetails"}
-            }
-        },
-    },
+    404: _pm_quality_problem_response(
+        description="PM-quality resource was not found.",
+        status_code=404,
+        title="Not Found",
+        reason_code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+        detail="Requested PM-quality resource was not found.",
+    ),
+    409: _pm_quality_problem_response(
+        description="PM-quality immutable persistence conflict.",
+        status_code=409,
+        title="Conflict",
+        reason_code="PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT",
+        detail="PM-quality request conflicts with immutable persisted state.",
+    ),
+    422: _pm_quality_problem_response(
+        description="PM-quality semantic validation failed.",
+        status_code=422,
+        title="Validation Error",
+        reason_code="PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH",
+        detail="PM-quality request failed semantic validation.",
+    ),
+    424: _pm_quality_problem_response(
+        description="PM-quality source dependency is incomplete or not ready.",
+        status_code=424,
+        title="Failed Dependency",
+        reason_code="DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE",
+        detail="PM-book membership is not source-ready for PM operating quality.",
+    ),
+    503: _pm_quality_problem_response(
+        description="PM-quality source dependency is unavailable.",
+        status_code=503,
+        title="Service Unavailable",
+        reason_code="DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE",
+        detail="Required PM-quality source dependency is unavailable.",
+    ),
 }
 
 
