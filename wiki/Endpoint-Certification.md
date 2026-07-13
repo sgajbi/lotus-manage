@@ -2300,6 +2300,10 @@ deterministic `PmOperatingQualityScoreRun:v1` evidence from explicit bank-owned 
 source-backed evidence signals, and optional persisted outcome reviews. The route family is the
 bounded first implementation of RFC42-WTBD-008. Optional `pm_book_scope` materializes source-owned
 lotus-core `PortfolioManagerBookMembership:v1` evidence into `book_scope_evidence`.
+The auditable scoring and fairness methodology is published at
+`docs/methodologies/pm-quality/scoring-and-fairness.md`; it is the source of truth for state-derived
+signal scores, weighted score aggregation, lookback business-date handling, fairness segment
+averages, spread thresholds, validation behavior, and worked examples.
 Enabled policies require bank approval and fairness-review evidence; score-run preview/create emits
 `governance_evidence`. The fairness-analysis route family emits and persists bounded
 `PmOperatingQualityFairnessAnalysis:v1` from persisted score-run ids and source-defined operating
@@ -2381,6 +2385,7 @@ Non-functional posture:
 Evidence commands:
 
 ```bash
+python -m pytest tests/unit/dpm/pm_quality/test_pm_quality_methodology_examples.py tests/unit/test_pm_quality_methodology_docs.py -q
 python -m pytest tests/unit/dpm/pm_quality/test_pm_operating_quality.py tests/unit/api/test_pm_operating_quality_api.py tests/unit/dpm/api/test_portfolio_memory_api.py -q
 python scripts/openapi_quality_gate.py
 ```

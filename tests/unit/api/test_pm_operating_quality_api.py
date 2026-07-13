@@ -1947,6 +1947,8 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     operation = schema["paths"][path]["post"]
     assert operation["tags"] == ["lotus-manage PM Operating Quality"]
     assert all(marker in operation["description"] for marker in ["What:", "When:", "How:"])
+    methodology_ref = "docs/methodologies/pm-quality/scoring-and-fairness.md"
+    assert methodology_ref in operation["description"]
     assert "requestBody" in operation
     assert "200" in operation["responses"]
     problem_schema = schema["components"]["schemas"]["PmQualityProblemDetails"]
@@ -1980,10 +1982,13 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert get_path in schema["paths"]
     assert "201" in schema["paths"][create_path]["post"]["responses"]
     assert "policy" in schema["paths"][create_path]["post"]["description"]
+    assert methodology_ref in schema["paths"][create_path]["post"]["description"]
     assert "200" in schema["paths"][create_path]["get"]["responses"]
     assert "does not recompute scores" in schema["paths"][create_path]["get"]["description"]
+    assert methodology_ref in schema["paths"][create_path]["get"]["description"]
     assert "200" in schema["paths"][get_path]["get"]["responses"]
     assert "does not recompute" in schema["paths"][get_path]["get"]["description"]
+    assert methodology_ref in schema["paths"][get_path]["get"]["description"]
 
     policy_list_path = "/api/v1/rebalance/pm-operating-quality/policies"
     policy_get_path = (
@@ -2002,6 +2007,7 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     fairness_description = schema["paths"][fairness_path]["post"]["description"]
     assert all(marker in fairness_description for marker in ["What:", "When:", "How:"])
     assert "does not infer protected classes" in fairness_description
+    assert methodology_ref in fairness_description
 
     fairness_create_path = "/api/v1/rebalance/pm-operating-quality/fairness-analyses"
     fairness_get_path = (
@@ -2010,15 +2016,18 @@ def test_pm_operating_quality_openapi_contract_is_documented() -> None:
     assert fairness_create_path in schema["paths"]
     assert fairness_get_path in schema["paths"]
     assert "201" in schema["paths"][fairness_create_path]["post"]["responses"]
+    assert methodology_ref in schema["paths"][fairness_create_path]["post"]["description"]
     assert "200" in schema["paths"][fairness_create_path]["get"]["responses"]
     assert (
         "stored fairness-analysis evidence"
         in schema["paths"][fairness_create_path]["get"]["description"]
     )
+    assert methodology_ref in schema["paths"][fairness_create_path]["get"]["description"]
     assert "200" in schema["paths"][fairness_get_path]["get"]["responses"]
     assert (
         "does not recompute score runs" in schema["paths"][fairness_get_path]["get"]["description"]
     )
+    assert methodology_ref in schema["paths"][fairness_get_path]["get"]["description"]
 
     review_preview_path = "/api/v1/rebalance/pm-operating-quality/review-actions/preview"
     review_create_path = "/api/v1/rebalance/pm-operating-quality/review-actions"

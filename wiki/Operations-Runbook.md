@@ -100,6 +100,9 @@ should use public PM-quality routes, Problem Details fields, bounded metrics, an
 correlation handles. Do not inspect or copy raw database payloads, source payloads, review
 rationale, generated summary text, prompts, model responses, portfolio lists, or client data into
 logs, support bundles, dashboards, or incident summaries.
+The scoring and fairness source of truth is
+`docs/methodologies/pm-quality/scoring-and-fairness.md`; use it for score, state, lookback, segment
+average, spread-threshold, and validation interpretation before escalating methodology questions.
 
 First checks:
 
@@ -150,6 +153,9 @@ Replay and privacy rules:
   `contracts/observability/lotus-manage-monitoring.v1.json`. Run
   `python scripts/validate_observability_contracts.py` after changing PM-quality metric code,
   monitoring contract entries, or runbook anchors.
+- Run `python -m pytest tests/unit/dpm/pm_quality/test_pm_quality_methodology_examples.py
+  tests/unit/test_pm_quality_methodology_docs.py -q` after changing PM-quality score, fairness,
+  lookback, or methodology documentation behavior.
 
 Incident drill commands:
 
