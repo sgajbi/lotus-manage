@@ -2030,6 +2030,7 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
     app.dependency_overrides[get_campaign_definition_repository] = lambda: campaign_repository
     app.openapi_schema = None
     memory = build_portfolio_memory(
+        tenant_id=TENANT_ID,
         portfolio_id=PORTFOLIO_ID,
         proof_pack_repository=proof_pack_repository,
         construction_repository=construction_repository,

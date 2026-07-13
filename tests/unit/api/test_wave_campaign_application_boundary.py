@@ -50,3 +50,12 @@ def test_obsolete_campaign_http_helpers_are_removed() -> None:
 
     for helper_path in helper_paths:
         assert not helper_path.exists(), f"{helper_path} should not be revived"
+
+
+def test_portfolio_memory_router_uses_dependency_composition_boundary() -> None:
+    source = Path("src/api/routers/portfolio_memory.py").read_text(encoding="utf-8")
+
+    assert "get_portfolio_memory_source_repositories" in source
+    assert "get_campaign_definition_repository" not in source
+    assert "DpmBulkReviewCampaignDefinitionRepository" not in source
+    assert "build_portfolio_memory_source_repositories" not in source
