@@ -30466,3 +30466,34 @@ and improves internal transaction-cost source posture maintainability only.
   review truth changed. README, repo context, central context, wiki source, and platform skills do
   not need updates because public API behavior, route paths, operator workflow, commands, and skill
   routing did not change.
+
+## BACKEND-REVIEW-20260713-0615-D: Campaign definition resolution in wave create/preview
+
+- Date: 2026-07-13
+- GitHub issue: #615
+- Scope: `BULK_REVIEW_CAMPAIGN` persisted campaign-definition resolution used by generic wave
+  preview/create APIs.
+- Bank-buyable control area: application-layer dependency flow, route thinness, source-lineage
+  preservation, and architecture-boundary tests.
+- Finding: after the campaign workflow routes moved to `DpmWaveCampaignApplicationService`, the
+  generic wave preview/create route still injected `DpmBulkReviewCampaignDefinitionRepository`
+  directly so the persisted `BULK_REVIEW_CAMPAIGN` request path could look up campaign definitions.
+- Action: changed the wave create/preview route and portfolio-resolution helper to depend on
+  `DpmWaveCampaignApplicationService` for campaign-definition lookup, preserving the existing
+  `DpmWaveValidationError` API behavior and source-ref projection while removing route-level
+  campaign repository injection. Extended the API-boundary regression test to include
+  `wave_create_preview_routes.py`.
+- Status: fixed locally.
+- Evidence: focused Ruff, unit, OpenAPI, service-boundary, dead-code, test-family, complexity,
+  engineering-health, and whitespace validation is recorded in the #615 issue comment for the
+  corresponding commit on branch `fix/issue-600-pm-quality-application-boundary`.
+- Same-pattern scan: direct campaign repository injection remains visible in `portfolio_memory.py`,
+  which is a broader portfolio-memory composition route rather than the campaign workflow API
+  route family; it remains the next explicit decision/fix before #615 closure.
+- Design decision: this is an internal design-modularity change inside one deployable service. The
+  generic wave API remains the same runtime surface, and no separately scalable campaign service is
+  justified by this slice.
+- Docs/wiki/context/skill decision: this ledger changed because route dependency-flow truth
+  changed. README, repo context, central context, wiki source, and platform skills do not need
+  updates because public route behavior, operator workflow, commands, and routing guidance did not
+  change.

@@ -16,6 +16,8 @@ from src.api.routers.wave_portfolio_resolution import (
 )
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.services import wave_service
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
+from src.infrastructure.waves import InMemoryDpmBulkReviewCampaignDefinitionRepository
 
 
 def _tactical_house_view_request(
@@ -174,7 +176,9 @@ def test_portfolio_resolution_dispatch_preserves_explicit_portfolio_payloads() -
         correlation_id="corr-wave-dispatch",
         advise_authority_client=None,
         risk_authority_client=None,
-        campaign_definition_repository=object(),
+        campaign_application_service=DpmWaveCampaignApplicationService(
+            campaign_definition_repository=InMemoryDpmBulkReviewCampaignDefinitionRepository()
+        ),
         core_resolver_factory=object,
     )
 

@@ -14,6 +14,7 @@ from src.api.routers.wave_campaign_definition_resolution import (
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignGovernanceInput
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.services.wave_errors import DpmWaveValidationError
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
@@ -154,11 +155,14 @@ def test_definition_governance_input_uses_definition_governance_before_fallback(
 def test_request_with_campaign_definition_projects_persisted_campaign_request() -> None:
     repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     repository.save_definition(definition=_definition())
+    application_service = DpmWaveCampaignApplicationService(
+        campaign_definition_repository=repository
+    )
 
     resolved = request_with_campaign_definition(
         request=_request(),
         tenant_id="tenant-sg",
-        repository=repository,
+        application_service=application_service,
     )
 
     assert resolved.trigger_id == "campaign-holdings-apple-tesla-20260510"
@@ -172,12 +176,15 @@ def test_request_with_campaign_definition_projects_persisted_campaign_request() 
 def test_request_with_campaign_definition_rejects_retired_definition() -> None:
     repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     repository.save_definition(definition=_definition(status="RETIRED"))
+    application_service = DpmWaveCampaignApplicationService(
+        campaign_definition_repository=repository
+    )
 
     with pytest.raises(DpmWaveValidationError) as exc_info:
         request_with_campaign_definition(
             request=_request(),
             tenant_id="tenant-sg",
-            repository=repository,
+            application_service=application_service,
         )
 
     assert exc_info.value.code == "BULK_REVIEW_CAMPAIGN_DEFINITION_RETIRED"
