@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, status
 
 from src.api.dependencies import (
     get_advise_authority_client,
-    get_campaign_definition_repository,
     get_mandate_repository,
     get_risk_authority_client,
+    get_wave_campaign_application_service,
     get_wave_repository,
 )
 from src.api.routers.wave_create_preview_http import create_wave_response, preview_wave_response
@@ -25,11 +25,9 @@ from src.api.services.authority_client_service import (
     AdviseAuthorityClient,
     RiskAuthorityClient,
 )
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.waves import (
-    DpmBulkReviewCampaignDefinitionRepository,
-    DpmWaveRepository,
-)
+from src.core.waves import DpmWaveRepository
 
 
 def register_wave_create_preview_routes(
@@ -95,8 +93,8 @@ def register_wave_create_preview_routes(
             get_advise_authority_client
         ),
         risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
-        campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-            get_campaign_definition_repository
+        campaign_application_service: DpmWaveCampaignApplicationService = Depends(
+            get_wave_campaign_application_service
         ),
     ) -> DpmWaveResponse:
         correlation_id = x_correlation_id or f"corr_wave_preview_{request.trigger_id}"
@@ -107,7 +105,7 @@ def register_wave_create_preview_routes(
             mandate_repository=mandate_repository,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
+            campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory_provider(),
         )
 
@@ -180,8 +178,8 @@ def register_wave_create_preview_routes(
             get_advise_authority_client
         ),
         risk_authority_client: RiskAuthorityClient | None = Depends(get_risk_authority_client),
-        campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-            get_campaign_definition_repository
+        campaign_application_service: DpmWaveCampaignApplicationService = Depends(
+            get_wave_campaign_application_service
         ),
     ) -> DpmWaveResponse:
         correlation_id = x_correlation_id or f"corr_wave_create_{request.trigger_id}"
@@ -194,6 +192,6 @@ def register_wave_create_preview_routes(
             wave_repository=wave_repository,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
+            campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory_provider(),
         )

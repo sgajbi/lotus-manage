@@ -3,10 +3,13 @@ from __future__ import annotations
 from src.api.routers.wave_campaign_models import DpmBulkReviewCampaignGovernanceInput
 from src.api.routers.wave_request_models import DpmWavePortfolioInput, DpmWavePreviewRequest
 from src.api.services import wave_service
+from src.api.services.wave_campaign_application import (
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
+)
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
     DpmBulkReviewCampaignDefinitionCandidate,
-    DpmBulkReviewCampaignDefinitionRepository,
     DpmWaveSourceRef,
 )
 
@@ -15,7 +18,7 @@ def request_with_campaign_definition(
     *,
     request: DpmWavePreviewRequest,
     tenant_id: str | None,
-    repository: DpmBulkReviewCampaignDefinitionRepository,
+    application_service: DpmWaveCampaignApplicationService,
 ) -> DpmWavePreviewRequest:
     if request.campaign_definition_id is None and request.campaign_definition_version is None:
         return request
@@ -25,16 +28,17 @@ def request_with_campaign_definition(
             "X-Tenant-Id is required when resolving persisted bulk-review campaign definitions.",
         )
     campaign_id, campaign_version = _validate_campaign_definition_reference_request(request)
-    definition = repository.get_definition(
-        tenant_id=tenant_id.strip(),
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-    )
-    if definition is None:
+    try:
+        definition = application_service.get_campaign_definition(
+            tenant_id=tenant_id.strip(),
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
         raise wave_service.DpmWaveValidationError(
             "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND",
             "Persisted bulk-review campaign definition was not found.",
-        )
+        ) from exc
     _validate_campaign_definition_available(definition=definition, request=request)
     return request.model_copy(
         update={

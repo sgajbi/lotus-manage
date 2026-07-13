@@ -41,7 +41,7 @@ from src.api.routers.wave_tactical_candidate_selection import (
     tactical_house_view_cohort_failure,
 )
 from src.api.services import wave_service
-from src.core.waves import DpmBulkReviewCampaignDefinitionRepository
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.api.services.authority_client_service import (
     AdviseAuthorityClient,
     AdviseAuthorityUnavailableError,
@@ -57,7 +57,7 @@ class _PortfolioResolutionContext:
     correlation_id: str
     advise_authority_client: AdviseAuthorityClient | None
     risk_authority_client: RiskAuthorityClient | None
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository
+    campaign_application_service: DpmWaveCampaignApplicationService
     core_resolver_factory: Callable[[], object]
 
 
@@ -76,7 +76,7 @@ def resolve_portfolio_inputs_for_request(
     correlation_id: str,
     advise_authority_client: AdviseAuthorityClient | None,
     risk_authority_client: RiskAuthorityClient | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
+    campaign_application_service: DpmWaveCampaignApplicationService,
     core_resolver_factory: Callable[[], object],
 ) -> list[dict[str, object]]:
     context = _PortfolioResolutionContext(
@@ -85,7 +85,7 @@ def resolve_portfolio_inputs_for_request(
         correlation_id=correlation_id,
         advise_authority_client=advise_authority_client,
         risk_authority_client=risk_authority_client,
-        campaign_definition_repository=campaign_definition_repository,
+        campaign_application_service=campaign_application_service,
         core_resolver_factory=core_resolver_factory,
     )
     handler = _PORTFOLIO_RESOLUTION_HANDLERS.get(
@@ -147,7 +147,7 @@ def _resolve_bulk_review_campaign_request_portfolios(
     resolved_request = request_with_campaign_definition(
         request=context.request,
         tenant_id=context.tenant_id,
-        repository=context.campaign_definition_repository,
+        application_service=context.campaign_application_service,
     )
     return resolve_bulk_review_campaign_portfolios(
         request=resolved_request,

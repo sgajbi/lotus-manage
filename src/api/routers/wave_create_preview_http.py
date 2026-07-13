@@ -7,8 +7,9 @@ from src.api.routers.wave_portfolio_resolution import resolve_portfolio_inputs_f
 from src.api.routers.wave_request_models import DpmWavePreviewRequest
 from src.api.routers.wave_response_contracts import DpmWaveResponse, wave_response
 from src.api.services import wave_service
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.core.mandate_repository import DpmMandateRepository
-from src.core.waves import DpmBulkReviewCampaignDefinitionRepository, DpmWaveRepository
+from src.core.waves import DpmWaveRepository
 from src.api.services.authority_client_service import (
     AdviseAuthorityClient,
     RiskAuthorityClient,
@@ -23,7 +24,7 @@ def preview_wave_response(
     mandate_repository: DpmMandateRepository,
     advise_authority_client: AdviseAuthorityClient | None,
     risk_authority_client: RiskAuthorityClient | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
+    campaign_application_service: DpmWaveCampaignApplicationService,
     core_resolver_factory: Callable[[], object],
 ) -> DpmWaveResponse:
     try:
@@ -33,7 +34,7 @@ def preview_wave_response(
             correlation_id=correlation_id,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
+            campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory,
         )
         wave = wave_service.preview_wave(
@@ -61,7 +62,7 @@ def create_wave_response(
     wave_repository: DpmWaveRepository,
     advise_authority_client: AdviseAuthorityClient | None,
     risk_authority_client: RiskAuthorityClient | None,
-    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository,
+    campaign_application_service: DpmWaveCampaignApplicationService,
     core_resolver_factory: Callable[[], object],
 ) -> DpmWaveResponse:
     try:
@@ -71,7 +72,7 @@ def create_wave_response(
             correlation_id=correlation_id,
             advise_authority_client=advise_authority_client,
             risk_authority_client=risk_authority_client,
-            campaign_definition_repository=campaign_definition_repository,
+            campaign_application_service=campaign_application_service,
             core_resolver_factory=core_resolver_factory,
         )
         wave, replayed = wave_service.create_wave(
