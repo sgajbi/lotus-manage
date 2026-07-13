@@ -46,6 +46,11 @@ POSTGRES_ACCESS_TOTAL = Counter(
     "lotus-manage bounded Postgres access outcomes.",
     ["operation", "outcome", "reason", "classification"],
 )
+PM_QUALITY_LIFECYCLE_TOTAL = Counter(
+    "lotus_manage_pm_quality_lifecycle_total",
+    "lotus-manage PM operating-quality route-family lifecycle outcomes.",
+    ["surface", "outcome", "reason"],
+)
 DPM_WORKFLOW_DECISION_TOTAL = Counter(
     "lotus_manage_workflow_decision_total",
     "lotus-manage workflow decision outcomes.",
@@ -141,6 +146,40 @@ _ALLOWED_POSTGRES_ACCESS_REASONS = frozenset(
 )
 _ALLOWED_POSTGRES_ACCESS_CLASSIFICATIONS = frozenset(
     {"none", "transient", "permanent", "unknown"}
+)
+_ALLOWED_PM_QUALITY_SURFACES = frozenset(
+    {
+        "policy",
+        "score_run",
+        "fairness_analysis",
+        "review_action",
+        "summary_invocation",
+        "unknown",
+    }
+)
+_ALLOWED_PM_QUALITY_OUTCOMES = frozenset(
+    {
+        "success",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "validation_failed",
+        "dependency_failed",
+        "unavailable",
+        "error",
+    }
+)
+_ALLOWED_PM_QUALITY_REASONS = frozenset(
+    {
+        "success",
+        "forbidden",
+        "not_found",
+        "immutable_conflict",
+        "validation_error",
+        "dependency_incomplete",
+        "dependency_unavailable",
+        "unexpected_error",
+    }
 )
 _ALLOWED_WORKFLOW_SURFACES = frozenset({"run", "trace", "retry"})
 _ALLOWED_WORKFLOW_ACTIONS = frozenset({"approve", "reject", "request_changes", "unknown"})
@@ -245,6 +284,7 @@ _SENSITIVE_LOG_FIELD_NAMES = frozenset(
 )
 _LATENCY_BUCKETS_MS = (10, 50, 100, 250, 500, 1000)
 _API_ROUTE_PREFIX = "/api/v1"
+_PM_QUALITY_ROUTE_PREFIX = "/api/v1/rebalance/pm-operating-quality"
 
 
 def _safe_metric_label(value: str, *, allowed_values: frozenset[str], fallback: str) -> str:
@@ -416,6 +456,8 @@ async def _request_observability_middleware(
         endpoint=endpoint,
         status_family=status_family,
     ).inc()
+    if response.status_code < 400:
+        record_pm_quality_http_result(path=endpoint, status_code=response.status_code)
     logger.info(
         "request.completed",
         extra={
@@ -619,6 +661,73 @@ def record_postgres_access(
             fallback="unknown",
         ),
     ).inc()
+
+
+def record_pm_quality_lifecycle(
+    *,
+    surface: str,
+    outcome: str,
+    reason: str,
+) -> None:
+    PM_QUALITY_LIFECYCLE_TOTAL.labels(
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_PM_QUALITY_SURFACES,
+            fallback="unknown",
+        ),
+        outcome=_safe_metric_label(
+            outcome,
+            allowed_values=_ALLOWED_PM_QUALITY_OUTCOMES,
+            fallback="error",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_PM_QUALITY_REASONS,
+            fallback="unexpected_error",
+        ),
+    ).inc()
+
+
+def record_pm_quality_http_result(*, path: str, status_code: int) -> None:
+    surface = _pm_quality_surface_from_path(path)
+    if surface is None:
+        return
+    outcome, reason = _pm_quality_outcome_reason(status_code=status_code)
+    record_pm_quality_lifecycle(surface=surface, outcome=outcome, reason=reason)
+
+
+def _pm_quality_surface_from_path(path: str) -> str | None:
+    if not path.startswith(_PM_QUALITY_ROUTE_PREFIX):
+        return None
+    if "/policies" in path:
+        return "policy"
+    if "/score-runs" in path:
+        return "score_run"
+    if "/fairness-analyses" in path:
+        return "fairness_analysis"
+    if "/review-actions" in path:
+        return "review_action"
+    if "/summary-invocations" in path:
+        return "summary_invocation"
+    return "unknown"
+
+
+def _pm_quality_outcome_reason(*, status_code: int) -> tuple[str, str]:
+    if 200 <= status_code < 400:
+        return "success", "success"
+    if status_code == 403:
+        return "forbidden", "forbidden"
+    if status_code == 404:
+        return "not_found", "not_found"
+    if status_code == 409:
+        return "conflict", "immutable_conflict"
+    if status_code == 422:
+        return "validation_failed", "validation_error"
+    if status_code == 424:
+        return "dependency_failed", "dependency_incomplete"
+    if status_code == 503:
+        return "unavailable", "dependency_unavailable"
+    return "error", "unexpected_error"
 
 
 def record_workflow_decision(

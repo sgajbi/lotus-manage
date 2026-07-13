@@ -2372,6 +2372,11 @@ Non-functional posture:
 - Summary-invocation preview/create/read/list does not store generated AI narrative text, expose
   raw review rationale, recalculate scores, recompute fairness posture, rank PMs, create HR,
   compensation, conduct, client-contact, trade, order, OMS, or execution decisions.
+- Runtime support uses the PM-quality lifecycle operations runbook and bounded
+  `lotus_manage_pm_quality_lifecycle_total` metric for route-family outcome triage. The exact
+  failure cause remains the Problem Details `reasonCode`; metric labels must not include PM ids,
+  portfolio ids, content hashes, source refs, review rationale, generated summary text, prompts, or
+  model responses.
 
 Evidence commands:
 

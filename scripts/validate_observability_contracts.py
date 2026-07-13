@@ -51,6 +51,9 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         f"{observability.POSTGRES_ACCESS_TOTAL._name}_total": tuple(
             observability.POSTGRES_ACCESS_TOTAL._labelnames
         ),
+        f"{observability.PM_QUALITY_LIFECYCLE_TOTAL._name}_total": tuple(
+            observability.PM_QUALITY_LIFECYCLE_TOTAL._labelnames
+        ),
         f"{observability.DPM_WORKFLOW_DECISION_TOTAL._name}_total": tuple(
             observability.DPM_WORKFLOW_DECISION_TOTAL._labelnames
         ),

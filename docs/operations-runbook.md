@@ -25,6 +25,12 @@ For full repo-native evidence in production-oriented work, run:
 
 - If health fails, verify startup migration state and storage adapter configuration first.
 - For supportability anomalies, inspect persisted supportability state and correlation IDs before retry.
+- For PM operating-quality incidents, use
+  [wiki/Operations-Runbook.md#pm-quality-lifecycle-operations](../wiki/Operations-Runbook.md#pm-quality-lifecycle-operations).
+  Triage by Problem Details `reasonCode`, `correlationId`, route `instance`, content hash,
+  `lotus_manage_pm_quality_lifecycle_total`, and `lotus_manage_postgres_access_total`; do not
+  inspect raw score payloads, review rationale, generated summary text, prompts, or model
+  responses.
 - For OpenAPI or contract drift, run:
   - `python scripts/openapi_quality_gate.py`
   - `python scripts/api_vocabulary_inventory.py --validate-only`
