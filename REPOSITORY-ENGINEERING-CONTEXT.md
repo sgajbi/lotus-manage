@@ -958,6 +958,9 @@ Primary areas:
    management workflow products.
 7. `contracts/trust-telemetry/`
    repo-native RFC-0087/RFC-0091 trust telemetry snapshots for governed management products.
+   Snapshot coverage proves catalog fixture coverage only; product-specific snapshots, including
+   PM-quality, may be blocked/operator-only until linked certification blockers are merged to
+   `main` and runtime trust evidence is regenerated.
 
 ## Runtime And Integration Boundaries
 

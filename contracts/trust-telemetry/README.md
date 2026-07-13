@@ -13,7 +13,9 @@ Every active product in `contracts/domain-data-products/lotus-manage-products.v1
 exactly one snapshot here. The focused test
 `tests/unit/test_trust_telemetry_contracts.py` derives coverage from that producer declaration and
 fails on missing, unexpected, stale-route, freshness, metadata, lineage, artifact, or
-certification-limit drift.
+certification-limit drift. Active catalog visibility is not the same as certification readiness:
+product-specific posture expectations may require a blocked or operator-only fixture until linked
+certification blockers are resolved and runtime trust evidence is regenerated.
 
 Validate with:
 
@@ -24,4 +26,9 @@ python -m pytest tests\unit\test_trust_telemetry_contracts.py -q
 
 Checked-in snapshots are contract fixtures validated by feature and PR-merge lanes. They do not by
 themselves assert live-environment runtime certification.
+
+`pm-operating-quality-score-run.telemetry.v1.json` is intentionally blocked while PM-quality
+certification evidence remains branch-local or pending runtime regeneration. It must not publish
+`quality_passed`, complete/reconciled, customer-consumable evidence until the linked PM-quality
+certification blockers are merged to `main` and the trust snapshot is deliberately promoted.
 

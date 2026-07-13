@@ -84,6 +84,9 @@ snapshots are:
 
 These snapshots are deterministic contract fixtures validated by the feature and PR-merge lanes.
 They do not by themselves assert live-environment runtime certification.
+The PM operating quality snapshot is intentionally `blocked`/`quality_blocked` and operator-only
+until linked PM-quality certification blockers are merged to `main` and runtime trust evidence is
+regenerated; do not treat active product declaration coverage as customer-reliance readiness.
 
 Consumer adapter rule:
 

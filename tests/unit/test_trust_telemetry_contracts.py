@@ -21,6 +21,48 @@ TELEMETRY_PATH = (
     ROOT / "contracts" / "trust-telemetry" / "portfolio-action-register.telemetry.v1.json"
 )
 
+EXPECTED_TRUST_POSTURES = {
+    "lotus-manage:PortfolioActionRegister:v1": {
+        "freshness_state": "current",
+        "completeness_status": "complete",
+        "reconciliation_status": "reconciled",
+        "data_quality_status": "quality_passed",
+        "evidence_access_class": "customer_consumable",
+        "blocked": False,
+        "runtime_certification": "repo_native_contract_fixture",
+        "certification_ready": None,
+    },
+    "lotus-manage:BulkReviewCampaignMembership:v1": {
+        "freshness_state": "current",
+        "completeness_status": "complete",
+        "reconciliation_status": "reconciled",
+        "data_quality_status": "quality_passed",
+        "evidence_access_class": "customer_consumable",
+        "blocked": False,
+        "runtime_certification": "repo_native_contract_fixture",
+        "certification_ready": None,
+    },
+    "lotus-manage:PmOperatingQualityScoreRun:v1": {
+        "freshness_state": "unknown",
+        "completeness_status": "blocked",
+        "reconciliation_status": "blocked",
+        "data_quality_status": "quality_blocked",
+        "evidence_access_class": "operator_only",
+        "blocked": True,
+        "runtime_certification": "repo_native_contract_fixture_blocked",
+        "certification_ready": False,
+    },
+}
+
+PM_QUALITY_CERTIFICATION_BLOCKERS = {
+    "sgajbi/lotus-manage#595",
+    "sgajbi/lotus-manage#596",
+    "sgajbi/lotus-manage#603",
+    "sgajbi/lotus-manage#606",
+    "sgajbi/lotus-manage#609",
+    "sgajbi/lotus-manage#610",
+}
+
 
 def _product_id(product: dict) -> str:
     return f"lotus-manage:{product['product_name']}:{product['product_version']}"
@@ -80,12 +122,15 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
     expected_product_ids = {_product_id(product) for product in products}
 
     assert set(snapshots) == expected_product_ids
+    assert set(EXPECTED_TRUST_POSTURES) == expected_product_ids
     assert sorted(path.name for path, _ in snapshots.values()) == sorted(
         _snapshot_filename(product) for product in products
     )
 
     for product in products:
-        path, telemetry = snapshots[_product_id(product)]
+        product_id = _product_id(product)
+        path, telemetry = snapshots[product_id]
+        expected_posture = EXPECTED_TRUST_POSTURES[product_id]
         assert telemetry["producer_repository"] == product["owner_repository"]
         assert telemetry["product_name"] == product["product_name"]
         assert telemetry["product_version"] == product["product_version"]
@@ -94,24 +139,42 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
             telemetry["freshness"]["freshness_class"]
             == (product["freshness_policy"]["freshness_class"])
         )
-        assert (
-            telemetry["completeness_status"] == (product["completeness_policy"]["default_status"])
-        )
-        assert telemetry["reconciliation_status"] == "reconciled"
-        assert telemetry["data_quality_status"] == "quality_passed"
+        assert telemetry["freshness"]["freshness_state"] == expected_posture["freshness_state"]
+        assert telemetry["completeness_status"] == expected_posture["completeness_status"]
+        assert telemetry["reconciliation_status"] == expected_posture["reconciliation_status"]
+        assert telemetry["data_quality_status"] == expected_posture["data_quality_status"]
         assert set(telemetry["observed_trust_metadata"]) == set(product["required_trust_metadata"])
         assert (
             telemetry["lineage"]["evidence_access_class"]
-            == (product["lineage_policy"]["evidence_access_class_ref"])
+            == expected_posture["evidence_access_class"]
         )
         assert telemetry["lineage"]["evidence_uris"] != []
-        assert telemetry["blocking"]["blocked"] is False
-        assert telemetry["certification_limits"] == {
-            "runtime_certification": "repo_native_contract_fixture",
-            "live_environment_certification": "not_asserted_by_snapshot",
-            "promotion_limit": "validated by feature and pr-merge lanes only",
-        }
+        assert telemetry["blocking"]["blocked"] is expected_posture["blocked"]
+        assert (
+            telemetry["certification_limits"]["runtime_certification"]
+            == expected_posture["runtime_certification"]
+        )
+        assert (
+            telemetry["certification_limits"]["live_environment_certification"]
+            == "not_asserted_by_snapshot"
+        )
         assert telemetry["evidence"]["validation_lanes"] == ["feature", "pr-merge"]
         assert telemetry["evidence"]["source_artifact_uri"] == (
             f"lotus-manage://contracts/trust-telemetry/{path.name}"
         )
+        if expected_posture["certification_ready"] is None:
+            assert "certification_ready" not in telemetry["certification_limits"]
+            assert "blocked_reason" not in telemetry["blocking"]
+        else:
+            assert (
+                telemetry["certification_limits"]["certification_ready"]
+                is expected_posture["certification_ready"]
+            )
+            assert telemetry["blocking"]["blocked_reason"] == "PM_QUALITY_CERTIFICATION_BLOCKED"
+            assert set(telemetry["blocking"]["blocker_issue_refs"]) == (
+                PM_QUALITY_CERTIFICATION_BLOCKERS
+            )
+            assert "quality_passed" not in {
+                telemetry["data_quality_status"],
+                telemetry["observed_trust_metadata"]["data_quality_status"],
+            }

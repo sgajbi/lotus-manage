@@ -36,30 +36,48 @@
   },
   "freshness": {
     "freshness_class": "intraday",
-    "freshness_state": "current",
+    "freshness_state": "unknown",
     "evaluated_at_utc": "2026-07-06T00:00:00Z",
     "observed_at_utc": "2026-07-06T00:00:00Z",
     "age_seconds": 0,
     "max_allowed_age_seconds": 14400
   },
-  "completeness_status": "complete",
-  "reconciliation_status": "reconciled",
-  "data_quality_status": "quality_passed",
+  "completeness_status": "blocked",
+  "reconciliation_status": "blocked",
+  "data_quality_status": "quality_blocked",
   "lineage": {
     "lineage_materialized": true,
     "lineage_bundle_id": "lineage:lotus-manage:tenant-private-banking-demo:pm-operating-quality-score-run:2026-07-06",
-    "evidence_access_class": "customer_consumable",
+    "evidence_access_class": "operator_only",
     "evidence_uris": [
       "lotus-manage://evidence/tenant-private-banking-demo/pm-operating-quality-score-run/PB_SG_GLOBAL_BAL_001/2026-07-06"
     ]
   },
   "blocking": {
-    "blocked": false
+    "blocked": true,
+    "blocked_reason": "PM_QUALITY_CERTIFICATION_BLOCKED",
+    "blocker_reason_codes": [
+      "PM_QUALITY_SUMMARY_STATE_INVARIANTS_PENDING_MAIN_MERGE",
+      "PM_QUALITY_AUDIT_LINEAGE_INTEGRITY_PENDING_MAIN_MERGE",
+      "PM_QUALITY_METHODOLOGY_PUBLICATION_PENDING_MAIN_MERGE",
+      "PM_QUALITY_ENDPOINT_CERTIFICATION_PENDING_MAIN_MERGE",
+      "PM_QUALITY_TENANT_ISOLATION_PENDING_MAIN_MERGE",
+      "PM_QUALITY_RUNTIME_TRUST_EVIDENCE_PENDING"
+    ],
+    "blocker_issue_refs": [
+      "sgajbi/lotus-manage#595",
+      "sgajbi/lotus-manage#596",
+      "sgajbi/lotus-manage#603",
+      "sgajbi/lotus-manage#606",
+      "sgajbi/lotus-manage#609",
+      "sgajbi/lotus-manage#610"
+    ]
   },
   "certification_limits": {
-    "runtime_certification": "repo_native_contract_fixture",
+    "runtime_certification": "repo_native_contract_fixture_blocked",
     "live_environment_certification": "not_asserted_by_snapshot",
-    "promotion_limit": "validated by feature and pr-merge lanes only"
+    "promotion_limit": "blocked until PM-quality certification blockers are merged to main and runtime trust evidence is regenerated",
+    "certification_ready": false
   },
   "observed_trust_metadata": {
     "product_name": "PmOperatingQualityScoreRun",
@@ -67,7 +85,7 @@
     "tenant_id": "TENANT_PRIVATE_BANKING_DEMO",
     "generated_at": "2026-07-06T00:00:00Z",
     "as_of_date": "2026-07-06",
-    "data_quality_status": "quality_passed",
+    "data_quality_status": "quality_blocked",
     "source_batch_fingerprint": "sha256:pm-operating-quality-score-run-demo",
     "correlation_id": "rfc-0091-lotus-manage-pm-operating-quality-score-run"
   },
