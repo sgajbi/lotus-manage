@@ -461,7 +461,7 @@ def test_core_resolver_shared_post_helper_closes_owned_client_on_terminal_error(
     assert closed["value"] is True
 
 
-def test_core_snapshot_transform_uses_reporting_currency_and_skips_blank_rows() -> None:
+def test_core_snapshot_transform_uses_reporting_currency_and_valid_zero_quantity() -> None:
     snapshot = _portfolio_snapshot_from_core_snapshot(
         {
             "portfolio_id": "PF_TEST",
@@ -469,10 +469,15 @@ def test_core_snapshot_transform_uses_reporting_currency_and_skips_blank_rows() 
             "valuation_context": {"reporting_currency": "EUR"},
             "sections": {
                 "positions_baseline": [
-                    {"security_id": "", "quantity": "99", "currency": "EUR"},
-                    {"instrument_id": "EQ_EU", "quantity": "10", "currency": "EUR"},
+                    {
+                        "instrument_id": "EQ_EU",
+                        "quantity": "0",
+                        "currency": "EUR",
+                        "market_value_local": "0",
+                    },
                     {"instrument_id": "CASH_USD", "quantity": "250", "currency": "USD"},
-                ]
+                ],
+                "portfolio_totals": {"baseline_total_market_value_base": "250"},
             },
         }
     )
@@ -480,11 +485,13 @@ def test_core_snapshot_transform_uses_reporting_currency_and_skips_blank_rows() 
     assert snapshot.snapshot_id == "PortfolioStateSnapshot:PF_TEST:2026-04-10"
     assert snapshot.base_currency == "EUR"
     assert [position.instrument_id for position in snapshot.positions] == ["EQ_EU"]
+    assert snapshot.positions[0].quantity == Decimal("0")
     assert snapshot.cash_balances[0].currency == "USD"
 
 
-def test_core_snapshot_row_mapper_returns_none_for_blank_identifier() -> None:
-    assert _map_core_snapshot_row({"quantity": "99"}, base_currency="USD") is None
+def test_core_snapshot_row_mapper_rejects_blank_identifier() -> None:
+    with pytest.raises(ValueError, match="instrument_id"):
+        _map_core_snapshot_row({"quantity": "99"}, base_currency="USD")
 
 
 def test_core_snapshot_row_mapper_preserves_position_market_value_currency() -> None:
@@ -507,9 +514,10 @@ def test_core_snapshot_row_mapper_preserves_position_market_value_currency() -> 
     assert mapped_row.position.market_value.currency == "USD"
 
 
-def test_core_snapshot_row_currency_normalizes_or_falls_back_to_base_currency() -> None:
+def test_core_snapshot_row_currency_normalizes_and_rejects_missing_currency() -> None:
     assert _core_snapshot_row_currency({"currency": "sgd"}, base_currency="USD") == "SGD"
-    assert _core_snapshot_row_currency({}, base_currency="eur") == "EUR"
+    with pytest.raises(ValueError, match="currency"):
+        _core_snapshot_row_currency({}, base_currency="eur")
 
 
 def test_core_snapshot_rows_aggregate_cash_by_currency() -> None:
@@ -517,7 +525,12 @@ def test_core_snapshot_rows_aggregate_cash_by_currency() -> None:
         [
             {"instrument_id": "CASH_USD", "quantity": "10", "currency": "USD"},
             {"instrument_id": "CASH_USD_2", "quantity": "15", "currency": "USD"},
-            {"instrument_id": "EQ_EU", "quantity": "2", "currency": "EUR"},
+            {
+                "instrument_id": "EQ_EU",
+                "quantity": "2",
+                "currency": "EUR",
+                "market_value_local": "20",
+            },
         ],
         base_currency="SGD",
     )
@@ -547,7 +560,8 @@ def test_core_snapshot_currency_helpers_return_uppercase_non_base_families() -> 
                         "market_value_local": "50",
                     },
                     {"instrument_id": "CASH_GBP", "quantity": "100", "currency": "gbp"},
-                ]
+                ],
+                "portfolio_totals": {"baseline_total_market_value_base": "250"},
             },
         }
     )
@@ -560,17 +574,23 @@ def test_core_snapshot_currency_helpers_return_uppercase_non_base_families() -> 
     ) == {"EUR", "GBP"}
 
 
-def test_required_currency_pairs_ignores_base_currency_and_missing_market_values() -> None:
+def test_required_currency_pairs_ignores_base_currency() -> None:
     snapshot = _portfolio_snapshot_from_core_snapshot(
         {
             "portfolio_id": "PF_TEST",
             "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "USD"},
             "sections": {
                 "positions_baseline": [
-                    {"instrument_id": "EQ_US", "quantity": "10", "currency": "USD"},
-                    {"instrument_id": "EQ_NO_VALUE", "quantity": "5"},
+                    {
+                        "instrument_id": "EQ_US",
+                        "quantity": "10",
+                        "currency": "USD",
+                        "market_value_local": "100",
+                    },
                     {"instrument_id": "CASH_EUR", "quantity": "100", "currency": "EUR"},
-                ]
+                ],
+                "portfolio_totals": {"baseline_total_market_value_base": "200"},
             },
         }
     )
@@ -578,3 +598,48 @@ def test_required_currency_pairs_ignores_base_currency_and_missing_market_values
     assert _required_currency_pairs(portfolio_snapshot=snapshot, base_currency="USD") == [
         ("EUR", "USD")
     ]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"portfolio_id": "PF_TEST"},
+        {
+            "portfolio_id": "PF_TEST",
+            "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "USD"},
+            "sections": {"portfolio_totals": {}},
+        },
+        {
+            "portfolio_id": "PF_TEST",
+            "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "US"},
+            "sections": {"positions_baseline": [], "portfolio_totals": {}},
+        },
+        {
+            "portfolio_id": "PF_TEST",
+            "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "USD"},
+            "sections": {
+                "positions_baseline": [{"instrument_id": "EQ_US", "currency": "USD"}],
+                "portfolio_totals": {},
+            },
+        },
+        {
+            "portfolio_id": "PF_TEST",
+            "as_of_date": "2026-04-10",
+            "valuation_context": {"portfolio_currency": "USD"},
+            "sections": {
+                "positions_baseline": [
+                    {"instrument_id": "EQ_US", "quantity": "1", "currency": "USD"}
+                ],
+                "portfolio_totals": {},
+            },
+        },
+    ],
+)
+def test_core_snapshot_mapper_fails_closed_on_incomplete_source_payloads(
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(DpmCoreResolverError, match="DPM_CORE_PORTFOLIO_SNAPSHOT_INCOMPLETE"):
+        _portfolio_snapshot_from_core_snapshot(payload)
