@@ -50,8 +50,12 @@ from src.infrastructure.pm_quality import (
 from src.infrastructure.outcomes import InMemoryDpmOutcomeReviewRepository
 
 
+TENANT_ID = "tenant-sg"
+
+
 def _enabled_policy() -> DpmPmOperatingQualityPolicy:
     return DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         enabled=True,
@@ -126,6 +130,7 @@ def _membership_response(
 def _score_run(*, pm_id: str, score: Decimal, correlation_id: str) -> DpmPmOperatingQualityScoreRun:
     policy = _enabled_policy()
     return build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id=pm_id,
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -169,6 +174,7 @@ def _application_service(
 def test_pm_quality_service_reuses_policy_when_injected() -> None:
     policy = _enabled_policy()
     resolved = resolve_pm_quality_policy_from_command(
+        tenant_id=TENANT_ID,
         policy=policy,
         policy_id=None,
         policy_version=None,
@@ -184,12 +190,14 @@ def test_pm_quality_application_service_administers_policies_through_repository_
     service = _application_service(policy_repository=policy_repository)
 
     saved = service.save_policy(
+        tenant_id=TENANT_ID,
         policy_id=policy.policy_id,
         policy_version=policy.policy_version,
         policy=policy,
     )
-    listed = service.list_policies(policy_id=policy.policy_id, enabled=True)
+    listed = service.list_policies(tenant_id=TENANT_ID, policy_id=policy.policy_id, enabled=True)
     fetched = service.get_policy(
+        tenant_id=TENANT_ID,
         policy_id=policy.policy_id,
         policy_version=policy.policy_version,
     )
@@ -204,6 +212,7 @@ def test_pm_quality_application_service_administers_policies_through_repository_
         match="PM_QUALITY_POLICY_PATH_BODY_MISMATCH",
     ):
         service.save_policy(
+            tenant_id=TENANT_ID,
             policy_id=policy.policy_id,
             policy_version="wrong-version",
             policy=policy,
@@ -212,13 +221,13 @@ def test_pm_quality_application_service_administers_policies_through_repository_
         DpmPmOperatingQualityServiceError,
         match="PM_QUALITY_POLICY_NOT_FOUND:missing:2026.05",
     ):
-        service.get_policy(policy_id="missing", policy_version="2026.05")
+        service.get_policy(tenant_id=TENANT_ID, policy_id="missing", policy_version="2026.05")
 
 
 def test_pm_quality_application_service_creates_score_run_through_repository_port() -> None:
     policy_repository = InMemoryDpmPmQualityPolicyRepository()
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
-    policy_repository.save_policy(policy=_enabled_policy())
+    policy_repository.save_policy(tenant_id=TENANT_ID, policy=_enabled_policy())
     service = _application_service(
         policy_repository=policy_repository,
         score_run_repository=score_run_repository,
@@ -226,6 +235,7 @@ def test_pm_quality_application_service_creates_score_run_through_repository_por
 
     score_run = service.create_score_run(
         DpmPmQualityScoreRunCommand(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -248,7 +258,10 @@ def test_pm_quality_application_service_creates_score_run_through_repository_por
         )
     )
 
-    persisted = score_run_repository.get_score_run(score_run_id=score_run.score_run_id)
+    persisted = score_run_repository.get_score_run(
+        tenant_id=TENANT_ID,
+        score_run_id=score_run.score_run_id,
+    )
     assert persisted is not None
     assert persisted.content_hash == score_run.content_hash
     assert persisted.correlation_id == "corr-create-score-run"
@@ -257,11 +270,15 @@ def test_pm_quality_application_service_creates_score_run_through_repository_por
 def test_pm_quality_application_service_queries_score_runs_through_repository_port() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-query")
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     service = _application_service(score_run_repository=score_run_repository)
 
-    listed = service.list_score_runs(pm_id="pm_001", policy_id="pmq_sg_dpm")
-    fetched = service.get_score_run(score_run_id=score_run.score_run_id)
+    listed = service.list_score_runs(
+        tenant_id=TENANT_ID,
+        pm_id="pm_001",
+        policy_id="pmq_sg_dpm",
+    )
+    fetched = service.get_score_run(tenant_id=TENANT_ID, score_run_id=score_run.score_run_id)
 
     assert [item.score_run_id for item in listed] == [score_run.score_run_id]
     assert fetched.content_hash == score_run.content_hash
@@ -269,7 +286,7 @@ def test_pm_quality_application_service_queries_score_runs_through_repository_po
         DpmPmOperatingQualityServiceError,
         match="PM_QUALITY_SCORE_RUN_NOT_FOUND:missing-score-run",
     ):
-        service.get_score_run(score_run_id="missing-score-run")
+        service.get_score_run(tenant_id=TENANT_ID, score_run_id="missing-score-run")
 
 
 def test_pm_quality_application_service_creates_fairness_analysis_through_repository_port() -> None:
@@ -277,8 +294,8 @@ def test_pm_quality_application_service_creates_fairness_analysis_through_reposi
     fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
     balanced = _score_run(pm_id="pm_balanced", score=Decimal("91"), correlation_id="corr-1")
     growth = _score_run(pm_id="pm_growth", score=Decimal("59"), correlation_id="corr-2")
-    score_run_repository.save_score_run(score_run=balanced)
-    score_run_repository.save_score_run(score_run=growth)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=balanced)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=growth)
     service = _application_service(
         score_run_repository=score_run_repository,
         fairness_repository=fairness_repository,
@@ -286,6 +303,7 @@ def test_pm_quality_application_service_creates_fairness_analysis_through_reposi
 
     analysis = service.create_fairness_analysis(
         DpmPmQualityFairnessAnalysisCommand(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             as_of_date="2026-05-12",
@@ -311,7 +329,7 @@ def test_pm_quality_application_service_creates_fairness_analysis_through_reposi
     )
 
     persisted = fairness_repository.get_fairness_analysis(
-        fairness_analysis_id=analysis.fairness_analysis_id
+        tenant_id=TENANT_ID, fairness_analysis_id=analysis.fairness_analysis_id
     )
     assert persisted is not None
     assert persisted.content_hash == analysis.content_hash
@@ -322,7 +340,7 @@ def test_pm_quality_application_service_creates_review_action_through_repository
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     review_action_repository = InMemoryDpmPmQualityReviewActionRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-target")
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     service = _application_service(
         score_run_repository=score_run_repository,
         review_action_repository=review_action_repository,
@@ -330,6 +348,7 @@ def test_pm_quality_application_service_creates_review_action_through_repository
 
     review_action = service.create_review_action(
         DpmPmQualityReviewActionCommand(
+            tenant_id=TENANT_ID,
             target_type="SCORE_RUN",
             target_id=score_run.score_run_id,
             action_type="ACKNOWLEDGE",
@@ -343,7 +362,7 @@ def test_pm_quality_application_service_creates_review_action_through_repository
     )
 
     persisted = review_action_repository.get_review_action(
-        review_action_id=review_action.review_action_id
+        tenant_id=TENANT_ID, review_action_id=review_action.review_action_id
     )
     assert persisted is not None
     assert persisted.content_hash == review_action.content_hash
@@ -357,7 +376,7 @@ def test_pm_quality_application_service_creates_summary_invocation_through_repos
     review_action_repository = InMemoryDpmPmQualityReviewActionRepository()
     summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-summary")
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     review_action = build_pm_quality_review_action(
         target=score_run,
         target_type="SCORE_RUN",
@@ -369,7 +388,7 @@ def test_pm_quality_application_service_creates_summary_invocation_through_repos
         remediation_due_date=None,
         correlation_id="corr-summary-review",
     )
-    review_action_repository.save_review_action(action=review_action)
+    review_action_repository.save_review_action(tenant_id=TENANT_ID, action=review_action)
     service = _application_service(
         score_run_repository=score_run_repository,
         review_action_repository=review_action_repository,
@@ -378,6 +397,7 @@ def test_pm_quality_application_service_creates_summary_invocation_through_repos
 
     invocation = service.create_summary_invocation(
         DpmPmQualitySummaryInvocationCommand(
+            tenant_id=TENANT_ID,
             score_run_id=score_run.score_run_id,
             review_action_id=review_action.review_action_id,
             invocation_state="COMPLETED",
@@ -388,13 +408,14 @@ def test_pm_quality_application_service_creates_summary_invocation_through_repos
             workflow_run_id="pmq-summary-run-101",
             summary_artifact_ref="pmq-summary-artifact-101",
             summary_content_hash="sha256:pmq-summary-101",
+            failure_reason_code=None,
             source_refs=[],
             correlation_id="corr-create-summary",
         )
     )
 
     persisted = summary_repository.get_summary_invocation(
-        summary_invocation_id=invocation.summary_invocation_id
+        tenant_id=TENANT_ID, summary_invocation_id=invocation.summary_invocation_id
     )
     assert persisted is not None
     assert persisted.content_hash == invocation.content_hash
@@ -405,11 +426,12 @@ def test_pm_quality_service_builds_fairness_analysis_from_persisted_score_runs()
     repository = InMemoryDpmPmQualityScoreRunRepository()
     balanced = _score_run(pm_id="pm_balanced", score=Decimal("91"), correlation_id="corr-1")
     growth = _score_run(pm_id="pm_growth", score=Decimal("59"), correlation_id="corr-2")
-    repository.save_score_run(score_run=balanced)
-    repository.save_score_run(score_run=growth)
+    repository.save_score_run(tenant_id=TENANT_ID, score_run=balanced)
+    repository.save_score_run(tenant_id=TENANT_ID, score_run=growth)
 
     analysis = build_pm_quality_fairness_analysis_from_command(
         command=DpmPmQualityFairnessAnalysisCommand(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             as_of_date="2026-05-12",
@@ -450,6 +472,7 @@ def test_pm_quality_service_reports_missing_score_run_with_stable_code() -> None
     ):
         build_pm_quality_fairness_analysis_from_command(
             command=DpmPmQualityFairnessAnalysisCommand(
+                tenant_id=TENANT_ID,
                 policy_id="pmq_sg_dpm",
                 policy_version="2026.05",
                 as_of_date="2026-05-12",
@@ -479,10 +502,12 @@ def test_pm_quality_service_reports_missing_score_run_with_stable_code() -> None
 def test_pm_quality_service_builds_score_run_from_policy_reference() -> None:
     policy_repository = InMemoryDpmPmQualityPolicyRepository()
     policy_repository.save_policy(
-        policy=_enabled_policy().model_copy(update={"policy_id": "pmq_reference"})
+        tenant_id=TENANT_ID,
+        policy=_enabled_policy().model_copy(update={"policy_id": "pmq_reference"}),
     )
     score_run = build_pm_quality_score_run_from_command(
         command=DpmPmQualityScoreRunCommand(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -509,6 +534,7 @@ def test_pm_quality_service_reports_missing_policy_reference_with_stable_code() 
     ):
         build_pm_quality_score_run_from_command(
             command=DpmPmQualityScoreRunCommand(
+                tenant_id=TENANT_ID,
                 pm_id="pm_001",
                 book_id="sg_dpm_book",
                 as_of_date="2026-05-12",
@@ -529,6 +555,7 @@ def test_pm_quality_service_materializes_pm_book_scope_with_resolver() -> None:
     resolver = _MembershipResolver(membership=_membership_response())
     score_run = build_pm_quality_score_run_from_command(
         command=DpmPmQualityScoreRunCommand(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -608,10 +635,11 @@ def test_pm_quality_service_builds_review_action_for_score_run() -> None:
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-review-target")
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
 
     review_action = build_pm_quality_review_action_from_command(
         command=DpmPmQualityReviewActionCommand(
+            tenant_id=TENANT_ID,
             target_type="SCORE_RUN",
             target_id=score_run.score_run_id,
             action_type="ACKNOWLEDGE",
@@ -635,6 +663,7 @@ def test_pm_quality_service_builds_review_action_for_fairness_analysis() -> None
     fairness_repository = InMemoryDpmPmQualityFairnessAnalysisRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-fairness-base")
     analysis = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         as_of_date="2026-05-12",
@@ -663,10 +692,11 @@ def test_pm_quality_service_builds_review_action_for_fairness_analysis() -> None
         generated_by="ops",
         correlation_id="corr-fairness",
     )
-    fairness_repository.save_fairness_analysis(analysis=analysis)
+    fairness_repository.save_fairness_analysis(tenant_id=TENANT_ID, analysis=analysis)
 
     review_action = build_pm_quality_review_action_from_command(
         command=DpmPmQualityReviewActionCommand(
+            tenant_id=TENANT_ID,
             target_type="FAIRNESS_ANALYSIS",
             target_id=analysis.fairness_analysis_id,
             action_type="REQUEST_EVIDENCE_REMEDIATION",
@@ -696,6 +726,7 @@ def test_pm_quality_service_review_action_targets_report_stable_missing_codes() 
     ):
         build_pm_quality_review_action_from_command(
             command=DpmPmQualityReviewActionCommand(
+                tenant_id=TENANT_ID,
                 target_type="SCORE_RUN",
                 target_id="missing-score-run",
                 action_type="ACKNOWLEDGE",
@@ -716,6 +747,7 @@ def test_pm_quality_service_review_action_targets_report_stable_missing_codes() 
     ):
         build_pm_quality_review_action_from_command(
             command=DpmPmQualityReviewActionCommand(
+                tenant_id=TENANT_ID,
                 target_type="FAIRNESS_ANALYSIS",
                 target_id="missing-fairness",
                 action_type="ACKNOWLEDGE",
@@ -737,7 +769,7 @@ def test_pm_quality_service_builds_summary_invocation_from_score_run_and_review_
     score_run = _score_run(
         pm_id="pm_001", score=Decimal("91"), correlation_id="corr-summary-target"
     )
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     review_action = build_pm_quality_review_action(
         target=score_run,
         target_type="SCORE_RUN",
@@ -749,10 +781,11 @@ def test_pm_quality_service_builds_summary_invocation_from_score_run_and_review_
         remediation_due_date=None,
         correlation_id="corr-review-summary",
     )
-    review_action_repository.save_review_action(action=review_action)
+    review_action_repository.save_review_action(tenant_id=TENANT_ID, action=review_action)
 
     summary = build_pm_quality_summary_invocation_from_command(
         command=DpmPmQualitySummaryInvocationCommand(
+            tenant_id=TENANT_ID,
             score_run_id=score_run.score_run_id,
             review_action_id=review_action.review_action_id,
             invocation_state="COMPLETED",
@@ -763,6 +796,7 @@ def test_pm_quality_service_builds_summary_invocation_from_score_run_and_review_
             workflow_run_id="pmq-summary-run-001",
             summary_artifact_ref="pmq-summary-artifact-001",
             summary_content_hash="sha256:pmq-summary",
+            failure_reason_code=None,
             source_refs=[],
             correlation_id="corr-summary",
         ),
@@ -781,7 +815,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
     score_run = _score_run(
         pm_id="pm_001", score=Decimal("91"), correlation_id="corr-summary-missing"
     )
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     review_action = build_pm_quality_review_action(
         target=score_run,
         target_type="SCORE_RUN",
@@ -793,7 +827,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
         remediation_due_date=None,
         correlation_id="corr-review-summary-missing",
     )
-    review_action_repository.save_review_action(action=review_action)
+    review_action_repository.save_review_action(tenant_id=TENANT_ID, action=review_action)
 
     with pytest.raises(
         DpmPmOperatingQualityServiceError,
@@ -801,6 +835,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
     ):
         build_pm_quality_summary_invocation_from_command(
             command=DpmPmQualitySummaryInvocationCommand(
+                tenant_id=TENANT_ID,
                 score_run_id="missing-score-run",
                 review_action_id=review_action.review_action_id,
                 invocation_state="COMPLETED",
@@ -811,6 +846,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
                 workflow_run_id=None,
                 summary_artifact_ref=None,
                 summary_content_hash=None,
+                failure_reason_code=None,
                 source_refs=[],
                 correlation_id="corr-summary-missing",
             ),
@@ -824,6 +860,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
     ):
         build_pm_quality_summary_invocation_from_command(
             command=DpmPmQualitySummaryInvocationCommand(
+                tenant_id=TENANT_ID,
                 score_run_id=score_run.score_run_id,
                 review_action_id="missing-review-action",
                 invocation_state="COMPLETED",
@@ -834,6 +871,7 @@ def test_pm_quality_service_summary_invocation_reports_stable_missing_codes() ->
                 workflow_run_id=None,
                 summary_artifact_ref=None,
                 summary_content_hash=None,
+                failure_reason_code=None,
                 source_refs=[],
                 correlation_id="corr-summary-missing",
             ),
@@ -846,7 +884,7 @@ def test_pm_quality_service_summary_invocation_reports_review_action_hash_mismat
     score_run_repository = InMemoryDpmPmQualityScoreRunRepository()
     review_action_repository = InMemoryDpmPmQualityReviewActionRepository()
     score_run = _score_run(pm_id="pm_001", score=Decimal("91"), correlation_id="corr-summary-hash")
-    score_run_repository.save_score_run(score_run=score_run)
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=score_run)
     review_action = build_pm_quality_review_action(
         target=score_run,
         target_type="SCORE_RUN",
@@ -861,7 +899,10 @@ def test_pm_quality_service_summary_invocation_reports_review_action_hash_mismat
     mismatched_review_action = review_action.model_copy(
         update={"target_content_hash": "sha256:hash-mismatch"}
     )
-    review_action_repository.save_review_action(action=mismatched_review_action)
+    review_action_repository.save_review_action(
+        tenant_id=TENANT_ID,
+        action=mismatched_review_action,
+    )
 
     with pytest.raises(
         DpmPmOperatingQualityServiceError,
@@ -869,6 +910,7 @@ def test_pm_quality_service_summary_invocation_reports_review_action_hash_mismat
     ):
         build_pm_quality_summary_invocation_from_command(
             command=DpmPmQualitySummaryInvocationCommand(
+                tenant_id=TENANT_ID,
                 score_run_id=score_run.score_run_id,
                 review_action_id=mismatched_review_action.review_action_id,
                 invocation_state="COMPLETED",
@@ -879,6 +921,7 @@ def test_pm_quality_service_summary_invocation_reports_review_action_hash_mismat
                 workflow_run_id=None,
                 summary_artifact_ref=None,
                 summary_content_hash=None,
+                failure_reason_code=None,
                 source_refs=[],
                 correlation_id="corr-summary-hash-mismatch",
             ),

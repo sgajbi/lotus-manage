@@ -14,6 +14,7 @@ from src.core.portfolio_memory.wave_collection import wave_memory_events
 
 def collect_portfolio_memory_events(
     *,
+    tenant_id: str | None = None,
     portfolio_id: str,
     repositories: PortfolioMemorySourceRepositories,
     limit: int,
@@ -74,8 +75,13 @@ def collect_portfolio_memory_events(
     )
 
     if repositories.pm_quality_score_run_repository is not None:
+        if tenant_id is None:
+            raise ValueError(
+                "tenant_id is required when portfolio memory includes PM-quality sources"
+            )
         events.extend(
             pm_quality_memory_events(
+                tenant_id=tenant_id,
                 portfolio_id=portfolio_id,
                 score_run_repository=repositories.pm_quality_score_run_repository,
                 review_action_repository=repositories.pm_quality_review_action_repository,

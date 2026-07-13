@@ -11,6 +11,10 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualityReviewActionResponse,
 )
 from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -56,8 +60,10 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_review_action_application_service
         ),
+        identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
     ) -> DpmPmQualityReviewActionListResponse:
         review_actions = application_service.list_review_actions(
+            tenant_id=identity.tenant_id,
             target_type=target_type,
             target_id=target_id,
             policy_id=policy_id,
@@ -91,9 +97,13 @@ def register_pm_quality_review_action_read_routes(router: APIRouter) -> None:
         application_service: DpmPmOperatingQualityApplicationService = Depends(
             get_pm_quality_review_action_application_service
         ),
+        identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
     ) -> DpmPmQualityReviewActionResponse:
         try:
-            review_action = application_service.get_review_action(review_action_id=review_action_id)
+            review_action = application_service.get_review_action(
+                tenant_id=identity.tenant_id,
+                review_action_id=review_action_id,
+            )
         except DpmPmOperatingQualityServiceError as exc:
             raise pm_quality_service_http_exception(exc) from exc
         return DpmPmQualityReviewActionResponse(review_action=review_action)

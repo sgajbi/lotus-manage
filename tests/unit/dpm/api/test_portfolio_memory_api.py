@@ -129,6 +129,16 @@ from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
 PORTFOLIO_ID = "PB_SG_GLOBAL_BAL_001"
+TENANT_ID = "tenant-sg"
+
+
+def _trusted_portfolio_memory_headers() -> dict[str, str]:
+    return {
+        "X-Actor-Id": "ops",
+        "X-Tenant-Id": TENANT_ID,
+        "X-Role": "operator",
+        "X-Correlation-Id": "corr-portfolio-memory",
+    }
 
 
 def teardown_function() -> None:
@@ -257,6 +267,7 @@ def _pm_quality_score_run() -> DpmPmOperatingQualityScoreRun:
         source_version="2026-05-12",
     )
     return DpmPmOperatingQualityScoreRun(
+        tenant_id=TENANT_ID,
         score_run_id="pmq_score_run_001",
         pm_id="pm_001",
         book_id="sg_dpm_book",
@@ -592,17 +603,21 @@ def test_portfolio_memory_composes_proof_pack_wave_handoff_and_outcome_events() 
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     pm_quality_review_repository = InMemoryDpmPmQualityReviewActionRepository()
-    pm_quality_review_repository.save_review_action(action=_pm_quality_review_action())
+    pm_quality_review_repository.save_review_action(
+        tenant_id=TENANT_ID,
+        action=_pm_quality_review_action(),
+    )
     pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     pm_quality_summary_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
 
     memory = build_portfolio_memory(
+        tenant_id=TENANT_ID,
         portfolio_id=PORTFOLIO_ID,
         proof_pack_repository=proof_pack_repository,
         wave_repository=wave_repository,
@@ -1265,12 +1280,15 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     pm_quality_review_repository = InMemoryDpmPmQualityReviewActionRepository()
-    pm_quality_review_repository.save_review_action(action=_pm_quality_review_action())
+    pm_quality_review_repository.save_review_action(
+        tenant_id=TENANT_ID,
+        action=_pm_quality_review_action(),
+    )
     pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     pm_quality_summary_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
@@ -1290,7 +1308,10 @@ def test_portfolio_memory_api_returns_queryable_source_backed_memory() -> None:
     app.openapi_schema = None
 
     with TestClient(app) as client:
-        response = client.get(f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}?limit=20")
+        response = client.get(
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}?limit=20",
+            headers=_trusted_portfolio_memory_headers(),
+        )
         openapi = client.get("/openapi.json")
 
     assert response.status_code == 200
@@ -1595,7 +1616,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
     proof_pack_repository, wave_repository, outcome_repository, mandate_repository = _repositories()
     construction_repository = _construction_repository()
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
     app.dependency_overrides[get_proof_pack_repository] = lambda: proof_pack_repository
@@ -1623,6 +1644,7 @@ def test_portfolio_memory_search_indexes_manage_local_evidence_without_global_di
                 "source_type": "DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF",
                 "limit": 10,
             },
+            headers=_trusted_portfolio_memory_headers(),
         )
         openapi = client.get("/openapi.json")
 
@@ -1903,6 +1925,7 @@ def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> No
                 "source_system": " lotus-manage ",
                 "source_type": " DPM_WAVE_INTERNAL_OPERATIONS_HANDOFF ",
             },
+            headers=_trusted_portfolio_memory_headers(),
         )
         empty_response = client.get(
             "/api/v1/rebalance/portfolio-memory/search",
@@ -1910,10 +1933,12 @@ def test_portfolio_memory_search_normalizes_text_filters_before_matching() -> No
                 "portfolio_ids": "EMPTY_PORTFOLIO",
                 "supportability_state": " EMPTY ",
             },
+            headers=_trusted_portfolio_memory_headers(),
         )
         unsupported_response = client.get(
             "/api/v1/rebalance/portfolio-memory/search",
             params={"event_type": " NOT_A_MEMORY_EVENT "},
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 200
@@ -2024,16 +2049,20 @@ def test_portfolio_memory_event_lookup_returns_exact_event_from_search_hit() -> 
         search_response = client.get(
             "/api/v1/rebalance/portfolio-memory/search",
             params={"event_type": "WAVE_HANDOFF_READY", "source_system": "lotus-manage"},
+            headers=_trusted_portfolio_memory_headers(),
         )
         event_id = search_response.json()["items"][0]["latest_matching_event_id"]
         lookup_response = client.get(
-            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{event_id}"
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{event_id}",
+            headers=_trusted_portfolio_memory_headers(),
         )
         report_ref_lookup_response = client.get(
-            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{report_event_ref.event_id}"
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/{report_event_ref.event_id}",
+            headers=_trusted_portfolio_memory_headers(),
         )
         missing_response = client.get(
-            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/not-a-memory-event"
+            f"/api/v1/rebalance/portfolio-memory/{PORTFOLIO_ID}/events/not-a-memory-event",
+            headers=_trusted_portfolio_memory_headers(),
         )
         openapi = client.get("/openapi.json")
 
@@ -2133,6 +2162,7 @@ def test_portfolio_memory_search_can_include_explicit_portfolio_for_manage_only_
                 "portfolio_ids": PORTFOLIO_ID,
                 "event_type": "CONSTRUCTION_ALTERNATIVE_SELECTED",
             },
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 200
@@ -2177,6 +2207,7 @@ def test_portfolio_memory_search_rejects_unsupported_event_type_filter() -> None
         response = client.get(
             "/api/v1/rebalance/portfolio-memory/search",
             params={"event_type": "NOT_A_MEMORY_EVENT"},
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 422
@@ -2216,6 +2247,7 @@ def test_portfolio_memory_search_rejects_too_many_explicit_portfolio_ids() -> No
                 ("portfolio_ids", "PB_SEARCH_002"),
                 ("source_scan_limit", "1"),
             ],
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 422
@@ -2225,13 +2257,14 @@ def test_portfolio_memory_search_rejects_too_many_explicit_portfolio_ids() -> No
 
 def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_scope() -> None:
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     pm_quality_summary_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
 
     page = search_portfolio_memory(
+        tenant_id=TENANT_ID,
         proof_pack_repository=InMemoryDpmProofPackRepository(),
         wave_repository=InMemoryDpmWaveRepository(),
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
@@ -2267,13 +2300,14 @@ def test_portfolio_memory_search_indexes_pm_quality_summary_invocations_by_book_
 
 def test_portfolio_memory_search_requires_source_system_on_matching_event_type() -> None:
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     pm_quality_summary_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
 
     page = search_portfolio_memory(
+        tenant_id=TENANT_ID,
         proof_pack_repository=InMemoryDpmProofPackRepository(),
         wave_repository=InMemoryDpmWaveRepository(),
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
@@ -2285,6 +2319,7 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
         generated_at=datetime(2026, 5, 21, 10, 0, tzinfo=timezone.utc),
     )
     later_page = search_portfolio_memory(
+        tenant_id=TENANT_ID,
         proof_pack_repository=InMemoryDpmProofPackRepository(),
         wave_repository=InMemoryDpmWaveRepository(),
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
@@ -2314,13 +2349,14 @@ def test_portfolio_memory_search_requires_source_system_on_matching_event_type()
 
 def test_portfolio_memory_search_facets_cover_filtered_results_before_pagination() -> None:
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     pm_quality_summary_repository = InMemoryDpmPmQualitySummaryInvocationRepository()
     pm_quality_summary_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
 
     page = search_portfolio_memory(
+        tenant_id=TENANT_ID,
         proof_pack_repository=InMemoryDpmProofPackRepository(),
         wave_repository=InMemoryDpmWaveRepository(),
         outcome_review_repository=InMemoryDpmOutcomeReviewRepository(),
@@ -2384,6 +2420,7 @@ def test_portfolio_memory_search_indexes_campaign_definition_candidates_without_
         response = client.get(
             "/api/v1/rebalance/portfolio-memory/search",
             params={"event_type": "BULK_REVIEW_CAMPAIGN_DEFINITION"},
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 200
@@ -2533,6 +2570,7 @@ def test_portfolio_memory_search_api_returns_explicit_empty_portfolio_when_reque
                 "portfolio_ids": "EMPTY_PORTFOLIO",
                 "supportability_state": "EMPTY",
             },
+            headers=_trusted_portfolio_memory_headers(),
         )
 
     assert response.status_code == 200

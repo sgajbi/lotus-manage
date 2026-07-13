@@ -8,7 +8,6 @@ from src.api.dependencies import (
 )
 from src.api.routers.pm_operating_quality_command_mapping import score_run_command_from_request
 from src.api.routers.pm_operating_quality_models import (
-    DpmPmOperatingQualityScorePreviewRequest,
     DpmPmOperatingQualityScorePreviewResponse,
 )
 from src.api.routers.pm_operating_quality_http import (
@@ -20,6 +19,7 @@ from src.api.routers.pm_operating_quality_score_run_read_routes import (
     register_pm_quality_score_run_read_routes as register_pm_quality_score_run_read_routes,
 )
 from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedScoreRunRequest,
     score_run_request_with_trusted_identity,
 )
 from src.api.services.pm_operating_quality_service import (
@@ -53,7 +53,7 @@ def register_pm_quality_score_run_command_routes(
         ),
     )
     def preview_pm_operating_quality_score_run_endpoint(
-        request: DpmPmOperatingQualityScorePreviewRequest = Depends(
+        trusted_request: PmQualityTrustedScoreRunRequest = Depends(
             score_run_request_with_trusted_identity
         ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -64,7 +64,8 @@ def register_pm_quality_score_run_command_routes(
         try:
             score_run = application_service.preview_score_run(
                 score_run_command_from_request(
-                    request=request,
+                    tenant_id=trusted_request.identity.tenant_id,
+                    request=trusted_request.request,
                     x_correlation_id=x_correlation_id,
                 )
             )
@@ -92,7 +93,7 @@ def register_pm_quality_score_run_command_routes(
         ),
     )
     def create_pm_operating_quality_score_run_endpoint(
-        request: DpmPmOperatingQualityScorePreviewRequest = Depends(
+        trusted_request: PmQualityTrustedScoreRunRequest = Depends(
             score_run_request_with_trusted_identity
         ),
         x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -103,7 +104,8 @@ def register_pm_quality_score_run_command_routes(
         try:
             score_run = application_service.create_score_run(
                 score_run_command_from_request(
-                    request=request,
+                    tenant_id=trusted_request.identity.tenant_id,
+                    request=trusted_request.request,
                     x_correlation_id=x_correlation_id,
                 )
             )

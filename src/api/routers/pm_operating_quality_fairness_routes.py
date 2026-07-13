@@ -10,7 +10,6 @@ from src.api.routers.pm_operating_quality_command_mapping import (
     fairness_analysis_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
-    DpmPmQualityFairnessPreviewRequest,
     DpmPmQualityFairnessPreviewResponse,
 )
 from src.api.routers.pm_operating_quality_fairness_read_routes import (
@@ -22,6 +21,7 @@ from src.api.routers.pm_operating_quality_http import (
 )
 from src.api.routers.pm_operating_quality_route_parameters import PmQualityCorrelationIdHeader
 from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedFairnessRequest,
     fairness_request_with_trusted_identity,
 )
 from src.api.services.pm_operating_quality_service import (
@@ -54,7 +54,9 @@ router = APIRouter()
     ),
 )
 def preview_pm_quality_fairness_analysis_endpoint(
-    request: DpmPmQualityFairnessPreviewRequest = Depends(fairness_request_with_trusted_identity),
+    trusted_request: PmQualityTrustedFairnessRequest = Depends(
+        fairness_request_with_trusted_identity
+    ),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_preview_application_service
@@ -63,7 +65,8 @@ def preview_pm_quality_fairness_analysis_endpoint(
     try:
         fairness_analysis = application_service.preview_fairness_analysis(
             fairness_analysis_command_from_request(
-                request=request,
+                tenant_id=trusted_request.identity.tenant_id,
+                request=trusted_request.request,
                 x_correlation_id=x_correlation_id,
             )
         )
@@ -90,7 +93,9 @@ def preview_pm_quality_fairness_analysis_endpoint(
     ),
 )
 def create_pm_quality_fairness_analysis_endpoint(
-    request: DpmPmQualityFairnessPreviewRequest = Depends(fairness_request_with_trusted_identity),
+    trusted_request: PmQualityTrustedFairnessRequest = Depends(
+        fairness_request_with_trusted_identity
+    ),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_fairness_application_service
@@ -99,7 +104,8 @@ def create_pm_quality_fairness_analysis_endpoint(
     try:
         fairness_analysis = application_service.create_fairness_analysis(
             fairness_analysis_command_from_request(
-                request=request,
+                tenant_id=trusted_request.identity.tenant_id,
+                request=trusted_request.request,
                 x_correlation_id=x_correlation_id,
             )
         )

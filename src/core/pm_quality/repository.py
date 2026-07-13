@@ -40,12 +40,13 @@ class DpmPmQualityPolicyConflictError(Exception):
 
 
 class DpmPmQualityPolicyRepository(Protocol):
-    def save_policy(self, *, policy: DpmPmOperatingQualityPolicy) -> None:
+    def save_policy(self, *, tenant_id: str, policy: DpmPmOperatingQualityPolicy) -> None:
         """Persist an immutable PM operating quality policy version."""
 
     def get_policy(
         self,
         *,
+        tenant_id: str,
         policy_id: str,
         policy_version: str,
     ) -> DpmPmOperatingQualityPolicy | None:
@@ -54,6 +55,7 @@ class DpmPmQualityPolicyRepository(Protocol):
     def list_policies(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         enabled: bool | None = None,
         as_of_date: str | None = None,
@@ -64,12 +66,13 @@ class DpmPmQualityPolicyRepository(Protocol):
 
 
 class DpmPmQualityScoreRunRepository(Protocol):
-    def save_score_run(self, *, score_run: DpmPmOperatingQualityScoreRun) -> None:
+    def save_score_run(self, *, tenant_id: str, score_run: DpmPmOperatingQualityScoreRun) -> None:
         """Persist an immutable PM operating quality score run."""
 
     def get_score_run(
         self,
         *,
+        tenant_id: str,
         score_run_id: str,
     ) -> DpmPmOperatingQualityScoreRun | None:
         """Return a score run by id, or None when absent."""
@@ -77,6 +80,7 @@ class DpmPmQualityScoreRunRepository(Protocol):
     def list_score_runs(
         self,
         *,
+        tenant_id: str,
         pm_id: str | None = None,
         book_id: str | None = None,
         policy_id: str | None = None,
@@ -89,12 +93,15 @@ class DpmPmQualityScoreRunRepository(Protocol):
 
 
 class DpmPmQualityFairnessAnalysisRepository(Protocol):
-    def save_fairness_analysis(self, *, analysis: DpmPmQualityFairnessAnalysis) -> None:
+    def save_fairness_analysis(
+        self, *, tenant_id: str, analysis: DpmPmQualityFairnessAnalysis
+    ) -> None:
         """Persist an immutable PM operating quality fairness analysis."""
 
     def get_fairness_analysis(
         self,
         *,
+        tenant_id: str,
         fairness_analysis_id: str,
     ) -> DpmPmQualityFairnessAnalysis | None:
         """Return a fairness analysis by id, or None when absent."""
@@ -102,6 +109,7 @@ class DpmPmQualityFairnessAnalysisRepository(Protocol):
     def list_fairness_analyses(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         policy_version: str | None = None,
         as_of_date: str | None = None,
@@ -113,12 +121,13 @@ class DpmPmQualityFairnessAnalysisRepository(Protocol):
 
 
 class DpmPmQualityReviewActionRepository(Protocol):
-    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+    def save_review_action(self, *, tenant_id: str, action: DpmPmQualityReviewAction) -> None:
         """Persist an immutable PM operating-quality review action."""
 
     def get_review_action(
         self,
         *,
+        tenant_id: str,
         review_action_id: str,
     ) -> DpmPmQualityReviewAction | None:
         """Return a review action by id, or None when absent."""
@@ -126,6 +135,7 @@ class DpmPmQualityReviewActionRepository(Protocol):
     def list_review_actions(
         self,
         *,
+        tenant_id: str,
         target_type: str | None = None,
         target_id: str | None = None,
         policy_id: str | None = None,
@@ -138,12 +148,15 @@ class DpmPmQualityReviewActionRepository(Protocol):
 
 
 class DpmPmQualitySummaryInvocationRepository(Protocol):
-    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+    def save_summary_invocation(
+        self, *, tenant_id: str, invocation: DpmPmQualitySummaryInvocation
+    ) -> None:
         """Persist an immutable PM-quality support-summary invocation record."""
 
     def get_summary_invocation(
         self,
         *,
+        tenant_id: str,
         summary_invocation_id: str,
     ) -> DpmPmQualitySummaryInvocation | None:
         """Return a summary invocation by id, or None when absent."""
@@ -151,6 +164,7 @@ class DpmPmQualitySummaryInvocationRepository(Protocol):
     def list_summary_invocations(
         self,
         *,
+        tenant_id: str,
         score_run_id: str | None = None,
         review_action_id: str | None = None,
         policy_id: str | None = None,

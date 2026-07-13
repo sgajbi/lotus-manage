@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from fastapi import Body, Request
 
-from src.api.enterprise_readiness import write_authorization_required
 from src.api.routers.pm_operating_quality_http import (
     PmQualityProblemDetailsException,
     pm_quality_authorization_http_exception,
@@ -24,15 +23,48 @@ class PmQualityTrustedIdentity:
     role: str
 
 
+@dataclass(frozen=True)
+class PmQualityTrustedScoreRunRequest:
+    request: DpmPmOperatingQualityScorePreviewRequest
+    identity: PmQualityTrustedIdentity
+
+
+@dataclass(frozen=True)
+class PmQualityTrustedFairnessRequest:
+    request: DpmPmQualityFairnessPreviewRequest
+    identity: PmQualityTrustedIdentity
+
+
+@dataclass(frozen=True)
+class PmQualityTrustedReviewActionRequest:
+    request: DpmPmQualityReviewActionRequest
+    identity: PmQualityTrustedIdentity
+
+
+@dataclass(frozen=True)
+class PmQualityTrustedSummaryInvocationRequest:
+    request: DpmPmQualitySummaryInvocationRequest
+    identity: PmQualityTrustedIdentity
+
+
+def pm_quality_trusted_identity_required(request: Request) -> PmQualityTrustedIdentity:
+    identity = _trusted_identity_from_request(request)
+    if not identity.actor_id:
+        raise _trusted_identity_problem("PM_QUALITY_TRUSTED_ACTOR_REQUIRED")
+    if not identity.tenant_id:
+        raise _trusted_identity_problem("PM_QUALITY_TRUSTED_TENANT_REQUIRED")
+    if not identity.role:
+        raise _trusted_identity_problem("PM_QUALITY_TRUSTED_ROLE_REQUIRED")
+    return identity
+
+
 def assert_pm_quality_actor_matches_trusted_identity(
     *,
     request: Request,
     actor_id: str,
     tenant_id: str | None = None,
-) -> PmQualityTrustedIdentity | None:
-    if not write_authorization_required(request.method):
-        return None
-    identity = _trusted_identity_from_request(request)
+) -> PmQualityTrustedIdentity:
+    identity = pm_quality_trusted_identity_required(request)
     if actor_id.strip() != identity.actor_id:
         raise _trusted_identity_problem("PM_QUALITY_TRUSTED_ACTOR_MISMATCH")
     if tenant_id is not None and tenant_id.strip() != identity.tenant_id:
@@ -43,46 +75,46 @@ def assert_pm_quality_actor_matches_trusted_identity(
 def score_run_request_with_trusted_identity(
     http_request: Request,
     request: DpmPmOperatingQualityScorePreviewRequest = Body(...),
-) -> DpmPmOperatingQualityScorePreviewRequest:
-    assert_pm_quality_actor_matches_trusted_identity(
+) -> PmQualityTrustedScoreRunRequest:
+    identity = assert_pm_quality_actor_matches_trusted_identity(
         request=http_request,
         actor_id=request.actor_id,
         tenant_id=(request.pm_book_scope.tenant_id if request.pm_book_scope is not None else None),
     )
-    return request
+    return PmQualityTrustedScoreRunRequest(request=request, identity=identity)
 
 
 def fairness_request_with_trusted_identity(
     http_request: Request,
     request: DpmPmQualityFairnessPreviewRequest = Body(...),
-) -> DpmPmQualityFairnessPreviewRequest:
-    assert_pm_quality_actor_matches_trusted_identity(
+) -> PmQualityTrustedFairnessRequest:
+    identity = assert_pm_quality_actor_matches_trusted_identity(
         request=http_request,
         actor_id=request.actor_id,
     )
-    return request
+    return PmQualityTrustedFairnessRequest(request=request, identity=identity)
 
 
 def review_action_request_with_trusted_identity(
     http_request: Request,
     request: DpmPmQualityReviewActionRequest = Body(...),
-) -> DpmPmQualityReviewActionRequest:
-    assert_pm_quality_actor_matches_trusted_identity(
+) -> PmQualityTrustedReviewActionRequest:
+    identity = assert_pm_quality_actor_matches_trusted_identity(
         request=http_request,
         actor_id=request.actor_id,
     )
-    return request
+    return PmQualityTrustedReviewActionRequest(request=request, identity=identity)
 
 
 def summary_invocation_request_with_trusted_identity(
     http_request: Request,
     request: DpmPmQualitySummaryInvocationRequest = Body(...),
-) -> DpmPmQualitySummaryInvocationRequest:
-    assert_pm_quality_actor_matches_trusted_identity(
+) -> PmQualityTrustedSummaryInvocationRequest:
+    identity = assert_pm_quality_actor_matches_trusted_identity(
         request=http_request,
         actor_id=request.requested_by,
     )
-    return request
+    return PmQualityTrustedSummaryInvocationRequest(request=request, identity=identity)
 
 
 def _trusted_identity_from_request(request: Request) -> PmQualityTrustedIdentity:

@@ -25,6 +25,7 @@ from src.infrastructure.proof_packs import InMemoryDpmProofPackRepository
 from src.infrastructure.waves import InMemoryDpmWaveRepository
 from tests.unit.dpm.api.test_portfolio_memory_api import (
     PORTFOLIO_ID,
+    TENANT_ID,
     _pm_quality_score_run,
     _pm_quality_summary_invocation,
     _repositories,
@@ -123,6 +124,7 @@ class _CountingScoreRunRepository(InMemoryDpmPmQualityScoreRunRepository):
     def list_score_runs(
         self,
         *,
+        tenant_id: str,
         pm_id: str | None = None,
         book_id: str | None = None,
         policy_id: str | None = None,
@@ -133,6 +135,7 @@ class _CountingScoreRunRepository(InMemoryDpmPmQualityScoreRunRepository):
     ) -> list[DpmPmOperatingQualityScoreRun]:
         self.list_calls += 1
         return super().list_score_runs(
+            tenant_id=tenant_id,
             pm_id=pm_id,
             book_id=book_id,
             policy_id=policy_id,
@@ -151,6 +154,7 @@ class _CountingSummaryInvocationRepository(InMemoryDpmPmQualitySummaryInvocation
     def list_summary_invocations(
         self,
         *,
+        tenant_id: str,
         score_run_id: str | None = None,
         review_action_id: str | None = None,
         policy_id: str | None = None,
@@ -161,6 +165,7 @@ class _CountingSummaryInvocationRepository(InMemoryDpmPmQualitySummaryInvocation
     ) -> list[DpmPmQualitySummaryInvocation]:
         self.list_calls += 1
         return super().list_summary_invocations(
+            tenant_id=tenant_id,
             score_run_id=score_run_id,
             review_action_id=review_action_id,
             policy_id=policy_id,
@@ -204,10 +209,10 @@ def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> N
     outcome_repository = _CountingOutcomeReviewRepository()
     outcome_repository.save_outcome_review(review=_review(), retention_expires_at=None)
     score_run_repository = _CountingScoreRunRepository()
-    score_run_repository.save_score_run(score_run=_pm_quality_score_run())
+    score_run_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
     summary_invocation_repository = _CountingSummaryInvocationRepository()
     summary_invocation_repository.save_summary_invocation(
-        invocation=_pm_quality_summary_invocation()
+        tenant_id=TENANT_ID, invocation=_pm_quality_summary_invocation()
     )
 
     page = search_portfolio_memory_from_sources(
@@ -220,6 +225,7 @@ def test_search_portfolio_memory_from_sources_batches_source_family_scans() -> N
         ),
         event_type="PM_QUALITY_SUMMARY_INVOCATION",
         generated_at=datetime(2026, 5, 31, 9, 0, tzinfo=timezone.utc),
+        tenant_id=TENANT_ID,
     )
 
     assert page.returned_count == 2

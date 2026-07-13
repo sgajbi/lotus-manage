@@ -74,10 +74,11 @@ class _SummaryInvocationFilters:
 class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._policies: dict[tuple[str, str], DpmPmOperatingQualityPolicy] = {}
+        self._policies: dict[tuple[str, str, str], DpmPmOperatingQualityPolicy] = {}
 
-    def save_policy(self, *, policy: DpmPmOperatingQualityPolicy) -> None:
-        key = (policy.policy_id, policy.policy_version)
+    def save_policy(self, *, tenant_id: str, policy: DpmPmOperatingQualityPolicy) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=policy.tenant_id)
+        key = (tenant_id, policy.policy_id, policy.policy_version)
         with self._lock:
             existing = self._policies.get(key)
             if existing is not None and _policy_hash(existing) != _policy_hash(policy):
@@ -87,16 +88,18 @@ class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
     def get_policy(
         self,
         *,
+        tenant_id: str,
         policy_id: str,
         policy_version: str,
     ) -> DpmPmOperatingQualityPolicy | None:
         with self._lock:
-            policy = self._policies.get((policy_id, policy_version))
+            policy = self._policies.get((tenant_id, policy_id, policy_version))
             return deepcopy(policy) if policy is not None else None
 
     def list_policies(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         enabled: bool | None = None,
         as_of_date: str | None = None,
@@ -105,7 +108,9 @@ class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
     ) -> list[DpmPmOperatingQualityPolicy]:
         with self._lock:
             page = _list_policies(
-                policies=list(self._policies.values()),
+                policies=[
+                    policy for policy in self._policies.values() if policy.tenant_id == tenant_id
+                ],
                 filters=_PolicyFilters(
                     policy_id=policy_id,
                     enabled=enabled,
@@ -120,27 +125,30 @@ class InMemoryDpmPmQualityPolicyRepository(DpmPmQualityPolicyRepository):
 class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._score_runs: dict[str, DpmPmOperatingQualityScoreRun] = {}
+        self._score_runs: dict[tuple[str, str], DpmPmOperatingQualityScoreRun] = {}
 
-    def save_score_run(self, *, score_run: DpmPmOperatingQualityScoreRun) -> None:
+    def save_score_run(self, *, tenant_id: str, score_run: DpmPmOperatingQualityScoreRun) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=score_run.tenant_id)
         with self._lock:
-            existing = self._score_runs.get(score_run.score_run_id)
+            existing = self._score_runs.get((tenant_id, score_run.score_run_id))
             if existing is not None and existing.content_hash != score_run.content_hash:
                 raise DpmPmQualityScoreRunConflictError("PM_QUALITY_SCORE_RUN_IMMUTABLE_CONFLICT")
-            self._score_runs[score_run.score_run_id] = deepcopy(score_run)
+            self._score_runs[(tenant_id, score_run.score_run_id)] = deepcopy(score_run)
 
     def get_score_run(
         self,
         *,
+        tenant_id: str,
         score_run_id: str,
     ) -> DpmPmOperatingQualityScoreRun | None:
         with self._lock:
-            score_run = self._score_runs.get(score_run_id)
+            score_run = self._score_runs.get((tenant_id, score_run_id))
             return deepcopy(score_run) if score_run is not None else None
 
     def list_score_runs(
         self,
         *,
+        tenant_id: str,
         pm_id: str | None = None,
         book_id: str | None = None,
         policy_id: str | None = None,
@@ -151,7 +159,11 @@ class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
     ) -> list[DpmPmOperatingQualityScoreRun]:
         with self._lock:
             page = _list_score_runs(
-                score_runs=list(self._score_runs.values()),
+                score_runs=[
+                    score_run
+                    for score_run in self._score_runs.values()
+                    if score_run.tenant_id == tenant_id
+                ],
                 filters=_ScoreRunFilters(
                     pm_id=pm_id,
                     book_id=book_id,
@@ -168,29 +180,34 @@ class InMemoryDpmPmQualityScoreRunRepository(DpmPmQualityScoreRunRepository):
 class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysisRepository):
     def __init__(self) -> None:
         self._lock = Lock()
-        self._analyses: dict[str, DpmPmQualityFairnessAnalysis] = {}
+        self._analyses: dict[tuple[str, str], DpmPmQualityFairnessAnalysis] = {}
 
-    def save_fairness_analysis(self, *, analysis: DpmPmQualityFairnessAnalysis) -> None:
+    def save_fairness_analysis(
+        self, *, tenant_id: str, analysis: DpmPmQualityFairnessAnalysis
+    ) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=analysis.tenant_id)
         with self._lock:
-            existing = self._analyses.get(analysis.fairness_analysis_id)
+            existing = self._analyses.get((tenant_id, analysis.fairness_analysis_id))
             if existing is not None and existing.content_hash != analysis.content_hash:
                 raise DpmPmQualityFairnessAnalysisConflictError(
                     "PM_QUALITY_FAIRNESS_ANALYSIS_IMMUTABLE_CONFLICT"
                 )
-            self._analyses[analysis.fairness_analysis_id] = deepcopy(analysis)
+            self._analyses[(tenant_id, analysis.fairness_analysis_id)] = deepcopy(analysis)
 
     def get_fairness_analysis(
         self,
         *,
+        tenant_id: str,
         fairness_analysis_id: str,
     ) -> DpmPmQualityFairnessAnalysis | None:
         with self._lock:
-            analysis = self._analyses.get(fairness_analysis_id)
+            analysis = self._analyses.get((tenant_id, fairness_analysis_id))
             return deepcopy(analysis) if analysis is not None else None
 
     def list_fairness_analyses(
         self,
         *,
+        tenant_id: str,
         policy_id: str | None = None,
         policy_version: str | None = None,
         as_of_date: str | None = None,
@@ -200,7 +217,11 @@ class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysi
     ) -> list[DpmPmQualityFairnessAnalysis]:
         with self._lock:
             page = _list_fairness_analyses(
-                analyses=list(self._analyses.values()),
+                analyses=[
+                    analysis
+                    for analysis in self._analyses.values()
+                    if analysis.tenant_id == tenant_id
+                ],
                 filters=_FairnessAnalysisFilters(
                     policy_id=policy_id,
                     policy_version=policy_version,
@@ -221,36 +242,40 @@ class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionReposit
         fairness_analysis_repository: DpmPmQualityFairnessAnalysisRepository | None = None,
     ) -> None:
         self._lock = Lock()
-        self._actions: dict[str, DpmPmQualityReviewAction] = {}
+        self._actions: dict[tuple[str, str], DpmPmQualityReviewAction] = {}
         self._score_run_repository = score_run_repository
         self._fairness_analysis_repository = fairness_analysis_repository
 
-    def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+    def save_review_action(self, *, tenant_id: str, action: DpmPmQualityReviewAction) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=action.tenant_id)
         _validate_review_action_parent(
+            tenant_id=tenant_id,
             action=action,
             score_run_repository=self._score_run_repository,
             fairness_analysis_repository=self._fairness_analysis_repository,
         )
         with self._lock:
-            existing = self._actions.get(action.review_action_id)
+            existing = self._actions.get((tenant_id, action.review_action_id))
             if existing is not None and existing.content_hash != action.content_hash:
                 raise DpmPmQualityReviewActionConflictError(
                     "PM_QUALITY_REVIEW_ACTION_IMMUTABLE_CONFLICT"
                 )
-            self._actions[action.review_action_id] = deepcopy(action)
+            self._actions[(tenant_id, action.review_action_id)] = deepcopy(action)
 
     def get_review_action(
         self,
         *,
+        tenant_id: str,
         review_action_id: str,
     ) -> DpmPmQualityReviewAction | None:
         with self._lock:
-            action = self._actions.get(review_action_id)
+            action = self._actions.get((tenant_id, review_action_id))
             return deepcopy(action) if action is not None else None
 
     def list_review_actions(
         self,
         *,
+        tenant_id: str,
         target_type: str | None = None,
         target_id: str | None = None,
         policy_id: str | None = None,
@@ -261,7 +286,9 @@ class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionReposit
     ) -> list[DpmPmQualityReviewAction]:
         with self._lock:
             page = _list_review_actions(
-                actions=list(self._actions.values()),
+                actions=[
+                    action for action in self._actions.values() if action.tenant_id == tenant_id
+                ],
                 filters=_ReviewActionFilters(
                     target_type=target_type,
                     target_id=target_id,
@@ -283,36 +310,42 @@ class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocat
         review_action_repository: DpmPmQualityReviewActionRepository | None = None,
     ) -> None:
         self._lock = Lock()
-        self._invocations: dict[str, DpmPmQualitySummaryInvocation] = {}
+        self._invocations: dict[tuple[str, str], DpmPmQualitySummaryInvocation] = {}
         self._score_run_repository = score_run_repository
         self._review_action_repository = review_action_repository
 
-    def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+    def save_summary_invocation(
+        self, *, tenant_id: str, invocation: DpmPmQualitySummaryInvocation
+    ) -> None:
+        _ensure_record_tenant(tenant_id=tenant_id, record_tenant_id=invocation.tenant_id)
         _validate_summary_invocation_parents(
+            tenant_id=tenant_id,
             invocation=invocation,
             score_run_repository=self._score_run_repository,
             review_action_repository=self._review_action_repository,
         )
         with self._lock:
-            existing = self._invocations.get(invocation.summary_invocation_id)
+            existing = self._invocations.get((tenant_id, invocation.summary_invocation_id))
             if existing is not None and existing.content_hash != invocation.content_hash:
                 raise DpmPmQualitySummaryInvocationConflictError(
                     "PM_QUALITY_SUMMARY_INVOCATION_IMMUTABLE_CONFLICT"
                 )
-            self._invocations[invocation.summary_invocation_id] = deepcopy(invocation)
+            self._invocations[(tenant_id, invocation.summary_invocation_id)] = deepcopy(invocation)
 
     def get_summary_invocation(
         self,
         *,
+        tenant_id: str,
         summary_invocation_id: str,
     ) -> DpmPmQualitySummaryInvocation | None:
         with self._lock:
-            invocation = self._invocations.get(summary_invocation_id)
+            invocation = self._invocations.get((tenant_id, summary_invocation_id))
             return deepcopy(invocation) if invocation is not None else None
 
     def list_summary_invocations(
         self,
         *,
+        tenant_id: str,
         score_run_id: str | None = None,
         review_action_id: str | None = None,
         policy_id: str | None = None,
@@ -323,7 +356,11 @@ class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocat
     ) -> list[DpmPmQualitySummaryInvocation]:
         with self._lock:
             page = _list_summary_invocations(
-                invocations=list(self._invocations.values()),
+                invocations=[
+                    invocation
+                    for invocation in self._invocations.values()
+                    if invocation.tenant_id == tenant_id
+                ],
                 filters=_SummaryInvocationFilters(
                     score_run_id=score_run_id,
                     review_action_id=review_action_id,
@@ -532,6 +569,7 @@ def _list_summary_invocations(
 
 def _validate_review_action_parent(
     *,
+    tenant_id: str,
     action: DpmPmQualityReviewAction,
     score_run_repository: DpmPmQualityScoreRunRepository | None,
     fairness_analysis_repository: DpmPmQualityFairnessAnalysisRepository | None,
@@ -540,12 +578,15 @@ def _validate_review_action_parent(
     if action.target_type == "SCORE_RUN":
         if score_run_repository is None:
             return
-        target = score_run_repository.get_score_run(score_run_id=action.target_id)
+        target = score_run_repository.get_score_run(
+            tenant_id=tenant_id,
+            score_run_id=action.target_id,
+        )
     elif action.target_type == "FAIRNESS_ANALYSIS":
         if fairness_analysis_repository is None:
             return
         target = fairness_analysis_repository.get_fairness_analysis(
-            fairness_analysis_id=action.target_id
+            tenant_id=tenant_id, fairness_analysis_id=action.target_id
         )
     else:
         raise DpmPmQualityReviewActionIntegrityError(
@@ -565,6 +606,7 @@ def _validate_review_action_parent(
 
 def _validate_summary_invocation_parents(
     *,
+    tenant_id: str,
     invocation: DpmPmQualitySummaryInvocation,
     score_run_repository: DpmPmQualityScoreRunRepository | None,
     review_action_repository: DpmPmQualityReviewActionRepository | None,
@@ -572,7 +614,10 @@ def _validate_summary_invocation_parents(
     score_run = (
         None
         if score_run_repository is None
-        else score_run_repository.get_score_run(score_run_id=invocation.score_run_id)
+        else score_run_repository.get_score_run(
+            tenant_id=tenant_id,
+            score_run_id=invocation.score_run_id,
+        )
     )
     if score_run_repository is not None and score_run is None:
         raise DpmPmQualitySummaryInvocationIntegrityError(
@@ -591,7 +636,7 @@ def _validate_summary_invocation_parents(
         None
         if review_action_repository is None
         else review_action_repository.get_review_action(
-            review_action_id=invocation.review_action_id
+            tenant_id=tenant_id, review_action_id=invocation.review_action_id
         )
     )
     if review_action_repository is not None and review_action is None:
@@ -609,6 +654,13 @@ def _validate_summary_invocation_parents(
         raise DpmPmQualitySummaryInvocationIntegrityError(
             "PM_QUALITY_SUMMARY_INVOCATION_REVIEW_ACTION_MISMATCH"
         )
+
+
+def _ensure_record_tenant(*, tenant_id: str, record_tenant_id: str) -> None:
+    if not tenant_id.strip():
+        raise ValueError("PM_QUALITY_TENANT_REQUIRED")
+    if record_tenant_id != tenant_id:
+        raise ValueError("PM_QUALITY_TENANT_MISMATCH")
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:

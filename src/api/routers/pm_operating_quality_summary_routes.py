@@ -10,7 +10,6 @@ from src.api.routers.pm_operating_quality_command_mapping import (
     summary_invocation_command_from_request,
 )
 from src.api.routers.pm_operating_quality_models import (
-    DpmPmQualitySummaryInvocationRequest,
     DpmPmQualitySummaryInvocationResponse,
 )
 from src.api.routers.pm_operating_quality_http import (
@@ -22,6 +21,7 @@ from src.api.routers.pm_operating_quality_summary_read_routes import (
     router as summary_read_router,
 )
 from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedSummaryInvocationRequest,
     summary_invocation_request_with_trusted_identity,
 )
 from src.api.services.pm_operating_quality_service import (
@@ -56,7 +56,7 @@ router = APIRouter()
     ),
 )
 def preview_pm_quality_summary_invocation_endpoint(
-    request: DpmPmQualitySummaryInvocationRequest = Depends(
+    trusted_request: PmQualityTrustedSummaryInvocationRequest = Depends(
         summary_invocation_request_with_trusted_identity
     ),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -67,7 +67,8 @@ def preview_pm_quality_summary_invocation_endpoint(
     try:
         invocation = application_service.preview_summary_invocation(
             summary_invocation_command_from_request(
-                request=request,
+                tenant_id=trusted_request.identity.tenant_id,
+                request=trusted_request.request,
                 x_correlation_id=x_correlation_id,
             )
         )
@@ -92,7 +93,7 @@ def preview_pm_quality_summary_invocation_endpoint(
     ),
 )
 def create_pm_quality_summary_invocation_endpoint(
-    request: DpmPmQualitySummaryInvocationRequest = Depends(
+    trusted_request: PmQualityTrustedSummaryInvocationRequest = Depends(
         summary_invocation_request_with_trusted_identity
     ),
     x_correlation_id: PmQualityCorrelationIdHeader = None,
@@ -103,7 +104,8 @@ def create_pm_quality_summary_invocation_endpoint(
     try:
         invocation = application_service.create_summary_invocation(
             summary_invocation_command_from_request(
-                request=request,
+                tenant_id=trusted_request.identity.tenant_id,
+                request=trusted_request.request,
                 x_correlation_id=x_correlation_id,
             )
         )

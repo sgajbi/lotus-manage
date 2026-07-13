@@ -103,6 +103,7 @@ _NORMALIZED_WORST_STATE: dict[str, PmQualityState] = {
 
 def build_pm_operating_quality_score_run(
     *,
+    tenant_id: str,
     pm_id: str,
     book_id: str | None,
     as_of_date: str,
@@ -124,6 +125,7 @@ def build_pm_operating_quality_score_run(
     if not policy.enabled:
         return _disabled_score_run(
             pm_id=pm_id,
+            tenant_id=tenant_id,
             book_id=book_id,
             as_of_date=as_of_date,
             policy=policy,
@@ -149,6 +151,7 @@ def build_pm_operating_quality_score_run(
 
     return _score_run(
         pm_id=pm_id,
+        tenant_id=tenant_id,
         book_id=book_id,
         as_of_date=as_of_date,
         policy=policy,
@@ -168,6 +171,7 @@ def build_pm_operating_quality_score_run(
 def _disabled_score_run(
     *,
     pm_id: str,
+    tenant_id: str,
     book_id: str | None,
     as_of_date: str,
     policy: DpmPmOperatingQualityPolicy,
@@ -179,6 +183,7 @@ def _disabled_score_run(
 ) -> DpmPmOperatingQualityScoreRun:
     return _score_run(
         pm_id=pm_id,
+        tenant_id=tenant_id,
         book_id=book_id,
         as_of_date=as_of_date,
         policy=policy,
@@ -620,6 +625,7 @@ def _score_reason_codes(
 def _score_run(
     *,
     pm_id: str,
+    tenant_id: str,
     book_id: str | None,
     as_of_date: str,
     policy: DpmPmOperatingQualityPolicy,
@@ -642,6 +648,7 @@ def _score_run(
     )
     hash_payload = _score_run_hash_payload(
         pm_id=pm_id,
+        tenant_id=tenant_id,
         book_id=book_id,
         as_of_date=as_of_date,
         policy=policy,
@@ -656,6 +663,7 @@ def _score_run(
     )
     content_hash = _content_hash(hash_payload)
     return DpmPmOperatingQualityScoreRun(
+        tenant_id=tenant_id,
         score_run_id=f"pmq_{uuid5(NAMESPACE_URL, content_hash).hex[:16]}",
         pm_id=pm_id,
         book_id=book_id,
@@ -697,6 +705,7 @@ def _score_run_source_refs(
 
 def _score_run_hash_payload(
     *,
+    tenant_id: str,
     pm_id: str,
     book_id: str | None,
     as_of_date: str,
@@ -711,6 +720,7 @@ def _score_run_hash_payload(
     source_refs: list[DpmOutcomeSourceRef],
 ) -> dict[str, Any]:
     return {
+        "tenant_id": tenant_id,
         "pm_id": pm_id,
         "book_id": book_id,
         "as_of_date": as_of_date,

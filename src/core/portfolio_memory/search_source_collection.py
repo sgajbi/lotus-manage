@@ -36,6 +36,7 @@ class PortfolioMemorySearchSourceEvents:
 
 def collect_portfolio_memory_search_events(
     *,
+    tenant_id: str | None = None,
     repositories: PortfolioMemorySourceRepositories,
     portfolio_ids: set[str],
     limit: int,
@@ -82,6 +83,7 @@ def collect_portfolio_memory_search_events(
         limit=limit,
     )
     _collect_pm_quality_events(
+        tenant_id=tenant_id,
         repositories=repositories,
         candidates=candidates,
         events_by_portfolio_id=events_by_portfolio_id,
@@ -275,6 +277,7 @@ def _collect_campaign_definition_events(
 
 def _collect_pm_quality_events(
     *,
+    tenant_id: str | None,
     repositories: PortfolioMemorySourceRepositories,
     candidates: set[str],
     events_by_portfolio_id: dict[str, list[DpmPortfolioMemoryEvent]],
@@ -282,15 +285,22 @@ def _collect_pm_quality_events(
 ) -> None:
     if repositories.pm_quality_score_run_repository is None:
         return
-    score_runs = repositories.pm_quality_score_run_repository.list_score_runs(limit=limit)
+    if tenant_id is None:
+        raise ValueError("tenant_id is required when portfolio memory includes PM-quality sources")
+    score_runs = repositories.pm_quality_score_run_repository.list_score_runs(
+        tenant_id=tenant_id,
+        limit=limit,
+    )
     score_runs_by_id = {score_run.score_run_id: score_run for score_run in score_runs}
     review_actions_by_score_run_id = _pm_quality_review_actions_by_score_run_id(
         repositories=repositories,
+        tenant_id=tenant_id,
         score_runs_by_id=score_runs_by_id,
         limit=limit,
     )
     summary_invocations_by_score_run_id = _pm_quality_summary_invocations_by_score_run_id(
         repositories=repositories,
+        tenant_id=tenant_id,
         score_runs_by_id=score_runs_by_id,
         limit=limit,
     )
@@ -319,6 +329,7 @@ def _collect_pm_quality_events(
 def _pm_quality_review_actions_by_score_run_id(
     *,
     repositories: PortfolioMemorySourceRepositories,
+    tenant_id: str,
     score_runs_by_id: dict[str, DpmPmOperatingQualityScoreRun],
     limit: int,
 ) -> dict[str, list[DpmPmQualityReviewAction]]:
@@ -326,6 +337,7 @@ def _pm_quality_review_actions_by_score_run_id(
         return {}
     actions_by_score_run_id: dict[str, list[DpmPmQualityReviewAction]] = defaultdict(list)
     for action in repositories.pm_quality_review_action_repository.list_review_actions(
+        tenant_id=tenant_id,
         target_type="SCORE_RUN",
         limit=limit,
     ):
@@ -337,6 +349,7 @@ def _pm_quality_review_actions_by_score_run_id(
 def _pm_quality_summary_invocations_by_score_run_id(
     *,
     repositories: PortfolioMemorySourceRepositories,
+    tenant_id: str,
     score_runs_by_id: dict[str, DpmPmOperatingQualityScoreRun],
     limit: int,
 ) -> dict[str, list[DpmPmQualitySummaryInvocation]]:
@@ -344,7 +357,7 @@ def _pm_quality_summary_invocations_by_score_run_id(
         return {}
     invocations_by_score_run_id: dict[str, list[DpmPmQualitySummaryInvocation]] = defaultdict(list)
     invocations = repositories.pm_quality_summary_invocation_repository.list_summary_invocations(
-        limit=limit
+        tenant_id=tenant_id, limit=limit
     )
     for invocation in invocations:
         if invocation.score_run_id in score_runs_by_id:

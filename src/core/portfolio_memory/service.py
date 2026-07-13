@@ -41,6 +41,7 @@ from src.core.portfolio_memory.search_source_collection import (
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories as _build_portfolio_memory_source_repositories,
+    require_pm_quality_tenant_id as _require_pm_quality_tenant_id,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
@@ -49,6 +50,7 @@ from src.core.waves.repository import DpmWaveRepository
 
 def build_portfolio_memory(
     *,
+    tenant_id: str | None = None,
     portfolio_id: str,
     proof_pack_repository: DpmProofPackRepository,
     wave_repository: DpmWaveRepository,
@@ -65,6 +67,7 @@ def build_portfolio_memory(
     """Compose manage-owned portfolio memory without recalculating source truth."""
 
     return build_portfolio_memory_from_sources(
+        tenant_id=tenant_id,
         portfolio_id=portfolio_id,
         repositories=_build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
@@ -84,6 +87,7 @@ def build_portfolio_memory(
 
 def build_portfolio_memory_from_sources(
     *,
+    tenant_id: str | None = None,
     portfolio_id: str,
     repositories: PortfolioMemorySourceRepositories,
     limit: int = PORTFOLIO_MEMORY_READ_LIMIT_DEFAULT,
@@ -93,7 +97,12 @@ def build_portfolio_memory_from_sources(
 
     limit = _validate_portfolio_memory_read_limit(limit=limit)
     generated_at = generated_at or datetime.now(timezone.utc)
+    pm_quality_tenant_id = _require_pm_quality_tenant_id(
+        tenant_id=tenant_id,
+        repositories=repositories,
+    )
     events = _collect_portfolio_memory_events(
+        tenant_id=pm_quality_tenant_id,
         portfolio_id=portfolio_id,
         repositories=repositories,
         limit=limit,
@@ -108,6 +117,7 @@ def build_portfolio_memory_from_sources(
 
 def search_portfolio_memory(
     *,
+    tenant_id: str | None = None,
     proof_pack_repository: DpmProofPackRepository,
     wave_repository: DpmWaveRepository,
     outcome_review_repository: DpmOutcomeReviewRepository,
@@ -130,6 +140,7 @@ def search_portfolio_memory(
     """Build a bounded Manage-local index over persisted portfolio-memory evidence."""
 
     return search_portfolio_memory_from_sources(
+        tenant_id=tenant_id,
         repositories=_build_portfolio_memory_source_repositories(
             proof_pack_repository=proof_pack_repository,
             wave_repository=wave_repository,
@@ -155,6 +166,7 @@ def search_portfolio_memory(
 
 def search_portfolio_memory_from_sources(
     *,
+    tenant_id: str | None = None,
     repositories: PortfolioMemorySourceRepositories,
     portfolio_ids: list[str] | None = None,
     event_type: str | None = None,
@@ -179,7 +191,12 @@ def search_portfolio_memory_from_sources(
         offset=offset,
         source_scan_limit=source_scan_limit,
     )
+    pm_quality_tenant_id = _require_pm_quality_tenant_id(
+        tenant_id=tenant_id,
+        repositories=repositories,
+    )
     search_sources = _collect_portfolio_memory_search_events(
+        tenant_id=pm_quality_tenant_id,
         repositories=repositories,
         portfolio_ids=search_query.explicit_candidate_ids,
         limit=search_query.source_scan_limit,

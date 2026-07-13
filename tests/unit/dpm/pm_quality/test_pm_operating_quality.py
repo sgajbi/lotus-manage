@@ -28,8 +28,12 @@ from src.core.pm_quality import summary_history
 from tests.unit.infrastructure.test_outcome_review_repository import _review
 
 
+TENANT_ID = "tenant-sg"
+
+
 def _enabled_policy() -> DpmPmOperatingQualityPolicy:
     return DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         enabled=True,
@@ -146,6 +150,7 @@ def _ready_score_run(
     state: str = "READY",
 ) -> DpmPmOperatingQualityScoreRun:
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id=pm_id,
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -196,6 +201,7 @@ def _ready_score_run(
 
 def test_pm_operating_quality_score_run_is_disabled_by_default() -> None:
     policy = DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_disabled",
         policy_version="2026.05",
         enabled=False,
@@ -204,6 +210,7 @@ def test_pm_operating_quality_score_run_is_disabled_by_default() -> None:
     )
 
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_001",
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -736,6 +743,7 @@ def test_pm_operating_quality_score_run_uses_configured_policy_and_source_refs()
     )
 
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_001",
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -978,6 +986,7 @@ def test_pm_quality_score_run_hash_payload_serializes_optional_materialization()
     )
 
     payload = scoring._score_run_hash_payload(
+        tenant_id=TENANT_ID,
         pm_id="pm_001",
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -1002,6 +1011,7 @@ def test_pm_quality_score_run_hash_payload_serializes_optional_materialization()
 
 def test_pm_operating_quality_materializes_peer_group_and_lookback_scope() -> None:
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_001",
         book_id="sg_dpm_book",
         as_of_date="2026-05-12",
@@ -1113,6 +1123,7 @@ def test_pm_operating_quality_lookback_window_fails_closed_for_stale_evidence() 
         scoring.DpmPmQualityValidationError, match="PM_QUALITY_EVIDENCE_OUTSIDE_LOOKBACK_WINDOW"
     ):
         build_pm_operating_quality_score_run(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -1143,6 +1154,7 @@ def test_pm_operating_quality_lookback_window_fails_closed_for_stale_evidence() 
 
 def test_pm_operating_quality_score_run_blocks_when_required_evidence_is_missing() -> None:
     policy = DpmPmOperatingQualityPolicy(
+        tenant_id=TENANT_ID,
         policy_id="pmq_missing",
         policy_version="2026.05",
         enabled=True,
@@ -1159,6 +1171,7 @@ def test_pm_operating_quality_score_run_blocks_when_required_evidence_is_missing
     )
 
     score_run = build_pm_operating_quality_score_run(
+        tenant_id=TENANT_ID,
         pm_id="pm_001",
         book_id=None,
         as_of_date="2026-05-12",
@@ -1189,6 +1202,7 @@ def test_pm_operating_quality_score_run_blocks_when_required_evidence_is_missing
 def test_pm_operating_quality_policy_rejects_prohibited_uses_and_date_mismatch() -> None:
     with pytest.raises(ValueError, match="prohibited use"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_bad",
             policy_version="2026.05",
             enabled=True,
@@ -1200,6 +1214,7 @@ def test_pm_operating_quality_policy_rejects_prohibited_uses_and_date_mismatch()
         )
     with pytest.raises(ValueError, match="prohibited use"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_bad_normalized_use",
             policy_version="2026.05",
             enabled=True,
@@ -1266,6 +1281,7 @@ def test_pm_quality_scope_policy_models_reject_unproven_or_invalid_scope() -> No
 def test_pm_quality_policy_model_rejects_threshold_weight_and_indicator_edges() -> None:
     with pytest.raises(ValueError, match="ready_threshold"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_bad_threshold",
             policy_version="2026.05",
             enabled=False,
@@ -1276,6 +1292,7 @@ def test_pm_quality_policy_model_rejects_threshold_weight_and_indicator_edges() 
         )
     with pytest.raises(ValueError, match="at least one configured weight"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_no_weights",
             policy_version="2026.05",
             enabled=True,
@@ -1286,6 +1303,7 @@ def test_pm_quality_policy_model_rejects_threshold_weight_and_indicator_edges() 
         )
     with pytest.raises(ValueError, match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_missing_governance",
             policy_version="2026.05",
             enabled=True,
@@ -1296,6 +1314,7 @@ def test_pm_quality_policy_model_rejects_threshold_weight_and_indicator_edges() 
         )
     with pytest.raises(ValueError, match="indicators must be unique"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_duplicate_weight",
             policy_version="2026.05",
             enabled=True,
@@ -1315,6 +1334,7 @@ def test_pm_quality_lookback_window_requires_dated_valid_evidence() -> None:
         match="PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED",
     ):
         build_pm_operating_quality_score_run(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -1386,6 +1406,7 @@ def test_pm_quality_lookback_window_fails_closed_for_mixed_undated_evidence() ->
         match="PM_QUALITY_LOOKBACK_WINDOW_EVIDENCE_DATE_REQUIRED",
     ):
         build_pm_operating_quality_score_run(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -1415,6 +1436,7 @@ def test_pm_quality_lookback_window_fails_closed_for_invalid_source_version_date
         match="PM_QUALITY_EVIDENCE_AS_OF_DATE_INVALID",
     ):
         build_pm_operating_quality_score_run(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id="sg_dpm_book",
             as_of_date="2026-05-12",
@@ -1536,6 +1558,7 @@ def test_pm_quality_fairness_analysis_rejects_invalid_inputs() -> None:
 
     with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED"):
         build_pm_operating_quality_fairness_analysis(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             as_of_date="2026-05-12",
@@ -1549,6 +1572,7 @@ def test_pm_quality_fairness_analysis_rejects_invalid_inputs() -> None:
         DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID"
     ):
         build_pm_operating_quality_fairness_analysis(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             as_of_date="2026-05-12",
@@ -1563,6 +1587,7 @@ def test_pm_quality_fairness_analysis_rejects_invalid_inputs() -> None:
         match="PM_QUALITY_FAIRNESS_SPREAD_THRESHOLD_INVALID",
     ):
         build_pm_operating_quality_fairness_analysis(
+            tenant_id=TENANT_ID,
             policy_id="pmq_sg_dpm",
             policy_version="2026.05",
             as_of_date="2026-05-12",
@@ -1607,6 +1632,7 @@ def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
 
     with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_SEGMENTS_REQUIRED"):
         fairness_analysis._validate_fairness_analysis_inputs(
+            tenant_id=TENANT_ID,
             segments=[segment],
             minimum_segment_score_run_count=1,
             maximum_average_score_spread=Decimal("10"),
@@ -1615,6 +1641,7 @@ def test_fairness_analysis_input_helper_rejects_invalid_thresholds() -> None:
         DpmPmQualityValidationError, match="PM_QUALITY_FAIRNESS_MINIMUM_COUNT_INVALID"
     ):
         fairness_analysis._validate_fairness_analysis_inputs(
+            tenant_id=TENANT_ID,
             segments=[segment, segment],
             minimum_segment_score_run_count=0,
             maximum_average_score_spread=Decimal("10"),
@@ -1713,6 +1740,7 @@ def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postu
     )
 
     blocked = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         as_of_date="2026-05-12",
@@ -1723,6 +1751,7 @@ def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postu
         correlation_id="corr-fairness-blocked",
     )
     pending = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         as_of_date="2026-05-12",
@@ -1733,6 +1762,7 @@ def test_pm_quality_fairness_analysis_classifies_blocked_pending_and_ready_postu
         correlation_id="corr-fairness-pending",
     )
     ready = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         as_of_date="2026-05-12",
@@ -1841,6 +1871,7 @@ def test_pm_quality_fairness_analysis_blocks_segments_below_minimum_count() -> N
     )
 
     analysis = build_pm_operating_quality_fairness_analysis(
+        tenant_id=TENANT_ID,
         policy_id="pmq_sg_dpm",
         policy_version="2026.05",
         as_of_date="2026-05-12",
@@ -1887,6 +1918,7 @@ def test_pm_quality_governance_evidence_rejects_stale_or_unauthorized_policy() -
 
     with pytest.raises(ValueError, match="PM_QUALITY_GOVERNANCE_APPROVAL_REQUIRED"):
         DpmPmOperatingQualityPolicy(
+            tenant_id=TENANT_ID,
             policy_id="pmq_missing_governance",
             policy_version="2026.05",
             enabled=True,
@@ -1897,6 +1929,7 @@ def test_pm_quality_governance_evidence_rejects_stale_or_unauthorized_policy() -
 
     with pytest.raises(DpmPmQualityValidationError, match="PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH"):
         build_pm_operating_quality_score_run(
+            tenant_id=TENANT_ID,
             pm_id="pm_001",
             book_id=None,
             as_of_date="2026-05-13",

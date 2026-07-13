@@ -11,6 +11,10 @@ from src.api.routers.pm_operating_quality_models import (
     DpmPmQualitySummaryInvocationResponse,
 )
 from src.api.routers.pm_operating_quality_temporal_filters import pm_quality_as_of_date_filter
+from src.api.routers.pm_operating_quality_trusted_identity import (
+    PmQualityTrustedIdentity,
+    pm_quality_trusted_identity_required,
+)
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
@@ -55,8 +59,10 @@ def list_pm_quality_summary_invocations_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_summary_invocation_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmQualitySummaryInvocationListResponse:
     invocations = application_service.list_summary_invocations(
+        tenant_id=identity.tenant_id,
         score_run_id=score_run_id,
         review_action_id=review_action_id,
         policy_id=policy_id,
@@ -92,10 +98,11 @@ def get_pm_quality_summary_invocation_endpoint(
     application_service: DpmPmOperatingQualityApplicationService = Depends(
         get_pm_quality_summary_invocation_application_service
     ),
+    identity: PmQualityTrustedIdentity = Depends(pm_quality_trusted_identity_required),
 ) -> DpmPmQualitySummaryInvocationResponse:
     try:
         invocation = application_service.get_summary_invocation(
-            summary_invocation_id=summary_invocation_id
+            tenant_id=identity.tenant_id, summary_invocation_id=summary_invocation_id
         )
     except DpmPmOperatingQualityServiceError as exc:
         raise pm_quality_service_http_exception(exc) from exc

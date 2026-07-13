@@ -18,10 +18,12 @@ from src.api.services.pm_operating_quality_service import (
 
 def score_run_command_from_request(
     *,
+    tenant_id: str,
     request: DpmPmOperatingQualityScorePreviewRequest,
     x_correlation_id: str | None,
 ) -> DpmPmQualityScoreRunCommand:
     return DpmPmQualityScoreRunCommand(
+        tenant_id=tenant_id,
         pm_id=request.pm_id,
         book_id=request.book_id,
         as_of_date=request.as_of_date,
@@ -34,7 +36,7 @@ def score_run_command_from_request(
         correlation_id=x_correlation_id or request.actor_id,
         book_scope=(
             DpmPmQualityBookScopeCommand(
-                tenant_id=request.pm_book_scope.tenant_id,
+                tenant_id=tenant_id,
                 booking_center_code=request.pm_book_scope.booking_center_code,
                 portfolio_types=list(request.pm_book_scope.portfolio_types),
                 include_inactive=request.pm_book_scope.include_inactive,
@@ -47,10 +49,12 @@ def score_run_command_from_request(
 
 def fairness_analysis_command_from_request(
     *,
+    tenant_id: str,
     request: DpmPmQualityFairnessPreviewRequest,
     x_correlation_id: str | None,
 ) -> DpmPmQualityFairnessAnalysisCommand:
     return DpmPmQualityFairnessAnalysisCommand(
+        tenant_id=tenant_id,
         policy_id=request.policy_id,
         policy_version=request.policy_version,
         as_of_date=request.as_of_date,
@@ -73,10 +77,12 @@ def fairness_analysis_command_from_request(
 
 def review_action_command_from_request(
     *,
+    tenant_id: str,
     request: DpmPmQualityReviewActionRequest,
     x_correlation_id: str | None,
 ) -> DpmPmQualityReviewActionCommand:
     return DpmPmQualityReviewActionCommand(
+        tenant_id=tenant_id,
         target_type=request.target_type,
         target_id=request.target_id,
         action_type=request.action_type,
@@ -91,10 +97,12 @@ def review_action_command_from_request(
 
 def summary_invocation_command_from_request(
     *,
+    tenant_id: str,
     request: DpmPmQualitySummaryInvocationRequest,
     x_correlation_id: str | None,
 ) -> DpmPmQualitySummaryInvocationCommand:
     return DpmPmQualitySummaryInvocationCommand(
+        tenant_id=tenant_id,
         score_run_id=request.score_run_id,
         review_action_id=request.review_action_id,
         invocation_state=request.invocation_state,

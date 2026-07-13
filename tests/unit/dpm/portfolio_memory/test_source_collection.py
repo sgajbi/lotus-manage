@@ -9,6 +9,7 @@ from src.infrastructure.pm_quality import InMemoryDpmPmQualityScoreRunRepository
 from src.infrastructure.waves import InMemoryDpmBulkReviewCampaignDefinitionRepository
 from tests.unit.dpm.api.test_portfolio_memory_api import (
     PORTFOLIO_ID,
+    TENANT_ID,
     _campaign_definition,
     _construction_repository,
     _pm_quality_score_run,
@@ -43,7 +44,7 @@ def test_collect_portfolio_memory_events_includes_optional_source_families() -> 
     campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
     campaign_repository.save_definition(definition=_campaign_definition())
     pm_quality_repository = InMemoryDpmPmQualityScoreRunRepository()
-    pm_quality_repository.save_score_run(score_run=_pm_quality_score_run())
+    pm_quality_repository.save_score_run(tenant_id=TENANT_ID, score_run=_pm_quality_score_run())
 
     events = collect_portfolio_memory_events(
         portfolio_id=PORTFOLIO_ID,
@@ -57,6 +58,7 @@ def test_collect_portfolio_memory_events_includes_optional_source_families() -> 
             pm_quality_score_run_repository=pm_quality_repository,
         ),
         limit=100,
+        tenant_id=TENANT_ID,
     )
 
     event_types = {event.event_type for event in events}
