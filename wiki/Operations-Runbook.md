@@ -51,6 +51,12 @@ scope unless a future source-owning service publishes and certifies that capabil
 - `/metrics` exposes `lotus_manage_core_resolver_total` with only bounded `operation`, `outcome`,
   `supportability_state`, and `reason` labels for future stateful core resolver calls. It must not
   include portfolio ids, source payload identifiers, request hashes, or raw upstream error text.
+- `/metrics` exposes `lotus_manage_source_http_request_total` and
+  `lotus_manage_source_http_request_duration_seconds_bucket` with only bounded `source_service`,
+  `method`, and `outcome` labels, plus `lotus_manage_source_http_retry_total` with only bounded
+  `source_service`, `method`, and retry `reason` labels for Core, Risk, and Advise source-owner
+  HTTP adapters. Labels must not include portfolio ids, PM ids, source refs, correlation ids,
+  payload values, URLs, or raw upstream errors.
 - `/metrics` exposes `lotus_manage_execution_total` with bounded `operation`, `input_mode`,
   `outcome`, and `result_status` labels for simulate, analyze, and async-analyze execution
   surfaces. Use it to monitor blocked, replayed, accepted, partial-failure, and error posture
@@ -91,6 +97,31 @@ scope unless a future source-owning service publishes and certifies that capabil
 - Capability consumers should gate this posture on
   `manage.observability.action_register_supportability` from `/api/v1/integration/capabilities` or
   `/api/v1/integration/capabilities`.
+
+## Source HTTP transport operations
+
+Core, Risk, and Advise source-owner adapters use shared bounded HTTP clients owned by the
+application runtime. Operators should treat source HTTP transport failures as dependency or
+capacity posture, not as Manage calculation defects.
+
+First checks:
+
+| Check | Signal | Operator decision |
+| --- | --- | --- |
+| Shared transport configuration | `DPM_SOURCE_HTTP_MAX_CONNECTIONS`, `DPM_SOURCE_HTTP_MAX_KEEPALIVE_CONNECTIONS`, `DPM_SOURCE_HTTP_CONNECT_TIMEOUT_SECONDS`, `DPM_SOURCE_HTTP_POOL_TIMEOUT_SECONDS` plus `DPM_CORE_HTTP_*`, `DPM_RISK_HTTP_*`, and `DPM_ADVISE_HTTP_*` overrides | Confirm pool, connect, and acquisition timeouts are intentionally bounded for the runtime tier. |
+| Request outcomes | `lotus_manage_source_http_request_total{source_service,method,outcome}` | Escalate `unavailable` to the source owner or network/runtime owner. Treat `incomplete`, `rejected`, or `invalid_response` as source-contract or caller-contract issues. |
+| Request latency | `lotus_manage_source_http_request_duration_seconds_bucket{source_service,method,outcome}` | Use p95 latency by source service and method to distinguish slow dependencies, pool acquisition pressure, and normal source-product failures. |
+| Retry pressure | `lotus_manage_source_http_retry_total{source_service,method,reason}` | Sustained `transport_error` or `transient_status` growth indicates downstream instability or pool pressure. Do not add blind write retries; verify idempotency and source contract first. |
+| Core resolver posture | `lotus_manage_core_resolver_total` and source-specific Problem Details or domain errors | Use source HTTP metrics to distinguish transport pressure from source-product completeness failures. |
+
+Privacy and support rules:
+
+- Do not add portfolio ids, PM ids, source refs, source URLs, correlation ids, payload values, raw
+  upstream errors, or client data to metric labels, log messages, dashboards, or support notes.
+- Use the existing product-safe error code (`DPM_CORE_*`, `LOTUS_RISK_*`, `LOTUS_ADVISE_*`) and the
+  bounded `source_service` label to route incidents.
+- Runtime shutdown closes shared transports. If a test or diagnostic manually constructs injected
+  fake clients, that test owns its fake lifecycle.
 
 ## PM-quality lifecycle operations
 

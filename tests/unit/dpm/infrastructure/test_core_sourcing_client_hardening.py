@@ -4,6 +4,7 @@ from decimal import Decimal
 import httpx
 import pytest
 
+import src.api.observability as observability_module
 from src.infrastructure.core_sourcing.client import (
     DpmCoreResolverClient,
     DpmCoreResolverConfig,
@@ -165,6 +166,107 @@ def test_source_product_retry_helper_maps_transient_status_then_payload() -> Non
 
     assert payload == {"source": "ready"}
     assert calls["count"] == 2
+
+
+def test_source_product_retry_helper_records_bounded_source_http_metrics(monkeypatch) -> None:
+    captured: list[tuple[str, dict[str, str]]] = []
+    calls = 0
+
+    class _Counter:
+        def __init__(self, name: str) -> None:
+            self.name = name
+
+        def labels(self, **labels):
+            captured.append((self.name, labels))
+            return self
+
+        def inc(self) -> None:
+            return None
+
+    class _Histogram:
+        def labels(self, **labels):
+            captured.append(("duration", labels))
+            return self
+
+        def observe(self, value: float) -> None:
+            assert value >= 0.0
+            return None
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        assert request.headers["X-Correlation-Id"] == "corr-source"
+        if calls == 1:
+            raise httpx.ConnectTimeout("temporary timeout")
+        if calls == 2:
+            return httpx.Response(503, json={"detail": "retry"})
+        return httpx.Response(200, json={"source": "ready"})
+
+    monkeypatch.setattr(
+        observability_module,
+        "SOURCE_HTTP_REQUEST_TOTAL",
+        _Counter("request"),
+    )
+    monkeypatch.setattr(
+        observability_module,
+        "SOURCE_HTTP_RETRY_TOTAL",
+        _Counter("retry"),
+    )
+    monkeypatch.setattr(
+        observability_module,
+        "SOURCE_HTTP_REQUEST_DURATION_SECONDS",
+        _Histogram(),
+    )
+
+    payload = _source_product_payload_with_retries(
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        attempts=3,
+        method="get",
+        url="https://core.example.test/integration/source",
+        selector={"portfolio_id": "PB_SG_GLOBAL_BAL_001"},
+        headers={"X-Correlation-Id": "corr-source"},
+        unavailable_code="UNAVAILABLE",
+        incomplete_code="INCOMPLETE",
+        source_service="lotus-core",
+    )
+
+    assert payload == {"source": "ready"}
+    assert captured == [
+        (
+            "retry",
+            {
+                "source_service": "lotus-core",
+                "method": "get",
+                "reason": "transport_error",
+            },
+        ),
+        (
+            "retry",
+            {
+                "source_service": "lotus-core",
+                "method": "get",
+                "reason": "transient_status",
+            },
+        ),
+        (
+            "request",
+            {
+                "source_service": "lotus-core",
+                "method": "get",
+                "outcome": "success",
+            },
+        ),
+        (
+            "duration",
+            {
+                "source_service": "lotus-core",
+                "method": "get",
+                "outcome": "success",
+            },
+        ),
+    ]
+    assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
+    assert "corr-source" not in json.dumps(captured)
 
 
 def test_source_product_retry_helper_exhausts_transient_status_safely() -> None:

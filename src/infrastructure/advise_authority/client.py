@@ -122,6 +122,7 @@ def _post_with_retries(
             unavailable_error="LOTUS_ADVISE_UNAVAILABLE",
             rejected_error="LOTUS_ADVISE_TACTICAL_HOUSE_VIEW_COHORT_REJECTED",
             invalid_response_error="LOTUS_ADVISE_INVALID_RESPONSE",
+            source_service="lotus-advise",
         )
     except AuthorityHttpError as exc:
         raise LotusAdviseAuthorityUnavailableError(exc.code) from exc

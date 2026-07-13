@@ -61,6 +61,7 @@ from src.api.services.rebalance_simulation_service import (
     execute_batch_analysis as _execute_batch_analysis,
 )
 from src.core.rebalance.engine import run_simulation
+from src.infrastructure.source_http_clients import close_shared_source_http_clients
 
 
 class HealthStatusResponse(BaseModel):
@@ -109,7 +110,10 @@ _READY_RESPONSES: dict[int | str, dict[str, Any]] = {
 @asynccontextmanager
 async def _app_lifespan(_app: FastAPI) -> AsyncIterator[None]:
     validate_persistence_profile_guardrails()
-    yield
+    try:
+        yield
+    finally:
+        close_shared_source_http_clients()
 
 
 app = FastAPI(

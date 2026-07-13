@@ -230,6 +230,16 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "OUTCOME_REVIEW_SUPPORTABILITY_TOTAL",
         _Counter("outcome"),
     )
+    monkeypatch.setattr(
+        observability_module,
+        "SOURCE_HTTP_REQUEST_TOTAL",
+        _Counter("source_http_request"),
+    )
+    monkeypatch.setattr(
+        observability_module,
+        "SOURCE_HTTP_RETRY_TOTAL",
+        _Counter("source_http_retry"),
+    )
 
     observability_module.record_async_operation(
         event="submit/PB_SG_GLOBAL_BAL_001",
@@ -272,6 +282,16 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         surface="rebalance/outcome-reviews/supportability/PB_SG_GLOBAL_BAL_001",
         supportability_state="client:private-bank-client",
         reason="request_hash:sha256:secret",
+    )
+    observability_module.record_source_http_request(
+        source_service="lotus-core/PB_SG_GLOBAL_BAL_001",
+        method="PATCH",
+        outcome="timeout_for_client",
+    )
+    observability_module.record_source_http_retry(
+        source_service="lotus-risk/PB_SG_GLOBAL_BAL_001",
+        method="DELETE",
+        reason="raw:http://risk.internal/private",
     )
 
     assert captured["async"] == {
@@ -316,10 +336,21 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "supportability_state": "error",
         "reason": "outcome_review_error",
     }
+    assert captured["source_http_request"] == {
+        "source_service": "unknown",
+        "method": "post",
+        "outcome": "error",
+    }
+    assert captured["source_http_retry"] == {
+        "source_service": "unknown",
+        "method": "post",
+        "reason": "transport_error",
+    }
     assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
     assert "postgresql://user:secret" not in json.dumps(captured)
     assert "sha256:secret" not in json.dumps(captured)
     assert "reviewer_001" not in json.dumps(captured)
+    assert "risk.internal" not in json.dumps(captured)
 
 
 def test_pm_quality_http_metric_uses_bounded_route_family(monkeypatch):
