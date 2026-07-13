@@ -3,6 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from src.api.services import wave_service
+from src.api.services.wave_campaign_launch_membership import (
+    build_campaign_definition_launch_portfolios,
+)
+from src.core.mandate_repository import DpmMandateRepository
 from src.core.waves import (
     CampaignApprovalDecisionType,
     CampaignAssignmentActionType,
@@ -25,10 +30,13 @@ from src.core.waves import (
     DpmBulkReviewCampaignDefinitionPreviewReadiness,
     DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
+    DpmRebalanceWave,
+    DpmWaveRepository,
     DpmWaveSourceRef,
     build_bulk_review_campaign_definition_approval_decision_page,
     build_bulk_review_campaign_definition_assignment_action_page,
     build_bulk_review_campaign_definition_assignment_task_page,
+    build_bulk_review_campaign_definition_launch_command,
     build_bulk_review_campaign_definition_launch_history_page,
     build_bulk_review_campaign_definition_launch_package,
     build_bulk_review_campaign_definition_maker_checker_control_page,
@@ -37,6 +45,7 @@ from src.core.waves import (
     open_bulk_review_campaign_definition_assignment_task,
     record_bulk_review_campaign_definition_approval_decision,
     record_bulk_review_campaign_definition_assignment_action,
+    record_bulk_review_campaign_definition_launch,
     record_bulk_review_campaign_definition_maker_checker_control,
     transition_bulk_review_campaign_definition_assignment_task,
 )
@@ -180,8 +189,24 @@ class DpmCampaignDefinitionMakerCheckerControlCommand:
 
 
 @dataclass(frozen=True)
+class DpmCampaignDefinitionLaunchCommand:
+    tenant_id: str
+    campaign_id: str
+    campaign_version: str
+    requested_as_of_date: str
+    actor_id: str
+    correlation_id: str | None
+
+
+@dataclass(frozen=True)
 class DpmCampaignDefinitionWriteResult:
     definition: DpmBulkReviewCampaignDefinition
+    replay: bool
+
+
+@dataclass(frozen=True)
+class DpmCampaignDefinitionLaunchResult:
+    wave: DpmRebalanceWave
     replay: bool
 
 
@@ -687,3 +712,54 @@ class DpmWaveCampaignApplicationService:
             limit=limit,
             offset=offset,
         )
+
+    def launch_campaign_definition(
+        self,
+        *,
+        command: DpmCampaignDefinitionLaunchCommand,
+        mandate_repository: DpmMandateRepository,
+        wave_repository: DpmWaveRepository,
+    ) -> DpmCampaignDefinitionLaunchResult:
+        definition = self.get_campaign_definition(
+            tenant_id=command.tenant_id,
+            campaign_id=command.campaign_id,
+            campaign_version=command.campaign_version,
+        )
+        launch_command = build_bulk_review_campaign_definition_launch_command(
+            definition=definition,
+            requested_as_of_date=command.requested_as_of_date,
+            actor_id=command.actor_id,
+            correlation_id=command.correlation_id,
+        )
+        wave_request = launch_command.create_request
+        portfolios = build_campaign_definition_launch_portfolios(
+            definition=definition,
+            actor_id=wave_request.actor_id,
+            requested_as_of_date=wave_request.as_of_date,
+        )
+        wave, replay = wave_service.create_wave(
+            trigger_type=wave_request.trigger_type,
+            trigger_id=wave_request.trigger_id,
+            rationale=wave_request.rationale,
+            as_of_date=wave_request.as_of_date,
+            actor_id=wave_request.actor_id,
+            correlation_id=launch_command.correlation_id,
+            portfolios=portfolios,
+            idempotency_key=launch_command.idempotency_key,
+            mandate_repository=mandate_repository,
+            wave_repository=wave_repository,
+        )
+        launched_definition = record_bulk_review_campaign_definition_launch(
+            definition=definition,
+            wave_id=wave.wave_id,
+            launched_by=wave_request.actor_id,
+            requested_as_of_date=wave_request.as_of_date,
+            correlation_id=launch_command.correlation_id,
+            idempotency_key=launch_command.idempotency_key,
+        )
+        if launched_definition.content_hash != definition.content_hash:
+            self.campaign_definition_repository.record_definition_launch(
+                definition=launched_definition,
+                expected_content_hash=definition.content_hash,
+            )
+        return DpmCampaignDefinitionLaunchResult(wave=wave, replay=replay)

@@ -305,6 +305,7 @@ def test_campaign_definition_routes_depend_on_application_service_boundary() -> 
         Path("src/api/routers/wave_campaign_workflow_automation_routes.py"),
         Path("src/api/routers/wave_campaign_workflow_overview_routes.py"),
         Path("src/api/routers/wave_campaign_launch_package_routes.py"),
+        Path("src/api/routers/wave_campaign_launch_routes.py"),
         Path("src/api/routers/wave_campaign_audit_read_routes.py"),
         Path("src/api/routers/wave_campaign_approval_decision_evidence_routes.py"),
         Path("src/api/routers/wave_campaign_assignment_action_evidence_routes.py"),
