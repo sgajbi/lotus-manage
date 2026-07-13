@@ -2,13 +2,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_definition_read_http import (
-    get_campaign_definition_response,
-    list_campaign_definitions_response,
-)
-from src.api.routers.wave_campaign_definition_write_http import (
-    put_campaign_definition_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_not_found_http_exception,
+    campaign_definition_value_http_exception,
 )
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
@@ -17,6 +15,11 @@ from src.api.routers.wave_campaign_trusted_context import (
 from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionPage,
     DpmBulkReviewCampaignDefinitionRequest,
+)
+from src.api.services.wave_campaign_application import (
+    DpmCampaignDefinitionCreateCommand,
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
 )
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionAsOfDateQuery,
@@ -29,7 +32,7 @@ from src.api.routers.wave_route_parameters import (
 )
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionRepository,
+    DpmBulkReviewCampaignDefinitionConflictError,
 )
 
 
@@ -54,17 +57,32 @@ def put_bulk_review_campaign_definition(
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return put_campaign_definition_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
+    try:
+        return application_service.create_campaign_definition(
+            command=DpmCampaignDefinitionCreateCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                display_name=request.display_name,
+                status=request.status,
+                as_of_date=request.as_of_date,
+                rationale=request.rationale,
+                eligible_portfolio_types=request.eligible_portfolio_types,
+                candidates=request.candidates,
+                governance=request.governance,
+                source_refs=request.source_refs,
+                created_by=request.created_by,
+                correlation_id=request.correlation_id,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
 
 
 @router.get(
@@ -81,18 +99,23 @@ def list_bulk_review_campaign_definitions(
     limit: CampaignReadModelLimitQuery = 50,
     offset: CampaignReadModelOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionPage:
-    return list_campaign_definitions_response(
+    items = application_service.list_campaign_definitions(
         tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,
         limit=limit,
         offset=offset,
-        repository=repository,
+    )
+    return DpmBulkReviewCampaignDefinitionPage(
+        items=items,
+        limit=limit,
+        offset=offset,
+        count=len(items),
     )
 
 
@@ -107,13 +130,15 @@ def get_bulk_review_campaign_definition(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return get_campaign_definition_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        repository=repository,
-    )
+    try:
+        return application_service.get_campaign_definition(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc
