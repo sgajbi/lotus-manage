@@ -10,6 +10,7 @@ from src.infrastructure.advise_authority import (
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
 )
+from src.api.services.wave_campaign_application import DpmWaveCampaignApplicationService
 from src.core.construction.repository import ConstructionRepository
 from src.core.mandate_repository import DpmMandateRepository
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -413,6 +414,18 @@ def get_campaign_definition_repository() -> DpmBulkReviewCampaignDefinitionRepos
             )
         return _POSTGRES_CAMPAIGN_DEFINITION_REPOSITORY
     return _CAMPAIGN_DEFINITION_REPOSITORY
+
+
+def get_wave_campaign_application_service(
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> DpmWaveCampaignApplicationService:
+    """Return bulk-review campaign workflow use cases."""
+
+    return DpmWaveCampaignApplicationService(
+        campaign_definition_repository=campaign_definition_repository
+    )
 
 
 def get_risk_authority_client() -> LotusRiskAuthorityClient | None:

@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_definition_lifecycle_http import (
-    retire_campaign_definition_response,
-    supersede_campaign_definition_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_conflict_http_exception,
+    campaign_definition_lifecycle_http_exception,
+    campaign_definition_not_found_http_exception,
+    campaign_definition_value_http_exception,
 )
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
@@ -15,13 +17,22 @@ from src.api.routers.wave_campaign_models import (
     DpmBulkReviewCampaignDefinitionRetirementRequest,
     DpmBulkReviewCampaignDefinitionSupersessionRequest,
 )
+from src.api.services.wave_campaign_application import (
+    DpmCampaignDefinitionRetireCommand,
+    DpmCampaignDefinitionSupersedeCommand,
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
+)
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
     CampaignDefinitionVersionPath,
 )
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
-    DpmBulkReviewCampaignDefinitionRepository,
+    DpmBulkReviewCampaignDefinitionConflictError,
+)
+from src.core.waves.campaign_definition_lifecycle import (
+    DpmBulkReviewCampaignDefinitionLifecycleError,
 )
 
 
@@ -45,17 +56,29 @@ def retire_bulk_review_campaign_definition(
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionRetirementRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return retire_campaign_definition_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
+    try:
+        return application_service.retire_campaign_definition(
+            command=DpmCampaignDefinitionRetireCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                retired_by=request.retired_by,
+                retirement_reason=request.retirement_reason,
+                correlation_id=request.correlation_id,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
 
 
 @router.post(
@@ -76,14 +99,27 @@ def supersede_bulk_review_campaign_definition(
     campaign_version: CampaignDefinitionVersionPath,
     request: DpmBulkReviewCampaignDefinitionSupersessionRequest,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinition:
-    return supersede_campaign_definition_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        request=request,
-        repository=repository,
-    )
+    try:
+        return application_service.supersede_campaign_definition(
+            command=DpmCampaignDefinitionSupersedeCommand(
+                tenant_id=trusted_context.tenant_id,
+                campaign_id=campaign_id,
+                campaign_version=campaign_version,
+                replacement_version=request.superseded_by_campaign_version,
+                superseded_by=request.superseded_by,
+                supersession_reason=request.supersession_reason,
+                correlation_id=request.correlation_id,
+            )
+        )
+    except DpmBulkReviewCampaignDefinitionConflictError as exc:
+        raise campaign_definition_conflict_http_exception(exc) from exc
+    except DpmBulkReviewCampaignDefinitionLifecycleError as exc:
+        raise campaign_definition_lifecycle_http_exception(exc) from exc
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc
+    except ValueError as exc:
+        raise campaign_definition_value_http_exception(exc) from exc
