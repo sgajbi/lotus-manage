@@ -13,10 +13,28 @@
   "source_repository": "lotus-manage",
   "serving_routes": [
     "/api/v1/rebalance/supportability/summary",
-    "/api/v1/rebalance/idea-action-intake",
     "/api/v1/rebalance/runs/{rebalance_run_id}/artifact",
     "/api/v1/rebalance/runs/{rebalance_run_id}/workflow",
     "/api/v1/rebalance/workflow/decisions"
+  ],
+  "route_foundations": [
+    {
+      "route": "POST /api/v1/rebalance/idea-action-intake",
+      "contract_ref": "contracts/idea-action-intake/lotus-manage-idea-action-intake.v1.json",
+      "supportability_status": "not_certified",
+      "supported_feature_promoted": false,
+      "route_existence_proven": true,
+      "action_register_created": false,
+      "rebalance_execution_authority_granted": false,
+      "order_created": false,
+      "client_publication_authorized": false,
+      "certification_blockers": [
+        "rebalance_execution_authority_remains_lotus_manage",
+        "action_register_persistence_not_certified",
+        "oms_execution_not_certified",
+        "client_publication_authority_blocked"
+      ]
+    }
   ],
   "runtime_source": {
     "emission_mode": "deterministic_local_management_fixture",

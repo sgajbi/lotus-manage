@@ -29,10 +29,11 @@
   source-safe `lotus-idea` conversion-intent handoff evidence and returns a not-certified
   acknowledgement. It is route-existence proof only; it does not create action-register records,
   approve rebalances, create orders, route OMS instructions, contact clients, authorize
-  publication, or promote a supported feature.
-- Implemented route families:
+  publication, or promote a supported feature. The product declaration and trust snapshot keep this
+  route under `route_foundations`, not under certified `current_routes` or unblocked
+  `serving_routes`.
+- Certified implemented route families:
    - `/api/v1/rebalance/supportability/summary`
-   - `/api/v1/rebalance/idea-action-intake`
    - `/api/v1/rebalance/runs/{rebalance_run_id}/artifact`
    - `/api/v1/rebalance/runs/{rebalance_run_id}/workflow`
    - `/api/v1/rebalance/workflow/decisions`

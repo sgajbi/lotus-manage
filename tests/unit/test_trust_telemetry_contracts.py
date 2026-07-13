@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from pathlib import Path
 
 import pytest
@@ -19,6 +20,9 @@ PRODUCT_DECLARATION_PATH = (
 )
 TELEMETRY_PATH = (
     ROOT / "contracts" / "trust-telemetry" / "portfolio-action-register.telemetry.v1.json"
+)
+IDEA_ACTION_INTAKE_CONTRACT_PATH = (
+    ROOT / "contracts" / "idea-action-intake" / "lotus-manage-idea-action-intake.v1.json"
 )
 
 EXPECTED_TRUST_POSTURES = {
@@ -96,6 +100,37 @@ def test_repo_native_trust_telemetry_validation_passes_when_platform_is_availabl
     assert validate_repo_native_trust_telemetry() == []
 
 
+def test_repo_native_trust_telemetry_validation_rejects_certified_route_foundation_leak(
+    tmp_path: Path,
+) -> None:
+    if not platform_validation_dependencies_available():
+        pytest.skip("sibling lotus-platform trust telemetry validator is not available")
+
+    telemetry_dir = tmp_path / "trust-telemetry"
+    telemetry_dir.mkdir()
+    for source_path in LOCAL_TELEMETRY_DIR.glob("*.json"):
+        shutil.copy2(source_path, telemetry_dir / source_path.name)
+
+    product_declaration_path = tmp_path / "lotus-manage-products.v1.json"
+    shutil.copy2(PRODUCT_DECLARATION_PATH, product_declaration_path)
+    portfolio_snapshot_path = telemetry_dir / "portfolio-action-register.telemetry.v1.json"
+    portfolio_snapshot = json.loads(portfolio_snapshot_path.read_text(encoding="utf-8"))
+    portfolio_snapshot["serving_routes"].append("/api/v1/rebalance/idea-action-intake")
+    portfolio_snapshot_path.write_text(json.dumps(portfolio_snapshot), encoding="utf-8")
+
+    issues = validate_repo_native_trust_telemetry(
+        telemetry_dir,
+        product_declaration_path=product_declaration_path,
+    )
+
+    assert any(
+        "not-certified route foundation /api/v1/rebalance/idea-action-intake "
+        "must not be listed in serving_routes"
+        in issue
+        for issue in issues
+    )
+
+
 def test_trust_telemetry_snapshot_matches_portfolio_action_register_declaration() -> None:
     product = _load_product_declaration()["products"][0]
     telemetry = _load_telemetry_snapshot()
@@ -109,6 +144,8 @@ def test_trust_telemetry_snapshot_matches_portfolio_action_register_declaration(
         telemetry["lineage"]["evidence_access_class"]
         == product["lineage_policy"]["evidence_access_class_ref"]
     )
+    assert telemetry["serving_routes"] == product["current_routes"]
+    assert telemetry["route_foundations"] == product["route_foundations"]
     assert telemetry["evidence"]["validation_lanes"] == ["feature", "pr-merge"]
 
 
@@ -135,6 +172,7 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
         assert telemetry["product_name"] == product["product_name"]
         assert telemetry["product_version"] == product["product_version"]
         assert telemetry["serving_routes"] == product["current_routes"]
+        assert telemetry.get("route_foundations", []) == product.get("route_foundations", [])
         assert (
             telemetry["freshness"]["freshness_class"]
             == (product["freshness_policy"]["freshness_class"])
@@ -178,3 +216,36 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
                 telemetry["data_quality_status"],
                 telemetry["observed_trust_metadata"]["data_quality_status"],
             }
+
+
+def test_not_certified_route_foundations_do_not_inherit_unblocked_serving_route_posture() -> None:
+    products = _load_product_declaration()["products"]
+    snapshots = _load_telemetry_snapshots_by_product_id()
+    idea_intake_contract = json.loads(IDEA_ACTION_INTAKE_CONTRACT_PATH.read_text(encoding="utf-8"))
+
+    for product in products:
+        product_id = _product_id(product)
+        _, telemetry = snapshots[product_id]
+        certified_routes = set(product.get("current_routes", []))
+        telemetry_serving_routes = set(telemetry["serving_routes"])
+        assert telemetry_serving_routes == certified_routes
+
+        for route_foundation in product.get("route_foundations", []):
+            route = route_foundation["route"].removeprefix("POST ")
+            has_blockers = bool(route_foundation.get("certification_blockers"))
+            is_not_certified = route_foundation.get("supportability_status") == "not_certified"
+            is_not_promoted = route_foundation.get("supported_feature_promoted") is False
+            if is_not_certified or is_not_promoted or has_blockers:
+                assert route not in certified_routes
+                assert route not in telemetry_serving_routes
+                assert route_foundation in telemetry.get("route_foundations", [])
+
+    portfolio_snapshot = snapshots["lotus-manage:PortfolioActionRegister:v1"][1]
+    [foundation] = portfolio_snapshot["route_foundations"]
+    assert foundation["route"] == idea_intake_contract["target_route"]
+    assert foundation["supportability_status"] == idea_intake_contract["supportability_status"]
+    assert (
+        foundation["supported_feature_promoted"]
+        is idea_intake_contract["supported_feature_promoted"]
+    )
+    assert foundation["certification_blockers"] == idea_intake_contract["certification_blockers"]

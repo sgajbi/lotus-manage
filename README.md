@@ -542,7 +542,8 @@ Main runtime surfaces come from [src/api/main.py](src/api/main.py):
   `/api/v1/rebalance/idea-action-intake` accepts source-safe `lotus-idea`
   conversion-intent handoff evidence and returns a not-certified acknowledgement. It does not
   create action-register records, approve rebalances, create orders, route OMS instructions,
-  contact clients, authorize publication, or promote a supported feature.
+  contact clients, authorize publication, or promote a supported feature. It is represented as
+  route-foundation evidence, not as a certified `PortfolioActionRegister:v1` serving route.
 - policy-pack supportability
   `/api/v1/rebalance/policies/*`
 - mandate digital twin and health

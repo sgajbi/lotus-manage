@@ -16,6 +16,9 @@ fails on missing, unexpected, stale-route, freshness, metadata, lineage, artifac
 certification-limit drift. Active catalog visibility is not the same as certification readiness:
 product-specific posture expectations may require a blocked or operator-only fixture until linked
 certification blockers are resolved and runtime trust evidence is regenerated.
+Not-certified route foundations, including `POST /api/v1/rebalance/idea-action-intake`, may be
+carried as explicit `route_foundations` evidence but must not appear in unblocked
+customer-consumable `serving_routes`.
 
 Validate with:
 
