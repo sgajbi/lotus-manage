@@ -1719,6 +1719,29 @@ def test_pm_quality_tenant_scope_migration_declares_composite_tenant_keys() -> N
     assert [token for token in required_tokens if token not in migration] == []
 
 
+def test_pm_quality_tenant_scope_migration_backfills_payload_tenant_ids() -> None:
+    migration = (
+        ROOT
+        / "src"
+        / "infrastructure"
+        / "postgres_migrations"
+        / "dpm"
+        / "0017_pm_quality_tenant_scope.sql"
+    ).read_text(encoding="utf-8")
+
+    column_backfill = (
+        "SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), "
+        "'legacy-default')"
+    )
+    payload_backfill = (
+        "SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', "
+        "to_jsonb(tenant_id), true)::text"
+    )
+
+    assert migration.count(column_backfill) == 5
+    assert migration.count(payload_backfill) == 5
+
+
 def test_in_memory_pm_quality_repository_persists_immutable_score_runs() -> None:
     repository = InMemoryDpmPmQualityScoreRunRepository()
     score_run = _score_run()

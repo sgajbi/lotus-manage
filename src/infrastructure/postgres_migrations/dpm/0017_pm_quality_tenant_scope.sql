@@ -20,24 +20,44 @@ ALTER TABLE dpm_pm_quality_summary_invocations
 ADD COLUMN IF NOT EXISTS tenant_id TEXT;
 
 UPDATE dpm_pm_quality_score_runs
-SET tenant_id = 'legacy-default'
+SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), 'legacy-default')
+WHERE tenant_id IS NULL;
+
+UPDATE dpm_pm_quality_score_runs
+SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', to_jsonb(tenant_id), true)::text
+WHERE payload_json::jsonb ->> 'tenant_id' IS DISTINCT FROM tenant_id;
+
+UPDATE dpm_pm_quality_policies
+SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), 'legacy-default')
 WHERE tenant_id IS NULL;
 
 UPDATE dpm_pm_quality_policies
-SET tenant_id = 'legacy-default'
+SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', to_jsonb(tenant_id), true)::text
+WHERE payload_json::jsonb ->> 'tenant_id' IS DISTINCT FROM tenant_id;
+
+UPDATE dpm_pm_quality_fairness_analyses
+SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), 'legacy-default')
 WHERE tenant_id IS NULL;
 
 UPDATE dpm_pm_quality_fairness_analyses
-SET tenant_id = 'legacy-default'
+SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', to_jsonb(tenant_id), true)::text
+WHERE payload_json::jsonb ->> 'tenant_id' IS DISTINCT FROM tenant_id;
+
+UPDATE dpm_pm_quality_review_actions
+SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), 'legacy-default')
 WHERE tenant_id IS NULL;
 
 UPDATE dpm_pm_quality_review_actions
-SET tenant_id = 'legacy-default'
+SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', to_jsonb(tenant_id), true)::text
+WHERE payload_json::jsonb ->> 'tenant_id' IS DISTINCT FROM tenant_id;
+
+UPDATE dpm_pm_quality_summary_invocations
+SET tenant_id = COALESCE(NULLIF(payload_json::jsonb ->> 'tenant_id', ''), 'legacy-default')
 WHERE tenant_id IS NULL;
 
 UPDATE dpm_pm_quality_summary_invocations
-SET tenant_id = 'legacy-default'
-WHERE tenant_id IS NULL;
+SET payload_json = jsonb_set(payload_json::jsonb, '{tenant_id}', to_jsonb(tenant_id), true)::text
+WHERE payload_json::jsonb ->> 'tenant_id' IS DISTINCT FROM tenant_id;
 
 ALTER TABLE dpm_pm_quality_score_runs
 ALTER COLUMN tenant_id SET NOT NULL;
