@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from src.core.waves import (
     DpmBulkReviewCampaignDefinition,
@@ -57,6 +58,12 @@ class DpmCampaignDefinitionSupersedeCommand:
     superseded_by: str
     supersession_reason: str
     correlation_id: str
+
+
+@dataclass(frozen=True)
+class DpmBulkReviewCampaignReadModelQuery:
+    definitions: list[DpmBulkReviewCampaignDefinition]
+    active_on: date | None
 
 
 @dataclass(frozen=True)
@@ -123,6 +130,55 @@ class DpmWaveCampaignApplicationService:
             as_of_date=as_of_date,
             limit=limit,
             offset=offset,
+        )
+
+    def load_campaign_read_model_query(
+        self,
+        *,
+        tenant_id: str,
+        campaign_id: str | None,
+        campaign_status: str | None,
+        as_of_date: str | None,
+        active_on: date | None,
+        use_workflow_projection: bool = False,
+        include_closed: bool = False,
+        board_status: str | None = None,
+        next_action: str | None = None,
+        assignment_escalation_tier: str | None = None,
+        assignment_task_status: str | None = None,
+        assigned_actor_id: str | None = None,
+        assignment_sla_posture: str | None = None,
+        maker_checker_outcome: str | None = None,
+    ) -> DpmBulkReviewCampaignReadModelQuery:
+        if use_workflow_projection:
+            definitions = self.campaign_definition_repository.list_definitions_by_workflow_projection(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                status=campaign_status,
+                as_of_date=as_of_date,
+                include_closed=include_closed,
+                board_status=board_status,
+                next_action=next_action,
+                assignment_escalation_tier=assignment_escalation_tier,
+                assignment_task_status=assignment_task_status,
+                assigned_actor_id=assigned_actor_id,
+                assignment_sla_posture=assignment_sla_posture,
+                maker_checker_outcome=maker_checker_outcome,
+                limit=None,
+                offset=0,
+            )
+        else:
+            definitions = self.campaign_definition_repository.list_definitions(
+                tenant_id=tenant_id,
+                campaign_id=campaign_id,
+                status=campaign_status,
+                as_of_date=as_of_date,
+                limit=None,
+                offset=0,
+            )
+        return DpmBulkReviewCampaignReadModelQuery(
+            definitions=definitions,
+            active_on=active_on,
         )
 
     def retire_campaign_definition(

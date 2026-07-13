@@ -82,9 +82,17 @@ def test_campaign_application_service_creates_lists_reads_and_checks_readiness()
         requested_as_of_date=command.as_of_date,
         actor_id=None,
     )
+    read_model_query = service.load_campaign_read_model_query(
+        tenant_id=command.tenant_id,
+        campaign_id=command.campaign_id,
+        campaign_status="ACTIVE",
+        as_of_date=command.as_of_date,
+        active_on=None,
+    )
 
     assert fetched == created
     assert listed == [created]
+    assert read_model_query.definitions == [created]
     assert readiness.candidate_count == 1
     assert readiness.eligible_candidate_count == 1
 
@@ -119,6 +127,9 @@ def test_campaign_definition_routes_depend_on_application_service_boundary() -> 
         Path("src/api/routers/wave_campaign_definition_routes.py"),
         Path("src/api/routers/wave_campaign_definition_lifecycle_routes.py"),
         Path("src/api/routers/wave_campaign_readiness_routes.py"),
+        Path("src/api/routers/wave_campaign_discovery_routes.py"),
+        Path("src/api/routers/wave_campaign_operating_queue_routes.py"),
+        Path("src/api/routers/wave_campaign_approval_inbox_routes.py"),
     ]
 
     for route_path in route_paths:
