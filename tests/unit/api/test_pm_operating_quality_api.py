@@ -22,6 +22,16 @@ from src.api.routers.pm_operating_quality_book_scope_builder import (
     _pm_book_member_source_refs,
     _pm_book_scope_evidence_from_membership,
     _pm_book_scope_source_id,
+    book_scope_signal,
+    resolve_pm_book_scope_evidence,
+)
+from src.api.routers.pm_operating_quality_http import (
+    pm_quality_core_resolver_incomplete_http_exception,
+    pm_quality_core_resolver_unavailable_http_exception,
+    pm_quality_not_found_http_exception,
+    pm_quality_pm_book_membership_empty_http_exception,
+    pm_quality_pm_book_membership_not_ready_http_exception,
+    pm_quality_service_http_exception,
 )
 from src.api.routers.pm_operating_quality_models import (
     _has_complete_pm_quality_policy_reference,
@@ -36,6 +46,7 @@ from src.api.routers.pm_operating_quality_models import (
 )
 from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
+    DpmPmOperatingQualityServiceError,
 )
 from src.core.dpm_source_context import DpmCorePortfolioManagerBookMembershipResponse
 from src.infrastructure.core_sourcing import DpmCoreResolverError, DpmCoreResolverUnavailableError
@@ -382,6 +393,9 @@ def test_pm_book_scope_router_helpers_preserve_source_id_fallbacks_and_member_li
     assert evidence.returned_portfolio_count == 105
     assert evidence.member_portfolio_ids[-1] == "PF_099"
     assert evidence.source_refs[0].source_type == "PortfolioManagerBookMembership"
+    signal = book_scope_signal(evidence)
+    assert signal.indicator == "SOURCE_QUALITY"
+    assert signal.source_type == "PortfolioManagerBookMembership"
 
 
 def test_pm_book_scope_router_date_helper_raises_http_422_for_invalid_date() -> None:
@@ -390,6 +404,97 @@ def test_pm_book_scope_router_date_helper_raises_http_422_for_invalid_date() -> 
         _parse_pm_book_scope_preview_as_of_date("bad-date")
     assert exc_info.value.status_code == 422
     assert exc_info.value.detail == "INVALID_AS_OF_DATE"
+
+
+def test_pm_book_scope_builder_resolves_membership_and_translates_failures() -> None:
+    request = pmq_router.DpmPmOperatingQualityScorePreviewRequest.model_validate(_request())
+    scope = pmq_router.DpmPmOperatingQualityPmBookScopeRequest(
+        tenant_id="tenant-sg",
+        booking_center_code="Singapore",
+        portfolio_types=["DPM"],
+    )
+    resolver = _PmBookResolver(_pm_book_membership_payload())
+
+    evidence = resolve_pm_book_scope_evidence(
+        request=request,
+        scope=scope,
+        correlation_id="corr-pm-book-direct",
+        core_resolver_factory=lambda: resolver,
+    )
+
+    assert evidence.source_id == "pm-book-snapshot-20260512"
+    assert resolver.calls[0]["correlation_id"] == "corr-pm-book-direct"
+
+    for failing_resolver, expected_code in (
+        (_UnavailablePmBookResolver(), "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"),
+        (_IncompletePmBookResolver(), "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"),
+        (
+            _PmBookResolver(_pm_book_membership_payload(supportability_state="INCOMPLETE")),
+            "DPM_CORE_PM_BOOK_INCOMPLETE",
+        ),
+        (
+            _PmBookResolver(_pm_book_membership_payload(members=[])),
+            "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY",
+        ),
+    ):
+        with pytest.raises(Exception) as exc_info:
+            resolve_pm_book_scope_evidence(
+                request=request,
+                scope=scope,
+                correlation_id="corr-pm-book-direct",
+                core_resolver_factory=lambda resolver=failing_resolver: resolver,
+            )
+        assert getattr(exc_info.value, "reason_code") == expected_code
+
+
+def test_pm_quality_problem_helpers_preserve_reason_codes_and_statuses() -> None:
+    not_found = pm_quality_not_found_http_exception(
+        code="PM_QUALITY_SCORE_RUN_NOT_FOUND",
+        identifier="score-run-1",
+        secondary_identifier="tenant-sg",
+    )
+    assert not_found.status_code == 404
+    assert not_found.reason_code == "PM_QUALITY_SCORE_RUN_NOT_FOUND"
+
+    unavailable = pm_quality_core_resolver_unavailable_http_exception(
+        DpmCoreResolverUnavailableError("")
+    )
+    incomplete = pm_quality_core_resolver_incomplete_http_exception(DpmCoreResolverError(""))
+    assert unavailable.reason_code == "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"
+    assert unavailable.status_code == 503
+    assert incomplete.reason_code == "DPM_CORE_PM_BOOK_MEMBERSHIP_INCOMPLETE"
+    assert incomplete.status_code == 424
+
+    not_ready = DpmCorePortfolioManagerBookMembershipResponse.model_validate(
+        _pm_book_membership_payload(supportability_state="INCOMPLETE")
+    )
+    assert pm_quality_pm_book_membership_not_ready_http_exception(not_ready).reason_code == (
+        "DPM_CORE_PM_BOOK_INCOMPLETE"
+    )
+    assert pm_quality_pm_book_membership_empty_http_exception().reason_code == (
+        "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY"
+    )
+
+
+@pytest.mark.parametrize(
+    ("code", "expected_status", "expected_reason"),
+    [
+        ("DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE", 503, "DPM_CORE_PM_BOOK_MEMBERSHIP_UNAVAILABLE"),
+        ("DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY", 424, "DPM_CORE_PM_BOOK_MEMBERSHIP_EMPTY"),
+        ("DPM_CORE_PM_BOOK_STALE", 424, "DPM_CORE_PM_BOOK_STALE"),
+        ("PM_QUALITY_POLICY_NOT_FOUND:pmq:2026.05", 404, "PM_QUALITY_POLICY_NOT_FOUND"),
+        ("PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH", 422, "PM_QUALITY_POLICY_AS_OF_DATE_MISMATCH"),
+    ],
+)
+def test_pm_quality_service_error_mapping_matrix(
+    code: str,
+    expected_status: int,
+    expected_reason: str,
+) -> None:
+    problem = pm_quality_service_http_exception(DpmPmOperatingQualityServiceError(code))
+
+    assert problem.status_code == expected_status
+    assert problem.reason_code == expected_reason
 
 
 def test_pm_operating_quality_request_models_normalize_and_validate_scope_edges() -> None:

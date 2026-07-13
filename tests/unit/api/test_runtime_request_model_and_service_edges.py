@@ -29,6 +29,7 @@ import src.api.request_models as request_models
 from src.api.services.rebalance_batch_analysis import resolve_base_snapshot_ids
 import src.api.services.rebalance_run_support_service as run_support_service
 import src.api.main as api_main
+from src.api.routers.rebalance_simulation_analyze_routes import analyze_scenarios
 from src.api.request_models import (
     BatchExecutionRequestEnvelope,
     RebalanceExecutionRequestEnvelope,
@@ -1277,3 +1278,40 @@ def test_run_analyze_async_operation_accepts_legacy_request_payload(monkeypatch)
     assert fake_service.completed is not None
     assert fake_service.completed[0] == "op_legacy"
     assert set(fake_service.completed[1]["results"]) == {"baseline"}
+
+
+def test_analyze_scenarios_translates_envelope_resolution_errors(monkeypatch) -> None:
+    monkeypatch.setattr(
+        service,
+        "resolve_batch_request_envelope",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            service.DpmRebalanceEnvelopeValidationError("BATCH_ENVELOPE_INVALID")
+        ),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        analyze_scenarios(request=object())  # type: ignore[arg-type]
+
+    assert exc_info.value.status_code == 422
+    assert exc_info.value.detail == "BATCH_ENVELOPE_INVALID"
+
+
+def test_analyze_scenarios_translates_batch_execution_errors(monkeypatch) -> None:
+    monkeypatch.setattr(
+        service,
+        "resolve_batch_request_envelope",
+        lambda **_kwargs: (object(), {"lineage": "ready"}),
+    )
+    monkeypatch.setattr(
+        service,
+        "execute_batch_analysis",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            service.DpmRebalanceIdempotencyConflictError("BATCH_EXECUTION_CONFLICT")
+        ),
+    )
+
+    with pytest.raises(HTTPException) as exc_info:
+        analyze_scenarios(request=object())  # type: ignore[arg-type]
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail == "BATCH_EXECUTION_CONFLICT"
