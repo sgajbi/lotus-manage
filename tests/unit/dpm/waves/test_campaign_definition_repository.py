@@ -116,6 +116,19 @@ def _definition(
     )
 
 
+def _approval_required_definition(*, campaign_id: str) -> DpmBulkReviewCampaignDefinition:
+    return DpmBulkReviewCampaignDefinition.model_validate(
+        {
+            **_definition(
+                campaign_id=campaign_id,
+                display_name=f"Approval required {campaign_id}",
+            ).model_dump(mode="python"),
+            "governance": None,
+            "content_hash": "",
+        }
+    )
+
+
 def test_campaign_definition_validation_rejects_bad_candidates_and_hash() -> None:
     with pytest.raises(ValueError, match="BULK_REVIEW_CAMPAIGN_PORTFOLIO_TYPE_REQUIRED"):
         DpmBulkReviewCampaignDefinitionCandidate(
@@ -471,11 +484,14 @@ def test_in_memory_campaign_definition_repository_isolates_tenant_scope() -> Non
         expected_content_hash=tenant_b.content_hash,
     )
 
-    assert repository.list_definitions_by_workflow_projection(
-        tenant_id="tenant-a",
-        assigned_actor_id="pm_tenant_b",
-        assignment_task_status="OPEN",
-    ) == []
+    assert (
+        repository.list_definitions_by_workflow_projection(
+            tenant_id="tenant-a",
+            assigned_actor_id="pm_tenant_b",
+            assignment_task_status="OPEN",
+        )
+        == []
+    )
     assert repository.list_definitions_by_workflow_projection(
         tenant_id="tenant-b",
         assigned_actor_id="pm_tenant_b",
@@ -516,6 +532,24 @@ def test_campaign_definition_list_helpers_filter_sort_and_page_definitions() -> 
         limit=1,
         offset=0,
     ) == [newer]
+
+
+def test_campaign_definition_workflow_projection_pages_after_projection_filters() -> None:
+    repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    leading_non_match = _definition(campaign_id="campaign-z-non-match")
+    first_match = _approval_required_definition(campaign_id="campaign-m-approval-required")
+    second_match = _approval_required_definition(campaign_id="campaign-a-approval-required")
+    for definition in [leading_non_match, first_match, second_match]:
+        repository.save_definition(definition=definition)
+
+    page = repository.list_definitions_by_workflow_projection(
+        tenant_id=leading_non_match.tenant_id,
+        next_action="RECORD_APPROVAL_DECISION",
+        limit=1,
+        offset=1,
+    )
+
+    assert page == [second_match]
 
 
 def test_campaign_definition_launch_history_is_append_only_and_idempotent() -> None:
@@ -1615,7 +1649,9 @@ def test_campaign_definition_retirement_validation_and_in_memory_lifecycle() -> 
         == retired
     )
     assert repository.list_definitions(tenant_id=definition.tenant_id, status="ACTIVE") == []
-    assert repository.list_definitions(tenant_id=definition.tenant_id, status="RETIRED") == [retired]
+    assert repository.list_definitions(tenant_id=definition.tenant_id, status="RETIRED") == [
+        retired
+    ]
     assert repository.retire_definition(definition=retired) == retired
     assert (
         repository.retire_definition(
@@ -2180,6 +2216,8 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
         assigned_actor_id="pm_001",
         assignment_sla_posture="ATTENTION",
         maker_checker_outcome="PENDING",
+        limit=2,
+        offset=0,
     )
 
     assert rows == [definition]
@@ -2195,6 +2233,7 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
     assert "%s = ANY(w.assignment_task_statuses)" in sql
     assert "%s = ANY(w.assigned_actor_ids)" in sql
     assert "%s = ANY(w.maker_checker_outcomes)" in sql
+    assert "LIMIT %s OFFSET %s" in sql
     assert args == (
         definition.tenant_id,
         definition.tenant_id,
@@ -2208,6 +2247,8 @@ def test_postgres_campaign_definition_repository_filters_using_workflow_projecti
         "OPEN",
         "pm_001",
         "PENDING",
+        2,
+        0,
     )
 
 

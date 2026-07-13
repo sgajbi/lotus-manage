@@ -6,6 +6,10 @@ from src.api.dependencies import get_wave_campaign_application_service
 from src.api.routers.wave_campaign_definition_errors import (
     parse_optional_campaign_discovery_date,
 )
+from src.api.routers.wave_campaign_read_model_paging import (
+    campaign_read_model_repository_paging,
+    record_campaign_read_model_paging,
+)
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
@@ -135,15 +139,34 @@ def list_bulk_review_campaign_workflow_automation(
         get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignWorkflowAutomationPage:
+    active_on_date = parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    projection_safe = (
+        requested_as_of_date is None
+        and actor_id is None
+        and active_on_date is None
+        and automation_status is None
+        and automation_action is None
+    )
+    paging = campaign_read_model_repository_paging(
+        repository_safe=projection_safe,
+        limit=limit,
+        offset=offset,
+        bounded_reason="workflow_projection_filters",
+    )
+    record_campaign_read_model_paging(surface="campaign_workflow_automation", paging=paging)
     campaign_query = application_service.load_campaign_read_model_query(
         tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,
-        active_on=parse_optional_campaign_discovery_date(
-            value=active_on,
-            field_name="active_on",
-        ),
+        active_on=active_on_date,
+        use_workflow_projection=projection_safe,
+        include_closed=include_closed,
+        page_limit=paging.page_limit,
+        page_offset=paging.page_offset,
     )
     return build_bulk_review_campaign_workflow_automation_page(
         definitions=campaign_query.definitions,

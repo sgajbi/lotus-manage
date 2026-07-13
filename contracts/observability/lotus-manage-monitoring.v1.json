@@ -232,6 +232,30 @@
       "source": "src.api.observability.record_campaign_workflow"
     },
     {
+      "name": "lotus_manage_campaign_read_model_scan_total",
+      "type": "counter",
+      "description": "Counts campaign read-model repository scan strategy decisions.",
+      "labels": {
+        "surface": [
+          "campaign_discovery",
+          "campaign_operating_queue",
+          "campaign_approval_inbox",
+          "campaign_workflow_board",
+          "campaign_assignment_plan",
+          "campaign_workflow_automation",
+          "unknown"
+        ],
+        "scan_mode": ["bounded_prefix", "full_scan"],
+        "reason": [
+          "repository_filters",
+          "workflow_projection_filters",
+          "derived_filters",
+          "unknown"
+        ]
+      },
+      "source": "src.api.observability.record_campaign_read_model_scan"
+    },
+    {
       "name": "lotus_manage_wave_supportability_total",
       "type": "counter",
       "description": "Counts product-safe rebalance wave supportability endpoint outcomes.",
@@ -418,6 +442,13 @@
           "metric": "lotus_manage_campaign_workflow_total",
           "query": "sum by (surface, outcome, reason) (rate(lotus_manage_campaign_workflow_total[5m]))",
           "use_when": "Monitor campaign approval, assignment, task, maker-checker, launch, readiness, and launch-history outcomes without campaign, actor, portfolio, correlation, or idempotency identifiers."
+        },
+        {
+          "panel_id": "campaign-read-model-scan-strategy",
+          "title": "Campaign Read-Model Scan Strategy",
+          "metric": "lotus_manage_campaign_read_model_scan_total",
+          "query": "sum by (surface, scan_mode, reason) (rate(lotus_manage_campaign_read_model_scan_total[5m]))",
+          "use_when": "Monitor bounded-prefix versus derived-filter campaign read-model scans without campaign, actor, portfolio, correlation, or idempotency identifiers."
         },
         {
           "panel_id": "outcome-review-supportability",

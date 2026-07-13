@@ -60,6 +60,9 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         f"{observability.CAMPAIGN_WORKFLOW_TOTAL._name}_total": tuple(
             observability.CAMPAIGN_WORKFLOW_TOTAL._labelnames
         ),
+        f"{observability.CAMPAIGN_READ_MODEL_SCAN_TOTAL._name}_total": tuple(
+            observability.CAMPAIGN_READ_MODEL_SCAN_TOTAL._labelnames
+        ),
         f"{observability.WAVE_SUPPORTABILITY_TOTAL._name}_total": tuple(
             observability.WAVE_SUPPORTABILITY_TOTAL._labelnames
         ),

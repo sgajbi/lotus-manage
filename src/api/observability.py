@@ -61,6 +61,11 @@ CAMPAIGN_WORKFLOW_TOTAL = Counter(
     "lotus-manage campaign workflow mutation, readiness, launch, and audit outcomes.",
     ["surface", "outcome", "reason"],
 )
+CAMPAIGN_READ_MODEL_SCAN_TOTAL = Counter(
+    "lotus_manage_campaign_read_model_scan_total",
+    "lotus-manage campaign read-model repository scan strategy decisions.",
+    ["surface", "scan_mode", "reason"],
+)
 WAVE_SUPPORTABILITY_TOTAL = Counter(
     "lotus_manage_wave_supportability_total",
     "lotus-manage rebalance wave supportability endpoint outcomes.",
@@ -238,6 +243,26 @@ _ALLOWED_CAMPAIGN_WORKFLOW_REASONS = frozenset(
         "launch_blocked",
         "wave_validation_error",
         "unexpected_error",
+    }
+)
+_ALLOWED_CAMPAIGN_READ_MODEL_SURFACES = frozenset(
+    {
+        "campaign_discovery",
+        "campaign_operating_queue",
+        "campaign_approval_inbox",
+        "campaign_workflow_board",
+        "campaign_assignment_plan",
+        "campaign_workflow_automation",
+        "unknown",
+    }
+)
+_ALLOWED_CAMPAIGN_READ_MODEL_SCAN_MODES = frozenset({"bounded_prefix", "full_scan"})
+_ALLOWED_CAMPAIGN_READ_MODEL_REASONS = frozenset(
+    {
+        "repository_filters",
+        "workflow_projection_filters",
+        "derived_filters",
+        "unknown",
     }
 )
 _ALLOWED_WAVE_SUPPORTABILITY_SURFACES = frozenset({"rebalance/waves/supportability"})
@@ -852,6 +877,31 @@ def record_campaign_workflow(
             reason,
             allowed_values=_ALLOWED_CAMPAIGN_WORKFLOW_REASONS,
             fallback="unexpected_error",
+        ),
+    ).inc()
+
+
+def record_campaign_read_model_scan(
+    *,
+    surface: str,
+    scan_mode: str,
+    reason: str,
+) -> None:
+    CAMPAIGN_READ_MODEL_SCAN_TOTAL.labels(
+        surface=_safe_metric_label(
+            surface,
+            allowed_values=_ALLOWED_CAMPAIGN_READ_MODEL_SURFACES,
+            fallback="unknown",
+        ),
+        scan_mode=_safe_metric_label(
+            scan_mode,
+            allowed_values=_ALLOWED_CAMPAIGN_READ_MODEL_SCAN_MODES,
+            fallback="full_scan",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_CAMPAIGN_READ_MODEL_REASONS,
+            fallback="unknown",
         ),
     ).inc()
 

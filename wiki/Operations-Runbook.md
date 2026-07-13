@@ -14,7 +14,7 @@ scope unless a future source-owning service publishes and certifies that capabil
 | First response and runtime checks | Important operational checks | `/health/ready`, `/metrics`, repo-native smoke checks |
 | Action-register observability | RFC-0108 action register supportability | `lotus_manage_action_register_supportability_total` and related supportability metrics |
 | PM-quality lifecycle triage | PM-quality lifecycle operations | PM-quality Problem Details, `lotus_manage_pm_quality_lifecycle_total`, score-run/review/summary routes |
-| Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total` and monitoring contract alerts |
+| Campaign workflow triage | Campaign workflow telemetry | `lotus_manage_campaign_workflow_total`, `lotus_manage_campaign_read_model_scan_total`, and monitoring contract panels |
 | Campaign recovery and replay | Campaign workflow operations | Campaign definition routes, launch history, workflow board, assignment tasks, and maker-checker pages |
 | Outcome-review supportability | RFC-0042 outcome review supportability | Outcome-review supportability API and bounded metrics |
 | Container readiness | Docker production readiness | Compose health, migrations, and readiness logs |
@@ -204,6 +204,13 @@ python scripts/validate_observability_contracts.py
 - `/metrics` exposes `lotus_manage_campaign_workflow_total` with bounded `surface`, `outcome`,
   and `reason` labels for campaign workflow mutation, preview readiness, launch package, launch,
   and launch-history surfaces.
+- `/metrics` exposes `lotus_manage_campaign_read_model_scan_total` with bounded `surface`,
+  `scan_mode`, and `reason` labels for campaign discovery, operating queue, approval inbox,
+  workflow board, assignment plan, and workflow automation read models. Use `bounded_prefix` to
+  confirm repository/projection-safe filters are loading at most `offset + limit` eligible rows,
+  and `full_scan` with `derived_filters` to identify requests whose active-date, actor,
+  inbox-status, or automation filters still require full-scan correctness until those predicates
+  move into a persisted projection or cursor contract.
 - Surfaces are route-family values such as `approval_decision`, `assignment_action`,
   `assignment_task_open`, `assignment_task_transition`, `maker_checker_control`,
   `preview_readiness`, `launch_package`, `launch`, and `launch_history`. Do not use campaign ids,
@@ -247,7 +254,7 @@ First checks:
 | Workflow overview | `GET /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/workflow-overview` | Compare readiness, lifecycle, launch-history, and optional launch-package posture in one read model. |
 | Product queue posture | `GET /api/v1/rebalance/waves/campaign-operating-queue`, `GET /api/v1/rebalance/waves/campaign-approval-inbox`, `GET /api/v1/rebalance/waves/campaign-workflow-board` | Decide whether the issue is launch readiness, approval posture, actor routing, or closed/inactive state. |
 | Assignment posture | `GET /api/v1/rebalance/waves/campaign-assignment-plan`, `GET /api/v1/rebalance/waves/campaign-workflow-automation` | Distinguish read-only assignment readiness from actual task mutation. |
-| Metrics | `/metrics`, `lotus_manage_campaign_workflow_total` | Classify failures by bounded `surface`, `outcome`, and `reason`; never add campaign ids, actor ids, portfolio ids, idempotency keys, or correlation ids as labels. |
+| Metrics | `/metrics`, `lotus_manage_campaign_workflow_total`, `lotus_manage_campaign_read_model_scan_total` | Classify workflow failures by bounded `surface`, `outcome`, and `reason`; classify read-model query shape by bounded `surface`, `scan_mode`, and `reason`; never add campaign ids, actor ids, portfolio ids, idempotency keys, or correlation ids as labels. |
 
 Evidence-family triage:
 

@@ -4,6 +4,7 @@ import pytest
 from fastapi import HTTPException
 
 from src.api.routers import wave_campaign_workflow_telemetry as workflow_telemetry
+from src.api.routers import wave_campaign_read_model_paging as read_model_paging
 
 
 def test_campaign_workflow_telemetry_records_bounded_outcomes(
@@ -43,6 +44,56 @@ def test_campaign_workflow_telemetry_records_bounded_outcomes(
         ("launch", "blocked", "launch_blocked"),
         ("launch", "error", "unexpected_error"),
         ("launch", "validation_failed", "wave_validation_error"),
+    ]
+
+
+def test_campaign_read_model_paging_records_bounded_scan_decisions(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[tuple[str, str, str]] = []
+
+    def record_campaign_read_model_scan(
+        *,
+        surface: str,
+        scan_mode: str,
+        reason: str,
+    ) -> None:
+        events.append((surface, scan_mode, reason))
+
+    monkeypatch.setattr(
+        read_model_paging,
+        "record_campaign_read_model_scan",
+        record_campaign_read_model_scan,
+    )
+
+    bounded = read_model_paging.campaign_read_model_repository_paging(
+        repository_safe=True,
+        limit=5,
+        offset=2,
+        bounded_reason="workflow_projection_filters",
+    )
+    full_scan = read_model_paging.campaign_read_model_repository_paging(
+        repository_safe=False,
+        limit=5,
+        offset=2,
+        bounded_reason="repository_filters",
+    )
+    read_model_paging.record_campaign_read_model_paging(
+        surface="campaign_workflow_board",
+        paging=bounded,
+    )
+    read_model_paging.record_campaign_read_model_paging(
+        surface="campaign_approval_inbox",
+        paging=full_scan,
+    )
+
+    assert bounded.page_limit == 5
+    assert bounded.page_offset == 2
+    assert full_scan.page_limit is None
+    assert full_scan.page_offset == 0
+    assert events == [
+        ("campaign_workflow_board", "bounded_prefix", "workflow_projection_filters"),
+        ("campaign_approval_inbox", "full_scan", "derived_filters"),
     ]
 
 
