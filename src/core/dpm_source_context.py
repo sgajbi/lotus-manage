@@ -541,6 +541,10 @@ def build_portfolio_snapshot_with_core_tax_lots(
         response=response,
         base_currency=portfolio_snapshot.base_currency,
     )
+    _validate_core_tax_lot_coverage(
+        portfolio_snapshot=portfolio_snapshot,
+        lots_by_instrument=lots_by_instrument,
+    )
     positions = [
         _portfolio_position_with_tax_lots(
             position=position,
@@ -551,6 +555,22 @@ def build_portfolio_snapshot_with_core_tax_lots(
     return PortfolioSnapshot.model_validate(
         {**portfolio_snapshot.model_dump(mode="python"), "positions": positions}
     )
+
+
+def _validate_core_tax_lot_coverage(
+    *,
+    portfolio_snapshot: PortfolioSnapshot,
+    lots_by_instrument: dict[str, list[TaxLot]],
+) -> None:
+    for position in portfolio_snapshot.positions:
+        if position.quantity <= Decimal("0"):
+            continue
+        lots = lots_by_instrument.get(position.instrument_id, [])
+        if not lots:
+            raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOTS_INCOMPLETE")
+        lot_quantity = sum((lot.quantity for lot in lots), Decimal("0"))
+        if abs(lot_quantity - position.quantity) > Decimal("0.0001"):
+            raise DpmCoreContextIncompleteError("DPM_CORE_TAX_LOT_QUANTITY_MISMATCH")
 
 
 def _open_core_tax_lots_by_instrument(

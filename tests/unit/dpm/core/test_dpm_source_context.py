@@ -663,7 +663,7 @@ def test_core_tax_lots_attach_to_portfolio_snapshot_for_tax_aware_engine():
     assert enriched.positions[0].lots[1].purchase_date == "2026-03-28"
 
 
-def test_core_tax_lots_skip_closed_or_depleted_lots_without_blocking_snapshot():
+def test_core_tax_lots_reject_closed_or_depleted_lots_for_positive_position():
     portfolio = PortfolioSnapshot.model_validate(
         {
             **_core_context().portfolio_snapshot.model_dump(mode="python"),
@@ -680,12 +680,35 @@ def test_core_tax_lots_skip_closed_or_depleted_lots_without_blocking_snapshot():
     lot_payload["lots"][1]["open_quantity"] = "0.0000000000"
     response = DpmCorePortfolioTaxLotWindowResponse.model_validate(lot_payload)
 
-    enriched = build_portfolio_snapshot_with_core_tax_lots(
-        portfolio_snapshot=portfolio,
-        response=response,
-    )
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_TAX_LOTS_INCOMPLETE"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=response,
+        )
 
-    assert enriched.positions[0].lots == []
+
+def test_core_tax_lots_reject_partial_open_lot_quantity_for_positive_position():
+    portfolio = PortfolioSnapshot.model_validate(
+        {
+            **_core_context().portfolio_snapshot.model_dump(mode="python"),
+            "positions": [
+                {
+                    "instrument_id": "EQ_US_AAPL",
+                    "quantity": "100.0000000000",
+                }
+            ],
+        }
+    )
+    lot_payload = _core_tax_lot_payload()
+    lot_payload["lots"] = [lot_payload["lots"][0]]
+    lot_payload["supportability"]["returned_lot_count"] = 1
+    response = DpmCorePortfolioTaxLotWindowResponse.model_validate(lot_payload)
+
+    with pytest.raises(DpmCoreContextIncompleteError, match="DPM_CORE_TAX_LOT_QUANTITY_MISMATCH"):
+        build_portfolio_snapshot_with_core_tax_lots(
+            portfolio_snapshot=portfolio,
+            response=response,
+        )
 
 
 def test_core_tax_lot_helper_uses_base_currency_when_local_currency_missing():

@@ -82,6 +82,9 @@ cash-pressure evidence, currency-overlay, and regime-stress-aware construction t
 `ClientRestrictionProfile:v1` and `SustainabilityPreferenceProfile:v1` when stateful core sourcing
 is enabled: hard client restrictions can block candidate trades, sustainability allocation
 preferences can trigger pending review, and profile source lineage is preserved for proof packs.
+Tax-aware construction requires complete open-lot coverage for sell candidates and blocks when
+tax-lot evidence or lot-cost FX is incomplete; non-tax-aware selling remains available only when
+tax awareness is explicitly disabled.
 Construction alternatives also preserve supplied source-owned risk/performance analytics context
 for tracking error, drawdown, stress contribution, historical risk attribution, benchmark,
 contribution, attribution, benchmark-relative performance, and currency attribution. The

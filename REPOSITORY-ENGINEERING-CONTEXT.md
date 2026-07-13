@@ -1103,6 +1103,10 @@ Most relevant current governance:
     Do not reintroduce implicit `USD`, `v1`, empty-fingerprint, empty-section, or zero-metric
     defaults for missing source facts. Valid zero values are allowed only when explicitly supplied
     by the source response and must stay distinguishable from omission.
+14. Tax-aware construction is evidence-gated. When `enable_tax_awareness=true`, sell candidates
+    require complete open-lot coverage from `PortfolioTaxLotWindow:v1` and lot-cost FX where
+    needed; missing lots, partial lots, closed/depleted-only lots, or missing lot-cost FX must block
+    tax-aware output rather than falling back to a normal non-tax-aware sell.
 
 ## Context Maintenance Rule
 

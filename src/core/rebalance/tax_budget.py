@@ -14,6 +14,9 @@ from src.core.models import (
 from src.core.valuation import get_fx_rate
 
 
+TAX_LOT_EVIDENCE_INCOMPLETE_BUCKET = "tax_lot_evidence_incomplete"
+
+
 @dataclass
 class _TaxBudgetAccumulator:
     total_realized_gain_base: Decimal
@@ -108,6 +111,41 @@ def _record_tax_budget_limit_reached(
             allowed_quantity=allowed_quantity,
             reason_code="TAX_BUDGET_LIMIT_REACHED",
         )
+    )
+
+
+def _record_tax_lot_evidence_incomplete(
+    *,
+    instrument_id: str,
+    reason_code: str,
+    dq_log: dict[str, list[str]],
+    diagnostics: DiagnosticsData,
+) -> None:
+    evidence_key = f"{instrument_id}:{reason_code}"
+    bucket = dq_log.setdefault(TAX_LOT_EVIDENCE_INCOMPLETE_BUCKET, [])
+    if evidence_key not in bucket:
+        bucket.append(evidence_key)
+    if reason_code not in diagnostics.warnings:
+        diagnostics.warnings.append(reason_code)
+
+
+def _tax_lot_quantity_covered(*, position: Position, requested_qty: Decimal) -> bool:
+    lot_quantity = sum(
+        (lot.quantity for lot in position.lots if lot.quantity > Decimal("0")),
+        Decimal("0"),
+    )
+    return lot_quantity >= requested_qty
+
+
+def _tax_lot_evidence_incomplete_for(
+    *,
+    instrument_id: str,
+    dq_log: dict[str, list[str]],
+) -> bool:
+    prefix = f"{instrument_id}:"
+    return any(
+        evidence_key.startswith(prefix)
+        for evidence_key in dq_log.get(TAX_LOT_EVIDENCE_INCOMPLETE_BUCKET, [])
     )
 
 
@@ -254,6 +292,7 @@ def _tax_budget_limited_quantity_from_lots(
 
 def _tax_budget_limited_sell_quantity(
     *,
+    instrument_id: str,
     options: EngineOptions,
     position: Position | None,
     requested_qty: Decimal,
@@ -263,10 +302,36 @@ def _tax_budget_limited_sell_quantity(
     market_data: MarketDataSnapshot,
     dq_log: dict[str, list[str]],
     tax_budget: _TaxBudgetAccumulator,
+    diagnostics: DiagnosticsData,
 ) -> Decimal:
     if not options.enable_tax_awareness:
         return requested_qty
+    if position is None:
+        _record_tax_lot_evidence_incomplete(
+            instrument_id=instrument_id,
+            reason_code="TAX_LOT_POSITION_MISSING",
+            dq_log=dq_log,
+            diagnostics=diagnostics,
+        )
+        return Decimal("0")
+    if not position.lots:
+        _record_tax_lot_evidence_incomplete(
+            instrument_id=instrument_id,
+            reason_code="TAX_LOTS_MISSING",
+            dq_log=dq_log,
+            diagnostics=diagnostics,
+        )
+        return Decimal("0")
+    if not _tax_lot_quantity_covered(position=position, requested_qty=requested_qty):
+        _record_tax_lot_evidence_incomplete(
+            instrument_id=instrument_id,
+            reason_code="TAX_LOTS_INCOMPLETE",
+            dq_log=dq_log,
+            diagnostics=diagnostics,
+        )
+        return Decimal("0")
 
+    fx_missing_before = len(dq_log.get("fx_missing", []))
     sorted_lots = _hifo_sorted_lots(
         position=position,
         instrument_ccy=price_ccy,
@@ -274,7 +339,18 @@ def _tax_budget_limited_sell_quantity(
         dq_log=dq_log,
     )
     if not sorted_lots:
-        return requested_qty
+        reason_code = (
+            "TAX_LOT_COST_FX_MISSING"
+            if len(dq_log.get("fx_missing", [])) > fx_missing_before
+            else "TAX_LOTS_INCOMPLETE"
+        )
+        _record_tax_lot_evidence_incomplete(
+            instrument_id=instrument_id,
+            reason_code=reason_code,
+            dq_log=dq_log,
+            diagnostics=diagnostics,
+        )
+        return Decimal("0")
 
     return _tax_budget_limited_quantity_from_lots(
         sorted_lots=sorted_lots,
@@ -312,6 +388,7 @@ def _sell_quantity_after_safety_limits(
         diagnostics=diagnostics,
     )
     quantity = _tax_budget_limited_sell_quantity(
+        instrument_id=instrument_id,
         options=options,
         position=position,
         requested_qty=sell_quantity_before_tax,
@@ -321,8 +398,13 @@ def _sell_quantity_after_safety_limits(
         market_data=market_data,
         dq_log=dq_log,
         tax_budget=tax_budget,
+        diagnostics=diagnostics,
     )
-    if options.enable_tax_awareness and quantity < sell_quantity_before_tax:
+    if (
+        options.enable_tax_awareness
+        and quantity < sell_quantity_before_tax
+        and not _tax_lot_evidence_incomplete_for(instrument_id=instrument_id, dq_log=dq_log)
+    ):
         _record_tax_budget_limit_reached(
             instrument_id=instrument_id,
             requested_quantity=sell_quantity_before_tax,
