@@ -190,6 +190,16 @@ candidate trades that violate hard client restrictions and can flag sustainabili
 classification evidence gaps for review. It does not infer unsupported ESG classifications or
 convert sustainability preferences into automatic compliance approval.
 
+Core and Risk source-product adapters are fail-closed at the anti-corruption boundary. Manage
+requires Core portfolio snapshot responses to carry portfolio id, `as_of_date`, valuation currency,
+`positions_baseline`, `portfolio_totals`, row identifiers, explicit quantities, row currencies, and
+position market values before constructing a `PortfolioSnapshot`. Risk concentration, regime
+scenario-pack, and risk-event cohort responses must carry source metadata, product/version or
+methodology version, request fingerprint, supportability, and required numeric measures before
+Manage constructs authority context. Explicit source-supplied zero quantities or risk metrics are
+valid; omitted values are not converted to `USD`, `v1`, empty holdings, empty fingerprints, or zero
+metrics.
+
 Mandate-health refresh also consumes `ClientRestrictionProfile:v1`,
 `SustainabilityPreferenceProfile:v1`, and `PortfolioCashflowProjection:v1` when those optional
 core products are available. Manage preserves their lineage on the mandate twin, keeps gap codes

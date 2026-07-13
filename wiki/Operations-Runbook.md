@@ -113,6 +113,7 @@ First checks:
 | Request latency | `lotus_manage_source_http_request_duration_seconds_bucket{source_service,method,outcome}` | Use p95 latency by source service and method to distinguish slow dependencies, pool acquisition pressure, and normal source-product failures. |
 | Retry pressure | `lotus_manage_source_http_retry_total{source_service,method,reason}` | Sustained `transport_error` or `transient_status` growth indicates downstream instability or pool pressure. Do not add blind write retries; verify idempotency and source contract first. |
 | Core resolver posture | `lotus_manage_core_resolver_total` and source-specific Problem Details or domain errors | Use source HTTP metrics to distinguish transport pressure from source-product completeness failures. |
+| Source-product validation | `DPM_CORE_PORTFOLIO_SNAPSHOT_INCOMPLETE` or `LOTUS_RISK_INVALID_RESPONSE` | Treat missing Core snapshot identity/date/currency/sections/row facts or missing Risk metadata/fingerprint/supportability/numeric measures as upstream contract defects. Do not remediate by adding Manage-side `USD`, `v1`, empty-list, empty-fingerprint, or zero defaults. |
 
 Privacy and support rules:
 

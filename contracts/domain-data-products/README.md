@@ -85,6 +85,17 @@ snapshots are:
 These snapshots are deterministic contract fixtures validated by the feature and PR-merge lanes.
 They do not by themselves assert live-environment runtime certification.
 
+Consumer adapter rule:
+
+Core and Risk source-product response mappings fail closed before domain model construction. Core
+portfolio snapshots must provide portfolio identity, business date, valuation currency,
+`positions_baseline`, `portfolio_totals`, row identifiers, explicit quantities, row currencies, and
+position market values. Risk concentration, regime-scenario, and risk-event cohort responses must
+provide source metadata, product/version or methodology version, request fingerprint,
+supportability, and required numeric measures. Explicit source-supplied zero values are valid;
+omitted values must not be represented as `USD`, `v1`, an empty fingerprint, an empty section, or a
+zero measure.
+
 Full mesh contract validation:
 
 ```powershell
