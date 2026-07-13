@@ -13,7 +13,9 @@ explicitly excluded.
 - Portfolio-memory persistence search and bounded retrieval.
 - Monitoring, exceptions, and command-center read/write for managed domains.
 - PM operating quality policy, score-run, fairness-analysis, review-action, summary-invocation,
-  and PM-quality-backed portfolio-memory reads with trusted-identity tenant isolation.
+  and PM-quality-backed portfolio-memory reads with trusted-identity tenant isolation. PM-quality
+  trust telemetry remains certification-blocked until linked certification evidence is merged to
+  `main` and runtime trust evidence is regenerated.
 
 ## Explicitly unsupported in `lotus-manage`
 

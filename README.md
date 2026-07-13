@@ -659,7 +659,9 @@ Repo-native gate mapping:
   route absence for `PB_SG_GLOBAL_BAL_001` as of `2026-04-10`.
 - `make mesh-contract-validate`
   repo-native domain product, trust telemetry, and observability monitoring contract validation
-  against Lotus platform governance
+  against Lotus platform governance. PM-quality trust telemetry is intentionally
+  certification-blocked until linked PM-quality blockers are merged to `main` and runtime trust
+  evidence is regenerated; catalog visibility is not customer-reliance certification.
 
 When the README changes, also run:
 
