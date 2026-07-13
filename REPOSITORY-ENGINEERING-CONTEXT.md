@@ -880,6 +880,14 @@ Current repository posture:
     `(tenant_id, campaign_id, campaign_version)`; all campaign definition routes require trusted
     `X-Tenant-Id`, repository read/list/workflow predicates include tenant scope, and
     portfolio-memory campaign scans require tenant context when the campaign repository is present.
+    Campaign read-model routes use bounded repository prefixes for base repository filters and
+    workflow-projection-safe filters by loading at most `offset + limit` eligible rows before the
+    existing domain builders apply final page slicing and returned-page count maps. Derived filters
+    not yet represented in the repository/projection, including expiry `active_on`, actor-specific
+    entitlement/readiness, approval inbox status, and workflow automation status/action, intentionally
+    keep full-scan correctness and emit `lotus_manage_campaign_read_model_scan_total` with
+    `scan_mode="full_scan"` and `reason="derived_filters"`; promote those predicates into a
+    persisted projection or cursor contract before pre-paging them.
     This is design modularity and
     query-shape hardening inside the same deployable service, not a runtime split or a new source of
     authorization, external workflow, order, OMS, or client-contact truth. Campaign launch is a

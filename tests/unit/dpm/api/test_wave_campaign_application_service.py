@@ -22,6 +22,19 @@ from src.core.waves import (
 from src.infrastructure.waves import InMemoryDpmBulkReviewCampaignDefinitionRepository
 
 
+class _ReadModelRepositorySpy:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, dict[str, object]]] = []
+
+    def list_definitions(self, **kwargs: object) -> list[object]:
+        self.calls.append(("base", kwargs))
+        return []
+
+    def list_definitions_by_workflow_projection(self, **kwargs: object) -> list[object]:
+        self.calls.append(("projection", kwargs))
+        return []
+
+
 def _service() -> DpmWaveCampaignApplicationService:
     return DpmWaveCampaignApplicationService(
         campaign_definition_repository=InMemoryDpmBulkReviewCampaignDefinitionRepository()
@@ -321,3 +334,78 @@ def test_campaign_application_service_centralizes_read_model_filters_and_active_
 
     assert query.active_on == date(2026, 5, 12)
     assert [definition.campaign_id for definition in query.definitions] == ["campaign-active"]
+
+
+def test_campaign_application_service_bounds_base_read_model_repository_prefix() -> None:
+    repository = _ReadModelRepositorySpy()
+    service = DpmWaveCampaignApplicationService(
+        campaign_definition_repository=repository,  # type: ignore[arg-type]
+    )
+
+    query = service.load_campaign_read_model_query(
+        tenant_id="tenant-sg",
+        campaign_id=None,
+        campaign_status="ACTIVE",
+        as_of_date=None,
+        active_on=None,
+        page_limit=5,
+        page_offset=2,
+    )
+
+    assert query.definitions == []
+    assert repository.calls == [
+        (
+            "base",
+            {
+                "tenant_id": "tenant-sg",
+                "campaign_id": None,
+                "status": "ACTIVE",
+                "as_of_date": None,
+                "limit": 7,
+                "offset": 0,
+            },
+        )
+    ]
+
+
+def test_campaign_application_service_bounds_workflow_projection_prefix() -> None:
+    repository = _ReadModelRepositorySpy()
+    service = DpmWaveCampaignApplicationService(
+        campaign_definition_repository=repository,  # type: ignore[arg-type]
+    )
+
+    query = service.load_campaign_read_model_query(
+        tenant_id="tenant-sg",
+        campaign_id=None,
+        campaign_status="ACTIVE",
+        as_of_date=None,
+        active_on=None,
+        use_workflow_projection=True,
+        include_closed=False,
+        next_action="RECORD_APPROVAL_DECISION",
+        page_limit=1,
+        page_offset=1,
+    )
+
+    assert query.definitions == []
+    assert repository.calls == [
+        (
+            "projection",
+            {
+                "tenant_id": "tenant-sg",
+                "campaign_id": None,
+                "status": "ACTIVE",
+                "as_of_date": None,
+                "include_closed": False,
+                "board_status": None,
+                "next_action": "RECORD_APPROVAL_DECISION",
+                "assignment_escalation_tier": None,
+                "assignment_task_status": None,
+                "assigned_actor_id": None,
+                "assignment_sla_posture": None,
+                "maker_checker_outcome": None,
+                "limit": 2,
+                "offset": 0,
+            },
+        )
+    ]

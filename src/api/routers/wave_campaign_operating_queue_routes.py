@@ -6,6 +6,10 @@ from src.api.dependencies import get_wave_campaign_application_service
 from src.api.routers.wave_campaign_definition_errors import (
     parse_optional_campaign_discovery_date,
 )
+from src.api.routers.wave_campaign_read_model_paging import (
+    campaign_read_model_repository_paging,
+    record_campaign_read_model_paging,
+)
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
@@ -60,15 +64,25 @@ def list_bulk_review_campaign_operating_queue(
         get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignOperatingQueuePage:
+    active_on_date = parse_optional_campaign_discovery_date(
+        value=active_on,
+        field_name="active_on",
+    )
+    paging = campaign_read_model_repository_paging(
+        repository_safe=active_on_date is None or include_expired,
+        limit=limit,
+        offset=offset,
+        bounded_reason="repository_filters",
+    )
+    record_campaign_read_model_paging(surface="campaign_operating_queue", paging=paging)
     campaign_query = application_service.load_campaign_read_model_query(
         tenant_id=trusted_context.tenant_id,
         campaign_id=campaign_id,
         campaign_status=campaign_status,
         as_of_date=as_of_date,
-        active_on=parse_optional_campaign_discovery_date(
-            value=active_on,
-            field_name="active_on",
-        ),
+        active_on=active_on_date,
+        page_limit=paging.page_limit,
+        page_offset=paging.page_offset,
     )
     return build_bulk_review_campaign_operating_queue_page(
         definitions=campaign_query.definitions,

@@ -1746,9 +1746,7 @@ def test_bulk_review_campaign_definition_replay_validates_candidate_source_contr
         }
     ]
     definition_payload["candidates"] = [first_candidate, *definition_payload["candidates"][1:]]
-    definition_request = DpmBulkReviewCampaignDefinitionRequest.model_validate(
-        definition_payload
-    )
+    definition_request = DpmBulkReviewCampaignDefinitionRequest.model_validate(definition_payload)
     campaign_repository.save_definition(
         definition=DpmBulkReviewCampaignDefinition(
             tenant_id="tenant-sg",
@@ -1772,9 +1770,7 @@ def test_bulk_review_campaign_definition_replay_validates_candidate_source_contr
         response = client.post("/api/v1/rebalance/waves/preview", json=request)
 
     assert response.status_code == 422
-    assert _error_reason_code(response) == (
-        "BULK_REVIEW_CAMPAIGN_SOURCE_CONTRACT_UNSUPPORTED"
-    )
+    assert _error_reason_code(response) == ("BULK_REVIEW_CAMPAIGN_SOURCE_CONTRACT_UNSUPPORTED")
 
 
 def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> None:
@@ -2163,9 +2159,7 @@ def test_bulk_review_campaign_definition_routes_list_get_and_conflict() -> None:
 
     assert first.status_code == 200
     assert conflict.status_code == 409
-    assert _error_reason_code(conflict) == (
-        "BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT"
-    )
+    assert _error_reason_code(conflict) == ("BULK_REVIEW_CAMPAIGN_DEFINITION_IMMUTABLE_CONFLICT")
     assert listed.status_code == 200
     assert listed.json()["count"] == 1
     assert fetched.status_code == 200
@@ -2422,9 +2416,7 @@ def test_bulk_review_campaign_definition_approval_decisions_record_and_list() ->
     assert replay.status_code == 201
     assert len(replay.json()["approval_decisions"]) == 1
     assert conflict.status_code == 409
-    assert (
-        _error_reason_code(conflict) == "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT"
-    )
+    assert _error_reason_code(conflict) == "BULK_REVIEW_CAMPAIGN_APPROVAL_DECISION_REF_CONFLICT"
     decision_payload = decision.json()
     assert len(decision_payload["approval_decisions"]) == 1
     assert decision_payload["approval_decisions"][0]["decision_type"] == "APPROVED"
@@ -2558,10 +2550,7 @@ def test_bulk_review_campaign_definition_launch_creates_durable_wave_and_replays
     assert empty_launch_history_page.json()["count"] == 0
     assert empty_launch_history_page.json()["total_count"] == 1
     assert missing_launch_history.status_code == 404
-    assert (
-        _error_reason_code(missing_launch_history)
-        == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
-    )
+    assert _error_reason_code(missing_launch_history) == "BULK_REVIEW_CAMPAIGN_DEFINITION_NOT_FOUND"
 
 
 def test_bulk_review_campaign_definition_launch_retry_repairs_missing_audit() -> None:
@@ -3187,6 +3176,22 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
             "active_on=2026-05-10&requested_as_of_date=2026-05-10&actor_id=pm_001"
             "&next_action=RECORD_APPROVAL_DECISION&limit=1"
         )
+        projection_required_put = client.put(
+            (
+                "/api/v1/rebalance/waves/campaign-definitions/"
+                "campaign-holdings-z-approval-required-20260510/versions/2026.05"
+            ),
+            json={
+                **_bulk_review_campaign_definition_request(),
+                "display_name": "Second approval required workflow board row",
+                "governance": None,
+                "correlation_id": "corr-campaign-definition-board-approval-required-2",
+            },
+        )
+        projection_offset_filtered = client.get(
+            "/api/v1/rebalance/waves/campaign-workflow-board?"
+            "next_action=RECORD_APPROVAL_DECISION&limit=1&offset=1"
+        )
         invalid = client.get("/api/v1/rebalance/waves/campaign-workflow-board?active_on=bad-date")
 
     assert ready_put.status_code == 200
@@ -3194,6 +3199,7 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
     assert unauthorized_put.status_code == 200
     assert retired_put.status_code == 200
     assert retire_response.status_code == 200
+    assert projection_required_put.status_code == 200
 
     assert board.status_code == 200
     payload = board.json()
@@ -3232,6 +3238,14 @@ def test_bulk_review_campaign_workflow_board_summarizes_cross_actor_next_actions
     assert limited_filtered.json()["count"] == 1
     assert limited_filtered.json()["items"][0]["campaign_id"] == (
         "campaign-holdings-approval-required-20260510"
+    )
+    assert projection_offset_filtered.status_code == 200
+    assert projection_offset_filtered.json()["count"] == 1
+    assert projection_offset_filtered.json()["items"][0]["campaign_id"] == (
+        "campaign-holdings-approval-required-20260510"
+    )
+    assert projection_offset_filtered.json()["items"][0]["next_action"] == (
+        "RECORD_APPROVAL_DECISION"
     )
 
     assert invalid.status_code == 422
@@ -3589,10 +3603,7 @@ def test_bulk_review_campaign_assignment_actions_record_and_page_posture() -> No
     assert replay.status_code == 201
     assert len(replay.json()["assignment_actions"]) == 2
     assert conflicting.status_code == 409
-    assert (
-        _error_reason_code(conflicting)
-        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
-    )
+    assert _error_reason_code(conflicting) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_ACTION_REF_CONFLICT"
     assert missing_actor.status_code == 422
     assert (
         _error_reason_code(missing_actor)
@@ -3724,10 +3735,7 @@ def test_bulk_review_campaign_assignment_tasks_open_transition_and_page_posture(
     assert put_response.status_code == 200
     assert opened.status_code == 201
     assert open_conflict.status_code == 409
-    assert (
-        _error_reason_code(open_conflict)
-        == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT"
-    )
+    assert _error_reason_code(open_conflict) == "BULK_REVIEW_CAMPAIGN_ASSIGNMENT_TASK_REF_CONFLICT"
     assert acknowledged.status_code == 201
     assert escalated.status_code == 201
     assert replay.status_code == 201
@@ -3860,10 +3868,7 @@ def test_bulk_review_campaign_maker_checker_controls_record_and_page_posture() -
     assert replay.status_code == 201
     assert len(replay.json()["maker_checker_controls"]) == 2
     assert conflict.status_code == 409
-    assert (
-        _error_reason_code(conflict)
-        == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT"
-    )
+    assert _error_reason_code(conflict) == "BULK_REVIEW_CAMPAIGN_MAKER_CHECKER_CONTROL_REF_CONFLICT"
     assert same_actor.status_code == 422
     assert (
         _error_reason_code(same_actor)
@@ -7155,9 +7160,10 @@ def _json_response_example(operation: dict[str, Any], status_code: str) -> dict[
     if _is_error_status_code(status_code) and "application/problem+json" in content_by_media_type:
         content = content_by_media_type["application/problem+json"]
     else:
-        content = content_by_media_type.get("application/json") or content_by_media_type[
-            "application/problem+json"
-        ]
+        content = (
+            content_by_media_type.get("application/json")
+            or content_by_media_type["application/problem+json"]
+        )
     examples = content.get("examples")
     if isinstance(examples, dict):
         return cast(dict[str, Any], examples["default"]["value"])

@@ -328,7 +328,15 @@ posture, assigned actors, assignment task statuses, maker-checker outcomes, evid
 lineage hashes for indexed operator filtering. `payload_json` plus `content_hash` remains the
 durable evidence source; the projection is rebuildable from the parent definition and does not
 authorize edits, create external workflow tasks, approve trades, route orders, contact clients, or
-claim OMS execution. Manage also supports append-only
+claim OMS execution. Campaign read-model routes use bounded repository prefixes for base
+repository filters and workflow-projection-safe filters by loading at most `offset + limit`
+eligible rows, then preserving existing filter-sort-page response semantics and returned-page count
+maps. Requests that use derived filters not yet represented in the repository/projection, such as
+expiry `active_on`, actor-specific entitlement/readiness, approval inbox status, or workflow
+automation status/action, intentionally keep full-scan correctness and emit
+`lotus_manage_campaign_read_model_scan_total{scan_mode="full_scan",reason="derived_filters"}`; the
+follow-up path is to promote those predicates into a persisted projection or cursor contract before
+pre-paging them. Manage also supports append-only
 assignment and escalation actions at
 `POST /api/v1/rebalance/waves/campaign-definitions/{campaign_id}/versions/{campaign_version}/assignment-actions`
 plus listing them at the same route with `GET`, mutating assignment posture evidence only with

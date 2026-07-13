@@ -107,6 +107,12 @@ class DpmBulkReviewCampaignReadModelQuery:
     active_on: date | None
 
 
+def _read_model_repository_limit(*, page_limit: int | None, page_offset: int) -> int | None:
+    if page_limit is None:
+        return None
+    return page_limit + page_offset
+
+
 @dataclass(frozen=True)
 class DpmCampaignDefinitionApprovalDecisionCommand:
     tenant_id: str
@@ -303,23 +309,31 @@ class DpmWaveCampaignApplicationService:
         assigned_actor_id: str | None = None,
         assignment_sla_posture: str | None = None,
         maker_checker_outcome: str | None = None,
+        page_limit: int | None = None,
+        page_offset: int = 0,
     ) -> DpmBulkReviewCampaignReadModelQuery:
+        repository_limit = _read_model_repository_limit(
+            page_limit=page_limit,
+            page_offset=page_offset,
+        )
         if use_workflow_projection:
-            definitions = self.campaign_definition_repository.list_definitions_by_workflow_projection(
-                tenant_id=tenant_id,
-                campaign_id=campaign_id,
-                status=campaign_status,
-                as_of_date=as_of_date,
-                include_closed=include_closed,
-                board_status=board_status,
-                next_action=next_action,
-                assignment_escalation_tier=assignment_escalation_tier,
-                assignment_task_status=assignment_task_status,
-                assigned_actor_id=assigned_actor_id,
-                assignment_sla_posture=assignment_sla_posture,
-                maker_checker_outcome=maker_checker_outcome,
-                limit=None,
-                offset=0,
+            definitions = (
+                self.campaign_definition_repository.list_definitions_by_workflow_projection(
+                    tenant_id=tenant_id,
+                    campaign_id=campaign_id,
+                    status=campaign_status,
+                    as_of_date=as_of_date,
+                    include_closed=include_closed,
+                    board_status=board_status,
+                    next_action=next_action,
+                    assignment_escalation_tier=assignment_escalation_tier,
+                    assignment_task_status=assignment_task_status,
+                    assigned_actor_id=assigned_actor_id,
+                    assignment_sla_posture=assignment_sla_posture,
+                    maker_checker_outcome=maker_checker_outcome,
+                    limit=repository_limit,
+                    offset=0,
+                )
             )
         else:
             definitions = self.campaign_definition_repository.list_definitions(
@@ -327,7 +341,7 @@ class DpmWaveCampaignApplicationService:
                 campaign_id=campaign_id,
                 status=campaign_status,
                 as_of_date=as_of_date,
-                limit=None,
+                limit=repository_limit,
                 offset=0,
             )
         return DpmBulkReviewCampaignReadModelQuery(

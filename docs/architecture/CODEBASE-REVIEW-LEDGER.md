@@ -30570,3 +30570,51 @@ and improves internal transaction-cost source posture maintainability only.
 - Docs/wiki/context/skill decision: README, repository context, operations runbook, wiki source,
   and this ledger changed because operator-facing error triage fields changed. Central context and
   platform skills do not need updates because this is a repository-local API contract alignment.
+
+## BACKEND-REVIEW-20260713-0617-A: Campaign read-model bounded scan strategy
+
+- Date: 2026-07-13
+- GitHub issue: #617
+- Scope: campaign discovery, operating queue, approval inbox, workflow board, assignment plan,
+  workflow automation, shared campaign application read-model loading, campaign definition
+  repositories, monitoring contract, README, repository context, and operations runbook/wiki source.
+- Bank-buyable control area: campaign operator read-model performance, pagination correctness,
+  query-shape observability, and supportable PostgreSQL pressure diagnostics.
+- Finding: after #584 fixed filter-then-page correctness by loading all repository-filtered
+  campaign definitions, projection-safe read-model requests still bypassed repository bounds and
+  forced PostgreSQL/API materialization of every matching campaign definition before returning a
+  small page.
+- Action: added explicit campaign read-model repository paging strategy and metric recording.
+  Repository/projection-safe routes now pass a bounded prefix into the shared application service:
+  base repository filters and workflow projection filters load at most `offset + limit` eligible
+  rows with repository offset `0`, then existing domain builders apply final page slicing once so
+  response shape, page count, and count-map semantics remain unchanged. Workflow-board and
+  assignment-plan projection filters use the existing workflow read-model projection; discovery and
+  operating queue use base repository bounds when expiry filtering is not active; approval inbox
+  and workflow automation use projection bounds only when their remaining filters are represented.
+  Derived filters not yet represented in the repository/projection intentionally retain full-scan
+  correctness and emit `lotus_manage_campaign_read_model_scan_total` with bounded
+  `surface`/`scan_mode`/`reason` labels.
+- Status: fixed locally.
+- Evidence: focused Ruff passed for touched implementation/tests; focused unit tests reported
+  `95 passed`; affected API read-model tests reported `6 passed`. Full repository gates will be
+  recorded in the #617 issue comment for the corresponding commit on branch
+  `fix/issue-600-pm-quality-application-boundary`.
+- Same-pattern scan: covered all six campaign read-model endpoints that share
+  `load_campaign_read_model_query(...)`; added application-service call-shape tests, in-memory
+  projection pagination-after-filter coverage, PostgreSQL projection SQL `LIMIT/OFFSET` assertion,
+  API workflow-board non-zero-offset regression, and bounded-label telemetry tests.
+- Residual risk and follow-up path: requests with expiry `active_on`, actor-specific
+  entitlement/readiness, approval inbox status, or workflow automation status/action still require
+  full-scan correctness because those predicates are not fully represented in the current persisted
+  workflow projection. The operational bound is the public `limit <= 200` response page plus the
+  new `lotus_manage_campaign_read_model_scan_total` metric for scan-mode visibility; the follow-up
+  path is to promote those predicates into a persisted projection or cursor contract before
+  pre-paging them.
+- Design decision: this is internal query-shape and observability hardening inside the same
+  `lotus-manage` deployable. No separately scalable campaign read-model service is justified by
+  this slice.
+- Docs/wiki/context/skill decision: README, repository context, operations runbook, wiki source,
+  monitoring contract, and this ledger changed because query-shape and operator metric truth
+  changed. Central context and platform skills do not need updates because the decision is
+  repository-local and follows existing backend delivery guidance.
