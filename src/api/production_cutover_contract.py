@@ -9,6 +9,7 @@ from src.api.persistence_profile import (
 )
 from src.api.services.rebalance_run_support_config import supportability_postgres_dsn
 from src.core.common.capabilities import has_psycopg
+from src.infrastructure.postgres_access import connect_postgres
 
 
 def validate_production_cutover_contract(*, check_migrations: bool) -> None:
@@ -27,7 +28,12 @@ def validate_cutover_migrations_applied() -> None:
 
     namespace = "dpm"
     expected_versions = expected_migration_versions(namespace=namespace)
-    with psycopg.connect(supportability_postgres_dsn(), row_factory=dict_row) as connection:
+    with connect_postgres(
+        supportability_postgres_dsn(),
+        connect_fn=psycopg.connect,
+        row_factory=dict_row,
+        application_name="lotus-manage:production-cutover",
+    ) as connection:
         applied_versions = applied_migration_versions(
             connection=connection,
             namespace=namespace,

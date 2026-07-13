@@ -14,6 +14,7 @@ from src.core.rebalance_runs.models import (
     DpmSupportabilitySummaryData,
 )
 from src.core.rebalance_runs.repository import DpmRunRepositoryConflictError
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 from src.infrastructure.rebalance_runs.operation_query import (
     build_operation_filter_query,
@@ -913,7 +914,12 @@ class PostgresDpmRunRepository:
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return connect_postgres(
+            self._dsn,
+            connect_fn=psycopg.connect,
+            row_factory=dict_row,
+            application_name="lotus-manage:rebalance-runs",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

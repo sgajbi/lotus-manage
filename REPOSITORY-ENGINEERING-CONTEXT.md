@@ -1013,8 +1013,9 @@ Important validation expectations:
 
 1. no-alias, OpenAPI, API vocabulary, migration smoke, and security audit are active,
 2. production profile readiness requires explicit write authorization enforcement, enterprise
-   primary key id, and a non-empty capability policy in addition to Postgres persistence guardrails;
-   PM-quality write routes reject body/header actor mismatches when authz is enabled,
+   primary key id, a non-empty capability policy, and a valid bounded Postgres access policy in
+   addition to Postgres persistence guardrails; PM-quality write routes reject body/header actor
+   mismatches when authz is enabled,
 3. architecture, complexity, exact duplicate implementation non-regression, dependency-hygiene,
    and dead-code gates are active in Remote Feature Lane, Pull Request Merge Gate, and Main
    Releasability; the separate Quality Baseline workflow remains report-only for expanded trend

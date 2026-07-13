@@ -21,6 +21,7 @@ _FORBIDDEN_LABEL_HINTS = {
     "actor",
     "client",
     "correlation",
+    "dsn",
     "idempotency",
     "instrument",
     "portfolio",
@@ -46,6 +47,9 @@ def implemented_metric_contract() -> dict[str, tuple[str, ...]]:
         ),
         f"{observability.DPM_POLICY_PACK_RESOLUTION_TOTAL._name}_total": tuple(
             observability.DPM_POLICY_PACK_RESOLUTION_TOTAL._labelnames
+        ),
+        f"{observability.POSTGRES_ACCESS_TOTAL._name}_total": tuple(
+            observability.POSTGRES_ACCESS_TOTAL._labelnames
         ),
         f"{observability.DPM_WORKFLOW_DECISION_TOTAL._name}_total": tuple(
             observability.DPM_WORKFLOW_DECISION_TOTAL._labelnames

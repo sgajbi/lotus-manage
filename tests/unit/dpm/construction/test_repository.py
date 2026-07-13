@@ -121,7 +121,8 @@ def test_postgres_repository_initializes_migrations(monkeypatch: pytest.MonkeyPa
     repository = PostgresConstructionRepository(dsn="postgresql://user:pass@localhost:5432/manage")
 
     assert repository._dsn == "postgresql://user:pass@localhost:5432/manage"
-    assert applied == [(connection, "dpm")]
+    assert applied[0][0]._connection is connection  # noqa: SLF001
+    assert applied[0][1] == "dpm"
 
 
 def test_postgres_repository_persists_alternative_set_and_idempotency(
@@ -217,8 +218,8 @@ class _FakePsycopg:
     def __init__(self, connection: "_FakeConnection") -> None:
         self._connection = connection
 
-    def connect(self, dsn: str, row_factory: Any) -> "_FakeConnection":
-        self._connection.connection_args.append({"dsn": dsn, "row_factory": row_factory})
+    def connect(self, dsn: str, **kwargs: Any) -> "_FakeConnection":
+        self._connection.connection_args.append({"dsn": dsn, **kwargs})
         return self._connection
 
 

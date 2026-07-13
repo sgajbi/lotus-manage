@@ -23,6 +23,7 @@ from src.core.pm_quality.repository import (
     DpmPmQualitySummaryInvocationIntegrityError,
 )
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -132,8 +133,10 @@ class PostgresDpmPmQualityScoreRunRepository:
         return [load_model_json(DpmPmOperatingQualityScoreRun, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
-        psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return _connect_pm_quality_postgres(
+            dsn=self._dsn,
+            application_name="lotus-manage:pm-quality-score-runs",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
@@ -238,8 +241,10 @@ class PostgresDpmPmQualityPolicyRepository:
         return [load_model_json(DpmPmOperatingQualityPolicy, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
-        psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return _connect_pm_quality_postgres(
+            dsn=self._dsn,
+            application_name="lotus-manage:pm-quality-policies",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
@@ -352,8 +357,10 @@ class PostgresDpmPmQualityFairnessAnalysisRepository:
         return [load_model_json(DpmPmQualityFairnessAnalysis, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
-        psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return _connect_pm_quality_postgres(
+            dsn=self._dsn,
+            application_name="lotus-manage:pm-quality-fairness",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
@@ -472,8 +479,10 @@ class PostgresDpmPmQualityReviewActionRepository:
         return [load_model_json(DpmPmQualityReviewAction, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
-        psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return _connect_pm_quality_postgres(
+            dsn=self._dsn,
+            application_name="lotus-manage:pm-quality-review-actions",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
@@ -608,8 +617,10 @@ class PostgresDpmPmQualitySummaryInvocationRepository:
         return [load_model_json(DpmPmQualitySummaryInvocation, _payload(row)) for row in rows]
 
     def _connect(self) -> Any:
-        psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return _connect_pm_quality_postgres(
+            dsn=self._dsn,
+            application_name="lotus-manage:pm-quality-summaries",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:
@@ -743,3 +754,13 @@ def _import_psycopg() -> tuple[Any, Any]:
     from psycopg.rows import dict_row
 
     return psycopg, dict_row
+
+
+def _connect_pm_quality_postgres(*, dsn: str, application_name: str) -> Any:
+    psycopg, dict_row = _import_psycopg()
+    return connect_postgres(
+        dsn,
+        connect_fn=psycopg.connect,
+        row_factory=dict_row,
+        application_name=application_name,
+    )

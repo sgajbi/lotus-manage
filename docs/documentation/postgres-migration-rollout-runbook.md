@@ -11,6 +11,12 @@ Runbook for forward-only schema migration rollout for:
 - PostgreSQL is reachable and healthy.
 - Runtime DSNs are configured:
   - `DPM_SUPPORTABILITY_POSTGRES_DSN`
+- Runtime Postgres access policy is configured or defaults are accepted:
+  - `DPM_POSTGRES_MAX_CONNECTIONS` (`1..100`, default `10`)
+  - `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS` (`1..30`, default `3`)
+  - `DPM_POSTGRES_STATEMENT_TIMEOUT_MS` (`100..60000`, default `5000`)
+  - `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` (`1000..120000`, default `10000`)
+  - `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS` (`1..30`, default `2`)
 - Application image/version to deploy is already tested in non-production.
 - Production compose override available:
   - `docker-compose.production.yml`
@@ -71,6 +77,16 @@ Do not start app replicas with Postgres backend enabled before migrations have c
   - `PERSISTENCE_PROFILE_REQUIRES_ENTERPRISE_CAPABILITY_RULES`
   - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES`
   - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN`
+  - `POSTGRES_ACCESS_POLICY_INVALID:{env_name}`
+  - `POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:{env_name}:{minimum}:{maximum}`
+- Runtime repositories use the shared bounded Postgres access policy for connection acquisition,
+  connect timeout, statement timeout, and idle-in-transaction timeout. Acquisition and driver
+  failures raise stable `POSTGRES_CONNECTION_ACQUIRE_TIMEOUT` or
+  `POSTGRES_CONNECTION_UNAVAILABLE` errors, emit bounded `lotus_manage_postgres_access_total`
+  metrics, and log sanitized reason/classification fields without DSNs or payload content.
+- Application writes are not blindly retried after database errors. Fix database capacity,
+  connectivity, timeout, migration, or lock pressure first, then replay only caller-owned
+  idempotent requests according to the route contract.
 
 ## CI Smoke Checks
 
@@ -88,6 +104,8 @@ CI executes:
     - `PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN`
     - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES`
     - `PERSISTENCE_PROFILE_REQUIRES_POLICY_PACK_POSTGRES_DSN`
+    - `POSTGRES_ACCESS_POLICY_INVALID:{env_name}`
+    - `POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:{env_name}:{minimum}:{maximum}`
 5. Production cutover contract check:
    - `python scripts/production_cutover_check.py --check-migrations`
 6. Optional nightly/manual deep validation:

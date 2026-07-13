@@ -744,7 +744,7 @@ class _FakePsycopg:
     def __init__(self, store: _FakePostgresStore) -> None:
         self.store = store
 
-    def connect(self, _dsn: str, *, row_factory: object) -> _FakeConnection:
+    def connect(self, _dsn: str, *, row_factory: object, **_kwargs: object) -> _FakeConnection:
         assert row_factory == "dict_row"
         return _FakeConnection(self.store)
 

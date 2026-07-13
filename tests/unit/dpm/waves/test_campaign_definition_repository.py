@@ -2999,14 +2999,14 @@ def test_postgres_campaign_definition_repository_connects_and_initializes(monkey
     first_expected_connection = _Connection([_Cursor()])
     init_expected_connection = _Connection([_Cursor()])
     connections = [first_expected_connection, init_expected_connection]
-    connect_calls: list[tuple[str, object]] = []
+    connect_calls: list[dict[str, object]] = []
     migrations: list[tuple[_Connection, str]] = []
     dict_row = object()
 
     class FakePsycopg:
         @staticmethod
-        def connect(dsn: str, *, row_factory: object) -> _Connection:
-            connect_calls.append((dsn, row_factory))
+        def connect(dsn: str, **kwargs: object) -> _Connection:
+            connect_calls.append({"dsn": dsn, **kwargs})
             return connections.pop(0)
 
     monkeypatch.setattr(
@@ -3025,12 +3025,17 @@ def test_postgres_campaign_definition_repository_connects_and_initializes(monkey
     first_connection = repository._connect()
     repository._init_db()
 
-    assert first_connection is first_expected_connection
-    assert connect_calls == [
-        ("postgresql://campaigns", dict_row),
-        ("postgresql://campaigns", dict_row),
+    try:
+        assert first_connection._connection is first_expected_connection  # noqa: SLF001
+    finally:
+        first_connection.close()
+    assert [call["dsn"] for call in connect_calls] == [
+        "postgresql://campaigns",
+        "postgresql://campaigns",
     ]
-    assert migrations == [(init_expected_connection, "dpm")]
+    assert [call["row_factory"] for call in connect_calls] == [dict_row, dict_row]
+    assert migrations[0][0]._connection is init_expected_connection  # noqa: SLF001
+    assert migrations[0][1] == "dpm"
 
 
 def test_postgres_campaign_definition_repository_init_stores_dsn(monkeypatch) -> None:

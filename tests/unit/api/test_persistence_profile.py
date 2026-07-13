@@ -97,6 +97,21 @@ def test_validate_persistence_profile_requires_policy_pack_postgres_dsn_when_ena
         profile.validate_persistence_profile_guardrails()
 
 
+def test_validate_persistence_profile_requires_valid_postgres_access_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("APP_PERSISTENCE_PROFILE", "PRODUCTION")
+    monkeypatch.setenv("DPM_POSTGRES_MAX_CONNECTIONS", "0")
+    monkeypatch.setattr(profile, "supportability_store_backend_name", lambda: "POSTGRES")
+    monkeypatch.setattr(profile, "supportability_postgres_dsn", lambda: "postgresql://dpm")
+
+    with pytest.raises(
+        RuntimeError,
+        match="POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:DPM_POSTGRES_MAX_CONNECTIONS:1:100",
+    ):
+        profile.validate_persistence_profile_guardrails()
+
+
 @pytest.mark.parametrize(
     ("env_updates", "expected"),
     [
