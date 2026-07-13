@@ -44,6 +44,17 @@ def _has_example(content: dict) -> bool:
     return bool(content.get("example") or content.get("examples"))
 
 
+def _json_error_content(response: dict) -> dict | None:
+    content = response.get("content", {})
+    json_content = content.get("application/json")
+    if isinstance(json_content, dict):
+        return json_content
+    problem_content = content.get("application/problem+json")
+    if isinstance(problem_content, dict):
+        return problem_content
+    return None
+
+
 def _is_error_status(status_code: object) -> bool:
     normalized = str(status_code)
     return normalized.startswith(("4", "5")) or normalized == "default"
@@ -297,8 +308,8 @@ def test_openapi_error_responses_have_json_examples():
             for status_code, response in sorted(operation.get("responses", {}).items()):
                 if not _is_error_status(status_code):
                     continue
-                json_content = response.get("content", {}).get("application/json")
-                if not isinstance(json_content, dict) or not _has_example(json_content):
+                json_content = _json_error_content(response)
+                if json_content is None or not _has_example(json_content):
                     missing.append(f"{method.upper()} {path} {status_code}")
 
     assert missing == []
