@@ -536,6 +536,7 @@ def _validate_review_action_parent(
     score_run_repository: DpmPmQualityScoreRunRepository | None,
     fairness_analysis_repository: DpmPmQualityFairnessAnalysisRepository | None,
 ) -> None:
+    target: DpmPmOperatingQualityScoreRun | DpmPmQualityFairnessAnalysis | None
     if action.target_type == "SCORE_RUN":
         if score_run_repository is None:
             return
