@@ -35,16 +35,20 @@ EXPECTED_TRUST_POSTURES = {
         "blocked": False,
         "runtime_certification": "repo_native_contract_fixture",
         "certification_ready": None,
+        "blocked_reason": None,
+        "blocker_issue_refs": set(),
     },
     "lotus-manage:BulkReviewCampaignMembership:v1": {
-        "freshness_state": "current",
-        "completeness_status": "complete",
-        "reconciliation_status": "reconciled",
-        "data_quality_status": "quality_passed",
-        "evidence_access_class": "customer_consumable",
-        "blocked": False,
-        "runtime_certification": "repo_native_contract_fixture",
-        "certification_ready": None,
+        "freshness_state": "unknown",
+        "completeness_status": "blocked",
+        "reconciliation_status": "blocked",
+        "data_quality_status": "quality_blocked",
+        "evidence_access_class": "operator_only",
+        "blocked": True,
+        "runtime_certification": "repo_native_contract_fixture_blocked",
+        "certification_ready": False,
+        "blocked_reason": "BULK_REVIEW_MESH_CERTIFICATION_DEFERRED",
+        "blocker_issue_refs": {"sgajbi/lotus-manage#612"},
     },
     "lotus-manage:PmOperatingQualityScoreRun:v1": {
         "freshness_state": "unknown",
@@ -55,16 +59,16 @@ EXPECTED_TRUST_POSTURES = {
         "blocked": True,
         "runtime_certification": "repo_native_contract_fixture_blocked",
         "certification_ready": False,
+        "blocked_reason": "PM_QUALITY_CERTIFICATION_BLOCKED",
+        "blocker_issue_refs": {
+            "sgajbi/lotus-manage#595",
+            "sgajbi/lotus-manage#596",
+            "sgajbi/lotus-manage#603",
+            "sgajbi/lotus-manage#606",
+            "sgajbi/lotus-manage#609",
+            "sgajbi/lotus-manage#610",
+        },
     },
-}
-
-PM_QUALITY_CERTIFICATION_BLOCKERS = {
-    "sgajbi/lotus-manage#595",
-    "sgajbi/lotus-manage#596",
-    "sgajbi/lotus-manage#603",
-    "sgajbi/lotus-manage#606",
-    "sgajbi/lotus-manage#609",
-    "sgajbi/lotus-manage#610",
 }
 
 
@@ -126,6 +130,40 @@ def test_repo_native_trust_telemetry_validation_rejects_certified_route_foundati
     assert any(
         "not-certified route foundation /api/v1/rebalance/idea-action-intake "
         "must not be listed in serving_routes"
+        in issue
+        for issue in issues
+    )
+
+
+def test_repo_native_trust_telemetry_validation_rejects_deferred_product_success_posture(
+    tmp_path: Path,
+) -> None:
+    if not platform_validation_dependencies_available():
+        pytest.skip("sibling lotus-platform trust telemetry validator is not available")
+
+    telemetry_dir = tmp_path / "trust-telemetry"
+    telemetry_dir.mkdir()
+    for source_path in LOCAL_TELEMETRY_DIR.glob("*.json"):
+        shutil.copy2(source_path, telemetry_dir / source_path.name)
+
+    product_declaration_path = tmp_path / "lotus-manage-products.v1.json"
+    shutil.copy2(PRODUCT_DECLARATION_PATH, product_declaration_path)
+    bulk_snapshot_path = telemetry_dir / "bulk-review-campaign-membership.telemetry.v1.json"
+    bulk_snapshot = json.loads(bulk_snapshot_path.read_text(encoding="utf-8"))
+    bulk_snapshot["data_quality_status"] = "quality_passed"
+    bulk_snapshot["lineage"]["evidence_access_class"] = "customer_consumable"
+    bulk_snapshot["blocking"] = {"blocked": False}
+    bulk_snapshot["certification_limits"].pop("certification_ready", None)
+    bulk_snapshot_path.write_text(json.dumps(bulk_snapshot), encoding="utf-8")
+
+    issues = validate_repo_native_trust_telemetry(
+        telemetry_dir,
+        product_declaration_path=product_declaration_path,
+    )
+
+    assert any(
+        "deferred mesh product lotus-manage:BulkReviewCampaignMembership:v1 "
+        "must publish data_quality_status=quality_blocked"
         in issue
         for issue in issues
     )
@@ -208,14 +246,31 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
                 telemetry["certification_limits"]["certification_ready"]
                 is expected_posture["certification_ready"]
             )
-            assert telemetry["blocking"]["blocked_reason"] == "PM_QUALITY_CERTIFICATION_BLOCKED"
+            assert telemetry["blocking"]["blocked_reason"] == expected_posture["blocked_reason"]
             assert set(telemetry["blocking"]["blocker_issue_refs"]) == (
-                PM_QUALITY_CERTIFICATION_BLOCKERS
+                expected_posture["blocker_issue_refs"]
             )
             assert "quality_passed" not in {
                 telemetry["data_quality_status"],
                 telemetry["observed_trust_metadata"]["data_quality_status"],
             }
+
+        if product_id == "lotus-manage:BulkReviewCampaignMembership:v1":
+            assert (
+                telemetry["certification_limits"]["platform_maturity_state"]
+                == product["mesh_maturity_posture"]["maturity_state"]
+            )
+            assert (
+                telemetry["certification_limits"]["maturity_wave"]
+                == product["mesh_maturity_posture"]["maturity_wave"]
+            )
+            assert (
+                telemetry["certification_limits"]["required_policy_refs"]
+                == product["mesh_maturity_posture"]["missing_policy_refs"]
+            )
+            assert "BULK_REVIEW_MESH_SLO_POLICY_MISSING" in (
+                telemetry["blocking"]["blocker_reason_codes"]
+            )
 
 
 def test_not_certified_route_foundations_do_not_inherit_unblocked_serving_route_posture() -> None:

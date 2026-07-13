@@ -175,6 +175,67 @@ def _validate_route_foundation_boundaries(
     return issues
 
 
+def _validate_deferred_mesh_maturity_boundaries(
+    source_directory: Path,
+    *,
+    product_declaration_path: Path,
+) -> list[str]:
+    if not product_declaration_path.exists():
+        return [f"{product_declaration_path}: product declaration does not exist"]
+
+    issues: list[str] = []
+    declaration = _load_json(product_declaration_path)
+    snapshots_by_product_id: dict[str, tuple[Path, dict]] = {}
+    for snapshot_path in sorted(source_directory.glob("*.json")):
+        payload = _load_json(snapshot_path)
+        product_id = payload.get("product_id")
+        if isinstance(product_id, str):
+            snapshots_by_product_id[product_id] = (snapshot_path, payload)
+
+    for product in declaration.get("products", []):
+        if not isinstance(product, dict):
+            continue
+        mesh_posture = product.get("mesh_maturity_posture")
+        if not isinstance(mesh_posture, dict):
+            continue
+        if not (
+            mesh_posture.get("maturity_state") == "deferred"
+            or mesh_posture.get("maturity_wave") == "future_wave"
+        ):
+            continue
+
+        product_id = _product_id(product)
+        snapshot = snapshots_by_product_id.get(product_id)
+        if snapshot is None:
+            continue
+        snapshot_path, telemetry = snapshot
+        if telemetry.get("data_quality_status") != "quality_blocked":
+            issues.append(
+                f"{snapshot_path}: deferred mesh product {product_id} must publish data_quality_status=quality_blocked"
+            )
+        if telemetry.get("lineage", {}).get("evidence_access_class") != "operator_only":
+            issues.append(
+                f"{snapshot_path}: deferred mesh product {product_id} must publish operator_only evidence"
+            )
+        if telemetry.get("blocking", {}).get("blocked") is not True:
+            issues.append(
+                f"{snapshot_path}: deferred mesh product {product_id} must publish blocking.blocked=true"
+            )
+        certification_limits = telemetry.get("certification_limits", {})
+        if certification_limits.get("certification_ready") is not False:
+            issues.append(
+                f"{snapshot_path}: deferred mesh product {product_id} must publish certification_ready=false"
+            )
+        if certification_limits.get("platform_maturity_state") != mesh_posture.get("maturity_state"):
+            issues.append(
+                f"{snapshot_path}: platform_maturity_state must match {product_declaration_path}"
+            )
+        if certification_limits.get("maturity_wave") != mesh_posture.get("maturity_wave"):
+            issues.append(f"{snapshot_path}: maturity_wave must match {product_declaration_path}")
+
+    return issues
+
+
 def validate_repo_native_trust_telemetry(
     source_directory: Path = LOCAL_TELEMETRY_DIR,
     *,
@@ -201,6 +262,9 @@ def validate_repo_native_trust_telemetry(
             semantics_registry_path=PLATFORM_SEMANTICS_REGISTRY_PATH,
         )
         return platform_issues + _validate_route_foundation_boundaries(
+            source_directory,
+            product_declaration_path=product_declaration_path,
+        ) + _validate_deferred_mesh_maturity_boundaries(
             source_directory,
             product_declaration_path=product_declaration_path,
         )

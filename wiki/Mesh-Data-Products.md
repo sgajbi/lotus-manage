@@ -44,6 +44,11 @@
 - Product role: governed Manage-owned campaign membership evidence for bulk-review rebalance
   waves, with optional approval, expiry, access-purpose, source-ref, and actor-entitlement
   governance evidence preserved in the membership envelope.
+- Trust posture: catalog-visible and implementation-backed, but mesh-deferred/future-wave in the
+  platform maturity matrix. The checked-in trust snapshot is blocked/operator-only until
+  product-specific platform SLO, access, evidence-pack, and runtime certification evidence are
+  promoted. Downstream consumers must not treat the fixture as customer-consumable
+  `quality_passed` telemetry.
 - Implemented route families:
   - `/api/v1/rebalance/waves/preview`
   - `/api/v1/rebalance/waves`
@@ -129,9 +134,11 @@ active producer product is missing repo-native trust telemetry, serving-route co
 access, SLO, or evidence posture. The checked-in snapshots are deterministic contract fixtures
 validated by feature and PR-merge lanes; they do not by themselves assert live-environment runtime
 certification. The PM operating quality score-run fixture is deliberately blocked until linked
-certification evidence is mainline and runtime trust is regenerated. PM operating quality score-run
-lifecycle is not portfolio-memory event projection and should not be treated as an execution,
-compensation, HR, conduct, or autonomous-ranking product.
+certification evidence is mainline and runtime trust is regenerated. The bulk-review campaign
+membership fixture is deliberately blocked while platform maturity remains `deferred`/`future_wave`
+and product-specific mesh SLO, access, evidence-pack, and runtime certification evidence are
+missing. PM operating quality score-run lifecycle is not portfolio-memory event projection and
+should not be treated as an execution, compensation, HR, conduct, or autonomous-ranking product.
 
 Stateful `portfolio_id` execution is not yet a promoted mesh consumption mode. The resolver seam is
 implemented, but live source-data dependency declaration waits for RFC-087 `lotus-core` composed

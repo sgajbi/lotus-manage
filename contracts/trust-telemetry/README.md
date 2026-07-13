@@ -35,3 +35,9 @@ certification evidence remains branch-local or pending runtime regeneration. It 
 `quality_passed`, complete/reconciled, customer-consumable evidence until the linked PM-quality
 certification blockers are merged to `main` and the trust snapshot is deliberately promoted.
 
+`bulk-review-campaign-membership.telemetry.v1.json` is intentionally blocked while the platform
+maturity matrix classifies `lotus-manage:BulkReviewCampaignMembership:v1` as
+`deferred`/`future_wave` and product-specific mesh SLO, access, evidence-pack, and runtime
+certification evidence are missing. It must remain operator-only `quality_blocked` telemetry until
+those policy and certification gaps are deliberately closed.
+

@@ -50,7 +50,9 @@ Current declarations:
    `lotus-manage:BulkReviewCampaignMembership:v1`, surfaced through bounded
    `BULK_REVIEW_CAMPAIGN` rebalance wave preview/create over source-backed candidate portfolios
    with optional approval/expiry/actor-entitlement governance evidence and optional persisted
-   `BulkReviewCampaignDefinition:v1` definitions,
+   `BulkReviewCampaignDefinition:v1` definitions. This product is catalog-visible but
+   mesh-deferred/future-wave until platform SLO, access, evidence-pack, and runtime certification
+   evidence are promoted,
    and `lotus-manage:PmOperatingQualityScoreRun:v1`, surfaced through immutable PM operating
    quality policy administration, bank approval and fairness-review governance evidence, optional
    source-owned PM-book scope evidence, preview, create/read/list score-run lifecycle,
@@ -88,6 +90,10 @@ They do not by themselves assert live-environment runtime certification.
 The PM operating quality snapshot is intentionally `blocked`/`quality_blocked` and operator-only
 until linked PM-quality certification blockers are merged to `main` and runtime trust evidence is
 regenerated; do not treat active product declaration coverage as customer-reliance readiness.
+The bulk-review campaign membership snapshot is also intentionally
+`blocked`/`quality_blocked` and operator-only while platform maturity classifies it as
+`deferred`/`future_wave` and product-specific mesh SLO, access, evidence-pack, and runtime
+certification evidence are missing.
 
 Consumer adapter rule:
 
@@ -111,17 +117,21 @@ Current watchlist:
 1. `lotus-manage` stateful source consumption must stay aligned with certified producer
    declarations. New source products should be added here only after source-owner approval,
    trust metadata, tests, and live proof exist.
-2. Market-data request payloads remain source-data-authority sensitive, but raw `MarketDataWindow`
+2. Active producer declarations do not imply customer-consumable trust telemetry. Deferred
+   products such as `BulkReviewCampaignMembership:v1` must remain blocked/operator-only in
+   `contracts/trust-telemetry/` until platform mesh maturity and product-specific policy evidence
+   are promoted.
+3. Market-data request payloads remain source-data-authority sensitive, but raw `MarketDataWindow`
    is not currently approved for `lotus-manage` in the upstream producer declaration. Manage
    declares only the bounded `MarketDataCoverageWindow:v1` supportability product and must not
    treat it as raw market-data or valuation-methodology ownership.
-3. `BenchmarkAssignment:v1` is approved for bounded `lotus-manage` benchmark-identity lineage
+4. `BenchmarkAssignment:v1` is approved for bounded `lotus-manage` benchmark-identity lineage
    consumption only. Manage preserves only active assignments; missing, unavailable, incomplete, or
    non-active assignments remain explicit degraded source posture through
    `BENCHMARK_ASSIGNMENT_NOT_YET_SOURCED`. Keep benchmark composition, active-risk, performance
    attribution, benchmark analytics, and model-approval methodology in their owning source
    services.
-4. The `lotus-idea` action-intake route is route-foundation evidence only. It clears the
+5. The `lotus-idea` action-intake route is route-foundation evidence only. It clears the
    cross-repo missing-route proof when validated by `lotus-idea`, but it does not persist an action
    register row, grant rebalance authority, create orders, authorize client publication, or promote
    a supported feature. It must remain outside certified product `current_routes` and unblocked
