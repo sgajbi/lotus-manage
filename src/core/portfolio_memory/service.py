@@ -41,6 +41,7 @@ from src.core.portfolio_memory.search_source_collection import (
 from src.core.portfolio_memory.source_repositories import (
     PortfolioMemorySourceRepositories,
     build_portfolio_memory_source_repositories as _build_portfolio_memory_source_repositories,
+    require_campaign_definition_tenant_id as _require_campaign_definition_tenant_id,
     require_pm_quality_tenant_id as _require_pm_quality_tenant_id,
 )
 from src.core.proof_packs.repository import DpmProofPackRepository
@@ -85,6 +86,23 @@ def build_portfolio_memory(
     )
 
 
+def _require_tenant_id_for_tenant_scoped_sources(
+    *,
+    tenant_id: str | None,
+    repositories: PortfolioMemorySourceRepositories,
+) -> str | None:
+    pm_quality_tenant_id = _require_pm_quality_tenant_id(
+        tenant_id=tenant_id,
+        repositories=repositories,
+    )
+    if pm_quality_tenant_id is not None:
+        return pm_quality_tenant_id
+    return _require_campaign_definition_tenant_id(
+        tenant_id=tenant_id,
+        repositories=repositories,
+    )
+
+
 def build_portfolio_memory_from_sources(
     *,
     tenant_id: str | None = None,
@@ -97,12 +115,12 @@ def build_portfolio_memory_from_sources(
 
     limit = _validate_portfolio_memory_read_limit(limit=limit)
     generated_at = generated_at or datetime.now(timezone.utc)
-    pm_quality_tenant_id = _require_pm_quality_tenant_id(
+    source_tenant_id = _require_tenant_id_for_tenant_scoped_sources(
         tenant_id=tenant_id,
         repositories=repositories,
     )
     events = _collect_portfolio_memory_events(
-        tenant_id=pm_quality_tenant_id,
+        tenant_id=source_tenant_id,
         portfolio_id=portfolio_id,
         repositories=repositories,
         limit=limit,
@@ -191,12 +209,12 @@ def search_portfolio_memory_from_sources(
         offset=offset,
         source_scan_limit=source_scan_limit,
     )
-    pm_quality_tenant_id = _require_pm_quality_tenant_id(
+    source_tenant_id = _require_tenant_id_for_tenant_scoped_sources(
         tenant_id=tenant_id,
         repositories=repositories,
     )
     search_sources = _collect_portfolio_memory_search_events(
-        tenant_id=pm_quality_tenant_id,
+        tenant_id=source_tenant_id,
         repositories=repositories,
         portfolio_ids=search_query.explicit_candidate_ids,
         limit=search_query.source_scan_limit,

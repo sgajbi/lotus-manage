@@ -30497,3 +30497,40 @@ and improves internal transaction-cost source posture maintainability only.
   changed. README, repo context, central context, wiki source, and platform skills do not need
   updates because public route behavior, operator workflow, commands, and routing guidance did not
   change.
+
+## BACKEND-REVIEW-20260713-0615-E: Portfolio-memory source repository composition boundary
+
+- Date: 2026-07-13
+- GitHub issue: #615
+- Scope: portfolio-memory source repository composition used by search, detail, and event lookup
+  APIs.
+- Bank-buyable control area: route thinness, dependency-composition ownership, source-lineage
+  preservation, and architecture-boundary regression tests.
+- Finding: after campaign workflow and wave create/preview routes stopped injecting the campaign
+  definition repository directly, `portfolio_memory.py` still assembled its full
+  `PortfolioMemorySourceRepositories` object inside the router package, including the campaign
+  definition repository used for bounded campaign-definition workflow evidence.
+- Action: moved portfolio-memory source repository aggregation to `src/api/dependencies.py` so the
+  router package owns only the API router and route-module registration. Fixed the core
+  portfolio-memory service to propagate caller tenant identity to every tenant-scoped source family
+  instead of deriving it only from PM-quality repository presence. Added a regression test that
+  prevents the portfolio-memory router from reintroducing direct campaign repository wiring or
+  source-repository construction, and updated event-lookup coverage to prove campaign-definition
+  memory can be reused by report context and HTTP lookup paths with trusted tenant identity.
+- Status: fixed locally.
+- Evidence: focused Ruff, unit, OpenAPI, service-boundary, dead-code, test-family, complexity,
+  engineering-health, and whitespace validation will be recorded in the #615 issue comment for the
+  corresponding commit on branch `fix/issue-600-pm-quality-application-boundary`.
+- Same-pattern scan: direct campaign repository access remains expected only in API dependency
+  composition, the campaign application service, repository tests, and core portfolio-memory source
+  projection code. Campaign workflow, generic wave create/preview, and portfolio-memory router
+  modules no longer wire the campaign repository directly. Tenant-scoped portfolio-memory
+  collection now uses one source tenant id for PM-quality and campaign-definition source families,
+  preserving the existing fail-closed behavior when a caller omits tenant identity.
+- Design decision: this is an internal dependency-flow cleanup inside the existing `lotus-manage`
+  deployable. Portfolio memory remains a Manage-local read model that preserves source refs and
+  does not become a separate runtime service.
+- Docs/wiki/context/skill decision: this ledger changed because route dependency-flow truth
+  changed. README, repo context, central context, wiki source, and platform skills do not need
+  updates because public route behavior, operator workflow, commands, and routing guidance did not
+  change.

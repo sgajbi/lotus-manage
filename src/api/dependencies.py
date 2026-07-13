@@ -22,6 +22,10 @@ from src.core.pm_quality.repository import (
     DpmPmQualityScoreRunRepository,
     DpmPmQualitySummaryInvocationRepository,
 )
+from src.core.portfolio_memory.source_repositories import (
+    PortfolioMemorySourceRepositories,
+    build_portfolio_memory_source_repositories,
+)
 from src.core.waves.repository import DpmWaveRepository
 from src.core.waves.campaign_repository import DpmBulkReviewCampaignDefinitionRepository
 from src.infrastructure.construction import InMemoryConstructionRepository
@@ -425,6 +429,40 @@ def get_wave_campaign_application_service(
 
     return DpmWaveCampaignApplicationService(
         campaign_definition_repository=campaign_definition_repository
+    )
+
+
+def get_portfolio_memory_source_repositories(
+    proof_pack_repository: DpmProofPackRepository = Depends(get_proof_pack_repository),
+    construction_repository: ConstructionRepository = Depends(get_construction_repository),
+    wave_repository: DpmWaveRepository = Depends(get_wave_repository),
+    outcome_review_repository: DpmOutcomeReviewRepository = Depends(get_outcome_review_repository),
+    mandate_repository: DpmMandateRepository = Depends(get_mandate_repository),
+    pm_quality_score_run_repository: DpmPmQualityScoreRunRepository = Depends(
+        get_pm_quality_score_run_repository
+    ),
+    pm_quality_review_action_repository: DpmPmQualityReviewActionRepository = Depends(
+        get_pm_quality_review_action_repository
+    ),
+    pm_quality_summary_invocation_repository: DpmPmQualitySummaryInvocationRepository = Depends(
+        get_pm_quality_summary_invocation_repository
+    ),
+    campaign_definition_repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
+        get_campaign_definition_repository
+    ),
+) -> PortfolioMemorySourceRepositories:
+    """Return source repositories used to compose Manage-local portfolio memory."""
+
+    return build_portfolio_memory_source_repositories(
+        proof_pack_repository=proof_pack_repository,
+        wave_repository=wave_repository,
+        outcome_review_repository=outcome_review_repository,
+        mandate_repository=mandate_repository,
+        construction_repository=construction_repository,
+        pm_quality_score_run_repository=pm_quality_score_run_repository,
+        pm_quality_review_action_repository=pm_quality_review_action_repository,
+        pm_quality_summary_invocation_repository=pm_quality_summary_invocation_repository,
+        campaign_definition_repository=campaign_definition_repository,
     )
 
 
