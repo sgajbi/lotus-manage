@@ -2,13 +2,18 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_workflow_overview_http import (
-    get_campaign_definition_workflow_overview_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_not_found_http_exception,
+    parse_optional_campaign_discovery_date,
 )
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
+)
+from src.api.services.wave_campaign_application import (
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
 )
 from src.api.routers.wave_route_parameters import (
     CampaignActiveOnQuery,
@@ -22,7 +27,6 @@ from src.api.routers.wave_route_parameters import (
     CampaignLaunchRequestedAsOfDateQuery,
 )
 from src.core.waves import (
-    DpmBulkReviewCampaignDefinitionRepository,
     DpmBulkReviewCampaignDefinitionWorkflowOverview,
 )
 
@@ -55,20 +59,25 @@ def get_bulk_review_campaign_definition_workflow_overview(
     launch_history_limit: CampaignLaunchHistoryLimitQuery = 20,
     launch_history_offset: CampaignLaunchHistoryOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionWorkflowOverview:
-    return get_campaign_definition_workflow_overview_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        requested_as_of_date=requested_as_of_date,
-        actor_id=actor_id,
-        active_on=active_on,
-        launch_history_limit=launch_history_limit,
-        launch_history_offset=launch_history_offset,
-        include_launch_package=include_launch_package,
-        correlation_id=correlation_id,
-        repository=repository,
-    )
+    try:
+        return application_service.get_campaign_definition_workflow_overview(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            requested_as_of_date=requested_as_of_date,
+            actor_id=actor_id,
+            active_on=parse_optional_campaign_discovery_date(
+                value=active_on,
+                field_name="active_on",
+            ),
+            launch_history_limit=launch_history_limit,
+            launch_history_offset=launch_history_offset,
+            include_launch_package=include_launch_package,
+            correlation_id=correlation_id,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc

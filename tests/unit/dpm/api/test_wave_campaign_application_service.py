@@ -89,12 +89,48 @@ def test_campaign_application_service_creates_lists_reads_and_checks_readiness()
         as_of_date=command.as_of_date,
         active_on=None,
     )
+    launch_package = service.get_campaign_definition_launch_package(
+        tenant_id=command.tenant_id,
+        campaign_id=command.campaign_id,
+        campaign_version=command.campaign_version,
+        requested_as_of_date=command.as_of_date,
+        actor_id="ops",
+        correlation_id="corr-campaign-launch-package",
+    )
+    workflow_overview = service.get_campaign_definition_workflow_overview(
+        tenant_id=command.tenant_id,
+        campaign_id=command.campaign_id,
+        campaign_version=command.campaign_version,
+        requested_as_of_date=command.as_of_date,
+        actor_id="ops",
+        active_on=None,
+        include_launch_package=True,
+        correlation_id="corr-campaign-workflow-overview",
+        launch_history_limit=20,
+        launch_history_offset=0,
+    )
+    lifecycle_events = service.list_campaign_definition_lifecycle_events(
+        tenant_id=command.tenant_id,
+        campaign_id=command.campaign_id,
+        campaign_version=command.campaign_version,
+    )
+    launch_history = service.list_campaign_definition_launch_history(
+        tenant_id=command.tenant_id,
+        campaign_id=command.campaign_id,
+        campaign_version=command.campaign_version,
+        limit=50,
+        offset=0,
+    )
 
     assert fetched == created
     assert listed == [created]
     assert read_model_query.definitions == [created]
     assert readiness.candidate_count == 1
     assert readiness.eligible_candidate_count == 1
+    assert launch_package.campaign_id == command.campaign_id
+    assert workflow_overview.campaign_id == command.campaign_id
+    assert lifecycle_events.count == 1
+    assert launch_history.count == 0
 
 
 def test_campaign_application_service_retires_and_raises_not_found() -> None:
@@ -133,6 +169,9 @@ def test_campaign_definition_routes_depend_on_application_service_boundary() -> 
         Path("src/api/routers/wave_campaign_workflow_board_routes.py"),
         Path("src/api/routers/wave_campaign_assignment_plan_routes.py"),
         Path("src/api/routers/wave_campaign_workflow_automation_routes.py"),
+        Path("src/api/routers/wave_campaign_workflow_overview_routes.py"),
+        Path("src/api/routers/wave_campaign_launch_package_routes.py"),
+        Path("src/api/routers/wave_campaign_audit_read_routes.py"),
     ]
 
     for route_path in route_paths:

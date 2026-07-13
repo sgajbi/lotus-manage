@@ -2,14 +2,22 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, status
 
-from src.api.dependencies import get_campaign_definition_repository
-from src.api.routers.wave_campaign_audit_read_http import (
-    list_campaign_definition_launch_history_response,
-    list_campaign_definition_lifecycle_events_response,
+from src.api.dependencies import get_wave_campaign_application_service
+from src.api.routers.wave_campaign_definition_errors import (
+    campaign_definition_not_found_http_exception,
 )
 from src.api.routers.wave_campaign_trusted_context import (
     CampaignTrustedContext,
     campaign_trusted_context_required,
+)
+from src.api.routers.wave_campaign_workflow_telemetry import (
+    campaign_workflow_http_exception,
+    record_campaign_workflow_success,
+    record_campaign_workflow_unexpected_error,
+)
+from src.api.services.wave_campaign_application import (
+    DpmWaveCampaignApplicationNotFoundError,
+    DpmWaveCampaignApplicationService,
 )
 from src.api.routers.wave_route_parameters import (
     CampaignDefinitionIdPath,
@@ -19,7 +27,6 @@ from src.api.routers.wave_route_parameters import (
 )
 from src.core.waves import (
     DpmBulkReviewCampaignDefinitionLaunchHistoryPage,
-    DpmBulkReviewCampaignDefinitionRepository,
 )
 from src.core.waves.campaign_definition_events import (
     DpmBulkReviewCampaignDefinitionLifecycleEventPage,
@@ -46,16 +53,18 @@ def list_bulk_review_campaign_definition_lifecycle_events(
     campaign_id: CampaignDefinitionIdPath,
     campaign_version: CampaignDefinitionVersionPath,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionLifecycleEventPage:
-    return list_campaign_definition_lifecycle_events_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        repository=repository,
-    )
+    try:
+        return application_service.list_campaign_definition_lifecycle_events(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_definition_not_found_http_exception() from exc
 
 
 @router.get(
@@ -77,15 +86,26 @@ def list_bulk_review_campaign_definition_launch_history(
     limit: CampaignEvidenceLimitQuery = 50,
     offset: CampaignEvidenceOffsetQuery = 0,
     trusted_context: CampaignTrustedContext = Depends(campaign_trusted_context_required),
-    repository: DpmBulkReviewCampaignDefinitionRepository = Depends(
-        get_campaign_definition_repository
+    application_service: DpmWaveCampaignApplicationService = Depends(
+        get_wave_campaign_application_service
     ),
 ) -> DpmBulkReviewCampaignDefinitionLaunchHistoryPage:
-    return list_campaign_definition_launch_history_response(
-        tenant_id=trusted_context.tenant_id,
-        campaign_id=campaign_id,
-        campaign_version=campaign_version,
-        limit=limit,
-        offset=offset,
-        repository=repository,
-    )
+    surface = "launch_history"
+    try:
+        page = application_service.list_campaign_definition_launch_history(
+            tenant_id=trusted_context.tenant_id,
+            campaign_id=campaign_id,
+            campaign_version=campaign_version,
+            limit=limit,
+            offset=offset,
+        )
+    except DpmWaveCampaignApplicationNotFoundError as exc:
+        raise campaign_workflow_http_exception(
+            surface=surface,
+            exc=campaign_definition_not_found_http_exception(),
+        ) from exc
+    except Exception:
+        record_campaign_workflow_unexpected_error(surface=surface)
+        raise
+    record_campaign_workflow_success(surface=surface)
+    return page
