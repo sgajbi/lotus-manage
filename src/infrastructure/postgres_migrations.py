@@ -131,11 +131,94 @@ def _insert_schema_migration_record(
 
 
 def _execute_sql_statements(*, connection: Any, sql: str) -> None:
-    for statement in sql.split(";"):
+    for statement in _split_sql_statements(sql):
         normalized = statement.strip()
         if not normalized:
             continue
         connection.execute(normalized)
+
+
+def _split_sql_statements(sql: str) -> list[str]:
+    statements: list[str] = []
+    start = 0
+    index = 0
+    dollar_tag: str | None = None
+    in_single_quote = False
+    in_double_quote = False
+    while index < len(sql):
+        char = sql[index]
+        if dollar_tag is not None:
+            index, dollar_tag = _advance_dollar_quoted_sql(
+                sql=sql,
+                index=index,
+                dollar_tag=dollar_tag,
+            )
+            continue
+        if in_single_quote:
+            index, in_single_quote = _advance_single_quoted_sql(sql=sql, index=index)
+            continue
+        if in_double_quote:
+            index, in_double_quote = _advance_double_quoted_sql(sql=sql, index=index)
+            continue
+        if char == "'":
+            in_single_quote = True
+            index += 1
+            continue
+        if char == '"':
+            in_double_quote = True
+            index += 1
+            continue
+        if char == "$":
+            tag = _dollar_quote_tag_at(sql=sql, index=index)
+            if tag is not None:
+                dollar_tag = tag
+                index += len(tag)
+                continue
+        if char == ";":
+            statements.append(sql[start:index])
+            start = index + 1
+        index += 1
+    statements.append(sql[start:])
+    return statements
+
+
+def _advance_dollar_quoted_sql(
+    *,
+    sql: str,
+    index: int,
+    dollar_tag: str,
+) -> tuple[int, str | None]:
+    if sql.startswith(dollar_tag, index):
+        return index + len(dollar_tag), None
+    return index + 1, dollar_tag
+
+
+def _advance_single_quoted_sql(*, sql: str, index: int) -> tuple[int, bool]:
+    char = sql[index]
+    if char == "'" and index + 1 < len(sql) and sql[index + 1] == "'":
+        return index + 2, True
+    if char == "'":
+        return index + 1, False
+    return index + 1, True
+
+
+def _advance_double_quoted_sql(*, sql: str, index: int) -> tuple[int, bool]:
+    if sql[index] == '"':
+        return index + 1, False
+    return index + 1, True
+
+
+def _dollar_quote_tag_at(*, sql: str, index: int) -> str | None:
+    end = sql.find("$", index + 1)
+    if end == -1:
+        return None
+    tag_body = sql[index + 1 : end]
+    if tag_body and not (
+        (tag_body[0].isalpha() or tag_body[0] == "_")
+        and all(char.isalnum() or char == "_" for char in tag_body)
+    ):
+        return None
+    return sql[index : end + 1]
 
 
 def _load_migrations(*, namespace: str) -> list[PostgresMigration]:

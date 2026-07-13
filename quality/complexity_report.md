@@ -1,10 +1,10 @@
 # lotus-manage Complexity Report
 
-- Generated at: `2026-07-13T14:28:37+00:00`
+- Generated at: `2026-07-13T14:57:16+00:00`
 
 - Baseline source snapshot: `a47d377f6b29bd475ca60bd51ff2f21a29fa556b`
 
-- Report source snapshot: `4326f770+worktree`
+- Report source snapshot: `0688f59e+worktree`
 
 - Mode: active source C-or-worse gate via `make complexity-gate`; broader dependency-free AST branch metrics remain report-only.
 
@@ -39,11 +39,11 @@
 | 3 | _validate_candidate_source_ref | src/core/waves/campaign_candidate_source_contracts.py | 12 | 70 |
 | 4 | _validate_review_action_parent | src/infrastructure/pm_quality/in_memory.py | 11 | 35 |
 | 5 | _campaign_workflow_labels_for_http_exception | src/api/routers/wave_campaign_workflow_telemetry.py | 11 | 21 |
-| 6 | list_definitions_by_workflow_projection | src/infrastructure/waves/campaign_definitions.py | 9 | 64 |
-| 7 | build_supportability_summary_response | src/core/rebalance_runs/supportability_summary.py | 9 | 59 |
-| 8 | _workflow_projection_matches | src/infrastructure/waves/campaign_definitions.py | 9 | 38 |
-| 9 | _validate_postgres_review_action_parent | src/infrastructure/pm_quality/postgres.py | 9 | 36 |
-| 10 | canonical_pm_quality_utc_datetime | src/core/pm_quality/temporal.py | 8 | 18 |
+| 6 | _split_sql_statements | src/infrastructure/postgres_migrations.py | 10 | 42 |
+| 7 | list_definitions_by_workflow_projection | src/infrastructure/waves/campaign_definitions.py | 9 | 64 |
+| 8 | build_supportability_summary_response | src/core/rebalance_runs/supportability_summary.py | 9 | 59 |
+| 9 | _workflow_projection_matches | src/infrastructure/waves/campaign_definitions.py | 9 | 38 |
+| 10 | _validate_postgres_review_action_parent | src/infrastructure/pm_quality/postgres.py | 9 | 36 |
 
 ### Most Complex Current Test Functions
 

@@ -131,6 +131,60 @@ def test_insert_schema_migration_record_stores_namespace_scoped_version(tmp_path
     assert connection.schema_migrations[("custom", "custom:0002")] == "checksum-2"
 
 
+def test_execute_sql_statements_preserves_dollar_quoted_blocks():
+    connection = _FakeConnection()
+
+    migrations_module._execute_sql_statements(  # noqa: SLF001
+        connection=connection,
+        sql="""
+        DO $$
+        BEGIN
+            PERFORM 1;
+            PERFORM 2;
+        END $$;
+        CREATE TABLE sample_table (id TEXT PRIMARY KEY);
+        DO $tenant_scope$
+        BEGIN
+            PERFORM 'legacy;tenant';
+        END $tenant_scope$;
+        """,
+    )
+
+    assert len(connection.applied_statements) == 3
+    assert connection.applied_statements[0].startswith("DO $$")
+    assert "PERFORM 1;" in connection.applied_statements[0]
+    assert "PERFORM 2;" in connection.applied_statements[0]
+    assert connection.applied_statements[1] == "CREATE TABLE sample_table (id TEXT PRIMARY KEY)"
+    assert connection.applied_statements[2].startswith("DO $tenant_scope$")
+    assert "legacy;tenant" in connection.applied_statements[2]
+
+
+def test_execute_sql_statements_preserves_quoted_semicolons_and_invalid_dollar_tags():
+    connection = _FakeConnection()
+
+    migrations_module._execute_sql_statements(  # noqa: SLF001
+        connection=connection,
+        sql="""
+        INSERT INTO "audit;events" VALUES ('legacy''tenant;kept');
+        SELECT $invalid-tag$;
+        SELECT $unterminated;
+        """,
+    )
+
+    assert connection.applied_statements == [
+        "INSERT INTO \"audit;events\" VALUES ('legacy''tenant;kept')",
+        "SELECT $invalid-tag$",
+        "SELECT $unterminated",
+    ]
+
+
+def test_load_migrations_rejects_unknown_namespace():
+    with pytest.raises(RuntimeError) as exc:
+        migrations_module._load_migrations(namespace="missing_namespace_for_test")  # noqa: SLF001
+
+    assert str(exc.value) == "POSTGRES_MIGRATIONS_NAMESPACE_NOT_FOUND:missing_namespace_for_test"
+
+
 def test_migration_lock_key_is_stable_and_namespace_scoped():
     assert _migration_lock_key(namespace="dpm") == _migration_lock_key(namespace="dpm")
     assert _migration_lock_key(namespace="dpm") != _migration_lock_key(namespace="policy_packs")
