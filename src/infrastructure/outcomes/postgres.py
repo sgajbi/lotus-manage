@@ -13,6 +13,7 @@ from src.core.outcomes.models import (
 )
 from src.core.outcomes.repository import DpmOutcomeReviewConflictError
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -163,7 +164,12 @@ class PostgresDpmOutcomeReviewRepository:
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return connect_postgres(
+            self._dsn,
+            connect_fn=psycopg.connect,
+            row_factory=dict_row,
+            application_name="lotus-manage:outcome-reviews",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

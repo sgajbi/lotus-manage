@@ -136,9 +136,9 @@ def test_postgres_policy_pack_repository_connect_uses_imported_driver(monkeypatc
 
     class _FakePsycopg:
         @staticmethod
-        def connect(dsn, row_factory):
+        def connect(dsn, **kwargs):
             calls["dsn"] = dsn
-            calls["row_factory"] = row_factory
+            calls["row_factory"] = kwargs["row_factory"]
             return object()
 
     class _FakeRepository(PostgresDpmPolicyPackRepository):

@@ -5,6 +5,7 @@ from typing import Any
 
 from src.core.common.capabilities import has_psycopg
 from src.core.rebalance.policy_packs import DpmPolicyPackDefinition
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 
 
@@ -82,7 +83,12 @@ class PostgresDpmPolicyPackRepository:
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return connect_postgres(
+            self._dsn,
+            connect_fn=psycopg.connect,
+            row_factory=dict_row,
+            application_name="lotus-manage:policy-packs",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

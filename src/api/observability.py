@@ -41,6 +41,11 @@ DPM_POLICY_PACK_RESOLUTION_TOTAL = Counter(
     "lotus-manage policy-pack resolution outcomes.",
     ["surface", "enabled", "source", "selected"],
 )
+POSTGRES_ACCESS_TOTAL = Counter(
+    "lotus_manage_postgres_access_total",
+    "lotus-manage bounded Postgres access outcomes.",
+    ["operation", "outcome", "reason", "classification"],
+)
 DPM_WORKFLOW_DECISION_TOTAL = Counter(
     "lotus_manage_workflow_decision_total",
     "lotus-manage workflow decision outcomes.",
@@ -129,6 +134,14 @@ _ALLOWED_POLICY_PACK_SOURCES = frozenset(
     {"disabled", "request", "tenant_default", "global_default", "none", "unknown"}
 )
 _ALLOWED_POLICY_PACK_SELECTED = frozenset({"true", "false"})
+_ALLOWED_POSTGRES_ACCESS_OPERATIONS = frozenset({"connect"})
+_ALLOWED_POSTGRES_ACCESS_OUTCOMES = frozenset({"success", "failure"})
+_ALLOWED_POSTGRES_ACCESS_REASONS = frozenset(
+    {"connected", "acquire_timeout", "connection_unavailable"}
+)
+_ALLOWED_POSTGRES_ACCESS_CLASSIFICATIONS = frozenset(
+    {"none", "transient", "permanent", "unknown"}
+)
 _ALLOWED_WORKFLOW_SURFACES = frozenset({"run", "trace", "retry"})
 _ALLOWED_WORKFLOW_ACTIONS = frozenset({"approve", "reject", "request_changes", "unknown"})
 _ALLOWED_WORKFLOW_OUTCOMES = frozenset({"success", "not_found", "disabled", "conflict", "error"})
@@ -573,6 +586,37 @@ def record_policy_pack_resolution(
             selected,
             allowed_values=_ALLOWED_POLICY_PACK_SELECTED,
             fallback="false",
+        ),
+    ).inc()
+
+
+def record_postgres_access(
+    *,
+    operation: str,
+    outcome: str,
+    reason: str,
+    classification: str,
+) -> None:
+    POSTGRES_ACCESS_TOTAL.labels(
+        operation=_safe_metric_label(
+            operation,
+            allowed_values=_ALLOWED_POSTGRES_ACCESS_OPERATIONS,
+            fallback="connect",
+        ),
+        outcome=_safe_metric_label(
+            outcome,
+            allowed_values=_ALLOWED_POSTGRES_ACCESS_OUTCOMES,
+            fallback="failure",
+        ),
+        reason=_safe_metric_label(
+            reason,
+            allowed_values=_ALLOWED_POSTGRES_ACCESS_REASONS,
+            fallback="connection_unavailable",
+        ),
+        classification=_safe_metric_label(
+            classification,
+            allowed_values=_ALLOWED_POSTGRES_ACCESS_CLASSIFICATIONS,
+            fallback="unknown",
         ),
     ).inc()
 

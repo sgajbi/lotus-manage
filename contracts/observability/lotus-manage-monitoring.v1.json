@@ -16,6 +16,7 @@
       "correlation_id",
       "run_id",
       "actor_id",
+      "dsn",
       "raw_error"
     ],
     "label_cardinality_posture": "bounded_allowlist_only"
@@ -126,6 +127,18 @@
         "selected": ["true", "false"]
       },
       "source": "src.api.observability.record_policy_pack_resolution"
+    },
+    {
+      "name": "lotus_manage_postgres_access_total",
+      "type": "counter",
+      "description": "Counts bounded runtime Postgres connection acquisition and driver outcomes.",
+      "labels": {
+        "operation": ["connect"],
+        "outcome": ["success", "failure"],
+        "reason": ["connected", "acquire_timeout", "connection_unavailable"],
+        "classification": ["none", "transient", "permanent", "unknown"]
+      },
+      "source": "src.api.observability.record_postgres_access"
     },
     {
       "name": "lotus_manage_workflow_decision_total",
@@ -275,6 +288,13 @@
           "use_when": "Monitor whether execution and diagnostic surfaces are using request, tenant, global, or disabled policy-pack posture."
         },
         {
+          "panel_id": "postgres-access-outcomes",
+          "title": "Postgres Access Outcomes",
+          "metric": "lotus_manage_postgres_access_total",
+          "query": "sum by (outcome, reason, classification) (rate(lotus_manage_postgres_access_total[5m]))",
+          "use_when": "Monitor runtime Postgres connection acquisition, timeout, and driver failure posture without DSNs, query text, table names, or caller identifiers."
+        },
+        {
           "panel_id": "workflow-decision-outcomes",
           "title": "Workflow Decision Outcomes",
           "metric": "lotus_manage_workflow_decision_total",
@@ -352,6 +372,15 @@
       "for": "30m",
       "description": "Policy-pack resolution is disabled for observed execution or diagnostic surfaces.",
       "runbook": "wiki/Operations-Runbook.md#rfc-0108-action-register-supportability"
+    },
+    {
+      "alert_id": "lotus-manage-postgres-access-failures",
+      "severity": "critical",
+      "metric": "lotus_manage_postgres_access_total",
+      "expression": "sum(rate(lotus_manage_postgres_access_total{outcome=\"failure\"}[5m])) > 0",
+      "for": "5m",
+      "description": "Runtime Postgres connection acquisition or driver access is failing.",
+      "runbook": "wiki/Operations-Runbook.md#docker-production-readiness"
     },
     {
       "alert_id": "lotus-manage-workflow-decision-conflicts",

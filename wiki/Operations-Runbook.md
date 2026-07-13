@@ -33,8 +33,8 @@ scope unless a future source-owning service publishes and certifies that capabil
 - local Docker keeps PostgreSQL internal to the Compose network by default
 - Docker startup applies PostgreSQL migrations before serving traffic
 - `/health/ready` validates production persistence guardrails, trusted write authorization posture,
-  and applied migrations in production profile, so container health is tied to supportability
-  backing-store and authz readiness instead of `/docs`
+  bounded Postgres access policy, and applied migrations in production profile, so container
+  health is tied to supportability backing-store and authz readiness instead of `/docs`
 
 ## RFC-0108 action register supportability
 
@@ -59,6 +59,10 @@ scope unless a future source-owning service publishes and certifies that capabil
 - `/metrics` exposes `lotus_manage_policy_pack_resolution_total` with bounded `surface`,
   `enabled`, `source`, and `selected` labels for simulate, analyze, async analyze, and policy API
   lookups.
+- `/metrics` exposes `lotus_manage_postgres_access_total` with bounded `operation`, `outcome`,
+  `reason`, and `classification` labels for runtime Postgres connection acquisition and driver
+  failures. Do not add DSNs, portfolio ids, request hashes, query text, table names, or payload
+  content to these labels or related log fields.
 - `/metrics` exposes `lotus_manage_workflow_decision_total` with bounded `surface`, `action`, and
   `outcome` labels for mandate workflow actions. `surface` uses route-family values such as `run`,
   `trace`, and `retry`; it must not use raw correlation, idempotency, request, actor, run, or
@@ -223,6 +227,15 @@ python scripts/openapi_quality_gate.py
 - The application command runs `python scripts/postgres_migrate.py --target dpm` before `uvicorn`.
 - The runtime image includes the migration script and the `psycopg` runtime driver required for
   Postgres-backed supportability stores.
+- Runtime Postgres adapters share the bounded access policy controlled by
+  `DPM_POSTGRES_MAX_CONNECTIONS`, `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS`,
+  `DPM_POSTGRES_STATEMENT_TIMEOUT_MS`, `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS`, and
+  `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS`. Invalid production values fail readiness with
+  `POSTGRES_ACCESS_POLICY_INVALID:*` or `POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:*`.
+- `POSTGRES_CONNECTION_ACQUIRE_TIMEOUT` indicates the process-local connection budget is exhausted
+  for longer than the configured acquisition timeout. `POSTGRES_CONNECTION_UNAVAILABLE` indicates
+  the driver could not connect within policy or the database rejected the connection. Treat both as
+  infrastructure/capacity incidents; do not add blind write retries in repositories.
 - A healthy container should have the `schema_migrations` table plus DPM supportability,
   workflow, lineage, and policy-pack persistence tables. If `/api/v1/rebalance/supportability/summary`
   returns a Postgres connection or migration error, inspect the startup logs first for migration

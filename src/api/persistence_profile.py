@@ -10,6 +10,10 @@ from src.api.services.rebalance_run_support_config import (
     supportability_postgres_dsn,
     supportability_store_backend_name,
 )
+from src.infrastructure.postgres_access import (
+    PostgresConfigurationError,
+    validate_postgres_access_policy,
+)
 
 _PRODUCTION_PROFILE = "PRODUCTION"
 _LOCAL_PROFILE = "LOCAL"
@@ -39,10 +43,21 @@ def _persistence_profile_guardrail_error() -> str | None:
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES"
     if not supportability_postgres_dsn():
         return "PERSISTENCE_PROFILE_REQUIRES_DPM_POSTGRES_DSN"
+    postgres_access_error = _postgres_access_policy_guardrail_error()
+    if postgres_access_error is not None:
+        return postgres_access_error
     authz_error = _production_authz_guardrail_error()
     if authz_error is not None:
         return authz_error
     return _policy_pack_catalog_guardrail_error(required=policy_pack_catalog_required_in_profile())
+
+
+def _postgres_access_policy_guardrail_error() -> str | None:
+    try:
+        validate_postgres_access_policy()
+    except PostgresConfigurationError as exc:
+        return str(exc)
+    return None
 
 
 def _production_authz_guardrail_error() -> str | None:

@@ -96,7 +96,8 @@ def test_applied_migration_versions_normalizes_namespaced_versions():
 def test_validate_cutover_migrations_applied_detects_missing(monkeypatch):
     class _FakePsycopg:
         @staticmethod
-        def connect(_dsn, row_factory):
+        def connect(_dsn, **kwargs):
+            row_factory = kwargs["row_factory"]
             assert row_factory is not None
 
             class _Context:

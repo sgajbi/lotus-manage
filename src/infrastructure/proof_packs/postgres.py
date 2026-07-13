@@ -14,6 +14,7 @@ from src.core.proof_packs.models import (
 )
 from src.core.proof_packs.repository import DpmProofPackConflictError
 from src.infrastructure.mandates.serialization import dump_model_json, load_model_json
+from src.infrastructure.postgres_access import connect_postgres
 from src.infrastructure.postgres_migrations import apply_postgres_migrations
 from src.infrastructure.proof_packs.in_memory import RETENTION_POLICY_PRE_TRADE_PROOF_PACK
 
@@ -237,7 +238,12 @@ class PostgresDpmProofPackRepository:
 
     def _connect(self) -> Any:
         psycopg, dict_row = _import_psycopg()
-        return psycopg.connect(self._dsn, row_factory=dict_row)
+        return connect_postgres(
+            self._dsn,
+            connect_fn=psycopg.connect,
+            row_factory=dict_row,
+            application_name="lotus-manage:proof-packs",
+        )
 
     def _init_db(self) -> None:
         with closing(self._connect()) as connection:

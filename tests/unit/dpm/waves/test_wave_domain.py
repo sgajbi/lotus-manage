@@ -283,7 +283,7 @@ def test_postgres_wave_repository_initializes_migrations(monkeypatch: pytest.Mon
 
     class FakePsycopg:
         @staticmethod
-        def connect(dsn: str, *, row_factory: object) -> FakeConnection:
+        def connect(dsn: str, *, row_factory: object, **_kwargs: object) -> FakeConnection:
             assert dsn == "postgresql://example"
             assert row_factory == "dict_row"
             calls.append("connect")

@@ -685,6 +685,21 @@ authz enforcement, primary key id, or capability policy is missing. The checked-
 enable authz for local production-profile proof; real deployments must replace the local key id and
 capability policy with bank-managed identity configuration.
 
+Runtime Postgres adapters use one bounded access policy instead of direct unbounded driver calls.
+Production operators should set and monitor:
+
+- `DPM_POSTGRES_MAX_CONNECTIONS` (default `10`, allowed `1..100`)
+- `DPM_POSTGRES_CONNECT_TIMEOUT_SECONDS` (default `3`, allowed `1..30`)
+- `DPM_POSTGRES_STATEMENT_TIMEOUT_MS` (default `5000`, allowed `100..60000`)
+- `DPM_POSTGRES_IDLE_IN_TRANSACTION_TIMEOUT_MS` (default `10000`, allowed `1000..120000`)
+- `DPM_POSTGRES_ACQUIRE_TIMEOUT_SECONDS` (default `2`, allowed `1..30`)
+
+Invalid values fail production readiness with `POSTGRES_ACCESS_POLICY_INVALID:*` or
+`POSTGRES_ACCESS_POLICY_OUT_OF_RANGE:*`. Runtime acquisition and driver failures emit sanitized
+`lotus_manage_postgres_access_total` metrics and structured logs without DSNs, portfolio ids,
+request hashes, or payload content. Runtime repositories do not retry writes blindly; operators
+should treat database failures as infrastructure faults and follow the Postgres rollout runbook.
+
 Async scenario analysis defaults to inline execution in Docker. For accept-now/execute-later live
 proof, start the stack with `DPM_ASYNC_EXECUTION_MODE=ACCEPT_ONLY`; manual execution can be disabled
 with `DPM_ASYNC_MANUAL_EXECUTION_ENABLED=false` when the execute endpoint must be hidden.

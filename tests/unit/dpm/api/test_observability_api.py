@@ -207,6 +207,11 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
     )
     monkeypatch.setattr(
         observability_module,
+        "POSTGRES_ACCESS_TOTAL",
+        _Counter("postgres"),
+    )
+    monkeypatch.setattr(
+        observability_module,
         "CAMPAIGN_WORKFLOW_TOTAL",
         _Counter("campaign_workflow"),
     )
@@ -236,6 +241,12 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         surface="run_id:rr_secret",
         action="actor:reviewer_001",
         outcome="portfolio_conflict",
+    )
+    observability_module.record_postgres_access(
+        operation="connect/postgresql://user:secret@host/manage",
+        outcome="failed_for_portfolio",
+        reason="dsn:postgresql://user:secret@host/manage",
+        classification="sqlstate:08006",
     )
     observability_module.record_campaign_workflow(
         surface="assignment_action/PB_SG_GLOBAL_BAL_001",
@@ -269,6 +280,12 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "action": "unknown",
         "outcome": "error",
     }
+    assert captured["postgres"] == {
+        "operation": "connect",
+        "outcome": "failure",
+        "reason": "connection_unavailable",
+        "classification": "unknown",
+    }
     assert captured["campaign_workflow"] == {
         "surface": "unknown",
         "outcome": "error",
@@ -285,6 +302,7 @@ def test_async_policy_and_workflow_metric_labels_are_bounded(monkeypatch):
         "reason": "outcome_review_error",
     }
     assert "PB_SG_GLOBAL_BAL_001" not in json.dumps(captured)
+    assert "postgresql://user:secret" not in json.dumps(captured)
     assert "sha256:secret" not in json.dumps(captured)
     assert "reviewer_001" not in json.dumps(captured)
 

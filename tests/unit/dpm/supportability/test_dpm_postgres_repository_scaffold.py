@@ -1038,19 +1038,28 @@ def test_postgres_json_dump_is_canonical():
 
 
 def test_postgres_connect_uses_imported_driver(monkeypatch):
+    class _FakeConnection:
+        def __init__(self, dsn, row_factory):
+            self.dsn = dsn
+            self.row_factory = row_factory
+
+        def close(self):
+            return None
+
     class _FakePsycopg:
         @staticmethod
-        def connect(dsn, row_factory):
-            return {"dsn": dsn, "row_factory": row_factory}
+        def connect(dsn, **kwargs):
+            return _FakeConnection(dsn, kwargs["row_factory"])
 
     monkeypatch.setattr(postgres_module, "_import_psycopg", lambda: (_FakePsycopg, "rf"))
     repository = object.__new__(PostgresDpmRunRepository)
     repository._dsn = "postgresql://user:pass@localhost:5432/dpm"
     connection = repository._connect()
-    assert connection == {
-        "dsn": "postgresql://user:pass@localhost:5432/dpm",
-        "row_factory": "rf",
-    }
+    try:
+        assert connection.dsn == "postgresql://user:pass@localhost:5432/dpm"
+        assert connection.row_factory == "rf"
+    finally:
+        connection.close()
 
 
 def test_import_psycopg_helper(monkeypatch):
