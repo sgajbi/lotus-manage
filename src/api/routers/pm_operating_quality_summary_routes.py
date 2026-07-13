@@ -25,7 +25,10 @@ from src.api.services.pm_operating_quality_service import (
     DpmPmOperatingQualityApplicationService,
     DpmPmOperatingQualityServiceError,
 )
-from src.core.pm_quality import DpmPmQualitySummaryInvocationConflictError
+from src.core.pm_quality import (
+    DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
+)
 
 
 router = APIRouter()
@@ -97,7 +100,10 @@ def create_pm_quality_summary_invocation_endpoint(
                 x_correlation_id=x_correlation_id,
             )
         )
-    except DpmPmQualitySummaryInvocationConflictError as exc:
+    except (
+        DpmPmQualitySummaryInvocationConflictError,
+        DpmPmQualitySummaryInvocationIntegrityError,
+    ) as exc:
         raise pm_quality_conflict_http_exception(exc) from exc
     except DpmPmOperatingQualityServiceError as exc:
         raise pm_quality_service_http_exception(exc) from exc

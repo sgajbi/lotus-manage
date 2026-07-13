@@ -62,8 +62,14 @@ _OUTCOME_REVIEW_REPOSITORY = InMemoryDpmOutcomeReviewRepository()
 _PM_QUALITY_POLICY_REPOSITORY = InMemoryDpmPmQualityPolicyRepository()
 _PM_QUALITY_SCORE_RUN_REPOSITORY = InMemoryDpmPmQualityScoreRunRepository()
 _PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY = InMemoryDpmPmQualityFairnessAnalysisRepository()
-_PM_QUALITY_REVIEW_ACTION_REPOSITORY = InMemoryDpmPmQualityReviewActionRepository()
-_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = InMemoryDpmPmQualitySummaryInvocationRepository()
+_PM_QUALITY_REVIEW_ACTION_REPOSITORY = InMemoryDpmPmQualityReviewActionRepository(
+    score_run_repository=_PM_QUALITY_SCORE_RUN_REPOSITORY,
+    fairness_analysis_repository=_PM_QUALITY_FAIRNESS_ANALYSIS_REPOSITORY,
+)
+_PM_QUALITY_SUMMARY_INVOCATION_REPOSITORY = InMemoryDpmPmQualitySummaryInvocationRepository(
+    score_run_repository=_PM_QUALITY_SCORE_RUN_REPOSITORY,
+    review_action_repository=_PM_QUALITY_REVIEW_ACTION_REPOSITORY,
+)
 _WAVE_REPOSITORY = InMemoryDpmWaveRepository()
 _CAMPAIGN_DEFINITION_REPOSITORY = InMemoryDpmBulkReviewCampaignDefinitionRepository()
 _POSTGRES_MANDATE_REPOSITORY: PostgresDpmMandateRepository | None = None

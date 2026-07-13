@@ -19,10 +19,12 @@ from src.core.pm_quality.repository import (
     DpmPmQualityPolicyConflictError,
     DpmPmQualityPolicyRepository,
     DpmPmQualityReviewActionConflictError,
+    DpmPmQualityReviewActionIntegrityError,
     DpmPmQualityReviewActionRepository,
     DpmPmQualityScoreRunConflictError,
     DpmPmQualityScoreRunRepository,
     DpmPmQualitySummaryInvocationConflictError,
+    DpmPmQualitySummaryInvocationIntegrityError,
     DpmPmQualitySummaryInvocationRepository,
 )
 
@@ -212,11 +214,23 @@ class InMemoryDpmPmQualityFairnessAnalysisRepository(DpmPmQualityFairnessAnalysi
 
 
 class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionRepository):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+        fairness_analysis_repository: DpmPmQualityFairnessAnalysisRepository | None = None,
+    ) -> None:
         self._lock = Lock()
         self._actions: dict[str, DpmPmQualityReviewAction] = {}
+        self._score_run_repository = score_run_repository
+        self._fairness_analysis_repository = fairness_analysis_repository
 
     def save_review_action(self, *, action: DpmPmQualityReviewAction) -> None:
+        _validate_review_action_parent(
+            action=action,
+            score_run_repository=self._score_run_repository,
+            fairness_analysis_repository=self._fairness_analysis_repository,
+        )
         with self._lock:
             existing = self._actions.get(action.review_action_id)
             if existing is not None and existing.content_hash != action.content_hash:
@@ -262,11 +276,23 @@ class InMemoryDpmPmQualityReviewActionRepository(DpmPmQualityReviewActionReposit
 
 
 class InMemoryDpmPmQualitySummaryInvocationRepository(DpmPmQualitySummaryInvocationRepository):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        score_run_repository: DpmPmQualityScoreRunRepository | None = None,
+        review_action_repository: DpmPmQualityReviewActionRepository | None = None,
+    ) -> None:
         self._lock = Lock()
         self._invocations: dict[str, DpmPmQualitySummaryInvocation] = {}
+        self._score_run_repository = score_run_repository
+        self._review_action_repository = review_action_repository
 
     def save_summary_invocation(self, *, invocation: DpmPmQualitySummaryInvocation) -> None:
+        _validate_summary_invocation_parents(
+            invocation=invocation,
+            score_run_repository=self._score_run_repository,
+            review_action_repository=self._review_action_repository,
+        )
         with self._lock:
             existing = self._invocations.get(invocation.summary_invocation_id)
             if existing is not None and existing.content_hash != invocation.content_hash:
@@ -502,6 +528,86 @@ def _list_summary_invocations(
         if _summary_invocation_matches_filters(invocation, filters)
     ]
     return _sort_summary_invocations(filtered)[offset : offset + limit]
+
+
+def _validate_review_action_parent(
+    *,
+    action: DpmPmQualityReviewAction,
+    score_run_repository: DpmPmQualityScoreRunRepository | None,
+    fairness_analysis_repository: DpmPmQualityFairnessAnalysisRepository | None,
+) -> None:
+    if action.target_type == "SCORE_RUN":
+        if score_run_repository is None:
+            return
+        target = score_run_repository.get_score_run(score_run_id=action.target_id)
+    elif action.target_type == "FAIRNESS_ANALYSIS":
+        if fairness_analysis_repository is None:
+            return
+        target = fairness_analysis_repository.get_fairness_analysis(
+            fairness_analysis_id=action.target_id
+        )
+    else:
+        raise DpmPmQualityReviewActionIntegrityError(
+            "PM_QUALITY_REVIEW_ACTION_TARGET_TYPE_UNSUPPORTED"
+        )
+    if target is None:
+        raise DpmPmQualityReviewActionIntegrityError("PM_QUALITY_REVIEW_ACTION_TARGET_NOT_FOUND")
+    if (
+        target.content_hash != action.target_content_hash
+        or target.policy_id != action.policy_id
+        or target.policy_version != action.policy_version
+        or target.as_of_date != action.as_of_date
+        or target.state != action.target_state
+    ):
+        raise DpmPmQualityReviewActionIntegrityError("PM_QUALITY_REVIEW_ACTION_TARGET_MISMATCH")
+
+
+def _validate_summary_invocation_parents(
+    *,
+    invocation: DpmPmQualitySummaryInvocation,
+    score_run_repository: DpmPmQualityScoreRunRepository | None,
+    review_action_repository: DpmPmQualityReviewActionRepository | None,
+) -> None:
+    score_run = (
+        None
+        if score_run_repository is None
+        else score_run_repository.get_score_run(score_run_id=invocation.score_run_id)
+    )
+    if score_run_repository is not None and score_run is None:
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_SCORE_RUN_NOT_FOUND"
+        )
+    if score_run is not None and (
+        score_run.content_hash != invocation.score_run_content_hash
+        or score_run.policy_id != invocation.policy_id
+        or score_run.policy_version != invocation.policy_version
+        or score_run.as_of_date != invocation.as_of_date
+    ):
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_SCORE_RUN_MISMATCH"
+        )
+    review_action = (
+        None
+        if review_action_repository is None
+        else review_action_repository.get_review_action(
+            review_action_id=invocation.review_action_id
+        )
+    )
+    if review_action_repository is not None and review_action is None:
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_REVIEW_ACTION_NOT_FOUND"
+        )
+    if review_action is not None and (
+        review_action.content_hash != invocation.review_action_content_hash
+        or review_action.target_type != "SCORE_RUN"
+        or review_action.target_id != invocation.score_run_id
+        or review_action.policy_id != invocation.policy_id
+        or review_action.policy_version != invocation.policy_version
+        or review_action.as_of_date != invocation.as_of_date
+    ):
+        raise DpmPmQualitySummaryInvocationIntegrityError(
+            "PM_QUALITY_SUMMARY_INVOCATION_REVIEW_ACTION_MISMATCH"
+        )
 
 
 def _policy_hash(policy: DpmPmOperatingQualityPolicy) -> str:

@@ -1,0 +1,11 @@
+ALTER TABLE dpm_pm_quality_summary_invocations
+ADD CONSTRAINT fk_pm_quality_summary_invocations_score_run
+FOREIGN KEY (score_run_id)
+REFERENCES dpm_pm_quality_score_runs(score_run_id)
+ON DELETE RESTRICT;
+
+ALTER TABLE dpm_pm_quality_summary_invocations
+ADD CONSTRAINT fk_pm_quality_summary_invocations_review_action
+FOREIGN KEY (review_action_id)
+REFERENCES dpm_pm_quality_review_actions(review_action_id)
+ON DELETE RESTRICT;

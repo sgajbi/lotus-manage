@@ -2307,7 +2307,11 @@ evidence without mutating the reviewed evidence.
 The summary-invocation route family emits and persists bounded
 `PmOperatingQualitySummaryInvocation:v1` history over persisted score-run and review-action
 evidence, preserving state-specific workflow, completed artifact, hash, or bounded failure
-evidence without storing generated AI narrative text.
+evidence without storing generated AI narrative text. Persistence enforces lineage below
+route/service lookup: review actions validate score-run or fairness-analysis parent evidence,
+summary invocations validate score-run/review-action parent coherence, and Postgres migration
+`0016_pm_quality_lineage_integrity.sql` adds non-cascading summary parent foreign keys. The
+migration intentionally blocks upgrade when existing summary rows reference missing parents.
 
 Functional coverage:
 
@@ -2342,6 +2346,9 @@ Functional coverage:
   workflow handoff, completed artifact refs and hashes, or failed invocation reason evidence,
   requested-by actor, correlation id, source refs, generated content hash, forbidden-use posture,
   and immutable/listable/retrievable history without storing generated summary text,
+- direct repository writes reject missing or mismatched PM-quality review-action and
+  summary-invocation parents, and portfolio-memory PM-quality projection omits unresolved summary
+  lineage,
 - portfolio memory advertises PM scoring as a separate product and projects only bounded
   source-backed score-run lineage events without numeric score metadata.
 

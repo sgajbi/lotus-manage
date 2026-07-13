@@ -23,8 +23,16 @@ class DpmPmQualityReviewActionConflictError(Exception):
     """Raised when immutable review-action identity conflicts."""
 
 
+class DpmPmQualityReviewActionIntegrityError(Exception):
+    """Raised when review-action target lineage is not persisted or coherent."""
+
+
 class DpmPmQualitySummaryInvocationConflictError(Exception):
     """Raised when immutable summary-invocation identity conflicts."""
+
+
+class DpmPmQualitySummaryInvocationIntegrityError(Exception):
+    """Raised when summary-invocation parent lineage is not persisted or coherent."""
 
 
 class DpmPmQualityPolicyConflictError(Exception):

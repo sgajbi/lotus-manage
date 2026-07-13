@@ -92,7 +92,11 @@
   workflow run plus non-sensitive `failure_reason_code` while rejecting completed artifact
   evidence. Manage records no generated summary text, reconstructs no prompts or model responses,
   projects no downstream summary UX, contacts no clients, approves no trades, routes no orders, and
-  claims no OMS execution.
+  claims no OMS execution. Persistence enforces lineage below HTTP lookup: review actions validate
+  persisted score-run or fairness-analysis targets, summary invocations validate
+  score-run/review-action parent coherence, and Postgres migration
+  `0016_pm_quality_lineage_integrity.sql` adds `ON DELETE RESTRICT` summary parent foreign keys.
+  Existing orphan rows must be remediated before that migration can apply.
 
 - Product ID: `lotus-manage:PmOperatingQualityFairnessAnalysis:v1`
 - Product role: governed PM operating quality fairness-analysis evidence generated from persisted
