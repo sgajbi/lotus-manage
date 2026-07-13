@@ -114,6 +114,7 @@ First checks:
 | Retry pressure | `lotus_manage_source_http_retry_total{source_service,method,reason}` | Sustained `transport_error` or `transient_status` growth indicates downstream instability or pool pressure. Do not add blind write retries; verify idempotency and source contract first. |
 | Core resolver posture | `lotus_manage_core_resolver_total` and source-specific Problem Details or domain errors | Use source HTTP metrics to distinguish transport pressure from source-product completeness failures. |
 | Source-product validation | `DPM_CORE_PORTFOLIO_SNAPSHOT_INCOMPLETE` or `LOTUS_RISK_INVALID_RESPONSE` | Treat missing Core snapshot identity/date/currency/sections/row facts or missing Risk metadata/fingerprint/supportability/numeric measures as upstream contract defects. Do not remediate by adding Manage-side `USD`, `v1`, empty-list, empty-fingerprint, or zero defaults. |
+| Tax-aware construction prerequisite | `tax_lot_evidence_incomplete` diagnostics with `TAX_LOTS_MISSING`, `TAX_LOTS_INCOMPLETE`, `TAX_LOT_POSITION_MISSING`, or `TAX_LOT_COST_FX_MISSING`; Core enrichment may raise `DPM_CORE_TAX_LOT_QUANTITY_MISMATCH` | Treat as a blocked tax-aware run. Confirm Core `PortfolioTaxLotWindow:v1` returned complete open-lot coverage for the sell candidate and that lot-cost FX is available. Do not ask PMs to treat the result as tax-aware if `enable_tax_awareness` was silently bypassed; that bypass is unsupported. |
 
 Privacy and support rules:
 

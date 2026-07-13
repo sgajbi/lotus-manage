@@ -220,7 +220,7 @@ def test_apply_turnover_limit_skips_intent_without_notional_base():
     assert [item.instrument_id for item in diagnostics.dropped_intents] == ["B"]
 
 
-def test_tax_awareness_with_missing_lots_uses_legacy_sell_path():
+def test_tax_awareness_with_missing_lots_blocks_ready_sell_path():
     pf = portfolio_snapshot(
         portfolio_id="pf_tax_no_lots",
         base_currency="USD",
@@ -239,13 +239,41 @@ def test_tax_awareness_with_missing_lots_uses_legacy_sell_path():
         EngineOptions(enable_tax_awareness=True, max_realized_capital_gains=Decimal("1")),
     )
 
+    assert_status(result, "BLOCKED")
+    assert security_intents(result) == []
+    assert result.tax_impact is None
+    assert result.diagnostics.data_quality["tax_lot_evidence_incomplete"] == [
+        "ABC:TAX_LOTS_MISSING"
+    ]
+    assert "TAX_LOTS_MISSING" in result.diagnostics.warnings
+    assert "TAX_BUDGET_LIMIT_REACHED" not in result.diagnostics.warnings
+
+
+def test_tax_awareness_disabled_allows_sell_without_lot_evidence():
+    pf = portfolio_snapshot(
+        portfolio_id="pf_tax_disabled_no_lots",
+        base_currency="USD",
+        positions=[{"instrument_id": "ABC", "quantity": Decimal("100")}],
+        cash_balances=[cash("USD", "0")],
+    )
+    mkt = market_data_snapshot(prices=[price("ABC", "100", "USD")], fx_rates=[])
+    shelf = [shelf_entry("ABC", status="APPROVED")]
+    model = model_portfolio(targets=[target("ABC", "0.0")])
+
+    result = run_simulation(
+        pf,
+        mkt,
+        model,
+        shelf,
+        EngineOptions(enable_tax_awareness=False, max_realized_capital_gains=Decimal("1")),
+    )
+
     assert_status(result, "READY")
     assert security_intents(result)[0].quantity == Decimal("100")
-    assert result.tax_impact is not None
-    assert result.tax_impact.total_realized_gain.amount == Decimal("0")
+    assert "tax_lot_evidence_incomplete" not in result.diagnostics.data_quality
 
 
-def test_tax_awareness_skips_lot_when_cost_fx_missing():
+def test_tax_awareness_blocks_when_lot_cost_fx_missing():
     pf = portfolio_snapshot(
         portfolio_id="pf_tax_missing_fx",
         base_currency="USD",
@@ -281,9 +309,14 @@ def test_tax_awareness_skips_lot_when_cost_fx_missing():
         ),
     )
 
-    assert_status(result, "READY")
-    assert security_intents(result)[0].quantity == Decimal("100")
+    assert_status(result, "BLOCKED")
+    assert security_intents(result) == []
     assert "EUR/USD" in result.diagnostics.data_quality["fx_missing"]
+    assert result.diagnostics.data_quality["tax_lot_evidence_incomplete"] == [
+        "ABC:TAX_LOT_COST_FX_MISSING"
+    ]
+    assert "TAX_LOT_COST_FX_MISSING" in result.diagnostics.warnings
+    assert "TAX_BUDGET_LIMIT_REACHED" not in result.diagnostics.warnings
 
 
 def test_tax_awareness_budget_exhaustion_stops_next_gain_lot():

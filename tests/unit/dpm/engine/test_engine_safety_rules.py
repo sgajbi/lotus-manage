@@ -624,6 +624,7 @@ def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None
     )
 
     allowed_quantity = _tax_budget_limited_sell_quantity(
+        instrument_id="EQ_1",
         options=EngineOptions(enable_tax_awareness=True),
         position=lot_position,
         requested_qty=Decimal("10"),
@@ -633,6 +634,7 @@ def test_tax_budget_limited_sell_quantity_caps_realized_gain_to_budget() -> None
         market_data=market_data_snapshot(),
         dq_log={"fx_missing": []},
         tax_budget=tax_budget,
+        diagnostics=empty_diagnostics(),
     )
 
     assert allowed_quantity == Decimal("5")
@@ -810,6 +812,7 @@ def test_tax_budget_limited_sell_quantity_bypasses_when_tax_awareness_disabled()
     )
 
     allowed_quantity = _tax_budget_limited_sell_quantity(
+        instrument_id="EQ_1",
         options=EngineOptions(enable_tax_awareness=False),
         position=None,
         requested_qty=Decimal("10"),
@@ -819,6 +822,7 @@ def test_tax_budget_limited_sell_quantity_bypasses_when_tax_awareness_disabled()
         market_data=market_data_snapshot(),
         dq_log={"fx_missing": []},
         tax_budget=tax_budget,
+        diagnostics=empty_diagnostics(),
     )
 
     assert allowed_quantity == Decimal("10")

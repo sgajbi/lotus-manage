@@ -91,7 +91,7 @@ Current source-product integration status:
 | `DpmModelPortfolioTarget:v1` | Client method and transformer implemented; live proof passed. | Supplies discretionary model targets. |
 | `DiscretionaryMandateBinding:v1` | Client method, policy-context transformer, and mandate-twin transformer implemented; live proof passed for the first source wave. | Supplies mandate authority, objective, review cadence, review dates, policy pack, and booking context. |
 | `InstrumentEligibilityProfile:v1` | Client method and shelf-entry transformer implemented; live proof passed. | Supplies buy/sell eligibility, restrictions, settlement, issuer, and taxonomy. |
-| `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof passed. | Supplies tax-aware lot context. |
+| `PortfolioTaxLotWindow:v1` | Client method and tax-lot-to-portfolio transformer implemented; live proof passed. Positive held positions require complete open-lot coverage whose quantity reconciles to the position before tax-aware construction can run. | Supplies tax-aware lot context without silent non-tax-aware fallback. |
 | `MarketDataCoverageWindow:v1` | Client method and market-data transformer implemented; stale or missing price/FX coverage blocks stateful source assembly. Live proof passed. | Supplies price and FX coverage. |
 | `PortfolioCashflowProjection:v1` | Query-plane client method and liquidity-context transformer implemented; live proof is enforced through `stateful_source_backed_construction`. | Supplies operational projected cash-pressure evidence for liquidity-aware construction without turning manage into a forecasting source. |
 | `DpmSourceReadiness:v1` | Core source-family readiness product implemented; live proof passed. | Operator/control-plane readiness summary for source families. |
@@ -101,6 +101,12 @@ Current source-product integration status:
 `DPM_CORE_TRANSACTION_COST_LOOKBACK_DAYS`, defaulting to 400 days. The longer default reflects
 private-banking portfolio turnover patterns and remains bounded to observed booked fees; it is not a
 market-impact, venue, fill-quality, or best-execution model.
+
+Tax-aware construction requires explicit open-lot evidence for each sell candidate. Missing lots,
+partial lot quantity coverage, closed/depleted-only lots, or unavailable lot-cost FX produce
+`tax_lot_evidence_incomplete` diagnostics and a blocked tax-aware result. Non-tax-aware simulation
+remains available only when `enable_tax_awareness=false`; Manage does not silently downgrade an
+enabled tax-aware request to the legacy sell path.
 
 Live proof on 2026-05-02:
 

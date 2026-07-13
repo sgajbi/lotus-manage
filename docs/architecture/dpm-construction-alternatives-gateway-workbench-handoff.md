@@ -141,7 +141,9 @@ state that demonstrates real construction trade-offs:
 
 1. the current portfolio must not already match the model exactly,
 2. at least one instrument should require buy intent and one should require sell intent,
-3. tax lots should exist for the sell candidate,
+3. complete open tax-lot evidence should exist for the sell candidate, with lot quantities
+   reconciling to the position and lot-cost FX available when lot cost is not in instrument
+   currency,
 4. market data and FX must be fresh enough to avoid fabricated values,
 5. eligibility should include at least one restriction or supportability reason suitable for the
    evidence drawer,
