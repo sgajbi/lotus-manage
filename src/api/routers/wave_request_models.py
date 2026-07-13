@@ -185,7 +185,8 @@ class DpmWavePreviewRequest(BaseModel):
             default="INLINE_SOURCE_BACKED",
             description=(
                 "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves "
-                "caller or persisted campaign-definition candidates. "
+                "only approved source-contract refs from caller or persisted "
+                "campaign-definition candidates before publishing READY membership. "
                 "`CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from "
                 "lotus-core `DpmPortfolioUniverseCandidate:v1`, walks continuation pages to "
                 "terminal exhaustion, and fails closed on empty, duplicate, non-terminating, or "

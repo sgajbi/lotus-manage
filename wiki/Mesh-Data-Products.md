@@ -45,7 +45,9 @@
   waves, with optional approval, expiry, access-purpose, source-ref, and actor-entitlement
   governance evidence preserved in the membership envelope. Persisted campaign definitions,
   workflow projections, launch evidence, and portfolio-memory campaign scans are tenant-scoped by
-  trusted `tenant_id` metadata.
+  trusted `tenant_id` metadata. Inline and persisted candidate refs must use approved source
+  contracts and carry source id, source version, READY supportability, and required content hash or
+  approved batch or definition fingerprint coverage before membership can be published as READY.
 - Trust posture: catalog-visible and implementation-backed, but mesh-deferred/future-wave in the
   platform maturity matrix. The checked-in trust snapshot is blocked/operator-only until
   product-specific platform SLO, access, evidence-pack, and runtime certification evidence are

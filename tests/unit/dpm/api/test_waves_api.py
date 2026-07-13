@@ -278,20 +278,12 @@ def _bulk_review_campaign_request() -> dict[str, object]:
                 "portfolio_type": "DISCRETIONARY",
                 "source_refs": [
                     {
-                        "source_system": "lotus-core",
-                        "source_type": "HoldingsAsOf",
-                        "source_id": "holdings-asof-pb-sg-global-bal-001",
+                        "source_system": "lotus-manage",
+                        "source_type": "AFFECTED_PORTFOLIO_MANIFEST",
+                        "source_id": "campaign-holdings-apple-tesla-20260510:PB_SG_GLOBAL_BAL_001",
                         "source_version": "v1",
                         "supportability_state": "READY",
-                        "content_hash": "sha256:holdings",
-                    },
-                    {
-                        "source_system": "lotus-advise",
-                        "source_type": "IdeaTargetingUniverse",
-                        "source_id": "idea-aapl-tsla-001",
-                        "source_version": "v1",
-                        "supportability_state": "READY",
-                        "content_hash": "sha256:idea-targeting",
+                        "content_hash": "sha256:campaign-manifest-pb-sg-global-bal-001",
                     },
                 ],
             },
@@ -1727,6 +1719,52 @@ def test_bulk_review_campaign_definition_reference_validation(
     assert response.json()["detail"]["code"] == expected_code
 
 
+def test_bulk_review_campaign_definition_replay_validates_candidate_source_contracts() -> None:
+    campaign_repository = InMemoryDpmBulkReviewCampaignDefinitionRepository()
+    definition_payload = _bulk_review_campaign_definition_request()
+    first_candidate = dict(definition_payload["candidates"][0])
+    first_candidate["source_refs"] = [
+        {
+            "source_system": "lotus-core",
+            "source_type": "HoldingsAsOf",
+            "source_id": "holdings-asof-pb-sg-global-bal-001",
+            "source_version": "v1",
+            "supportability_state": "READY",
+            "content_hash": "sha256:holdings",
+        }
+    ]
+    definition_payload["candidates"] = [first_candidate, *definition_payload["candidates"][1:]]
+    definition_request = DpmBulkReviewCampaignDefinitionRequest.model_validate(
+        definition_payload
+    )
+    campaign_repository.save_definition(
+        definition=DpmBulkReviewCampaignDefinition(
+            tenant_id="tenant-sg",
+            campaign_id="campaign-holdings-apple-tesla-20260510",
+            campaign_version="2026.05",
+            **definition_request.model_dump(),
+        )
+    )
+    request = {
+        **_bulk_review_campaign_request(),
+        "campaign_definition_id": "campaign-holdings-apple-tesla-20260510",
+        "campaign_definition_version": "2026.05",
+        "portfolios": [],
+    }
+
+    with _client(
+        InMemoryDpmMandateRepository(),
+        InMemoryDpmWaveRepository(),
+        campaign_definition_repository=campaign_repository,
+    ) as client:
+        response = client.post("/api/v1/rebalance/waves/preview", json=request)
+
+    assert response.status_code == 422
+    assert response.json()["detail"]["code"] == (
+        "BULK_REVIEW_CAMPAIGN_SOURCE_CONTRACT_UNSUPPORTED"
+    )
+
+
 def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> None:
     mandate_repository = InMemoryDpmMandateRepository()
     mandate_repository.save_mandate_snapshot(_twin())
@@ -1752,8 +1790,7 @@ def test_bulk_review_campaign_preview_publishes_manage_membership_product() -> N
     assert {ref["source_type"] for ref in item["source_refs"]} >= {
         "BulkReviewCampaignMembership",
         "BULK_REVIEW_CAMPAIGN_MEMBER",
-        "HoldingsAsOf",
-        "IdeaTargetingUniverse",
+        "AFFECTED_PORTFOLIO_MANIFEST",
         "MANDATE_DIGITAL_TWIN",
     }
     assert item["diagnostics"]["source_product"] == "BulkReviewCampaignMembership:v1"
@@ -2156,7 +2193,7 @@ def test_bulk_review_campaign_definition_preview_readiness_is_ready_for_eligible
     assert payload["expiry_state"] == "ACTIVE"
     assert payload["actor_entitlement_state"] == "AUTHORIZED"
     assert payload["lifecycle_event_count"] == 1
-    assert payload["source_ref_count"] == 5
+    assert payload["source_ref_count"] == 4
     assert payload["content_hash"].startswith("sha256:")
 
 
@@ -2730,7 +2767,7 @@ def test_bulk_review_campaign_discovery_summarizes_persisted_definitions() -> No
         "global_portfolio_universe_owner_posture": "DEFERRED_SOURCE_OWNER",
         "required_source_product": "GlobalPortfolioUniverseCampaignCandidateSet:v1",
         "candidate_source_ref_posture": "SOURCE_BACKED",
-        "source_systems": ["lotus-advise", "lotus-core"],
+        "source_systems": ["lotus-core", "lotus-manage"],
         "blocked_capabilities": [
             "bank_wide_portfolio_universe_scan",
             "candidate_portfolio_discovery",
@@ -4536,6 +4573,118 @@ def test_bulk_review_campaign_create_persists_manage_membership_wave() -> None:
             },
             422,
             "BULK_REVIEW_CAMPAIGN_SOURCE_REFS_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-core",
+                                "source_type": "HoldingsAsOf",
+                                "source_id": "holdings-asof-pb-sg-global-bal-001",
+                                "source_version": "v1",
+                                "supportability_state": "READY",
+                                "content_hash": "sha256:holdings",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_CONTRACT_UNSUPPORTED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-manage",
+                                "source_type": "AFFECTED_PORTFOLIO_MANIFEST",
+                                "source_id": "campaign-manifest-001",
+                                "source_version": "v1",
+                                "content_hash": "sha256:campaign-manifest",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_SUPPORTABILITY_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-manage",
+                                "source_type": "AFFECTED_PORTFOLIO_MANIFEST",
+                                "source_id": "campaign-manifest-001",
+                                "source_version": "v1",
+                                "supportability_state": "STALE",
+                                "content_hash": "sha256:campaign-manifest",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_NOT_READY",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-manage",
+                                "source_type": "AFFECTED_PORTFOLIO_MANIFEST",
+                                "source_id": "campaign-manifest-001",
+                                "source_version": "v1",
+                                "supportability_state": "READY",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_HASH_REQUIRED",
+        ),
+        (
+            {
+                "portfolios": [
+                    {
+                        "portfolio_id": PORTFOLIO_ID,
+                        "mandate_id": MANDATE_ID,
+                        "portfolio_type": "DISCRETIONARY",
+                        "source_refs": [
+                            {
+                                "source_system": "lotus-manage",
+                                "source_type": "AFFECTED_PORTFOLIO_MANIFEST",
+                                "source_id": "campaign-manifest-001",
+                                "supportability_state": "READY",
+                                "content_hash": "sha256:campaign-manifest",
+                            }
+                        ],
+                    }
+                ]
+            },
+            422,
+            "BULK_REVIEW_CAMPAIGN_SOURCE_VERSION_REQUIRED",
         ),
         (
             {

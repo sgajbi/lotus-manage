@@ -253,7 +253,10 @@ membership is implemented for `BULK_REVIEW_CAMPAIGN` through Manage-owned
 portfolio type, DPM portfolio-type filtering, deterministic membership refs, optional
 approval/expiry/actor-entitlement governance evidence, immutable
 `BulkReviewCampaignDefinition:v1` definitions over source-backed candidate sets, and fail-closed
-validation. `BULK_REVIEW_CAMPAIGN` preview/create can also resolve its candidate set from
+validation. Inline and persisted candidate refs must use approved source contracts and carry READY
+supportability, source version, and required content hashes before Manage publishes READY
+membership. Unsupported, stale, missing-supportability, missing-version, or missing-hash candidate
+refs fail closed. `BULK_REVIEW_CAMPAIGN` preview/create can also resolve its candidate set from
 lotus-core `DpmPortfolioUniverseCandidate:v1` by setting
 `campaign_candidate_source=CORE_DPM_PORTFOLIO_UNIVERSE`; Manage preserves Core candidate lineage,
 rejects caller-supplied portfolios for that mode, walks bounded continuation pages to terminal

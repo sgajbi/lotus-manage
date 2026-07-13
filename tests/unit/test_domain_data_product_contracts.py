@@ -369,6 +369,18 @@ def test_manage_product_declaration_publishes_manage_owned_products() -> None:
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )
     assert (
+        "approved source contracts"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "READY supportability"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
+        "required content hash or approved batch or definition fingerprint coverage"
+        in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
+    )
+    assert (
         "catalog-visible but mesh-deferred/future-wave"
         in (campaign_membership["freshness_policy"]["max_allowed_age_description"])
     )

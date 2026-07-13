@@ -1869,7 +1869,7 @@
       "semanticId": "lotus.campaign_candidate_source",
       "canonicalTerm": "campaign_candidate_source",
       "preferredName": "campaign_candidate_source",
-      "description": "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves caller or persisted campaign-definition candidates. `CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from lotus-core `DpmPortfolioUniverseCandidate:v1`, walks continuation pages to terminal exhaustion, and fails closed on empty, duplicate, non-terminating, or still-truncated pages.",
+      "description": "Candidate source for `BULK_REVIEW_CAMPAIGN`. `INLINE_SOURCE_BACKED` preserves only approved source-contract refs from caller or persisted campaign-definition candidates before publishing READY membership. `CORE_DPM_PORTFOLIO_UNIVERSE` resolves bounded source-owned candidates from lotus-core `DpmPortfolioUniverseCandidate:v1`, walks continuation pages to terminal exhaustion, and fails closed on empty, duplicate, non-terminating, or still-truncated pages.",
       "example": "INLINE_SOURCE_BACKED",
       "type": "string",
       "locations": [
