@@ -129,8 +129,7 @@ def test_repo_native_trust_telemetry_validation_rejects_certified_route_foundati
 
     assert any(
         "not-certified route foundation /api/v1/rebalance/idea-action-intake "
-        "must not be listed in serving_routes"
-        in issue
+        "must not be listed in serving_routes" in issue
         for issue in issues
     )
 
@@ -163,8 +162,7 @@ def test_repo_native_trust_telemetry_validation_rejects_deferred_product_success
 
     assert any(
         "deferred mesh product lotus-manage:BulkReviewCampaignMembership:v1 "
-        "must publish data_quality_status=quality_blocked"
-        in issue
+        "must publish data_quality_status=quality_blocked" in issue
         for issue in issues
     )
 
@@ -247,8 +245,9 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
                 is expected_posture["certification_ready"]
             )
             assert telemetry["blocking"]["blocked_reason"] == expected_posture["blocked_reason"]
-            assert set(telemetry["blocking"]["blocker_issue_refs"]) == (
-                expected_posture["blocker_issue_refs"]
+            assert (
+                set(telemetry["blocking"]["blocker_issue_refs"])
+                == (expected_posture["blocker_issue_refs"])
             )
             assert "quality_passed" not in {
                 telemetry["data_quality_status"],
@@ -270,8 +269,9 @@ def test_trust_telemetry_covers_every_active_product_declaration() -> None:
                 telemetry["certification_limits"]["required_policy_refs"]
                 == product["mesh_maturity_posture"]["missing_policy_refs"]
             )
-            assert "BULK_REVIEW_MESH_SLO_POLICY_MISSING" in (
-                telemetry["blocking"]["blocker_reason_codes"]
+            assert (
+                "BULK_REVIEW_MESH_SLO_POLICY_MISSING"
+                in (telemetry["blocking"]["blocker_reason_codes"])
             )
 
 

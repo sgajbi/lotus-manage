@@ -23,6 +23,20 @@ PM_QUALITY_POSTGRES_SINGLETONS = (
 )
 
 
+def _trusted_pm_quality_headers(
+    *,
+    correlation_id: str = "corr-pmq-lifecycle",
+) -> dict[str, str]:
+    return {
+        "X-Actor-Id": "ops",
+        "X-Tenant-Id": "tenant-sg",
+        "X-Role": "operator",
+        "X-Correlation-Id": correlation_id,
+        "X-Service-Identity": "lotus-gateway",
+        "X-Capabilities": "pm_quality.write,pm_quality.read",
+    }
+
+
 class _FakeCursor:
     def __init__(
         self,
@@ -41,36 +55,39 @@ class _FakeCursor:
 
 class _PmQualityPostgresConnection:
     def __init__(self) -> None:
-        self.score_runs: dict[str, dict[str, Any]] = {}
-        self.policies: dict[tuple[str, str], dict[str, Any]] = {}
-        self.fairness_analyses: dict[str, dict[str, Any]] = {}
-        self.review_actions: dict[str, dict[str, Any]] = {}
-        self.summary_invocations: dict[str, dict[str, Any]] = {}
+        self.score_runs: dict[tuple[str, str], dict[str, Any]] = {}
+        self.policies: dict[tuple[str, str, str], dict[str, Any]] = {}
+        self.fairness_analyses: dict[tuple[str, str], dict[str, Any]] = {}
+        self.review_actions: dict[tuple[str, str], dict[str, Any]] = {}
+        self.summary_invocations: dict[tuple[str, str], dict[str, Any]] = {}
         self.commits = 0
         self.rollbacks = 0
 
     def execute(self, query: str, params: Sequence[Any] = ()) -> _FakeCursor:
         normalized = " ".join(query.split())
         if normalized.startswith("INSERT INTO dpm_pm_quality_policies"):
-            key = (str(params[0]), str(params[1]))
+            key = (str(params[0]), str(params[1]), str(params[2]))
             self.policies.setdefault(
                 key,
                 {
-                    "policy_id": str(params[0]),
-                    "policy_version": str(params[1]),
-                    "enabled": bool(params[2]),
-                    "as_of_date": str(params[3]),
-                    "content_hash": str(params[5]),
-                    "payload_json": json.loads(str(params[6])),
+                    "tenant_id": str(params[0]),
+                    "policy_id": str(params[1]),
+                    "policy_version": str(params[2]),
+                    "enabled": bool(params[3]),
+                    "as_of_date": str(params[4]),
+                    "content_hash": str(params[6]),
+                    "payload_json": json.loads(str(params[7])),
                 },
             )
             return _FakeCursor()
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_policies"):
-            row = self.policies.get((str(params[0]), str(params[1])))
+            row = self.policies.get((str(params[0]), str(params[1]), str(params[2])))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_policies WHERE"):
             if "policy_version = %s" in normalized and "LIMIT" not in normalized:
-                return _FakeCursor(self.policies.get((str(params[0]), str(params[1]))))
+                return _FakeCursor(
+                    self.policies.get((str(params[0]), str(params[1]), str(params[2])))
+                )
             return _FakeCursor(
                 rows=self._filtered_rows(
                     rows=list(self.policies.values()),
@@ -91,34 +108,37 @@ class _PmQualityPostgresConnection:
 
         if normalized.startswith("INSERT INTO dpm_pm_quality_score_runs"):
             self.score_runs.setdefault(
-                str(params[0]),
+                (str(params[0]), str(params[1])),
                 {
-                    "score_run_id": str(params[0]),
-                    "pm_id": str(params[1]),
-                    "book_id": str(params[2]),
-                    "policy_id": str(params[3]),
-                    "policy_version": str(params[4]),
-                    "as_of_date": str(params[5]),
-                    "state": str(params[6]),
-                    "content_hash": str(params[8]),
-                    "generated_at": str(params[9]),
-                    "payload_json": json.loads(str(params[12])),
+                    "tenant_id": str(params[0]),
+                    "score_run_id": str(params[1]),
+                    "pm_id": str(params[2]),
+                    "book_id": str(params[3]),
+                    "policy_id": str(params[4]),
+                    "policy_version": str(params[5]),
+                    "as_of_date": str(params[6]),
+                    "state": str(params[7]),
+                    "content_hash": str(params[9]),
+                    "generated_at": str(params[10]),
+                    "payload_json": json.loads(str(params[13])),
                 },
             )
             return _FakeCursor()
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_score_runs"):
-            row = self.score_runs.get(str(params[0]))
+            row = self.score_runs.get((str(params[0]), str(params[1])))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
         if normalized.startswith(
             "SELECT content_hash, policy_id, policy_version, as_of_date, state "
             "FROM dpm_pm_quality_score_runs"
         ):
-            return _FakeCursor(_parent_evidence_row(self.score_runs.get(str(params[0]))))
+            return _FakeCursor(
+                _parent_evidence_row(self.score_runs.get((str(params[0]), str(params[1]))))
+            )
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_score_runs WHERE")
             and "score_run_id = %s" in normalized
         ):
-            return _FakeCursor(self.score_runs.get(str(params[0])))
+            return _FakeCursor(self.score_runs.get((str(params[0]), str(params[1]))))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_score_runs"):
             return _FakeCursor(
                 rows=self._filtered_rows(
@@ -132,32 +152,35 @@ class _PmQualityPostgresConnection:
 
         if normalized.startswith("INSERT INTO dpm_pm_quality_fairness_analyses"):
             self.fairness_analyses.setdefault(
-                str(params[0]),
+                (str(params[0]), str(params[1])),
                 {
-                    "fairness_analysis_id": str(params[0]),
-                    "policy_id": str(params[1]),
-                    "policy_version": str(params[2]),
-                    "as_of_date": str(params[3]),
-                    "state": str(params[4]),
-                    "content_hash": str(params[6]),
-                    "generated_at": str(params[7]),
-                    "payload_json": json.loads(str(params[10])),
+                    "tenant_id": str(params[0]),
+                    "fairness_analysis_id": str(params[1]),
+                    "policy_id": str(params[2]),
+                    "policy_version": str(params[3]),
+                    "as_of_date": str(params[4]),
+                    "state": str(params[5]),
+                    "content_hash": str(params[7]),
+                    "generated_at": str(params[8]),
+                    "payload_json": json.loads(str(params[11])),
                 },
             )
             return _FakeCursor()
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_fairness_analyses"):
-            row = self.fairness_analyses.get(str(params[0]))
+            row = self.fairness_analyses.get((str(params[0]), str(params[1])))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
         if normalized.startswith(
             "SELECT content_hash, policy_id, policy_version, as_of_date, state "
             "FROM dpm_pm_quality_fairness_analyses"
         ):
-            return _FakeCursor(_parent_evidence_row(self.fairness_analyses.get(str(params[0]))))
+            return _FakeCursor(
+                _parent_evidence_row(self.fairness_analyses.get((str(params[0]), str(params[1]))))
+            )
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses WHERE")
             and "fairness_analysis_id = %s" in normalized
         ):
-            return _FakeCursor(self.fairness_analyses.get(str(params[0])))
+            return _FakeCursor(self.fairness_analyses.get((str(params[0]), str(params[1]))))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_fairness_analyses"):
             return _FakeCursor(
                 rows=self._filtered_rows(
@@ -171,34 +194,37 @@ class _PmQualityPostgresConnection:
 
         if normalized.startswith("INSERT INTO dpm_pm_quality_review_actions"):
             self.review_actions.setdefault(
-                str(params[0]),
+                (str(params[0]), str(params[1])),
                 {
-                    "review_action_id": str(params[0]),
-                    "target_type": str(params[2]),
-                    "target_id": str(params[3]),
-                    "policy_id": str(params[4]),
-                    "policy_version": str(params[5]),
-                    "as_of_date": str(params[6]),
-                    "action_state": str(params[9]),
-                    "content_hash": str(params[10]),
-                    "generated_at": str(params[11]),
-                    "payload_json": json.loads(str(params[14])),
+                    "tenant_id": str(params[0]),
+                    "review_action_id": str(params[1]),
+                    "target_type": str(params[3]),
+                    "target_id": str(params[4]),
+                    "policy_id": str(params[5]),
+                    "policy_version": str(params[6]),
+                    "as_of_date": str(params[7]),
+                    "action_state": str(params[10]),
+                    "content_hash": str(params[11]),
+                    "generated_at": str(params[12]),
+                    "payload_json": json.loads(str(params[15])),
                 },
             )
             return _FakeCursor()
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_review_actions"):
-            row = self.review_actions.get(str(params[0]))
+            row = self.review_actions.get((str(params[0]), str(params[1])))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
         if normalized.startswith(
             "SELECT content_hash, target_type, target_id, policy_id, policy_version, as_of_date "
             "FROM dpm_pm_quality_review_actions"
         ):
-            return _FakeCursor(_review_action_parent_row(self.review_actions.get(str(params[0]))))
+            return _FakeCursor(
+                _review_action_parent_row(self.review_actions.get((str(params[0]), str(params[1]))))
+            )
         if (
             normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions WHERE")
             and "review_action_id = %s" in normalized
         ):
-            return _FakeCursor(self.review_actions.get(str(params[0])))
+            return _FakeCursor(self.review_actions.get((str(params[0]), str(params[1]))))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_review_actions"):
             return _FakeCursor(
                 rows=self._filtered_rows(
@@ -218,23 +244,24 @@ class _PmQualityPostgresConnection:
 
         if normalized.startswith("INSERT INTO dpm_pm_quality_summary_invocations"):
             self.summary_invocations.setdefault(
-                str(params[0]),
+                (str(params[0]), str(params[1])),
                 {
-                    "summary_invocation_id": str(params[0]),
-                    "score_run_id": str(params[1]),
-                    "review_action_id": str(params[2]),
-                    "policy_id": str(params[3]),
-                    "policy_version": str(params[4]),
-                    "as_of_date": str(params[5]),
-                    "invocation_state": str(params[6]),
-                    "content_hash": str(params[13]),
-                    "generated_at": str(params[14]),
-                    "payload_json": json.loads(str(params[17])),
+                    "tenant_id": str(params[0]),
+                    "summary_invocation_id": str(params[1]),
+                    "score_run_id": str(params[2]),
+                    "review_action_id": str(params[3]),
+                    "policy_id": str(params[4]),
+                    "policy_version": str(params[5]),
+                    "as_of_date": str(params[6]),
+                    "invocation_state": str(params[7]),
+                    "content_hash": str(params[14]),
+                    "generated_at": str(params[15]),
+                    "payload_json": json.loads(str(params[18])),
                 },
             )
             return _FakeCursor()
         if normalized.startswith("SELECT content_hash FROM dpm_pm_quality_summary_invocations"):
-            row = self.summary_invocations.get(str(params[0]))
+            row = self.summary_invocations.get((str(params[0]), str(params[1])))
             return _FakeCursor({"content_hash": row["content_hash"]} if row else None)
         if (
             normalized.startswith(
@@ -242,7 +269,7 @@ class _PmQualityPostgresConnection:
             )
             and "summary_invocation_id = %s" in normalized
         ):
-            return _FakeCursor(self.summary_invocations.get(str(params[0])))
+            return _FakeCursor(self.summary_invocations.get((str(params[0]), str(params[1]))))
         if normalized.startswith("SELECT payload_json FROM dpm_pm_quality_summary_invocations"):
             return _FakeCursor(
                 rows=self._filtered_rows(
@@ -273,6 +300,10 @@ class _PmQualityPostgresConnection:
     ) -> list[dict[str, Any]]:
         filtered = rows
         param_index = 0
+        if "tenant_id = %s" in normalized:
+            expected_tenant = params[param_index]
+            filtered = [row for row in filtered if row["tenant_id"] == expected_tenant]
+            param_index += 1
         for column in filter_columns:
             if f"{column} = %s" in normalized:
                 expected = params[param_index]
@@ -369,6 +400,7 @@ def test_pm_quality_endpoint_lifecycle_uses_canonical_app_and_postgres_adapter(
     pm_quality_postgres_connection: _PmQualityPostgresConnection,
 ) -> None:
     with TestClient(app) as client:
+        client.headers.update(_trusted_pm_quality_headers())
         policy = client.put(
             "/api/v1/rebalance/pm-operating-quality/policies/pmq_sg_dpm/versions/2026.05",
             json=_policy(),
@@ -557,6 +589,7 @@ def _policy(enabled: bool = True) -> dict[str, Any]:
     policy: dict[str, Any] = {
         "policy_id": "pmq_sg_dpm",
         "policy_version": "2026.05",
+        "tenant_id": "tenant-sg",
         "enabled": enabled,
         "as_of_date": "2026-05-12",
         "access_purpose": "SUPERVISORY_CONTROL_REVIEW",

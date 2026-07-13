@@ -53,7 +53,20 @@ class _FakeConnection:
             or sql.startswith("CREATE INDEX")
             or sql.startswith("CREATE UNIQUE INDEX")
             or sql.startswith("ALTER TABLE")
+            or sql.startswith("DO $$")
+            or (sql.startswith("BEGIN ") and "constraint_record" in sql)
             or sql.startswith("INSERT INTO dpm_bulk_review_campaign_workflow_read_model")
+        ):
+            return _FakeCursor(None)
+        if sql in {"END IF", "END LOOP", "END $$"}:
+            return _FakeCursor(None)
+        if sql.startswith("UPDATE ") and " SET tenant_id = " in sql and " WHERE " in sql:
+            return _FakeCursor(None)
+        if (
+            sql.startswith("UPDATE ")
+            and " jsonb_set(" in sql
+            and "'{tenant_id}'" in sql
+            and " WHERE " in sql
         ):
             return _FakeCursor(None)
         if "FROM schema_migrations" in sql:
